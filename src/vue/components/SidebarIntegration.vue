@@ -1,40 +1,29 @@
 <template>
-  <!-- This component is rendered into the sidebar via teleport -->
-  <Teleport to="#gmkb-sidebar" v-if="sidebarMountPoint">
+  <!-- Always use the new SidebarTabs - render directly into #gmkb-sidebar -->
+  <Teleport to="#gmkb-sidebar" v-if="mounted">
     <SidebarTabs />
-  </Teleport>
-  
-  <!-- Fallback to old mount point if new sidebar doesn't exist -->
-  <Teleport to="#vue-component-list" v-else-if="componentListMountPoint">
-    <ComponentList />
   </Teleport>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 import SidebarTabs from './sidebar/SidebarTabs.vue';
-import ComponentList from './sidebar/ComponentList.vue';
 
-const sidebarMountPoint = ref(false);
-const componentListMountPoint = ref(false);
+const mounted = ref(false);
 
-onMounted(() => {
-  // Check for new sidebar mount point first
-  const newSidebar = document.getElementById('gmkb-sidebar');
-  if (newSidebar) {
-    sidebarMountPoint.value = true;
-    console.log('✅ New sidebar mount point found');
-    console.log('Sidebar element:', newSidebar);
-    console.log('Sidebar visible:', window.getComputedStyle(newSidebar).display !== 'none');
+onMounted(async () => {
+  // Wait for DOM to be ready
+  await nextTick();
+  
+  const sidebarElement = document.getElementById('gmkb-sidebar');
+  
+  if (sidebarElement) {
+    // Clear any existing content
+    sidebarElement.innerHTML = '';
+    mounted.value = true;
+    console.log('✅ SidebarTabs will render into #gmkb-sidebar');
   } else {
-    // Fallback to old mount point
-    const oldMountPoint = document.getElementById('vue-component-list');
-    if (oldMountPoint) {
-      componentListMountPoint.value = true;
-      console.log('✅ Using legacy component list mount point');
-    } else {
-      console.warn('⚠️ No sidebar mount points found');
-    }
+    console.error('❌ #gmkb-sidebar mount point not found!');
   }
 });
 </script>

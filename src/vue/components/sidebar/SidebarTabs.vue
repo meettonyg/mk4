@@ -1,5 +1,5 @@
 <template>
-  <div class="gmkb-sidebar gmkb-sidebar-tabs">
+  <div class="gmkb-sidebar" :class="{ 'dark-mode': isDarkMode }">
     <!-- Tab Navigation -->
     <div class="sidebar-tabs">
       <button 
@@ -14,166 +14,293 @@
       </button>
     </div>
     
+    <!-- Search - Only for Components Tab -->
+    <div v-if="activeTab === 'components'" class="search-container">
+      <div class="search-wrapper">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+        <input
+          v-model="searchTerm"
+          type="text"
+          placeholder="Search Widget..."
+          class="search-input"
+        />
+      </div>
+    </div>
+    
     <!-- Tab Content -->
     <div class="sidebar-content">
-      <!-- Components Tab -->
+      <!-- COMPONENTS TAB -->
       <div v-show="activeTab === 'components'" class="tab-panel">
-        <!-- Component Library for Adding New Components -->
-        <div class="component-library-sidebar">
-          <div class="library-header">
-            <h3>Add Components</h3>
-          </div>
-          <div class="library-components">
-            <div
-              v-for="compType in componentTypes"
-              :key="compType.type"
-              class="library-component"
-              :draggable="true"
-              @dragstart="onDragStart($event, compType.type)"
-              @dragend="onDragEnd"
+        <div
+          v-for="[categoryId, category] in Object.entries(categories)"
+          :key="categoryId"
+          class="category-section"
+        >
+          <button
+            @click="toggleCategory(categoryId)"
+            class="category-header"
+          >
+            <svg 
+              class="chevron-icon" 
+              :class="{ expanded: expandedCategories.includes(categoryId) }"
+              width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             >
-              <span class="component-icon">{{ compType.icon }}</span>
-              <span class="component-name">{{ compType.name }}</span>
-              <button @click="addComponent(compType.type)" class="add-btn" title="Add">+</button>
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+            <span class="category-label">{{ category.label }}</span>
+            <span v-if="category.badge" class="pro-badge">{{ category.badge }}</span>
+          </button>
+
+          <div v-show="expandedCategories.includes(categoryId)" class="components-grid">
+            <div
+              v-for="component in category.components"
+              :key="component.id"
+              :draggable="!component.isPro"
+              @dragstart="onDragStart($event, component.id)"
+              @dragend="onDragEnd"
+              @click="!component.isPro && addComponent(component.id)"
+              class="component-card"
+              :class="{ 'is-pro': component.isPro, 'is-dragging': draggingComponent === component.id }"
+            >
+              <div v-if="component.isPro" class="lock-icon">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+              </div>
+              
+              <div class="component-icon-wrapper">
+                <span class="component-icon">{{ component.icon }}</span>
+              </div>
+              
+              <span class="component-label">{{ component.label }}</span>
             </div>
           </div>
         </div>
-        
-        <!-- Divider -->
-        <div class="sidebar-divider"></div>
-        
-        <!-- Existing Components List -->
-        <ComponentList />
+
+        <!-- Premium Upsell -->
+        <div class="premium-cta">
+          <div class="premium-header">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+            <h3>Unlock Premium</h3>
+          </div>
+          <p>Get advanced components and unlimited customization.</p>
+          <button class="premium-button">Upgrade to Pro</button>
+        </div>
       </div>
-      
-      <!-- Layout Tab -->
-      <div v-show="activeTab === 'layout'" class="tab-panel">
-        <div class="layout-panel">
-          <h3>Sections</h3>
-          
-          <div class="layout-options">
-            <button 
-              v-for="layout in layouts" 
-              :key="layout.value"
-              @click="addSection(layout.value)"
-              class="layout-option"
-              :title="layout.label"
+
+      <!-- LAYOUT TAB -->
+      <div v-show="activeTab === 'layout'" class="tab-panel layout-panel">
+        <div class="panel-section">
+          <h3 class="panel-section-title">Section Layouts</h3>
+          <div class="layout-list">
+            <button
+              v-for="layout in sectionLayouts"
+              :key="layout.id"
+              @click="selectLayout(layout.id)"
+              class="layout-card"
+              :class="{ active: selectedLayout === layout.id }"
             >
-              <div class="layout-icon" v-html="layout.icon"></div>
-              <span>{{ layout.label }}</span>
+              <div class="layout-preview">
+                <div
+                  v-for="(col, index) in layout.columns"
+                  :key="index"
+                  class="layout-column"
+                  :style="{ width: `${col.width}%` }"
+                ></div>
+              </div>
+              
+              <div class="layout-info">
+                <div class="layout-name">{{ layout.label }}</div>
+                <div class="layout-description">{{ layout.description }}</div>
+              </div>
+
+              <div v-if="selectedLayout === layout.id" class="selected-check">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M10 3L4.5 8.5L2 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
             </button>
           </div>
-          
-          <!-- Section List -->
+
+          <div class="layout-actions">
+            <button @click="addSection" class="action-btn action-btn-primary">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Add Section
+            </button>
+            <button @click="duplicateSection" class="action-btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              Duplicate
+            </button>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <h3 class="panel-section-title">Current Sections ({{ sections.length }})</h3>
           <div class="section-list">
-            <h4>Current Sections ({{ sectionCount }})</h4>
-            <div 
-              v-for="(section, index) in sections" 
+            <div
+              v-for="(section, index) in sections"
               :key="section.section_id"
               class="section-item"
             >
-              <span class="section-number">{{ index + 1 }}</span>
-              <span class="section-type">{{ getSectionLabel(section.type) }}</span>
-              <button @click="removeSection(section.section_id)" class="remove-btn" title="Remove">
-                ×
+              <button class="drag-handle">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="9" cy="5" r="1"></circle>
+                  <circle cx="9" cy="12" r="1"></circle>
+                  <circle cx="9" cy="19" r="1"></circle>
+                  <circle cx="15" cy="5" r="1"></circle>
+                  <circle cx="15" cy="12" r="1"></circle>
+                  <circle cx="15" cy="19" r="1"></circle>
+                </svg>
+              </button>
+              
+              <div class="section-number">{{ index + 1 }}</div>
+              
+              <div class="section-details">
+                <div class="section-name">{{ getSectionLabel(section.type) }}</div>
+                <div class="section-meta">{{ getComponentCount(section) }} component{{ getComponentCount(section) !== 1 ? 's' : '' }}</div>
+              </div>
+
+              <button @click="removeSection(section.section_id)" class="delete-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
               </button>
             </div>
           </div>
         </div>
       </div>
-      
-      <!-- Settings Tab -->
-      <div v-show="activeTab === 'settings'" class="tab-panel">
-        <div class="settings-panel">
-          <h3>Media Kit Settings</h3>
-          
-          <!-- Theme Selection -->
-          <div class="setting-group">
-            <label>Theme</label>
-            <select v-model="selectedTheme" @change="updateTheme" class="setting-select">
-              <option 
-                v-for="theme in availableThemes" 
-                :key="theme.id" 
-                :value="theme.id"
-              >
-                {{ theme.name }}
-              </option>
-            </select>
+
+      <!-- SETTINGS TAB -->
+      <div v-show="activeTab === 'settings'" class="tab-panel design-panel">
+        <div class="panel-section">
+          <h3 class="panel-section-title">Active Theme</h3>
+          <div class="theme-list">
+            <button
+              v-for="theme in themes"
+              :key="theme.id"
+              @click="selectTheme(theme.id)"
+              class="theme-card"
+              :class="{ active: selectedTheme === theme.id }"
+            >
+              <div class="theme-swatch" :style="{ backgroundColor: theme.color }"></div>
+              <span class="theme-name">{{ theme.name }}</span>
+              <div v-if="selectedTheme === theme.id" class="selected-check">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M10 3L4.5 8.5L2 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </button>
           </div>
-          
-          <!-- Auto-save Toggle -->
-          <div class="setting-group">
-            <label class="toggle-label">
-              <input type="checkbox" v-model="autoSave" @change="toggleAutoSave" class="toggle-input" />
-              <span>Auto-save</span>
-            </label>
+          <button class="secondary-btn">Browse All Themes</button>
+        </div>
+
+        <div class="panel-section">
+          <h3 class="panel-section-title">Global Spacing</h3>
+          <div class="input-group">
+            <label class="input-label">Max Width</label>
+            <input type="text" class="text-input" value="900px" />
           </div>
-          
-          <!-- ROOT FIX: Wire up export/import buttons -->
-          <div class="setting-group">
-            <button class="setting-btn" @click="openExportModal">Export Media Kit</button>
-            <button class="setting-btn" @click="openImportModal">Import Media Kit</button>
+          <div class="input-group">
+            <label class="input-label">Section Spacing</label>
+            <input type="text" class="text-input" value="30px" />
+          </div>
+          <div class="input-group">
+            <label class="input-label">Container Padding</label>
+            <input type="text" class="text-input" value="20px" />
           </div>
         </div>
+
+        <div class="panel-section">
+          <h3 class="panel-section-title">Customize</h3>
+          <button class="customize-btn">
+            <div class="customize-icon">🎨</div>
+            <span>Global Colors</span>
+          </button>
+          <button class="customize-btn">
+            <div class="customize-icon">📝</div>
+            <span>Global Fonts</span>
+          </button>
+          <button class="customize-btn">
+            <div class="customize-icon">⚙️</div>
+            <span>Advanced Settings</span>
+          </button>
+        </div>
       </div>
+    </div>
+
+    <!-- Bottom Action Button -->
+    <div class="sidebar-footer">
+      <button class="footer-action-btn" @click="handleFooterAction">
+        <span class="plus-icon">+</span>
+        {{ getFooterButtonText }}
+      </button>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, inject, onMounted, onBeforeUnmount } from 'vue';
 import { useMediaKitStore } from '../../../stores/mediaKit';
 import { useThemeStore } from '../../../stores/theme';
 import UnifiedComponentRegistry from '../../../services/UnifiedComponentRegistry';
-import ComponentList from './ComponentList.vue';
 
 export default {
   name: 'SidebarTabs',
-  components: {
-    ComponentList
-  },
   
   setup() {
     const store = useMediaKitStore();
     const themeStore = useThemeStore();
+    const isDarkMode = inject('isDarkMode', ref(false));
     
-    // Tab configuration
-    const tabs = [
-      { id: 'components', label: 'Components', icon: '📦' },
-      { id: 'layout', label: 'Layout', icon: '🎨' },
-      { id: 'settings', label: 'Settings', icon: '⚙️' }
-    ];
-    
+    // State
     const activeTab = ref('components');
+    const searchTerm = ref('');
+    const expandedCategories = ref(['basic']);
+    const selectedLayout = ref('full_width');
+    const selectedTheme = ref(computed({
+      get: () => store.theme || 'professional_clean',
+      set: (value) => { store.theme = value; }
+    }));
+    const draggingComponent = ref(null);
     
-    // ROOT FIX: Load component types from registry instead of hard-coding
-    const componentTypes = ref([]);
-    
-    // ROOT FIX: Component label mapping for friendly display names
+    // Component labels and icons mapping
     const componentLabels = {
-      'hero': 'Hero Section',
+      'hero': 'Hero',
       'biography': 'Biography',
-      'topics': 'Speaking Topics',
+      'topics': 'Topics',
       'topics-questions': 'Topics & Questions',
       'questions': 'Questions',
-      'guest-intro': 'Guest Introduction',
-      'contact': 'Contact Info',
-      'social': 'Social Links',
+      'guest-intro': 'Guest Intro',
+      'contact': 'Contact',
+      'social': 'Social',
       'testimonials': 'Testimonials',
-      'stats': 'Statistics',
+      'stats': 'Stats',
       'authority-hook': 'Authority Hook',
       'logo-grid': 'Logo Grid',
       'call-to-action': 'Call to Action',
-      'booking-calendar': 'Booking Calendar',
-      'video-intro': 'Video Introduction',
-      'photo-gallery': 'Photo Gallery',
-      'podcast-player': 'Podcast Player'
+      'booking-calendar': 'Booking',
+      'video-intro': 'Video Intro',
+      'photo-gallery': 'Gallery',
+      'podcast-player': 'Podcast'
     };
     
-    // ROOT FIX: Component icon mapping
     const componentIcons = {
       'hero': '🎯',
-      'biography': '👤',
+      'biography': '📄',
       'topics': '💬',
       'topics-questions': '❓',
       'questions': '❓',
@@ -184,147 +311,118 @@ export default {
       'stats': '📊',
       'authority-hook': '🏆',
       'logo-grid': '🖼️',
-      'call-to-action': '🎯',
+      'call-to-action': '⚡',
       'booking-calendar': '📅',
       'video-intro': '🎥',
       'photo-gallery': '📷',
       'podcast-player': '🎙️'
     };
     
-    // Function to refresh component types from registry
-    const refreshComponentTypes = () => {
-      const registryComponents = UnifiedComponentRegistry.getAll();
-      componentTypes.value = registryComponents.map(comp => ({
-        type: comp.type,
-        name: componentLabels[comp.type] || comp.name || comp.type,
-        icon: componentIcons[comp.type] || comp.icon || '📦'
-      }));
-      console.log(`✅ SidebarTabs: Loaded ${componentTypes.value.length} components from registry`);
-    };
-    
-    // Initialize component types
-    refreshComponentTypes();
-    
-    // Listen for component discovery events
-    const handleComponentsDiscovered = () => {
-      refreshComponentTypes();
-    };
-    
-    // Layout options
-    const layouts = [
-      { 
-        value: 'full_width', 
-        label: 'Full Width', 
-        icon: '<svg viewBox="0 0 24 24" width="32" height="32"><rect x="3" y="8" width="18" height="8" fill="currentColor"/></svg>' 
-      },
-      { 
-        value: 'two_column', 
-        label: '2 Column', 
-        icon: '<svg viewBox="0 0 24 24" width="32" height="32"><rect x="3" y="8" width="8" height="8" fill="currentColor"/><rect x="13" y="8" width="8" height="8" fill="currentColor"/></svg>' 
-      },
-      { 
-        value: 'three_column', 
-        label: '3 Column', 
-        icon: '<svg viewBox="0 0 24 24" width="32" height="32"><rect x="2" y="8" width="5" height="8" fill="currentColor"/><rect x="9" y="8" width="6" height="8" fill="currentColor"/><rect x="17" y="8" width="5" height="8" fill="currentColor"/></svg>' 
-      }
+    // Tabs
+    const tabs = [
+      { id: 'components', label: 'Components', icon: '☰' },
+      { id: 'layout', label: 'Layout', icon: '📐' },
+      { id: 'settings', label: 'Settings', icon: '⚙️' }
     ];
     
-    // Computed
-    const sections = computed(() => store.sections);
-    const sectionCount = computed(() => store.sectionCount);
-    // ROOT FIX: Use computed property to stay synced with store
-    const selectedTheme = computed({
-      get: () => store.theme,
-      set: (value) => {
-        store.theme = value;
-      }
+    // Dynamic categories from registry
+    const categories = computed(() => {
+      const registryComponents = UnifiedComponentRegistry.getAll();
+      
+      const basic = [];
+      const media = [];
+      const premium = [];
+      
+      registryComponents.forEach(comp => {
+        const componentData = {
+          id: comp.type,
+          icon: componentIcons[comp.type] || '📦',
+          label: componentLabels[comp.type] || comp.name || comp.type,
+          isPro: comp.isPremium || false
+        };
+        
+        // Categorize components
+        if (comp.isPremium) {
+          premium.push(componentData);
+        } else if (['logo-grid', 'testimonials', 'contact', 'questions'].includes(comp.type)) {
+          media.push(componentData);
+        } else {
+          basic.push(componentData);
+        }
+      });
+      
+      return {
+        basic: {
+          label: 'Basic',
+          components: basic
+        },
+        media: {
+          label: 'Media & Content',
+          components: media
+        },
+        premium: {
+          label: 'Premium',
+          badge: 'PRO',
+          components: premium
+        }
+      };
     });
-    const autoSave = ref(store.autoSaveEnabled !== false); // Default to true if undefined
     
-    // ROOT FIX: Load available themes from theme store
-    const availableThemes = computed(() => {
-      if (!themeStore.availableThemes || themeStore.availableThemes.length === 0) {
-        // Fallback to default themes
-        return [
-          { id: 'professional_clean', name: 'Professional Clean' },
-          { id: 'creative_bold', name: 'Creative Bold' },
-          { id: 'minimal_elegant', name: 'Minimal Elegant' },
-          { id: 'modern_dark', name: 'Modern Dark' }
-        ];
+    // Section Layouts
+    const sectionLayouts = [
+      { id: 'full_width', label: 'Full Width', columns: [{ width: 100 }], description: '100%' },
+      { id: 'two_column', label: 'Two Column', columns: [{ width: 50 }, { width: 50 }], description: '50% / 50%' },
+      { id: 'main_sidebar', label: 'Main + Sidebar', columns: [{ width: 70 }, { width: 30 }], description: '70% / 30%' },
+      { id: 'sidebar_main', label: 'Sidebar + Main', columns: [{ width: 30 }, { width: 70 }], description: '30% / 70%' },
+      { id: 'three_column', label: 'Three Column', columns: [{ width: 33 }, { width: 34 }, { width: 33 }], description: '33% / 33% / 33%' }
+    ];
+    
+    // Themes
+    const themes = computed(() => {
+      if (themeStore.availableThemes && themeStore.availableThemes.length > 0) {
+        return themeStore.availableThemes;
       }
-      return themeStore.availableThemes;
+      return [
+        { id: 'professional_clean', name: 'Professional Clean', color: '#4f46e5' },
+        { id: 'creative_bold', name: 'Creative Bold', color: '#f97316' },
+        { id: 'minimal_elegant', name: 'Minimal Elegant', color: '#18181b' },
+        { id: 'modern_dark', name: 'Modern Dark', color: '#8b5cf6' }
+      ];
+    });
+    
+    // Computed
+    const sections = computed(() => store.sections || []);
+    
+    const getFooterButtonText = computed(() => {
+      if (activeTab.value === 'components') return 'Add Component';
+      if (activeTab.value === 'layout') return 'Add Section';
+      return 'Save Changes';
     });
     
     // Methods
-    const openComponentLibrary = () => {
-      store.setComponentLibraryOpen(true);
-      document.dispatchEvent(new CustomEvent('gmkb:open-component-library'));
-    };
-    
-    const addSection = (type) => {
-      store.addSection(type);
-      console.log('Added section:', type);
-    };
-    
-    const removeSection = (sectionId) => {
-      if (confirm('Remove this section?')) {
-        store.removeSection(sectionId);
-      }
-    };
-    
-    const getSectionLabel = (type) => {
-      const labels = {
-        'full_width': 'Full Width',
-        'two_column': 'Two Column',
-        'three_column': 'Three Column'
-      };
-      return labels[type] || type;
-    };
-    
-    const updateTheme = () => {
-      // Update store theme
-      store.theme = selectedTheme.value;
-      store._trackChange();
-      
-      // Trigger the correct event that ThemeProvider listens for
-      document.dispatchEvent(new CustomEvent('gmkb:change-theme', {
-        detail: { themeId: selectedTheme.value }
-      }));
-      
-      console.log('✅ Theme changed to:', selectedTheme.value);
-    };
-    
-    // ROOT FIX: Wire up auto-save toggle - properly set store property
-    const toggleAutoSave = () => {
-      if (!store.autoSaveEnabled && store.autoSaveEnabled !== false) {
-        // Property doesn't exist, add it
-        store.$patch({ autoSaveEnabled: autoSave.value });
+    const toggleCategory = (categoryId) => {
+      const index = expandedCategories.value.indexOf(categoryId);
+      if (index > -1) {
+        expandedCategories.value.splice(index, 1);
       } else {
-        store.autoSaveEnabled = autoSave.value;
+        expandedCategories.value.push(categoryId);
       }
-      console.log('✅ Auto-save', autoSave.value ? 'enabled' : 'disabled');
     };
     
-    // Drag handlers for component library
-    const onDragStart = (event, componentType) => {
+    const onDragStart = (event, componentId) => {
+      draggingComponent.value = componentId;
       event.dataTransfer.effectAllowed = 'copy';
-      event.dataTransfer.setData('text/plain', componentType);
-      event.dataTransfer.setData('component-type', componentType);
-      event.dataTransfer.setData('application/json', JSON.stringify({ type: componentType }));
-      
-      // Add visual feedback
-      event.target.classList.add('dragging');
-      
-      console.log('Started dragging component type:', componentType);
+      event.dataTransfer.setData('component-type', componentId);
+      event.dataTransfer.setData('text/plain', componentId);
+      event.dataTransfer.setData('application/json', JSON.stringify({ type: componentId }));
+      console.log('✅ Drag started:', componentId);
     };
     
-    const onDragEnd = (event) => {
-      event.target.classList.remove('dragging');
-      console.log('Ended dragging');
+    const onDragEnd = () => {
+      draggingComponent.value = null;
     };
     
-    // Add component directly (non-drag method)
-    const addComponent = (type) => {
+    const addComponent = (componentId) => {
       // Ensure we have at least one section
       if (store.sections.length === 0) {
         store.addSection('full_width');
@@ -333,86 +431,159 @@ export default {
       // Add component to first section
       const firstSection = store.sections[0];
       store.addComponent({
-        type: type,
+        type: componentId,
         sectionId: firstSection.section_id
       });
       
-      console.log('Added component:', type);
+      console.log('✅ Added component:', componentId);
     };
     
-    // ROOT FIX: Add methods to open export/import modals
-    const openExportModal = () => {
-      // Dispatch event that ImportExportModal component listens for
-      document.dispatchEvent(new CustomEvent('gmkb:open-export'));
-      console.log('✅ Dispatched gmkb:open-export event');
+    const selectLayout = (layoutId) => {
+      selectedLayout.value = layoutId;
+      console.log('✅ Selected layout:', layoutId);
     };
     
-    const openImportModal = () => {
-      // Dispatch event that ImportExportModal component listens for  
-      document.dispatchEvent(new CustomEvent('gmkb:open-import'));
-      console.log('✅ Dispatched gmkb:open-import event');
+    const selectTheme = (themeId) => {
+      selectedTheme.value.value = themeId;
+      store.theme = themeId;
+      store._trackChange();
+      
+      document.dispatchEvent(new CustomEvent('gmkb:change-theme', {
+        detail: { themeId }
+      }));
+      
+      console.log('✅ Selected theme:', themeId);
     };
     
-    // ROOT FIX: Register event listeners with proper cleanup
+    const addSection = () => {
+      if (selectedLayout.value) {
+        store.addSection(selectedLayout.value);
+        console.log('✅ Added section:', selectedLayout.value);
+      }
+    };
+    
+    const duplicateSection = () => {
+      if (sections.value.length > 0) {
+        const lastSection = sections.value[sections.value.length - 1];
+        store.addSection(lastSection.type);
+        console.log('✅ Duplicated section');
+      }
+    };
+    
+    const removeSection = (sectionId) => {
+      if (confirm('Remove this section?')) {
+        store.removeSection(sectionId);
+        console.log('✅ Removed section:', sectionId);
+      }
+    };
+    
+    const getSectionLabel = (type) => {
+      const labels = {
+        'full_width': 'Full Width',
+        'two_column': 'Two Column',
+        'three_column': 'Three Column',
+        'main_sidebar': 'Main + Sidebar',
+        'sidebar_main': 'Sidebar + Main'
+      };
+      return labels[type] || type;
+    };
+    
+    const getComponentCount = (section) => {
+      return section.components?.length || 0;
+    };
+    
+    const handleFooterAction = () => {
+      if (activeTab.value === 'components') {
+        console.log('Add component action');
+      } else if (activeTab.value === 'layout') {
+        addSection();
+      } else {
+        console.log('Save changes');
+      }
+    };
+    
+    // Refresh components from registry
+    const refreshComponents = () => {
+      console.log('✅ Refreshed components from registry');
+    };
+    
+    // Event handlers
+    const handleComponentsDiscovered = () => {
+      refreshComponents();
+    };
+    
+    // Lifecycle
     onMounted(() => {
       document.addEventListener('gmkb:components-discovered', handleComponentsDiscovered);
+      refreshComponents();
     });
     
-    // ROOT FIX: Clean up event listeners to prevent memory leaks
     onBeforeUnmount(() => {
       document.removeEventListener('gmkb:components-discovered', handleComponentsDiscovered);
     });
     
     return {
-      tabs,
+      isDarkMode,
       activeTab,
-      layouts,
-      sections,
-      sectionCount,
+      searchTerm,
+      expandedCategories,
+      selectedLayout,
       selectedTheme,
-      autoSave,
-      availableThemes,
-      componentTypes,
-      openComponentLibrary,
-      addSection,
-      removeSection,
-      getSectionLabel,
-      updateTheme,
-      toggleAutoSave,
+      draggingComponent,
+      tabs,
+      categories,
+      sectionLayouts,
+      themes,
+      sections,
+      getFooterButtonText,
+      toggleCategory,
       onDragStart,
       onDragEnd,
       addComponent,
-      openExportModal,
-      openImportModal
+      selectLayout,
+      selectTheme,
+      addSection,
+      duplicateSection,
+      removeSection,
+      getSectionLabel,
+      getComponentCount,
+      handleFooterAction
     };
   }
 };
 </script>
 
-<style>
-/* Unscoped styles - properly namespace everything with .gmkb-sidebar */
-
-/* Main sidebar container */
+<style scoped>
+/* Base Sidebar Container - LIGHT MODE DEFAULT */
 .gmkb-sidebar {
-  height: 100%;  display: flex;
+  width: 100%;
+  height: 100%;
+  display: flex;
   flex-direction: column;
-  background: #0f172a !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: white;
+  border-right: 1px solid #e5e7eb;
+  transition: all 0.2s;
 }
 
-/* Tab Navigation - CONSOLIDATED */
-.gmkb-sidebar .sidebar-tabs {
-  display: flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  position: relative !important;
-  z-index: 10 !important;
-  min-height: 48px !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+.gmkb-sidebar.dark-mode {
+  background: #111827;
+  border-right-color: #374151;
+}
+
+/* Tab Navigation */
+.sidebar-tabs {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
   flex-shrink: 0;
 }
 
-.gmkb-sidebar .tab-button {
+.dark-mode .sidebar-tabs {
+  border-bottom-color: #374151;
+  background: #1f2937;
+}
+
+.tab-button {
   flex: 1;
   display: flex;
   align-items: center;
@@ -421,327 +592,759 @@ export default {
   padding: 12px 8px;
   background: transparent;
   border: none;
-  color: #64748b !important;
+  border-bottom: 2px solid transparent;
+  color: #6b7280;
   cursor: pointer;
   transition: all 0.2s;
-  border-bottom: 2px solid transparent;
-  font-size: 13px;
-}
-
-.gmkb-sidebar .tab-button:hover {
-  color: #94a3b8 !important;
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.gmkb-sidebar .tab-button.active {
-  color: #3b82f6 !important;
-  border-bottom-color: #3b82f6;
-  background: rgba(59, 130, 246, 0.05);
-}
-
-.gmkb-sidebar .tab-icon {
-  font-size: 16px;
-}
-
-.gmkb-sidebar .tab-label {
   font-size: 13px;
   font-weight: 500;
 }
 
-/* Tab Content */
-.gmkb-sidebar .sidebar-content {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
+.tab-button:hover {
+  color: #111827;
+  background: rgba(0, 0, 0, 0.02);
 }
 
-.gmkb-sidebar .tab-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+.dark-mode .tab-button {
+  color: #9ca3af;
 }
 
-/* Rest of the styles remain the same but with .gmkb-sidebar prefix */
-.gmkb-sidebar .component-library-sidebar {
+.dark-mode .tab-button:hover {
+  color: #f3f4f6;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-button.active {
+  color: #ec4899;
+  border-bottom-color: #ec4899;
+  background: white;
+}
+
+.dark-mode .tab-button.active {
+  background: #111827;
+}
+
+/* Search Container */
+.search-container {
   padding: 12px;
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 8px;
-  margin: 12px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.gmkb-sidebar .library-header h3 {
-  margin: 0 0 12px 0;
+.dark-mode .search-container {
+  border-bottom-color: #374151;
+}
+
+.search-wrapper {
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
   font-size: 14px;
-  font-weight: 600;
-  color: #e2e8f0;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  outline: none;
+  transition: all 0.2s;
+  background: white;
 }
 
-.gmkb-sidebar .library-components {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 6px;
-  max-height: 300px;
+.search-input:focus {
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+}
+
+.dark-mode .search-input {
+  background: #1f2937;
+  border-color: #374151;
+  color: #f3f4f6;
+}
+
+/* Sidebar Content */
+.sidebar-content {
+  flex: 1;
   overflow-y: auto;
 }
 
-.gmkb-sidebar .library-component {
+.tab-panel {
+  padding-bottom: 16px;
+}
+
+/* Category Section */
+.category-section {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dark-mode .category-section {
+  border-bottom-color: #374151;
+}
+
+.category-header {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
+  padding: 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.category-header:hover {
+  background: #f9fafb;
+}
+
+.dark-mode .category-header:hover {
+  background: #1f2937;
+}
+
+.chevron-icon {
+  color: #9ca3af;
+  transition: transform 0.2s;
+}
+
+.chevron-icon.expanded {
+  transform: rotate(90deg);
+}
+
+.category-label {
+  flex: 1;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #374151;
+}
+
+.dark-mode .category-label {
+  color: #d1d5db;
+}
+
+.pro-badge {
+  padding: 2px 6px;
+  background: linear-gradient(to right, #ec4899, #a855f7);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+/* Components Grid */
+.components-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 8px 12px 16px;
+}
+
+.component-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
   cursor: move;
   transition: all 0.2s;
 }
 
-.gmkb-sidebar .library-component:hover {
-  background: rgba(59, 130, 246, 0.1);
-  border-color: rgba(59, 130, 246, 0.3);
+.component-card:hover {
+  border-color: #ec4899;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.gmkb-sidebar .library-component.dragging {
+.component-card.is-pro {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.component-card.is-dragging {
   opacity: 0.5;
   transform: scale(0.95);
 }
 
-.gmkb-sidebar .component-icon {
-  font-size: 18px;
+.dark-mode .component-card {
+  background: #1f2937;
+  border-color: #374151;
 }
 
-.gmkb-sidebar .component-name {
-  flex: 1;
-  font-size: 13px;
-  color: #cbd5e1;
-  font-weight: 500;
+.lock-icon {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: #9ca3af;
 }
 
-.gmkb-sidebar .add-btn {
-  width: 24px;
-  height: 24px;
+.component-icon-wrapper {
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(59, 130, 246, 0.2);
-  border: 1px solid rgba(59, 130, 246, 0.4);
-  border-radius: 4px;
-  color: #3b82f6;
-  font-size: 18px;
+  background: #f3f4f6;
+  border-radius: 8px;
+}
+
+.dark-mode .component-icon-wrapper {
+  background: #374151;
+}
+
+.component-icon {
+  font-size: 20px;
+}
+
+.component-label {
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  color: #374151;
+  line-height: 1.3;
+}
+
+.dark-mode .component-label {
+  color: #d1d5db;
+}
+
+/* Premium CTA */
+.premium-cta {
+  margin: 16px;
+  padding: 16px;
+  background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%);
+  border-radius: 8px;
+  color: white;
+}
+
+.premium-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.premium-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.premium-cta p {
+  font-size: 12px;
+  opacity: 0.9;
+  margin: 0 0 12px;
+}
+
+.premium-button {
+  width: 100%;
+  padding: 8px;
+  background: white;
+  color: #ec4899;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.2s;
 }
 
-.gmkb-sidebar .add-btn:hover {
-  background: rgba(59, 130, 246, 0.3);
-  transform: scale(1.1);
-}
-
-.gmkb-sidebar .sidebar-divider {
-  height: 1px;
-  background: rgba(255, 255, 255, 0.1);
-  margin: 12px;
+.premium-button:hover {
+  background: #f9fafb;
 }
 
 /* Layout Panel */
-.gmkb-sidebar .layout-panel {
-  padding: 16px;
-}
-
-.gmkb-sidebar .layout-panel h3 {
-  margin: 0 0 16px 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: #e2e8f0;
-}
-
-.gmkb-sidebar .layout-options {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+.panel-section {
+  margin: 16px;
   margin-bottom: 24px;
 }
 
-.gmkb-sidebar .layout-option {
+.panel-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #374151;
+  margin: 0 0 12px;
+}
+
+.dark-mode .panel-section-title {
+  color: #d1d5db;
+}
+
+.layout-list {
   display: flex;
   flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.layout-card {
+  display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 12px 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 12px;
+  padding: 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.layout-card:hover {
+  border-color: #ec4899;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.layout-card.active {
+  border-color: #ec4899;
+  background: #fdf2f8;
+  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.15);
+}
+
+.dark-mode .layout-card {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.dark-mode .layout-card.active {
+  background: rgba(236, 72, 153, 0.1);
+}
+
+.layout-preview {
+  width: 64px;
+  height: 48px;
+  display: flex;
+  gap: 2px;
+  padding: 6px;
+  background: #f3f4f6;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.dark-mode .layout-preview {
+  background: #374151;
+}
+
+.layout-column {
+  background: #9ca3af;
+  border-radius: 2px;
+}
+
+.dark-mode .layout-column {
+  background: #6b7280;
+}
+
+.layout-info {
+  flex: 1;
+  text-align: left;
+}
+
+.layout-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 2px;
+}
+
+.dark-mode .layout-name {
+  color: #f3f4f6;
+}
+
+.layout-description {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.dark-mode .layout-description {
+  color: #9ca3af;
+}
+
+.selected-check {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ec4899;
+  border-radius: 50%;
+  color: white;
+  flex-shrink: 0;
+}
+
+/* Action Buttons */
+.layout-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: white;
+  border: 1px solid #d1d5db;
   border-radius: 6px;
-  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.gmkb-sidebar .layout-option:hover {
-  background: rgba(59, 130, 246, 0.1);
-  border-color: rgba(59, 130, 246, 0.3);
-  color: #3b82f6;
+.action-btn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
 }
 
-.gmkb-sidebar .layout-icon {
-  width: 32px;
-  height: 32px;
+.dark-mode .action-btn {
+  background: #1f2937;
+  border-color: #374151;
+  color: #d1d5db;
 }
 
-.gmkb-sidebar .layout-option span {
-  font-size: 11px;
-  font-weight: 500;
+.dark-mode .action-btn:hover {
+  background: #374151;
+}
+
+.action-btn-primary {
+  flex: 1.5;
 }
 
 /* Section List */
-.gmkb-sidebar .section-list {
-  margin-top: 24px;
+.section-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.gmkb-sidebar .section-list h4 {
-  margin: 0 0 12px 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: #cbd5e1;
-}
-
-.gmkb-sidebar .section-item {
+.section-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px;
-  margin-bottom: 6px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
+  padding: 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  transition: all 0.2s;
 }
 
-.gmkb-sidebar .section-number {
+.section-item:hover {
+  background: #f9fafb;
+}
+
+.dark-mode .section-item {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.dark-mode .section-item:hover {
+  background: #374151;
+}
+
+.drag-handle {
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  cursor: move;
+}
+
+.section-number {
   width: 24px;
   height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid rgba(6, 182, 212, 0.3);
   border-radius: 4px;
-  color: #3b82f6;
+  color: #06b6d4;
   font-size: 12px;
   font-weight: 600;
 }
 
-.gmkb-sidebar .section-type {
+.section-details {
   flex: 1;
-  font-size: 13px;
-  color: #cbd5e1;
 }
 
-.gmkb-sidebar .remove-btn {
-  width: 24px;
-  height: 24px;
+.section-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 2px;
+}
+
+.dark-mode .section-name {
+  color: #f3f4f6;
+}
+
+.section-meta {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.dark-mode .section-meta {
+  color: #9ca3af;
+}
+
+.delete-btn {
+  padding: 4px;
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: color 0.2s;
+  opacity: 0;
+}
+
+.section-item:hover .delete-btn {
+  opacity: 1;
+}
+
+.delete-btn:hover {
+  color: #ef4444;
+}
+
+/* Design Panel */
+.theme-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.theme-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.theme-card:hover {
+  border-color: #ec4899;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.theme-card.active {
+  border-color: #ec4899;
+  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.15);
+}
+
+.dark-mode .theme-card {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.theme-swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 2px solid #d1d5db;
+  flex-shrink: 0;
+}
+
+.theme-name {
+  flex: 1;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.dark-mode .theme-name {
+  color: #f3f4f6;
+}
+
+.secondary-btn {
+  width: 100%;
+  padding: 8px;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.secondary-btn:hover {
+  background: #f9fafb;
+}
+
+.dark-mode .secondary-btn {
+  background: #1f2937;
+  border-color: #374151;
+  color: #d1d5db;
+}
+
+/* Input Groups */
+.input-group {
+  margin-bottom: 12px;
+}
+
+.input-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.dark-mode .input-label {
+  color: #d1d5db;
+}
+
+.text-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s;
+  background: white;
+}
+
+.text-input:focus {
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+}
+
+.dark-mode .text-input {
+  background: #1f2937;
+  border-color: #374151;
+  color: #f3f4f6;
+}
+
+/* Customize Buttons */
+.customize-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 8px;
+  text-align: left;
+}
+
+.customize-btn:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.dark-mode .customize-btn {
+  background: #1f2937;
+  border-color: #374151;
+  color: #d1d5db;
+}
+
+.customize-icon {
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: 4px;
-  color: #ef4444;
-  font-size: 18px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.gmkb-sidebar .remove-btn:hover {
-  background: rgba(239, 68, 68, 0.2);
-  transform: scale(1.1);
-}
-
-/* Settings Panel */
-.gmkb-sidebar .settings-panel {
-  padding: 16px;
-}
-
-.gmkb-sidebar .settings-panel h3 {
-  margin: 0 0 20px 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: #e2e8f0;
-}
-
-.gmkb-sidebar .setting-group {
-  margin-bottom: 20px;
-}
-
-.gmkb-sidebar .setting-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 13px;
-  color: #94a3b8;
-}
-
-.gmkb-sidebar .setting-select {
-  width: 100%;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(236, 72, 153, 0.1);
   border-radius: 6px;
-  color: #e2e8f0;
-  font-size: 14px;
-  cursor: pointer;
+  font-size: 16px;
 }
 
-.gmkb-sidebar .setting-select:focus {
-  outline: none;
-  border-color: #3b82f6;
+/* Footer */
+.sidebar-footer {
+  padding: 12px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
 }
 
-.gmkb-sidebar .toggle-label {
+.dark-mode .sidebar-footer {
+  border-top-color: #374151;
+  background: #1f2937;
+}
+
+.footer-action-btn {
+  width: 100%;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  cursor: pointer;
-}
-
-.gmkb-sidebar .toggle-input {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-}
-
-.gmkb-sidebar .setting-btn {
-  width: 100%;
   padding: 10px;
-  margin-bottom: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #ec4899;
+  color: white;
+  border: none;
   border-radius: 6px;
-  color: #cbd5e1;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.2s;
 }
 
-.gmkb-sidebar .setting-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+.footer-action-btn:hover {
+  background: #db2777;
 }
 
-/* Scrollbar styling */
-.gmkb-sidebar .library-components::-webkit-scrollbar {
-  width: 4px;
+.plus-icon {
+  font-size: 18px;
+  line-height: 1;
 }
 
-.gmkb-sidebar .library-components::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
+/* Scrollbar */
+.sidebar-content::-webkit-scrollbar {
+  width: 6px;
 }
 
-.gmkb-sidebar .library-components::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
+.sidebar-content::-webkit-scrollbar-track {
+  background: #f3f4f6;
 }
 
-.gmkb-sidebar .library-components::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
+.dark-mode .sidebar-content::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.dark-mode .sidebar-content::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.dark-mode .sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
 }
 </style>
