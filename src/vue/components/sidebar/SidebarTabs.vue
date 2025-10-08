@@ -473,8 +473,29 @@ export default {
     }));
     const draggingComponent = ref(null);
     
-    // Page background color
+    // Page background - Enhanced with multiple types
+    const backgroundType = ref('color');
     const pageBackgroundColor = ref('#ffffff');
+    
+    // Gradient settings
+    const gradientStart = ref('#4f46e5');
+    const gradientEnd = ref('#ec4899');
+    const gradientAngle = ref(135);
+    
+    // Image settings
+    const backgroundImage = ref('');
+    const backgroundImageSize = ref('cover');
+    const backgroundImagePosition = ref('center center');
+    const backgroundImageRepeat = ref('no-repeat');
+    const backgroundOverlayColor = ref('#000000');
+    const backgroundOverlayOpacity = ref(0);
+    
+    // Background types
+    const backgroundTypes = [
+      { id: 'color', icon: '🎨', label: 'Color' },
+      { id: 'gradient', icon: '🌈', label: 'Gradient' },
+      { id: 'image', icon: '🖼️', label: 'Image' }
+    ];
     
     // Tabs
     const tabs = [
@@ -552,6 +573,12 @@ export default {
     
     // Computed
     const sections = computed(() => store.sections || []);
+    
+    const gradientPreviewStyle = computed(() => {
+      return {
+        background: `linear-gradient(${gradientAngle.value}deg, ${gradientStart.value}, ${gradientEnd.value})`
+      };
+    });
     
     const getFooterButtonText = computed(() => {
       if (activeTab.value === 'components') return 'Add Component';
@@ -665,19 +692,105 @@ export default {
     // Update page background color
     const updatePageBackground = () => {
       const previewElement = document.getElementById('media-kit-preview');
-      if (previewElement) {
+      if (!previewElement) return;
+      
+      // Clear all background styles first
+      previewElement.style.background = '';
+      previewElement.style.backgroundColor = '';
+      previewElement.style.backgroundImage = '';
+      previewElement.style.backgroundSize = '';
+      previewElement.style.backgroundPosition = '';
+      previewElement.style.backgroundRepeat = '';
+      
+      let backgroundConfig = {
+        type: backgroundType.value
+      };
+      
+      // Apply based on type
+      if (backgroundType.value === 'color') {
         previewElement.style.backgroundColor = pageBackgroundColor.value;
+        backgroundConfig.color = pageBackgroundColor.value;
+        
+      } else if (backgroundType.value === 'gradient') {
+        const gradient = `linear-gradient(${gradientAngle.value}deg, ${gradientStart.value}, ${gradientEnd.value})`;
+        previewElement.style.background = gradient;
+        backgroundConfig.gradient = {
+          start: gradientStart.value,
+          end: gradientEnd.value,
+          angle: gradientAngle.value
+        };
+        
+      } else if (backgroundType.value === 'image' && backgroundImage.value) {
+        // Base image
+        previewElement.style.backgroundImage = `url(${backgroundImage.value})`;
+        previewElement.style.backgroundSize = backgroundImageSize.value;
+        previewElement.style.backgroundPosition = backgroundImagePosition.value;
+        previewElement.style.backgroundRepeat = backgroundImageRepeat.value;
+        
+        // Overlay
+        if (backgroundOverlayOpacity.value > 0) {
+          const overlayRgba = hexToRgba(backgroundOverlayColor.value, backgroundOverlayOpacity.value / 100);
+          previewElement.style.background = `linear-gradient(${overlayRgba}, ${overlayRgba}), url(${backgroundImage.value})`;
+          previewElement.style.backgroundSize = backgroundImageSize.value;
+          previewElement.style.backgroundPosition = backgroundImagePosition.value;
+          previewElement.style.backgroundRepeat = backgroundImageRepeat.value;
+        }
+        
+        backgroundConfig.image = {
+          url: backgroundImage.value,
+          size: backgroundImageSize.value,
+          position: backgroundImagePosition.value,
+          repeat: backgroundImageRepeat.value,
+          overlayColor: backgroundOverlayColor.value,
+          overlayOpacity: backgroundOverlayOpacity.value
+        };
       }
       
       // Save to store for persistence
-      if (store.customSettings) {
-        store.customSettings.pageBackground = pageBackgroundColor.value;
-      } else {
-        store.customSettings = { pageBackground: pageBackgroundColor.value };
-      }
+      store.customSettings = {
+        ...store.customSettings,
+        pageBackground: backgroundConfig
+      };
       
       store._trackChange();
-      console.log('✅ Page background updated:', pageBackgroundColor.value);
+      console.log('✅ Page background updated:', backgroundType.value, backgroundConfig);
+    };
+    
+    // Helper: Convert hex to rgba
+    const hexToRgba = (hex, alpha) => {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+    
+    // Open WordPress Media Library
+    const openMediaLibrary = () => {
+      if (typeof wp !== 'undefined' && wp.media) {
+        const frame = wp.media({
+          title: 'Select Background Image',
+          button: { text: 'Use Image' },
+          multiple: false,
+          library: { type: 'image' }
+        });
+        
+        frame.on('select', () => {
+          const attachment = frame.state().get('selection').first().toJSON();
+          backgroundImage.value = attachment.url;
+          updatePageBackground();
+        });
+        
+        frame.open();
+      } else {
+        alert('WordPress Media Library is not available');
+      }
+    };
+    
+    // Remove background image
+    const removeBackgroundImage = () => {
+      backgroundImage.value = '';
+      backgroundType.value = 'color';
+      updatePageBackground();
     };
     
     // Refresh components from registry
@@ -697,7 +810,32 @@ export default {
       
       // Initialize page background from store
       if (store.customSettings?.pageBackground) {
-        pageBackgroundColor.value = store.customSettings.pageBackground;
+        const bg = store.customSettings.pageBackground;
+        
+        // Legacy support: if it's just a string, treat as color
+        if (typeof bg === 'string') {
+          backgroundType.value = 'color';
+          pageBackgroundColor.value = bg;
+        } else {
+          // New format: object with type
+          backgroundType.value = bg.type || 'color';
+          
+          if (bg.type === 'color' && bg.color) {
+            pageBackgroundColor.value = bg.color;
+          } else if (bg.type === 'gradient' && bg.gradient) {
+            gradientStart.value = bg.gradient.start;
+            gradientEnd.value = bg.gradient.end;
+            gradientAngle.value = bg.gradient.angle;
+          } else if (bg.type === 'image' && bg.image) {
+            backgroundImage.value = bg.image.url;
+            backgroundImageSize.value = bg.image.size;
+            backgroundImagePosition.value = bg.image.position;
+            backgroundImageRepeat.value = bg.image.repeat;
+            backgroundOverlayColor.value = bg.image.overlayColor;
+            backgroundOverlayOpacity.value = bg.image.overlayOpacity;
+          }
+        }
+        
         updatePageBackground();
       }
     });
@@ -714,7 +852,19 @@ export default {
       selectedLayout,
       selectedTheme,
       draggingComponent,
+      backgroundType,
+      backgroundTypes,
       pageBackgroundColor,
+      gradientStart,
+      gradientEnd,
+      gradientAngle,
+      gradientPreviewStyle,
+      backgroundImage,
+      backgroundImageSize,
+      backgroundImagePosition,
+      backgroundImageRepeat,
+      backgroundOverlayColor,
+      backgroundOverlayOpacity,
       tabs,
       categories,
       sectionLayouts,
@@ -733,7 +883,9 @@ export default {
       getSectionLabel,
       getComponentCount,
       handleFooterAction,
-      updatePageBackground
+      updatePageBackground,
+      openMediaLibrary,
+      removeBackgroundImage
     };
   }
 };
@@ -1485,6 +1637,302 @@ body.dark-mode .color-picker-input {
   flex: 1;
   font-family: 'Monaco', 'Courier New', monospace;
   text-transform: uppercase;
+}
+
+/* Background Type Selector */
+.bg-type-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.bg-type-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.bg-type-btn:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+.bg-type-btn.active {
+  border-color: #ec4899;
+  background: #fdf2f8;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+}
+
+body.dark-mode .bg-type-btn {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+body.dark-mode .bg-type-btn:hover {
+  background: #334155;
+  border-color: #475569;
+}
+
+body.dark-mode .bg-type-btn.active {
+  background: rgba(236, 72, 153, 0.1);
+  border-color: #ec4899;
+}
+
+.bg-type-icon {
+  font-size: 24px;
+}
+
+.bg-type-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+}
+
+body.dark-mode .bg-type-label {
+  color: #d1d5db;
+}
+
+/* Gradient Controls */
+.gradient-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gradient-angle-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.angle-slider {
+  flex: 1;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.angle-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #ec4899;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.angle-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #ec4899;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode .angle-slider {
+  background: #334155;
+}
+
+.angle-input {
+  width: 60px;
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 14px;
+  background: white;
+}
+
+body.dark-mode .angle-input {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f3f4f6;
+}
+
+.gradient-preview {
+  width: 100%;
+  height: 80px;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+  margin-top: 8px;
+}
+
+body.dark-mode .gradient-preview {
+  border-color: #334155;
+}
+
+/* Image Controls */
+.image-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.image-upload-wrapper {
+  width: 100%;
+}
+
+.upload-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  background: white;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.upload-btn:hover {
+  border-color: #ec4899;
+  background: #fdf2f8;
+  color: #ec4899;
+}
+
+body.dark-mode .upload-btn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #9ca3af;
+}
+
+body.dark-mode .upload-btn:hover {
+  border-color: #ec4899;
+  background: rgba(236, 72, 153, 0.1);
+  color: #ec4899;
+}
+
+.image-preview-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid #e5e7eb;
+}
+
+body.dark-mode .image-preview-wrapper {
+  border-color: #334155;
+}
+
+.image-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remove-image-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.remove-image-btn:hover {
+  background: rgba(239, 68, 68, 0.9);
+}
+
+.select-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.select-input:focus {
+  outline: none;
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+}
+
+body.dark-mode .select-input {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f3f4f6;
+}
+
+.opacity-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.opacity-slider {
+  flex: 1;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.opacity-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #ec4899;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.opacity-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #ec4899;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode .opacity-slider {
+  background: #334155;
+}
+
+.opacity-value {
+  min-width: 45px;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+body.dark-mode .opacity-value {
+  color: #d1d5db;
 }
 
 /* Customize Buttons */
