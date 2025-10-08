@@ -631,18 +631,65 @@ export default {
     };
     
     const selectTheme = (themeId) => {
-      selectedTheme.value.value = themeId;
-      store.theme = themeId;
-      store._trackChange();
-      
-      // CRITICAL FIX: Also update theme store to maintain sync
-      themeStore.selectTheme(themeId);
-      
-      document.dispatchEvent(new CustomEvent('gmkb:change-theme', {
-        detail: { themeId }
-      }));
-      
-      console.log('✅ Selected theme:', themeId);
+      // CRITICAL FIX: Add comprehensive error handling
+      try {
+        console.log('[SidebarTabs] selectTheme called with:', themeId);
+        console.log('[SidebarTabs] Theme store available:', !!themeStore);
+        console.log('[SidebarTabs] Media kit store available:', !!store);
+        
+        // Update local ref
+        selectedTheme.value.value = themeId;
+        console.log('[SidebarTabs] Updated selectedTheme.value.value');
+        
+        // Update media kit store
+        store.theme = themeId;
+        console.log('[SidebarTabs] Updated store.theme');
+        
+        // Track change in media kit store
+        if (typeof store._trackChange === 'function') {
+          store._trackChange();
+          console.log('[SidebarTabs] Called store._trackChange()');
+        } else {
+          console.error('[SidebarTabs] store._trackChange is not a function!', typeof store._trackChange);
+        }
+        
+        // CRITICAL FIX: Update theme store
+        if (typeof themeStore.selectTheme === 'function') {
+          themeStore.selectTheme(themeId);
+          console.log('[SidebarTabs] Called themeStore.selectTheme()');
+        } else {
+          console.error('[SidebarTabs] themeStore.selectTheme is not a function!', typeof themeStore.selectTheme);
+        }
+        
+        // Dispatch custom event
+        document.dispatchEvent(new CustomEvent('gmkb:change-theme', {
+          detail: { themeId }
+        }));
+        console.log('[SidebarTabs] Dispatched gmkb:change-theme event');
+        
+        console.log('✅ Selected theme successfully:', themeId);
+        
+        // Show success toast
+        if (window.showToast) {
+          window.showToast('Theme changed successfully', 'success');
+        }
+      } catch (error) {
+        // CRITICAL: Explicit error logging
+        console.error('❌ [SidebarTabs] selectTheme ERROR:', error);
+        console.error('❌ Error name:', error.name);
+        console.error('❌ Error message:', error.message);
+        console.error('❌ Error stack:', error.stack);
+        
+        // Show error to user
+        if (window.showToast) {
+          window.showToast(`Failed to change theme: ${error.message}`, 'error');
+        } else {
+          alert(`Failed to change theme: ${error.message}`);
+        }
+        
+        // Re-throw to ensure Vue error handler also sees it
+        throw error;
+      }
     };
     
     const addSection = () => {
