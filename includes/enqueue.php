@@ -186,6 +186,18 @@ function gmkb_get_post_id() {
 function gmkb_get_component_registry_data() {
     if (class_exists('ComponentDiscovery')) {
         $discovery = new ComponentDiscovery(GUESTIFY_PLUGIN_DIR . 'components/');
+        
+        // ROOT FIX: Force clear cache once to fix icon issue
+        // TODO: Remove this after confirming fix works
+        $discovery->clearCache();
+        
+        // ROOT FIX: Clear cache in development mode to ensure fresh component data
+        if (defined('GMKB_DEV_MODE') && GMKB_DEV_MODE) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('🔄 GMKB DEV: Component cache cleared for fresh scan');
+            }
+        }
+        
         $discovery->scan();
         return $discovery->getComponents();
     }

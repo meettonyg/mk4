@@ -130,6 +130,12 @@ class ComponentDiscovery {
             $componentData['isPremium'] = $componentData['isPremium'] ?? false;
             $componentData['dependencies'] = $componentData['dependencies'] ?? [];
             
+            // CRITICAL FIX: Preserve icon from component.json (Font Awesome class name)
+            // This is the ROOT CAUSE - icon field was not being preserved!
+            if (!isset($componentData['icon'])) {
+                $componentData['icon'] = 'fa-solid fa-cube'; // Generic fallback
+            }
+            
             // CRITICAL FIX: Add 'type' field that JavaScript expects
             $componentData['type'] = $componentName;
             $componentData['directory'] = $componentName;
