@@ -1,128 +1,136 @@
 <template>
-  <div class="gmkb-toolbar-complete">
-    <!-- Left Section: Logo & Title -->
+  <div class="gmkb-toolbar-complete" :class="{ 'dark-mode': isDarkMode }">
+    <!-- Left Section -->
     <div class="toolbar-section toolbar-left">
-      <div class="toolbar-logo">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#3b82f6"/>
-          <path d="M2 17L12 22L22 17" stroke="#3b82f6" stroke-width="2"/>
-        </svg>
-        <span>Guestify</span>
-      </div>
-      
-      <div class="toolbar-divider"></div>
-      
-      <div class="toolbar-title-group">
-        <h1 class="toolbar-title">{{ postTitle }}</h1>
-        <span class="toolbar-subtitle">Media Kit Builder</span>
+      <div class="branding">
+        <div class="brand-logo">Guestify</div>
+        <div class="editing-info">
+          <span class="editing-label">Editing:</span>
+          <span class="document-title">{{ postTitle }}</span>
+        </div>
       </div>
     </div>
-    
-    <!-- Center Section: Device Preview & Actions -->
+
+    <!-- Center Section - Device Preview -->
     <div class="toolbar-section toolbar-center">
-      <DevicePreview />
-      
-      <div class="toolbar-divider"></div>
-      <!-- Undo -->
-      <button 
-        @click="handleUndo"
-        :disabled="!store.canUndo"
-        class="toolbar-btn"
-        title="Undo (Ctrl+Z)"
+      <div class="device-selector">
+        <button
+          v-for="device in devices"
+          :key="device"
+          @click="setDeviceMode(device)"
+          class="device-btn"
+          :class="{ active: deviceMode === device }"
+          :title="`${device} view`"
+        >
+          {{ device }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Right Section -->
+    <div class="toolbar-section toolbar-right">
+      <!-- Save Status -->
+      <div class="save-status" :class="`save-status--${saveStatus}`">
+        <div class="save-indicator"></div>
+        <span class="save-text">{{ saveStatusText }}</span>
+      </div>
+
+      <!-- Dark Mode Toggle -->
+      <button
+        @click="toggleDarkMode"
+        class="toolbar-btn toolbar-btn-icon"
+        :title="isDarkMode ? 'Light mode' : 'Dark mode'"
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 7v6h6M21 17a9 9 0 00-15-6.5L3 13"/>
+        <svg v-if="isDarkMode" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
         </svg>
-        <span>Undo</span>
-      </button>
-      
-      <!-- Redo -->
-      <button 
-        @click="handleRedo"
-        :disabled="!store.canRedo"
-        class="toolbar-btn"
-        title="Redo (Ctrl+Shift+Z)"
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 7v6h-6M3 17a9 9 0 0115-6.5L21 13"/>
+        <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
         </svg>
-        <span>Redo</span>
       </button>
-      
-      <div class="toolbar-divider"></div>
-      
-      <!-- Theme -->
-      <button 
-        id="global-theme-btn"
-        @click.prevent="handleTheme"
-        class="toolbar-btn"
-        title="Change Theme"
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+
+      <!-- Theme Button -->
+      <button class="toolbar-btn" @click="handleTheme">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
         </svg>
         <span>Theme</span>
       </button>
-      
-      <!-- Export -->
-      <button 
-        @click="handleExport"
-        class="toolbar-btn"
-        title="Export Media Kit"
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+
+      <!-- Export Button -->
+      <button class="toolbar-btn toolbar-btn-success" @click="handleExport">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
         </svg>
         <span>Export</span>
       </button>
-      
-      <!-- Share -->
-      <button 
-        @click="handleShare"
-        class="toolbar-btn"
-        title="Share Media Kit"
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="18" cy="5" r="3"/>
-          <circle cx="6" cy="12" r="3"/>
-          <circle cx="18" cy="19" r="3"/>
-          <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/>
+
+      <!-- Share Button -->
+      <button class="toolbar-btn" @click="handleShare">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="18" cy="5" r="3"></circle>
+          <circle cx="6" cy="12" r="3"></circle>
+          <circle cx="18" cy="19" r="3"></circle>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
         </svg>
         <span>Share</span>
       </button>
-      
-    </div>
-    
-    <!-- Right Section: Status & Save -->
-    <div class="toolbar-section toolbar-right">
-      <div class="toolbar-status" :class="`toolbar-status--${saveStatus}`">
-        <span v-if="saveStatus === 'saving'" class="status-spinner"></span>
-        <span v-else class="status-dot"></span>
-        <span class="status-text">{{ saveStatusText }}</span>
-      </div>
-      
-      <div class="toolbar-divider"></div>
-      
-      <!-- Save -->
-      <button 
-        id="save-btn"
-        @click="handleSave"
-        :disabled="saveStatus === 'saving'"
-        class="toolbar-btn toolbar-btn--primary"
-        title="Save Media Kit (Ctrl+S)"
+
+      <!-- Undo -->
+      <button
+        @click="handleUndo"
+        :disabled="!store.canUndo"
+        class="toolbar-btn toolbar-btn-icon"
+        title="Undo (Ctrl+Z)"
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
-          <path d="M17 21v-8H7v8M7 3v5h8"/>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 7v6h6"></path>
+          <path d="M21 17a9 9 0 00-15-6.5L3 13"></path>
         </svg>
-        <span>{{ saveStatus === 'saving' ? 'Saving...' : 'Save' }}</span>
+      </button>
+
+      <!-- Redo -->
+      <button
+        @click="handleRedo"
+        :disabled="!store.canRedo"
+        class="toolbar-btn toolbar-btn-icon"
+        title="Redo (Ctrl+Shift+Z)"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 7v6h-6"></path>
+          <path d="M3 17a9 9 0 0115-6.5L21 13"></path>
+        </svg>
+      </button>
+
+      <!-- Save Button -->
+      <button
+        @click="handleSave"
+        class="toolbar-btn toolbar-btn-primary"
+        title="Save (Ctrl+S)"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path>
+          <path d="M17 21v-8H7v8M7 3v5h8"></path>
+        </svg>
+        <span>Save</span>
       </button>
     </div>
     
     <!-- Export Modal -->
     <ExportModal ref="exportModal" />
     
-    <!-- Share Modal (placeholder for now) -->
+    <!-- Share Modal -->
     <Teleport to="body">
       <div v-if="showShareModal" class="modal-overlay" @click.self="showShareModal = false">
         <div class="modal share-modal">
@@ -150,86 +158,120 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useMediaKitStore } from '../../stores/mediaKit';
-import DevicePreview from './DevicePreview.vue';
-import ExportModal from './ExportModal.vue';
+import { ref, computed, provide, watch, onMounted, onUnmounted } from 'vue'
+import { useMediaKitStore } from '../../stores/mediaKit'
+import ExportModal from './ExportModal.vue'
 
-const store = useMediaKitStore();
-const exportModal = ref(null);
-const showShareModal = ref(false);
+const store = useMediaKitStore()
+const exportModal = ref(null)
+const showShareModal = ref(false)
+
+// Dark mode state
+const isDarkMode = ref(false)
+
+// Provide dark mode to child components
+provide('isDarkMode', isDarkMode)
+
+// Device options
+const devices = ['desktop', 'tablet', 'mobile']
+const deviceMode = ref('desktop')
 
 // Computed properties
-const postTitle = computed(() => window.gmkbData?.postTitle || 'Media Kit');
-const saveStatus = computed(() => store.saveStatus);
+const postTitle = computed(() => window.gmkbData?.postTitle || 'Untitled Media Kit')
+const saveStatus = computed(() => store.saveStatus)
 
 const saveStatusText = computed(() => {
   switch (saveStatus.value) {
-    case 'saving': return 'Saving...';
-    case 'saved': return 'All changes saved';
-    case 'unsaved': return 'Unsaved changes';
-    default: return '';
+    case 'saving':
+      return 'Saving...'
+    case 'saved':
+      return 'Saved'
+    case 'unsaved':
+      return 'Unsaved changes'
+    default:
+      return ''
   }
-});
+})
 
 const shareLink = computed(() => {
-  const postId = window.gmkbData?.postId || '';
-  return `${window.location.origin}/?mkcg_id=${postId}`;
-});
+  const postId = window.gmkbData?.postId || ''
+  return `${window.location.origin}/?mkcg_id=${postId}`
+})
 
-// Action handlers
+// Methods
+const toggleDarkMode = () => {
+  isDarkMode.value = !isDarkMode.value
+  
+  // Apply to body for global dark mode
+  if (isDarkMode.value) {
+    document.body.classList.add('dark-mode')
+  } else {
+    document.body.classList.remove('dark-mode')
+  }
+  
+  // Dispatch event
+  document.dispatchEvent(new CustomEvent('gmkb:dark-mode-change', {
+    detail: { isDark: isDarkMode.value }
+  }))
+  
+  console.log('✅ Dark mode:', isDarkMode.value ? 'enabled' : 'disabled')
+}
+
+const setDeviceMode = (device) => {
+  deviceMode.value = device
+  document.dispatchEvent(new CustomEvent('gmkb:device-change', {
+    detail: { device }
+  }))
+  console.log('✅ Device mode changed to:', device)
+}
+
 function handleUndo() {
   if (store.canUndo) {
-    store.undo();
-    console.log('↩️ Undo action');
-  } else {
-    console.log('⚠️ Cannot undo - no history');
+    store.undo()
+    console.log('↩️ Undo action')
   }
 }
 
 function handleRedo() {
   if (store.canRedo) {
-    store.redo();
-    console.log('↪️ Redo action');
-  } else {
-    console.log('⚠️ Cannot redo - no forward history');
+    store.redo()
+    console.log('↪️ Redo action')
   }
 }
 
 function handleTheme() {
-  // ROOT FIX: Only dispatch event once on click, not on hover
-  const event = new CustomEvent('gmkb:open-theme-switcher', {
+  document.dispatchEvent(new CustomEvent('gmkb:open-theme-switcher', {
     detail: { trigger: 'click' }
-  });
-  document.dispatchEvent(event);
-  console.log('🎨 Theme button clicked - event dispatched');
+  }))
+  console.log('🎨 Opened theme switcher')
 }
 
 function handleExport() {
   if (exportModal.value) {
-    exportModal.value.open();
+    exportModal.value.open()
   }
+  console.log('✅ Opened export modal')
 }
 
 function handleShare() {
-  showShareModal.value = true;
+  showShareModal.value = true
 }
 
 function copyShareLink() {
   if (navigator.clipboard) {
     navigator.clipboard.writeText(shareLink.value).then(() => {
-      alert('Link copied to clipboard!');
-    });
+      alert('Link copied to clipboard!')
+    })
   }
 }
 
 async function handleSave() {
   try {
-    await store.save();
-    console.log('✅ Manual save triggered');
+    await store.save()
+    console.log('✅ Manual save triggered')
   } catch (error) {
-    console.error('❌ Save failed:', error);
-    alert('Failed to save: ' + error.message);
+    console.error('❌ Save failed:', error)
+    alert('Failed to save: ' + error.message)
   }
 }
 
@@ -237,58 +279,68 @@ async function handleSave() {
 function handleKeyboard(e) {
   // Save: Ctrl+S or Cmd+S
   if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-    e.preventDefault();
-    handleSave();
+    e.preventDefault()
+    handleSave()
   }
   
   // Undo: Ctrl+Z or Cmd+Z
   if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-    e.preventDefault();
-    if (store.canUndo) handleUndo();
+    e.preventDefault()
+    if (store.canUndo) handleUndo()
   }
   
   // Redo: Ctrl+Shift+Z or Cmd+Shift+Z
   if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) {
-    e.preventDefault();
-    if (store.canRedo) handleRedo();
+    e.preventDefault()
+    if (store.canRedo) handleRedo()
   }
-  
-  // Export: Ctrl+E or Cmd+E
-  if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
-    e.preventDefault();
-    handleExport();
+}
+
+// Watch dark mode and sync with localStorage
+watch(isDarkMode, (newValue) => {
+  localStorage.setItem('gmkb-dark-mode', newValue ? 'true' : 'false')
+}, { immediate: true })
+
+// Initialize dark mode from localStorage
+const initDarkMode = () => {
+  const savedMode = localStorage.getItem('gmkb-dark-mode')
+  if (savedMode === 'true') {
+    isDarkMode.value = true
+    document.body.classList.add('dark-mode')
   }
 }
 
 onMounted(() => {
-  document.addEventListener('keydown', handleKeyboard);
-  console.log('✅ Complete toolbar mounted');
-});
+  initDarkMode()
+  document.addEventListener('keydown', handleKeyboard)
+  console.log('✅ Perfected toolbar mounted')
+})
 
 onUnmounted(() => {
-  document.removeEventListener('keydown', handleKeyboard);
-});
+  document.removeEventListener('keydown', handleKeyboard)
+})
 </script>
 
 <style>
-/* Removed scoped - toolbar is teleported so scoped styles don't apply properly */
+/* Base Toolbar */
 .gmkb-toolbar-complete {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
-  z-index: 1000;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 10px 20px;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
   gap: 24px;
+  height: 60px;
+  transition: all 0.2s;
 }
 
+.gmkb-toolbar-complete.dark-mode {
+  background: #111827;
+  border-bottom-color: #374151;
+}
+
+/* Toolbar Sections */
 .toolbar-section {
   display: flex;
   align-items: center;
@@ -297,141 +349,193 @@ onUnmounted(() => {
 
 .toolbar-left {
   flex: 0 0 auto;
-  min-width: 300px;
 }
 
 .toolbar-center {
-  flex: 1 1 auto;
-  justify-content: center;
+  flex: 0 0 auto;
 }
 
 .toolbar-right {
-  flex: 0 0 auto;
-  min-width: 250px;
+  flex: 1;
   justify-content: flex-end;
 }
 
-/* Logo */
-.toolbar-logo {
+/* Branding */
+.branding {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 16px;
+  gap: 12px;
+}
+
+.brand-logo {
+  font-size: 18px;
   font-weight: 700;
-  color: #1e293b;
+  color: #06b6d4;
+  letter-spacing: -0.02em;
 }
 
-.toolbar-logo svg {
-  flex-shrink: 0;
-}
-
-/* Title Group */
-.toolbar-title-group {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.toolbar-title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #1e293b;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 300px;
-}
-
-.toolbar-subtitle {
-  font-size: 13px;
-  color: #64748b;
-  white-space: nowrap;
-}
-
-/* Status Indicator */
-.toolbar-status {
+.editing-info {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 12px;
-  background: rgba(0, 0, 0, 0.03);
+  font-size: 14px;
+}
+
+.editing-label {
+  color: #6b7280;
+}
+
+.dark-mode .editing-label {
+  color: #9ca3af;
+}
+
+.document-title {
+  font-weight: 500;
+  color: #111827;
+}
+
+.dark-mode .document-title {
+  color: #f3f4f6;
+}
+
+/* Device Selector */
+.device-selector {
+  display: flex;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.dark-mode .device-selector {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.device-btn {
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.device-btn:hover {
+  color: #111827;
+}
+
+.dark-mode .device-btn {
+  color: #9ca3af;
+}
+
+.dark-mode .device-btn:hover {
+  color: #f3f4f6;
+}
+
+.device-btn.active {
+  background: #06b6d4;
+  color: white;
+  box-shadow: 0 2px 4px rgba(6, 182, 212, 0.3);
+}
+
+/* Save Status */
+.save-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   border-radius: 20px;
   font-size: 12px;
-  color: #64748b;
+  transition: all 0.2s;
 }
 
-.toolbar-status--saving {
-  background: rgba(245, 158, 11, 0.1);
+.dark-mode .save-status {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.save-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+.save-status--saving .save-indicator {
+  background: #f59e0b;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.save-status--saved .save-indicator {
+  background: #10b981;
+}
+
+.save-status--unsaved .save-indicator {
+  background: #ef4444;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.save-status--saving {
   color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
 }
 
-.toolbar-status--saved {
-  background: rgba(16, 185, 129, 0.1);
+.save-status--saved {
   color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
 }
 
-.toolbar-status--unsaved {
-  background: rgba(239, 68, 68, 0.1);
+.save-status--unsaved {
   color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
-.status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
+.save-text {
+  font-weight: 500;
 }
 
-.status-spinner {
-  width: 12px;
-  height: 12px;
-  border: 2px solid rgba(245, 158, 11, 0.3);
-  border-top-color: #f59e0b;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.status-text {
-  white-space: nowrap;
-}
-
-/* Divider */
-.toolbar-divider {
-  width: 1px;
-  height: 24px;
-  background: #e2e8f0;
-}
-
-/* Buttons */
+/* Toolbar Buttons */
 .toolbar-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 12px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  padding: 8px 14px;
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid #e5e7eb;
   border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
+  color: #374151;
+  font-size: 14px;
   font-weight: 500;
-  color: #475569;
-  transition: all 0.2s ease;
-  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .toolbar-btn:hover:not(:disabled) {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  transform: translateY(-1px);
+  background: rgba(0, 0, 0, 0.05);
+  border-color: #d1d5db;
 }
 
 .toolbar-btn:active:not(:disabled) {
-  transform: translateY(0);
+  transform: translateY(1px);
 }
 
 .toolbar-btn:disabled {
@@ -439,17 +543,57 @@ onUnmounted(() => {
   cursor: not-allowed;
 }
 
-.toolbar-btn--primary {
-  background: #3b82f6;
-  border-color: #3b82f6;
-  color: #ffffff;
+.dark-mode .toolbar-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #374151;
+  color: #d1d5db;
 }
 
-.toolbar-btn--primary:hover:not(:disabled) {
-  background: #2563eb;
-  border-color: #2563eb;
+.dark-mode .toolbar-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #4b5563;
 }
 
+/* Icon-only buttons */
+.toolbar-btn-icon {
+  padding: 8px;
+}
+
+.toolbar-btn-icon span {
+  display: none;
+}
+
+/* Primary Button (Save) */
+.toolbar-btn-primary {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+  border-color: #06b6d4;
+  color: white;
+  box-shadow: 0 2px 4px rgba(6, 182, 212, 0.3);
+}
+
+.toolbar-btn-primary:hover {
+  background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+  border-color: #0891b2;
+  box-shadow: 0 4px 8px rgba(6, 182, 212, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Success Button (Export) */
+.toolbar-btn-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-color: #10b981;
+  color: white;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+}
+
+.toolbar-btn-success:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  border-color: #059669;
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
+  transform: translateY(-1px);
+}
+
+/* SVG Icons */
 .toolbar-btn svg {
   flex-shrink: 0;
 }
@@ -551,57 +695,32 @@ onUnmounted(() => {
 }
 
 /* Responsive */
-@media (max-width: 1400px) {
-  .toolbar-subtitle {
+@media (max-width: 1024px) {
+  .editing-info {
     display: none;
   }
 }
 
-@media (max-width: 1200px) {
-  .toolbar-title {
-    max-width: 200px;
+@media (max-width: 768px) {
+  .gmkb-toolbar-complete {
+    padding: 8px 12px;
+    gap: 8px;
   }
   
   .toolbar-btn span {
     display: none;
   }
   
-  .toolbar-btn--primary span {
-    display: inline;
-  }
-}
-
-@media (max-width: 1024px) {
-  .toolbar-status-text {
+  .toolbar-btn-icon span {
     display: none;
   }
   
-  .toolbar-status {
-    padding: 6px;
-  }
-}
-
-@media (max-width: 768px) {
-  .gmkb-toolbar-complete {
-    padding: 0 12px;
-    gap: 8px;
-  }
-  
-  .toolbar-logo span {
+  .save-status {
     display: none;
   }
   
-  .toolbar-title {
-    font-size: 14px;
-    max-width: 120px;
-  }
-  
-  .toolbar-divider {
+  .device-selector {
     display: none;
-  }
-  
-  .toolbar-btn {
-    padding: 8px;
   }
 }
 </style>
