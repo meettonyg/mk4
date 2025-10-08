@@ -515,6 +515,13 @@ export default {
 </script>
 
 <style scoped>
+/* Global box-sizing reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 /* Base Sidebar Container - LIGHT MODE DEFAULT */
 .gmkb-sidebar {
   width: 100%;
@@ -527,8 +534,8 @@ export default {
 }
 
 .gmkb-sidebar.dark-mode {
-  background: #111827;
-  border-right-color: #374151;
+  background: #0f172a;
+  border-right-color: #334155;
 }
 
 /* Tab Navigation */
@@ -540,8 +547,8 @@ export default {
 }
 
 .dark-mode .sidebar-tabs {
-  border-bottom-color: #374151;
-  background: #1f2937;
+  border-bottom-color: #334155;
+  background: #1e293b;
 }
 
 .tab-button {
@@ -582,7 +589,7 @@ export default {
 }
 
 .dark-mode .tab-button.active {
-  background: #111827;
+  background: #0f172a;
 }
 
 /* Search Container */
@@ -592,7 +599,7 @@ export default {
 }
 
 .dark-mode .search-container {
-  border-bottom-color: #374151;
+  border-bottom-color: #334155;
 }
 
 .search-wrapper {
@@ -616,6 +623,7 @@ export default {
   outline: none;
   transition: all 0.2s;
   background: white;
+  box-sizing: border-box;
 }
 
 .search-input:focus {
@@ -624,8 +632,8 @@ export default {
 }
 
 .dark-mode .search-input {
-  background: #1f2937;
-  border-color: #374151;
+  background: #1e293b;
+  border-color: #334155;
   color: #f3f4f6;
 }
 
@@ -645,7 +653,7 @@ export default {
 }
 
 .dark-mode .category-section {
-  border-bottom-color: #374151;
+  border-bottom-color: #334155;
 }
 
 .category-header {
@@ -665,7 +673,7 @@ export default {
 }
 
 .dark-mode .category-header:hover {
-  background: #1f2937;
+  background: #1e293b;
 }
 
 .chevron-icon {
@@ -739,8 +747,8 @@ export default {
 }
 
 .dark-mode .component-card {
-  background: #1f2937;
-  border-color: #374151;
+  background: #1e293b;
+  border-color: #334155;
 }
 
 .lock-icon {
@@ -894,8 +902,8 @@ export default {
 }
 
 .dark-mode .layout-card {
-  background: #1f2937;
-  border-color: #374151;
+  background: #1e293b;
+  border-color: #334155;
 }
 
 .dark-mode .layout-card.active {
@@ -914,7 +922,7 @@ export default {
 }
 
 .dark-mode .layout-preview {
-  background: #374151;
+  background: #334155;
 }
 
 .layout-column {
@@ -992,13 +1000,13 @@ export default {
 }
 
 .dark-mode .action-btn {
-  background: #1f2937;
-  border-color: #374151;
+  background: #1e293b;
+  border-color: #334155;
   color: #d1d5db;
 }
 
 .dark-mode .action-btn:hover {
-  background: #374151;
+  background: #334155;
 }
 
 .action-btn-primary {
@@ -1028,12 +1036,12 @@ export default {
 }
 
 .dark-mode .section-item {
-  background: #1f2937;
-  border-color: #374151;
+  background: #1e293b;
+  border-color: #334155;
 }
 
 .dark-mode .section-item:hover {
-  background: #374151;
+  background: #334155;
 }
 
 .drag-handle {
@@ -1132,8 +1140,8 @@ export default {
 }
 
 .dark-mode .theme-card {
-  background: #1f2937;
-  border-color: #374151;
+  background: #1e293b;
+  border-color: #334155;
 }
 
 .theme-swatch {
@@ -1174,8 +1182,8 @@ export default {
 }
 
 .dark-mode .secondary-btn {
-  background: #1f2937;
-  border-color: #374151;
+  background: #1e293b;
+  border-color: #334155;
   color: #d1d5db;
 }
 
@@ -1205,6 +1213,7 @@ export default {
   outline: none;
   transition: all 0.2s;
   background: white;
+  box-sizing: border-box;
 }
 
 .text-input:focus {
@@ -1213,8 +1222,8 @@ export default {
 }
 
 .dark-mode .text-input {
-  background: #1f2937;
-  border-color: #374151;
+  background: #1e293b;
+  border-color: #334155;
   color: #f3f4f6;
 }
 
@@ -1243,8 +1252,8 @@ export default {
 }
 
 .dark-mode .customize-btn {
-  background: #1f2937;
-  border-color: #374151;
+  background: #1e293b;
+  border-color: #334155;
   color: #d1d5db;
 }
 
@@ -1267,8 +1276,8 @@ export default {
 }
 
 .dark-mode .sidebar-footer {
-  border-top-color: #374151;
-  background: #1f2937;
+  border-top-color: #334155;
+  background: #1e293b;
 }
 
 .footer-action-btn {
@@ -1307,7 +1316,7 @@ export default {
 }
 
 .dark-mode .sidebar-content::-webkit-scrollbar-track {
-  background: #1f2937;
+  background: #1e293b;
 }
 
 .sidebar-content::-webkit-scrollbar-thumb {

@@ -381,8 +381,8 @@ onUnmounted(() => {
 
 /* Block Modifier: dark mode */
 .gmkb-toolbar--dark {
-  background: #111827;
-  border-bottom-color: #374151;
+  background: #0f172a;
+  border-bottom-color: #334155;
 }
 
 /* Element: section */
@@ -457,8 +457,8 @@ onUnmounted(() => {
 }
 
 .gmkb-toolbar--dark .gmkb-toolbar__device-selector {
-  background: #1f2937;
-  border-color: #374151;
+  background: #1e293b;
+  border-color: #334155;
 }
 
 .gmkb-toolbar__device-btn {
@@ -476,14 +476,16 @@ onUnmounted(() => {
 
 .gmkb-toolbar__device-btn:hover {
   color: #111827;
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .gmkb-toolbar--dark .gmkb-toolbar__device-btn {
-  color: #9ca3af;
+  color: #cbd5e1;
 }
 
 .gmkb-toolbar--dark .gmkb-toolbar__device-btn:hover {
   color: #f3f4f6;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .gmkb-toolbar__device-btn--active {
@@ -593,13 +595,13 @@ onUnmounted(() => {
 
 .gmkb-toolbar--dark .gmkb-toolbar__btn {
   background: rgba(255, 255, 255, 0.05);
-  border-color: #374151;
+  border-color: #334155;
   color: #d1d5db;
 }
 
 .gmkb-toolbar--dark .gmkb-toolbar__btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.08);
-  border-color: #4b5563;
+  border-color: #475569;
 }
 
 /* Element Modifier: icon-only button */

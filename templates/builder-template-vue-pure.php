@@ -213,6 +213,12 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             display: flex;
             overflow: hidden;
             background: #f8f9fb;
+            transition: background 0.2s;
+        }
+        
+        /* Dark mode support */
+        body.dark-mode #gmkb-main-content {
+            background: #334155;
         }
         
         #gmkb-sidebar {
@@ -223,9 +229,16 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             display: flex;
             flex-direction: column;
             position: relative;
-            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-            border-right: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+            background: white;
+            border-right: 1px solid #e5e7eb;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s;
+        }
+        
+        body.dark-mode #gmkb-sidebar {
+            background: #0f172a;
+            border-right-color: #334155;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
         }
         
         #media-kit-preview {
@@ -234,6 +247,10 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             background: #f8f9fb;
             padding: 32px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        body.dark-mode #media-kit-preview {
+            background: #475569;
         }
         
         /* Enhanced scrollbar for preview */
@@ -245,13 +262,25 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             background: #e5e7eb;
         }
         
+        body.dark-mode #media-kit-preview::-webkit-scrollbar-track {
+            background: #334155;
+        }
+        
         #media-kit-preview::-webkit-scrollbar-thumb {
             background: #cbd5e1;
             border-radius: 4px;
         }
         
+        body.dark-mode #media-kit-preview::-webkit-scrollbar-thumb {
+            background: #64748b;
+        }
+        
         #media-kit-preview::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
+        }
+        
+        body.dark-mode #media-kit-preview::-webkit-scrollbar-thumb:hover {
+            background: #475569;
         }
         
         /* Device preview styles - Enhanced */
