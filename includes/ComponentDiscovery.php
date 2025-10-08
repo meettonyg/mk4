@@ -121,7 +121,8 @@ class ComponentDiscovery {
             'description' => $manifest['description'] ?? '',
             'category' => $manifest['category'] ?? 'general',
             'version' => $manifest['version'] ?? '1.0.0',
-            'icon' => $this->find_icon($directory),
+            // ROOT FIX: Read icon from component.json first (Font Awesome class), then fall back to file search
+            'icon' => $manifest['icon'] ?? $this->find_icon($directory),
             'directory' => $directory,
             'renderers' => $manifest['renderers'] ?? [],
             'editor' => $manifest['renderers']['editor'] ?? null,
@@ -179,7 +180,8 @@ class ComponentDiscovery {
             'description' => $schema['description'] ?? '',
             'category' => $schema['category'] ?? 'general',
             'version' => '1.0.0',
-            'icon' => $this->find_icon($directory),
+            // ROOT FIX: Read icon from schema first (Font Awesome class), then fall back to file search
+            'icon' => $schema['icon'] ?? $this->find_icon($directory),
             'directory' => $directory,
             'renderers' => $this->detect_renderers($directory),
             'editor' => $this->detect_editor($directory),

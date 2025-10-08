@@ -129,34 +129,34 @@ class UnifiedComponentRegistry {
   createFallbackDefinitions() {
     const componentTypes = [
       // Essential
-      { type: 'hero', name: 'Hero Section', category: 'essential' },
-      { type: 'biography', name: 'Biography', category: 'essential' },
-      { type: 'contact', name: 'Contact', category: 'essential' },
+      { type: 'hero', name: 'Hero Section', category: 'essential', icon: 'fa-solid fa-user' },
+      { type: 'biography', name: 'Biography', category: 'essential', icon: 'fa-solid fa-file-lines' },
+      { type: 'contact', name: 'Contact', category: 'essential', icon: 'fa-solid fa-phone' },
       
       // Content
-      { type: 'topics', name: 'Topics', category: 'content' },
-      { type: 'questions', name: 'Questions', category: 'content' },
-      { type: 'guest-intro', name: 'Guest Introduction', category: 'content' },
+      { type: 'topics', name: 'Topics', category: 'content', icon: 'fa-solid fa-message' },
+      { type: 'questions', name: 'Questions', category: 'content', icon: 'fa-solid fa-circle-question' },
+      { type: 'guest-intro', name: 'Guest Introduction', category: 'content', icon: 'fa-solid fa-hand-wave' },
       
       // Social
-      { type: 'social', name: 'Social Links', category: 'social' },
-      { type: 'testimonials', name: 'Testimonials', category: 'social' },
-      { type: 'stats', name: 'Statistics', category: 'social' },
-      { type: 'authority-hook', name: 'Authority Hook', category: 'social' },
-      { type: 'logo-grid', name: 'Logo Grid', category: 'social' },
+      { type: 'social', name: 'Social Links', category: 'social', icon: 'fa-solid fa-share-nodes' },
+      { type: 'testimonials', name: 'Testimonials', category: 'social', icon: 'fa-solid fa-message' },
+      { type: 'stats', name: 'Statistics', category: 'social', icon: 'fa-solid fa-chart-simple' },
+      { type: 'authority-hook', name: 'Authority Hook', category: 'social', icon: 'fa-solid fa-certificate' },
+      { type: 'logo-grid', name: 'Logo Grid', category: 'social', icon: 'fa-solid fa-grid-2' },
       
       // Conversion
-      { type: 'call-to-action', name: 'Call to Action', category: 'conversion' },
-      { type: 'booking-calendar', name: 'Booking Calendar', category: 'conversion' },
+      { type: 'call-to-action', name: 'Call to Action', category: 'conversion', icon: 'fa-solid fa-bolt' },
+      { type: 'booking-calendar', name: 'Booking Calendar', category: 'conversion', icon: 'fa-solid fa-calendar-days' },
       
       // Media
-      { type: 'video-intro', name: 'Video Introduction', category: 'media' },
-      { type: 'photo-gallery', name: 'Photo Gallery', category: 'media' },
-      { type: 'podcast-player', name: 'Podcast Player', category: 'media' }
+      { type: 'video-intro', name: 'Video Introduction', category: 'media', icon: 'fa-solid fa-video' },
+      { type: 'photo-gallery', name: 'Photo Gallery', category: 'media', icon: 'fa-solid fa-images' },
+      { type: 'podcast-player', name: 'Podcast Player', category: 'media', icon: 'fa-solid fa-podcast' }
     ];
     
-    componentTypes.forEach(({ type, name, category }) => {
-      this.definitions[type] = this.createComponentDefinition(type, name, category);
+    componentTypes.forEach(({ type, name, category, icon }) => {
+      this.definitions[type] = this.createComponentDefinition(type, name, category, icon);
     });
     
     // Create categories
@@ -174,12 +174,13 @@ class UnifiedComponentRegistry {
   /**
    * Create a component definition
    */
-  createComponentDefinition(type, name = null, category = 'general') {
+  createComponentDefinition(type, name = null, category = 'general', icon = null) {
     return {
       type: type,
       name: name || this.formatComponentName(type),
       description: `${name || this.formatComponentName(type)} component`,
       category: category,
+      icon: icon || 'fa-solid fa-cube',
       hasVueRenderer: !!this.vueComponents[type],
       supports: {
         vueRender: true,
