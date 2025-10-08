@@ -1,25 +1,25 @@
 <template>
-  <div class="gmkb-toolbar-complete" :class="{ 'dark-mode': isDarkMode }">
+  <div class="gmkb-toolbar" :class="{ 'gmkb-toolbar--dark': isDarkMode }">
     <!-- Left Section -->
-    <div class="toolbar-section toolbar-left">
-      <div class="branding">
-        <div class="brand-logo">Guestify</div>
-        <div class="editing-info">
-          <span class="editing-label">Editing:</span>
-          <span class="document-title">{{ postTitle }}</span>
+    <div class="gmkb-toolbar__section gmkb-toolbar__section--left">
+      <div class="gmkb-toolbar__branding">
+        <div class="gmkb-toolbar__logo">Guestify</div>
+        <div class="gmkb-toolbar__editing-info">
+          <span class="gmkb-toolbar__editing-label">Editing:</span>
+          <span class="gmkb-toolbar__document-title">{{ postTitle }}</span>
         </div>
       </div>
     </div>
 
     <!-- Center Section - Device Preview -->
-    <div class="toolbar-section toolbar-center">
-      <div class="device-selector">
+    <div class="gmkb-toolbar__section gmkb-toolbar__section--center">
+      <div class="gmkb-toolbar__device-selector">
         <button
           v-for="device in devices"
           :key="device"
           @click="setDeviceMode(device)"
-          class="device-btn"
-          :class="{ active: deviceMode === device }"
+          class="gmkb-toolbar__device-btn"
+          :class="{ 'gmkb-toolbar__device-btn--active': deviceMode === device }"
           :title="`${device} view`"
         >
           {{ device }}
@@ -28,17 +28,17 @@
     </div>
 
     <!-- Right Section -->
-    <div class="toolbar-section toolbar-right">
+    <div class="gmkb-toolbar__section gmkb-toolbar__section--right">
       <!-- Save Status -->
-      <div class="save-status" :class="`save-status--${saveStatus}`">
-        <div class="save-indicator"></div>
-        <span class="save-text">{{ saveStatusText }}</span>
+      <div class="gmkb-toolbar__save-status" :class="`gmkb-toolbar__save-status--${saveStatus}`">
+        <div class="gmkb-toolbar__save-indicator"></div>
+        <span class="gmkb-toolbar__save-text">{{ saveStatusText }}</span>
       </div>
 
       <!-- Dark Mode Toggle -->
       <button
         @click="toggleDarkMode"
-        class="toolbar-btn toolbar-btn-icon"
+        class="gmkb-toolbar__btn gmkb-toolbar__btn--icon"
         :title="isDarkMode ? 'Light mode' : 'Dark mode'"
       >
         <svg v-if="isDarkMode" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -58,7 +58,7 @@
       </button>
 
       <!-- Theme Button -->
-      <button class="toolbar-btn" @click="handleTheme">
+      <button id="global-theme-btn" class="gmkb-toolbar__btn" @click="handleTheme">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
         </svg>
@@ -66,7 +66,7 @@
       </button>
 
       <!-- Export Button -->
-      <button class="toolbar-btn toolbar-btn-success" @click="handleExport">
+      <button class="gmkb-toolbar__btn gmkb-toolbar__btn--success" @click="handleExport">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
           <polyline points="7 10 12 15 17 10"></polyline>
@@ -76,7 +76,7 @@
       </button>
 
       <!-- Share Button -->
-      <button class="toolbar-btn" @click="handleShare">
+      <button class="gmkb-toolbar__btn" @click="handleShare">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="18" cy="5" r="3"></circle>
           <circle cx="6" cy="12" r="3"></circle>
@@ -91,7 +91,7 @@
       <button
         @click="handleUndo"
         :disabled="!store.canUndo"
-        class="toolbar-btn toolbar-btn-icon"
+        class="gmkb-toolbar__btn gmkb-toolbar__btn--icon"
         title="Undo (Ctrl+Z)"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -104,7 +104,7 @@
       <button
         @click="handleRedo"
         :disabled="!store.canRedo"
-        class="toolbar-btn toolbar-btn-icon"
+        class="gmkb-toolbar__btn gmkb-toolbar__btn--icon"
         title="Redo (Ctrl+Shift+Z)"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -116,7 +116,7 @@
       <!-- Save Button -->
       <button
         @click="handleSave"
-        class="toolbar-btn toolbar-btn-primary"
+        class="gmkb-toolbar__btn gmkb-toolbar__btn--primary"
         title="Save (Ctrl+S)"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -132,23 +132,23 @@
     
     <!-- Share Modal -->
     <Teleport to="body">
-      <div v-if="showShareModal" class="modal-overlay" @click.self="showShareModal = false">
-        <div class="modal share-modal">
-          <div class="modal__header">
+      <div v-if="showShareModal" class="gmkb-modal-overlay" @click.self="showShareModal = false">
+        <div class="gmkb-modal gmkb-modal--share">
+          <div class="gmkb-modal__header">
             <h2>Share Media Kit</h2>
-            <button @click="showShareModal = false" class="modal__close">×</button>
+            <button @click="showShareModal = false" class="gmkb-modal__close">×</button>
           </div>
-          <div class="modal__body">
+          <div class="gmkb-modal__body">
             <p>Share functionality coming soon!</p>
-            <div class="share-link">
+            <div class="gmkb-modal__share-link">
               <input 
                 type="text" 
                 :value="shareLink" 
                 readonly 
-                class="share-input"
+                class="gmkb-modal__share-input"
                 @click="$event.target.select()"
               />
-              <button @click="copyShareLink" class="btn btn--primary">Copy Link</button>
+              <button @click="copyShareLink" class="gmkb-btn gmkb-btn--primary">Copy Link</button>
             </div>
           </div>
         </div>
@@ -240,10 +240,12 @@ function handleRedo() {
 }
 
 function handleTheme() {
-  document.dispatchEvent(new CustomEvent('gmkb:open-theme-switcher', {
-    detail: { trigger: 'click' }
-  }))
-  console.log('🎨 Opened theme switcher')
+  // Open the theme switcher modal that already exists in MediaKitApp
+  const event = new CustomEvent('gmkb:open-theme-switcher', {
+    detail: { trigger: 'toolbar' }
+  });
+  document.dispatchEvent(event);
+  console.log('🎨 Theme switcher event dispatched');
 }
 
 function handleExport() {
@@ -313,7 +315,7 @@ const initDarkMode = () => {
 onMounted(() => {
   initDarkMode()
   document.addEventListener('keydown', handleKeyboard)
-  console.log('✅ Perfected toolbar mounted')
+  console.log('✅ Perfected toolbar mounted with BEM conventions')
 })
 
 onUnmounted(() => {
@@ -322,8 +324,10 @@ onUnmounted(() => {
 </script>
 
 <style>
-/* Base Toolbar */
-.gmkb-toolbar-complete {
+/* BEM Base Styles - Root level specificity */
+
+/* Block: gmkb-toolbar */
+.gmkb-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -335,71 +339,73 @@ onUnmounted(() => {
   transition: all 0.2s;
 }
 
-.gmkb-toolbar-complete.dark-mode {
+/* Block Modifier: dark mode */
+.gmkb-toolbar--dark {
   background: #111827;
   border-bottom-color: #374151;
 }
 
-/* Toolbar Sections */
-.toolbar-section {
+/* Element: section */
+.gmkb-toolbar__section {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.toolbar-left {
+/* Element Modifier: section positions */
+.gmkb-toolbar__section--left {
   flex: 0 0 auto;
 }
 
-.toolbar-center {
+.gmkb-toolbar__section--center {
   flex: 0 0 auto;
 }
 
-.toolbar-right {
+.gmkb-toolbar__section--right {
   flex: 1;
   justify-content: flex-end;
 }
 
-/* Branding */
-.branding {
+/* Element: branding */
+.gmkb-toolbar__branding {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.brand-logo {
+.gmkb-toolbar__logo {
   font-size: 18px;
   font-weight: 700;
   color: #06b6d4;
   letter-spacing: -0.02em;
 }
 
-.editing-info {
+.gmkb-toolbar__editing-info {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 14px;
 }
 
-.editing-label {
+.gmkb-toolbar__editing-label {
   color: #6b7280;
 }
 
-.dark-mode .editing-label {
+.gmkb-toolbar--dark .gmkb-toolbar__editing-label {
   color: #9ca3af;
 }
 
-.document-title {
+.gmkb-toolbar__document-title {
   font-weight: 500;
   color: #111827;
 }
 
-.dark-mode .document-title {
+.gmkb-toolbar--dark .gmkb-toolbar__document-title {
   color: #f3f4f6;
 }
 
-/* Device Selector */
-.device-selector {
+/* Element: device-selector */
+.gmkb-toolbar__device-selector {
   display: flex;
   background: #f3f4f6;
   border: 1px solid #e5e7eb;
@@ -408,12 +414,12 @@ onUnmounted(() => {
   gap: 4px;
 }
 
-.dark-mode .device-selector {
+.gmkb-toolbar--dark .gmkb-toolbar__device-selector {
   background: #1f2937;
   border-color: #374151;
 }
 
-.device-btn {
+.gmkb-toolbar__device-btn {
   padding: 6px 12px;
   border: none;
   background: transparent;
@@ -426,26 +432,26 @@ onUnmounted(() => {
   transition: all 0.2s;
 }
 
-.device-btn:hover {
+.gmkb-toolbar__device-btn:hover {
   color: #111827;
 }
 
-.dark-mode .device-btn {
+.gmkb-toolbar--dark .gmkb-toolbar__device-btn {
   color: #9ca3af;
 }
 
-.dark-mode .device-btn:hover {
+.gmkb-toolbar--dark .gmkb-toolbar__device-btn:hover {
   color: #f3f4f6;
 }
 
-.device-btn.active {
+.gmkb-toolbar__device-btn--active {
   background: #06b6d4;
   color: white;
   box-shadow: 0 2px 4px rgba(6, 182, 212, 0.3);
 }
 
-/* Save Status */
-.save-status {
+/* Element: save-status */
+.gmkb-toolbar__save-status {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -457,32 +463,32 @@ onUnmounted(() => {
   transition: all 0.2s;
 }
 
-.dark-mode .save-status {
+.gmkb-toolbar--dark .gmkb-toolbar__save-status {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.08);
 }
 
-.save-indicator {
+.gmkb-toolbar__save-indicator {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: #10b981;
 }
 
-.save-status--saving .save-indicator {
+.gmkb-toolbar__save-status--saving .gmkb-toolbar__save-indicator {
   background: #f59e0b;
-  animation: pulse 1.5s ease-in-out infinite;
+  animation: gmkb-pulse 1.5s ease-in-out infinite;
 }
 
-.save-status--saved .save-indicator {
+.gmkb-toolbar__save-status--saved .gmkb-toolbar__save-indicator {
   background: #10b981;
 }
 
-.save-status--unsaved .save-indicator {
+.gmkb-toolbar__save-status--unsaved .gmkb-toolbar__save-indicator {
   background: #ef4444;
 }
 
-@keyframes pulse {
+@keyframes gmkb-pulse {
   0%, 100% {
     opacity: 1;
   }
@@ -491,30 +497,30 @@ onUnmounted(() => {
   }
 }
 
-.save-status--saving {
+.gmkb-toolbar__save-status--saving {
   color: #f59e0b;
   background: rgba(245, 158, 11, 0.1);
   border-color: rgba(245, 158, 11, 0.3);
 }
 
-.save-status--saved {
+.gmkb-toolbar__save-status--saved {
   color: #10b981;
   background: rgba(16, 185, 129, 0.1);
   border-color: rgba(16, 185, 129, 0.3);
 }
 
-.save-status--unsaved {
+.gmkb-toolbar__save-status--unsaved {
   color: #ef4444;
   background: rgba(239, 68, 68, 0.1);
   border-color: rgba(239, 68, 68, 0.3);
 }
 
-.save-text {
+.gmkb-toolbar__save-text {
   font-weight: 500;
 }
 
-/* Toolbar Buttons */
-.toolbar-btn {
+/* Element: btn - Base button styles */
+.gmkb-toolbar__btn {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -529,64 +535,64 @@ onUnmounted(() => {
   transition: all 0.2s;
 }
 
-.toolbar-btn:hover:not(:disabled) {
+.gmkb-toolbar__btn:hover:not(:disabled) {
   background: rgba(0, 0, 0, 0.05);
   border-color: #d1d5db;
 }
 
-.toolbar-btn:active:not(:disabled) {
+.gmkb-toolbar__btn:active:not(:disabled) {
   transform: translateY(1px);
 }
 
-.toolbar-btn:disabled {
+.gmkb-toolbar__btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-.dark-mode .toolbar-btn {
+.gmkb-toolbar--dark .gmkb-toolbar__btn {
   background: rgba(255, 255, 255, 0.05);
   border-color: #374151;
   color: #d1d5db;
 }
 
-.dark-mode .toolbar-btn:hover:not(:disabled) {
+.gmkb-toolbar--dark .gmkb-toolbar__btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.08);
   border-color: #4b5563;
 }
 
-/* Icon-only buttons */
-.toolbar-btn-icon {
+/* Element Modifier: icon-only button */
+.gmkb-toolbar__btn--icon {
   padding: 8px;
 }
 
-.toolbar-btn-icon span {
+.gmkb-toolbar__btn--icon span {
   display: none;
 }
 
-/* Primary Button (Save) */
-.toolbar-btn-primary {
+/* Element Modifier: primary button (Save) */
+.gmkb-toolbar__btn--primary {
   background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
   border-color: #06b6d4;
   color: white;
   box-shadow: 0 2px 4px rgba(6, 182, 212, 0.3);
 }
 
-.toolbar-btn-primary:hover {
+.gmkb-toolbar__btn--primary:hover:not(:disabled) {
   background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
   border-color: #0891b2;
   box-shadow: 0 4px 8px rgba(6, 182, 212, 0.4);
   transform: translateY(-1px);
 }
 
-/* Success Button (Export) */
-.toolbar-btn-success {
+/* Element Modifier: success button (Export) */
+.gmkb-toolbar__btn--success {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   border-color: #10b981;
   color: white;
   box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
 }
 
-.toolbar-btn-success:hover {
+.gmkb-toolbar__btn--success:hover:not(:disabled) {
   background: linear-gradient(135deg, #059669 0%, #047857 100%);
   border-color: #059669;
   box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
@@ -594,12 +600,12 @@ onUnmounted(() => {
 }
 
 /* SVG Icons */
-.toolbar-btn svg {
+.gmkb-toolbar__btn svg {
   flex-shrink: 0;
 }
 
-/* Share Modal */
-.modal-overlay {
+/* Block: gmkb-modal */
+.gmkb-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -613,7 +619,7 @@ onUnmounted(() => {
   backdrop-filter: blur(4px);
 }
 
-.modal {
+.gmkb-modal {
   background: #ffffff;
   border-radius: 12px;
   max-width: 500px;
@@ -621,7 +627,7 @@ onUnmounted(() => {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
-.modal__header {
+.gmkb-modal__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -629,14 +635,14 @@ onUnmounted(() => {
   border-bottom: 1px solid #e2e8f0;
 }
 
-.modal__header h2 {
+.gmkb-modal__header h2 {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
   color: #1e293b;
 }
 
-.modal__close {
+.gmkb-modal__close {
   width: 32px;
   height: 32px;
   display: flex;
@@ -651,22 +657,22 @@ onUnmounted(() => {
   transition: all 0.2s;
 }
 
-.modal__close:hover {
+.gmkb-modal__close:hover {
   background: #f1f5f9;
   color: #1e293b;
 }
 
-.modal__body {
+.gmkb-modal__body {
   padding: 24px;
 }
 
-.share-link {
+.gmkb-modal__share-link {
   display: flex;
   gap: 8px;
   margin-top: 16px;
 }
 
-.share-input {
+.gmkb-modal__share-input {
   flex: 1;
   padding: 10px 14px;
   border: 1px solid #e2e8f0;
@@ -675,7 +681,8 @@ onUnmounted(() => {
   font-family: monospace;
 }
 
-.btn {
+/* Block: gmkb-btn (for modal buttons) */
+.gmkb-btn {
   padding: 10px 16px;
   border: none;
   border-radius: 6px;
@@ -685,41 +692,41 @@ onUnmounted(() => {
   transition: all 0.2s;
 }
 
-.btn--primary {
+.gmkb-btn--primary {
   background: #3b82f6;
   color: #ffffff;
 }
 
-.btn--primary:hover {
+.gmkb-btn--primary:hover {
   background: #2563eb;
 }
 
 /* Responsive */
 @media (max-width: 1024px) {
-  .editing-info {
+  .gmkb-toolbar__editing-info {
     display: none;
   }
 }
 
 @media (max-width: 768px) {
-  .gmkb-toolbar-complete {
+  .gmkb-toolbar {
     padding: 8px 12px;
     gap: 8px;
   }
   
-  .toolbar-btn span {
+  .gmkb-toolbar__btn span {
     display: none;
   }
   
-  .toolbar-btn-icon span {
+  .gmkb-toolbar__btn--icon span {
     display: none;
   }
   
-  .save-status {
+  .gmkb-toolbar__save-status {
     display: none;
   }
   
-  .device-selector {
+  .gmkb-toolbar__device-selector {
     display: none;
   }
 }
