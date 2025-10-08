@@ -187,6 +187,202 @@
       <!-- SETTINGS TAB -->
       <div v-show="activeTab === 'settings'" class="tab-panel design-panel">
         <div class="panel-section">
+          <h3 class="panel-section-title">Page Background</h3>
+          
+          <!-- Background Type Selector -->
+          <div class="bg-type-selector">
+            <button
+              v-for="type in backgroundTypes"
+              :key="type.id"
+              @click="backgroundType = type.id"
+              class="bg-type-btn"
+              :class="{ active: backgroundType === type.id }"
+            >
+              <span class="bg-type-icon">{{ type.icon }}</span>
+              <span class="bg-type-label">{{ type.label }}</span>
+            </button>
+          </div>
+          
+          <!-- SOLID COLOR -->
+          <div v-show="backgroundType === 'color'" class="input-group">
+            <label class="input-label">Background Color</label>
+            <div class="color-picker-wrapper">
+              <input
+                type="color"
+                v-model="pageBackgroundColor"
+                @input="updatePageBackground"
+                class="color-picker-input"
+              />
+              <input
+                type="text"
+                v-model="pageBackgroundColor"
+                @input="updatePageBackground"
+                class="text-input color-hex-input"
+                placeholder="#ffffff"
+              />
+            </div>
+          </div>
+          
+          <!-- GRADIENT -->
+          <div v-show="backgroundType === 'gradient'" class="gradient-controls">
+            <div class="input-group">
+              <label class="input-label">Start Color</label>
+              <div class="color-picker-wrapper">
+                <input
+                  type="color"
+                  v-model="gradientStart"
+                  @input="updatePageBackground"
+                  class="color-picker-input"
+                />
+                <input
+                  type="text"
+                  v-model="gradientStart"
+                  @input="updatePageBackground"
+                  class="text-input color-hex-input"
+                />
+              </div>
+            </div>
+            
+            <div class="input-group">
+              <label class="input-label">End Color</label>
+              <div class="color-picker-wrapper">
+                <input
+                  type="color"
+                  v-model="gradientEnd"
+                  @input="updatePageBackground"
+                  class="color-picker-input"
+                />
+                <input
+                  type="text"
+                  v-model="gradientEnd"
+                  @input="updatePageBackground"
+                  class="text-input color-hex-input"
+                />
+              </div>
+            </div>
+            
+            <div class="input-group">
+              <label class="input-label">Gradient Angle</label>
+              <div class="gradient-angle-control">
+                <input
+                  type="range"
+                  v-model="gradientAngle"
+                  @input="updatePageBackground"
+                  min="0"
+                  max="360"
+                  class="angle-slider"
+                />
+                <input
+                  type="number"
+                  v-model="gradientAngle"
+                  @input="updatePageBackground"
+                  min="0"
+                  max="360"
+                  class="angle-input"
+                />°
+              </div>
+            </div>
+            
+            <div class="gradient-preview" :style="gradientPreviewStyle"></div>
+          </div>
+          
+          <!-- IMAGE -->
+          <div v-show="backgroundType === 'image'" class="image-controls">
+            <div class="input-group">
+              <label class="input-label">Background Image</label>
+              <div class="image-upload-wrapper">
+                <button v-if="!backgroundImage" @click="openMediaLibrary" class="upload-btn">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                  </svg>
+                  <span>Upload Image</span>
+                </button>
+                
+                <div v-else class="image-preview-wrapper">
+                  <img :src="backgroundImage" class="image-preview" />
+                  <button @click="removeBackgroundImage" class="remove-image-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div v-if="backgroundImage" class="input-group">
+              <label class="input-label">Image Size</label>
+              <select v-model="backgroundImageSize" @change="updatePageBackground" class="select-input">
+                <option value="cover">Cover (Fill)</option>
+                <option value="contain">Contain (Fit)</option>
+                <option value="auto">Auto (Original)</option>
+              </select>
+            </div>
+            
+            <div v-if="backgroundImage" class="input-group">
+              <label class="input-label">Image Position</label>
+              <select v-model="backgroundImagePosition" @change="updatePageBackground" class="select-input">
+                <option value="center center">Center</option>
+                <option value="top left">Top Left</option>
+                <option value="top center">Top Center</option>
+                <option value="top right">Top Right</option>
+                <option value="center left">Center Left</option>
+                <option value="center right">Center Right</option>
+                <option value="bottom left">Bottom Left</option>
+                <option value="bottom center">Bottom Center</option>
+                <option value="bottom right">Bottom Right</option>
+              </select>
+            </div>
+            
+            <div v-if="backgroundImage" class="input-group">
+              <label class="input-label">Image Repeat</label>
+              <select v-model="backgroundImageRepeat" @change="updatePageBackground" class="select-input">
+                <option value="no-repeat">No Repeat</option>
+                <option value="repeat">Repeat</option>
+                <option value="repeat-x">Repeat Horizontally</option>
+                <option value="repeat-y">Repeat Vertically</option>
+              </select>
+            </div>
+            
+            <div v-if="backgroundImage" class="input-group">
+              <label class="input-label">Overlay Color</label>
+              <div class="color-picker-wrapper">
+                <input
+                  type="color"
+                  v-model="backgroundOverlayColor"
+                  @input="updatePageBackground"
+                  class="color-picker-input"
+                />
+                <input
+                  type="text"
+                  v-model="backgroundOverlayColor"
+                  @input="updatePageBackground"
+                  class="text-input color-hex-input"
+                  placeholder="#000000"
+                />
+              </div>
+            </div>
+            
+            <div v-if="backgroundImage" class="input-group">
+              <label class="input-label">Overlay Opacity</label>
+              <div class="opacity-control">
+                <input
+                  type="range"
+                  v-model="backgroundOverlayOpacity"
+                  @input="updatePageBackground"
+                  min="0"
+                  max="100"
+                  class="opacity-slider"
+                />
+                <span class="opacity-value">{{ backgroundOverlayOpacity }}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="panel-section">
           <h3 class="panel-section-title">Active Theme</h3>
           <div class="theme-list">
             <button
@@ -276,6 +472,9 @@ export default {
       set: (value) => { store.theme = value; }
     }));
     const draggingComponent = ref(null);
+    
+    // Page background color
+    const pageBackgroundColor = ref('#ffffff');
     
     // Tabs
     const tabs = [
@@ -463,6 +662,24 @@ export default {
       }
     };
     
+    // Update page background color
+    const updatePageBackground = () => {
+      const previewElement = document.getElementById('media-kit-preview');
+      if (previewElement) {
+        previewElement.style.backgroundColor = pageBackgroundColor.value;
+      }
+      
+      // Save to store for persistence
+      if (store.customSettings) {
+        store.customSettings.pageBackground = pageBackgroundColor.value;
+      } else {
+        store.customSettings = { pageBackground: pageBackgroundColor.value };
+      }
+      
+      store._trackChange();
+      console.log('✅ Page background updated:', pageBackgroundColor.value);
+    };
+    
     // Refresh components from registry
     const refreshComponents = () => {
       console.log('✅ Refreshed components from registry');
@@ -477,6 +694,12 @@ export default {
     onMounted(() => {
       document.addEventListener('gmkb:components-discovered', handleComponentsDiscovered);
       refreshComponents();
+      
+      // Initialize page background from store
+      if (store.customSettings?.pageBackground) {
+        pageBackgroundColor.value = store.customSettings.pageBackground;
+        updatePageBackground();
+      }
     });
     
     onBeforeUnmount(() => {
@@ -491,6 +714,7 @@ export default {
       selectedLayout,
       selectedTheme,
       draggingComponent,
+      pageBackgroundColor,
       tabs,
       categories,
       sectionLayouts,
@@ -508,7 +732,8 @@ export default {
       removeSection,
       getSectionLabel,
       getComponentCount,
-      handleFooterAction
+      handleFooterAction,
+      updatePageBackground
     };
   }
 };
@@ -1226,6 +1451,40 @@ body.dark-mode .text-input {
   background: #1e293b;
   border-color: #334155;
   color: #f3f4f6;
+}
+
+/* Color Picker */
+.color-picker-wrapper {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.color-picker-input {
+  width: 48px;
+  height: 40px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 2px;
+  background: white;
+  transition: all 0.2s;
+}
+
+.color-picker-input:hover {
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+}
+
+body.dark-mode .color-picker-input {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.color-hex-input {
+  flex: 1;
+  font-family: 'Monaco', 'Courier New', monospace;
+  text-transform: uppercase;
 }
 
 /* Customize Buttons */

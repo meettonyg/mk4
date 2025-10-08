@@ -212,13 +212,13 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             flex: 1;
             display: flex;
             overflow: hidden;
-            background: #f8f9fb;
+            background: #e5e7eb;
             transition: background 0.2s;
         }
         
-        /* Dark mode support */
+        /* Main content background in dark mode - visible as frame around preview */
         body.dark-mode #gmkb-main-content {
-            background: #334155;
+            background: #1e293b;
         }
         
         #gmkb-sidebar {
@@ -244,14 +244,13 @@ if (!in_array($post->post_type, $allowed_post_types)) {
         #media-kit-preview {
             flex: 1;
             overflow-y: auto;
-            background: #f8f9fb;
+            background: #ffffff;
             padding: 32px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        body.dark-mode #media-kit-preview {
-            background: #475569;
-        }
+        /* Preview background is now user-controlled via settings */
+        /* Dark mode does NOT affect preview - only affects tools */
         
         /* Enhanced scrollbar for preview */
         #media-kit-preview::-webkit-scrollbar {
@@ -353,7 +352,7 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             <aside id="gmkb-sidebar"></aside>
             
             <!-- Preview area -->
-            <div id="media-kit-preview" style="flex: 1; overflow-y: auto; background: #f9fafb;"></div>
+            <div id="media-kit-preview"></div>
         </div>
     </div>
 
