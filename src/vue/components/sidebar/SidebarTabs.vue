@@ -72,9 +72,7 @@
                 </svg>
               </div>
               
-              <div class="component-icon-wrapper">
-                <span class="component-icon">{{ component.icon }}</span>
-              </div>
+              <div class="component-icon-wrapper" v-html="component.icon"></div>
               
               <span class="component-label">{{ component.label }}</span>
             </div>
@@ -795,16 +793,33 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f3f4f6;
-  border-radius: 8px;
+  background: transparent;
+  border-radius: 0;
 }
 
-.dark-mode .component-icon-wrapper {
-  background: #374151;
+.dark-mode .component-icon-wrapper {  
+  background: transparent;
 }
 
-.component-icon {
-  font-size: 20px;
+.component-icon {  
+  font-size: 28px;
+  filter: grayscale(100%) contrast(0.3) brightness(0.7);
+  opacity: 0.8;
+  transition: all 0.2s;
+}
+
+.component-card:hover .component-icon {
+  filter: grayscale(100%) contrast(0.5) brightness(0.6);
+  opacity: 1;
+}
+
+.dark-mode .component-icon {
+  filter: grayscale(100%) contrast(0.5) brightness(1.3) invert(1);
+  opacity: 0.6;
+}
+
+.dark-mode .component-card:hover .component-icon {
+  opacity: 0.9;
 }
 
 .component-label {

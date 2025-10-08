@@ -1,0 +1,39 @@
+chore: Archive old toolbar and sidebar components
+
+ARCHIVED COMPONENTS (moved to src/vue/components/ARCHIVED/):
+- BuilderToolbar.vue → Replaced by MediaKitToolbarComplete.vue
+- MediaKitBuilder.vue → Not used (MediaKitApp.vue is active)
+- sidebar/ComponentList.vue → Replaced by SidebarTabs.vue
+- sidebar/ComponentListItem.vue → No longer needed
+- sidebar/SidebarTabsNew.vue → Reference implementation superseded
+
+REASON:
+Migration to Perfected Elementor-Style Design with BEM conventions
+
+ACTIVE COMPONENTS:
+✅ MediaKitToolbarComplete.vue (with BEM, dark mode, device preview)
+✅ SidebarTabs.vue (3-tab design with component library)
+✅ SidebarIntegration.vue (Teleport wrapper)
+✅ MediaKitApp.vue (Pure Vue SPA)
+
+BENEFITS:
+- Cleaner codebase (5 unused files removed)
+- Clear single-implementation structure
+- Proper BEM naming conventions
+- No duplicate toolbar/sidebar implementations
+- All old code preserved for 90-day review period
+
+ARCHIVE STRUCTURE:
+src/vue/components/ARCHIVED/
+├── BuilderToolbar.vue
+├── MediaKitBuilder.vue
+├── sidebar/
+│   ├── ComponentList.vue
+│   ├── ComponentListItem.vue
+│   └── SidebarTabsNew.vue
+└── README.md (archive manifest with full details)
+
+REVIEW PERIOD:
+Files kept until January 6, 2026 for verification, then can be deleted
+
+See ARCHIVED/README.md for complete archive manifest and migration path.

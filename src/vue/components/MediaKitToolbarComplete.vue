@@ -219,10 +219,50 @@ const toggleDarkMode = () => {
 
 const setDeviceMode = (device) => {
   deviceMode.value = device
+  
+  // Apply device-specific styling to preview area
+  const previewArea = document.getElementById('media-kit-preview')
+  const mainContent = document.getElementById('gmkb-main-content')
+  
+  if (previewArea) {
+    // Remove all device classes
+    previewArea.classList.remove('gmkb-device--desktop', 'gmkb-device--tablet', 'gmkb-device--mobile')
+    if (mainContent) {
+      mainContent.classList.remove('gmkb-device--desktop', 'gmkb-device--tablet', 'gmkb-device--mobile')
+    }
+    
+    // Add current device class
+    previewArea.classList.add(`gmkb-device--${device}`)
+    if (mainContent) {
+      mainContent.classList.add(`gmkb-device--${device}`)
+    }
+    
+    // Apply device-specific widths
+    if (device === 'desktop') {
+      previewArea.style.maxWidth = ''
+      previewArea.style.margin = ''
+      previewArea.style.boxShadow = ''
+    } else if (device === 'tablet') {
+      previewArea.style.maxWidth = '768px'
+      previewArea.style.margin = '0 auto'
+      previewArea.style.boxShadow = '0 0 20px rgba(0,0,0,0.1)'
+      previewArea.style.transition = 'all 0.3s ease'
+    } else if (device === 'mobile') {
+      previewArea.style.maxWidth = '375px'
+      previewArea.style.margin = '0 auto'
+      previewArea.style.boxShadow = '0 0 20px rgba(0,0,0,0.1)'
+      previewArea.style.transition = 'all 0.3s ease'
+    }
+    
+    console.log('✅ Device mode applied:', device)
+  } else {
+    console.warn('⚠️ Preview area not found for device mode')
+  }
+  
+  // Dispatch event for other components
   document.dispatchEvent(new CustomEvent('gmkb:device-change', {
     detail: { device }
   }))
-  console.log('✅ Device mode changed to:', device)
 }
 
 function handleUndo() {
@@ -354,11 +394,13 @@ onUnmounted(() => {
 
 /* Element Modifier: section positions */
 .gmkb-toolbar__section--left {
-  flex: 0 0 auto;
+  flex: 1;
+  justify-content: flex-start;
 }
 
 .gmkb-toolbar__section--center {
   flex: 0 0 auto;
+  justify-content: center;
 }
 
 .gmkb-toolbar__section--right {
@@ -699,6 +741,36 @@ onUnmounted(() => {
 
 .gmkb-btn--primary:hover {
   background: #2563eb;
+}
+
+/* Device Preview Styles - Applied to #media-kit-preview */
+#media-kit-preview {
+  transition: all 0.3s ease;
+}
+
+/* Desktop - Full width */
+#media-kit-preview.gmkb-device--desktop {
+  max-width: 100%;
+  margin: 0;
+  box-shadow: none;
+}
+
+/* Tablet - 768px centered */
+#media-kit-preview.gmkb-device--tablet {
+  max-width: 768px;
+  margin: 0 auto;
+  box-shadow: 0 0 20px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Mobile - 375px centered */
+#media-kit-preview.gmkb-device--mobile {
+  max-width: 375px;
+  margin: 0 auto;
+  box-shadow: 0 0 20px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 /* Responsive */
