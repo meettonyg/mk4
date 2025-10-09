@@ -41,9 +41,21 @@ import { keyboardManager } from './services/KeyboardManager.js';
 import { performanceMonitor } from './services/PerformanceMonitor.js';
 import { analytics } from './services/Analytics.js';
 
-// Initialize core systems
+// ROOT FIX: Initialize core systems and GMKB namespace EARLY
+// This ensures window.GMKB exists even if initialization fails
 let apiService;
 let vueApp = null;
+
+// ROOT FIX: Create GMKB namespace immediately to prevent undefined errors
+window.GMKB = window.GMKB || {
+  version: '4.0.0-pure-vue',
+  architecture: 'pure-vue',
+  initialization: 'pending',
+  stores: null, // Will be populated during initialization
+  services: {},
+  utils: { logger },
+  error: null
+};
 
 // ROOT FIX: showToast now imported from ToastService
 
@@ -107,8 +119,15 @@ async function initializeVue() {
     const pinia = createPinia();
     console.log('✅ Pinia store created');
     
-    // ROOT FIX: Initialize UI store (accessible via GMKB.stores.ui)
+    // ROOT FIX: Initialize UI store FIRST (accessible via GMKB.stores.ui)
+    // This must succeed for edit controls to work
+    console.log('4️⃣.1 Creating UI store...');
     const uiStore = useUIStore(pinia);
+    
+    // ROOT FIX: Make UI store immediately available
+    window.GMKB.stores = window.GMKB.stores || {};
+    window.GMKB.stores.ui = uiStore;
+    console.log('✅ UI store created and registered globally');
     
     // ROOT FIX: Initialize stores BEFORE mounting Vue to prevent race condition
     // STEP 4: Initialize stores (BEFORE Vue mount)
@@ -118,7 +137,12 @@ async function initializeVue() {
     
     const mediaKitStore = useMediaKitStore(pinia);
     const themeStore = useThemeStore(pinia);
-    console.log('✅ Stores created');
+    
+    // ROOT FIX: Register stores immediately after creation
+    window.GMKB.stores.mediaKit = mediaKitStore;
+    window.GMKB.stores.theme = themeStore;
+    window.GMKB.stores.pinia = pinia;
+    console.log('✅ Stores created and registered globally');
     
     // Make stores available ONLY through GMKB namespace
     // Removed individual window.gmkbStore, window.mediaKitStore assignments
@@ -228,69 +252,70 @@ async function initializeVue() {
     // ROOT FIX: Preload critical components after mount
     preloadCriticalComponents();
     
-    // P0 FIX #6: Consolidate ALL global objects into single GMKB namespace
-    // Prevents namespace pollution, memory leaks, and debugging chaos
-    // BEFORE: 15+ window objects cluttering namespace
-    // AFTER: 1 organized namespace with proper structure
-    window.GMKB = {
-      // Version info
-      version: '4.0.0-pure-vue',
-      architecture: 'pure-vue',
+    // P0 FIX #6: Update GMKB namespace with Vue app and instance
+    // Stores already registered above for early access
+    window.GMKB.initialization = 'complete';
+    window.GMKB.app = app;
+    window.GMKB.vueInstance = instance;
+    
+    // Ensure stores are still set (defensive programming)
+    window.GMKB.stores = window.GMKB.stores || {};
+    window.GMKB.stores.mediaKit = mediaKitStore;
+    window.GMKB.stores.theme = themeStore;
+    window.GMKB.stores.ui = uiStore;
+    window.GMKB.stores.pinia = pinia;
       
-      // Core application
-      app: app,
-      vueInstance: instance,
+    // Services
+    window.GMKB.services = {
+      api: apiService,
+      security: securityService,
+      undoRedo: undoRedoManager,
+      keyboard: keyboardManager,
+      performance: performanceMonitor,
+      analytics: analytics,
+      toast: { show: showToast },
+      console: ConsoleAPI,
+      pods: podsDataIntegration,
+      registry: UnifiedComponentRegistry
+    };
+    
+    // Utility functions
+    window.GMKB.utils = {
+      showToast,
+      logger
+    };
       
-      // Stores
-      stores: {
-        mediaKit: mediaKitStore,
-        theme: themeStore,
-        ui: uiStore,
-        pinia: pinia
-      },
-      
-      // Services
-      services: {
-        api: apiService,
-        security: securityService,
-        undoRedo: undoRedoManager,
-        keyboard: keyboardManager,
-        performance: performanceMonitor,
-        analytics: analytics,
-        toast: { show: showToast },
-        console: ConsoleAPI,
-        pods: podsDataIntegration,
-        registry: UnifiedComponentRegistry
-      },
-      
-      // Utility functions
-      utils: {
-        showToast,
-        logger
-      },
-      
-      // Legacy aliases for backwards compatibility (deprecated - will be removed in v5)
-      get gmkbStore() { 
-        console.warn('⚠️ window.gmkbStore is deprecated. Use GMKB.stores.mediaKit');
+    // Legacy aliases for backwards compatibility (deprecated - will be removed in v5)
+    Object.defineProperty(window.GMKB, 'gmkbStore', {
+      get() { 
+        console.warn('⚠️ window.GMKB.gmkbStore is deprecated. Use GMKB.stores.mediaKit');
         return this.stores.mediaKit; 
-      },
-      get mediaKitStore() { 
-        console.warn('⚠️ window.mediaKitStore is deprecated. Use GMKB.stores.mediaKit');
+      }
+    });
+    Object.defineProperty(window.GMKB, 'mediaKitStore', {
+      get() { 
+        console.warn('⚠️ window.GMKB.mediaKitStore is deprecated. Use GMKB.stores.mediaKit');
         return this.stores.mediaKit; 
-      },
-      get themeStore() { 
-        console.warn('⚠️ window.themeStore is deprecated. Use GMKB.stores.theme');
+      }
+    });
+    Object.defineProperty(window.GMKB, 'themeStore', {
+      get() { 
+        console.warn('⚠️ window.GMKB.themeStore is deprecated. Use GMKB.stores.theme');
         return this.stores.theme; 
-      },
-      get gmkbAPI() { 
-        console.warn('⚠️ window.gmkbAPI is deprecated. Use GMKB.services.api');
+      }
+    });
+    Object.defineProperty(window.GMKB, 'gmkbAPI', {
+      get() { 
+        console.warn('⚠️ window.GMKB.gmkbAPI is deprecated. Use GMKB.services.api');
         return this.services.api; 
-      },
-      get gmkbApp() { 
-        console.warn('⚠️ window.gmkbApp is deprecated. Use GMKB.app');
+      }
+    });
+    Object.defineProperty(window.GMKB, 'gmkbApp', {
+      get() { 
+        console.warn('⚠️ window.GMKB.gmkbApp is deprecated. Use GMKB.app');
         return this.app; 
       }
-    };
+    });
     
     // P0 FIX #6: Clean up old global references
     // Remove any lingering window.* assignments from other parts of the codebase
@@ -379,6 +404,13 @@ async function initializeVue() {
     
   } catch (error) {
     console.error('❌ Failed to initialize Vue:', error);
+    
+    // ROOT FIX: Store error in GMKB namespace for debugging
+    if (window.GMKB) {
+      window.GMKB.error = error;
+      window.GMKB.initialization = 'failed';
+    }
+    
     throw error;
   }
 }
@@ -469,6 +501,12 @@ async function initialize() {
     
   } catch (error) {
     console.error('❌ Initialization failed:', error);
+    
+    // ROOT FIX: Update GMKB with error info
+    if (window.GMKB) {
+      window.GMKB.error = error;
+      window.GMKB.initialization = 'failed';
+    }
     
     // Show error in UI
     const app = document.getElementById('app');

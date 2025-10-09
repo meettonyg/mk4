@@ -2,11 +2,6 @@
   <div class="gmkb-sidebar" :class="{ 'dark-mode': isDarkMode }">
     <!-- ROOT FIX: Elementor-style dynamic sidebar content -->
     
-    <!-- DEBUG: Show current mode -->
-    <div v-if="true" style="position: fixed; top: 0; right: 0; background: red; color: white; padding: 4px 8px; z-index: 999999; font-size: 11px;">
-      Mode: {{ sidebarMode }} | Section: {{ editingSectionId }} | Component: {{ editingComponentId }}
-    </div>
-    
     <!-- DEFAULT MODE: Show tabs -->
     <template v-if="sidebarMode === 'default'">
     <!-- Tab Navigation -->
