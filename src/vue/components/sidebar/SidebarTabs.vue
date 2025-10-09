@@ -452,16 +452,20 @@
     </template>
     
     <!-- SECTION EDITING MODE -->
-    <SectionEditor
-      v-else-if="sidebarMode === 'section'"
-      :section-id="editingSectionId"
-    />
+    <template v-else-if="sidebarMode === 'section'">
+      <SectionEditor
+        :section-id="editingSectionId"
+        key="section-editor"
+      />
+    </template>
     
     <!-- COMPONENT EDITING MODE -->
-    <ComponentEditor
-      v-else-if="sidebarMode === 'component'"
-      :component-id="editingComponentId"
-    />
+    <template v-else-if="sidebarMode === 'component'">
+      <ComponentEditor
+        :component-id="editingComponentId"
+        key="component-editor"
+      />
+    </template>
   </div>
 </template>
 

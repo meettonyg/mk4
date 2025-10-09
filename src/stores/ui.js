@@ -186,9 +186,11 @@ export const useUIStore = defineStore('ui', {
             this.sidebarMode = 'section';
             this.editingSectionId = sectionId;
             this.editingComponentId = null;
+            this.sidebarOpen = true; // ROOT FIX: Ensure sidebar is visible
             
             console.log('   ✅ Updated mode to:', this.sidebarMode);
             console.log('   ✅ Updated editingSectionId to:', this.editingSectionId);
+            console.log('   ✅ Updated sidebarOpen to:', this.sidebarOpen);
             
             // Close old panels (backwards compatibility)
             this.editPanelOpen = false;
@@ -208,6 +210,7 @@ export const useUIStore = defineStore('ui', {
             this.sidebarMode = 'component';
             this.editingComponentId = componentId;
             this.editingSectionId = null;
+            this.sidebarOpen = true; // ROOT FIX: Ensure sidebar is visible
             
             // Close old panels (backwards compatibility)
             this.editPanelOpen = false;
