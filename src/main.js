@@ -36,10 +36,10 @@ import { useUIStore } from './stores/ui.js';
 
 // PHASE 17-24: Import new critical services
 import { securityService } from './services/SecurityService.js';
-import { undoRedoManager, setupUndoRedoShortcuts } from './services/UndoRedoManager.js';
 import { keyboardManager } from './services/KeyboardManager.js';
 import { performanceMonitor } from './services/PerformanceMonitor.js';
 import { analytics } from './services/Analytics.js';
+import componentStyleService from './services/ComponentStyleService.js';
 
 // ROOT FIX: Initialize core systems and GMKB namespace EARLY
 // This ensures window.GMKB exists even if initialization fails
@@ -269,14 +269,14 @@ async function initializeVue() {
     window.GMKB.services = {
       api: apiService,
       security: securityService,
-      undoRedo: undoRedoManager,
       keyboard: keyboardManager,
       performance: performanceMonitor,
       analytics: analytics,
       toast: { show: showToast },
       console: ConsoleAPI,
       pods: podsDataIntegration,
-      registry: UnifiedComponentRegistry
+      registry: UnifiedComponentRegistry,
+      componentStyle: componentStyleService
     };
     
     // Utility functions
@@ -338,21 +338,6 @@ async function initializeVue() {
     // PHASE 17-24: Initialize new critical services (accessible via GMKB.services)
     console.log('🔐 Initializing security services...');
     
-    console.log('↩️ Initializing undo/redo manager...');
-    setupUndoRedoShortcuts(undoRedoManager);
-    
-    // Connect undo/redo to store
-    mediaKitStore.$subscribe((mutation, state) => {
-      if (!undoRedoManager.isApplyingHistory) {
-        undoRedoManager.record({
-          type: mutation.type,
-          target: 'store',
-          oldValue: mutation.payload?.oldValue,
-          newValue: mutation.payload?.newValue
-        });
-      }
-    });
-    
     console.log('⌨️ Keyboard manager already initialized');
     
     console.log('📊 Initializing performance monitor...');
@@ -377,6 +362,11 @@ async function initializeVue() {
     
     console.log('✅ All critical services initialized');
     
+    // Initialize component style service with all components
+    console.log('🎨 Initializing component styles...');
+    componentStyleService.initializeAll(mediaKitStore.components);
+    console.log('✅ Component styles initialized');
+    
     // Console API now handled by ConsoleAPI service (see ConsoleAPI.install above)
     
     console.log('✅ Vue Media Kit Builder initialized successfully');
@@ -395,7 +385,6 @@ async function initializeVue() {
     // ROOT FIX: Console help now handled by ConsoleAPI.help()
     console.log('🎯 Media Kit Builder v4.0 initialized. Type GMKB.help() for commands.');
     console.log('🔐 Security: XSS protection active');
-    console.log('↩️ Undo/Redo: Ctrl/Cmd+Z / Ctrl/Cmd+Y');
     console.log('⌨️ Keyboard shortcuts available - press ? for help');
     console.log('📊 Performance monitoring active');
     console.log('📈 Analytics tracking enabled');

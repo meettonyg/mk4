@@ -5,151 +5,181 @@
       <button @click="$emit('close')" class="close-btn">×</button>
     </div>
     
-    <div class="editor-sections">
-      <!-- Main Content -->
-      <section class="editor-section">
-        <h4>Content</h4>
-        
-        <div class="field-group">
-          <label for="hero-title">Main Title</label>
-          <input 
-            id="hero-title"
-            v-model="localData.title" 
-            @input="updateField('title')"
-            type="text"
-            placeholder="Enter hero title..."
-          />
-        </div>
-        
-        <div class="field-group">
-          <label for="hero-subtitle">Subtitle</label>
-          <input 
-            id="hero-subtitle"
-            v-model="localData.subtitle" 
-            @input="updateField('subtitle')"
-            type="text"
-            placeholder="Enter subtitle..."
-          />
-        </div>
-        
-        <div class="field-group">
-          <label for="hero-description">Description</label>
-          <textarea 
-            id="hero-description"
-            v-model="localData.description" 
-            @input="updateField('description')"
-            rows="4"
-            placeholder="Enter description..."
-          />
-        </div>
-      </section>
-
-      <!-- Call to Action -->
-      <section class="editor-section">
-        <h4>Call to Action</h4>
-        
-        <div class="field-group">
-          <label for="hero-cta-text">Button Text</label>
-          <input 
-            id="hero-cta-text"
-            v-model="localData.ctaText" 
-            @input="updateField('ctaText')"
-            type="text"
-            placeholder="e.g., Get Started"
-          />
-        </div>
-        
-        <div class="field-group">
-          <label for="hero-cta-url">Button Link</label>
-          <input 
-            id="hero-cta-url"
-            v-model="localData.ctaUrl" 
-            @input="updateField('ctaUrl')"
-            type="url"
-            placeholder="https://"
-          />
-        </div>
-      </section>
-
-      <!-- Background -->
-      <section class="editor-section">
-        <h4>Background</h4>
-        
-        <div class="field-group">
-          <label for="hero-bg-type">Background Type</label>
-          <select 
-            id="hero-bg-type"
-            v-model="localData.backgroundType" 
-            @change="updateField('backgroundType')"
-          >
-            <option value="color">Solid Color</option>
-            <option value="gradient">Gradient</option>
-            <option value="image">Image</option>
-          </select>
-        </div>
-        
-        <div v-if="localData.backgroundType === 'color'" class="field-group">
-          <label for="hero-bg-color">Background Color</label>
-          <div class="color-input">
+    <!-- Tab Navigation -->
+    <div class="editor-tabs">
+      <button
+        v-for="tab in tabs"
+        :key="tab.id"
+        :class="['tab-btn', { active: activeTab === tab.id }]"
+        @click="activeTab = tab.id"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
+    
+    <div class="editor-content">
+      <!-- CONTENT TAB -->
+      <div v-show="activeTab === 'content'" class="tab-panel">
+        <section class="editor-section">
+          <h4>Hero Content</h4>
+          
+          <div class="field-group">
+            <label for="hero-title">Main Title</label>
             <input 
-              id="hero-bg-color"
-              v-model="localData.backgroundColor" 
-              @input="updateField('backgroundColor')"
-              type="color"
-            />
-            <input 
-              v-model="localData.backgroundColor" 
-              @input="updateField('backgroundColor')"
+              id="hero-title"
+              v-model="localData.title" 
+              @input="updateField('title')"
               type="text"
-              placeholder="#000000"
+              placeholder="Enter hero title..."
             />
           </div>
-        </div>
-        
-        <div v-if="localData.backgroundType === 'image'" class="field-group">
-          <label for="hero-bg-image">Background Image URL</label>
-          <input 
-            id="hero-bg-image"
-            v-model="localData.backgroundImage" 
-            @input="updateField('backgroundImage')"
-            type="url"
-            placeholder="https://example.com/image.jpg"
-          />
-        </div>
-      </section>
+          
+          <div class="field-group">
+            <label for="hero-subtitle">Subtitle</label>
+            <input 
+              id="hero-subtitle"
+              v-model="localData.subtitle" 
+              @input="updateField('subtitle')"
+              type="text"
+              placeholder="Enter subtitle..."
+            />
+          </div>
+          
+          <div class="field-group">
+            <label for="hero-description">Description</label>
+            <textarea 
+              id="hero-description"
+              v-model="localData.description" 
+              @input="updateField('description')"
+              rows="4"
+              placeholder="Enter description..."
+            />
+          </div>
+        </section>
 
-      <!-- Layout Options -->
-      <section class="editor-section">
-        <h4>Layout</h4>
-        
-        <div class="field-group">
-          <label for="hero-alignment">Text Alignment</label>
-          <select 
-            id="hero-alignment"
-            v-model="localData.textAlign" 
-            @change="updateField('textAlign')"
-          >
-            <option value="left">Left</option>
-            <option value="center">Center</option>
-            <option value="right">Right</option>
-          </select>
-        </div>
-        
-        <div class="field-group">
-          <label for="hero-height">Section Height</label>
-          <select 
-            id="hero-height"
-            v-model="localData.height" 
-            @change="updateField('height')"
-          >
-            <option value="auto">Auto</option>
-            <option value="small">Small (300px)</option>
-            <option value="medium">Medium (500px)</option>
-            <option value="large">Large (700px)</option>
-            <option value="fullscreen">Fullscreen</option>
-          </select>
-        </div>
-      </section>
+        <!-- Call to Action -->
+        <section class="editor-section">
+          <h4>Call to Action</h4>
+          
+          <div class="field-group">
+            <label for="hero-cta-text">Button Text</label>
+            <input 
+              id="hero-cta-text"
+              v-model="localData.ctaText" 
+              @input="updateField('ctaText')"
+              type="text"
+              placeholder="e.g., Get Started"
+            />
+          </div>
+          
+          <div class="field-group">
+            <label for="hero-cta-url">Button Link</label>
+            <input 
+              id="hero-cta-url"
+              v-model="localData.ctaUrl" 
+              @input="updateField('ctaUrl')"
+              type="url"
+              placeholder="https://"
+            />
+          </div>
+        </section>
+
+        <!-- Background -->
+        <section class="editor-section">
+          <h4>Background</h4>
+          
+          <div class="field-group">
+            <label for="hero-bg-type">Background Type</label>
+            <select 
+              id="hero-bg-type"
+              v-model="localData.backgroundType" 
+              @change="updateField('backgroundType')"
+            >
+              <option value="color">Solid Color</option>
+              <option value="gradient">Gradient</option>
+              <option value="image">Image</option>
+            </select>
+          </div>
+          
+          <div v-if="localData.backgroundType === 'color'" class="field-group">
+            <label for="hero-bg-color">Background Color</label>
+            <div class="color-input">
+              <input 
+                id="hero-bg-color"
+                v-model="localData.backgroundColor" 
+                @input="updateField('backgroundColor')"
+                type="color"
+              />
+              <input 
+                v-model="localData.backgroundColor" 
+                @input="updateField('backgroundColor')"
+                type="text"
+                placeholder="#000000"
+              />
+            </div>
+          </div>
+          
+          <div v-if="localData.backgroundType === 'image'" class="field-group">
+            <label for="hero-bg-image">Background Image URL</label>
+            <input 
+              id="hero-bg-image"
+              v-model="localData.backgroundImage" 
+              @input="updateField('backgroundImage')"
+              type="url"
+              placeholder="https://example.com/image.jpg"
+            />
+          </div>
+        </section>
+
+        <!-- Layout Options -->
+        <section class="editor-section">
+          <h4>Layout</h4>
+          
+          <div class="field-group">
+            <label for="hero-alignment">Text Alignment</label>
+            <select 
+              id="hero-alignment"
+              v-model="localData.textAlign" 
+              @change="updateField('textAlign')"
+            >
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+            </select>
+          </div>
+          
+          <div class="field-group">
+            <label for="hero-height">Section Height</label>
+            <select 
+              id="hero-height"
+              v-model="localData.height" 
+              @change="updateField('height')"
+            >
+              <option value="auto">Auto</option>
+              <option value="small">Small (300px)</option>
+              <option value="medium">Medium (500px)</option>
+              <option value="large">Large (700px)</option>
+              <option value="fullscreen">Fullscreen</option>
+            </select>
+          </div>
+        </section>
+      </div>
+      
+      <!-- STYLE TAB -->
+      <div v-show="activeTab === 'style'" class="tab-panel">
+        <BaseStylePanel
+          :component-id="componentId"
+          :component-type="'hero'"
+          :show-typography="true"
+        />
+      </div>
+      
+      <!-- ADVANCED TAB -->
+      <div v-show="activeTab === 'advanced'" class="tab-panel">
+        <BaseAdvancedPanel
+          :component-id="componentId"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -157,6 +187,8 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
+import BaseStylePanel from '../../src/vue/components/sidebar/editors/BaseStylePanel.vue';
+import BaseAdvancedPanel from '../../src/vue/components/sidebar/editors/BaseAdvancedPanel.vue';
 
 const props = defineProps({
   componentId: {
@@ -171,6 +203,14 @@ const props = defineProps({
 
 const emit = defineEmits(['update', 'close']);
 const store = useMediaKitStore();
+
+// Tab state
+const activeTab = ref('content');
+const tabs = [
+  { id: 'content', label: 'Content' },
+  { id: 'style', label: 'Style' },
+  { id: 'advanced', label: 'Advanced' }
+];
 
 // Local data copy
 const localData = ref({
@@ -209,7 +249,7 @@ const updateField = (field) => {
     });
     
     // Mark as having unsaved changes
-    store.hasUnsavedChanges = true;
+    store.isDirty = true;
   }, 300);
 };
 </script>
@@ -258,11 +298,44 @@ const updateField = (field) => {
   color: #1e293b;
 }
 
-.editor-sections {
+.editor-tabs {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-btn:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.tab-btn.active {
+  color: #3b82f6;
+  background: white;
+  border-bottom-color: #3b82f6;
+}
+
+.editor-content {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
   background: #f9fafb;
+}
+
+.tab-panel {
+  padding: 20px;
 }
 
 .editor-section {
@@ -343,20 +416,20 @@ const updateField = (field) => {
 }
 
 /* Scrollbar styling */
-.editor-sections::-webkit-scrollbar {
+.editor-content::-webkit-scrollbar {
   width: 6px;
 }
 
-.editor-sections::-webkit-scrollbar-track {
+.editor-content::-webkit-scrollbar-track {
   background: #f1f5f9;
 }
 
-.editor-sections::-webkit-scrollbar-thumb {
+.editor-content::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 3px;
 }
 
-.editor-sections::-webkit-scrollbar-thumb:hover {
+.editor-content::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
 </style>

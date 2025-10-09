@@ -28,6 +28,9 @@
       
       <!-- Modals rendered outside main content -->
       <Teleport to="body">
+        <!-- Toast Notifications -->
+        <ToastContainer />
+        
         <!-- Component Library Modal -->
         <ComponentLibrary />
         
@@ -71,6 +74,7 @@ import ImportExportModal from './ImportExportModal.vue';
 import MediaKitToolbarComplete from './MediaKitToolbarComplete.vue';
 import ErrorBoundary from './ErrorBoundary.vue';
 import SectionSettings from './sections/SectionSettings.vue';
+import ToastContainer from './ToastContainer.vue';
 
 // Store references
 const store = useMediaKitStore();

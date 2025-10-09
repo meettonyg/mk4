@@ -160,9 +160,11 @@
 <script setup>
 import { ref, computed, provide, watch, onMounted, onUnmounted } from 'vue'
 import { useMediaKitStore } from '../../stores/mediaKit'
+import { useToast } from '../../composables/useToast'
 import ExportModal from './ExportModal.vue'
 
 const store = useMediaKitStore()
+const { showSuccess, showInfo, showError } = useToast()
 const exportModal = ref(null)
 const showShareModal = ref(false)
 
@@ -268,6 +270,7 @@ const setDeviceMode = (device) => {
 function handleUndo() {
   if (store.canUndo) {
     store.undo()
+    showInfo('↩️ Undone')
     console.log('↩️ Undo action')
   }
 }
@@ -275,6 +278,7 @@ function handleUndo() {
 function handleRedo() {
   if (store.canRedo) {
     store.redo()
+    showInfo('↪️ Redone')
     console.log('↪️ Redo action')
   }
 }
@@ -310,10 +314,11 @@ function copyShareLink() {
 async function handleSave() {
   try {
     await store.save()
+    showSuccess('✅ Media kit saved successfully!')
     console.log('✅ Manual save triggered')
   } catch (error) {
     console.error('❌ Save failed:', error)
-    alert('Failed to save: ' + error.message)
+    showError('Failed to save: ' + error.message)
   }
 }
 

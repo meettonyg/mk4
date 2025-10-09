@@ -5,6 +5,9 @@ import { debounce } from '../utils/debounce';
 import systemReadiness from '../services/SystemReadiness.js';
 import { deepClone, generateUniqueId, deepEqual } from '../utils/deepClone.js';
 import { APIService } from '../services/APIService.js';
+// PHASE 2: Component Schema imports
+import { getDefaultSettings, getComponentDefaults, mergeWithDefaults } from '../utils/componentSchema.js';
+import { validateComponent, sanitizeComponent } from '../utils/componentValidator.js';
 
 export const useMediaKitStore = defineStore('mediaKit', {
   state: () => ({
@@ -603,15 +606,31 @@ export const useMediaKitStore = defineStore('mediaKit', {
       const defaultProps = UnifiedComponentRegistry.getDefaultProps(componentData.type);
       const componentSchema = registryComponent.schema || null;
       
-      // Create component with proper structure
+      // PHASE 2: Create component with proper structure AND default settings schema
+      // CRITICAL: Always merge with defaults to ensure complete settings structure
+      const componentSettings = componentData.settings ?
+        mergeWithDefaults(componentData.settings) :
+        getComponentDefaults(componentData.type);
+      
       const component = {
         id: componentId,
         type: componentData.type,
         data: { ...defaultProps, ...(componentData.data || {}) },
         props: { ...defaultProps, ...(componentData.props || {}) },
-        settings: componentData.settings || {},
+        settings: componentSettings, // PHASE 2: Always use schema-compliant settings
         schema: componentSchema
       };
+      
+      // CRITICAL: Log component creation in debug mode
+      if (window.gmkbData?.debugMode) {
+        console.log(`✅ Created component ${componentId} with settings:`, component.settings);
+      }
+      
+      // PHASE 2: Validate component structure
+      const validation = validateComponent(component);
+      if (!validation.valid && window.gmkbData?.debugMode) {
+        console.warn('[Store] Component validation warnings:', validation.errors);
+      }
       
       // ROOT FIX: Enrich component with Pods data configuration
       if (window.podsDataIntegration || window.gmkbPodsIntegration) {
