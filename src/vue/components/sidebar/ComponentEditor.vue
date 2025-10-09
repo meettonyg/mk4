@@ -53,8 +53,8 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { useMediaKitStore } from '@/stores/mediaKit'
-import { useUIStore } from '@/stores/ui'
+import { useMediaKitStore } from '../../../stores/mediaKit'
+import { useUIStore } from '../../../stores/ui'
 import GenericComponentEditor from './GenericComponentEditor.vue'
 
 const props = defineProps({
@@ -67,22 +67,6 @@ const props = defineProps({
 const store = useMediaKitStore()
 const uiStore = useUIStore()
 
-// DEBUG: Log when component mounts
-onMounted(() => {
-  console.log('✅ ComponentEditor: Component MOUNTED');
-  console.log('   - componentId:', props.componentId);
-  console.log('   - component:', component.value);
-});
-
-// DEBUG: Watch component
-watch(() => props.componentId, (newId) => {
-  console.log('🎯 ComponentEditor: Component ID changed to:', newId);
-}, { immediate: true });
-
-watch(component, (newComp) => {
-  console.log('🔄 ComponentEditor: Component data:', newComp);
-}, { immediate: true });
-
 // Active tab
 const activeTab = ref('content')
 
@@ -93,7 +77,7 @@ const tabs = [
   { id: 'advanced', label: 'Advanced', icon: 'fa-solid fa-gear' }
 ]
 
-// Get component
+// CRITICAL FIX: Declare component BEFORE any watches that use it
 const component = computed(() => {
   return store.components[props.componentId]
 })
@@ -127,6 +111,24 @@ const editorComponent = computed(() => {
   // 
   // return editorMap[componentType] || null
 })
+
+// DEBUG: Log when component mounts
+onMounted(() => {
+  console.log('✅✅✅ ComponentEditor: Component MOUNTED ✅✅✅');
+  console.log('   - componentId:', props.componentId);
+  console.log('   - component:', component.value);
+  console.log('   - store exists:', !!store);
+  console.log('   - uiStore exists:', !!uiStore);
+});
+
+// DEBUG: Watch component (NOW component is already declared)
+watch(() => props.componentId, (newId) => {
+  console.log('🎯 ComponentEditor: Component ID changed to:', newId);
+}, { immediate: true });
+
+watch(component, (newComp) => {
+  console.log('🔄 ComponentEditor: Component data:', newComp);
+}, { immediate: true });
 
 // Handle back button
 function handleBack() {

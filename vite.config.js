@@ -109,7 +109,8 @@ export default defineConfig(({ mode }) => ({
   // Performance optimizations with esbuild
   esbuild: {
     target: 'es2015',
-    drop: mode === 'production' ? ['console', 'debugger'] : [],
+    drop: [], // TEMPORARILY DISABLED for debugging component editor
+    // drop: mode === 'production' ? ['console', 'debugger'] : [],
     legalComments: 'none',
     minify: mode === 'production',
     minifyIdentifiers: mode === 'production',

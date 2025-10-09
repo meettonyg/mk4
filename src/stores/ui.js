@@ -196,11 +196,19 @@ export const useUIStore = defineStore('ui', {
         },
         
         openComponentEditor(componentId) {
-            console.log('🎯 UI Store: Opening component editor in sidebar for:', componentId);
+            console.log('🔵🔵🔵 UI STORE: openComponentEditor CALLED 🔵🔵🔵');
+            console.log('   Component ID:', componentId);
+            console.log('   Current mode:', this.sidebarMode);
+            console.log('   Current editing component:', this.editingComponentId);
+            
             this.sidebarMode = 'component';
             this.editingComponentId = componentId;
             this.editingSectionId = null;
-            this.sidebarOpen = true; // ROOT FIX: Ensure sidebar is visible
+            this.sidebarOpen = true;
+            
+            console.log('   ✅ Updated mode to:', this.sidebarMode);
+            console.log('   ✅ Updated editingComponentId to:', this.editingComponentId);
+            console.log('   ✅ Updated sidebarOpen to:', this.sidebarOpen);
             
             // Close old panels (backwards compatibility)
             this.editPanelOpen = false;
@@ -212,6 +220,7 @@ export const useUIStore = defineStore('ui', {
             document.dispatchEvent(new CustomEvent('gmkb:component-editor-opened', {
                 detail: { componentId }
             }));
+            console.log('   ✅ Dispatched gmkb:component-editor-opened event');
         },
         
         closeSidebarEditor() {
