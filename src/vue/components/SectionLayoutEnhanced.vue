@@ -309,11 +309,13 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
+import { useUIStore } from '../../stores/ui';
 import ComponentWrapper from './ComponentWrapper.vue';
 import SectionSettings from './sections/SectionSettings.vue';
 import draggable from 'vuedraggable';
 
 const store = useMediaKitStore();
+const uiStore = useUIStore();
 
 // Layout options
 const layoutOptions = [
@@ -511,9 +513,15 @@ const removeSection = (sectionId) => {
   }
 };
 
+// ROOT FIX: Open section editor in sidebar (Elementor-style)
 const openSectionSettings = (sectionId) => {
-  editingSectionId.value = sectionId;
-  console.log('Opening section settings for:', sectionId);
+  console.log('🔴🔴🔴 SECTION SETTINGS CLICKED! 🔴🔴🔴');
+  console.log('   Section ID:', sectionId);
+  console.log('   UI Store exists?', !!uiStore);
+  console.log('   Method exists?', typeof uiStore.openSectionEditor);
+  
+  uiStore.openSectionEditor(sectionId);
+  console.log('✅ SectionLayoutEnhanced: Opened section editor in sidebar');
 };
 
 // Get section by ID
