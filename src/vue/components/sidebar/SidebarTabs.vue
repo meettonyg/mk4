@@ -2,14 +2,6 @@
   <div class="gmkb-sidebar" :class="{ 'dark-mode': isDarkMode }">
     <!-- ROOT FIX: Elementor-style dynamic sidebar content -->
     
-    <!-- DEBUG INDICATOR -->
-    <div style="position: fixed; bottom: 10px; right: 10px; background: black; color: lime; padding: 8px 12px; z-index: 999999; font-size: 11px; font-family: monospace; border: 2px solid lime; border-radius: 4px;">
-      <div><strong>SIDEBAR DEBUG:</strong></div>
-      <div>Mode: <span style="color: yellow;">{{ sidebarMode }}</span></div>
-      <div>Section: <span style="color: cyan;">{{ editingSectionId || 'none' }}</span></div>
-      <div>Component: <span style="color: magenta;">{{ editingComponentId || 'none' }}</span></div>
-    </div>
-    
     <!-- DEFAULT MODE: Show tabs -->
     <template v-if="sidebarMode === 'default'">
     <!-- Tab Navigation -->
