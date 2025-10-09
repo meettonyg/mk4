@@ -230,6 +230,11 @@ function editComponent(componentId) {
 
 // ROOT FIX: Open section editor in sidebar (Elementor-style)
 function openSectionSettings() {
+  console.log('🔴🔴🔴 SECTION BUTTON CLICKED! 🔴🔴🔴');
+  console.log('   Section ID:', props.sectionId);
+  console.log('   UI Store:', uiStore);
+  console.log('   UI Store method exists?', typeof uiStore.openSectionEditor);
+  
   uiStore.openSectionEditor(props.sectionId)
   console.log('✅ Section: Opening section editor for:', props.sectionId)
 }

@@ -136,6 +136,11 @@ const moveDown = () => {
 
 // ROOT FIX: Open component editor in sidebar (Elementor-style)
 const edit = () => {
+  console.log('🟢🟢🟢 COMPONENT EDIT CLICKED! 🟢🟢🟢');
+  console.log('   Component ID:', props.componentId);
+  console.log('   UI Store:', uiStore);
+  console.log('   UI Store method exists?', typeof uiStore.openComponentEditor);
+  
   uiStore.openComponentEditor(props.componentId);
   console.log('✅ ComponentControls: Opening component editor for:', props.componentId);
 };
