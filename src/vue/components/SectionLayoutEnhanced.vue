@@ -50,10 +50,9 @@
                 <span>📄</span>
               </button>
               <button 
-                @click.stop="testClick(section.section_id); openSectionSettings(section.section_id)"
+                @click.stop="openSectionSettings(section.section_id)"
                 class="control-btn"
                 title="Section Settings"
-                data-test="section-settings-btn"
               >
                 <span>⚙️</span>
               </button>
@@ -516,18 +515,7 @@ const removeSection = (sectionId) => {
 
 // ROOT FIX: Open section editor in sidebar (Elementor-style)
 const openSectionSettings = (sectionId) => {
-  console.log('🔴🔴🔴 SECTION SETTINGS CLICKED! 🔴🔴🔴');
-  console.log('   Section ID:', sectionId);
-  console.log('   UI Store exists?', !!uiStore);
-  console.log('   Method exists?', typeof uiStore.openSectionEditor);
-  
   uiStore.openSectionEditor(sectionId);
-  console.log('✅ SectionLayoutEnhanced: Opened section editor in sidebar');
-};
-
-// TEST FUNCTION: Simple click test
-const testClick = (sectionId) => {
-  console.log('🧪 TEST CLICK FIRED! Section ID:', sectionId);
 };
 
 // Get section by ID
@@ -803,31 +791,6 @@ onMounted(async () => {
   
   // Initialize sections if needed
   await nextTick();
-  
-  // CRITICAL: Test if section controls are mounted
-  console.log('🧪 TESTING: Checking for section controls in DOM...');
-  const controls = document.querySelectorAll('.section-controls');
-  console.log('🧪 Found section controls:', controls.length);
-  if (controls.length > 0) {
-    console.log('🧪 First control visibility:', window.getComputedStyle(controls[0]).visibility);
-    console.log('🧪 First control opacity:', window.getComputedStyle(controls[0]).opacity);
-  }
-  
-  // CRITICAL: Test if settings buttons exist
-  const settingsButtons = document.querySelectorAll('[data-test="section-settings-btn"]');
-  console.log('🧪 Found section settings buttons:', settingsButtons.length);
-  if (settingsButtons.length > 0) {
-    console.log('🧪 First button:', settingsButtons[0]);
-    console.log('🧪 Button visible:', window.getComputedStyle(settingsButtons[0]).display);
-    console.log('🧪 Button pointer-events:', window.getComputedStyle(settingsButtons[0]).pointerEvents);
-    
-    // TEST: Try programmatic click after 2 seconds
-    console.log('🧪 Will attempt programmatic click in 2 seconds...');
-    setTimeout(() => {
-      console.log('🧪 Now clicking button programmatically...');
-      settingsButtons[0].click();
-    }, 2000);
-  }
   
   // GEMINI FIX #2: Initialize columns through store action (proper architecture)
   // This moves the logic from view layer to store, preventing direct state mutation
