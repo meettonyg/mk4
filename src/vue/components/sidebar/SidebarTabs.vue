@@ -4,6 +4,8 @@
     
     <!-- DEFAULT MODE: Show tabs -->
     <template v-if="sidebarMode === 'default'">
+      <!-- DEBUG -->
+      <div style="position: absolute; top: 0; left: 0; background: blue; color: white; padding: 4px; z-index: 99999; font-size: 10px;">MODE: DEFAULT</div>
     <!-- Tab Navigation -->
     <div class="sidebar-tabs">
       <button 
@@ -453,6 +455,8 @@
     
     <!-- SECTION EDITING MODE -->
     <template v-else-if="sidebarMode === 'section'">
+      <!-- DEBUG -->
+      <div style="position: absolute; top: 0; left: 0; background: red; color: white; padding: 4px; z-index: 99999; font-size: 10px;">MODE: SECTION ({{ editingSectionId }})</div>
       <SectionEditor
         :section-id="editingSectionId"
         key="section-editor"
@@ -461,10 +465,20 @@
     
     <!-- COMPONENT EDITING MODE -->
     <template v-else-if="sidebarMode === 'component'">
+      <!-- DEBUG -->
+      <div style="position: absolute; top: 0; left: 0; background: green; color: white; padding: 4px; z-index: 99999; font-size: 10px;">MODE: COMPONENT ({{ editingComponentId }})</div>
       <ComponentEditor
         :component-id="editingComponentId"
         key="component-editor"
       />
+    </template>
+    
+    <!-- FALLBACK: Unknown mode -->
+    <template v-else>
+      <div style="position: absolute; top: 0; left: 0; background: orange; color: white; padding: 4px; z-index: 99999; font-size: 10px;">MODE: UNKNOWN ({{ sidebarMode }})</div>
+      <div style="padding: 20px; color: red;">
+        Error: Unknown sidebar mode "{{ sidebarMode }}"
+      </div>
     </template>
   </div>
 </template>

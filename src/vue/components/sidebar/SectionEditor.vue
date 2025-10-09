@@ -175,18 +175,26 @@
 </template>
 
 <script setup>
+console.log('🔴🔴🔴 SectionEditor: SCRIPT SETUP EXECUTING 🔴🔴🔴');
+
 import { ref, computed, reactive, watch, onMounted } from 'vue'
-import { useMediaKitStore } from '@/stores/mediaKit'
-import { useUIStore } from '@/stores/ui'
+import { useMediaKitStore } from '../../../stores/mediaKit'
+import { useUIStore } from '../../../stores/ui'
+
+console.log('🟡 SectionEditor: Imports complete');
 
 const store = useMediaKitStore()
 const uiStore = useUIStore()
 
+console.log('🟢 SectionEditor: Stores initialized');
+
 // DEBUG: Log when component mounts
 onMounted(() => {
-  console.log('✅ SectionEditor: Component MOUNTED');
+  console.log('✅✅✅ SectionEditor: Component MOUNTED ✅✅✅');
   console.log('   - sectionId:', sectionId.value);
   console.log('   - section:', section.value);
+  console.log('   - store exists:', !!store);
+  console.log('   - uiStore exists:', !!uiStore);
 });
 
 // Active tab
