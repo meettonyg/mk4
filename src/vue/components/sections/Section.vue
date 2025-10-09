@@ -8,7 +8,7 @@
       v-if="isEditing"
       @duplicate="$emit('duplicate')"
       @remove="$emit('remove')"
-      @settings="showSettings = true"
+      @settings="openSectionSettings"
     />
 
     <div class="section-grid" :class="gridClass">
@@ -68,22 +68,16 @@
       </TransitionGroup>
     </div>
 
-    <SectionSettings 
-      v-if="showSettings"
-      :section-id="sectionId"
-      :section="section"
-      @close="showSettings = false"
-      @update="updateSectionSettings"
-    />
+
   </div>
 </template>
 
 <script setup>
 import { computed, ref } from 'vue'
 import { useMediaKitStore } from '@/stores/mediaKit'
+import { useUIStore } from '@/stores/ui'
 import draggable from 'vuedraggable'
 import SectionControls from './SectionControls.vue'
-import SectionSettings from './SectionSettings.vue'
 import ComponentWrapper from '../ComponentWrapper.vue'
 
 const props = defineProps({
@@ -104,7 +98,7 @@ const props = defineProps({
 const emit = defineEmits(['duplicate', 'remove', 'update'])
 
 const store = useMediaKitStore()
-const showSettings = ref(false)
+const uiStore = useUIStore()
 
 // Compute section classes
 const sectionClass = computed(() => ({
@@ -234,17 +228,10 @@ function editComponent(componentId) {
   store.openComponentEditor(componentId)
 }
 
-// Section settings
-function updateSectionSettings(updates) {
-  if (updates.settings) {
-    store.updateSectionSettings(props.sectionId, updates.settings)
-  }
-  if (updates.layout || updates.type) {
-    store.updateSection(props.sectionId, {
-      layout: updates.layout || updates.type,
-      type: updates.layout || updates.type
-    })
-  }
+// ROOT FIX: Open section editor in sidebar (Elementor-style)
+function openSectionSettings() {
+  uiStore.openSectionEditor(props.sectionId)
+  console.log('✅ Section: Opening section editor for:', props.sectionId)
 }
 </script>
 

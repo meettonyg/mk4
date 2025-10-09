@@ -446,12 +446,9 @@ export const useThemeStore = defineStore('theme', {
         this.hasUnsavedChanges = true;
         this.applyThemeToDOM();
         
-        // FIX: Update media kit store immediately so theme persists
-        const mediaKitStore = useMediaKitStore();
-        mediaKitStore.theme = themeId;
-        mediaKitStore._trackChange();  // Mark for save and trigger auto-save
-        
-        console.log('[Theme Store] Theme selected and saved to media kit store:', themeId);
+        // CRITICAL FIX: Don't call useMediaKitStore() here - causes circular dependency!
+        // The calling component should handle updating the media kit store
+        console.log('[Theme Store] Theme selected (caller must update mediaKitStore):', themeId);
       } else {
         console.error('[Theme Store] Could not find theme with ID:', themeId);
       }

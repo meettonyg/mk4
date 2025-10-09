@@ -9,6 +9,9 @@
     <!-- Theme Customizer Modal -->
     <ThemeCustomizer />
     
+    <!-- Section Settings Panel -->
+    <SectionSettings />
+    
     <!-- Sections Container -->
     <div class="gmkb-sections-container">
       <!-- Render sections with their components -->
@@ -39,6 +42,7 @@ import ThemeProvider from './ThemeProvider.vue';
 import SectionRenderer from './SectionRenderer.vue';
 import ComponentLibrary from './ComponentLibraryNew.vue';
 import ThemeCustomizer from './ThemeCustomizer.vue';
+import SectionSettings from './sections/SectionSettings.vue';
 
 const store = useMediaKitStore();
 // showAddMenu removed - no floating button per user request

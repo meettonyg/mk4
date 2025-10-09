@@ -68,6 +68,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useMediaKitStore } from '../../../stores/mediaKit';
+import { useUIStore } from '../../../stores/ui';
 
 // Props
 const props = defineProps({
@@ -90,6 +91,7 @@ const props = defineProps({
 });
 
 const store = useMediaKitStore();
+const uiStore = useUIStore();
 
 // Computed
 const isFirst = computed(() => props.index === 0);
@@ -132,8 +134,10 @@ const moveDown = () => {
   }
 };
 
+// ROOT FIX: Open component editor in sidebar (Elementor-style)
 const edit = () => {
-  store.openDesignPanel(props.componentId);
+  uiStore.openComponentEditor(props.componentId);
+  console.log('✅ ComponentControls: Opening component editor for:', props.componentId);
 };
 
 const duplicate = () => {

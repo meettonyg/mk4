@@ -39,6 +39,9 @@ export const useMediaKitStore = defineStore('mediaKit', {
     // ROOT FIX: UI state moved to UIStore
     // All selection, hover, drag, and modal state now in src/stores/ui.js
     
+    // Section selection for sidebar settings panel
+    selectedSectionId: null,
+    
     // Meta state
     lastSaved: null,
     // hasUnsavedChanges: false, // REMOVED: Duplicate of isDirty
@@ -1841,6 +1844,23 @@ export const useMediaKitStore = defineStore('mediaKit', {
     // Close edit panel
     closeEditPanel() {
       this.editingComponentId = null;
+    },
+
+    // Section selection management
+    selectSection(sectionId) {
+      this.selectedSectionId = sectionId;
+      
+      // Dispatch section selection event
+      document.dispatchEvent(new CustomEvent('gmkb:section-selected', {
+        detail: { sectionId }
+      }));
+    },
+
+    clearSectionSelection() {
+      this.selectedSectionId = null;
+      
+      // Dispatch clear event
+      document.dispatchEvent(new CustomEvent('gmkb:section-deselected'));
     },
 
     // Alias for backwards compatibility - now just calls save()

@@ -1,5 +1,9 @@
 <template>
   <div class="gmkb-sidebar" :class="{ 'dark-mode': isDarkMode }">
+    <!-- ROOT FIX: Elementor-style dynamic sidebar content -->
+    
+    <!-- DEFAULT MODE: Show tabs -->
+    <template v-if="sidebarMode === 'default'">
     <!-- Tab Navigation -->
     <div class="sidebar-tabs">
       <button 
@@ -445,22 +449,44 @@
         {{ getFooterButtonText }}
       </button>
     </div>
+    </template>
+    
+    <!-- SECTION EDITING MODE -->
+    <SectionEditor
+      v-else-if="sidebarMode === 'section'"
+      :section-id="editingSectionId"
+    />
+    
+    <!-- COMPONENT EDITING MODE -->
+    <ComponentEditor
+      v-else-if="sidebarMode === 'component'"
+      :component-id="editingComponentId"
+    />
   </div>
 </template>
 
 <script>
 import { ref, computed, inject, onMounted, onBeforeUnmount } from 'vue';
 import { useMediaKitStore } from '../../../stores/mediaKit';
+import { useUIStore } from '../../../stores/ui';
 import { useThemeStore } from '../../../stores/theme';
 import UnifiedComponentRegistry from '../../../services/UnifiedComponentRegistry';
+import SectionEditor from './SectionEditor.vue';
+import ComponentEditor from './ComponentEditor.vue';
 
 export default {
   name: 'SidebarTabs',
   
   setup() {
     const store = useMediaKitStore();
+    const uiStore = useUIStore();
     const themeStore = useThemeStore();
     const isDarkMode = inject('isDarkMode', ref(false));
+    
+    // ROOT FIX: Sidebar mode state from UI store
+    const sidebarMode = computed(() => uiStore.sidebarMode);
+    const editingSectionId = computed(() => uiStore.editingSectionId);
+    const editingComponentId = computed(() => uiStore.editingComponentId);
     
     // State
     const activeTab = ref('components');
@@ -631,64 +657,43 @@ export default {
     };
     
     const selectTheme = (themeId) => {
-      // CRITICAL FIX: Add comprehensive error handling
+      console.log('=== THEME SELECTION START ===');
+      console.log('1. themeId:', themeId);
+      
       try {
-        console.log('[SidebarTabs] selectTheme called with:', themeId);
-        console.log('[SidebarTabs] Theme store available:', !!themeStore);
-        console.log('[SidebarTabs] Media kit store available:', !!store);
-        
-        // Update local ref
-        selectedTheme.value.value = themeId;
-        console.log('[SidebarTabs] Updated selectedTheme.value.value');
-        
-        // Update media kit store
+        console.log('2. Updating media kit store...');
+        console.log('   - Current theme:', store.theme);
         store.theme = themeId;
-        console.log('[SidebarTabs] Updated store.theme');
+        console.log('   - New theme:', store.theme);
+        console.log('   - SUCCESS');
         
-        // Track change in media kit store
-        if (typeof store._trackChange === 'function') {
-          store._trackChange();
-          console.log('[SidebarTabs] Called store._trackChange()');
-        } else {
-          console.error('[SidebarTabs] store._trackChange is not a function!', typeof store._trackChange);
-        }
+        console.log('3. Calling store._trackChange()...');
+        store._trackChange();
+        console.log('   - SUCCESS');
         
-        // CRITICAL FIX: Update theme store
-        if (typeof themeStore.selectTheme === 'function') {
-          themeStore.selectTheme(themeId);
-          console.log('[SidebarTabs] Called themeStore.selectTheme()');
-        } else {
-          console.error('[SidebarTabs] themeStore.selectTheme is not a function!', typeof themeStore.selectTheme);
-        }
+        console.log('4. Updating theme store...');
+        themeStore.selectTheme(themeId);
+        console.log('   - SUCCESS');
         
-        // Dispatch custom event
+        console.log('5. Updating local selectedTheme ref...');
+        selectedTheme.value.value = themeId;
+        console.log('   - SUCCESS');
+        
+        console.log('6. Dispatching event...');
         document.dispatchEvent(new CustomEvent('gmkb:change-theme', {
           detail: { themeId }
         }));
-        console.log('[SidebarTabs] Dispatched gmkb:change-theme event');
+        console.log('   - SUCCESS');
         
-        console.log('✅ Selected theme successfully:', themeId);
+        console.log('=== THEME SELECTION COMPLETE ===');
+        console.log('✅ Theme changed to:', themeId);
         
-        // Show success toast
-        if (window.showToast) {
-          window.showToast('Theme changed successfully', 'success');
-        }
       } catch (error) {
-        // CRITICAL: Explicit error logging
-        console.error('❌ [SidebarTabs] selectTheme ERROR:', error);
-        console.error('❌ Error name:', error.name);
-        console.error('❌ Error message:', error.message);
-        console.error('❌ Error stack:', error.stack);
-        
-        // Show error to user
-        if (window.showToast) {
-          window.showToast(`Failed to change theme: ${error.message}`, 'error');
-        } else {
-          alert(`Failed to change theme: ${error.message}`);
-        }
-        
-        // Re-throw to ensure Vue error handler also sees it
-        throw error;
+        console.error('=== THEME SELECTION ERROR ===');
+        console.error('❌ Error:', error);
+        console.error('❌ Message:', error.message);
+        console.error('❌ Stack:', error.stack);
+        console.error('=== END ERROR ===');
       }
     };
     
@@ -903,6 +908,9 @@ export default {
     
     return {
       isDarkMode,
+      sidebarMode,
+      editingSectionId,
+      editingComponentId,
       activeTab,
       searchTerm,
       expandedCategories,

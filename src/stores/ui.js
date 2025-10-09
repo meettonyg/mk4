@@ -22,6 +22,13 @@ export const useUIStore = defineStore('ui', {
         editPanelOpen: false,
         designPanelOpen: false,
         
+        // ROOT FIX: Elementor-style sidebar mode
+        sidebarMode: 'default', // 'default' | 'section' | 'component'
+        editingSectionId: null,
+        
+        // DEPRECATED: Old panel-based approach (keep for backwards compatibility during migration)
+        sectionSettingsPanelOpen: false,
+        
         // Modal state
         componentLibraryOpen: false,
         themeCustomizerOpen: false,
@@ -84,7 +91,8 @@ export const useUIStore = defineStore('ui', {
                    state.themeCustomizerOpen || 
                    state.importExportModalOpen ||
                    state.editPanelOpen ||
-                   state.designPanelOpen;
+                   state.designPanelOpen ||
+                   state.sectionSettingsPanelOpen;
         },
         
         // Get active toast count
@@ -144,20 +152,11 @@ export const useUIStore = defineStore('ui', {
             this.hoveredComponentId = null;
         },
         
-        // Editor actions
-        openComponentEditor(componentId) {
-            this.editingComponentId = componentId;
-            this.editPanelOpen = true;
-            this.designPanelOpen = false; // Close design panel
-            
-            document.dispatchEvent(new CustomEvent('gmkb:editor-opened', {
-                detail: { componentId }
-            }));
-        },
-        
+        // DEPRECATED: Old editor actions (kept for backwards compatibility)
+        // Component editing is now handled by openComponentEditor() below in the sidebar section
         closeComponentEditor() {
-            this.editPanelOpen = false;
-            this.editingComponentId = null;
+            console.warn('⚠️ closeComponentEditor is deprecated, use closeSidebarEditor instead');
+            this.closeSidebarEditor();
         },
         
         openDesignPanel(componentId) {
@@ -175,6 +174,70 @@ export const useUIStore = defineStore('ui', {
             if (!this.editPanelOpen) {
                 this.editingComponentId = null;
             }
+        },
+        
+        // ROOT FIX: Elementor-style sidebar editor management
+        openSectionEditor(sectionId) {
+            console.log('🎯 UI Store: Opening section editor in sidebar for:', sectionId);
+            this.sidebarMode = 'section';
+            this.editingSectionId = sectionId;
+            this.editingComponentId = null;
+            
+            // Close old panels (backwards compatibility)
+            this.editPanelOpen = false;
+            this.designPanelOpen = false;
+            this.sectionSettingsPanelOpen = false;
+            
+            console.log('✅ UI Store: Sidebar mode → SECTION');
+            
+            document.dispatchEvent(new CustomEvent('gmkb:section-editor-opened', {
+                detail: { sectionId }
+            }));
+        },
+        
+        openComponentEditor(componentId) {
+            console.log('🎯 UI Store: Opening component editor in sidebar for:', componentId);
+            this.sidebarMode = 'component';
+            this.editingComponentId = componentId;
+            this.editingSectionId = null;
+            
+            // Close old panels (backwards compatibility)
+            this.editPanelOpen = false;
+            this.designPanelOpen = false;
+            this.sectionSettingsPanelOpen = false;
+            
+            console.log('✅ UI Store: Sidebar mode → COMPONENT');
+            
+            document.dispatchEvent(new CustomEvent('gmkb:component-editor-opened', {
+                detail: { componentId }
+            }));
+        },
+        
+        closeSidebarEditor() {
+            console.log('🎯 UI Store: Closing sidebar editor, returning to default');
+            this.sidebarMode = 'default';
+            this.editingSectionId = null;
+            this.editingComponentId = null;
+            
+            // Close old panels (backwards compatibility)
+            this.editPanelOpen = false;
+            this.designPanelOpen = false;
+            this.sectionSettingsPanelOpen = false;
+            
+            console.log('✅ UI Store: Sidebar mode → DEFAULT');
+            
+            document.dispatchEvent(new CustomEvent('gmkb:sidebar-editor-closed'));
+        },
+        
+        // DEPRECATED: Old section settings methods (keep for backwards compatibility)
+        openSectionSettings(sectionId) {
+            console.warn('⚠️ openSectionSettings is deprecated, use openSectionEditor instead');
+            this.openSectionEditor(sectionId);
+        },
+        
+        closeSectionSettings() {
+            console.warn('⚠️ closeSectionSettings is deprecated, use closeSidebarEditor instead');
+            this.closeSidebarEditor();
         },
         
         // Modal actions
@@ -328,9 +391,15 @@ export const useUIStore = defineStore('ui', {
             this.clearSelection();
             this.clearHoveredComponent();
             
+            // ROOT FIX: Reset sidebar to default mode
+            this.sidebarMode = 'default';
+            this.editingSectionId = null;
+            this.editingComponentId = null;
+            
             // Close all panels and modals
             this.editPanelOpen = false;
             this.designPanelOpen = false;
+            this.sectionSettingsPanelOpen = false;
             this.componentLibraryOpen = false;
             this.themeCustomizerOpen = false;
             this.importExportModalOpen = false;
