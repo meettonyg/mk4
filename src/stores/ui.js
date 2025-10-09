@@ -178,10 +178,17 @@ export const useUIStore = defineStore('ui', {
         
         // ROOT FIX: Elementor-style sidebar editor management
         openSectionEditor(sectionId) {
-            console.log('🎯 UI Store: Opening section editor in sidebar for:', sectionId);
+            console.log('🔴🔴🔴 UI STORE: openSectionEditor CALLED 🔴🔴🔴');
+            console.log('   Section ID:', sectionId);
+            console.log('   Current mode:', this.sidebarMode);
+            console.log('   Current editing section:', this.editingSectionId);
+            
             this.sidebarMode = 'section';
             this.editingSectionId = sectionId;
             this.editingComponentId = null;
+            
+            console.log('   ✅ Updated mode to:', this.sidebarMode);
+            console.log('   ✅ Updated editingSectionId to:', this.editingSectionId);
             
             // Close old panels (backwards compatibility)
             this.editPanelOpen = false;
@@ -193,6 +200,7 @@ export const useUIStore = defineStore('ui', {
             document.dispatchEvent(new CustomEvent('gmkb:section-editor-opened', {
                 detail: { sectionId }
             }));
+            console.log('   ✅ Dispatched gmkb:section-editor-opened event');
         },
         
         openComponentEditor(componentId) {
