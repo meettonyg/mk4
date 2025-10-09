@@ -2,6 +2,11 @@
   <div class="gmkb-sidebar" :class="{ 'dark-mode': isDarkMode }">
     <!-- ROOT FIX: Elementor-style dynamic sidebar content -->
     
+    <!-- DEBUG: Show current mode -->
+    <div v-if="true" style="position: fixed; top: 0; right: 0; background: red; color: white; padding: 4px 8px; z-index: 999999; font-size: 11px;">
+      Mode: {{ sidebarMode }} | Section: {{ editingSectionId }} | Component: {{ editingComponentId }}
+    </div>
+    
     <!-- DEFAULT MODE: Show tabs -->
     <template v-if="sidebarMode === 'default'">
     <!-- Tab Navigation -->
@@ -466,7 +471,7 @@
 </template>
 
 <script>
-import { ref, computed, inject, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, inject, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useMediaKitStore } from '../../../stores/mediaKit';
 import { useUIStore } from '../../../stores/ui';
 import { useThemeStore } from '../../../stores/theme';
@@ -487,6 +492,19 @@ export default {
     const sidebarMode = computed(() => uiStore.sidebarMode);
     const editingSectionId = computed(() => uiStore.editingSectionId);
     const editingComponentId = computed(() => uiStore.editingComponentId);
+    
+    // DEBUG: Watch sidebar mode changes
+    watch(sidebarMode, (newMode, oldMode) => {
+      console.log('🔄 SidebarTabs: Mode changed from', oldMode, 'to', newMode);
+    });
+    
+    watch(editingSectionId, (newId) => {
+      console.log('🔄 SidebarTabs: Editing section ID:', newId);
+    });
+    
+    watch(editingComponentId, (newId) => {
+      console.log('🔄 SidebarTabs: Editing component ID:', newId);
+    });
     
     // State
     const activeTab = ref('components');

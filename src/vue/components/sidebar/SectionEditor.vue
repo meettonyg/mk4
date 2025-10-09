@@ -175,12 +175,19 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, watch } from 'vue'
+import { ref, computed, reactive, watch, onMounted } from 'vue'
 import { useMediaKitStore } from '@/stores/mediaKit'
 import { useUIStore } from '@/stores/ui'
 
 const store = useMediaKitStore()
 const uiStore = useUIStore()
+
+// DEBUG: Log when component mounts
+onMounted(() => {
+  console.log('✅ SectionEditor: Component MOUNTED');
+  console.log('   - sectionId:', sectionId.value);
+  console.log('   - section:', section.value);
+});
 
 // Active tab
 const activeTab = ref('layout')
@@ -230,11 +237,19 @@ const settings = reactive({})
 
 // Watch section changes and update settings
 watch(section, (newSection) => {
+  console.log('🔄 SectionEditor: Section changed:', newSection);
   if (newSection && newSection.settings) {
     Object.assign(settings, newSection.settings)
     console.log('✅ SectionEditor: Settings loaded for section:', sectionId.value)
+  } else {
+    console.warn('⚠️ SectionEditor: Section has no settings:', newSection);
   }
 }, { immediate: true })
+
+// Watch sectionId
+watch(sectionId, (newId) => {
+  console.log('🎯 SectionEditor: Editing section ID changed to:', newId);
+}, { immediate: true });
 
 // Update individual setting
 function updateSetting(key, value) {

@@ -52,7 +52,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useMediaKitStore } from '@/stores/mediaKit'
 import { useUIStore } from '@/stores/ui'
 import GenericComponentEditor from './GenericComponentEditor.vue'
@@ -66,6 +66,22 @@ const props = defineProps({
 
 const store = useMediaKitStore()
 const uiStore = useUIStore()
+
+// DEBUG: Log when component mounts
+onMounted(() => {
+  console.log('✅ ComponentEditor: Component MOUNTED');
+  console.log('   - componentId:', props.componentId);
+  console.log('   - component:', component.value);
+});
+
+// DEBUG: Watch component
+watch(() => props.componentId, (newId) => {
+  console.log('🎯 ComponentEditor: Component ID changed to:', newId);
+}, { immediate: true });
+
+watch(component, (newComp) => {
+  console.log('🔄 ComponentEditor: Component data:', newComp);
+}, { immediate: true });
 
 // Active tab
 const activeTab = ref('content')
