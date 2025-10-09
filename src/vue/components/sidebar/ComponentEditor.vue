@@ -52,7 +52,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, defineAsyncComponent } from 'vue'
 import { useMediaKitStore } from '../../../stores/mediaKit'
 import { useUIStore } from '../../../stores/ui'
 import GenericComponentEditor from './GenericComponentEditor.vue'
@@ -94,22 +94,58 @@ const componentTypeName = computed(() => {
 
 // Dynamically load component-specific editor
 const editorComponent = computed(() => {
-  // ROOT FIX: For now, always use GenericComponentEditor
-  // Component-specific editors can be added later one by one
-  return null
+  if (!component.value?.type) return null
   
-  // TODO: Add component-specific editors as they're created:
-  // if (!component.value?.type) return null
-  // 
-  // const componentType = component.value.type
-  // 
-  // const editorMap = {
-  //   'hero': markRaw(defineAsyncComponent(() =>
-  //     import('../../../components/hero/HeroEditor.vue')
-  //   ))
-  // }
-  // 
-  // return editorMap[componentType] || null
+  const componentType = component.value.type
+  
+  // Convert kebab-case to PascalCase (e.g., 'hero' → 'Hero', 'guest-intro' → 'GuestIntro')
+  const pascalCase = componentType
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join('')
+  
+  // Map component types to their editor paths
+  const editorMap = {
+    'hero': () => import(`../../../../components/hero/HeroEditor.vue`),
+    'biography': () => import(`../../../../components/biography/BiographyEditor.vue`),
+    'topics': () => import(`../../../../components/topics/TopicsEditor.vue`),
+    'contact': () => import(`../../../../components/contact/ContactEditor.vue`),
+    'guest-intro': () => import(`../../../../components/guest-intro/GuestIntroEditor.vue`),
+    'authority-hook': () => import(`../../../../components/authority-hook/AuthorityHookEditor.vue`),
+    'stats': () => import(`../../../../components/stats/StatsEditor.vue`),
+    'social': () => import(`../../../../components/social/SocialEditor.vue`),
+    'questions': () => import(`../../../../components/questions/QuestionsEditor.vue`),
+    'testimonials': () => import(`../../../../components/testimonials/TestimonialsEditor.vue`),
+    'call-to-action': () => import(`../../../../components/call-to-action/CallToActionEditor.vue`),
+    'video-intro': () => import(`../../../../components/video-intro/VideoIntroEditor.vue`),
+    'podcast-player': () => import(`../../../../components/podcast-player/PodcastPlayerEditor.vue`),
+    'photo-gallery': () => import(`../../../../components/photo-gallery/PhotoGalleryEditor.vue`),
+    'logo-grid': () => import(`../../../../components/logo-grid/LogoGridEditor.vue`),
+    'booking-calendar': () => import(`../../../../components/booking-calendar/BookingCalendarEditor.vue`),
+    'topics-questions': () => import(`../../../../components/topics-questions/TopicsQuestionsEditor.vue`)
+  }
+  
+  // Return the editor loader if it exists
+  if (editorMap[componentType]) {
+    console.log(`✅ Loading component-specific editor for: ${componentType}`);
+    return defineAsyncComponent({
+      loader: editorMap[componentType],
+      loadingComponent: null,
+      errorComponent: null,
+      delay: 0,
+      timeout: 3000,
+      suspensible: false,
+      onError(error, retry, fail, attempts) {
+        console.error(`❌ Failed to load editor for ${componentType}:`, error);
+        console.log(`🔄 Falling back to GenericComponentEditor`);
+        // Don't retry, just fall back to generic editor
+        fail();
+      }
+    })
+  }
+  
+  console.log(`⚠️ No specific editor found for: ${componentType}, using GenericComponentEditor`);
+  return null
 })
 
 // DEBUG: Log when component mounts
