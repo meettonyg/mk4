@@ -606,11 +606,35 @@ export const useMediaKitStore = defineStore('mediaKit', {
       const defaultProps = UnifiedComponentRegistry.getDefaultProps(componentData.type);
       const componentSchema = registryComponent.schema || null;
       
-      // PHASE 2: Create component with proper structure AND default settings schema
-      // CRITICAL: Always merge with defaults to ensure complete settings structure
-      const componentSettings = componentData.settings ?
-        mergeWithDefaults(componentData.settings) :
-        getComponentDefaults(componentData.type);
+      // THEME INTEGRATION: Get active theme's default preset
+      // Import getPreset and applyPresetToSettings dynamically
+      let componentSettings;
+      if (componentData.settings) {
+        // User provided settings - use them
+        componentSettings = mergeWithDefaults(componentData.settings);
+      } else {
+        // No settings provided - use theme's default preset
+        const themeStore = window.$pinia?.state?.value?.theme;
+        const activeTheme = themeStore?.activeTheme;
+        const defaultPresetId = activeTheme?.defaultPreset || 'modern';
+        
+        // Get base defaults
+        const baseSettings = getComponentDefaults(componentData.type);
+        
+        // Apply theme's default preset if available
+        if (window.stylePresets) {
+          const { getPreset, applyPresetToSettings } = window.stylePresets;
+          const preset = getPreset(defaultPresetId);
+          if (preset) {
+            componentSettings = applyPresetToSettings(baseSettings, defaultPresetId);
+            console.log(`✅ Applied "${preset.name}" preset from "${activeTheme?.name || 'current'}" theme to new ${componentData.type}`);
+          } else {
+            componentSettings = baseSettings;
+          }
+        } else {
+          componentSettings = baseSettings;
+        }
+      }
       
       const component = {
         id: componentId,

@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "A sleek dark theme with high contrast and modern aesthetics",
   "preview_image": "modern-dark-preview.jpg",
+  "defaultPreset": "modern",
   "typography": {
     "primary_font": {
       "family": "SF Pro Display, -apple-system, BlinkMacSystemFont, sans-serif",

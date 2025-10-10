@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "A vibrant, bold theme for creative professionals and artists",
   "preview_image": "creative-bold-preview.jpg",
+  "defaultPreset": "bold",
   "typography": {
     "primary_font": {
       "family": "Poppins, sans-serif",

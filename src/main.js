@@ -265,6 +265,11 @@ async function initializeVue() {
     window.GMKB.stores.ui = uiStore;
     window.GMKB.stores.pinia = pinia;
       
+    // THEME INTEGRATION: Import and expose stylePresets
+    const stylePresetsModule = await import('./utils/stylePresets.js');
+    window.stylePresets = stylePresetsModule;
+    console.log('✅ Style presets module exposed globally');
+    
     // Services
     window.GMKB.services = {
       api: apiService,
@@ -276,7 +281,8 @@ async function initializeVue() {
       console: ConsoleAPI,
       pods: podsDataIntegration,
       registry: UnifiedComponentRegistry,
-      componentStyle: componentStyleService
+      componentStyle: componentStyleService,
+      stylePresets: stylePresetsModule
     };
     
     // Utility functions
