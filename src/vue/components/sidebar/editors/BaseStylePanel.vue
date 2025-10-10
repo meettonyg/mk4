@@ -341,11 +341,22 @@ const updateSpacing = (type, value) => {
   } else {
     const component = store.components[props.componentId];
     if (component) {
-      component.settings.style.spacing[type] = value;
-      store.updateComponent(props.componentId, { settings: component.settings });
+      // CRITICAL FIX: Create new settings object instead of mutating
+      const newSettings = {
+        ...component.settings,
+        style: {
+          ...component.settings.style,
+          spacing: {
+            ...component.settings.style.spacing,
+            [type]: value
+          }
+        }
+      };
+      
+      store.updateComponent(props.componentId, { settings: newSettings });
       
       // Apply styles immediately to live preview
-      componentStyleService.applyStyling(props.componentId, component.settings);
+      componentStyleService.applyStyling(props.componentId, newSettings);
     }
   }
 };
@@ -366,10 +377,21 @@ const updateBackground = (property, value) => {
   } else {
     const component = store.components[props.componentId];
     if (component) {
-      component.settings.style.background[property] = value;
-      store.updateComponent(props.componentId, { settings: component.settings });
+      // CRITICAL FIX: Create new settings object instead of mutating
+      const newSettings = {
+        ...component.settings,
+        style: {
+          ...component.settings.style,
+          background: {
+            ...component.settings.style.background,
+            [property]: value
+          }
+        }
+      };
       
-      componentStyleService.applyStyling(props.componentId, component.settings);
+      store.updateComponent(props.componentId, { settings: newSettings });
+      
+      componentStyleService.applyStyling(props.componentId, newSettings);
     }
   }
 };
@@ -393,13 +415,21 @@ const updateTypography = (updates) => {
   } else {
     const component = store.components[props.componentId];
     if (component) {
-      component.settings.style.typography = {
-        ...component.settings.style.typography,
-        ...updates
+      // CRITICAL FIX: Create new settings object instead of mutating
+      const newSettings = {
+        ...component.settings,
+        style: {
+          ...component.settings.style,
+          typography: {
+            ...component.settings.style.typography,
+            ...updates
+          }
+        }
       };
-      store.updateComponent(props.componentId, { settings: component.settings });
       
-      componentStyleService.applyStyling(props.componentId, component.settings);
+      store.updateComponent(props.componentId, { settings: newSettings });
+      
+      componentStyleService.applyStyling(props.componentId, newSettings);
     }
   }
 };
@@ -421,10 +451,24 @@ const updateBorderWidth = (side, value) => {
   } else {
     const component = store.components[props.componentId];
     if (component) {
-      component.settings.style.border.width[side] = value;
-      store.updateComponent(props.componentId, { settings: component.settings });
+      // CRITICAL FIX: Create new settings object instead of mutating
+      const newSettings = {
+        ...component.settings,
+        style: {
+          ...component.settings.style,
+          border: {
+            ...component.settings.style.border,
+            width: {
+              ...component.settings.style.border.width,
+              [side]: value
+            }
+          }
+        }
+      };
       
-      componentStyleService.applyStyling(props.componentId, component.settings);
+      store.updateComponent(props.componentId, { settings: newSettings });
+      
+      componentStyleService.applyStyling(props.componentId, newSettings);
     }
   }
 };
@@ -445,10 +489,21 @@ const updateBorder = (property, value) => {
   } else {
     const component = store.components[props.componentId];
     if (component) {
-      component.settings.style.border[property] = value;
-      store.updateComponent(props.componentId, { settings: component.settings });
+      // CRITICAL FIX: Create new settings object instead of mutating
+      const newSettings = {
+        ...component.settings,
+        style: {
+          ...component.settings.style,
+          border: {
+            ...component.settings.style.border,
+            [property]: value
+          }
+        }
+      };
       
-      componentStyleService.applyStyling(props.componentId, component.settings);
+      store.updateComponent(props.componentId, { settings: newSettings });
+      
+      componentStyleService.applyStyling(props.componentId, newSettings);
     }
   }
 };
@@ -475,16 +530,27 @@ const updateBorderRadius = (value) => {
   } else {
     const component = store.components[props.componentId];
     if (component) {
-      component.settings.style.border.radius = {
-        topLeft: value,
-        topRight: value,
-        bottomRight: value,
-        bottomLeft: value,
-        unit: 'px'
+      // CRITICAL FIX: Create new settings object instead of mutating
+      const newSettings = {
+        ...component.settings,
+        style: {
+          ...component.settings.style,
+          border: {
+            ...component.settings.style.border,
+            radius: {
+              topLeft: value,
+              topRight: value,
+              bottomRight: value,
+              bottomLeft: value,
+              unit: 'px'
+            }
+          }
+        }
       };
-      store.updateComponent(props.componentId, { settings: component.settings });
       
-      componentStyleService.applyStyling(props.componentId, component.settings);
+      store.updateComponent(props.componentId, { settings: newSettings });
+      
+      componentStyleService.applyStyling(props.componentId, newSettings);
     }
   }
 };
@@ -505,10 +571,21 @@ const updateEffect = (property, value) => {
   } else {
     const component = store.components[props.componentId];
     if (component) {
-      component.settings.style.effects[property] = value;
-      store.updateComponent(props.componentId, { settings: component.settings });
+      // CRITICAL FIX: Create new settings object instead of mutating
+      const newSettings = {
+        ...component.settings,
+        style: {
+          ...component.settings.style,
+          effects: {
+            ...component.settings.style.effects,
+            [property]: value
+          }
+        }
+      };
       
-      componentStyleService.applyStyling(props.componentId, component.settings);
+      store.updateComponent(props.componentId, { settings: newSettings });
+      
+      componentStyleService.applyStyling(props.componentId, newSettings);
     }
   }
 };

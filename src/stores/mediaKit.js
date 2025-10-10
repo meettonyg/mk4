@@ -724,6 +724,28 @@ export const useMediaKitStore = defineStore('mediaKit', {
       }
       
       if (this.components[componentId]) {
+        // CRITICAL FIX: If updating settings, ensure proper structure
+        if (updates.settings) {
+          // Validate settings structure
+          if (Array.isArray(updates.settings) || typeof updates.settings !== 'object') {
+            console.warn(`⚠️ updateComponent: Invalid settings provided for ${componentId}, using defaults`);
+            updates.settings = getComponentDefaults(this.components[componentId].type || 'generic');
+          } else {
+            // Merge with existing settings to preserve structure
+            const currentSettings = this.components[componentId].settings || {};
+            updates.settings = {
+              style: {
+                ...currentSettings.style,
+                ...updates.settings.style
+              },
+              advanced: {
+                ...currentSettings.advanced,
+                ...updates.settings.advanced
+              }
+            };
+          }
+        }
+        
         this.components[componentId] = {
           ...this.components[componentId],
           ...updates
@@ -912,8 +934,29 @@ export const useMediaKitStore = defineStore('mediaKit', {
         if (Array.isArray(savedState.components)) {
           this.components = {};
         } else {
-          // Direct assignment - components should be treated as immutable
-          this.components = savedState.components;
+          // CRITICAL FIX: Validate and fix component settings on load
+          const validatedComponents = {};
+          Object.entries(savedState.components).forEach(([id, component]) => {
+            // Ensure component has valid settings structure
+            if (!component.settings || Array.isArray(component.settings) || typeof component.settings !== 'object') {
+              console.warn(`⚠️ Component ${id} has invalid settings, applying defaults`);
+              component.settings = getComponentDefaults(component.type || 'generic');
+            } else {
+              // Ensure settings has style and advanced properties
+              if (!component.settings.style) {
+                const defaults = getComponentDefaults(component.type || 'generic');
+                component.settings.style = defaults.style;
+              }
+              if (!component.settings.advanced) {
+                const defaults = getComponentDefaults(component.type || 'generic');
+                component.settings.advanced = defaults.advanced;
+              }
+              // Merge with defaults to ensure all nested properties exist
+              component.settings = mergeWithDefaults(component.settings);
+            }
+            validatedComponents[id] = component;
+          });
+          this.components = validatedComponents;
         }
       }
       
