@@ -21,11 +21,12 @@
         >
           <!-- Section Header with Controls - Shows on hover only -->
           <div class="gmkb-section__header">
-            <div class="section-handle">
-              <span class="handle-icon">⋮⋮</span>
-              <span class="section-type">{{ getSectionLabel(section.type) }}</span>
-            </div>
-            <div class="section-controls">
+            <div class="gmkb-section__header-bar">
+              <div class="section-handle">
+                <span class="handle-icon">⋮⋮</span>
+                <span class="section-type">{{ getSectionLabel(section.type) }}</span>
+              </div>
+              <div class="section-controls">
               <button 
                 @click.stop="moveSection(index, -1)"
                 class="control-btn"
@@ -63,6 +64,7 @@
               >
                 <span>🗑️</span>
               </button>
+              </div>
             </div>
           </div>
 
@@ -920,13 +922,36 @@ onUnmounted(() => {
   background: rgba(59, 130, 246, 0.05);
 }
 
-/* Section Header */
+/* Section Header - appears on hover like ComponentControls */
 .gmkb-section__header {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+  pointer-events: none;
+}
+
+.gmkb-section__header-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 8px 12px;
+  background: white;
+  border: 1px solid var(--gmkb-color-primary, #4a90e2);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  pointer-events: all;
+}
+
+/* Show header on section hover */
+.gmkb-section:hover .gmkb-section__header,
+.gmkb-section--active .gmkb-section__header {
+  opacity: 1;
+  visibility: visible;
 }
 
 .section-handle {
@@ -934,50 +959,43 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   cursor: move;
+  user-select: none;
 }
 
 .handle-icon {
-  color: #64748b;
-  font-size: 16px;
+  color: var(--gmkb-color-text-muted, #999);
+  font-size: 14px;
 }
 
 .section-type {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  color: #94a3b8;
+  color: var(--gmkb-color-primary, #4a90e2);
+  padding: 0 8px;
 }
 
 .section-controls {
   display: flex;
-  gap: 4px;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s, visibility 0.2s;
-}
-
-/* Show controls on section hover (like ComponentWrapper) */
-.gmkb-section:hover .section-controls,
-.gmkb-section--active .section-controls {
-  opacity: 1;
-  visibility: visible;
+  gap: 2px;
+  align-items: center;
 }
 
 .control-btn {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  border: none;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s;
+  color: var(--gmkb-color-text, #333);
 }
 
 .control-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--gmkb-color-surface, #f5f5f5);
 }
 
 .control-btn:disabled {
@@ -985,9 +1003,9 @@ onUnmounted(() => {
   cursor: not-allowed;
 }
 
-.control-btn--delete:hover {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.4);
+.control-btn--delete:hover:not(:disabled) {
+  background: #fee;
+  color: #dc3545;
 }
 
 /* Section Content - padding controlled by inline styles from getColumnStyles */
