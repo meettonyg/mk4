@@ -76,46 +76,60 @@ class ComponentStyleService {
 
     const rules = [];
 
-    // Base selector
-    const selector = `[data-component-id="${componentId}"]`;
+    // CRITICAL FIX: Target the INNER CONTENT containers, not wrapper
+    // These are where the actual visible content and background appears
+    const wrapperSelector = `[data-component-id="${componentId}"]`;
+    const contentSelector = `[data-component-id="${componentId}"] .biography-container,
+                            [data-component-id="${componentId}"] .biography-content,
+                            [data-component-id="${componentId}"] .hero-container,
+                            [data-component-id="${componentId}"] .hero-content,
+                            [data-component-id="${componentId}"] .topics-container,
+                            [data-component-id="${componentId}"] .topics-grid,
+                            [data-component-id="${componentId}"] .stats-container,
+                            [data-component-id="${componentId}"] .stats-grid,
+                            [data-component-id="${componentId}"] .contact-container,
+                            [data-component-id="${componentId}"] .contact-content,
+                            [data-component-id="${componentId}"] .guest-intro-container,
+                            [data-component-id="${componentId}"] .authority-hook-container`;
 
     // Build CSS rules
-    const baseRules = [];
+    const wrapperRules = []; // For margin only
+    const contentRules = []; // For background, padding, border, etc.
 
-    // Spacing (margin & padding)
+    // Spacing (margin & padding) - Apply strategically
     if (style.spacing) {
       if (style.spacing.margin) {
         const m = style.spacing.margin;
-        baseRules.push(`margin: ${m.top}${m.unit} ${m.right}${m.unit} ${m.bottom}${m.unit} ${m.left}${m.unit}`);
+        wrapperRules.push(`margin: ${m.top}${m.unit} ${m.right}${m.unit} ${m.bottom}${m.unit} ${m.left}${m.unit}`);
       }
       if (style.spacing.padding) {
         const p = style.spacing.padding;
-        baseRules.push(`padding: ${p.top}${p.unit} ${p.right}${p.unit} ${p.bottom}${p.unit} ${p.left}${p.unit}`);
+        contentRules.push(`padding: ${p.top}${p.unit} ${p.right}${p.unit} ${p.bottom}${p.unit} ${p.left}${p.unit}`);
       }
     }
 
-    // Background
+    // Background - Apply to content area for visibility
     if (style.background) {
       if (style.background.color) {
-        baseRules.push(`background-color: ${style.background.color}`);
+        contentRules.push(`background-color: ${style.background.color} !important`);
       }
       if (style.background.opacity !== undefined && style.background.opacity !== 100) {
-        baseRules.push(`opacity: ${style.background.opacity / 100}`);
+        contentRules.push(`opacity: ${style.background.opacity / 100}`);
       }
     }
 
-    // Typography (if present)
+    // Typography (if present) - Apply to content
     if (style.typography) {
       const t = style.typography;
-      if (t.fontFamily) baseRules.push(`font-family: ${t.fontFamily}`);
-      if (t.fontSize) baseRules.push(`font-size: ${t.fontSize.value}${t.fontSize.unit}`);
-      if (t.fontWeight) baseRules.push(`font-weight: ${t.fontWeight}`);
-      if (t.lineHeight) baseRules.push(`line-height: ${t.lineHeight}`);
-      if (t.color) baseRules.push(`color: ${t.color}`);
-      if (t.textAlign) baseRules.push(`text-align: ${t.textAlign}`);
+      if (t.fontFamily) contentRules.push(`font-family: ${t.fontFamily}`);
+      if (t.fontSize) contentRules.push(`font-size: ${t.fontSize.value}${t.fontSize.unit}`);
+      if (t.fontWeight) contentRules.push(`font-weight: ${t.fontWeight}`);
+      if (t.lineHeight) contentRules.push(`line-height: ${t.lineHeight}`);
+      if (t.color) contentRules.push(`color: ${t.color}`);
+      if (t.textAlign) contentRules.push(`text-align: ${t.textAlign}`);
     }
 
-    // Border
+    // Border - Apply to content
     if (style.border) {
       const b = style.border;
       
@@ -123,38 +137,38 @@ class ComponentStyleService {
       if (b.width) {
         const hasWidth = b.width.top || b.width.right || b.width.bottom || b.width.left;
         if (hasWidth) {
-          baseRules.push(`border-width: ${b.width.top}${b.width.unit} ${b.width.right}${b.width.unit} ${b.width.bottom}${b.width.unit} ${b.width.left}${b.width.unit}`);
-          if (b.color) baseRules.push(`border-color: ${b.color}`);
-          if (b.style) baseRules.push(`border-style: ${b.style}`);
+          contentRules.push(`border-width: ${b.width.top}${b.width.unit} ${b.width.right}${b.width.unit} ${b.width.bottom}${b.width.unit} ${b.width.left}${b.width.unit}`);
+          if (b.color) contentRules.push(`border-color: ${b.color}`);
+          if (b.style) contentRules.push(`border-style: ${b.style}`);
         }
       }
       
       // Border radius
       if (b.radius) {
-        baseRules.push(`border-radius: ${b.radius.topLeft}${b.radius.unit} ${b.radius.topRight}${b.radius.unit} ${b.radius.bottomRight}${b.radius.unit} ${b.radius.bottomLeft}${b.radius.unit}`);
+        contentRules.push(`border-radius: ${b.radius.topLeft}${b.radius.unit} ${b.radius.topRight}${b.radius.unit} ${b.radius.bottomRight}${b.radius.unit} ${b.radius.bottomLeft}${b.radius.unit}`);
       }
     }
 
-    // Effects
+    // Effects - Apply to content
     if (style.effects) {
       if (style.effects.boxShadow && style.effects.boxShadow !== 'none') {
-        baseRules.push(`box-shadow: ${style.effects.boxShadow}`);
+        contentRules.push(`box-shadow: ${style.effects.boxShadow}`);
       }
       if (style.effects.opacity !== undefined && style.effects.opacity !== 100) {
-        baseRules.push(`opacity: ${style.effects.opacity / 100}`);
+        contentRules.push(`opacity: ${style.effects.opacity / 100}`);
       }
     }
 
-    // Advanced - Layout
+    // Advanced - Layout (apply to wrapper)
     if (advanced.layout) {
       const layout = advanced.layout;
       
       // Width
       if (layout.width) {
         if (layout.width.type === 'full') {
-          baseRules.push('width: 100%');
+          wrapperRules.push('width: 100%');
         } else if (layout.width.type === 'custom') {
-          baseRules.push(`width: ${layout.width.value}${layout.width.unit}`);
+          wrapperRules.push(`width: ${layout.width.value}${layout.width.unit}`);
         }
         // 'auto' doesn't need explicit CSS
       }
@@ -162,18 +176,24 @@ class ComponentStyleService {
       // Alignment
       if (layout.alignment) {
         if (layout.alignment === 'center') {
-          baseRules.push('margin-left: auto');
-          baseRules.push('margin-right: auto');
+          wrapperRules.push('margin-left: auto');
+          wrapperRules.push('margin-right: auto');
         } else if (layout.alignment === 'right') {
-          baseRules.push('margin-left: auto');
+          wrapperRules.push('margin-left: auto');
         }
         // 'left' is default
       }
     }
 
-    // Build main rule
-    if (baseRules.length > 0) {
-      rules.push(`${selector} { ${baseRules.join('; ')}; }`);
+    // Build final CSS rules
+    // Apply wrapper rules (margin, width, alignment)
+    if (wrapperRules.length > 0) {
+      rules.push(`${wrapperSelector} { ${wrapperRules.join('; ')}; }`);
+    }
+    
+    // Apply content rules (background, padding, border, typography, effects)
+    if (contentRules.length > 0) {
+      rules.push(`${contentSelector} { ${contentRules.join('; ')}; }`);
     }
 
     // Responsive visibility
@@ -182,17 +202,17 @@ class ComponentStyleService {
       
       // Mobile (max-width: 767px)
       if (resp.hideOnMobile) {
-        rules.push(`@media (max-width: 767px) { ${selector} { display: none !important; } }`);
+        rules.push(`@media (max-width: 767px) { ${wrapperSelector} { display: none !important; } }`);
       }
       
       // Tablet (768px - 1024px)
       if (resp.hideOnTablet) {
-        rules.push(`@media (min-width: 768px) and (max-width: 1024px) { ${selector} { display: none !important; } }`);
+        rules.push(`@media (min-width: 768px) and (max-width: 1024px) { ${wrapperSelector} { display: none !important; } }`);
       }
       
       // Desktop (min-width: 1025px)
       if (resp.hideOnDesktop) {
-        rules.push(`@media (min-width: 1025px) { ${selector} { display: none !important; } }`);
+        rules.push(`@media (min-width: 1025px) { ${wrapperSelector} { display: none !important; } }`);
       }
     }
 
