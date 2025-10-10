@@ -19,13 +19,13 @@
           @mouseenter="hoveredSection = section.section_id"
           @mouseleave="hoveredSection = null"
         >
-          <!-- Section Header with Controls - ROOT FIX: Enhanced visibility -->
+          <!-- Section Header with Controls - Shows on hover only -->
           <div class="gmkb-section__header">
             <div class="section-handle">
               <span class="handle-icon">⋮⋮</span>
               <span class="section-type">{{ getSectionLabel(section.type) }}</span>
             </div>
-            <div class="section-controls" :class="{ 'force-visible': showControls }">
+            <div class="section-controls">
               <button 
                 @click.stop="moveSection(index, -1)"
                 class="control-btn"
@@ -343,7 +343,6 @@ const editingSectionId = ref(null);
 
 // Reactive state
 const hoveredSection = ref(null);
-const showControls = ref(true); // ROOT FIX: Always show controls for now
 const sections = computed({
   get: () => store.sections,
   set: (value) => {
@@ -838,11 +837,6 @@ onUnmounted(() => {
   flex-direction: column;
 }
 
-.force-visible {
-  opacity: 1 !important;
-  visibility: visible !important;
-}
-
 /* Toolbar */
 .gmkb-section-toolbar {
   display: flex;
@@ -917,13 +911,6 @@ onUnmounted(() => {
   background: rgba(59, 130, 246, 0.05);
 }
 
-/* ROOT FIX: Always show controls on hover */
-.gmkb-section:hover .section-controls,
-.gmkb-section__header:hover .section-controls {
-  opacity: 1 !important;
-  visibility: visible !important;
-}
-
 /* Section Header */
 .gmkb-section__header {
   display: flex;
@@ -959,10 +946,9 @@ onUnmounted(() => {
   transition: opacity 0.2s, visibility 0.2s;
 }
 
-/* ROOT FIX: Show controls on section or header hover */
+/* Show controls on section hover (like ComponentWrapper) */
 .gmkb-section:hover .section-controls,
-.section-controls:hover,
-.section-controls.force-visible {
+.gmkb-section--active .section-controls {
   opacity: 1;
   visibility: visible;
 }
