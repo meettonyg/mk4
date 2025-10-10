@@ -11,17 +11,17 @@ export const DEFAULT_SETTINGS = {
   style: {
     spacing: {
       margin: {
-        top: 0,
+        top: 32,
         right: 0,
-        bottom: 0,
+        bottom: 32,
         left: 0,
         unit: 'px'
       },
       padding: {
-        top: 0,
-        right: 0,
-        bottom: 0,
-        left: 0,
+        top: 40,
+        right: 20,
+        bottom: 40,
+        left: 20,
         unit: 'px'
       }
     },
@@ -30,14 +30,17 @@ export const DEFAULT_SETTINGS = {
       opacity: 100
     },
     typography: {
-      fontFamily: 'inherit',
+      fontFamily: 'system-ui, -apple-system, sans-serif',
       fontSize: {
         value: 16,
         unit: 'px'
       },
-      fontWeight: 400,
-      lineHeight: 1.5,
-      color: '#000000',
+      fontWeight: '400',
+      lineHeight: {
+        value: 1.6,
+        unit: 'unitless'
+      },
+      color: '#1e293b',
       textAlign: 'left'
     },
     border: {
@@ -48,18 +51,18 @@ export const DEFAULT_SETTINGS = {
         left: 0,
         unit: 'px'
       },
-      color: '#000000',
+      color: '#e5e7eb',
       style: 'solid',
       radius: {
-        topLeft: 0,
-        topRight: 0,
-        bottomRight: 0,
-        bottomLeft: 0,
+        topLeft: 8,
+        topRight: 8,
+        bottomRight: 8,
+        bottomLeft: 8,
         unit: 'px'
       }
     },
     effects: {
-      boxShadow: 'none',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
       opacity: 100
     }
   },

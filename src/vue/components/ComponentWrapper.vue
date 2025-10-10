@@ -16,29 +16,61 @@
       :total-components="totalComponents"
     />
     
-    <div class="component-wrapper__content">
-      <ComponentRenderer
-        v-if="component"
-        :component-id="componentId || component.id"
-        :component="component"
-        :section-id="sectionId"
-        :is-editing="isEditing"
-        :is-selected="isSelected"
-      />
-      
-      <div v-else class="component-placeholder">
-        <span class="placeholder-icon">⚠️</span>
-        <span>Component not found: {{ componentId }}</span>
-      </div>
+    <!-- V2 ARCHITECTURE: Direct Component Rendering - NO INTERMEDIATE LAYERS -->
+    <component
+      v-if="component && componentMap[component.type]"
+      :is="componentMap[component.type]"
+      :key="componentId || component.id"
+      :component-id="componentId || component.id"
+      :data="component.data"
+      :props="component.props"
+      :settings="component.settings"
+      :is-editing="isEditing"
+      :is-selected="isSelected"
+      class="component-root"
+      :class="`${component.type}-component`"
+    />
+    
+    <!-- Fallback for unknown component or missing component -->
+    <div v-else class="component-placeholder">
+      <span class="placeholder-icon">⚠️</span>
+      <span v-if="!component">Component not found: {{ componentId }}</span>
+      <span v-else>Unknown component type: {{ component.type }}</span>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, defineAsyncComponent } from 'vue'
 import { useMediaKitStore } from '@/stores/mediaKit'
-import ComponentRenderer from './ComponentRenderer.vue'
 import ComponentControls from './builder/ComponentControls.vue'
+
+// Import all component types directly
+// Using @components alias defined in vite.config.js
+const componentMap = {
+  'biography': defineAsyncComponent(() => 
+    import('@components/biography/Biography.vue')
+  ),
+  'hero': defineAsyncComponent(() => 
+    import('@components/hero/Hero.vue')
+  ),
+  'guest-intro': defineAsyncComponent(() => 
+    import('@components/guest-intro/GuestIntro.vue')
+  ),
+  // These components only have Renderer files for now
+  'topics': defineAsyncComponent(() => 
+    import('@components/topics/TopicsRenderer.vue')
+  ),
+  'stats': defineAsyncComponent(() => 
+    import('@components/stats/StatsRenderer.vue')
+  ),
+  'contact': defineAsyncComponent(() => 
+    import('@components/contact/ContactRenderer.vue')
+  ),
+  'authority-hook': defineAsyncComponent(() => 
+    import('@components/authority-hook/AuthorityHookRenderer.vue')
+  )
+}
 
 const props = defineProps({
   // Support both ways of passing component data for compatibility
@@ -131,11 +163,7 @@ function onMouseLeave() {
   position: relative;
   transition: all 0.3s ease;
   border-radius: var(--radius-md, 6px);
-  margin-bottom: var(--spacing-md, 16px);
-}
-
-.component-wrapper:last-child {
-  margin-bottom: 0;
+  /* Margin applied via inline styles from ComponentStyleService */
 }
 
 .component-wrapper:first-child {
@@ -157,10 +185,11 @@ function onMouseLeave() {
   outline-offset: 2px;
 }
 
-/* Component content */
-.component-wrapper__content {
-  position: relative;
-  background: white;
+/* V2 ARCHITECTURE: Component root handles all visual styles */
+.component-root {
+  /* All styling applied via inline styles from ComponentStyleService */
+  /* Background, padding, border, typography, effects, etc. */
+  display: block;
   border-radius: 8px;
   overflow: hidden;
 }
