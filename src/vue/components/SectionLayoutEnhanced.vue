@@ -707,26 +707,35 @@ const getSectionStyles = (section) => {
 
 // Get column gap styles
 const getColumnStyles = (section) => {
+  const styles = {};
+  
   // Support both 'gap' and 'columnGap' keys for backwards compatibility
   const gapValue = section.settings?.columnGap || section.settings?.gap;
   
-  if (gapValue) {
-    // Map semantic tokens to actual pixel values
-    const gapMap = {
-      'small': '12px',
-      'medium': '24px',
-      'large': '40px',
-      'none': '0px'
-    };
-    
-    // If it's a semantic token, map it; otherwise treat as px value
-    const mappedGap = gapMap[gapValue] || (typeof gapValue === 'number' ? `${gapValue}px` : gapValue);
-    
-    return {
-      gap: mappedGap
-    };
-  }
-  return {};
+  // Map semantic tokens to actual pixel values
+  const gapMap = {
+    'small': '12px',
+    'medium': '24px',
+    'large': '40px',
+    'none': '0px'
+  };
+  
+  // If gapValue exists, map it; otherwise default to '0px'
+  const mappedGap = gapValue ? (gapMap[gapValue] || (typeof gapValue === 'number' ? `${gapValue}px` : gapValue)) : '0px';
+  styles.gap = mappedGap;
+  
+  // Also control content padding to respect section padding setting
+  const paddingValue = section.settings?.padding;
+  const paddingMap = {
+    'small': '20px',
+    'medium': '40px',
+    'large': '60px',
+    'none': '0px'
+  };
+  const mappedPadding = paddingValue ? (paddingMap[paddingValue] || `${paddingValue}px`) : '0px';
+  styles.padding = mappedPadding;
+  
+  return styles;
 };
 
 // Lifecycle
@@ -981,9 +990,8 @@ onUnmounted(() => {
   border-color: rgba(239, 68, 68, 0.4);
 }
 
-/* Section Content */
+/* Section Content - padding controlled by inline styles from getColumnStyles */
 .gmkb-section__content {
-  padding: 16px;
   min-height: 200px;
 }
 
@@ -995,32 +1003,32 @@ onUnmounted(() => {
 .layout-two-column {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  /* gap controlled by inline styles */
 }
 
 .layout-three-column {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 20px;
+  /* gap controlled by inline styles */
 }
 
 .layout-main-sidebar {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: 20px;
+  /* gap controlled by inline styles */
 }
 
 /* Keep old classes for backward compatibility */
 .layout-two_column {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  /* gap controlled by inline styles */
 }
 
 .layout-three_column {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 20px;
+  /* gap controlled by inline styles */
 }
 
 /* Column */
@@ -1028,12 +1036,11 @@ onUnmounted(() => {
   min-height: 150px;
 }
 
-/* Drop Zone */
+/* Drop Zone - no padding to respect section settings */
 .component-drop-zone {
   min-height: 120px;
   border: 2px dashed rgba(59, 130, 246, 0.3);
   border-radius: 6px;
-  padding: 12px;
   transition: all 0.3s;
   background: rgba(59, 130, 246, 0.02);
 }

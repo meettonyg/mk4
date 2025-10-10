@@ -164,10 +164,7 @@ function onMouseLeave() {
   transition: all 0.3s ease;
   border-radius: var(--radius-md, 6px);
   /* Margin applied via inline styles from ComponentStyleService */
-}
-
-.component-wrapper:first-child {
-  margin-top: 40px; /* Space for controls */
+  /* No default margins - all spacing controlled by component settings */
 }
 
 .component-wrapper--hovering {
