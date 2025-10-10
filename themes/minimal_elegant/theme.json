@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "A sophisticated, minimalist theme with monochrome aesthetics",
   "preview_image": "minimal-elegant-preview.jpg",
-  "defaultPreset": "minimal",
+  "defaultPreset": "large",
   "typography": {
     "primary_font": {
       "family": "Helvetica Neue, Helvetica, Arial, sans-serif",

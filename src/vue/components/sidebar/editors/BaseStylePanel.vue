@@ -1,35 +1,37 @@
 <template>
   <div class="base-style-panel">
-    <!-- Preset Selector -->
-    <section class="preset-section">
-      <div class="preset-header">
-        <h4 class="style-section-title">
-          Quick Presets
-          <Tooltip text="Apply professionally designed style combinations with one click. Choose a preset that matches your brand or content style." />
-        </h4>
-        <span v-if="appliedPreset" class="preset-badge">{{ appliedPreset }}</span>
-      </div>
+    <!-- Size-Based Layout Selector (Elementor Style) -->
+    <section class="size-selector-section">
+      <h4 class="size-selector-title">
+        Layout Spacing
+        <Tooltip text="Choose how much padding and spacing your component has. Changes apply instantly." />
+      </h4>
       
-      <div class="preset-grid">
-        <button
-          v-for="preset in presets"
+      <div class="size-options">
+        <label 
+          v-for="preset in presets" 
           :key="preset.id"
-          class="preset-button"
-          :class="{ 
-            active: currentPresetId === preset.id,
-            recommended: preset.isRecommended,
-            'top-pick': preset.isTopRecommendation
-          }"
-          @click="applyPreset(preset.id)"
-          :title="getPresetTooltip(preset)"
+          class="size-option"
+          :class="{ active: currentPresetId === preset.id }"
         >
-          <span v-if="preset.isTopRecommendation" class="recommendation-badge">✨ Top Pick</span>
-          <span v-else-if="preset.isRecommended" class="recommendation-badge">Recommended</span>
-          <span class="preset-icon">{{ preset.icon }}</span>
-          <span class="preset-name">{{ preset.name }}</span>
-        </button>
+          <input 
+            type="radio" 
+            :value="preset.id"
+            :checked="currentPresetId === preset.id"
+            @change="applyPreset(preset.id)"
+            class="size-radio"
+          />
+          <span class="size-content">
+            <span class="size-name">{{ preset.name }}</span>
+            <span class="size-value">{{ preset.value }}</span>
+          </span>
+        </label>
       </div>
       
+      <div v-if="isThemePreset" class="preset-note">
+        <i class="fa-solid fa-info-circle"></i>
+        <span>{{ currentPresetName }} spacing set by your theme</span>
+      </div>
     </section>
 
     <!-- Spacing Section -->
@@ -207,7 +209,6 @@ import { computed, ref } from 'vue';
 import { useMediaKitStore } from '../../../../stores/mediaKit';
 import componentStyleService from '../../../../services/ComponentStyleService';
 import { getAllPresets, applyPresetToSettings } from '../../../../utils/stylePresets';
-import { getPresetsWithRecommendations, getRecommendationReason } from '../../../../utils/smartDefaults';
 import { useToast } from '../../../../composables/useToast';
 import SpacingControl from './shared/SpacingControl.vue';
 import ColorPicker from './shared/ColorPicker.vue';
@@ -241,13 +242,41 @@ const props = defineProps({
 const store = useMediaKitStore();
 const { showSuccess } = useToast();
 
-// Preset system with smart recommendations
-const presets = computed(() => {
-  return getPresetsWithRecommendations(props.componentType);
-});
+// Get all available presets
+const presets = computed(() => getAllPresets());
 
 const currentPresetId = ref(null);
 const appliedPreset = ref(null);
+
+// Computed properties for UI
+const currentPresetName = computed(() => {
+  if (!currentPresetId.value) {
+    // Try to detect from settings
+    const settings = componentSettings.value;
+    const padding = settings?.style?.spacing?.padding?.top || 40;
+    
+    // Simple heuristic to guess preset based on padding
+    if (padding === 0) return 'None';
+    if (padding <= 20) return 'Small';
+    if (padding <= 40) return 'Medium';
+    if (padding <= 64) return 'Large';
+    if (padding >= 80) return 'X-Large';
+    return 'Custom';
+  }
+  
+  const preset = presets.value.find(p => p.id === currentPresetId.value);
+  return preset ? preset.name : 'Custom';
+});
+
+const isThemePreset = computed(() => {
+  // Check if current preset matches theme's default
+  const themeStore = window.$pinia?.state?.value?.theme;
+  const activeTheme = themeStore?.activeTheme;
+  const themeDefaultPreset = activeTheme?.defaultPreset;
+  
+  if (!themeDefaultPreset || !currentPresetId.value) return false;
+  return currentPresetId.value === themeDefaultPreset;
+});
 
 // Get entity (component or section)
 const entity = computed(() => {
@@ -578,15 +607,10 @@ const applyPreset = (presetId) => {
     // Update UI state
     currentPresetId.value = presetId;
     appliedPreset.value = preset.name;
+    showPresetSelector.value = false; // Close dropdown
     
     // Show toast notification
-    let message = `${preset.name} preset applied! ${preset.icon}`;
-    if (preset.isTopRecommendation) {
-      message = `✨ ${preset.name} preset applied - Perfect choice!`;
-    } else if (preset.isRecommended) {
-      message = `${preset.name} preset applied - Great match! ${preset.icon}`;
-    }
-    showSuccess(message);
+    showSuccess(`Layout changed to ${preset.name}`);
     
     // Mark as dirty
     store.isDirty = true;
@@ -611,30 +635,21 @@ const applyPreset = (presetId) => {
   // Update UI state
   currentPresetId.value = presetId;
   appliedPreset.value = preset.name;
+  showPresetSelector.value = false; // Close dropdown
   
-  // Show toast notification with recommendation context
-  let message = `${preset.name} preset applied! ${preset.icon}`;
-  if (preset.isTopRecommendation) {
-    message = `✨ ${preset.name} preset applied - Perfect choice!`;
-  } else if (preset.isRecommended) {
-    message = `${preset.name} preset applied - Great match! ${preset.icon}`;
-  }
-  showSuccess(message);
+  // Show toast notification
+  showSuccess(`Layout changed to ${preset.name}`);
   
   // Mark as dirty
   store.isDirty = true;
 };
 
-// Get tooltip text for preset button
-const getPresetTooltip = (preset) => {
-  let tooltip = preset.description;
-  const reason = getRecommendationReason(preset.id, props.componentType);
-  
-  if (reason) {
-    tooltip += '\n\n✨ ' + reason;
+// Get tooltip text
+const getPresetTooltip = () => {
+  if (isThemePreset.value) {
+    return 'Layout automatically set by your theme. Click to change.';
   }
-  
-  return tooltip;
+  return 'Click to change layout preset';
 };
 </script>
 
@@ -723,144 +738,108 @@ const getPresetTooltip = (preset) => {
   color: #64748b;
 }
 
-/* Preset Section Styles */
-.preset-section {
+/* Size-Based Layout Selector (Elementor Style) */
+.size-selector-section {
   margin-bottom: 24px;
-  padding-bottom: 24px;
+  padding-bottom: 20px;
   border-bottom: 2px solid #e5e7eb;
-  background: linear-gradient(to bottom, #f8fafc, #ffffff);
-  padding: 16px;
-  border-radius: 8px;
-  margin: 0 0 24px 0;
 }
 
-.preset-header {
+.size-selector-title {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-}
-
-.preset-badge {
-  background: #3b82f6;
-  color: white;
-  padding: 4px 12px;
-  border-radius: 12px;
+  gap: 6px;
+  margin: 0 0 12px 0;
   font-size: 11px;
   font-weight: 600;
+  color: #475569;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.preset-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  margin-bottom: 12px;
+.size-options {
+  display: flex;
+  gap: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
-.preset-button {
+.size-option {
+  flex: 1;
+  position: relative;
+  cursor: pointer;
+  margin: 0;
+}
+
+.size-radio {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.size-content {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 12px 8px;
-  border: 2px solid #e5e7eb;
-  background: white;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-height: 70px;
-  position: relative;
-  overflow: visible;
+  padding: 10px 8px;
+  background: #ffffff;
+  border-right: 1px solid #d1d5db;
+  transition: all 0.2s;
+  min-height: 54px;
 }
 
-.preset-button.recommended {
-  border-color: #60a5fa;
-  background: #eff6ff;
+.size-option:last-child .size-content {
+  border-right: none;
 }
 
-.preset-button.top-pick {
-  border-color: #fbbf24;
-  background: linear-gradient(135deg, #fef3c7 0%, #fef9e6 100%);
-  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
+.size-option:hover .size-content {
+  background: #f9fafb;
 }
 
-.recommendation-badge {
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  transform: translateX(-50%);
+.size-option.active .size-content {
   background: #3b82f6;
-  color: white;
-  font-size: 9px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 10px;
-  white-space: nowrap;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  z-index: 1;
 }
 
-.preset-button.top-pick .recommendation-badge {
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 0 0 0 rgba(251, 191, 36, 0.4);
-  }
-  50% {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 0 0 6px rgba(251, 191, 36, 0);
-  }
-}
-
-.preset-button:hover {
-  border-color: #3b82f6;
-  background: #eff6ff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.1);
-}
-
-.preset-button.recommended:hover {
-  border-color: #2563eb;
-  background: #dbeafe;
-  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
-}
-
-.preset-button.top-pick:hover {
-  border-color: #f59e0b;
-  transform: translateY(-3px);
-  box-shadow: 0 6px 12px rgba(251, 191, 36, 0.3);
-}
-
-.preset-button.active {
-  border-color: #3b82f6;
-  background: #dbeafe;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.preset-icon {
-  font-size: 24px;
-  margin-bottom: 4px;
-  display: block;
-}
-
-.preset-name {
+.size-name {
   font-size: 12px;
   font-weight: 600;
-  color: #475569;
-  text-align: center;
+  color: #1f2937;
+  line-height: 1.2;
+  transition: color 0.2s;
 }
 
-.preset-button:hover .preset-name {
+.size-option.active .size-name {
+  color: #ffffff;
+}
+
+.size-value {
+  font-size: 10px;
+  color: #6b7280;
+  margin-top: 2px;
+  transition: color 0.2s;
+}
+
+.size-option.active .size-value {
+  color: #dbeafe;
+}
+
+.preset-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: #eff6ff;
+  border-left: 3px solid #3b82f6;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #1e40af;
+}
+
+.preset-note i {
+  font-size: 12px;
   color: #3b82f6;
-}
-
-.preset-button.active .preset-name {
-  color: #2563eb;
 }
 </style>

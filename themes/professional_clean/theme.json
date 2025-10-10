@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "A clean, professional theme perfect for business and corporate media kits",
   "preview_image": "professional-clean-preview.jpg",
-  "defaultPreset": "modern",
+  "defaultPreset": "medium",
   "typography": {
     "primary_font": {
       "family": "Inter, sans-serif",

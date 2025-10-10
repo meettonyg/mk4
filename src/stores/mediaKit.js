@@ -616,7 +616,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         // No settings provided - use theme's default preset
         const themeStore = window.$pinia?.state?.value?.theme;
         const activeTheme = themeStore?.activeTheme;
-        const defaultPresetId = activeTheme?.defaultPreset || 'modern';
+        const defaultPresetId = activeTheme?.defaultPreset || 'medium';
         
         // Get base defaults
         const baseSettings = getComponentDefaults(componentData.type);
@@ -627,7 +627,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
           const preset = getPreset(defaultPresetId);
           if (preset) {
             componentSettings = applyPresetToSettings(baseSettings, defaultPresetId);
-            console.log(`✅ Applied "${preset.name}" preset from "${activeTheme?.name || 'current'}" theme to new ${componentData.type}`);
+            console.log(`✅ Applied "${preset.name}" (${preset.value}) preset from "${activeTheme?.name || 'current'}" theme to new ${componentData.type}`);
           } else {
             componentSettings = baseSettings;
           }
