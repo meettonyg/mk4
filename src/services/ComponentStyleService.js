@@ -58,9 +58,19 @@ class ComponentStyleService {
    * @returns {string} CSS string
    */
   generateCSS(componentId, settings) {
+    // CRITICAL FIX: Handle invalid settings (like empty arrays)
+    if (!settings || Array.isArray(settings) || typeof settings !== 'object') {
+      if (window.gmkbData?.debugMode) {
+        console.warn(`⚠️ Invalid settings for ${componentId}, skipping styles`);
+      }
+      return '';
+    }
+    
     const { style, advanced } = settings;
     if (!style || !advanced) {
-      console.warn('⚠️ Invalid settings structure:', settings);
+      if (window.gmkbData?.debugMode) {
+        console.warn(`⚠️ Missing style or advanced settings for ${componentId}`);
+      }
       return '';
     }
 

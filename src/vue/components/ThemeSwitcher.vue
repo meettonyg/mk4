@@ -48,7 +48,7 @@
             ></button>
           </div>
           <button @click="openCustomizer" class="customizer-button">
-            <span>⚙️</span> Customize Theme
+            <i class="fa-solid fa-sliders"></i> Customize Theme
           </button>
         </div>
       </div>

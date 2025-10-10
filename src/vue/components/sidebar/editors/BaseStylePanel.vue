@@ -258,10 +258,76 @@ const entity = computed(() => {
   }
 });
 
-// Get component/section settings from store
+// Get component/section settings from store with proper defaults
 const componentSettings = computed(() => {
-  return entity.value?.settings || {};
+  const settings = entity.value?.settings;
+  
+  // CRITICAL FIX: Handle empty array or invalid settings
+  if (!settings || Array.isArray(settings) || typeof settings !== 'object') {
+    console.warn('⚠️ BaseStylePanel: Invalid or missing settings, using defaults');
+    return getDefaultSettings();
+  }
+  
+  // Ensure nested structure exists
+  return {
+    style: {
+      spacing: settings.style?.spacing || getDefaultSettings().style.spacing,
+      background: settings.style?.background || getDefaultSettings().style.background,
+      border: settings.style?.border || getDefaultSettings().style.border,
+      effects: settings.style?.effects || getDefaultSettings().style.effects,
+      typography: settings.style?.typography || getDefaultSettings().style.typography
+    },
+    advanced: settings.advanced || getDefaultSettings().advanced
+  };
 });
+
+// Default settings structure
+function getDefaultSettings() {
+  return {
+    style: {
+      spacing: {
+        margin: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px' },
+        padding: { top: 20, right: 20, bottom: 20, left: 20, unit: 'px' }
+      },
+      background: {
+        color: '#ffffff',
+        opacity: 100
+      },
+      border: {
+        width: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px' },
+        style: 'solid',
+        color: '#e5e7eb',
+        radius: { topLeft: 0, topRight: 0, bottomRight: 0, bottomLeft: 0, unit: 'px' }
+      },
+      effects: {
+        boxShadow: 'none'
+      },
+      typography: {
+        fontFamily: 'inherit',
+        fontSize: 16,
+        fontWeight: 400,
+        lineHeight: 1.5,
+        color: '#000000',
+        textAlign: 'left'
+      }
+    },
+    advanced: {
+      layout: {
+        width: { type: 'auto', value: 100, unit: '%' },
+        alignment: 'left'
+      },
+      responsive: {
+        desktop: true,
+        tablet: true,
+        mobile: true
+      },
+      custom: {
+        cssClasses: '',
+        cssId: ''
+      }
+    }
+  };
+}
 
 // Helper to apply styles to sections
 function applySectionStyles(sectionId, settings) {

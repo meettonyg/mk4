@@ -168,10 +168,66 @@ const entity = computed(() => {
   }
 });
 
-// Get component/section settings from store
+// Get component/section settings from store with proper defaults
 const componentSettings = computed(() => {
-  return entity.value?.settings || {};
+  const settings = entity.value?.settings;
+  
+  // CRITICAL FIX: Handle empty array or invalid settings
+  if (!settings || Array.isArray(settings) || typeof settings !== 'object') {
+    console.warn('⚠️ BaseAdvancedPanel: Invalid or missing settings, using defaults');
+    return getDefaultSettings();
+  }
+  
+  // Ensure nested structure exists
+  return {
+    style: settings.style || getDefaultSettings().style,
+    advanced: {
+      layout: settings.advanced?.layout || getDefaultSettings().advanced.layout,
+      responsive: settings.advanced?.responsive || getDefaultSettings().advanced.responsive,
+      custom: settings.advanced?.custom || getDefaultSettings().advanced.custom
+    }
+  };
 });
+
+// Default settings structure
+function getDefaultSettings() {
+  return {
+    style: {
+      spacing: {
+        margin: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px' },
+        padding: { top: 20, right: 20, bottom: 20, left: 20, unit: 'px' }
+      },
+      background: {
+        color: '#ffffff',
+        opacity: 100
+      },
+      border: {
+        width: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px' },
+        style: 'solid',
+        color: '#e5e7eb',
+        radius: { topLeft: 0, topRight: 0, bottomRight: 0, bottomLeft: 0, unit: 'px' }
+      },
+      effects: {
+        boxShadow: 'none'
+      }
+    },
+    advanced: {
+      layout: {
+        width: { type: 'auto', value: 100, unit: '%' },
+        alignment: 'left'
+      },
+      responsive: {
+        desktop: true,
+        tablet: true,
+        mobile: true
+      },
+      custom: {
+        cssClasses: '',
+        cssId: ''
+      }
+    }
+  };
+}
 
 // Helper to apply styles to sections
 function applySectionStyles(sectionId, settings) {
