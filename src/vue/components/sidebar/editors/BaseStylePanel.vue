@@ -1,39 +1,5 @@
 <template>
   <div class="base-style-panel">
-    <!-- Size-Based Layout Selector (Elementor Style) -->
-    <section class="size-selector-section">
-      <h4 class="size-selector-title">
-        Layout Spacing
-        <Tooltip text="Choose how much padding and spacing your component has. Changes apply instantly." />
-      </h4>
-      
-      <div class="size-options">
-        <label 
-          v-for="preset in presets" 
-          :key="preset.id"
-          class="size-option"
-          :class="{ active: currentPresetId === preset.id }"
-        >
-          <input 
-            type="radio" 
-            :value="preset.id"
-            :checked="currentPresetId === preset.id"
-            @change="applyPreset(preset.id)"
-            class="size-radio"
-          />
-          <span class="size-content">
-            <span class="size-name">{{ preset.name }}</span>
-            <span class="size-value">{{ preset.value }}</span>
-          </span>
-        </label>
-      </div>
-      
-      <div v-if="isThemePreset" class="preset-note">
-        <i class="fa-solid fa-info-circle"></i>
-        <span>{{ currentPresetName }} spacing set by your theme</span>
-      </div>
-    </section>
-
     <!-- Spacing Section -->
     <section class="style-section">
       <h4 class="style-section-title">
@@ -205,11 +171,9 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { useMediaKitStore } from '../../../../stores/mediaKit';
 import componentStyleService from '../../../../services/ComponentStyleService';
-import { getAllPresets, applyPresetToSettings } from '../../../../utils/stylePresets';
-import { useToast } from '../../../../composables/useToast';
 import SpacingControl from './shared/SpacingControl.vue';
 import ColorPicker from './shared/ColorPicker.vue';
 import TypographyControl from './shared/TypographyControl.vue';
@@ -240,43 +204,6 @@ const props = defineProps({
 });
 
 const store = useMediaKitStore();
-const { showSuccess } = useToast();
-
-// Get all available presets
-const presets = computed(() => getAllPresets());
-
-const currentPresetId = ref(null);
-const appliedPreset = ref(null);
-
-// Computed properties for UI
-const currentPresetName = computed(() => {
-  if (!currentPresetId.value) {
-    // Try to detect from settings
-    const settings = componentSettings.value;
-    const padding = settings?.style?.spacing?.padding?.top || 40;
-    
-    // Simple heuristic to guess preset based on padding
-    if (padding === 0) return 'None';
-    if (padding <= 20) return 'Small';
-    if (padding <= 40) return 'Medium';
-    if (padding <= 64) return 'Large';
-    if (padding >= 80) return 'X-Large';
-    return 'Custom';
-  }
-  
-  const preset = presets.value.find(p => p.id === currentPresetId.value);
-  return preset ? preset.name : 'Custom';
-});
-
-const isThemePreset = computed(() => {
-  // Check if current preset matches theme's default
-  const themeStore = window.$pinia?.state?.value?.theme;
-  const activeTheme = themeStore?.activeTheme;
-  const themeDefaultPreset = activeTheme?.defaultPreset;
-  
-  if (!themeDefaultPreset || !currentPresetId.value) return false;
-  return currentPresetId.value === themeDefaultPreset;
-});
 
 // Get entity (component or section)
 const entity = computed(() => {
@@ -586,71 +513,7 @@ const updateEffect = (property, value) => {
   }
 };
 
-// Apply preset
-const applyPreset = (presetId) => {
-  if (props.mode === 'section') {
-    const section = entity.value;
-    if (!section) return;
-    
-    const preset = presets.value.find(p => p.id === presetId);
-    if (!preset) return;
-    
-    // Apply preset to settings
-    const updatedSettings = applyPresetToSettings(section.settings, presetId);
-    
-    // Update store
-    store.updateSectionSettings(props.sectionId, updatedSettings);
-    
-    // Apply styles immediately to live preview
-    applySectionStyles(props.sectionId, updatedSettings);
-    
-    // Update UI state
-    currentPresetId.value = presetId;
-    appliedPreset.value = preset.name;
-    showPresetSelector.value = false; // Close dropdown
-    
-    // Show toast notification
-    showSuccess(`Layout changed to ${preset.name}`);
-    
-    // Mark as dirty
-    store.isDirty = true;
-    return;
-  }
-  
-  const component = store.components[props.componentId];
-  if (!component) return;
-  
-  const preset = presets.value.find(p => p.id === presetId);
-  if (!preset) return;
-  
-  // Apply preset to settings
-  const updatedSettings = applyPresetToSettings(component.settings, presetId);
-  
-  // Update store
-  store.updateComponent(props.componentId, { settings: updatedSettings });
-  
-  // Apply styles immediately to live preview
-  componentStyleService.applyStyling(props.componentId, updatedSettings);
-  
-  // Update UI state
-  currentPresetId.value = presetId;
-  appliedPreset.value = preset.name;
-  showPresetSelector.value = false; // Close dropdown
-  
-  // Show toast notification
-  showSuccess(`Layout changed to ${preset.name}`);
-  
-  // Mark as dirty
-  store.isDirty = true;
-};
 
-// Get tooltip text
-const getPresetTooltip = () => {
-  if (isThemePreset.value) {
-    return 'Layout automatically set by your theme. Click to change.';
-  }
-  return 'Click to change layout preset';
-};
 </script>
 
 <style scoped>
@@ -738,108 +601,5 @@ const getPresetTooltip = () => {
   color: #64748b;
 }
 
-/* Size-Based Layout Selector (Elementor Style) */
-.size-selector-section {
-  margin-bottom: 24px;
-  padding-bottom: 20px;
-  border-bottom: 2px solid #e5e7eb;
-}
 
-.size-selector-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0 0 12px 0;
-  font-size: 11px;
-  font-weight: 600;
-  color: #475569;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.size-options {
-  display: flex;
-  gap: 0;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.size-option {
-  flex: 1;
-  position: relative;
-  cursor: pointer;
-  margin: 0;
-}
-
-.size-radio {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.size-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 8px;
-  background: #ffffff;
-  border-right: 1px solid #d1d5db;
-  transition: all 0.2s;
-  min-height: 54px;
-}
-
-.size-option:last-child .size-content {
-  border-right: none;
-}
-
-.size-option:hover .size-content {
-  background: #f9fafb;
-}
-
-.size-option.active .size-content {
-  background: #3b82f6;
-}
-
-.size-name {
-  font-size: 12px;
-  font-weight: 600;
-  color: #1f2937;
-  line-height: 1.2;
-  transition: color 0.2s;
-}
-
-.size-option.active .size-name {
-  color: #ffffff;
-}
-
-.size-value {
-  font-size: 10px;
-  color: #6b7280;
-  margin-top: 2px;
-  transition: color 0.2s;
-}
-
-.size-option.active .size-value {
-  color: #dbeafe;
-}
-
-.preset-note {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 10px;
-  padding: 8px 10px;
-  background: #eff6ff;
-  border-left: 3px solid #3b82f6;
-  border-radius: 4px;
-  font-size: 11px;
-  color: #1e40af;
-}
-
-.preset-note i {
-  font-size: 12px;
-  color: #3b82f6;
-}
 </style>
