@@ -1,10 +1,10 @@
 <template>
   <div class="component-editor-template">
     <div class="editor-header">
-      <button @click="handleBack" class="back-btn" title="Back">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 12H5M12 19l-7-7 7-7"/>
-        </svg>
+      <!-- Stacked header: Back link on top, title below -->
+      <button @click="handleBack" class="back-link">
+        <span class="back-arrow">←</span>
+        <span class="back-text">Back</span>
       </button>
       <h3 class="editor-title">Edit {{ componentType }}</h3>
     </div>
@@ -167,8 +167,9 @@ body.dark-mode .component-editor-template {
 /* Header */
 .editor-header {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
   padding: 16px 20px;
   background: white;
   border-bottom: 1px solid #e5e7eb;
@@ -179,34 +180,42 @@ body.dark-mode .editor-header {
   border-color: #334155;
 }
 
-.back-btn {
-  display: flex;
+.back-link {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
+  gap: 4px;
   background: transparent;
   border: none;
-  border-radius: 6px;
-  color: #64748b;
+  padding: 0;
+  font-size: 12px;
+  color: #6b7280;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color 0.2s;
 }
 
-.back-btn:hover {
-  background: #f1f5f9;
-  color: #1e293b;
+.back-link:hover {
+  color: #ec4899;
 }
 
-body.dark-mode .back-btn:hover {
-  background: #334155;
-  color: #f3f4f6;
+body.dark-mode .back-link {
+  color: #9ca3af;
+}
+
+body.dark-mode .back-link:hover {
+  color: #ec4899;
+}
+
+.back-arrow {
+  font-size: 14px;
+}
+
+.back-text {
+  font-weight: 500;
 }
 
 .editor-title {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: #1e293b;
 }

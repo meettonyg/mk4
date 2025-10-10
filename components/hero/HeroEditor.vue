@@ -1,63 +1,41 @@
 <template>
-  <div class="hero-editor">
-    <div class="editor-header">
-      <h3>Hero Component</h3>
-      <button @click="$emit('close')" class="close-btn">×</button>
-    </div>
-    
-    <!-- Tab Navigation -->
-    <div class="editor-tabs">
-      <button
-        v-for="tab in tabs"
-        :key="tab.id"
-        :class="['tab-btn', { active: activeTab === tab.id }]"
-        @click="activeTab = tab.id"
-      >
-        {{ tab.label }}
-      </button>
-    </div>
-    
-    <div class="editor-content">
-      <!-- CONTENT TAB -->
-      <div v-show="activeTab === 'content'" class="tab-panel">
+  <ComponentEditorTemplate
+    :component-id="componentId"
+    component-type="Hero"
+    :show-typography="true"
+    :active-tab="activeTab"
+    @update:active-tab="activeTab = $event"
+    @back="handleBack"
+  >
+    <!-- Content Tab -->
+    <template #content>
+      <div class="content-fields">
         <section class="editor-section">
           <h4>Hero Content</h4>
           
           <div class="field-group">
-            <label for="hero-title">Main Title</label>
+            <label for="hero-title">Title</label>
             <input 
               id="hero-title"
               v-model="localData.title" 
-              @input="updateField('title')"
+              @input="updateComponent"
               type="text"
-              placeholder="Enter hero title..."
+              placeholder="Enter headline..."
             />
           </div>
           
           <div class="field-group">
             <label for="hero-subtitle">Subtitle</label>
-            <input 
+            <textarea 
               id="hero-subtitle"
               v-model="localData.subtitle" 
-              @input="updateField('subtitle')"
-              type="text"
-              placeholder="Enter subtitle..."
-            />
-          </div>
-          
-          <div class="field-group">
-            <label for="hero-description">Description</label>
-            <textarea 
-              id="hero-description"
-              v-model="localData.description" 
-              @input="updateField('description')"
-              rows="4"
-              placeholder="Enter description..."
+              @input="updateComponent"
+              rows="3"
+              placeholder="Enter subheading..."
             />
           </div>
         </section>
 
-        <!-- Call to Action -->
         <section class="editor-section">
           <h4>Call to Action</h4>
           
@@ -66,284 +44,189 @@
             <input 
               id="hero-cta-text"
               v-model="localData.ctaText" 
-              @input="updateField('ctaText')"
+              @input="updateComponent"
               type="text"
-              placeholder="e.g., Get Started"
+              placeholder="Get in Touch"
             />
           </div>
           
           <div class="field-group">
-            <label for="hero-cta-url">Button Link</label>
+            <label for="hero-cta-url">Button URL</label>
             <input 
               id="hero-cta-url"
               v-model="localData.ctaUrl" 
-              @input="updateField('ctaUrl')"
+              @input="updateComponent"
               type="url"
-              placeholder="https://"
+              placeholder="#contact"
             />
           </div>
         </section>
 
-        <!-- Background -->
         <section class="editor-section">
-          <h4>Background</h4>
+          <h4>Background Image</h4>
           
           <div class="field-group">
-            <label for="hero-bg-type">Background Type</label>
-            <select 
-              id="hero-bg-type"
-              v-model="localData.backgroundType" 
-              @change="updateField('backgroundType')"
-            >
-              <option value="color">Solid Color</option>
-              <option value="gradient">Gradient</option>
-              <option value="image">Image</option>
-            </select>
-          </div>
-          
-          <div v-if="localData.backgroundType === 'color'" class="field-group">
-            <label for="hero-bg-color">Background Color</label>
-            <div class="color-input">
-              <input 
-                id="hero-bg-color"
-                v-model="localData.backgroundColor" 
-                @input="updateField('backgroundColor')"
-                type="color"
-              />
-              <input 
-                v-model="localData.backgroundColor" 
-                @input="updateField('backgroundColor')"
-                type="text"
-                placeholder="#000000"
-              />
-            </div>
-          </div>
-          
-          <div v-if="localData.backgroundType === 'image'" class="field-group">
             <label for="hero-bg-image">Background Image URL</label>
             <input 
               id="hero-bg-image"
               v-model="localData.backgroundImage" 
-              @input="updateField('backgroundImage')"
+              @input="updateComponent"
               type="url"
-              placeholder="https://example.com/image.jpg"
+              placeholder="https://example.com/background.jpg"
             />
+            <button @click="openMediaLibrary" class="media-btn">
+              Choose from Media Library
+            </button>
+          </div>
+          
+          <!-- Image Preview -->
+          <div v-if="localData.backgroundImage" class="image-preview">
+            <img :src="localData.backgroundImage" alt="Background preview" />
           </div>
         </section>
 
-        <!-- Layout Options -->
         <section class="editor-section">
           <h4>Layout</h4>
           
           <div class="field-group">
-            <label for="hero-alignment">Text Alignment</label>
+            <label for="hero-alignment">Content Alignment</label>
             <select 
               id="hero-alignment"
-              v-model="localData.textAlign" 
-              @change="updateField('textAlign')"
+              v-model="localData.alignment" 
+              @change="updateComponent"
             >
               <option value="left">Left</option>
               <option value="center">Center</option>
               <option value="right">Right</option>
             </select>
           </div>
-          
-          <div class="field-group">
-            <label for="hero-height">Section Height</label>
-            <select 
-              id="hero-height"
-              v-model="localData.height" 
-              @change="updateField('height')"
-            >
-              <option value="auto">Auto</option>
-              <option value="small">Small (300px)</option>
-              <option value="medium">Medium (500px)</option>
-              <option value="large">Large (700px)</option>
-              <option value="fullscreen">Fullscreen</option>
-            </select>
-          </div>
         </section>
       </div>
-      
-      <!-- STYLE TAB -->
-      <div v-show="activeTab === 'style'" class="tab-panel">
-        <BaseStylePanel
-          :component-id="componentId"
-          :component-type="'hero'"
-          :show-typography="true"
-        />
-      </div>
-      
-      <!-- ADVANCED TAB -->
-      <div v-show="activeTab === 'advanced'" class="tab-panel">
-        <BaseAdvancedPanel
-          :component-id="componentId"
-        />
-      </div>
-    </div>
-  </div>
+    </template>
+  </ComponentEditorTemplate>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
-import BaseStylePanel from '../../src/vue/components/sidebar/editors/BaseStylePanel.vue';
-import BaseAdvancedPanel from '../../src/vue/components/sidebar/editors/BaseAdvancedPanel.vue';
+import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 
 const props = defineProps({
   componentId: {
     type: String,
     required: true
-  },
-  componentData: {
-    type: Object,
-    default: () => ({})
   }
 });
 
-const emit = defineEmits(['update', 'close']);
+const emit = defineEmits(['close']);
+
 const store = useMediaKitStore();
 
-// Tab state
+// Active tab state
 const activeTab = ref('content');
-const tabs = [
-  { id: 'content', label: 'Content' },
-  { id: 'style', label: 'Style' },
-  { id: 'advanced', label: 'Advanced' }
-];
 
-// Local data copy
+// Local data state
 const localData = ref({
   title: '',
   subtitle: '',
-  description: '',
+  backgroundImage: '',
   ctaText: '',
   ctaUrl: '',
-  backgroundType: 'color',
-  backgroundColor: '#1e293b',
-  backgroundImage: '',
-  textAlign: 'center',
-  height: 'medium',
-  ...props.componentData
+  alignment: 'center'
 });
 
-// Watch for external data changes
-watch(() => props.componentData, (newData) => {
-  localData.value = { ...localData.value, ...newData };
-}, { deep: true });
+// Initialize local data from store
+const loadComponentData = () => {
+  const component = store.components[props.componentId];
+  if (component && component.data) {
+    localData.value = {
+      title: component.data.title || '',
+      subtitle: component.data.subtitle || '',
+      backgroundImage: component.data.backgroundImage || '',
+      ctaText: component.data.ctaText || '',
+      ctaUrl: component.data.ctaUrl || '#',
+      alignment: component.data.alignment || 'center'
+    };
+  }
+};
 
-// Update field with debouncing
+// Watch for component changes
+watch(() => props.componentId, () => {
+  loadComponentData();
+}, { immediate: true });
+
+// Update component in store with debouncing
 let updateTimeout = null;
-const updateField = (field) => {
-  if (updateTimeout) clearTimeout(updateTimeout);
+const updateComponent = () => {
+  if (updateTimeout) {
+    clearTimeout(updateTimeout);
+  }
   
   updateTimeout = setTimeout(() => {
-    // Update store directly
     store.updateComponent(props.componentId, {
-      data: { ...localData.value }
+      data: {
+        title: localData.value.title,
+        subtitle: localData.value.subtitle,
+        backgroundImage: localData.value.backgroundImage,
+        ctaText: localData.value.ctaText,
+        ctaUrl: localData.value.ctaUrl,
+        alignment: localData.value.alignment
+      }
     });
     
-    // Emit update event
-    emit('update', {
-      data: { ...localData.value }
-    });
-    
-    // Mark as having unsaved changes
     store.isDirty = true;
   }, 300);
+};
+
+// Open WordPress Media Library
+const openMediaLibrary = () => {
+  if (window.wp && window.wp.media) {
+    const frame = window.wp.media({
+      title: 'Select Background Image',
+      button: {
+        text: 'Use this image'
+      },
+      multiple: false
+    });
+    
+    frame.on('select', () => {
+      const attachment = frame.state().get('selection').first().toJSON();
+      localData.value.backgroundImage = attachment.url;
+      updateComponent();
+    });
+    
+    frame.open();
+  } else {
+    alert('WordPress Media Library not available. Please enter an image URL manually.');
+  }
+};
+
+// Handle back button
+const handleBack = () => {
+  emit('close');
 };
 </script>
 
 <style scoped>
-.hero-editor {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  background: white;
-}
-
-.editor-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--gmkb-spacing-md, 16px) 20px;
-  border-bottom: 1px solid #e5e7eb;
-  background: linear-gradient(to bottom, #ffffff, #f9fafb);
-}
-
-.editor-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.close-btn {
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: transparent;
-  color: #64748b;
-  font-size: 24px;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.close-btn:hover {
-  background: #f1f5f9;
-  color: #1e293b;
-}
-
-.editor-tabs {
-  display: flex;
-  border-bottom: 1px solid #e5e7eb;
-  background: #f9fafb;
-}
-
-.tab-btn {
-  flex: 1;
-  padding: 12px 16px;
-  border: none;
-  background: transparent;
-  color: #64748b;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border-bottom: 2px solid transparent;
-}
-
-.tab-btn:hover {
-  background: #f1f5f9;
-  color: #475569;
-}
-
-.tab-btn.active {
-  color: #3b82f6;
-  background: white;
-  border-bottom-color: #3b82f6;
-}
-
-.editor-content {
-  flex: 1;
-  overflow-y: auto;
-  background: #f9fafb;
-}
-
-.tab-panel {
+.content-fields {
   padding: 20px;
 }
 
 .editor-section {
   background: white;
   border-radius: 8px;
-  padding: var(--gmkb-spacing-md, 16px);
+  padding: 20px;
   margin-bottom: 16px;
   border: 1px solid #e5e7eb;
+}
+
+body.dark-mode .editor-section {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.editor-section:last-child {
+  margin-bottom: 0;
 }
 
 .editor-section h4 {
@@ -353,6 +236,10 @@ const updateField = (field) => {
   color: #475569;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+body.dark-mode .editor-section h4 {
+  color: #94a3b8;
 }
 
 .field-group {
@@ -371,65 +258,93 @@ const updateField = (field) => {
   color: #64748b;
 }
 
+body.dark-mode .field-group label {
+  color: #94a3b8;
+}
+
 .field-group input[type="text"],
 .field-group input[type="url"],
-.field-group input[type="color"],
 .field-group select,
 .field-group textarea {
   width: 100%;
-  padding: var(--gmkb-spacing-sm, 8px) 12px;
+  padding: 10px 12px;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   font-size: 14px;
   background: white;
+  color: #1f2937;
   transition: all 0.2s;
+  font-family: inherit;
+}
+
+body.dark-mode .field-group input[type="text"],
+body.dark-mode .field-group input[type="url"],
+body.dark-mode .field-group select,
+body.dark-mode .field-group textarea {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f3f4f6;
 }
 
 .field-group input:focus,
 .field-group select:focus,
 .field-group textarea:focus {
   outline: none;
-  border-color: var(--gmkb-color-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
 }
 
 .field-group textarea {
   resize: vertical;
-  font-family: inherit;
+  min-height: 80px;
 }
 
-/* Color input wrapper */
-.color-input {
-  display: flex;
-  gap: 8px;
-}
-
-.color-input input[type="color"] {
-  width: 48px;
-  height: 36px;
-  padding: 4px;
+.media-btn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.2s;
+  color: #475569;
 }
 
-.color-input input[type="text"] {
-  flex: 1;
+.media-btn:hover {
+  background: #ec4899;
+  color: white;
+  border-color: #ec4899;
 }
 
-/* Scrollbar styling */
-.editor-content::-webkit-scrollbar {
-  width: 6px;
+body.dark-mode .media-btn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #d1d5db;
 }
 
-.editor-content::-webkit-scrollbar-track {
-  background: #f1f5f9;
+body.dark-mode .media-btn:hover {
+  background: #ec4899;
+  border-color: #ec4899;
+  color: white;
 }
 
-.editor-content::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
+.image-preview {
+  margin-top: 12px;
+  text-align: center;
 }
 
-.editor-content::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+.image-preview img {
+  max-width: 100%;
+  max-height: 200px;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+body.dark-mode .image-preview img {
+  border-color: #334155;
 }
 </style>

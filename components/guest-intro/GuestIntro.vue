@@ -1,5 +1,10 @@
 <template>
-  <div class="gmkb-guest-intro" :class="[`layout-${layout}`, { 'has-tagline': tagline }]">
+  <!-- V2 ARCHITECTURE: Single root element with component-root class -->
+  <div 
+    class="component-root guest-intro-component"
+    :data-component-id="componentId"
+    :class="[`layout-${layout}`, { 'has-tagline': tagline }]"
+  >
     <div class="guest-intro-content">
       <h2 class="guest-name">{{ displayName }}</h2>
       
@@ -19,139 +24,108 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'GuestIntro',
+<script setup>
+import { computed } from 'vue';
+
+const props = defineProps({
+  componentId: {
+    type: String,
+    required: true
+  },
+  data: {
+    type: Object,
+    default: () => ({})
+  },
   props: {
-    // Name fields
-    full_name: {
-      type: String,
-      default: ''
-    },
-    first_name: {
-      type: String,
-      default: ''
-    },
-    last_name: {
-      type: String,
-      default: ''
-    },
-    // Professional info
-    guest_title: {
-      type: String,
-      default: ''
-    },
-    company: {
-      type: String,
-      default: ''
-    },
-    // Content
-    introduction: {
-      type: String,
-      default: ''
-    },
-    tagline: {
-      type: String,
-      default: ''
-    },
-    // Display options
-    layout: {
-      type: String,
-      default: 'centered',
-      validator: value => ['centered', 'left-aligned', 'card'].includes(value)
-    }
+    type: Object,
+    default: () => ({})
   },
-  computed: {
-    displayName() {
-      // Use full_name if available, otherwise combine first and last
-      if (this.full_name) {
-        return this.full_name;
-      }
-      const parts = [];
-      if (this.first_name) parts.push(this.first_name);
-      if (this.last_name) parts.push(this.last_name);
-      return parts.join(' ') || 'Guest Name';
-    },
-    displayTitle() {
-      return this.guest_title || '';
-    }
+  settings: {
+    type: Object,
+    default: () => ({})
   },
-  mounted() {
-    // Auto-load from Pods data if available and props are empty
-    if (window.gmkbData?.pods_data && !this.full_name && !this.first_name) {
-      this.loadFromPodsData();
-    }
+  isEditing: {
+    type: Boolean,
+    default: false
   },
-  methods: {
-    loadFromPodsData() {
-      const pods = window.gmkbData.pods_data;
-      if (!pods) return;
-      
-      // Emit updates to parent to maintain props flow
-      const updates = {};
-      
-      if (pods.full_name) updates.full_name = pods.full_name;
-      if (pods.first_name) updates.first_name = pods.first_name;
-      if (pods.last_name) updates.last_name = pods.last_name;
-      if (pods.guest_title) updates.guest_title = pods.guest_title;
-      if (pods.company) updates.company = pods.company;
-      if (pods.introduction) updates.introduction = pods.introduction;
-      if (pods.tagline) updates.tagline = pods.tagline;
-      
-      this.$emit('update:modelValue', updates);
-    }
+  isSelected: {
+    type: Boolean,
+    default: false
   }
-};
+});
+
+// Extract data from both data and props for compatibility
+const fullName = computed(() => props.data?.full_name || props.props?.full_name || props.data?.fullName || props.props?.fullName || '');
+const firstName = computed(() => props.data?.first_name || props.props?.first_name || props.data?.firstName || props.props?.firstName || '');
+const lastName = computed(() => props.data?.last_name || props.props?.last_name || props.data?.lastName || props.props?.lastName || '');
+const guestTitle = computed(() => props.data?.guest_title || props.props?.guest_title || props.data?.title || props.props?.title || '');
+const company = computed(() => props.data?.company || props.props?.company || '');
+const introduction = computed(() => props.data?.introduction || props.props?.introduction || '');
+const tagline = computed(() => props.data?.tagline || props.props?.tagline || '');
+const layout = computed(() => props.data?.layout || props.props?.layout || 'centered');
+
+// Computed display name
+const displayName = computed(() => {
+  if (fullName.value) {
+    return fullName.value;
+  }
+  const parts = [];
+  if (firstName.value) parts.push(firstName.value);
+  if (lastName.value) parts.push(lastName.value);
+  return parts.join(' ') || 'Guest Name';
+});
+
+// Computed display title
+const displayTitle = computed(() => guestTitle.value || '');
 </script>
 
 <style scoped>
-.gmkb-guest-intro {
-  padding: var(--gmkb-spacing-xl, 2rem);
-  background: var(--gmkb-color-surface, #ffffff);
-  border-radius: var(--gmkb-border-radius, 8px);
-  margin: var(--gmkb-spacing-lg, 1.5rem) 0;
+/* V2 ARCHITECTURE: Minimal component styles */
+/* All visual styles (background, padding, border, etc.) applied via ComponentStyleService */
+
+.guest-intro-component {
+  /* Styles applied via inline styles from ComponentStyleService */
 }
 
 /* Layout: Centered */
-.gmkb-guest-intro.layout-centered .guest-intro-content {
+.guest-intro-component.layout-centered .guest-intro-content {
   text-align: center;
   max-width: 800px;
   margin: 0 auto;
 }
 
 /* Layout: Left-aligned */
-.gmkb-guest-intro.layout-left-aligned .guest-intro-content {
+.guest-intro-component.layout-left-aligned .guest-intro-content {
   text-align: left;
   max-width: 900px;
 }
 
 /* Layout: Card */
-.gmkb-guest-intro.layout-card {
-  box-shadow: var(--gmkb-shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
-  border: 1px solid var(--gmkb-color-border, #e0e0e0);
+.guest-intro-component.layout-card {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e0e0;
 }
 
-.gmkb-guest-intro.layout-card .guest-intro-content {
-  padding: var(--gmkb-spacing-md, 1rem);
+.guest-intro-component.layout-card .guest-intro-content {
+  padding: 1rem;
 }
 
 /* Name styling */
 .guest-name {
-  font-family: var(--gmkb-font-heading, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
-  font-size: var(--gmkb-font-size-xl, 2rem);
+  font-size: 2rem;
   font-weight: 700;
-  color: var(--gmkb-color-text, #333333);
-  margin: 0 0 var(--gmkb-spacing-sm, 0.5rem) 0;
-  line-height: var(--gmkb-line-height-heading, 1.2);
+  margin: 0 0 0.5rem 0;
+  line-height: 1.2;
+  color: inherit;
 }
 
 /* Title line */
 .guest-title-line {
   display: flex;
-  gap: var(--gmkb-spacing-sm, 0.5rem);
-  font-size: var(--gmkb-font-size-lg, 1.25rem);
-  color: var(--gmkb-color-text-light, #666666);
-  margin-bottom: var(--gmkb-spacing-md, 1rem);
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  color: #666666;
+  margin-bottom: 1rem;
   flex-wrap: wrap;
 }
 
@@ -165,7 +139,7 @@ export default {
 
 .guest-company {
   position: relative;
-  padding-left: var(--gmkb-spacing-sm, 0.5rem);
+  padding-left: 0.5rem;
 }
 
 .guest-company::before {
@@ -178,12 +152,10 @@ export default {
 
 /* Tagline styling */
 .guest-tagline {
-  margin: var(--gmkb-spacing-md, 1rem) 0;
-  padding: var(--gmkb-spacing-md, 1rem);
-  background: linear-gradient(135deg, 
-    var(--gmkb-color-primary, #007bff) 0%, 
-    var(--gmkb-color-primary-hover, #0056b3) 100%);
-  border-radius: var(--gmkb-border-radius, 8px);
+  margin: 1rem 0;
+  padding: 1rem;
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  border-radius: 8px;
   position: relative;
   overflow: hidden;
 }
@@ -191,7 +163,7 @@ export default {
 .tagline-text {
   position: relative;
   display: inline-block;
-  font-size: var(--gmkb-font-size-lg, 1.25rem);
+  font-size: 1.25rem;
   font-weight: 600;
   color: white;
   font-style: italic;
@@ -211,37 +183,32 @@ export default {
 
 /* Introduction text */
 .guest-introduction {
-  margin-top: var(--gmkb-spacing-lg, 1.5rem);
+  margin-top: 1.5rem;
 }
 
 .guest-introduction p {
-  font-family: var(--gmkb-font-primary, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
-  font-size: var(--gmkb-font-size-base, 1rem);
-  line-height: var(--gmkb-line-height-base, 1.6);
-  color: var(--gmkb-color-text, #333333);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: inherit;
   margin: 0;
 }
 
 /* Responsive */
-@media (max-max-width: var(--gmkb-max-width-content, 768px)) {
-  .gmkb-guest-intro {
-    padding: var(--gmkb-spacing-md, 1rem);
-  }
-  
+@media (max-width: 768px) {
   .guest-name {
-    font-size: calc(var(--gmkb-font-size-xl, 2rem) * 0.85);
+    font-size: 1.7rem;
   }
   
   .guest-title-line {
-    font-size: var(--gmkb-font-size-base, 1rem);
+    font-size: 1rem;
   }
   
   .guest-tagline {
-    padding: var(--gmkb-spacing-sm, 0.5rem);
+    padding: 0.5rem;
   }
   
   .tagline-text {
-    font-size: var(--gmkb-font-size-base, 1rem);
+    font-size: 1rem;
   }
 }
 </style>
