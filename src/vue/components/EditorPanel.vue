@@ -108,10 +108,6 @@ const editorComponent = computed(() => {
       import('../../../components/booking-calendar/BookingCalendarEditor.vue')
         .catch(() => null)
     )),
-    'authority-hook': markRaw(defineAsyncComponent(() => 
-      import('../../../components/authority-hook/AuthorityHookEditor.vue')
-        .catch(() => null)
-    )),
     'guest-intro': markRaw(defineAsyncComponent(() => 
       import('../../../components/guest-intro/GuestIntroEditor.vue')
         .catch(() => null)

@@ -1,7 +1,11 @@
 <template>
-  <div class="gmkb-topics-questions">
+  <!-- V2 ARCHITECTURE: Single root element with component-root class -->
+  <div 
+    class="component-root topics-questions-component"
+    :data-component-id="componentId"
+  >
     <!-- Display Mode Selector -->
-    <div class="display-mode-selector" v-if="showModeSelector">
+    <div v-if="showModeSelector" class="display-mode-selector">
       <button 
         v-for="mode in modes" 
         :key="mode.value"
@@ -12,7 +16,7 @@
       </button>
     </div>
 
-    <!-- Topics Only Mode -->
+    <!-- Topics Section -->
     <div v-if="currentMode === 'topics' || currentMode === 'combined'" class="topics-section">
       <h3 v-if="topicsTitle" class="section-title">{{ topicsTitle }}</h3>
       <div :class="['topics-container', `display-${topicsDisplay}`]">
@@ -27,7 +31,7 @@
       </div>
     </div>
 
-    <!-- Questions Only Mode -->
+    <!-- Questions Section -->
     <div v-if="currentMode === 'questions' || currentMode === 'combined'" class="questions-section">
       <h3 v-if="questionsTitle" class="section-title">{{ questionsTitle }}</h3>
       <div :class="['questions-container', `display-${questionsDisplay}`]">
@@ -58,7 +62,7 @@
             v-if="questionsDisplay === 'accordion' && expandedQuestions.includes(index)"
             class="answer-placeholder"
           >
-            <p>Answer content would go here...</p>
+            <p>Click to contact me about this topic</p>
           </div>
         </div>
       </div>
@@ -66,250 +70,252 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'TopicsQuestions',
+<script setup>
+import { ref, computed, onMounted } from 'vue';
+import { useMediaKitStore } from '../../src/stores/mediaKit';
+import { usePodsData } from '../../src/composables/usePodsData';
+
+const props = defineProps({
+  componentId: {
+    type: String,
+    required: true
+  },
+  data: {
+    type: Object,
+    default: () => ({})
+  },
   props: {
-    // Topics (topic_1 through topic_5)
-    topic_1: { type: String, default: '' },
-    topic_2: { type: String, default: '' },
-    topic_3: { type: String, default: '' },
-    topic_4: { type: String, default: '' },
-    topic_5: { type: String, default: '' },
-    
-    // Questions (question_1 through question_25)
-    ...Object.fromEntries(
-      Array.from({ length: 25 }, (_, i) => [
-        `question_${i + 1}`,
-        { type: String, default: '' }
-      ])
-    ),
-    
-    // Display options
-    displayMode: {
-      type: String,
-      default: 'combined',
-      validator: value => ['topics', 'questions', 'combined'].includes(value)
-    },
-    showModeSelector: {
-      type: Boolean,
-      default: true
-    },
-    topicsDisplay: {
-      type: String,
-      default: 'cards',
-      validator: value => ['cards', 'list'].includes(value)
-    },
-    questionsDisplay: {
-      type: String,
-      default: 'list',
-      validator: value => ['accordion', 'list'].includes(value)
-    },
-    topicsTitle: {
-      type: String,
-      default: 'Topics of Expertise'
-    },
-    questionsTitle: {
-      type: String,
-      default: 'Interview Questions'
-    }
+    type: Object,
+    default: () => ({})
   },
-  data() {
-    return {
-      currentMode: this.displayMode,
-      expandedQuestions: [],
-      modes: [
-        { value: 'topics', label: 'Topics Only' },
-        { value: 'questions', label: 'Questions Only' },
-        { value: 'combined', label: 'Topics & Questions' }
-      ]
-    };
+  settings: {
+    type: Object,
+    default: () => ({})
   },
-  computed: {
-    filteredTopics() {
-      const topics = [];
-      for (let i = 1; i <= 5; i++) {
-        const topic = this[`topic_${i}`];
-        if (topic && topic.trim()) {
-          topics.push(topic);
-        }
-      }
-      return topics;
-    },
-    filteredQuestions() {
-      const questions = [];
-      for (let i = 1; i <= 25; i++) {
-        const question = this[`question_${i}`];
-        if (question && question.trim()) {
-          questions.push(question);
-        }
-      }
-      return questions;
-    }
+  isEditing: {
+    type: Boolean,
+    default: false
   },
-  mounted() {
-    // Auto-load from Pods data if available
-    if (window.gmkbData?.pods_data) {
-      this.loadFromPodsData();
-    }
-  },
-  methods: {
-    loadFromPodsData() {
-      const pods = window.gmkbData.pods_data;
-      if (!pods) return;
-      
-      const updates = {};
-      
-      // Load topics
-      for (let i = 1; i <= 5; i++) {
-        if (pods[`topic_${i}`] && !this[`topic_${i}`]) {
-          updates[`topic_${i}`] = pods[`topic_${i}`];
-        }
-      }
-      
-      // Load questions
-      for (let i = 1; i <= 25; i++) {
-        if (pods[`question_${i}`] && !this[`question_${i}`]) {
-          updates[`question_${i}`] = pods[`question_${i}`];
-        }
-      }
-      
-      if (Object.keys(updates).length > 0) {
-        this.$emit('update:modelValue', updates);
-      }
-    },
-    toggleQuestion(index) {
-      const pos = this.expandedQuestions.indexOf(index);
-      if (pos >= 0) {
-        this.expandedQuestions.splice(pos, 1);
-      } else {
-        this.expandedQuestions.push(index);
-      }
+  isSelected: {
+    type: Boolean,
+    default: false
+  }
+});
+
+// Store and composables
+const store = useMediaKitStore();
+const { topics: podsTopics, questions: podsQuestions } = usePodsData();
+
+// Local state
+const currentMode = ref(props.data?.displayMode || props.props?.displayMode || 'combined');
+const expandedQuestions = ref([]);
+
+const modes = [
+  { value: 'topics', label: 'Topics Only' },
+  { value: 'questions', label: 'Questions Only' },
+  { value: 'combined', label: 'Topics & Questions' }
+];
+
+// Extract data from both data and props for compatibility
+const showModeSelector = computed(() => {
+  const val = props.data?.showModeSelector ?? props.props?.showModeSelector;
+  return val !== false;
+});
+
+const topicsDisplay = computed(() => props.data?.topicsDisplay || props.props?.topicsDisplay || 'cards');
+const questionsDisplay = computed(() => props.data?.questionsDisplay || props.props?.questionsDisplay || 'list');
+const topicsTitle = computed(() => props.data?.topicsTitle || props.props?.topicsTitle || 'Topics of Expertise');
+const questionsTitle = computed(() => props.data?.questionsTitle || props.props?.questionsTitle || 'Interview Questions');
+
+const filteredTopics = computed(() => {
+  const topics = [];
+  
+  // Check for topics in data/props
+  for (let i = 1; i <= 10; i++) {
+    const topic = props.data?.[`topic_${i}`] || props.props?.[`topic_${i}`];
+    if (topic && topic.trim()) {
+      topics.push(topic);
     }
   }
+  
+  // Fallback to Pods topics
+  if (topics.length === 0 && podsTopics.value && podsTopics.value.length > 0) {
+    return podsTopics.value.map(t => t.text || t.name || t).slice(0, 10);
+  }
+  
+  return topics;
+});
+
+const filteredQuestions = computed(() => {
+  const questions = [];
+  
+  // Check for questions in data/props
+  for (let i = 1; i <= 25; i++) {
+    const question = props.data?.[`question_${i}`] || props.props?.[`question_${i}`];
+    if (question && question.trim()) {
+      questions.push(question);
+    }
+  }
+  
+  // Fallback to Pods questions
+  if (questions.length === 0 && podsQuestions.value && podsQuestions.value.length > 0) {
+    return podsQuestions.value.map(q => q.text || q.question || q).slice(0, 25);
+  }
+  
+  return questions;
+});
+
+const toggleQuestion = (index) => {
+  const pos = expandedQuestions.value.indexOf(index);
+  if (pos >= 0) {
+    expandedQuestions.value.splice(pos, 1);
+  } else {
+    expandedQuestions.value.push(index);
+  }
 };
+
+// Lifecycle
+onMounted(() => {
+  if (store.components[props.componentId]) {
+    document.dispatchEvent(new CustomEvent('gmkb:vue-component-mounted', {
+      detail: {
+        type: 'topics-questions',
+        id: props.componentId,
+        podsDataUsed: (filteredTopics.value.length > 0 && podsTopics.value?.length > 0) ||
+                     (filteredQuestions.value.length > 0 && podsQuestions.value?.length > 0)
+      }
+    }));
+  }
+});
 </script>
 
 <style scoped>
-.gmkb-topics-questions {
-  padding: var(--gmkb-spacing-lg, 1.5rem) 0;
+/* V2 ARCHITECTURE: Minimal component styles */
+/* All visual styles (background, padding, border, etc.) applied via ComponentStyleService */
+
+.topics-questions-component {
+  /* Styles applied via inline styles from ComponentStyleService */
 }
 
 /* Mode Selector */
 .display-mode-selector {
   display: flex;
-  gap: var(--gmkb-spacing-sm, 0.5rem);
+  gap: 0.5rem;
   justify-content: center;
-  margin-bottom: var(--gmkb-spacing-lg, 1.5rem);
+  margin-bottom: 2rem;
   flex-wrap: wrap;
 }
 
 .mode-btn {
-  padding: var(--gmkb-spacing-sm, 0.5rem) var(--gmkb-spacing-md, 1rem);
-  background: var(--gmkb-color-surface, #f5f5f5);
-  border: 2px solid var(--gmkb-color-border, #e0e0e0);
-  border-radius: var(--gmkb-border-radius, 8px);
-  color: var(--gmkb-color-text, #333);
-  font-size: var(--gmkb-font-size-base, 1rem);
+  padding: 0.5rem 1rem;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  color: #1e293b;
+  font-size: 1rem;
   cursor: pointer;
-  transition: all var(--gmkb-transition-speed, 0.3s);
+  transition: all 0.3s;
+  font-weight: 500;
 }
 
 .mode-btn:hover {
-  background: var(--gmkb-color-primary, #007bff);
+  background: #3b82f6;
   color: white;
-  border-color: var(--gmkb-color-primary, #007bff);
+  border-color: #3b82f6;
 }
 
 .mode-btn.active {
-  background: var(--gmkb-color-primary, #007bff);
+  background: #3b82f6;
   color: white;
-  border-color: var(--gmkb-color-primary, #007bff);
+  border-color: #3b82f6;
 }
 
 /* Section Titles */
 .section-title {
-  font-family: var(--gmkb-font-heading, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
-  font-size: var(--gmkb-font-size-lg, 1.25rem);
+  font-size: 1.5rem;
   font-weight: 600;
-  color: var(--gmkb-color-text, #333);
-  margin-bottom: var(--gmkb-spacing-md, 1rem);
+  margin: 0 0 1.5rem 0;
   text-align: center;
+  color: inherit;
 }
 
 /* Topics Section */
 .topics-section {
-  margin-bottom: var(--gmkb-spacing-xl, 2rem);
+  margin-bottom: 3rem;
 }
 
 .topics-container.display-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--gmkb-spacing-md, 1rem);
+  gap: 1rem;
 }
 
 .topics-container.display-list {
   display: flex;
   flex-direction: column;
-  gap: var(--gmkb-spacing-sm, 0.5rem);
+  gap: 0.75rem;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .topic-item {
   display: flex;
   align-items: center;
-  gap: var(--gmkb-spacing-sm, 0.5rem);
-  padding: var(--gmkb-spacing-md, 1rem);
-  background: var(--gmkb-color-surface, #ffffff);
-  border-radius: var(--gmkb-border-radius, 8px);
-  transition: transform var(--gmkb-transition-speed, 0.3s);
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  transition: transform 0.3s;
 }
 
 .topic-item.card-style {
-  box-shadow: var(--gmkb-shadow-sm, 0 2px 4px rgba(0, 0, 0, 0.1));
-  border: 1px solid var(--gmkb-color-border, #e0e0e0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
 }
 
 .topic-item.card-style:hover {
   transform: translateY(-2px);
-  box-shadow: var(--gmkb-shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .topic-number {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  background: var(--gmkb-color-primary, #007bff);
+  width: 32px;
+  height: 32px;
+  background: #3b82f6;
   color: white;
   border-radius: 50%;
   font-weight: 600;
-  font-size: var(--gmkb-font-size-sm, 0.875rem);
+  font-size: 0.875rem;
   flex-shrink: 0;
 }
 
 .topic-text {
   flex: 1;
-  font-size: var(--gmkb-font-size-base, 1rem);
-  color: var(--gmkb-color-text, #333);
-  line-height: var(--gmkb-line-height-base, 1.6);
+  font-size: 1rem;
+  color: #1e293b;
+  line-height: 1.6;
 }
 
 /* Questions Section */
 .questions-section {
-  margin-bottom: var(--gmkb-spacing-xl, 2rem);
+  margin-bottom: 2rem;
 }
 
 .questions-container {
   display: flex;
   flex-direction: column;
-  gap: var(--gmkb-spacing-sm, 0.5rem);
+  gap: 0.75rem;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .question-item {
-  background: var(--gmkb-color-surface, #ffffff);
-  border: 1px solid var(--gmkb-color-border, #e0e0e0);
-  border-radius: var(--gmkb-border-radius, 8px);
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -317,61 +323,65 @@ export default {
 .question-content {
   display: flex;
   align-items: center;
-  gap: var(--gmkb-spacing-sm, 0.5rem);
-  padding: var(--gmkb-spacing-md, 1rem);
+  gap: 0.75rem;
+  padding: 1rem;
 }
 
 .question-header {
   cursor: pointer;
-  transition: background var(--gmkb-transition-speed, 0.3s);
+  transition: background 0.3s;
 }
 
 .question-header:hover {
-  background: var(--gmkb-color-surface, #f5f5f5);
+  background: rgba(0, 0, 0, 0.03);
 }
 
 .question-number {
   font-weight: 600;
-  color: var(--gmkb-color-primary, #007bff);
+  color: #3b82f6;
   flex-shrink: 0;
 }
 
 .question-text {
   flex: 1;
-  font-size: var(--gmkb-font-size-base, 1rem);
-  color: var(--gmkb-color-text, #333);
-  line-height: var(--gmkb-line-height-base, 1.6);
+  font-size: 1rem;
+  color: #1e293b;
+  line-height: 1.6;
 }
 
 .accordion-icon {
-  font-size: var(--gmkb-font-size-lg, 1.25rem);
-  color: var(--gmkb-color-primary, #007bff);
+  font-size: 1.5rem;
+  color: #3b82f6;
   flex-shrink: 0;
   width: 24px;
   text-align: center;
 }
 
 .answer-placeholder {
-  padding: var(--gmkb-spacing-md, 1rem);
-  background: var(--gmkb-color-surface, #f9f9f9);
-  border-top: 1px solid var(--gmkb-color-border, #e0e0e0);
+  padding: 1rem;
+  background: rgba(59, 130, 246, 0.05);
+  border-top: 1px solid #e2e8f0;
 }
 
 .answer-placeholder p {
   margin: 0;
-  color: var(--gmkb-color-text-light, #666);
+  color: #64748b;
   font-style: italic;
 }
 
 /* Responsive */
-@media (max-max-width: var(--gmkb-max-width-content, 768px)) {
+@media (max-width: 768px) {
   .topics-container.display-cards {
     grid-template-columns: 1fr;
   }
   
   .mode-btn {
-    font-size: var(--gmkb-font-size-sm, 0.875rem);
-    padding: var(--gmkb-spacing-xs, 0.25rem) var(--gmkb-spacing-sm, 0.5rem);
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .section-title {
+    font-size: 1.25rem;
   }
 }
 </style>

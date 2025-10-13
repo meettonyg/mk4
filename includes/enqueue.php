@@ -227,24 +227,31 @@ function gmkb_get_component_registry_data() {
         
         $discovery = new ComponentDiscovery(GUESTIFY_PLUGIN_DIR . 'components/');
         
-        // ROOT FIX: AGGRESSIVE CACHE CLEAR - Force delete ALL related transients
-        // Clear component discovery cache
+        // ROOT FIX: AGGRESSIVE CACHE CLEAR - Clear ALL related transients
+        // Component discovery cache
         $cache_key = 'gmkb_component_discovery_' . md5(GUESTIFY_PLUGIN_DIR . 'components/');
-    delete_transient($cache_key);
-    
-    // Also clear any lingering old cache keys
-    delete_transient('gmkb_components_cache');
-    delete_transient('gmkb_component_registry');
-    
-    // Clear file version caches to force fresh script/style loading
-    delete_transient('gmkb_script_version_' . md5($bundle_js_path));
-    $css_paths = array(
-        'gmkb.css' => GUESTIFY_PLUGIN_DIR . 'dist/gmkb.css',
-        'style.css' => GUESTIFY_PLUGIN_DIR . 'dist/style.css'
-    );
-    foreach ($css_paths as $path) {
-        delete_transient('gmkb_style_version_' . md5($path));
-    }
+        delete_transient($cache_key);
+        
+        // Clear old cache keys
+        delete_transient('gmkb_components_cache');
+        delete_transient('gmkb_component_registry');
+        
+        // FIX: Clear file version caches using proper paths
+        $bundle_js_path = GUESTIFY_PLUGIN_DIR . 'dist/gmkb.iife.js';
+        if (file_exists($bundle_js_path)) {
+            delete_transient('gmkb_script_version_' . md5($bundle_js_path));
+        }
+        
+        $css_files = array(
+            GUESTIFY_PLUGIN_DIR . 'dist/gmkb.css',
+            GUESTIFY_PLUGIN_DIR . 'dist/style.css'
+        );
+        
+        foreach ($css_files as $css_path) {
+            if (file_exists($css_path)) {
+                delete_transient('gmkb_style_version_' . md5($css_path));
+            }
+        }
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('🔍 GMKB: Cache cleared, key: ' . $cache_key);

@@ -1,25 +1,15 @@
 <template>
-  <div class="topics-editor">
-    <div class="editor-header">
-      <h3>Topics Component</h3>
-      <button @click="closeEditor" class="close-btn">×</button>
-    </div>
-    
-    <!-- Tab Navigation -->
-    <div class="editor-tabs">
-      <button
-        v-for="tab in tabs"
-        :key="tab.id"
-        :class="['tab-btn', { active: activeTab === tab.id }]"
-        @click="activeTab = tab.id"
-      >
-        {{ tab.label }}
-      </button>
-    </div>
-    
-    <div class="editor-content">
-      <!-- CONTENT TAB -->
-      <div v-show="activeTab === 'content'" class="tab-panel">
+  <ComponentEditorTemplate
+    :component-id="componentId"
+    component-type="Topics"
+    :show-typography="true"
+    :active-tab="activeTab"
+    @update:active-tab="activeTab = $event"
+    @back="handleBack"
+  >
+    <!-- Content Tab -->
+    <template #content>
+      <div class="content-fields">
         <section class="editor-section">
           <h4>Section Settings</h4>
           
@@ -29,8 +19,20 @@
               id="topics-title"
               v-model="localData.title" 
               @input="updateComponent"
+              type="text"
               placeholder="e.g., Areas of Expertise"
-            >
+            />
+          </div>
+          
+          <div class="field-group">
+            <label for="topics-description">Description</label>
+            <textarea 
+              id="topics-description"
+              v-model="localData.description" 
+              @input="updateComponent"
+              rows="3"
+              placeholder="Optional description text..."
+            />
           </div>
         </section>
 
@@ -48,7 +50,7 @@
                 @input="updateComponent"
                 placeholder="Enter topic..."
                 class="topic-input"
-              >
+              />
               <button 
                 @click="removeTopic(index)"
                 class="remove-btn"
@@ -69,20 +71,6 @@
           <h4>Display Options</h4>
           
           <div class="field-group">
-            <label for="layout-style">Layout Style</label>
-            <select 
-              id="layout-style"
-              v-model="localData.layoutStyle" 
-              @change="updateComponent"
-            >
-              <option value="grid">Grid</option>
-              <option value="list">List</option>
-              <option value="tags">Tags</option>
-              <option value="cards">Cards</option>
-            </select>
-          </div>
-          
-          <div class="field-group">
             <label for="columns">Columns (Desktop)</label>
             <select 
               id="columns"
@@ -101,37 +89,20 @@
                 type="checkbox"
                 v-model="localData.showIcons" 
                 @change="updateComponent"
-              >
+              />
               Show Icons
             </label>
           </div>
         </section>
       </div>
-      
-      <!-- STYLE TAB -->
-      <div v-show="activeTab === 'style'" class="tab-panel">
-        <BaseStylePanel
-          :component-id="componentId"
-          :component-type="'topics'"
-          :show-typography="true"
-        />
-      </div>
-      
-      <!-- ADVANCED TAB -->
-      <div v-show="activeTab === 'advanced'" class="tab-panel">
-        <BaseAdvancedPanel
-          :component-id="componentId"
-        />
-      </div>
-    </div>
-  </div>
+    </template>
+  </ComponentEditorTemplate>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
-import BaseStylePanel from '../../src/vue/components/sidebar/editors/BaseStylePanel.vue';
-import BaseAdvancedPanel from '../../src/vue/components/sidebar/editors/BaseAdvancedPanel.vue';
+import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 
 const props = defineProps({
   componentId: {
@@ -140,20 +111,18 @@ const props = defineProps({
   }
 });
 
+const emit = defineEmits(['close']);
+
 const store = useMediaKitStore();
 
-// Tab state
+// Active tab state
 const activeTab = ref('content');
-const tabs = [
-  { id: 'content', label: 'Content' },
-  { id: 'style', label: 'Style' },
-  { id: 'advanced', label: 'Advanced' }
-];
 
+// Local data state
 const localData = ref({
   title: 'Areas of Expertise',
+  description: '',
   topics: [],
-  layoutStyle: 'grid',
   columns: '3',
   showIcons: false
 });
@@ -164,8 +133,10 @@ const loadComponentData = () => {
   if (component && component.data) {
     localData.value = {
       title: component.data.title || 'Areas of Expertise',
-      topics: Array.isArray(component.data.topics) ? [...component.data.topics] : [],
-      layoutStyle: component.data.layoutStyle || 'grid',
+      description: component.data.description || '',
+      topics: Array.isArray(component.data.topics) 
+        ? [...component.data.topics]
+        : [],
       columns: String(component.data.columns || '3'),
       showIcons: component.data.showIcons || false
     };
@@ -186,7 +157,7 @@ const removeTopic = (index) => {
   updateComponent();
 };
 
-// Update component
+// Update component with debouncing
 let updateTimeout = null;
 const updateComponent = () => {
   if (updateTimeout) clearTimeout(updateTimeout);
@@ -195,8 +166,8 @@ const updateComponent = () => {
     store.updateComponent(props.componentId, {
       data: {
         title: localData.value.title,
+        description: localData.value.description,
         topics: localData.value.topics.filter(t => t.trim()),
-        layoutStyle: localData.value.layoutStyle,
         columns: parseInt(localData.value.columns),
         showIcons: localData.value.showIcons
       }
@@ -205,101 +176,32 @@ const updateComponent = () => {
   }, 300);
 };
 
-const closeEditor = () => {
-  store.closeEditPanel();
+// Handle back button
+const handleBack = () => {
+  emit('close');
 };
 </script>
 
 <style scoped>
-.topics-editor {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  background: white;
-}
-
-.editor-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--gmkb-spacing-md, 16px) 20px;
-  border-bottom: 1px solid #e5e7eb;
-  background: linear-gradient(to bottom, #ffffff, #f9fafb);
-}
-
-.editor-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.close-btn {
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: transparent;
-  color: #64748b;
-  font-size: 24px;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.close-btn:hover {
-  background: #f1f5f9;
-  color: #1e293b;
-}
-
-.editor-tabs {
-  display: flex;
-  border-bottom: 1px solid #e5e7eb;
-  background: #f9fafb;
-}
-
-.tab-btn {
-  flex: 1;
-  padding: 12px 16px;
-  border: none;
-  background: transparent;
-  color: #64748b;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border-bottom: 2px solid transparent;
-}
-
-.tab-btn:hover {
-  background: #f1f5f9;
-  color: #475569;
-}
-
-.tab-btn.active {
-  color: #3b82f6;
-  background: white;
-  border-bottom-color: #3b82f6;
-}
-
-.editor-content {
-  flex: 1;
-  overflow-y: auto;
-  background: #f9fafb;
-}
-
-.tab-panel {
+.content-fields {
   padding: 20px;
 }
 
 .editor-section {
   background: white;
   border-radius: 8px;
-  padding: var(--gmkb-spacing-md, 16px);
+  padding: 20px;
   margin-bottom: 16px;
   border: 1px solid #e5e7eb;
+}
+
+body.dark-mode .editor-section {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.editor-section:last-child {
+  margin-bottom: 0;
 }
 
 .editor-section h4 {
@@ -309,6 +211,10 @@ const closeEditor = () => {
   color: #475569;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+body.dark-mode .editor-section h4 {
+  color: #94a3b8;
 }
 
 .field-group {
@@ -327,15 +233,30 @@ const closeEditor = () => {
   color: #64748b;
 }
 
+body.dark-mode .field-group label {
+  color: #94a3b8;
+}
+
 .field-group input[type="text"],
-.field-group select {
+.field-group select,
+.field-group textarea {
   width: 100%;
-  padding: var(--gmkb-spacing-sm, 8px) 12px;
+  padding: 10px 12px;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   font-size: 14px;
   background: white;
+  color: #1f2937;
   transition: all 0.2s;
+  font-family: inherit;
+}
+
+body.dark-mode .field-group input,
+body.dark-mode .field-group select,
+body.dark-mode .field-group textarea {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f3f4f6;
 }
 
 .field-group input[type="checkbox"] {
@@ -344,10 +265,16 @@ const closeEditor = () => {
 }
 
 .field-group input:focus,
-.field-group select:focus {
+.field-group select:focus,
+.field-group textarea:focus {
   outline: none;
-  border-color: var(--gmkb-color-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+}
+
+.field-group textarea {
+  resize: vertical;
+  min-height: 80px;
 }
 
 .topics-list {
@@ -363,21 +290,29 @@ const closeEditor = () => {
 
 .topic-input {
   flex: 1;
-  padding: var(--gmkb-spacing-sm, 8px) 12px;
+  padding: 10px 12px;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   font-size: 14px;
   background: white;
+  color: #1f2937;
+  font-family: inherit;
+}
+
+body.dark-mode .topic-input {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f3f4f6;
 }
 
 .topic-input:focus {
   outline: none;
-  border-color: var(--gmkb-color-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
 }
 
 .remove-btn {
-  width: 32px;
+  width: 38px;
   height: 38px;
   background: #fef2f2;
   border: 1px solid #fecaca;
@@ -396,6 +331,12 @@ const closeEditor = () => {
   border-color: #f87171;
 }
 
+body.dark-mode .remove-btn {
+  background: #450a0a;
+  border-color: #7f1d1d;
+  color: #fca5a5;
+}
+
 .add-btn {
   padding: 10px;
   background: #f0f9ff;
@@ -405,27 +346,16 @@ const closeEditor = () => {
   cursor: pointer;
   font-weight: 500;
   transition: all 0.2s;
+  width: 100%;
 }
 
 .add-btn:hover {
   background: #e0f2fe;
 }
 
-/* Scrollbar styling */
-.editor-content::-webkit-scrollbar {
-  width: 6px;
-}
-
-.editor-content::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
-
-.editor-content::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-
-.editor-content::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+body.dark-mode .add-btn {
+  background: #0c4a6e;
+  border-color: #0369a1;
+  color: #7dd3fc;
 }
 </style>

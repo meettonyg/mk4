@@ -56,7 +56,6 @@ const editorComponent = computed(() => {
     'topics': () => import(`../../../../components/topics/TopicsEditor.vue`),
     'contact': () => import(`../../../../components/contact/ContactEditor.vue`),
     'guest-intro': () => import(`../../../../components/guest-intro/GuestIntroEditor.vue`),
-    'authority-hook': () => import(`../../../../components/authority-hook/AuthorityHookEditor.vue`),
     'stats': () => import(`../../../../components/stats/StatsEditor.vue`),
     'social': () => import(`../../../../components/social/SocialEditor.vue`),
     'questions': () => import(`../../../../components/questions/QuestionsEditor.vue`),

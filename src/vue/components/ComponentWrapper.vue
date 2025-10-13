@@ -48,6 +48,7 @@ import ComponentControls from './builder/ComponentControls.vue'
 // Import all component types directly
 // Using @components alias defined in vite.config.js
 const componentMap = {
+  // V2 Components - Following simplified architecture
   'biography': defineAsyncComponent(() => 
     import('@components/biography/Biography.vue')
   ),
@@ -57,18 +58,47 @@ const componentMap = {
   'guest-intro': defineAsyncComponent(() => 
     import('@components/guest-intro/GuestIntro.vue')
   ),
-  // These components only have Renderer files for now
   'topics': defineAsyncComponent(() => 
-    import('@components/topics/TopicsRenderer.vue')
+    import('@components/topics/Topics.vue')
   ),
   'stats': defineAsyncComponent(() => 
-    import('@components/stats/StatsRenderer.vue')
+    import('@components/stats/Stats.vue')
   ),
   'contact': defineAsyncComponent(() => 
-    import('@components/contact/ContactRenderer.vue')
+    import('@components/contact/Contact.vue')
   ),
-  'authority-hook': defineAsyncComponent(() => 
-    import('@components/authority-hook/AuthorityHookRenderer.vue')
+  // Batch 1: Simple Components
+  'social': defineAsyncComponent(() => 
+    import('@components/social/Social.vue')
+  ),
+  'call-to-action': defineAsyncComponent(() => 
+    import('@components/call-to-action/CallToAction.vue')
+  ),
+  'logo-grid': defineAsyncComponent(() => 
+    import('@components/logo-grid/LogoGrid.vue')
+  ),
+  // Batch 2: Medium Components
+  'testimonials': defineAsyncComponent(() => 
+    import('@components/testimonials/Testimonials.vue')
+  ),
+  'questions': defineAsyncComponent(() => 
+    import('@components/questions/Questions.vue')
+  ),
+  'video-intro': defineAsyncComponent(() => 
+    import('@components/video-intro/VideoIntro.vue')
+  ),
+  'topics-questions': defineAsyncComponent(() => 
+    import('@components/topics-questions/TopicsQuestions.vue')
+  ),
+  // Batch 3: Complex Components
+  'photo-gallery': defineAsyncComponent(() => 
+    import('@components/photo-gallery/PhotoGallery.vue')
+  ),
+  'podcast-player': defineAsyncComponent(() => 
+    import('@components/podcast-player/PodcastPlayer.vue')
+  ),
+  'booking-calendar': defineAsyncComponent(() => 
+    import('@components/booking-calendar/BookingCalendar.vue')
   )
 }
 

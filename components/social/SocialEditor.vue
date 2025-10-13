@@ -1,25 +1,15 @@
 <template>
-  <div class="social-editor">
-    <div class="editor-header">
-      <h3>Social Links Component</h3>
-      <button @click="closeEditor" class="close-btn">×</button>
-    </div>
-    
-    <!-- Tab Navigation -->
-    <div class="editor-tabs">
-      <button
-        v-for="tab in tabs"
-        :key="tab.id"
-        :class="['tab-btn', { active: activeTab === tab.id }]"
-        @click="activeTab = tab.id"
-      >
-        {{ tab.label }}
-      </button>
-    </div>
-    
-    <div class="editor-content">
-      <!-- CONTENT TAB -->
-      <div v-show="activeTab === 'content'" class="tab-panel">
+  <ComponentEditorTemplate
+    :component-id="componentId"
+    component-type="Social Links"
+    :show-typography="false"
+    :active-tab="activeTab"
+    @update:active-tab="activeTab = $event"
+    @back="handleBack"
+  >
+    <!-- Content Tab -->
+    <template #content>
+      <div class="content-fields">
         <section class="editor-section">
           <h4>Section Settings</h4>
           
@@ -29,8 +19,20 @@
               id="social-title"
               v-model="localData.title" 
               @input="updateComponent"
+              type="text"
               placeholder="e.g., Connect With Me"
-            >
+            />
+          </div>
+          
+          <div class="field-group">
+            <label for="social-description">Description</label>
+            <textarea 
+              id="social-description"
+              v-model="localData.description" 
+              @input="updateComponent"
+              rows="2"
+              placeholder="Optional description..."
+            />
           </div>
         </section>
         
@@ -47,7 +49,7 @@
               @input="updateComponent"
               :placeholder="network.placeholder"
               type="url"
-            >
+            />
           </div>
         </section>
         
@@ -55,93 +57,25 @@
           <h4>Display Options</h4>
           
           <div class="field-group">
-            <label for="icon-style">Icon Style</label>
-            <select 
-              id="icon-style"
-              v-model="localData.iconStyle" 
-              @change="updateComponent"
-            >
-              <option value="rounded">Rounded</option>
-              <option value="square">Square</option>
-              <option value="circle">Circle</option>
-              <option value="text-only">Text Only</option>
-            </select>
-          </div>
-          
-          <div class="field-group">
-            <label for="icon-size">Icon Size</label>
-            <select 
-              id="icon-size"
-              v-model="localData.iconSize" 
-              @change="updateComponent"
-            >
-              <option value="small">Small</option>
-              <option value="medium">Medium</option>
-              <option value="large">Large</option>
-            </select>
-          </div>
-          
-          <div class="field-group">
-            <label for="alignment">Alignment</label>
-            <select 
-              id="alignment"
-              v-model="localData.alignment" 
-              @change="updateComponent"
-            >
-              <option value="left">Left</option>
-              <option value="center">Center</option>
-              <option value="right">Right</option>
-            </select>
-          </div>
-          
-          <div class="field-group">
             <label>
               <input 
                 type="checkbox"
                 v-model="localData.showLabels" 
                 @change="updateComponent"
-              >
+              />
               Show Network Names
-            </label>
-          </div>
-          
-          <div class="field-group">
-            <label>
-              <input 
-                type="checkbox"
-                v-model="localData.openInNewTab" 
-                @change="updateComponent"
-              >
-              Open Links in New Tab
             </label>
           </div>
         </section>
       </div>
-      
-      <!-- STYLE TAB -->
-      <div v-show="activeTab === 'style'" class="tab-panel">
-        <BaseStylePanel
-          :component-id="componentId"
-          :component-type="'social'"
-          :show-typography="false"
-        />
-      </div>
-      
-      <!-- ADVANCED TAB -->
-      <div v-show="activeTab === 'advanced'" class="tab-panel">
-        <BaseAdvancedPanel
-          :component-id="componentId"
-        />
-      </div>
-    </div>
-  </div>
+    </template>
+  </ComponentEditorTemplate>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
-import BaseStylePanel from '../../src/vue/components/sidebar/editors/BaseStylePanel.vue';
-import BaseAdvancedPanel from '../../src/vue/components/sidebar/editors/BaseAdvancedPanel.vue';
+import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 
 const props = defineProps({
   componentId: {
@@ -150,42 +84,36 @@ const props = defineProps({
   }
 });
 
+const emit = defineEmits(['close']);
+
 const store = useMediaKitStore();
 
-// Tab state
+// Active tab state
 const activeTab = ref('content');
-const tabs = [
-  { id: 'content', label: 'Content' },
-  { id: 'style', label: 'Style' },
-  { id: 'advanced', label: 'Advanced' }
-];
 
 const socialNetworks = {
-  linkedin: { name: 'LinkedIn', icon: '💼', placeholder: 'https://linkedin.com/in/username' },
-  twitter: { name: 'Twitter/X', icon: '🐦', placeholder: 'https://twitter.com/username' },
   facebook: { name: 'Facebook', icon: '👤', placeholder: 'https://facebook.com/username' },
+  twitter: { name: 'Twitter/X', icon: '🐦', placeholder: 'https://twitter.com/username' },
+  linkedin: { name: 'LinkedIn', icon: '💼', placeholder: 'https://linkedin.com/in/username' },
   instagram: { name: 'Instagram', icon: '📷', placeholder: 'https://instagram.com/username' },
   youtube: { name: 'YouTube', icon: '📺', placeholder: 'https://youtube.com/@channel' },
   tiktok: { name: 'TikTok', icon: '🎵', placeholder: 'https://tiktok.com/@username' },
   github: { name: 'GitHub', icon: '💻', placeholder: 'https://github.com/username' },
-  website: { name: 'Website', icon: '🌐', placeholder: 'https://example.com' }
+  pinterest: { name: 'Pinterest', icon: '📌', placeholder: 'https://pinterest.com/username' }
 };
 
 const localData = ref({
   title: 'Connect With Me',
-  linkedin: '',
-  twitter: '',
+  description: '',
   facebook: '',
+  twitter: '',
+  linkedin: '',
   instagram: '',
   youtube: '',
   tiktok: '',
   github: '',
-  website: '',
-  iconStyle: 'rounded',
-  iconSize: 'medium',
-  alignment: 'center',
-  showLabels: false,
-  openInNewTab: true
+  pinterest: '',
+  showLabels: false
 });
 
 // Load component data
@@ -194,26 +122,23 @@ const loadComponentData = () => {
   if (component && component.data) {
     localData.value = {
       title: component.data.title || 'Connect With Me',
-      linkedin: component.data.linkedin || '',
-      twitter: component.data.twitter || '',
+      description: component.data.description || '',
       facebook: component.data.facebook || '',
+      twitter: component.data.twitter || '',
+      linkedin: component.data.linkedin || '',
       instagram: component.data.instagram || '',
       youtube: component.data.youtube || '',
       tiktok: component.data.tiktok || '',
       github: component.data.github || '',
-      website: component.data.website || '',
-      iconStyle: component.data.iconStyle || 'rounded',
-      iconSize: component.data.iconSize || 'medium',
-      alignment: component.data.alignment || 'center',
-      showLabels: component.data.showLabels || false,
-      openInNewTab: component.data.openInNewTab !== false
+      pinterest: component.data.pinterest || '',
+      showLabels: component.data.showLabels || false
     };
   }
 };
 
 watch(() => props.componentId, loadComponentData, { immediate: true });
 
-// Update component
+// Update component with debouncing
 let updateTimeout = null;
 const updateComponent = () => {
   if (updateTimeout) clearTimeout(updateTimeout);
@@ -226,101 +151,32 @@ const updateComponent = () => {
   }, 300);
 };
 
-const closeEditor = () => {
-  store.closeEditPanel();
+// Handle back button
+const handleBack = () => {
+  emit('close');
 };
 </script>
 
 <style scoped>
-.social-editor {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  background: white;
-}
-
-.editor-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--gmkb-spacing-md, 16px) 20px;
-  border-bottom: 1px solid #e5e7eb;
-  background: linear-gradient(to bottom, #ffffff, #f9fafb);
-}
-
-.editor-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.close-btn {
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: transparent;
-  color: #64748b;
-  font-size: 24px;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.close-btn:hover {
-  background: #f1f5f9;
-  color: #1e293b;
-}
-
-.editor-tabs {
-  display: flex;
-  border-bottom: 1px solid #e5e7eb;
-  background: #f9fafb;
-}
-
-.tab-btn {
-  flex: 1;
-  padding: 12px 16px;
-  border: none;
-  background: transparent;
-  color: #64748b;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border-bottom: 2px solid transparent;
-}
-
-.tab-btn:hover {
-  background: #f1f5f9;
-  color: #475569;
-}
-
-.tab-btn.active {
-  color: #3b82f6;
-  background: white;
-  border-bottom-color: #3b82f6;
-}
-
-.editor-content {
-  flex: 1;
-  overflow-y: auto;
-  background: #f9fafb;
-}
-
-.tab-panel {
+.content-fields {
   padding: 20px;
 }
 
 .editor-section {
   background: white;
   border-radius: 8px;
-  padding: var(--gmkb-spacing-md, 16px);
+  padding: 20px;
   margin-bottom: 16px;
   border: 1px solid #e5e7eb;
+}
+
+body.dark-mode .editor-section {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.editor-section:last-child {
+  margin-bottom: 0;
 }
 
 .editor-section h4 {
@@ -330,6 +186,10 @@ const closeEditor = () => {
   color: #475569;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+body.dark-mode .editor-section h4 {
+  color: #94a3b8;
 }
 
 .field-group {
@@ -348,15 +208,30 @@ const closeEditor = () => {
   color: #64748b;
 }
 
+body.dark-mode .field-group label {
+  color: #94a3b8;
+}
+
 .field-group input,
-.field-group select {
+.field-group select,
+.field-group textarea {
   width: 100%;
-  padding: var(--gmkb-spacing-sm, 8px) 12px;
+  padding: 10px 12px;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   font-size: 14px;
   background: white;
+  color: #1f2937;
   transition: all 0.2s;
+  font-family: inherit;
+}
+
+body.dark-mode .field-group input,
+body.dark-mode .field-group select,
+body.dark-mode .field-group textarea {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f3f4f6;
 }
 
 .field-group input[type="checkbox"] {
@@ -365,25 +240,35 @@ const closeEditor = () => {
 }
 
 .field-group input:focus,
-.field-group select:focus {
+.field-group select:focus,
+.field-group textarea:focus {
   outline: none;
-  border-color: var(--gmkb-color-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+}
+
+.field-group textarea {
+  resize: vertical;
+  min-height: 60px;
 }
 
 .social-network {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.social-network:last-child {
+  margin-bottom: 0;
 }
 
 .network-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .network-icon {
-  font-size: 16px;
+  font-size: 18px;
 }
 
 .network-name {
@@ -392,21 +277,11 @@ const closeEditor = () => {
   font-weight: 500;
 }
 
-/* Scrollbar styling */
-.editor-content::-webkit-scrollbar {
-  width: 6px;
+body.dark-mode .network-name {
+  color: #94a3b8;
 }
 
-.editor-content::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
-
-.editor-content::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-
-.editor-content::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+.social-network input {
+  width: 100%;
 }
 </style>

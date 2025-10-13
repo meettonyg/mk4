@@ -310,9 +310,9 @@ const loadCustomEditor = async () => {
     'photo-gallery': () => import('../../../../components/photo-gallery/PhotoGalleryEditor.vue').catch(() => null),
     'podcast-player': () => import('../../../../components/podcast-player/PodcastPlayerEditor.vue').catch(() => null),
     'booking-calendar': () => import('../../../../components/booking-calendar/BookingCalendarEditor.vue').catch(() => null),
-    'authority-hook': () => import('../../../../components/authority-hook/AuthorityHookEditor.vue').catch(() => null),
     'guest-intro': () => import('../../../../components/guest-intro/GuestIntroEditor.vue').catch(() => null),
     'logo-grid': () => import('../../../../components/logo-grid/LogoGridEditor.vue').catch(() => null),
+    'topics-questions': () => import('../../../../components/topics-questions/TopicsQuestionsEditor.vue').catch(() => null),
   };
 
   if (editorMap[type]) {

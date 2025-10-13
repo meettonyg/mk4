@@ -1,266 +1,272 @@
 <template>
-  <div>
-    <!-- ROOT FIX: Use correct CSS classes that match styles.css -->
-    <div class="photo-gallery-component" :class="[`layout-${galleryStyle}`]">
-      <div class="photo-gallery-container">
-        <h3 v-if="title" class="photo-gallery-title">{{ title }}</h3>
-        
-        <div v-if="displayImages.length > 0" 
-             :class="['photo-gallery-grid', `spacing-medium`]"
-             :data-columns="columns"
-             :data-hover="'zoom'"
-             :data-caption-style="showCaptions ? 'hover' : 'none'">
-          <div 
-            v-for="(image, index) in displayImages" 
-            :key="`image-${index}`"
-            :class="['photo-item', 'image-standard', getImageOrientation(image)]"
-            @click="openLightbox(index)"
-          >
-            <div class="photo-wrapper">
-              <img 
-                class="photo-image"
-                :src="image.url" 
-                :alt="image.alt || `Gallery image ${index + 1}`"
-                :loading="lazyLoad ? 'lazy' : 'eager'"
-              />
-            </div>
-            <div v-if="showCaptions && image.caption" class="photo-caption">
-              {{ image.caption }}
-            </div>
-          </div>
-        </div>
-        <!-- Placeholder when no images -->
-        <div v-else class="photo-gallery-placeholder">
-          <div class="placeholder-content">
-            <div class="placeholder-icon"></div>
-            <p>No images in gallery. Click "Edit" to add photos.</p>
-          </div>
+  <!-- V2 ARCHITECTURE: Single root element with component-root class -->
+  <div 
+    class="component-root photo-gallery-component"
+    :data-component-id="componentId"
+  >
+    <h2 v-if="title" class="gallery-title">{{ title }}</h2>
+    <p v-if="description" class="gallery-description">{{ description }}</p>
+    
+    <div class="gallery-grid" :class="`columns-${columns || 3}`">
+      <div
+        v-for="(photo, index) in photos"
+        :key="index"
+        class="gallery-item"
+        @click="openLightbox(index)"
+      >
+        <img :src="photo.thumbnail || photo.url" :alt="photo.caption || `Photo ${index + 1}`" />
+        <div class="gallery-overlay">
+          <span class="overlay-icon">🔍</span>
         </div>
       </div>
     </div>
-
+    
     <!-- Lightbox -->
-    <div v-if="lightboxOpen" class="lightbox" @click="closeLightbox">
-    <div class="lightbox-content" @click.stop>
-      <button class="lightbox-close" @click="closeLightbox">×</button>
-      <button class="lightbox-prev" @click="prevImage" v-if="currentImageIndex > 0">‹</button>
-      <button class="lightbox-next" @click="nextImage" v-if="currentImageIndex < displayImages.length - 1">›</button>
-      
-      <img 
-        :src="displayImages[currentImageIndex].url" 
-        :alt="displayImages[currentImageIndex].alt"
-      />
-      
-      <div v-if="displayImages[currentImageIndex].caption" class="lightbox-caption">
-        {{ displayImages[currentImageIndex].caption }}
+    <Teleport to="body">
+      <div v-if="lightboxOpen" class="lightbox" @click="closeLightbox">
+        <button class="lightbox-close" @click="closeLightbox" aria-label="Close lightbox">&times;</button>
+        <button 
+          v-if="photos.length > 1"
+          class="lightbox-prev" 
+          @click.stop="previousPhoto"
+          aria-label="Previous photo"
+        >‹</button>
+        <img :src="photos[currentPhotoIndex].url" :alt="photos[currentPhotoIndex].caption" />
+        <button 
+          v-if="photos.length > 1"
+          class="lightbox-next" 
+          @click.stop="nextPhoto"
+          aria-label="Next photo"
+        >›</button>
+        <p v-if="photos[currentPhotoIndex].caption" class="lightbox-caption">
+          {{ photos[currentPhotoIndex].caption }}
+        </p>
       </div>
-    </div>
-  </div>
+    </Teleport>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'PhotoGallery',
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useMediaKitStore } from '../../src/stores/mediaKit';
+import { usePodsData } from '../../src/composables/usePodsData';
+
+const props = defineProps({
+  componentId: {
+    type: String,
+    required: true
+  },
+  data: {
+    type: Object,
+    default: () => ({})
+  },
   props: {
-    // Individual image fields from Pods
-    vertical_image: {
-      type: [String, Object],
-      default: ''
-    },
-    horizontal_image: {
-      type: [String, Object],
-      default: ''
-    },
-    guest_headshot: {
-      type: [String, Object],
-      default: ''
-    },
-    guest_carousel_images: {
-      type: [Array, String],
-      default: () => []
-    },
-    // Manual images array
-    images: {
-      type: Array,
-      default: () => []
-    },
-    // Display options
-    title: {
-      type: String,
-      default: ''
-    },
-    columns: {
-      type: Number,
-      default: 3,
-      validator: value => [1, 2, 3, 4, 5, 6].includes(value)
-    },
-    galleryStyle: {
-      type: String,
-      default: 'masonry',
-      validator: value => ['masonry', 'uniform', 'mixed'].includes(value)
-    },
-    lazyLoad: {
-      type: Boolean,
-      default: true
-    },
-    showCaptions: {
-      type: Boolean,
-      default: true
-    }
+    type: Object,
+    default: () => ({})
   },
-  data() {
-    return {
-      lightboxOpen: false,
-      currentImageIndex: 0
-    };
+  settings: {
+    type: Object,
+    default: () => ({})
   },
-  computed: {
-    displayImages() {
-      const images = [];
-      
-      // Add manual images first (if provided)
-      if (this.images && this.images.length > 0) {
-        images.push(...this.normalizeImages(this.images));
-      }
-      
-      // Add Pods images if no manual images provided
-      if (images.length === 0) {
-        // Add individual Pods images
-        if (this.vertical_image) {
-          images.push(this.normalizeImage(this.vertical_image, 'vertical'));
-        }
-        if (this.horizontal_image) {
-          images.push(this.normalizeImage(this.horizontal_image, 'horizontal'));
-        }
-        if (this.guest_headshot) {
-          images.push(this.normalizeImage(this.guest_headshot, 'square'));
-        }
-        
-        // Add carousel images
-        if (this.guest_carousel_images) {
-          const carouselImages = Array.isArray(this.guest_carousel_images) 
-            ? this.guest_carousel_images 
-            : this.parseCarouselImages(this.guest_carousel_images);
-          
-          images.push(...this.normalizeImages(carouselImages));
-        }
-      }
-      
-      return images.filter(img => img && img.url);
-    }
+  isEditing: {
+    type: Boolean,
+    default: false
   },
-  mounted() {
-    // Auto-load from Pods data if available
-    if (window.gmkbData?.pods_data && this.displayImages.length === 0) {
-      this.loadFromPodsData();
-    }
-    
-    // Add keyboard navigation for lightbox
-    window.addEventListener('keydown', this.handleKeyboard);
-  },
-  beforeUnmount() {
-    window.removeEventListener('keydown', this.handleKeyboard);
-  },
-  methods: {
-    normalizeImage(image, orientation = 'auto') {
-      if (!image) return null;
-      
-      if (typeof image === 'string') {
-        return {
-          url: image,
-          alt: '',
-          caption: '',
-          orientation: orientation
-        };
-      }
-      
-      return {
-        url: image.url || image.src || image,
-        alt: image.alt || '',
-        caption: image.caption || image.title || '',
-        orientation: image.orientation || orientation
-      };
-    },
-    normalizeImages(images) {
-      if (!images) return [];
-      const imageArray = Array.isArray(images) ? images : [images];
-      return imageArray.map(img => this.normalizeImage(img));
-    },
-    parseCarouselImages(carouselString) {
-      // Parse comma-separated URLs or JSON array string
-      if (typeof carouselString === 'string') {
-        try {
-          return JSON.parse(carouselString);
-        } catch {
-          return carouselString.split(',').map(url => url.trim()).filter(Boolean);
-        }
-      }
-      return [];
-    },
-    getImageOrientation(image) {
-      if (image.orientation && image.orientation !== 'auto') {
-        return `orientation-${image.orientation}`;
-      }
-      // Auto-detect orientation could be added here
-      return 'orientation-auto';
-    },
-    loadFromPodsData() {
-      const pods = window.gmkbData.pods_data;
-      if (!pods) return;
-      
-      const updates = {};
-      
-      if (pods.vertical_image) updates.vertical_image = pods.vertical_image;
-      if (pods.horizontal_image) updates.horizontal_image = pods.horizontal_image;
-      if (pods.guest_headshot) updates.guest_headshot = pods.guest_headshot;
-      if (pods.guest_carousel_images) updates.guest_carousel_images = pods.guest_carousel_images;
-      
-      if (Object.keys(updates).length > 0) {
-        this.$emit('update:modelValue', updates);
-      }
-    },
-    openLightbox(index) {
-      this.currentImageIndex = index;
-      this.lightboxOpen = true;
-      document.body.style.overflow = 'hidden';
-    },
-    closeLightbox() {
-      this.lightboxOpen = false;
-      document.body.style.overflow = '';
-    },
-    nextImage() {
-      if (this.currentImageIndex < this.displayImages.length - 1) {
-        this.currentImageIndex++;
-      }
-    },
-    prevImage() {
-      if (this.currentImageIndex > 0) {
-        this.currentImageIndex--;
-      }
-    },
-    handleKeyboard(e) {
-      if (!this.lightboxOpen) return;
-      
-      switch(e.key) {
-        case 'Escape':
-          this.closeLightbox();
-          break;
-        case 'ArrowRight':
-          this.nextImage();
-          break;
-        case 'ArrowLeft':
-          this.prevImage();
-          break;
-      }
+  isSelected: {
+    type: Boolean,
+    default: false
+  }
+});
+
+// Store and composables
+const store = useMediaKitStore();
+const { media, allData: rawPodsData } = usePodsData();
+
+// Extract headshot from media
+const headshotUrl = computed(() => media.value?.headshot || '');
+
+// Local state
+const lightboxOpen = ref(false);
+const currentPhotoIndex = ref(0);
+
+// Extract data from both data and props for compatibility
+const title = computed(() => props.data?.title || props.props?.title || 'Photo Gallery');
+const description = computed(() => props.data?.description || props.props?.description || '');
+const columns = computed(() => props.data?.columns || props.props?.columns || 3);
+
+const photos = computed(() => {
+  // Handle array format
+  if (Array.isArray(props.data?.photos) && props.data.photos.length > 0) {
+    return props.data.photos;
+  }
+  
+  // Build from individual photo fields
+  const photosList = [];
+  for (let i = 1; i <= 12; i++) {
+    const url = props.data?.[`photo_${i}_url`] || props.props?.[`photo_${i}_url`];
+    if (url) {
+      photosList.push({
+        url: url,
+        thumbnail: props.data?.[`photo_${i}_thumbnail`] || props.props?.[`photo_${i}_thumbnail`] || url,
+        caption: props.data?.[`photo_${i}_caption`] || props.props?.[`photo_${i}_caption`] || ''
+      });
     }
   }
+  
+  // Use Pods gallery images if available
+  if (photosList.length === 0) {
+    for (let i = 1; i <= 12; i++) {
+      const galleryImage = rawPodsData.value?.[`gallery_image_${i}`];
+      if (galleryImage) {
+        photosList.push({
+          url: galleryImage,
+          thumbnail: galleryImage,
+          caption: rawPodsData.value?.[`gallery_caption_${i}`] || ''
+        });
+      }
+    }
+    
+    // Add headshot if no other photos
+    if (photosList.length === 0 && headshotUrl.value) {
+      photosList.push({
+        url: headshotUrl.value,
+        thumbnail: headshotUrl.value,
+        caption: 'Profile Photo'
+      });
+    }
+  }
+  
+  return photosList;
+});
+
+const openLightbox = (index) => {
+  currentPhotoIndex.value = index;
+  lightboxOpen.value = true;
+  document.body.style.overflow = 'hidden';
 };
+
+const closeLightbox = () => {
+  lightboxOpen.value = false;
+  document.body.style.overflow = '';
+};
+
+const nextPhoto = () => {
+  if (photos.value.length > 0) {
+    currentPhotoIndex.value = (currentPhotoIndex.value + 1) % photos.value.length;
+  }
+};
+
+const previousPhoto = () => {
+  if (photos.value.length > 0) {
+    currentPhotoIndex.value = currentPhotoIndex.value === 0 
+      ? photos.value.length - 1 
+      : currentPhotoIndex.value - 1;
+  }
+};
+
+// Lifecycle
+onMounted(() => {
+  if (store.components[props.componentId]) {
+    document.dispatchEvent(new CustomEvent('gmkb:vue-component-mounted', {
+      detail: {
+        type: 'photo-gallery',
+        id: props.componentId,
+        podsDataUsed: photos.value.some(photo => 
+          photo.url === headshotUrl.value || 
+          (rawPodsData.value && Object.values(rawPodsData.value).includes(photo.url))
+        )
+      }
+    }));
+  }
+});
+
+onUnmounted(() => {
+  document.body.style.overflow = '';
+});
 </script>
 
 <style scoped>
-/* ROOT FIX: Use external styles.css for component styling */
-/* Only keep lightbox-specific styles that aren't in the external CSS */
+/* V2 ARCHITECTURE: Minimal component styles */
+/* All visual styles (background, padding, border, etc.) applied via ComponentStyleService */
+
+.photo-gallery-component {
+  /* Styles applied via inline styles from ComponentStyleService */
+}
+
+.gallery-title {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 1rem 0;
+  color: inherit;
+}
+
+.gallery-description {
+  text-align: center;
+  color: #64748b;
+  margin: 0 0 2rem 0;
+  line-height: 1.6;
+}
+
+.gallery-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.gallery-grid.columns-2 {
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+}
+
+.gallery-grid.columns-3 {
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+}
+
+.gallery-grid.columns-4 {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.gallery-item {
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.gallery-item img {
+  width: 100%;
+  height: 250px;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+  display: block;
+}
+
+.gallery-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.gallery-item:hover img {
+  transform: scale(1.05);
+}
+
+.gallery-item:hover .gallery-overlay {
+  opacity: 1;
+}
+
+.overlay-icon {
+  font-size: 2rem;
+  color: white;
+}
 
 /* Lightbox */
 .lightbox {
@@ -269,30 +275,15 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.9);
-  z-index: 9999;
+  background: rgba(0, 0, 0, 0.95);
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: fadeIn 0.3s;
+  z-index: 10000;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.lightbox-content {
-  position: relative;
-  max-width: 90vw;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.lightbox-content img {
-  max-width: 100%;
+.lightbox img {
+  max-width: 90%;
   max-height: 80vh;
   object-fit: contain;
 }
@@ -306,9 +297,26 @@ export default {
   color: white;
   font-size: 3rem;
   cursor: pointer;
-  padding: 0.5rem 1rem;
-  transition: background 0.2s;
+  padding: 1rem;
+  transition: all 0.3s ease;
   border-radius: 4px;
+}
+
+.lightbox-close {
+  top: 20px;
+  right: 40px;
+}
+
+.lightbox-prev {
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.lightbox-next {
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .lightbox-close:hover,
@@ -317,64 +325,37 @@ export default {
   background: rgba(255, 255, 255, 0.2);
 }
 
-.lightbox-close {
-  top: -50px;
-  right: 0;
-}
-
-.lightbox-prev {
-  left: -60px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.lightbox-next {
-  right: -60px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
 .lightbox-caption {
-  margin-top: var(--gmkb-spacing-md, 1rem);
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
   color: white;
   text-align: center;
-  font-size: var(--gmkb-font-size-base, 1rem);
+  padding: 0.5rem 1rem;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 4px;
+  max-width: 80%;
 }
 
 /* Responsive */
-@media (max-max-width: var(--gmkb-max-width-content, 768px)) {
-  .gallery-grid.columns-3,
-  .gallery-grid.columns-4,
-  .gallery-grid.columns-5,
-  .gallery-grid.columns-6 {
-    grid-template-columns: repeat(2, 1fr);
+@media (max-width: 768px) {
+  .gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
   }
   
-  .gallery-grid.style-masonry .orientation-horizontal {
-    grid-column: span 1;
+  .gallery-item img {
+    height: 180px;
+  }
+  
+  .gallery-title {
+    font-size: 1.5rem;
   }
   
   .lightbox-prev,
   .lightbox-next {
-    position: fixed;
-    bottom: 20px;
-    top: auto;
-    transform: none;
-  }
-  
-  .lightbox-prev {
-    left: 20px;
-  }
-  
-  .lightbox-next {
-    right: 20px;
-    left: auto;
-  }
-}
-
-@media (max-width: 480px) {
-  .gallery-grid {
-    grid-template-columns: 1fr !important;
+    font-size: 2rem;
+    padding: 0.5rem;
   }
 }
 </style>
