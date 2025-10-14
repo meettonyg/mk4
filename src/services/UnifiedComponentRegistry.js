@@ -12,6 +12,10 @@ import FallbackRenderer from '../vue/components/FallbackRenderer.vue';
 // This allows Vite to properly resolve and bundle all components
 const componentModules = import.meta.glob('/components/*/*Renderer.vue');
 
+// ARCHITECTURE COMPLIANCE: Load component metadata directly from component.json files
+// This keeps the registry synchronized with the self-contained component directories
+const componentMetaModules = import.meta.glob('/components/*/component.json', { eager: true });
+
 class UnifiedComponentRegistry {
   constructor() {
     // Component definitions from WordPress
@@ -35,15 +39,32 @@ class UnifiedComponentRegistry {
    */
   initialize() {
     if (this.initialized) return;
-    
+
     // Step 1: Load definitions from WordPress data
     this.loadWordPressDefinitions();
-    
+
     // Step 2: Register Vue components
     this.registerVueComponents();
-    
+
     this.initialized = true;
     console.log('✅ UnifiedComponentRegistry: Initialized with', Object.keys(this.definitions).length, 'components');
+  }
+
+  /**
+   * Get component entries discovered via import.meta.glob
+   * @returns {Array<{ type: string, path: string, meta: Object|null }>}
+   */
+  getAvailableComponentEntries() {
+    return Object.keys(componentModules).map(path => {
+      const match = path.match(/\/components\/([^/]+)\//);
+      if (!match) return null;
+
+      const type = match[1];
+      const metaModule = componentMetaModules[`/components/${type}/component.json`];
+      const meta = metaModule ? (metaModule.default || metaModule) : null;
+
+      return { type, path, meta };
+    }).filter(Boolean);
   }
   
   /**
@@ -64,21 +85,12 @@ class UnifiedComponentRegistry {
   
   /**
    * Register all Vue component implementations
+   * ARCHITECTURE COMPLIANCE: Auto-discovers components from filesystem
    */
   registerVueComponents() {
-    // ROOT FIX: Include topics-questions component
-    const componentTypes = [
-      'hero', 'biography', 'topics', 'topics-questions', 'questions', 'guest-intro',
-      'contact', 'social', 'testimonials', 'stats', 'authority-hook',
-      'logo-grid', 'call-to-action', 'booking-calendar', 'video-intro',
-      'photo-gallery', 'podcast-player'
-    ];
-    
-    componentTypes.forEach(type => {
-      // Construct the path that matches the glob pattern
-      const componentName = this.pascalCase(type);
-      const path = `/components/${type}/${componentName}Renderer.vue`;
-      
+    const entries = this.getAvailableComponentEntries();
+
+    entries.forEach(({ type, path, meta }) => {
       if (componentModules[path]) {
         // Create async component that loads from the glob modules
         this.vueComponents[type] = defineAsyncComponent({
@@ -94,16 +106,30 @@ class UnifiedComponentRegistry {
         console.warn(`Component module not found for ${type} at ${path}`);
         this.vueComponents[type] = markRaw(FallbackRenderer);
       }
-      
-      // Ensure we have a definition for this component
+
+      // Ensure we have a definition for this component using metadata when available
       if (!this.definitions[type]) {
-        this.definitions[type] = this.createComponentDefinition(type);
+        this.definitions[type] = this.createComponentDefinition(
+          type,
+          meta?.name,
+          meta?.category,
+          meta?.icon
+        );
+      } else if (meta) {
+        // Merge metadata into existing definition to keep data consistent
+        this.definitions[type] = {
+          ...this.definitions[type],
+          name: meta.name || this.definitions[type].name,
+          description: meta.description || this.definitions[type].description,
+          category: meta.category || this.definitions[type].category,
+          icon: meta.icon || this.definitions[type].icon
+        };
       }
     });
-    
+
     console.log('✅ Registered', Object.keys(this.vueComponents).length, 'Vue components');
     console.log('Available component paths:', Object.keys(componentModules));
-    
+
     // ROOT FIX: Recompute hasVueRenderer after Vue components are registered
     Object.keys(this.vueComponents).forEach(type => {
       if (this.definitions[type]) {
@@ -125,53 +151,33 @@ class UnifiedComponentRegistry {
   
   /**
    * Create fallback definitions for all known components
-   * ARCHITECTURE COMPLIANT: Generic placeholders only, no hardcoded icons
-   * Icons should come from component.json via WordPress data
+   * ARCHITECTURE COMPLIANT: Auto-discovers components from filesystem
    */
   createFallbackDefinitions() {
-    const componentTypes = [
-      // Essential
-      { type: 'hero', name: 'Hero Section', category: 'essential' },
-      { type: 'biography', name: 'Biography', category: 'essential' },
-      { type: 'contact', name: 'Contact', category: 'essential' },
-      
-      // Content
-      { type: 'topics', name: 'Topics', category: 'content' },
-      { type: 'questions', name: 'Questions', category: 'content' },
-      { type: 'topics-questions', name: 'Topics & Questions', category: 'content' },
-      { type: 'guest-intro', name: 'Guest Introduction', category: 'content' },
-      
-      // Social
-      { type: 'social', name: 'Social Links', category: 'social' },
-      { type: 'testimonials', name: 'Testimonials', category: 'social' },
-      { type: 'stats', name: 'Statistics', category: 'social' },
-      { type: 'authority-hook', name: 'Authority Hook', category: 'social' },
-      { type: 'logo-grid', name: 'Logo Grid', category: 'social' },
-      
-      // Conversion
-      { type: 'call-to-action', name: 'Call to Action', category: 'conversion' },
-      { type: 'booking-calendar', name: 'Booking Calendar', category: 'conversion' },
-      
-      // Media
-      { type: 'video-intro', name: 'Video Introduction', category: 'media' },
-      { type: 'photo-gallery', name: 'Photo Gallery', category: 'media' },
-      { type: 'podcast-player', name: 'Podcast Player', category: 'media' }
-    ];
-    
-    // ARCHITECTURE COMPLIANT: No icon specified - will use generic fallback
-    componentTypes.forEach(({ type, name, category }) => {
-      this.definitions[type] = this.createComponentDefinition(type, name, category);
+    const entries = this.getAvailableComponentEntries();
+
+    entries.forEach(({ type, meta }) => {
+      const name = meta?.name || this.formatComponentName(type);
+      const category = meta?.category || 'general';
+      const icon = meta?.icon || null;
+      const description = meta?.description || `${name} component`;
+
+      this.definitions[type] = {
+        ...this.createComponentDefinition(type, name, category, icon),
+        description
+      };
     });
-    
-    // Create categories
+
+    // Create categories based on discovered metadata
     const categoryMap = {};
-    componentTypes.forEach(({ category }) => {
+    entries.forEach(({ meta }) => {
+      const category = meta?.category || 'general';
       if (!categoryMap[category]) {
         categoryMap[category] = { slug: category, name: this.formatCategoryName(category), count: 0 };
       }
       categoryMap[category].count++;
     });
-    
+
     this.categories = Object.values(categoryMap);
   }
   
@@ -229,7 +235,6 @@ class UnifiedComponentRegistry {
       'video-intro': { videoUrl: '' },
       'podcast-player': { episodes: [] },
       'booking-calendar': { availability: {} },
-      'authority-hook': { credentials: [] },
       'logo-grid': { logos: [] },
       'guest-intro': { name: '', title: '', company: '' }
     };
@@ -312,7 +317,7 @@ class UnifiedComponentRegistry {
    */
   getAll() {
     if (!this.initialized) this.initialize();
-    return Object.values(this.definitions);
+    return Object.values(this.definitions).filter(def => this.vueComponents[def.type]);
   }
   
   /**
