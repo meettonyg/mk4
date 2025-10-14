@@ -373,50 +373,57 @@ const getLayoutClass = (type) => {
 };
 
 const getComponent = (componentId) => {
-  // CRITICAL FIX: Handle various component reference formats
-  if (!componentId) {
-    console.warn('⚠️ getComponent called with undefined/null componentId');
-    return null;
-  }
-  
-  // Normalize the component ID
-  let normalizedId = componentId;
-  
-  // If componentId is an object, extract the actual ID
-  if (typeof componentId === 'object' && componentId !== null) {
-    if (componentId.component_id) {
-      console.log('🔧 Extracting component_id from object:', componentId.component_id);
-      normalizedId = componentId.component_id;
-    } else if (componentId.id) {
-      console.log('🔧 Extracting id from object:', componentId.id);
-      normalizedId = componentId.id;
-    } else {
-      console.error('❌ Object has no recognizable ID property:', componentId);
+  try {
+    // CRITICAL FIX: Handle various component reference formats
+    if (!componentId) {
+      console.warn('⚠️ getComponent called with undefined/null componentId');
       return null;
     }
-  }
-  
-  // Ensure we have a string ID
-  if (typeof normalizedId !== 'string') {
-    console.error('❌ Component ID is not a string:', normalizedId, typeof normalizedId);
+    
+    // Normalize the component ID
+    let normalizedId = componentId;
+    
+    // If componentId is an object, extract the actual ID
+    if (typeof componentId === 'object' && componentId !== null) {
+      if (componentId.component_id) {
+        console.log('🔧 Extracting component_id from object:', componentId.component_id);
+        normalizedId = componentId.component_id;
+      } else if (componentId.id) {
+        console.log('🔧 Extracting id from object:', componentId.id);
+        normalizedId = componentId.id;
+      } else {
+        console.error('❌ Object has no recognizable ID property:', componentId);
+        return null;
+      }
+    }
+    
+    // Ensure we have a string ID
+    if (typeof normalizedId !== 'string') {
+      console.error('❌ Component ID is not a string:', normalizedId, typeof normalizedId);
+      return null;
+    }
+    
+    // Look up the component
+    const component = store.components[normalizedId];
+    
+    if (!component) {
+      console.warn(`⚠️ Component not found: ${normalizedId}`);
+      return null;
+    }
+    
+    // CRITICAL FIX: Validate component has required data
+    if (!component.type) {
+      console.error('❌ Component missing type:', normalizedId, component);
+      return null;
+    }
+    
+    return component;
+  } catch (error) {
+    console.error('[SectionLayoutEnhanced] Error in getComponent:', error);
+    console.error('[SectionLayoutEnhanced] componentId:', componentId);
+    console.error('[SectionLayoutEnhanced] store:', store);
     return null;
   }
-  
-  // Look up the component
-  const component = store.components[normalizedId];
-  
-  if (!component) {
-    console.warn(`⚠️ Component not found: ${normalizedId}`);
-    return null;
-  }
-  
-  // CRITICAL FIX: Validate component has required data
-  if (!component.type) {
-    console.error('❌ Component missing type:', normalizedId, component);
-    return null;
-  }
-  
-  return component;
 };
 
 const getColumnComponents = (section, column) => {

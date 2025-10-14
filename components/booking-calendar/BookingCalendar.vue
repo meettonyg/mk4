@@ -122,7 +122,7 @@ const emit = defineEmits(['booking-submit']);
 
 // Store and composables
 const store = useMediaKitStore();
-const { email: podsEmail, fullName, rawPodsData } = usePodsData();
+const { email: podsEmail, fullName, allData: rawPodsData } = usePodsData();
 
 // Local state
 const bookingForm = ref({

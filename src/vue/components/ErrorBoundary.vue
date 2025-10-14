@@ -63,18 +63,30 @@ export default {
     
     // Capture errors from child components
     onErrorCaptured((err, instance, info) => {
+      // Log detailed error information
+      console.error('🚨 ErrorBoundary caught error:', {
+        error: err,
+        message: err?.message,
+        stack: err?.stack,
+        component: instance?.$options?.name || instance?.$?.type?.name || 'Unknown',
+        instance: instance,
+        info,
+        count: errorCount.value + 1
+      });
+      
+      // Log component details
+      if (instance?.$props) {
+        console.error('🔍 Component props:', instance.$props);
+      }
+      if (instance?.$attrs) {
+        console.error('🔍 Component attrs:', instance.$attrs);
+      }
+      
+      // Show error UI
       hasError.value = true;
       errorMessage.value = err?.message || 'Unknown error';
-      errorDetails.value = `${err?.stack || err}\n\nComponent: ${instance?.$options.name || 'Unknown'}\nInfo: ${info}`;
+      errorDetails.value = `${err?.stack || err}\n\nComponent: ${instance?.$options?.name || 'Unknown'}\nInfo: ${info}`;
       errorCount.value++;
-      
-      // Log error for debugging
-      console.error('ErrorBoundary caught error:', {
-        error: err,
-        component: instance?.$options.name,
-        info,
-        count: errorCount.value
-      });
       
       // Call custom error handler if provided
       if (props.onError) {
@@ -85,7 +97,7 @@ export default {
       if (window.gmkbAnalytics?.track) {
         window.gmkbAnalytics.track('component_error', {
           error: errorMessage.value,
-          component: instance?.$options.name || 'Unknown',
+          component: instance?.$options?.name || 'Unknown',
           info,
           errorCount: errorCount.value
         });
