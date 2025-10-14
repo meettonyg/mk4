@@ -1,12 +1,8 @@
 <template>
   <div class="component-editor-template">
     <div class="editor-header">
-      <!-- Stacked header: Back link on top, title below -->
-      <button @click="handleBack" class="back-link">
-        <span class="back-arrow">←</span>
-        <span class="back-text">Back</span>
-      </button>
-      <h3 class="editor-title">Edit {{ componentType }}</h3>
+      <h3>Edit {{ componentType }}</h3>
+      <button @click="handleClose" class="close-btn">×</button>
     </div>
     
     <!-- Tab Navigation -->
@@ -77,7 +73,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['back', 'update:activeTab']);
+const emit = defineEmits(['close', 'update:activeTab']);
 
 // Tab configuration
 const tabs = [
@@ -147,8 +143,8 @@ const tabs = [
   }
 ];
 
-function handleBack() {
-  emit('back');
+function handleClose() {
+  emit('close');
 }
 </script>
 
@@ -167,9 +163,8 @@ body.dark-mode .component-editor-template {
 /* Header */
 .editor-header {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
+  justify-content: space-between;
+  align-items: center;
   padding: 16px 20px;
   background: white;
   border-bottom: 1px solid #e5e7eb;
@@ -180,47 +175,37 @@ body.dark-mode .editor-header {
   border-color: #334155;
 }
 
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: transparent;
-  border: none;
-  padding: 0;
-  font-size: 12px;
-  color: #6b7280;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.back-link:hover {
-  color: #ec4899;
-}
-
-body.dark-mode .back-link {
-  color: #9ca3af;
-}
-
-body.dark-mode .back-link:hover {
-  color: #ec4899;
-}
-
-.back-arrow {
-  font-size: 14px;
-}
-
-.back-text {
-  font-weight: 500;
-}
-
-.editor-title {
+.editor-header h3 {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
   color: #1e293b;
 }
 
-body.dark-mode .editor-title {
+body.dark-mode .editor-header h3 {
+  color: #f3f4f6;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+  color: #6b7280;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: #1e293b;
+}
+
+body.dark-mode .close-btn {
+  color: #9ca3af;
+}
+
+body.dark-mode .close-btn:hover {
   color: #f3f4f6;
 }
 

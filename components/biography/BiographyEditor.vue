@@ -5,7 +5,7 @@
     :show-typography="true"
     :active-tab="activeTab"
     @update:active-tab="activeTab = $event"
-    @back="handleBack"
+    @close="handleClose"
   >
     <!-- Content Tab -->
     <template #content>
@@ -236,8 +236,8 @@ const openMediaLibrary = () => {
   }
 };
 
-// Handle back button
-const handleBack = () => {
+// Handle close button
+const handleClose = () => {
   emit('close');
 };
 </script>
