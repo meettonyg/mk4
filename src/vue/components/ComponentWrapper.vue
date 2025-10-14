@@ -46,6 +46,7 @@
 import { ref, computed, defineAsyncComponent } from 'vue'
 import { useMediaKitStore } from '@/stores/mediaKit'
 import ComponentControls from './builder/ComponentControls.vue'
+import DeprecatedComponentPlaceholder from './DeprecatedComponentPlaceholder.vue'
 
 // Import all component types directly
 // Using @components alias defined in vite.config.js
@@ -101,7 +102,9 @@ const componentMap = {
   ),
   'booking-calendar': defineAsyncComponent(() => 
     import('@components/booking-calendar/BookingCalendar.vue')
-  )
+  ),
+  // Deprecated component placeholder
+  'deprecated-placeholder': DeprecatedComponentPlaceholder
 }
 
 const props = defineProps({

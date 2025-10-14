@@ -8,6 +8,8 @@ import { APIService } from '../services/APIService.js';
 // PHASE 2: Component Schema imports
 import { getDefaultSettings, getComponentDefaults, mergeWithDefaults } from '../utils/componentSchema.js';
 import { validateComponent, sanitizeComponent } from '../utils/componentValidator.js';
+// PHASE 4: Component Deprecation System
+import deprecationManager from '../services/ComponentDeprecationManager.js';
 
 export const useMediaKitStore = defineStore('mediaKit', {
   state: () => ({
@@ -377,6 +379,21 @@ export const useMediaKitStore = defineStore('mediaKit', {
               console.error('❌ Pods enrichment failed:', error);
               // Non-fatal - continue without enrichment
             }
+          }
+          
+          // PHASE 4: Handle deprecated components
+          console.log('🔄 Checking for deprecated components...');
+          this.components = deprecationManager.processAllComponents(this.components);
+          
+          // Show deprecation notices if any
+          const notices = deprecationManager.getDeprecationNotices(this.components);
+          if (notices.length > 0) {
+            console.warn(`⚠️ Found ${notices.length} deprecated component(s):`, notices);
+            
+            // Dispatch event for UI to show notices
+            document.dispatchEvent(new CustomEvent('gmkb:show-deprecation-notices', {
+              detail: { notices }
+            }));
           }
         } else if (this.postId) {
           // ROOT FIX: Use the APIService we already created
