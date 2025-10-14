@@ -46,8 +46,7 @@ class ComponentDiscoveryService {
       'hero', 'biography', 'topics', 'questions', 'contact',
       'social', 'testimonials', 'photo-gallery', 'logo-grid',
       'call-to-action', 'stats', 'video-intro', 'podcast-player',
-      'booking-calendar', 'guest-intro', 'topics-questions',
-      'authority-hook'
+      'booking-calendar', 'guest-intro', 'topics-questions'
     ];
     
     knownTypes.forEach(type => this.discoveredComponents.add(type));
@@ -268,8 +267,7 @@ class ComponentDiscoveryService {
       'podcast-player': 'PodcastPlayer',
       'booking-calendar': 'BookingCalendar',
       'guest-intro': 'GuestIntro',
-      'topics-questions': 'TopicsQuestions',
-      'authority-hook': 'AuthorityHook'
+      'topics-questions': 'TopicsQuestions'
     };
 
     return specialCases[type] || this.pascalCase(type);

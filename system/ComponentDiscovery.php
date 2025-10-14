@@ -20,7 +20,6 @@ class ComponentDiscovery {
         'bio' => 'biography',
         'social-links' => 'social',
         'social-media' => 'social',
-        'authority' => 'authority-hook',
         'cta' => 'call-to-action',
         'booking' => 'booking-calendar',
         'gallery' => 'photo-gallery',
