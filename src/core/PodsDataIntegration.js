@@ -347,11 +347,25 @@ export class PodsDataIntegration {
 
   /**
    * Transform Pods data based on component's configuration
+   * ROOT FIX: Added comprehensive error handling and null safety
    */
   transformPodsData(config, podsData) {
     const result = {};
+    
+    // CRITICAL FIX: Validate inputs
+    if (!config || !config.fields || typeof config.fields !== 'object') {
+      console.warn('[PodsDataIntegration] Invalid config structure:', config);
+      return result;
+    }
+    
+    if (!podsData || typeof podsData !== 'object') {
+      console.warn('[PodsDataIntegration] Invalid podsData structure');
+      return result;
+    }
 
+    // CRITICAL FIX: Wrap field processing in try-catch for each field
     for (const [targetField, sourceConfig] of Object.entries(config.fields)) {
+      try {
       if (typeof sourceConfig === 'object' && sourceConfig.type === 'composite') {
         // Handle composite fields (like full name)
         let value = sourceConfig.format;
@@ -379,6 +393,11 @@ export class PodsDataIntegration {
           }
         }
       }
+      } catch (fieldError) {
+        // CRITICAL FIX: Log but continue processing other fields
+        console.warn(`[PodsDataIntegration] Error processing field ${targetField}:`, fieldError);
+        // Continue to next field
+      }
     }
 
     return result;
@@ -387,15 +406,40 @@ export class PodsDataIntegration {
   /**
    * Enrich component with Pods data
    * Respects self-contained architecture by using component's own config
+   * ROOT FIX: Added comprehensive null/undefined checking to prevent errors
    */
   enrichComponentData(component) {
+    // CRITICAL FIX: Validate component exists and has required properties
+    if (!component) {
+      console.warn('[PodsDataIntegration] Cannot enrich null/undefined component');
+      return component;
+    }
+    
+    if (!component.type) {
+      console.warn('[PodsDataIntegration] Component missing type:', component);
+      return component;
+    }
+    
+    // CRITICAL FIX: Get config with null safety
     const config = this.getComponentPodsConfig(component.type);
     
     if (!config || config.dataSource !== 'pods') {
       return component;
     }
 
-    const transformedData = this.transformPodsData(config, this.podsData);
+    // CRITICAL FIX: Protect transformPodsData with try-catch
+    let transformedData;
+    try {
+      transformedData = this.transformPodsData(config, this.podsData);
+    } catch (error) {
+      console.warn(`[PodsDataIntegration] Error transforming data for ${component.type}:`, error);
+      return component; // Return unchanged component on error
+    }
+    
+    // CRITICAL FIX: Initialize component.data if it doesn't exist
+    if (!component.data || typeof component.data !== 'object') {
+      component.data = {};
+    }
     
     // Merge the transformed Pods data with component data
     component.data = {

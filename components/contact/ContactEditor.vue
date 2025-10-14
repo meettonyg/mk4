@@ -84,53 +84,7 @@
           </div>
         </section>
 
-        <section class="editor-section">
-          <h4>Social Media Links</h4>
-          
-          <div class="field-group">
-            <label for="contact-linkedin">LinkedIn</label>
-            <input 
-              id="contact-linkedin"
-              v-model="localData.linkedin" 
-              @input="updateComponent"
-              type="url"
-              placeholder="https://linkedin.com/in/username"
-            />
-          </div>
-          
-          <div class="field-group">
-            <label for="contact-twitter">Twitter/X</label>
-            <input 
-              id="contact-twitter"
-              v-model="localData.twitter" 
-              @input="updateComponent"
-              type="url"
-              placeholder="https://twitter.com/username"
-            />
-          </div>
-          
-          <div class="field-group">
-            <label for="contact-instagram">Instagram</label>
-            <input 
-              id="contact-instagram"
-              v-model="localData.instagram" 
-              @input="updateComponent"
-              type="url"
-              placeholder="https://instagram.com/username"
-            />
-          </div>
-          
-          <div class="field-group">
-            <label for="contact-facebook">Facebook</label>
-            <input 
-              id="contact-facebook"
-              v-model="localData.facebook" 
-              @input="updateComponent"
-              type="url"
-              placeholder="https://facebook.com/username"
-            />
-          </div>
-        </section>
+
       </div>
     </template>
   </ComponentEditorTemplate>
@@ -162,11 +116,7 @@ const localData = ref({
   email: '',
   phone: '',
   website: '',
-  address: '',
-  linkedin: '',
-  twitter: '',
-  instagram: '',
-  facebook: ''
+  address: ''
 });
 
 // Load component data
@@ -179,11 +129,7 @@ const loadComponentData = () => {
       email: component.data.email || '',
       phone: component.data.phone || '',
       website: component.data.website || '',
-      address: component.data.address || '',
-      linkedin: component.data.linkedin || '',
-      twitter: component.data.twitter || '',
-      instagram: component.data.instagram || '',
-      facebook: component.data.facebook || ''
+      address: component.data.address || ''
     };
   }
 };

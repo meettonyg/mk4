@@ -98,7 +98,6 @@ const socialNetworks = {
   instagram: { name: 'Instagram', icon: '📷', placeholder: 'https://instagram.com/username' },
   youtube: { name: 'YouTube', icon: '📺', placeholder: 'https://youtube.com/@channel' },
   tiktok: { name: 'TikTok', icon: '🎵', placeholder: 'https://tiktok.com/@username' },
-  github: { name: 'GitHub', icon: '💻', placeholder: 'https://github.com/username' },
   pinterest: { name: 'Pinterest', icon: '📌', placeholder: 'https://pinterest.com/username' }
 };
 
@@ -111,7 +110,6 @@ const localData = ref({
   instagram: '',
   youtube: '',
   tiktok: '',
-  github: '',
   pinterest: '',
   showLabels: false
 });
@@ -129,7 +127,6 @@ const loadComponentData = () => {
       instagram: component.data.instagram || '',
       youtube: component.data.youtube || '',
       tiktok: component.data.tiktok || '',
-      github: component.data.github || '',
       pinterest: component.data.pinterest || '',
       showLabels: component.data.showLabels || false
     };

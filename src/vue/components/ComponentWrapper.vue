@@ -8,34 +8,36 @@
     @mouseleave="onMouseLeave"
   >
     <!-- Single unified control system -->
+    <!-- ROOT FIX: Use actualComponent computed for null safety -->
     <ComponentControls
-      v-if="showControlsComputed && component"
-      :component-id="componentId || component.id"
-      :component-type="component.type"
+      v-if="showControlsComputed && actualComponent"
+      :component-id="componentId || actualComponent.id"
+      :component-type="actualComponent.type"
       :index="index"
       :total-components="totalComponents"
     />
     
     <!-- V2 ARCHITECTURE: Direct Component Rendering - NO INTERMEDIATE LAYERS -->
+    <!-- ROOT FIX: Use actualComponent computed instead of component prop directly -->
     <component
-      v-if="component && componentMap[component.type]"
-      :is="componentMap[component.type]"
-      :key="componentId || component.id"
-      :component-id="componentId || component.id"
-      :data="component.data"
-      :props="component.props"
-      :settings="component.settings"
+      v-if="actualComponent && componentMap[actualComponent.type]"
+      :is="componentMap[actualComponent.type]"
+      :key="componentId || actualComponent.id"
+      :component-id="componentId || actualComponent.id"
+      :data="actualComponent.data || {}"
+      :props="actualComponent.props || {}"
+      :settings="actualComponent.settings || {}"
       :is-editing="isEditing"
       :is-selected="isSelected"
       class="component-root"
-      :class="`${component.type}-component`"
+      :class="`${actualComponent.type}-component`"
     />
     
     <!-- Fallback for unknown component or missing component -->
     <div v-else class="component-placeholder">
       <span class="placeholder-icon">⚠️</span>
-      <span v-if="!component">Component not found: {{ componentId }}</span>
-      <span v-else>Unknown component type: {{ component.type }}</span>
+      <span v-if="!actualComponent">Component not found: {{ componentId }}</span>
+      <span v-else>Unknown component type: {{ actualComponent.type }}</span>
     </div>
   </div>
 </template>
@@ -140,21 +142,65 @@ const store = useMediaKitStore()
 const isHovered = ref(false)
 
 // Get component data (support both prop methods)
+// ROOT FIX: Added comprehensive null safety to prevent .value errors
 const actualComponent = computed(() => {
-  if (props.component) return props.component
-  if (props.componentId) return store.components[props.componentId]
-  return null
+  // CRITICAL: Validate props exist before accessing
+  if (!props) {
+    console.warn('[ComponentWrapper] Props is undefined');
+    return null;
+  }
+  
+  // Try component prop first
+  if (props.component && typeof props.component === 'object') {
+    return props.component;
+  }
+  
+  // Try componentId prop
+  if (props.componentId && typeof props.componentId === 'string') {
+    // CRITICAL: Validate store and components exist
+    if (!store || !store.components) {
+      console.warn('[ComponentWrapper] Store or store.components is undefined');
+      return null;
+    }
+    
+    const component = store.components[props.componentId];
+    
+    // CRITICAL: Validate component exists and has required properties
+    if (!component) {
+      console.warn(`[ComponentWrapper] Component not found: ${props.componentId}`);
+      return null;
+    }
+    
+    if (!component.type) {
+      console.error(`[ComponentWrapper] Component missing type: ${props.componentId}`, component);
+      return null;
+    }
+    
+    return component;
+  }
+  
+  // No valid component data
+  return null;
 })
 
 // Computed properties
+// ROOT FIX: Added null safety to prevent accessing undefined values
 const isSelected = computed(() => {
-  const id = props.componentId || props.component?.id
-  return store.selectedComponentId === id
+  if (!props || !store) return false;
+  
+  const id = props.componentId || props.component?.id;
+  if (!id) return false;
+  
+  return store.selectedComponentId === id;
 })
 
 const isEditing = computed(() => {
-  const id = props.componentId || props.component?.id
-  return store.editingComponentId === id
+  if (!props || !store) return false;
+  
+  const id = props.componentId || props.component?.id;
+  if (!id) return false;
+  
+  return store.editingComponentId === id;
 })
 
 // Show controls when hovering or selected
@@ -163,12 +209,21 @@ const showControlsComputed = computed(() =>
 )
 
 // Wrapper classes
-const wrapperClass = computed(() => ({
-  'component-wrapper--selected': isSelected.value,
-  'component-wrapper--editing': isEditing.value,
-  'component-wrapper--hovering': isHovered.value,
-  [`component-wrapper--${actualComponent.value?.type}`]: actualComponent.value?.type
-}))
+// ROOT FIX: Added null safety for actualComponent.value
+const wrapperClass = computed(() => {
+  const classes = {
+    'component-wrapper--selected': isSelected.value,
+    'component-wrapper--editing': isEditing.value,
+    'component-wrapper--hovering': isHovered.value
+  };
+  
+  // CRITICAL: Only add type class if component exists and has type
+  if (actualComponent.value && actualComponent.value.type) {
+    classes[`component-wrapper--${actualComponent.value.type}`] = true;
+  }
+  
+  return classes;
+})
 
 // Mouse events
 function onMouseEnter() {

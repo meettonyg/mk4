@@ -62,65 +62,7 @@
           </div>
         </section>
 
-        <section class="editor-section">
-          <h4>Profile Image</h4>
-          
-          <div class="field-group">
-            <label for="bio-image">Profile Image URL</label>
-            <input 
-              id="bio-image"
-              v-model="localData.imageUrl" 
-              @input="updateComponent"
-              type="url"
-              placeholder="https://example.com/profile.jpg"
-            />
-            <button @click="openMediaLibrary" class="media-btn">
-              Choose from Media Library
-            </button>
-          </div>
-          
-          <!-- Image Preview -->
-          <div v-if="localData.imageUrl" class="image-preview">
-            <img :src="localData.imageUrl" alt="Profile preview" />
-          </div>
-        </section>
 
-        <section class="editor-section">
-          <h4>Social Links</h4>
-          
-          <div class="field-group">
-            <label for="bio-linkedin">LinkedIn URL</label>
-            <input 
-              id="bio-linkedin"
-              v-model="localData.linkedin" 
-              @input="updateComponent"
-              type="url"
-              placeholder="https://linkedin.com/in/..."
-            />
-          </div>
-          
-          <div class="field-group">
-            <label for="bio-twitter">Twitter/X URL</label>
-            <input 
-              id="bio-twitter"
-              v-model="localData.twitter" 
-              @input="updateComponent"
-              type="url"
-              placeholder="https://twitter.com/..."
-            />
-          </div>
-          
-          <div class="field-group">
-            <label for="bio-website">Personal Website</label>
-            <input 
-              id="bio-website"
-              v-model="localData.website" 
-              @input="updateComponent"
-              type="url"
-              placeholder="https://..."
-            />
-          </div>
-        </section>
       </div>
     </template>
   </ComponentEditorTemplate>
@@ -150,11 +92,7 @@ const localData = ref({
   name: '',
   title: '',
   biography: '',
-  imageUrl: '',
-  location: '',
-  linkedin: '',
-  twitter: '',
-  website: ''
+  location: ''
 });
 
 // Initialize local data from store
@@ -166,11 +104,7 @@ const loadComponentData = () => {
       name: component.data.name || component.data.fullName || '',
       title: component.data.title || component.data.role || '',
       biography: component.data.biography || component.data.bio || component.data.content || '',
-      imageUrl: component.data.imageUrl || component.data.profileImage || '',
-      location: component.data.location || '',
-      linkedin: component.data.linkedin || '',
-      twitter: component.data.twitter || '',
-      website: component.data.website || ''
+      location: component.data.location || ''
     };
   }
 };
@@ -194,46 +128,17 @@ const updateComponent = () => {
         name: localData.value.name,
         title: localData.value.title,
         biography: localData.value.biography,
-        imageUrl: localData.value.imageUrl,
         location: localData.value.location,
-        // Social links
-        linkedin: localData.value.linkedin,
-        twitter: localData.value.twitter,
-        website: localData.value.website,
         // Legacy field compatibility
         fullName: localData.value.name,
         role: localData.value.title,
         bio: localData.value.biography,
-        content: localData.value.biography,
-        profileImage: localData.value.imageUrl
+        content: localData.value.biography
       }
     });
     
     store.isDirty = true;
   }, 300);
-};
-
-// Open WordPress Media Library
-const openMediaLibrary = () => {
-  if (window.wp && window.wp.media) {
-    const frame = window.wp.media({
-      title: 'Select Profile Image',
-      button: {
-        text: 'Use this image'
-      },
-      multiple: false
-    });
-    
-    frame.on('select', () => {
-      const attachment = frame.state().get('selection').first().toJSON();
-      localData.value.imageUrl = attachment.url;
-      updateComponent();
-    });
-    
-    frame.open();
-  } else {
-    alert('WordPress Media Library not available. Please enter an image URL manually.');
-  }
 };
 
 // Handle close button
@@ -331,51 +236,5 @@ body.dark-mode .field-group textarea {
   min-height: 120px;
 }
 
-.media-btn {
-  margin-top: 8px;
-  width: 100%;
-  padding: 10px 16px;
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  color: #475569;
-}
 
-.media-btn:hover {
-  background: #ec4899;
-  color: white;
-  border-color: #ec4899;
-}
-
-body.dark-mode .media-btn {
-  background: #1e293b;
-  border-color: #334155;
-  color: #d1d5db;
-}
-
-body.dark-mode .media-btn:hover {
-  background: #ec4899;
-  border-color: #ec4899;
-  color: white;
-}
-
-.image-preview {
-  margin-top: 12px;
-  text-align: center;
-}
-
-.image-preview img {
-  max-width: 200px;
-  height: auto;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-}
-
-body.dark-mode .image-preview img {
-  border-color: #334155;
-}
 </style>

@@ -360,13 +360,16 @@ export const useMediaKitStore = defineStore('mediaKit', {
             try {
               Object.keys(this.components).forEach(componentId => {
                 const component = this.components[componentId];
-                if (component) {
+                // ROOT FIX: Validate component structure before enrichment
+                if (component && component.type && typeof component === 'object') {
                   try {
                     podsIntegration.enrichComponentData(component);
                   } catch (enrichError) {
                     console.warn(`⚠️ Failed to enrich component ${componentId}:`, enrichError);
                     // Continue with other components
                   }
+                } else {
+                  console.warn(`⚠️ Skipping invalid component ${componentId}:`, component);
                 }
               });
               console.log('✅ Enriched all loaded components with Pods data (savedState branch)');
@@ -412,13 +415,16 @@ export const useMediaKitStore = defineStore('mediaKit', {
             try {
               Object.keys(this.components).forEach(componentId => {
                 const component = this.components[componentId];
-                if (component) {
+                // ROOT FIX: Validate component structure before enrichment
+                if (component && component.type && typeof component === 'object') {
                   try {
                     podsIntegration.enrichComponentData(component);
                   } catch (enrichError) {
                     console.warn(`⚠️ Failed to enrich component ${componentId}:`, enrichError);
                     // Continue with other components
                   }
+                } else {
+                  console.warn(`⚠️ Skipping invalid component ${componentId}:`, component);
                 }
               });
               console.log('✅ Enriched all loaded components with Pods data');
