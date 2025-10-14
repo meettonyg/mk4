@@ -1955,18 +1955,86 @@ export const useMediaKitStore = defineStore('mediaKit', {
     },
 
     // NEW: Section settings management
+    // ROOT FIX: Preserve components when changing layout
     updateSection(sectionId, updates) {
       const section = this.sections.find(s => s.section_id === sectionId);
-      if (section) {
-        Object.assign(section, updates);
-        this.isDirty = true;
-        this._trackChange();
-        
-        // Dispatch update event
-        document.dispatchEvent(new CustomEvent('gmkb:section-updated', {
-          detail: { sectionId, updates }
-        }));
+      if (!section) {
+        console.warn(`⚠️ Section ${sectionId} not found`);
+        return;
       }
+      
+      // CRITICAL FIX: If updating layout/type, preserve and redistribute components
+      if (updates.layout || updates.type) {
+        const newLayout = updates.layout || updates.type;
+        const oldLayout = section.layout || section.type;
+        
+        // Only redistribute if layout actually changed
+        if (newLayout !== oldLayout) {
+          console.log(`🔄 Section ${sectionId}: Layout change detected (${oldLayout} → ${newLayout})`);
+          
+          // Collect ALL existing components from current structure
+          const existingComponents = [];
+          
+          // From full-width sections
+          if (section.components && Array.isArray(section.components)) {
+            section.components.forEach(comp => {
+              const compId = typeof comp === 'string' ? comp : (comp.component_id || comp.id);
+              if (compId) existingComponents.push(compId);
+            });
+          }
+          
+          // From multi-column sections
+          if (section.columns) {
+            Object.values(section.columns).forEach(column => {
+              if (Array.isArray(column)) {
+                column.forEach(compId => {
+                  if (compId) existingComponents.push(compId);
+                });
+              }
+            });
+          }
+          
+          console.log(`📦 Preserving ${existingComponents.length} components:`, existingComponents);
+          
+          // Create new structure based on target layout
+          if (newLayout === 'full_width') {
+            // Moving TO full-width: Put all components in components array
+            section.components = existingComponents;
+            delete section.columns;
+            console.log(`✅ Converted to full_width with ${existingComponents.length} components`);
+          } else {
+            // Moving TO multi-column: Distribute components across columns
+            delete section.components;
+            
+            // Initialize columns based on new layout
+            const columnCount = newLayout === 'two_column' ? 2 : 3;
+            section.columns = {};
+            for (let i = 1; i <= columnCount; i++) {
+              section.columns[String(i)] = [];
+            }
+            
+            // Distribute components evenly across columns
+            existingComponents.forEach((compId, index) => {
+              const targetColumn = String((index % columnCount) + 1);
+              section.columns[targetColumn].push(compId);
+            });
+            
+            console.log(`✅ Converted to ${newLayout} with ${existingComponents.length} components distributed:`,
+              Object.entries(section.columns).map(([col, comps]) => `col${col}: ${comps.length}`).join(', '));
+          }
+        }
+      }
+      
+      // Apply remaining updates (AFTER component redistribution)
+      Object.assign(section, updates);
+      
+      this.isDirty = true;
+      this._trackChange();
+      
+      // Dispatch update event
+      document.dispatchEvent(new CustomEvent('gmkb:section-updated', {
+        detail: { sectionId, updates }
+      }));
     },
 
     // NEW: Update section settings
