@@ -213,15 +213,31 @@ async function initializeVue() {
     console.log('8️⃣ Mounting Vue application...');
     const app = createApp(MediaKitApp);
     
-    // CRITICAL: Add global error handler to prevent app crashes
+    // CRITICAL: Add global error handler to prevent app crashes and identify problematic components
     app.config.errorHandler = (err, instance, info) => {
       console.error('❌ Vue Error:', err);
-      console.error('Component:', instance?.$options?.name || 'Unknown');
+      console.error('Component:', instance?.$options?.name || instance?.$?.type?.name || 'Unknown');
+      console.error('Component Props:', instance?.$props);
       console.error('Error Info:', info);
+      console.error('Full Instance:', instance);
+      
+      // Extract component details
+      const componentId = instance?.$props?.componentId || instance?.$attrs?.['data-component-id'];
+      if (componentId) {
+        console.error('🔍 Failed Component ID:', componentId);
+        const componentData = window.gmkbData?.savedState?.components?.[componentId];
+        if (componentData) {
+          console.error('🔍 Component Data:', componentData);
+          console.error('🔍 Component Type:', componentData.type);
+        }
+      }
       
       // Show user-friendly error
       if (typeof window.showToast === 'function') {
-        window.showToast('An error occurred. Check console for details.', 'error');
+        window.showToast(
+          `Error in ${instance?.$options?.name || 'component'}: ${err.message}`,
+          'error'
+        );
       }
       
       // Log to error service in production
@@ -229,6 +245,7 @@ async function initializeVue() {
         window.gmkbAnalytics.track('vue_error', {
           error: err.message,
           component: instance?.$options?.name,
+          componentId: componentId,
           info: info
         });
       }

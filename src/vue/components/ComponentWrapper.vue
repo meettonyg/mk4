@@ -147,85 +147,113 @@ const isHovered = ref(false)
 // Get component data (support both prop methods)
 // ROOT FIX: Added comprehensive null safety to prevent .value errors
 const actualComponent = computed(() => {
-  // CRITICAL: Validate props exist before accessing
-  if (!props) {
-    console.warn('[ComponentWrapper] Props is undefined');
+  try {
+    // CRITICAL: Validate props exist before accessing
+    if (!props) {
+      console.warn('[ComponentWrapper] Props is undefined');
+      return null;
+    }
+    
+    // Try component prop first
+    if (props.component && typeof props.component === 'object') {
+      return props.component;
+    }
+    
+    // Try componentId prop
+    if (props.componentId && typeof props.componentId === 'string') {
+      // CRITICAL: Validate store and components exist
+      if (!store || !store.components) {
+        console.warn('[ComponentWrapper] Store or store.components is undefined');
+        return null;
+      }
+      
+      const component = store.components[props.componentId];
+      
+      // CRITICAL: Validate component exists and has required properties
+      if (!component) {
+        console.warn(`[ComponentWrapper] Component not found: ${props.componentId}`);
+        return null;
+      }
+      
+      if (!component.type) {
+        console.error(`[ComponentWrapper] Component missing type: ${props.componentId}`, component);
+        return null;
+      }
+      
+      return component;
+    }
+    
+    // No valid component data
+    return null;
+  } catch (error) {
+    console.error('[ComponentWrapper] Error in actualComponent computed:', error);
+    console.error('[ComponentWrapper] Props:', props);
+    console.error('[ComponentWrapper] Store:', store);
     return null;
   }
-  
-  // Try component prop first
-  if (props.component && typeof props.component === 'object') {
-    return props.component;
-  }
-  
-  // Try componentId prop
-  if (props.componentId && typeof props.componentId === 'string') {
-    // CRITICAL: Validate store and components exist
-    if (!store || !store.components) {
-      console.warn('[ComponentWrapper] Store or store.components is undefined');
-      return null;
-    }
-    
-    const component = store.components[props.componentId];
-    
-    // CRITICAL: Validate component exists and has required properties
-    if (!component) {
-      console.warn(`[ComponentWrapper] Component not found: ${props.componentId}`);
-      return null;
-    }
-    
-    if (!component.type) {
-      console.error(`[ComponentWrapper] Component missing type: ${props.componentId}`, component);
-      return null;
-    }
-    
-    return component;
-  }
-  
-  // No valid component data
-  return null;
 })
 
 // Computed properties
 // ROOT FIX: Added null safety to prevent accessing undefined values
 const isSelected = computed(() => {
-  if (!props || !store) return false;
-  
-  const id = props.componentId || props.component?.id;
-  if (!id) return false;
-  
-  return store.selectedComponentId === id;
+  try {
+    if (!props || !store) return false;
+    
+    const id = props.componentId || props.component?.id;
+    if (!id) return false;
+    
+    return store.selectedComponentId === id;
+  } catch (error) {
+    console.error('[ComponentWrapper] Error in isSelected:', error);
+    return false;
+  }
 })
 
 const isEditing = computed(() => {
-  if (!props || !store) return false;
-  
-  const id = props.componentId || props.component?.id;
-  if (!id) return false;
-  
-  return store.editingComponentId === id;
+  try {
+    if (!props || !store) return false;
+    
+    const id = props.componentId || props.component?.id;
+    if (!id) return false;
+    
+    return store.editingComponentId === id;
+  } catch (error) {
+    console.error('[ComponentWrapper] Error in isEditing:', error);
+    return false;
+  }
 })
 
 // Show controls when hovering or selected
-const showControlsComputed = computed(() => 
-  props.showControls && (isHovered.value || isSelected.value)
-)
+const showControlsComputed = computed(() => {
+  try {
+    return props.showControls && (isHovered.value || isSelected.value);
+  } catch (error) {
+    console.error('[ComponentWrapper] Error in showControlsComputed:', error);
+    return false;
+  }
+})
 
 // Wrapper classes
 // ROOT FIX: Added null safety for actualComponent.value
 const wrapperClass = computed(() => {
-  const classes = {
-    'component-wrapper--selected': isSelected.value,
-    'component-wrapper--editing': isEditing.value,
-    'component-wrapper--hovering': isHovered.value
-  };
-  
-  // CRITICAL: Only add type class if component exists and has type
-  if (actualComponent.value && actualComponent.value.type) {
-    classes[`component-wrapper--${actualComponent.value.type}`] = true;
+  try {
+    const classes = {
+      'component-wrapper--selected': isSelected.value,
+      'component-wrapper--editing': isEditing.value,
+      'component-wrapper--hovering': isHovered.value
+    };
+    
+    // CRITICAL: Only add type class if component exists and has type
+    if (actualComponent.value && actualComponent.value.type) {
+      classes[`component-wrapper--${actualComponent.value.type}`] = true;
+    }
+    
+    return classes;
+  } catch (error) {
+    console.error('[ComponentWrapper] Error in wrapperClass:', error);
+    console.error('[ComponentWrapper] actualComponent:', actualComponent);
+    return {};
   }
-  
-  return classes;
 })
 
 // Mouse events

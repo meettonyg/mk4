@@ -64,11 +64,31 @@ const props = defineProps({
 });
 
 // Extract data from both data and props for compatibility
-const imageUrl = computed(() => props.data?.imageUrl || props.props?.imageUrl || '');
-const name = computed(() => props.data?.name || props.props?.name || props.data?.fullName || props.props?.fullName || '');
-const title = computed(() => props.data?.title || props.props?.title || props.data?.role || props.props?.role || '');
-const location = computed(() => props.data?.location || props.props?.location || '');
-const biography = computed(() => props.data?.biography || props.props?.biography || props.data?.bio || props.props?.bio || '');
+// ROOT FIX: Added safety checks for undefined props
+const imageUrl = computed(() => {
+  if (!props) return '';
+  return props.data?.imageUrl || props.props?.imageUrl || '';
+});
+
+const name = computed(() => {
+  if (!props) return '';
+  return props.data?.name || props.props?.name || props.data?.fullName || props.props?.fullName || '';
+});
+
+const title = computed(() => {
+  if (!props) return '';
+  return props.data?.title || props.props?.title || props.data?.role || props.props?.role || '';
+});
+
+const location = computed(() => {
+  if (!props) return '';
+  return props.data?.location || props.props?.location || '';
+});
+
+const biography = computed(() => {
+  if (!props) return '';
+  return props.data?.biography || props.props?.biography || props.data?.bio || props.props?.bio || '';
+});
 
 // Social links
 const socialLinks = computed(() => {

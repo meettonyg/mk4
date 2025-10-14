@@ -54,12 +54,36 @@ const props = defineProps({
 });
 
 // Extract data from both data and props for compatibility
-const title = computed(() => props.data?.title || props.props?.title || '');
-const subtitle = computed(() => props.data?.subtitle || props.props?.subtitle || '');
-const backgroundImage = computed(() => props.data?.backgroundImage || props.props?.backgroundImage || '');
-const ctaText = computed(() => props.data?.ctaText || props.props?.ctaText || '');
-const ctaUrl = computed(() => props.data?.ctaUrl || props.props?.ctaUrl || '#');
-const alignment = computed(() => props.data?.alignment || props.props?.alignment || 'center');
+// ROOT FIX: Added safety checks for undefined props
+const title = computed(() => {
+  if (!props) return '';
+  return props.data?.title || props.props?.title || '';
+});
+
+const subtitle = computed(() => {
+  if (!props) return '';
+  return props.data?.subtitle || props.props?.subtitle || '';
+});
+
+const backgroundImage = computed(() => {
+  if (!props) return '';
+  return props.data?.backgroundImage || props.props?.backgroundImage || '';
+});
+
+const ctaText = computed(() => {
+  if (!props) return '';
+  return props.data?.ctaText || props.props?.ctaText || '';
+});
+
+const ctaUrl = computed(() => {
+  if (!props) return '#';
+  return props.data?.ctaUrl || props.props?.ctaUrl || '#';
+});
+
+const alignment = computed(() => {
+  if (!props) return 'center';
+  return props.data?.alignment || props.props?.alignment || 'center';
+});
 </script>
 
 <style scoped>
