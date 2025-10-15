@@ -227,6 +227,202 @@
               </div>
             </template>
 
+            <!-- Main + Sidebar Layout (70% / 30%) -->
+            <template v-else-if="section.type === 'main_sidebar'">
+              <div class="gmkb-section__column" data-column="1">
+                <div 
+                  class="component-drop-zone"
+                  :data-section-id="section.section_id"
+                  :data-column="1"
+                  @dragover.prevent="onDragOver"
+                  @dragleave="onDragLeave"
+                  @drop.prevent="onDrop($event, section.section_id, 1)"
+                >
+                  <div v-if="!getColumnComponents(section, 1).length" class="drop-placeholder">
+                    <span class="drop-icon">📦</span>
+                    <span>Main Column</span>
+                  </div>
+                  <draggable
+                    v-else
+                    :model-value="getColumnComponents(section, 1)"
+                    @update:model-value="updateColumnComponents(section, 1, $event)"
+                    group="components"
+                    :item-key="(item) => {
+                      if (typeof item === 'string') return item;
+                      if (item && typeof item === 'object') {
+                        return item.component_id || item.id || String(Math.random());
+                      }
+                      return String(item || Math.random());
+                    }"
+                    class="component-list"
+                    @change="onComponentOrderChange"
+                    :animation="200"
+                    ghost-class="ghost"
+                    drag-class="drag"
+                  >
+                    <template #item="{element: componentId, index}">
+                      <ComponentWrapper
+                        v-if="componentId && getComponent(componentId)"
+                        :component="getComponent(componentId)"
+                        :component-id="componentId"
+                        :index="index"
+                        :total-components="getColumnComponents(section, 1).length"
+                        :show-controls="true"
+                      />
+                      <div v-else-if="!componentId" class="component-error-placeholder">
+                        <span>❌ Missing component ID at index {{ index }}</span>
+                      </div>
+                    </template>
+                  </draggable>
+                </div>
+              </div>
+              <div class="gmkb-section__column" data-column="2">
+                <div 
+                  class="component-drop-zone"
+                  :data-section-id="section.section_id"
+                  :data-column="2"
+                  @dragover.prevent="onDragOver"
+                  @dragleave="onDragLeave"
+                  @drop.prevent="onDrop($event, section.section_id, 2)"
+                >
+                  <div v-if="!getColumnComponents(section, 2).length" class="drop-placeholder">
+                    <span class="drop-icon">📦</span>
+                    <span>Sidebar</span>
+                  </div>
+                  <draggable
+                    v-else
+                    :model-value="getColumnComponents(section, 2)"
+                    @update:model-value="updateColumnComponents(section, 2, $event)"
+                    group="components"
+                    :item-key="(item) => {
+                      if (typeof item === 'string') return item;
+                      if (item && typeof item === 'object') {
+                        return item.component_id || item.id || String(Math.random());
+                      }
+                      return String(item || Math.random());
+                    }"
+                    class="component-list"
+                    @change="onComponentOrderChange"
+                    :animation="200"
+                    ghost-class="ghost"
+                    drag-class="drag"
+                  >
+                    <template #item="{element: componentId, index}">
+                      <ComponentWrapper
+                        v-if="componentId && getComponent(componentId)"
+                        :component="getComponent(componentId)"
+                        :component-id="componentId"
+                        :index="index"
+                        :total-components="getColumnComponents(section, 2).length"
+                        :show-controls="true"
+                      />
+                      <div v-else-if="!componentId" class="component-error-placeholder">
+                        <span>❌ Missing component ID at index {{ index }}</span>
+                      </div>
+                    </template>
+                  </draggable>
+                </div>
+              </div>
+            </template>
+
+            <!-- Sidebar + Main Layout (30% / 70%) -->
+            <template v-else-if="section.type === 'sidebar_main'">
+              <div class="gmkb-section__column" data-column="1">
+                <div 
+                  class="component-drop-zone"
+                  :data-section-id="section.section_id"
+                  :data-column="1"
+                  @dragover.prevent="onDragOver"
+                  @dragleave="onDragLeave"
+                  @drop.prevent="onDrop($event, section.section_id, 1)"
+                >
+                  <div v-if="!getColumnComponents(section, 1).length" class="drop-placeholder">
+                    <span class="drop-icon">📦</span>
+                    <span>Sidebar</span>
+                  </div>
+                  <draggable
+                    v-else
+                    :model-value="getColumnComponents(section, 1)"
+                    @update:model-value="updateColumnComponents(section, 1, $event)"
+                    group="components"
+                    :item-key="(item) => {
+                      if (typeof item === 'string') return item;
+                      if (item && typeof item === 'object') {
+                        return item.component_id || item.id || String(Math.random());
+                      }
+                      return String(item || Math.random());
+                    }"
+                    class="component-list"
+                    @change="onComponentOrderChange"
+                    :animation="200"
+                    ghost-class="ghost"
+                    drag-class="drag"
+                  >
+                    <template #item="{element: componentId, index}">
+                      <ComponentWrapper
+                        v-if="componentId && getComponent(componentId)"
+                        :component="getComponent(componentId)"
+                        :component-id="componentId"
+                        :index="index"
+                        :total-components="getColumnComponents(section, 1).length"
+                        :show-controls="true"
+                      />
+                      <div v-else-if="!componentId" class="component-error-placeholder">
+                        <span>❌ Missing component ID at index {{ index }}</span>
+                      </div>
+                    </template>
+                  </draggable>
+                </div>
+              </div>
+              <div class="gmkb-section__column" data-column="2">
+                <div 
+                  class="component-drop-zone"
+                  :data-section-id="section.section_id"
+                  :data-column="2"
+                  @dragover.prevent="onDragOver"
+                  @dragleave="onDragLeave"
+                  @drop.prevent="onDrop($event, section.section_id, 2)"
+                >
+                  <div v-if="!getColumnComponents(section, 2).length" class="drop-placeholder">
+                    <span class="drop-icon">📦</span>
+                    <span>Main Column</span>
+                  </div>
+                  <draggable
+                    v-else
+                    :model-value="getColumnComponents(section, 2)"
+                    @update:model-value="updateColumnComponents(section, 2, $event)"
+                    group="components"
+                    :item-key="(item) => {
+                      if (typeof item === 'string') return item;
+                      if (item && typeof item === 'object') {
+                        return item.component_id || item.id || String(Math.random());
+                      }
+                      return String(item || Math.random());
+                    }"
+                    class="component-list"
+                    @change="onComponentOrderChange"
+                    :animation="200"
+                    ghost-class="ghost"
+                    drag-class="drag"
+                  >
+                    <template #item="{element: componentId, index}">
+                      <ComponentWrapper
+                        v-if="componentId && getComponent(componentId)"
+                        :component="getComponent(componentId)"
+                        :component-id="componentId"
+                        :index="index"
+                        :total-components="getColumnComponents(section, 2).length"
+                        :show-controls="true"
+                      />
+                      <div v-else-if="!componentId" class="component-error-placeholder">
+                        <span>❌ Missing component ID at index {{ index }}</span>
+                      </div>
+                    </template>
+                  </draggable>
+                </div>
+              </div>
+            </template>
+
             <!-- Three Column Layout -->
             <template v-else-if="section.type === 'three_column'">
               <div 
@@ -355,8 +551,14 @@ const sections = computed({
 
 // Methods
 const getSectionLabel = (type) => {
-  const option = layoutOptions.find(opt => opt.value === type);
-  return option ? option.label : type;
+  const labels = {
+    'full_width': 'Full Width',
+    'two_column': 'Two Column',
+    'three_column': 'Three Column',
+    'main_sidebar': 'Main + Sidebar',
+    'sidebar_main': 'Sidebar + Main'
+  };
+  return labels[type] || type;
 };
 
 // ROOT FIX: Get proper layout CSS class
@@ -367,7 +569,7 @@ const getLayoutClass = (type) => {
     'two_column': 'layout-two-column',
     'three_column': 'layout-three-column',
     'main_sidebar': 'layout-main-sidebar',
-    'sidebar': 'layout-main-sidebar'
+    'sidebar_main': 'layout-sidebar-main'
   };
   return classMap[type] || `layout-${type}`;
 };
@@ -435,8 +637,9 @@ const getColumnComponents = (section, column) => {
     section.columns[column] = [];
   }
   
-  // For two column layout, ensure we only have columns 1 and 2
-  if (section.type === 'two_column' && column > 2) {
+  // For two column layouts (including sidebar layouts), ensure we only have columns 1 and 2
+  const twoColumnLayouts = ['two_column', 'main_sidebar', 'sidebar_main'];
+  if (twoColumnLayouts.includes(section.type) && column > 2) {
     return [];
   }
   
@@ -1039,7 +1242,13 @@ onUnmounted(() => {
 
 .layout-main-sidebar {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 7fr 3fr;
+  /* gap controlled by inline styles */
+}
+
+.layout-sidebar-main {
+  display: grid;
+  grid-template-columns: 3fr 7fr;
   /* gap controlled by inline styles */
 }
 

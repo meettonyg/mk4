@@ -593,6 +593,11 @@ class GMKB_Frontend_Display {
             return;
         }
         
+        // ROOT FIX: Allow components to enrich their own props via filter
+        // This maintains self-contained component architecture
+        $props = apply_filters('gmkb_enrich_component_props', $props, $component_type, $props['post_id'] ?? 0);
+        $props = apply_filters("gmkb_enrich_{$component_type}_props", $props, $props['post_id'] ?? 0);
+        
         // Extract props as variables for template
         extract($props, EXTR_SKIP);
         

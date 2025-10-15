@@ -106,6 +106,22 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php';
 }
 
+// ROOT FIX: Auto-load component data-integration files (ARCHITECTURE COMPLIANT)
+// This ensures each component's data integration logic is loaded
+$components_dir = GUESTIFY_PLUGIN_DIR . 'components';
+if (is_dir($components_dir)) {
+    $component_folders = glob($components_dir . '/*', GLOB_ONLYDIR);
+    foreach ($component_folders as $component_folder) {
+        $data_integration_file = $component_folder . '/data-integration.php';
+        if (file_exists($data_integration_file)) {
+            require_once $data_integration_file;
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB: Loaded data integration for ' . basename($component_folder));
+            }
+        }
+    }
+}
+
 // ROOT FIX: Include frontend template router for conditional media kit display
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/frontend-template-router.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/frontend-template-router.php';

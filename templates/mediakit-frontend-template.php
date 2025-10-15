@@ -138,77 +138,10 @@ $post = get_post($post_id);
     <?php endif; ?>
     
     <?php 
-    // ROOT FIX: Clean wp_head() - remove unnecessary scripts
+    // ROOT FIX: Clean wp_head() - styling comes from Vue bundle and theme CSS
     // Action hooks are handled in enqueue.php
     wp_head(); 
     ?>
-    
-    <!-- Clean Frontend Styles - Matching Vue Backend -->
-    <style id="gmkb-frontend-base">
-        /* Base reset matching Vue app */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            font-family: var(--gmkb-font-primary, -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif);
-            color: var(--gmkb-color-text, #1f2937);
-            line-height: var(--gmkb-line-height-body, 1.7);
-            background: var(--gmkb-color-background, #ffffff);
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-        
-        /* Container structure matching backend preview */
-        .gmkb-frontend-wrapper {
-            width: 100%;
-            min-height: 100vh;
-        }
-        
-        .gmkb-media-kit-container {
-            max-width: var(--gmkb-spacing-content-max-width, 1200px);
-            margin: 0 auto;
-            padding: var(--gmkb-spacing-container-padding, 24px);
-        }
-        
-        /* Section and component spacing */
-        .gmkb-section {
-            margin-bottom: var(--gmkb-spacing-section-gap, 96px);
-        }
-        
-        .gmkb-section:last-child {
-            margin-bottom: 0;
-        }
-        
-        .gmkb-component {
-            position: relative;
-            transition: var(--gmkb-transitions, all 0.2s ease);
-        }
-        
-        /* Column layouts */
-        .gmkb-section__columns {
-            display: grid;
-            gap: var(--gmkb-spacing-component-gap, 48px);
-        }
-        
-        .gmkb-section__columns--2 {
-            grid-template-columns: repeat(2, 1fr);
-        }
-        
-        .gmkb-section__columns--3 {
-            grid-template-columns: repeat(3, 1fr);
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .gmkb-section__columns--2,
-            .gmkb-section__columns--3 {
-                grid-template-columns: 1fr;
-            }
-            
-            .gmkb-section {
-                margin-bottom: 48px;
-            }
-        }
-    </style>
 </head>
 <body <?php body_class(['gmkb-media-kit-page', 'gmkb-theme--' . esc_attr($global_settings['theme'] ?? 'professional_clean')]); ?>>
 

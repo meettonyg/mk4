@@ -406,3 +406,55 @@ class Biography_Data_Integration {
 if (defined('WP_DEBUG') && WP_DEBUG) {
     error_log('✅ COMPLIANT: Biography Data Integration loaded - Generic data-integration.php pattern');
 }
+
+/**
+ * ROOT FIX: Hook into component prop enrichment filter (ARCHITECTURE COMPLIANT)
+ * This keeps biography-specific logic in the biography component
+ */
+add_filter('gmkb_enrich_biography_props', function($props, $post_id) {
+    // Only proceed if Pods is active
+    if (!function_exists('pods')) {
+        return $props;
+    }
+    
+    try {
+        $pod = pods('guests', $post_id);
+        if (!$pod || !$pod->exists()) {
+            return $props;
+        }
+        
+        // Load guest data from Pods - matching Vue component prop names
+        $first_name = $pod->field('first_name');
+        $last_name = $pod->field('last_name');
+        
+        $props['name'] = trim($first_name . ' ' . $last_name);
+        $props['title'] = $pod->field('professional_title');
+        $props['company'] = $pod->field('company');
+        $props['bio'] = $pod->field('biography');
+        $props['biography'] = $pod->field('biography'); // Alias
+        $props['bio_content'] = $pod->field('biography'); // Template uses this
+        $props['image_url'] = $pod->field('headshot.guid');
+        
+        // Also try headshot as array
+        if (empty($props['image_url'])) {
+            $headshot = $pod->field('headshot');
+            if (is_array($headshot) && isset($headshot['guid'])) {
+                $props['image_url'] = $headshot['guid'];
+            }
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ Biography: Enriched props for post ' . $post_id);
+            error_log('   - Name: ' . $props['name']);
+            error_log('   - Title: ' . $props['title']);
+            error_log('   - Bio length: ' . strlen($props['bio']));
+        }
+        
+    } catch (Exception $e) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('⚠️ Biography: Error enriching props: ' . $e->getMessage());
+        }
+    }
+    
+    return $props;
+}, 10, 2);

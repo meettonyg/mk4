@@ -325,3 +325,25 @@ class Topics_Data_Integration {
 if (defined('WP_DEBUG') && WP_DEBUG) {
     error_log('✅ COMPLIANT: Topics Data Integration loaded - Generic data-integration.php pattern');
 }
+
+/**
+ * ROOT FIX: Hook into component prop enrichment filter (ARCHITECTURE COMPLIANT)
+ * This keeps topics-specific logic in the topics component
+ */
+add_filter('gmkb_enrich_topics_props', function($props, $post_id) {
+    // Load topics data using the Topics_Data_Integration class
+    $topics_data = Topics_Data_Integration::load_component_data($post_id);
+    
+    if ($topics_data['success']) {
+        // Prepare props using the class method
+        $props = Topics_Data_Integration::prepare_template_props($topics_data, $props);
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ Topics: Enriched props for post ' . $post_id);
+            error_log('   - Topics count: ' . count($props['topics']));
+            error_log('   - Title: ' . ($props['title'] ?? 'N/A'));
+        }
+    }
+    
+    return $props;
+}, 10, 2);

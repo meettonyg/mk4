@@ -84,7 +84,7 @@ $section_title = 'Biography';
         
         <?php // Display biography text ?>
         <?php if (isset($content) && !empty($content)): ?>
-            <div class="biography-text"><?php echo wp_kses_post($content); ?></div>
+            <div class="biography-text"><?php echo wpautop(wp_kses_post($content)); ?></div>
         <?php else: ?>
             <p class="biography-placeholder">Add your full biography and professional background here. This is where you can share your story, expertise, and what makes you unique as a speaker or expert in your field.</p>
         <?php endif; ?>

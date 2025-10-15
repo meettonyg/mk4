@@ -1,6 +1,6 @@
 <?php
 /**
- * Vue-Only Enqueue System - Production Ready
+ * Clean Enqueue System - Single Filter Approach
  *
  * @package Guestify
  * @version 4.1.0
@@ -11,16 +11,202 @@ if (!defined('ABSPATH')) {
 }
 
 // ===============================================
+// HELPER FUNCTIONS (Must be defined first)
+// ===============================================
+
+function gmkb_is_builder_page() {
+    // ROOT FIX: Check for explicit builder mode first
+    if (isset($_GET['mkcg_id']) && is_numeric($_GET['mkcg_id'])) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('🔍 GMKB: Detected BUILDER page (via mkcg_id parameter)');
+        }
+        return true; // Explicit builder mode
+    }
+    
+    // Admin edit screen
+    if (is_admin()) {
+        $screen = get_current_screen();
+        if ($screen && $screen->post_type === 'mkcg' && $screen->base === 'post') {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('🔍 GMKB: Detected BUILDER page (admin edit screen)');
+            }
+            return true; // Admin editor
+        }
+    }
+    
+    return false;
+}
+
+function gmkb_is_frontend_display() {
+    // ROOT FIX: Frontend DISPLAY pages (not builder)
+    // These show the rendered media kit to visitors
+    
+    // NOT builder mode
+    if (isset($_GET['mkcg_id']) || is_admin()) {
+        return false;
+    }
+    
+    // Check if we're on a singular mkcg post page
+    if (is_singular('mkcg') || is_singular('guests')) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('🔍 GMKB: Detected FRONTEND DISPLAY page');
+        }
+        return true; // Frontend media kit display
+    }
+    
+    return false;
+}
+
+// ===============================================
+// CLEAN FILTER APPROACH - OUTPUT BLOCKING
+// ===============================================
+
+/**
+ * ROOT FIX: Clean approach - filter script tags at output time
+ * This is more elegant than dequeue and handles stubborn enqueues
+ */
+function gmkb_filter_jquery_script_tag($tag, $handle, $src) {
+    // Only filter on frontend media kit pages
+    if (!gmkb_is_frontend_display()) {
+        return $tag;
+    }
+    
+    // Block jQuery and other unnecessary scripts
+    $blocked_scripts = array(
+        'jquery',
+        'jquery-core',
+        'jquery-migrate',
+        'wp-embed',
+    );
+    
+    if (in_array($handle, $blocked_scripts)) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB: Blocked script: ' . $handle);
+        }
+        return ''; // Don't output the tag
+    }
+    
+    return $tag;
+}
+
+/**
+ * ROOT FIX: Clean approach - filter style tags at output time
+ */
+function gmkb_filter_style_tag($tag, $handle, $href, $media) {
+    // Only filter on frontend media kit pages
+    if (!gmkb_is_frontend_display()) {
+        return $tag;
+    }
+    
+    // Block theme and plugin styles
+    $blocked_styles = array(
+        'guestify-style',
+        'guestify-style-css',
+        'wpf-admin-bar',
+        'contact-form-7',
+        'wp-block-library',
+        'wp-block-library-theme',
+        'global-styles',
+    );
+    
+    // Also block if handle contains 'theme' or 'guestify'
+    if (in_array($handle, $blocked_styles) || 
+        stripos($handle, 'theme') !== false || 
+        stripos($handle, 'guestify') !== false) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB: Blocked style: ' . $handle);
+        }
+        return ''; // Don't output the tag
+    }
+    
+    return $tag;
+}
+
+// ===============================================
 // MAIN ENQUEUE HOOKS
 // ===============================================
 add_action('wp_enqueue_scripts', 'gmkb_enqueue_vue_only_assets', 20);
 add_action('admin_enqueue_scripts', 'gmkb_enqueue_vue_only_assets', 20);
 
-// ROOT FIX: Dequeue jQuery on frontend media kit pages (not needed)
-add_action('wp_enqueue_scripts', 'gmkb_dequeue_unnecessary_scripts', 100);
+// ROOT FIX: Block jQuery script tags from outputting on frontend media kit pages
+// This is the cleanest approach - filters the HTML output
+add_filter('script_loader_tag', 'gmkb_filter_jquery_script_tag', 10, 3);
+add_filter('style_loader_tag', 'gmkb_filter_style_tag', 10, 4);
 
-// ROOT FIX: Prevent third-party plugins from adding scripts to media kit pages
-add_action('wp_enqueue_scripts', 'gmkb_dequeue_third_party_scripts', 999);
+// ROOT FIX: AGGRESSIVELY block WordPress 6.7+ auto-sizes CSS on media kit pages ONLY
+// Multiple approaches to ensure it's removed
+
+// Approach 1: Remove the WordPress core action that injects this CSS
+add_action('template_redirect', 'gmkb_remove_wp_auto_sizes_action', 1);
+function gmkb_remove_wp_auto_sizes_action() {
+    if (gmkb_is_frontend_display() || gmkb_is_builder_page()) {
+        // Remove WordPress core function that prints the auto-sizes CSS
+        remove_action('wp_head', 'wp_print_auto_sizes_contain_intrinsic_size_style');
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB: Removed wp_print_auto_sizes_contain_intrinsic_size_style action');
+        }
+    }
+}
+
+// Approach 2: Disable the feature for media kit pages
+add_filter('wp_img_tag_add_auto_sizes', 'gmkb_disable_auto_sizes_mediakit_only', 1);
+function gmkb_disable_auto_sizes_mediakit_only($add_auto_sizes) {
+    if (gmkb_is_frontend_display() || gmkb_is_builder_page()) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB: Disabled auto-sizes via filter');
+        }
+        return false;
+    }
+    return $add_auto_sizes;
+}
+
+// Approach 3: Remove the inline style from wp_head output on media kit pages
+add_action('wp_head', 'gmkb_remove_auto_sizes_inline_style', 1);
+add_action('admin_head', 'gmkb_remove_auto_sizes_inline_style', 1);
+function gmkb_remove_auto_sizes_inline_style() {
+    if (gmkb_is_frontend_display() || gmkb_is_builder_page()) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB: Starting output buffer to strip auto-sizes CSS');
+        }
+        
+        // Start output buffering to catch and remove the style
+        ob_start(function($html) {
+            // Remove the contain-intrinsic-size CSS with multiple pattern variations
+            $patterns = array(
+                '/<style[^>]*>\s*img:is\(\[sizes="auto" i\][^}]+contain-intrinsic-size[^}]+}\s*<\/style>/i',
+                '/<style>img:is\(\[sizes="auto" i\][^<]+<\/style>/i',
+                '/<style[^>]*>\s*img:is\(\[sizes=.auto.\s+i\][^}]*contain-intrinsic-size[^}]*}\s*<\/style>/is'
+            );
+            
+            foreach ($patterns as $pattern) {
+                $original = $html;
+                $html = preg_replace($pattern, '', $html);
+                
+                if ($html !== $original && defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('✅ GMKB: Stripped auto-sizes CSS with pattern');
+                }
+            }
+            
+            return $html;
+        });
+    }
+}
+
+// Approach 4: Close the output buffer at the end of wp_head on media kit pages
+add_action('wp_head', 'gmkb_close_auto_sizes_buffer', 999);
+add_action('admin_head', 'gmkb_close_auto_sizes_buffer', 999);
+function gmkb_close_auto_sizes_buffer() {
+    if (gmkb_is_frontend_display() || gmkb_is_builder_page()) {
+        if (ob_get_level() > 0) {
+            ob_end_flush();
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB: Closed output buffer');
+            }
+        }
+    }
+}
 
 // Hook to print the critical data object directly into the head.
 add_action('wp_head', 'gmkb_inject_data_object_script', 1);
@@ -119,56 +305,6 @@ function gmkb_enqueue_vue_only_assets() {
     }
 }
 
-/**
- * ROOT FIX: Dequeue unnecessary scripts on frontend media kit pages
- * Removes jQuery and other scripts that are not needed for static display
- */
-function gmkb_dequeue_unnecessary_scripts() {
-    // ROOT FIX: Use new helper function for cleaner logic
-    if (!gmkb_is_frontend_display()) {
-        return; // Only run on frontend display pages
-    }
-    
-    // ROOT FIX: Dequeue jQuery - not needed for frontend display
-    wp_dequeue_script('jquery');
-    wp_dequeue_script('jquery-core');
-    wp_dequeue_script('jquery-migrate');
-    
-    // ROOT FIX: Dequeue unnecessary WordPress scripts
-    wp_dequeue_script('wp-embed');
-    
-    // ROOT FIX: Dequeue theme stylesheet - media kit is self-contained
-    wp_dequeue_style('guestify-style');
-    wp_dequeue_style('guestify-style-css');
-    
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('✅ GMKB: jQuery and unnecessary scripts dequeued from frontend');
-        error_log('✅ GMKB: Theme stylesheet dequeued - media kit is self-contained');
-    }
-}
-
-/**
- * ROOT FIX: Remove third-party plugin scripts that aren't needed for static media kit display
- * This runs last (priority 999) to clean up after other plugins
- */
-function gmkb_dequeue_third_party_scripts() {
-    // ROOT FIX: Use new helper function for cleaner logic
-    if (!gmkb_is_frontend_display()) {
-        return; // Only run on frontend display pages
-    }
-    
-    // ROOT FIX: Dequeue WP Fusion admin bar (not needed on frontend)
-    wp_dequeue_style('wpf-admin-bar');
-    
-    // ROOT FIX: Dequeue common plugin scripts that aren't needed
-    wp_dequeue_script('contact-form-7'); // Contact Form 7
-    wp_dequeue_script('wpcf7-recaptcha'); // CF7 reCAPTCHA
-    wp_dequeue_style('contact-form-7'); // CF7 styles
-    
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('✅ GMKB: Third-party plugin scripts cleaned up');
-    }
-}
 
 /**
  * Directly prints the gmkbData object into the <head> of the document.
@@ -263,42 +399,6 @@ function gmkb_inject_data_object_script() {
 // ===============================================
 // HELPER FUNCTIONS
 // ===============================================
-
-function gmkb_is_builder_page() {
-    // ROOT FIX: Check for explicit builder mode first
-    if (isset($_GET['mkcg_id']) && is_numeric($_GET['mkcg_id'])) {
-        return true; // Explicit builder mode
-    }
-    
-    // Admin edit screen
-    if (is_admin()) {
-        $screen = get_current_screen();
-        if ($screen && $screen->post_type === 'mkcg' && $screen->base === 'post') {
-            return true; // Admin editor
-        }
-    }
-    
-    // ROOT FIX: REMOVED is_singular('mkcg') check
-    // Frontend display pages should NOT load builder assets
-    // Only load builder in explicit builder mode or admin
-    
-    return false;
-}
-
-function gmkb_is_frontend_display() {
-    // ROOT FIX: New helper to identify frontend display pages
-    // These pages need Font Awesome but NOT Vue bundle
-    
-    if (is_admin() || isset($_GET['mkcg_id'])) {
-        return false; // Not frontend display
-    }
-    
-    if (is_singular('mkcg') || is_singular('guests')) {
-        return true; // Frontend media kit page
-    }
-    
-    return false;
-}
 
 function gmkb_get_post_id() {
     if (isset($_GET['mkcg_id']) && is_numeric($_GET['mkcg_id'])) {
