@@ -1,10 +1,10 @@
 /* Biography Component Styles */
 
 .biography-component {
+  /* V2 ARCHITECTURE: Minimal component styles */
+  /* All visual styles (background, padding, border, etc.) applied via ComponentStyleService */
   position: relative;
-  padding: var(--gmkb-spacing-lg, 2rem);
-  background: var(--gmkb-color-surface, #ffffff);
-  border-radius: var(--gmkb-border-radius, 8px);
+  display: block;
   transition: all 0.3s ease;
   min-height: 100px;
 }
@@ -59,7 +59,42 @@
   color: #ef4444;
 }
 
-/* Biography Content */
+/* Biography Content - Matches Vue Structure */
+.biography-content {
+  /* No background/padding here - handled by parent .component-root */
+  position: relative;
+  width: 100%;
+}
+
+.biography-name {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  color: inherit; /* Inherit from component-root */
+  line-height: 1.2;
+}
+
+.biography-title {
+  font-size: 1.125rem;
+  color: #64748b;
+  margin: 0 0 0.5rem 0;
+}
+
+.biography-text {
+  line-height: 1.6;
+  color: inherit;
+  cursor: text;
+}
+
+.biography-text p {
+  margin: 0 0 1rem 0;
+}
+
+.biography-text p:last-child {
+  margin-bottom: 0;
+}
+
+/* Legacy selectors for backward compatibility */
 .biography__content {
   position: relative;
   width: 100%;

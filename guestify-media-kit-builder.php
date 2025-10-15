@@ -73,11 +73,6 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/import/ImportManager.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/import/ImportManager.php';
 }
 
-// ROOT FIX: Admin diagnostic tool for fixing component save issues
-if (file_exists(GUESTIFY_PLUGIN_DIR . 'admin/diagnostic-tools.php')) {
-    require_once GUESTIFY_PLUGIN_DIR . 'admin/diagnostic-tools.php';
-}
-
 // PHASE 7: Version Control System
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/version-control/VersionManager.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/version-control/VersionManager.php';
@@ -121,11 +116,6 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/debug-rest-endpoint.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/debug-rest-endpoint.php';
 }
 
-// PHASE 8: Enhanced Frontend Display with Theme Support
-if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-frontend-display.php')) {
-    require_once GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-frontend-display.php';
-}
-
 // ADMIN TOOLS: Load essential admin functionality only
 if (is_admin()) {
     $viewer_file = GUESTIFY_PLUGIN_DIR . 'admin/media-kit-viewer.php';
@@ -133,9 +123,9 @@ if (is_admin()) {
         require_once $viewer_file;
     }
     
-    $diagnostic_file = GUESTIFY_PLUGIN_DIR . 'admin/diagnostic-tools.php';
-    if (file_exists($diagnostic_file)) {
-        require_once $diagnostic_file;
+    // Initialize frontend display class if available
+    if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-frontend-display.php')) {
+        require_once GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-frontend-display.php';
     }
 }
 

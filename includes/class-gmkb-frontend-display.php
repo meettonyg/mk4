@@ -193,12 +193,7 @@ class GMKB_Frontend_Display {
             $design_system_version = filemtime($design_system_path);
             $design_system_url = GMKB_PLUGIN_URL . 'design-system/index.css';
             wp_enqueue_style('gmkb-design-system', $design_system_url, array(), $design_system_version);
-            wp_print_styles('gmkb-design-system');
         }
-        
-        // Optional: Print any JS needed
-        wp_print_scripts('gmkb-frontend-lazy');
-        wp_print_scripts('gmkb-frontend-animations');
     }
     
     /**

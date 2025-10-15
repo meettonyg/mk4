@@ -54,7 +54,7 @@ if (empty($bio_content) && $post_id > 0) {
 $content = $bio_content;
 $section_title = 'Biography';
 ?>
-<!-- Biography component template - controls added dynamically by JS -->
+<!-- Biography component template - matches Vue structure -->
 <div class="content-section biography-component editable-element" 
      data-element="biography" 
      data-component="biography" 
@@ -64,14 +64,13 @@ $section_title = 'Biography';
      style="position: relative; cursor: pointer;"
      tabindex="0">
     
-    <h2 class="section-title"><?php echo esc_html($section_title); ?></h2>
-    
-    <?php // ROOT FIX: Display name and title if available ?>
-    <?php if (!empty($guest_name) || !empty($guest_title) || !empty($guest_company)): ?>
-    <div class="biography-header">
+    <div class="biography-content">
+        <?php // Display name as h2 (matches Vue structure) ?>
         <?php if (!empty($guest_name)): ?>
-            <h3 class="biography-name"><?php echo esc_html($guest_name); ?></h3>
+            <h2 class="biography-name"><?php echo esc_html($guest_name); ?></h2>
         <?php endif; ?>
+        
+        <?php // Display title/company ?>
         <?php if (!empty($guest_title) || !empty($guest_company)): ?>
             <p class="biography-title">
                 <?php 
@@ -82,12 +81,10 @@ $section_title = 'Biography';
                 ?>
             </p>
         <?php endif; ?>
-    </div>
-    <?php endif; ?>
-    
-    <div class="biography-content">
+        
+        <?php // Display biography text ?>
         <?php if (isset($content) && !empty($content)): ?>
-            <p><?php echo wp_kses_post($content); ?></p>
+            <div class="biography-text"><?php echo wp_kses_post($content); ?></div>
         <?php else: ?>
             <p class="biography-placeholder">Add your full biography and professional background here. This is where you can share your story, expertise, and what makes you unique as a speaker or expert in your field.</p>
         <?php endif; ?>

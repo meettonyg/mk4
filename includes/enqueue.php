@@ -1,9 +1,9 @@
 <?php
 /**
- * Vue-Only Enqueue System - Clean Build Version
+ * Vue-Only Enqueue System - Production Ready
  *
  * @package Guestify
- * @version 4.0.5
+ * @version 4.1.0
  */
 
 if (!defined('ABSPATH')) {

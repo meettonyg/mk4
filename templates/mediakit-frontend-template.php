@@ -53,6 +53,7 @@ if (empty($media_kit_state)) {
         <p>This guest's media kit is currently being updated. Please check back soon.</p>
         <a href="<?php echo home_url(); ?>" class="button">Return Home</a>
     </div>
+<?php wp_footer(); ?>
 </body>
 </html>
 <?php
@@ -126,29 +127,86 @@ $post = get_post($post_id);
 <head>
     <meta charset="<?php bloginfo('charset'); ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?php echo get_the_title($post_id); ?> - Media Kit</title>
+    <title><?php echo esc_html($post->post_title ?? get_the_title()); ?> - Media Kit</title>
     
-    <!-- Only load essential Media Kit CSS -->
-    <link rel='stylesheet' href='<?php echo GMKB_PLUGIN_URL; ?>css/frontend-mediakit.css' media='all' />
-    <link rel='stylesheet' href='<?php echo GMKB_PLUGIN_URL; ?>css/modules/components.css' media='all' />
+    <!-- SEO Meta Tags -->
+    <?php if ($post): ?>
+        <meta name="description" content="<?php echo esc_attr(wp_trim_words($post->post_excerpt ?: $post->post_content, 25)); ?>">
+        <?php if (has_post_thumbnail($post_id)): ?>
+            <meta property="og:image" content="<?php echo get_the_post_thumbnail_url($post_id, 'large'); ?>">
+        <?php endif; ?>
+    <?php endif; ?>
     
-    <style>
-        /* Minimal icon in corner */
-        body::before {
-            content: "📄";
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            font-size: 24px;
-            z-index: 9999;
-            background: rgba(255,255,255,0.9);
-            padding: 8px 12px;
-            border-radius: 50%;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    <?php wp_head(); ?>
+    
+    <!-- Clean Frontend Styles - Matching Vue Backend -->
+    <style id="gmkb-frontend-base">
+        /* Base reset matching Vue app */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: var(--gmkb-font-primary, -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif);
+            color: var(--gmkb-color-text, #1f2937);
+            line-height: var(--gmkb-line-height-body, 1.7);
+            background: var(--gmkb-color-background, #ffffff);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        /* Container structure matching backend preview */
+        .gmkb-frontend-wrapper {
+            width: 100%;
+            min-height: 100vh;
+        }
+        
+        .gmkb-media-kit-container {
+            max-width: var(--gmkb-spacing-content-max-width, 1200px);
+            margin: 0 auto;
+            padding: var(--gmkb-spacing-container-padding, 24px);
+        }
+        
+        /* Section and component spacing */
+        .gmkb-section {
+            margin-bottom: var(--gmkb-spacing-section-gap, 96px);
+        }
+        
+        .gmkb-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .gmkb-component {
+            position: relative;
+            transition: var(--gmkb-transitions, all 0.2s ease);
+        }
+        
+        /* Column layouts */
+        .gmkb-section__columns {
+            display: grid;
+            gap: var(--gmkb-spacing-component-gap, 48px);
+        }
+        
+        .gmkb-section__columns--2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .gmkb-section__columns--3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .gmkb-section__columns--2,
+            .gmkb-section__columns--3 {
+                grid-template-columns: 1fr;
+            }
+            
+            .gmkb-section {
+                margin-bottom: 48px;
+            }
         }
     </style>
 </head>
-<body>
+<body <?php body_class(['gmkb-media-kit-page', 'gmkb-theme--' . esc_attr($global_settings['theme'] ?? 'professional_clean')]); ?>>
 
 
 

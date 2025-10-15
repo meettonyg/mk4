@@ -1,73 +1,96 @@
-# Deployment Ignore File
-# Files/folders listed here should NOT be uploaded to production server
+# Guestify Media Kit Builder - Deploy Ignore
+# Files and directories to exclude from production deployment
 
-# Development Dependencies
-node_modules/
-package.json
-package-lock.json
+# Archives and Backups
+/_archive/
+_archive/
+*.backup
+*.bak
+*.old
 
-# Source Files (we upload compiled dist/ instead)
-src/
+# Documentation (except README)
+/docs/
+*.md
+!README.md
+
+# Development Files
+/src/
+/tests/
+/cypress/
+/scripts/
+*.bat
+*.sh
+*.ps1
 
 # Build Configuration
+/node_modules/
+package.json
+package-lock.json
 vite.config.js
 vitest.config.js
-jsconfig.json
+webpack.config.js
 tsconfig.json
+.eslintrc*
+.prettierrc*
+.stylelintrc*
 
-# Tests
-tests/
-*.test.js
-*.spec.js
-
-# Documentation (optional - include if you want docs on server)
-README.md
-CHANGELOG.md
-*.md
-
-# Git Files
+# Version Control
 .git/
 .gitignore
 .gitattributes
+.github/
 
 # IDE Files
 .vscode/
 .idea/
-*.swp
-*.swo
-*~
-
-# OS Files
+*.sublime-*
 .DS_Store
 Thumbs.db
-desktop.ini
 
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Environment Files
-.env
-.env.local
-.env.*.local
+# Debug and Diagnostic Files
+check-old-files.php
+*diagnostic*.php
+*debug*.php
+*test*.php
+console-*.js
+emergency-*.js
 
 # Temporary Files
-tmp/
-temp/
 *.tmp
+*.temp
+*.log
+*.cache
+.cache/
 
-# Archive/Backup Files
-ARCHIVE/
-backup/
-*.bak
-*.old
+# Build Artifacts (if not needed)
+# Uncomment if shipping source only:
+# /dist/
 
-# Option C Documentation (keep on server for reference)
-# Remove the # below if you want to exclude these too
-# OPTION-C-*.md
+# Documentation Files (development)
+CHECKLIST*.md
+*COMPLETE*.md
+*FIX*.md
+*PHASE*.md
+*AUDIT*.md
+*STATUS*.md
+*SUMMARY*.md
+*ANALYSIS*.md
+*INVESTIGATION*.md
 
-# Critical: NEVER upload these
-.htpasswd
-wp-config.php
+# Component Development Files
+component-compliance-report.json
+component-error-diagnostic.js
+
+# Empty Directories
+/css/
+!css/index.php
+
+# SQL Files
+*.sql
+
+# Archive Tools
+remove-*.sql
+clear-*.php
+CLEANUP-*.bat
+BUILD-*.bat
+FORCE-*.bat
