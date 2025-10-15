@@ -137,7 +137,11 @@ $post = get_post($post_id);
         <?php endif; ?>
     <?php endif; ?>
     
-    <?php wp_head(); ?>
+    <?php 
+    // ROOT FIX: Clean wp_head() - remove unnecessary scripts
+    // Action hooks are handled in enqueue.php
+    wp_head(); 
+    ?>
     
     <!-- Clean Frontend Styles - Matching Vue Backend -->
     <style id="gmkb-frontend-base">
@@ -211,10 +215,9 @@ $post = get_post($post_id);
 
 
 <?php
-// Debug output
+// ROOT FIX: Simplified debug output
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('MEDIAKIT TEMPLATE: Attempting to render with GMKB_Frontend_Display');
-    error_log('MEDIAKIT TEMPLATE: Class exists: ' . (class_exists('GMKB_Frontend_Display') ? 'YES' : 'NO'));
+    error_log('✅ MEDIAKIT TEMPLATE: Rendering media kit for post_id=' . $post_id);
 }
 
 // Use the enhanced frontend display class if available

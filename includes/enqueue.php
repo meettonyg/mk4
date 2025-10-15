@@ -16,6 +16,12 @@ if (!defined('ABSPATH')) {
 add_action('wp_enqueue_scripts', 'gmkb_enqueue_vue_only_assets', 20);
 add_action('admin_enqueue_scripts', 'gmkb_enqueue_vue_only_assets', 20);
 
+// ROOT FIX: Dequeue jQuery on frontend media kit pages (not needed)
+add_action('wp_enqueue_scripts', 'gmkb_dequeue_unnecessary_scripts', 100);
+
+// ROOT FIX: Prevent third-party plugins from adding scripts to media kit pages
+add_action('wp_enqueue_scripts', 'gmkb_dequeue_third_party_scripts', 999);
+
 // Hook to print the critical data object directly into the head.
 add_action('wp_head', 'gmkb_inject_data_object_script', 1);
 add_action('admin_head', 'gmkb_inject_data_object_script', 1);
@@ -89,12 +95,79 @@ function gmkb_enqueue_vue_only_assets() {
     }
     
     // --- FONT AWESOME for clean monochrome icons ---
-    wp_enqueue_style(
-        'gmkb-font-awesome',
-        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
-        array(),
-        '6.4.0'
-    );
+    // ROOT FIX: Load Font Awesome where it's actually needed:
+    // - Admin/builder pages (for UI)
+    // - Frontend media kit pages (for social icons, icon lists, etc.)
+    // - Do NOT load on other random pages
+    $load_font_awesome = false;
+    
+    if (gmkb_is_builder_page()) {
+        // Builder or admin - needs Font Awesome for UI
+        $load_font_awesome = true;
+    } elseif (gmkb_is_frontend_display()) {
+        // Frontend media kit - needs Font Awesome for social icons
+        $load_font_awesome = true;
+    }
+    
+    if ($load_font_awesome) {
+        wp_enqueue_style(
+            'gmkb-font-awesome',
+            'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
+            array(),
+            '6.4.0'
+        );
+    }
+}
+
+/**
+ * ROOT FIX: Dequeue unnecessary scripts on frontend media kit pages
+ * Removes jQuery and other scripts that are not needed for static display
+ */
+function gmkb_dequeue_unnecessary_scripts() {
+    // ROOT FIX: Use new helper function for cleaner logic
+    if (!gmkb_is_frontend_display()) {
+        return; // Only run on frontend display pages
+    }
+    
+    // ROOT FIX: Dequeue jQuery - not needed for frontend display
+    wp_dequeue_script('jquery');
+    wp_dequeue_script('jquery-core');
+    wp_dequeue_script('jquery-migrate');
+    
+    // ROOT FIX: Dequeue unnecessary WordPress scripts
+    wp_dequeue_script('wp-embed');
+    
+    // ROOT FIX: Dequeue theme stylesheet - media kit is self-contained
+    wp_dequeue_style('guestify-style');
+    wp_dequeue_style('guestify-style-css');
+    
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB: jQuery and unnecessary scripts dequeued from frontend');
+        error_log('✅ GMKB: Theme stylesheet dequeued - media kit is self-contained');
+    }
+}
+
+/**
+ * ROOT FIX: Remove third-party plugin scripts that aren't needed for static media kit display
+ * This runs last (priority 999) to clean up after other plugins
+ */
+function gmkb_dequeue_third_party_scripts() {
+    // ROOT FIX: Use new helper function for cleaner logic
+    if (!gmkb_is_frontend_display()) {
+        return; // Only run on frontend display pages
+    }
+    
+    // ROOT FIX: Dequeue WP Fusion admin bar (not needed on frontend)
+    wp_dequeue_style('wpf-admin-bar');
+    
+    // ROOT FIX: Dequeue common plugin scripts that aren't needed
+    wp_dequeue_script('contact-form-7'); // Contact Form 7
+    wp_dequeue_script('wpcf7-recaptcha'); // CF7 reCAPTCHA
+    wp_dequeue_style('contact-form-7'); // CF7 styles
+    
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB: Third-party plugin scripts cleaned up');
+    }
 }
 
 /**
@@ -192,18 +265,38 @@ function gmkb_inject_data_object_script() {
 // ===============================================
 
 function gmkb_is_builder_page() {
+    // ROOT FIX: Check for explicit builder mode first
     if (isset($_GET['mkcg_id']) && is_numeric($_GET['mkcg_id'])) {
-        return true;
+        return true; // Explicit builder mode
     }
-    if (is_singular('mkcg')) {
-        return true;
-    }
+    
+    // Admin edit screen
     if (is_admin()) {
         $screen = get_current_screen();
         if ($screen && $screen->post_type === 'mkcg' && $screen->base === 'post') {
-            return true;
+            return true; // Admin editor
         }
     }
+    
+    // ROOT FIX: REMOVED is_singular('mkcg') check
+    // Frontend display pages should NOT load builder assets
+    // Only load builder in explicit builder mode or admin
+    
+    return false;
+}
+
+function gmkb_is_frontend_display() {
+    // ROOT FIX: New helper to identify frontend display pages
+    // These pages need Font Awesome but NOT Vue bundle
+    
+    if (is_admin() || isset($_GET['mkcg_id'])) {
+        return false; // Not frontend display
+    }
+    
+    if (is_singular('mkcg') || is_singular('guests')) {
+        return true; // Frontend media kit page
+    }
+    
     return false;
 }
 
