@@ -116,16 +116,16 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/debug-rest-endpoint.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/debug-rest-endpoint.php';
 }
 
+// ROOT FIX: Load frontend display class on BOTH admin and frontend
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-frontend-display.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-frontend-display.php';
+}
+
 // ADMIN TOOLS: Load essential admin functionality only
 if (is_admin()) {
     $viewer_file = GUESTIFY_PLUGIN_DIR . 'admin/media-kit-viewer.php';
     if (file_exists($viewer_file)) {
         require_once $viewer_file;
-    }
-    
-    // Initialize frontend display class if available
-    if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-frontend-display.php')) {
-        require_once GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-frontend-display.php';
     }
 }
 

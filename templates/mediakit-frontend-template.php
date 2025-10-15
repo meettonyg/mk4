@@ -242,7 +242,7 @@ if (class_exists('GMKB_Frontend_Display')) {
     <!-- Media Kit Container -->
     <article id="gmkb-media-kit-<?php echo esc_attr($post_id); ?>" class="gmkb-media-kit-container gmkb-frontend-display">
     
-    <?php if (empty($components)): ?>
+    <?php if (empty($components) && empty($sections)): ?>
         <!-- Empty State -->
         <div class="gmkb-empty-state">
             <h2>Media Kit Under Construction</h2>
