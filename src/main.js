@@ -9,6 +9,10 @@
  * - 100% Vue-driven architecture
  */
 
+// ROOT FIX: Import global builder structure CSS
+// This gets bundled into dist/gmkb.css by Vite
+import './styles/builder.css';
+
 // Vue 3 imports
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';

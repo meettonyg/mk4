@@ -54,7 +54,7 @@ if (!in_array($post->post_type, $allowed_post_types)) {
     <?php wp_head(); ?>
 
     <style>
-        /* Critical CSS - Inline for instant loading */
+        /* CRITICAL CSS - Must be inline for instant loading */
         body, html {
             margin: 0;
             padding: 0;
@@ -71,7 +71,7 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             height: 100%;
         }
 
-        /* PHASE 6: Loading screen - Shows until Vue takes over */
+        /* Loading screen - Shows until Vue takes over */
         .gmkb-loading {
             display: flex;
             align-items: center;
@@ -139,7 +139,7 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             text-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
         }
 
-        /* PHASE 6: Error screen */
+        /* Error screen */
         .gmkb-error {
             display: flex;
             flex-direction: column;
@@ -180,149 +180,6 @@ if (!in_array($post->post_type, $allowed_post_types)) {
         .gmkb-error__button:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-        
-        /* Hide WordPress admin bar in builder */
-        #wpadminbar {
-            display: none !important;
-        }
-        
-        html {
-            margin-top: 0 !important;
-        }
-        
-        /* Builder UI Structure - Enhanced Design */
-        #gmkb-builder-wrapper {
-            width: 100%;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            padding-top: 0;
-        }
-        
-        #gmkb-toolbar {
-            flex-shrink: 0;
-            z-index: 100;
-            background: linear-gradient(to right, #1e293b, #0f172a);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.05);
-        }
-        
-        #gmkb-main-content {
-            flex: 1;
-            display: flex;
-            overflow: hidden;
-            background: #e5e7eb;
-            transition: background 0.2s;
-        }
-        
-        /* Main content background in dark mode - visible as frame around preview */
-        body.dark-mode #gmkb-main-content {
-            background: #1e293b;
-        }
-        
-        #gmkb-sidebar {
-            flex-shrink: 0;
-            width: 320px;
-            height: 100%;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            background: white;
-            border-right: 1px solid #e5e7eb;
-            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
-            transition: all 0.2s;
-        }
-        
-        body.dark-mode #gmkb-sidebar {
-            background: #0f172a;
-            border-right-color: #334155;
-            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
-        }
-        
-        #media-kit-preview {
-            flex: 1;
-            overflow-y: auto;
-            background: #ffffff;
-            padding: 32px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        /* Preview background is now user-controlled via settings */
-        /* Dark mode does NOT affect preview - only affects tools */
-        
-        /* Enhanced scrollbar for preview */
-        #media-kit-preview::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        #media-kit-preview::-webkit-scrollbar-track {
-            background: #e5e7eb;
-        }
-        
-        body.dark-mode #media-kit-preview::-webkit-scrollbar-track {
-            background: #334155;
-        }
-        
-        #media-kit-preview::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-        
-        body.dark-mode #media-kit-preview::-webkit-scrollbar-thumb {
-            background: #64748b;
-        }
-        
-        #media-kit-preview::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-        
-        body.dark-mode #media-kit-preview::-webkit-scrollbar-thumb:hover {
-            background: #475569;
-        }
-        
-        /* Device preview styles - Enhanced */
-        #media-kit-preview.device-desktop {
-            padding: 32px;
-        }
-        
-        #media-kit-preview.device-tablet {
-            padding: 48px 32px;
-        }
-        
-        #media-kit-preview.device-tablet > * {
-            max-width: 768px;
-            margin-left: auto;
-            margin-right: auto;
-            background: white;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            border-radius: 12px;
-            overflow: hidden;
-        }
-        
-        #media-kit-preview.device-mobile {
-            padding: 48px 32px;
-        }
-        
-        #media-kit-preview.device-mobile > * {
-            max-width: 375px;
-            margin-left: auto;
-            margin-right: auto;
-            background: white;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            border-radius: 24px;
-            overflow: hidden;
-        }
-        
-        /* Show builder wrapper when Vue is ready */
-        .gmkb-vue-ready #gmkb-builder-wrapper {
-            display: flex !important;
-        }
-        
-        /* Hide loading screen when Vue is ready */
-        .gmkb-vue-ready #app {
-            display: none;
         }
     </style>
 </head>

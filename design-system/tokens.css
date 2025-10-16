@@ -135,6 +135,46 @@
   --gmkb-z-modal: 1400;
   --gmkb-z-popover: 1500;
   --gmkb-z-tooltip: 1600;
+  
+  /* Component-Specific Sizes */
+  --gmkb-hero-avatar-size: 140px;
+  --gmkb-hero-avatar-border: 5px;
+  --gmkb-hero-content-max-width: 600px;
+  --gmkb-social-icon-size: 48px;
+  --gmkb-underline-width: 40px;
+  --gmkb-underline-height: 3px;
+  --gmkb-topic-border-width: 4px;
+  --gmkb-topic-hover-translate: 6px;
+  --gmkb-fallback-border-width: 2px;
+  
+  /* Letter Spacing */
+  --gmkb-letter-spacing-tight: -0.025em;
+  --gmkb-letter-spacing-wide: 0.1em;
+  
+  /* Opacity Values */
+  --gmkb-opacity-light: 0.1;
+  --gmkb-opacity-medium: 0.3;
+  --gmkb-opacity-high: 0.6;
+  --gmkb-opacity-subtle: 0.9;
+  --gmkb-opacity-near-full: 0.95;
+  
+  /* Border Styles */
+  --gmkb-border-width-thin: 1px;
+  --gmkb-border-width-medium: 2px;
+  --gmkb-border-width-thick: 4px;
+  --gmkb-border-width-extra: 5px;
+  
+  /* Hero Component Variables */
+  --gmkb-hero-gradient-start: var(--gmkb-color-primary);
+  --gmkb-hero-gradient-middle: var(--gmkb-color-accent);
+  --gmkb-hero-gradient-end: #ec4899;
+  --gmkb-hero-overlay-opacity: 0.1;
+  --gmkb-hero-text-opacity: 0.9;
+  --gmkb-hero-text-opacity-high: 0.95;
+  
+  /* Shadow Opacity Values */
+  --gmkb-shadow-opacity-light: 0.2;
+  --gmkb-shadow-opacity-medium: 0.3;
 }
 
 /* Mobile Responsive Adjustments */

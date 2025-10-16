@@ -343,29 +343,29 @@ function gmkb_enqueue_vue_only_assets() {
         }
     }
     
-    // --- FONT AWESOME for clean monochrome icons ---
-    // ROOT FIX: Load Font Awesome where it's actually needed:
-    // - Admin/builder pages (for UI)
-    // - Frontend media kit pages (for social icons, icon lists, etc.)
-    // - Do NOT load on other random pages
-    $load_font_awesome = false;
-    
-    if (gmkb_is_builder_page()) {
-        // Builder or admin - needs Font Awesome for UI
-        $load_font_awesome = true;
-    } elseif (gmkb_is_frontend_display()) {
-        // Frontend media kit - needs Font Awesome for social icons
-        $load_font_awesome = true;
-    }
-    
-    if ($load_font_awesome) {
+    // ROOT FIX: ALSO load design system CSS in builder for accurate preview
+    // This ensures components look the same in builder as they do on frontend
+    $design_system_path = GUESTIFY_PLUGIN_DIR . 'design-system/index.css';
+    if (file_exists($design_system_path)) {
+        $design_system_version = defined('WP_DEBUG') && WP_DEBUG ? time() : filemtime($design_system_path);
+        $design_system_url = GUESTIFY_PLUGIN_URL . 'design-system/index.css';
+        
         wp_enqueue_style(
-            'gmkb-font-awesome',
-            'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
-            array(),
-            '6.4.0'
+            'gmkb-design-system-builder',
+            $design_system_url,
+            array('gmkb-vue-style'), // Load after builder UI styles
+            $design_system_version
         );
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB: Design system CSS loaded in builder for accurate preview');
+        }
     }
+    
+    // --- FONT AWESOME ---
+    // ROOT FIX: Don't load Font Awesome - the theme already loads it globally
+    // This prevents duplicate loading and reduces page weight
+    // The plugin uses Font Awesome icons which are available from the theme
 }
 
 
@@ -661,11 +661,9 @@ function gmkb_get_theme_data() {
                 $themes = $theme_discovery->getThemes();
                 
                 foreach ($themes as $theme_id => $theme_data) {
-                    $id = $theme_data['theme_id'] ?? $theme_id;
-                    
                     $themes_array[] = array(
-                        'id' => $id,
-                        'name' => $theme_data['name'] ?? ucfirst(str_replace('_', ' ', $theme_id)),
+                        'id' => $theme_data['theme_id'] ?? $theme_id,
+                        'name' => $theme_data['theme_name'] ?? $theme_data['name'] ?? ucfirst(str_replace('_', ' ', $theme_id)),
                         'description' => $theme_data['description'] ?? '',
                         'colors' => $theme_data['colors'] ?? array(),
                         'typography' => $theme_data['typography'] ?? array(),

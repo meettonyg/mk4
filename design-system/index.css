@@ -116,6 +116,32 @@ button {
 .mb-8 { margin-bottom: var(--gmkb-space-8); }
 
 /* ==========================================
+   RESPONSIVE VISIBILITY UTILITIES
+   PHASE 2: Support for hideOnMobile, hideOnTablet, hideOnDesktop
+   ========================================== */
+
+/* Mobile breakpoint: 0-767px */
+@media (max-width: 767px) {
+  .gmkb-hide-mobile {
+    display: none !important;
+  }
+}
+
+/* Tablet breakpoint: 768px-1023px */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .gmkb-hide-tablet {
+    display: none !important;
+  }
+}
+
+/* Desktop breakpoint: 1024px+ */
+@media (min-width: 1024px) {
+  .gmkb-hide-desktop {
+    display: none !important;
+  }
+}
+
+/* ==========================================
    THEME OVERRIDES
    Specific theme files can override tokens
    ========================================== */
