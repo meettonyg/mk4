@@ -1,5 +1,5 @@
 <template>
-  <div class="gmkb-podcast-player-component" :data-component-id="componentId">
+  <div class="gmkb-component gmkb-component--podcastplayer" :data-component-id="componentId">
     <div class="podcast-container">
       <h2 v-if="title" class="podcast-title">{{ title }}</h2>
       <p v-if="description" class="podcast-description">{{ description }}</p>
@@ -153,8 +153,8 @@ export default {
 };
 </script>
 
-<style scoped>
-.gmkb-podcast-player-component {
+<style>
+.gmkb-component--podcastplayer {
   padding: 2rem;
   background: var(--gmkb-color-surface, #fff);
 }

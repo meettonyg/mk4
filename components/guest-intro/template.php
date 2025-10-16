@@ -32,7 +32,7 @@ if (isset($props) && is_array($props)) {
 // Set defaults
 $componentId = $componentId ?? 'guest-intro-' . time();
 ?>
-<div class="content-section guest-intro-component editable-element" data-element="guest-intro" data-component="guest-intro" data-component-id="<?php echo esc_attr($componentId); ?>" data-component-type="guest-intro">
+<div class="gmkb-component gmkb-component--guestintro editable-element" data-element="guest-intro" data-component="guest-intro" data-component-id="<?php echo esc_attr($componentId); ?>" data-component-type="guest-intro">
     <!-- ROOT FIX: Controls removed - ComponentControlsManager handles all control functionality dynamically -->
     <h2 class="section-title"><?php echo esc_html($title ?? 'Guest Introduction'); ?></h2>
     

@@ -1,5 +1,5 @@
 <template>
-  <div class="gmkb-guest-intro-component" :data-component-id="componentId">
+  <div class="gmkb-component gmkb-component--guestintro" :data-component-id="componentId">
     <div class="intro-container">
       <h2 v-if="title" class="intro-title">{{ title }}</h2>
       
@@ -170,8 +170,8 @@ export default {
 };
 </script>
 
-<style scoped>
-.gmkb-guest-intro-component {
+<style>
+.gmkb-component--guestintro {
   padding: var(--gmkb-spacing-xl, 2rem);
   background: var(--gmkb-color-surface, #fff);
 }

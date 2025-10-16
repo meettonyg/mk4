@@ -1,5 +1,5 @@
 <template>
-  <div class="gmkb-booking-calendar-component" :data-component-id="componentId">
+  <div class="gmkb-component gmkb-component--bookingcalendar" :data-component-id="componentId">
     <div class="booking-container">
       <h2 v-if="title" class="booking-title">{{ title }}</h2>
       <p v-if="description" class="booking-description">{{ description }}</p>
@@ -225,8 +225,8 @@ export default {
 };
 </script>
 
-<style scoped>
-.gmkb-booking-calendar-component {
+<style>
+.gmkb-component--bookingcalendar {
   padding: 2rem;
   background: var(--gmkb-color-surface, #fff);
 }

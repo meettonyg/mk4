@@ -28,7 +28,7 @@ if (isset($props) && is_array($props)) {
 $title = $title ?? 'Podcast Episodes';
 $componentId = $componentId ?? 'podcast-player-' . time();
 ?>
-<div class="podcast-player-component editable-element" data-element="podcast-player" data-component="podcast-player" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="podcast-player">
+<div class="gmkb-component gmkb-component--podcastplayer editable-element" data-element="podcast-player" data-component="podcast-player" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="podcast-player">
     <div class="element-controls">
         <button class="control-btn" title="Move Up">↑</button>
         <button class="control-btn" title="Move Down">↓</button>

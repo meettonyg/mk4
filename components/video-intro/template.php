@@ -7,7 +7,7 @@ $title = $props['title'] ?? '';
 $videoUrl = $props['videoUrl'] ?? $props['video_url'] ?? '';
 $description = $props['description'] ?? '';
 ?>
-<div class="gmkb-component gmkb-component--video-intro" data-component-id="<?php echo esc_attr($component_id); ?>">
+<div class="gmkb-component gmkb-component--videointro" data-component-id="<?php echo esc_attr($component_id); ?>">
     <?php if ($title): ?>
         <h2 class="section-title"><?php echo esc_html($title); ?></h2>
     <?php endif; ?>

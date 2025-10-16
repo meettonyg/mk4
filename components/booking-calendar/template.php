@@ -24,7 +24,7 @@ if (isset($props) && is_array($props)) {
 $title = $title ?? 'Book a Session';
 $componentId = $componentId ?? 'booking-calendar-' . time();
 ?>
-<div class="booking-calendar-component editable-element" data-element="booking-calendar" data-component="booking-calendar" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="booking-calendar">
+<div class="gmkb-component gmkb-component--bookingcalendar editable-element" data-element="booking-calendar" data-component="booking-calendar" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="booking-calendar">
     <!-- ROOT FIX: Removed hardcoded element-controls - dynamic controls added by component-controls-manager.js -->
     <h2 class="booking-calendar-title"><?php echo $title ?? 'Book a Session'; ?></h2>
     <?php if (isset($description)): ?>

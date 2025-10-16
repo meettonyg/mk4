@@ -236,9 +236,8 @@ function gmkb_close_auto_sizes_buffer() {
     }
 }
 
-// Hook to print the critical data object directly into the head - VERY EARLY
-add_action('wp_head', 'gmkb_inject_data_object_script', -999);  // ROOT FIX: Priority -999 (very early)
-add_action('admin_head', 'gmkb_inject_data_object_script', -999);
+// ROOT FIX: Data injection now handled via wp_add_inline_script in gmkb_enqueue_vue_only_assets
+// This ensures data is available BEFORE the Vue bundle executes
 
 
 /**
@@ -280,6 +279,42 @@ function gmkb_enqueue_vue_only_assets() {
     
     $script_url = GUESTIFY_PLUGIN_URL . 'dist/gmkb.iife.js';
     wp_enqueue_script('gmkb-vue-app', $script_url, array(), $script_version, true);
+    
+    // ROOT FIX: Inject gmkbData using wp_add_inline_script to guarantee it loads BEFORE the Vue bundle
+    $gmkb_data = gmkb_prepare_data_for_injection();
+    
+    // CRITICAL DEBUGGING: Check if data preparation failed
+    if (empty($gmkb_data)) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('❌ GMKB CRITICAL: gmkb_prepare_data_for_injection() returned EMPTY data!');
+        }
+        // Add error to page for visibility
+        $inline_script = 'console.error("❌ GMKB CRITICAL: Data preparation failed - gmkbData is empty");';
+        $inline_script .= 'console.error("❌ Check WordPress debug.log for detailed error information");';
+        $inline_script .= 'window.gmkbData = null;';
+    } else {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            $component_count = isset($gmkb_data['componentRegistry']) ? count($gmkb_data['componentRegistry']) : 0;
+            error_log('✅ GMKB: Data prepared successfully - ' . $component_count . ' components');
+        }
+        
+        // Inject the data
+        $inline_script = 'window.gmkbData = ' . wp_json_encode($gmkb_data) . ';';
+        
+        // Add detailed console logging
+        $inline_script .= 'console.log("✅ GMKB: gmkbData injected successfully via wp_add_inline_script");';
+        $inline_script .= 'console.log("📊 GMKB DATA SUMMARY:");';
+        $inline_script .= 'console.log("  - Post ID:", window.gmkbData.postId);';
+        $inline_script .= 'console.log("  - User Status:", window.gmkbData.user.isLoggedIn ? "Logged in (ID: " + window.gmkbData.user.userId + ")" : "Guest (view/edit only)");';
+        $inline_script .= 'console.log("  - Can Save:", window.gmkbData.user.canSave ? "YES" : "NO (login required)");';
+        $inline_script .= 'console.log("  - Components:", Object.keys(window.gmkbData.componentRegistry || {}).length);';
+        $inline_script .= 'console.log("  - Themes:", window.gmkbData.themes ? window.gmkbData.themes.length : 0);';
+        $inline_script .= 'console.log("  - Has saved state:", !!window.gmkbData.savedState);';
+        $inline_script .= 'console.log("  - Full data:", window.gmkbData);';
+        $inline_script .= 'if (!window.gmkbData.user.isLoggedIn) { console.log("📝 CARRD MODE: You can edit this media kit, but need to login to save changes"); }';
+    }
+    
+    wp_add_inline_script('gmkb-vue-app', $inline_script, 'before');
 
     // --- CSS BUNDLE (check both possible names) ---
     // After clean rebuild, should be gmkb.css
@@ -335,49 +370,87 @@ function gmkb_enqueue_vue_only_assets() {
 
 
 /**
- * Directly prints the gmkbData object into the <head> of the document.
+ * Prepares the gmkbData object for injection into the page.
+ * ROOT FIX: This is now called from gmkb_enqueue_vue_only_assets() and used with wp_add_inline_script()
+ * @return array The prepared data array
  */
-function gmkb_inject_data_object_script() {
-    // ROOT FIX: Add comprehensive debugging
-    echo '<script>console.log("🔍 GMKB: gmkb_inject_data_object_script() called");</script>';
-    
-    if (!gmkb_is_builder_page()) {
-        echo '<script>console.warn("⚠️ GMKB: Not a builder page, exiting injection");</script>';
-        return;
-    }
-    
-    echo '<script>console.log("✅ GMKB: Is builder page, continuing...");</script>';
-
+function gmkb_prepare_data_for_injection() {
+    // STEP 1: Get post ID
     $post_id = gmkb_get_post_id();
-    echo '<script>console.log("🎯 GMKB: Post ID:", ' . intval($post_id) . ');</script>';
     
-    // Validate post exists and user has permission (Issue #15 fix)
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('🔍 GMKB DATA PREP - STEP 1: Post ID = ' . $post_id);
+    }
+    
+    // STEP 2: Validate post exists
     if (!$post_id || !get_post($post_id)) {
-        echo '<script>console.error("❌ GMKB: Invalid post_id, assets not loaded");</script>';
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('⚠️ GMKB: Invalid post_id, assets not loaded');
+            error_log('❌ GMKB DATA PREP - STEP 2 FAILED: Invalid post_id');
         }
-        return; // Don't inject data if post is invalid
+        return array(); // Return empty array if post is invalid
     }
     
-    echo '<script>console.log("✅ GMKB: Post exists");</script>';
-    
-    // Check user has permission to edit this post
-    if (!current_user_can('edit_post', $post_id)) {
-        echo '<script>console.error("❌ GMKB: User lacks permission for post_id ' . intval($post_id) . '");</script>';
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('⚠️ GMKB: User lacks permission for post_id ' . $post_id);
-        }
-        return; // Don't inject data if user lacks permission
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB DATA PREP - STEP 2: Post exists');
     }
     
-    echo '<script>console.log("✅ GMKB: User has permission");</script>';
+    // STEP 3: Check user login status (informational only - not blocking)
+    $is_logged_in = is_user_logged_in();
+    $user_id = get_current_user_id();
+    
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        if ($is_logged_in) {
+            error_log('✅ GMKB DATA PREP - STEP 3: User logged in (ID: ' . $user_id . ') - can save changes');
+        } else {
+            error_log('🔵 GMKB DATA PREP - STEP 3: User NOT logged in (view/edit only, cannot save)');
+        }
+    }
+    
+    // STEP 4: Check user permissions (only if logged in)
+    $can_edit = false;
+    if ($is_logged_in) {
+        $post = get_post($post_id);
+        $post_type_object = get_post_type_object($post->post_type);
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('🔍 GMKB DATA PREP - STEP 4: Checking permissions for post type = ' . $post->post_type);
+        }
+        
+        // Get the appropriate capability for this post type
+        $edit_cap = $post_type_object->cap->edit_post ?? 'edit_post';
+        
+        // Check if user can edit this specific post
+        $can_edit = current_user_can($edit_cap, $post_id);
+        
+        // Fallback: Check if they can edit posts of this type at all
+        if (!$can_edit) {
+            $edit_posts_cap = $post_type_object->cap->edit_posts ?? 'edit_posts';
+            $can_edit = current_user_can($edit_posts_cap);
+        }
+        
+        // Additional fallback for administrators
+        if (!$can_edit && current_user_can('manage_options')) {
+            $can_edit = true;
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            if ($can_edit) {
+                error_log('✅ GMKB DATA PREP - STEP 4: User has permission to save (cap: ' . $edit_cap . ')');
+            } else {
+                error_log('⚠️ GMKB DATA PREP - STEP 4: User logged in but lacks save permission');
+            }
+        }
+    }
     
     $nonce = wp_create_nonce('gmkb_nonce');
 
-    // Explicitly include the class files before using them
+    // STEP 5: Include required class files
     require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php';
     require_once GUESTIFY_PLUGIN_DIR . 'system/ThemeDiscovery.php';
+    
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB DATA PREP - STEP 5: Required classes loaded');
+    }
 
     // Ensure restUrl has trailing slash
     $rest_url = rest_url();
@@ -385,6 +458,50 @@ function gmkb_inject_data_object_script() {
         $rest_url .= '/';
     }
     
+    // STEP 6: Gather component data
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('🔍 GMKB DATA PREP - STEP 6: Gathering component registry...');
+    }
+    $component_registry = gmkb_get_component_registry_data();
+    $component_count = is_array($component_registry) ? count($component_registry) : 0;
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB DATA PREP - STEP 6: Component registry loaded (' . $component_count . ' components)');
+    }
+    
+    // STEP 7: Gather theme data
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('🔍 GMKB DATA PREP - STEP 7: Gathering themes...');
+    }
+    $themes = gmkb_get_theme_data();
+    $theme_count = is_array($themes) ? count($themes) : 0;
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB DATA PREP - STEP 7: Themes loaded (' . $theme_count . ' themes)');
+    }
+    
+    // STEP 8: Get saved state
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('🔍 GMKB DATA PREP - STEP 8: Loading saved state...');
+    }
+    $saved_state = gmkb_get_saved_state($post_id);
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        if ($saved_state) {
+            error_log('✅ GMKB DATA PREP - STEP 8: Saved state loaded');
+        } else {
+            error_log('🔵 GMKB DATA PREP - STEP 8: No saved state (new media kit)');
+        }
+    }
+    
+    // STEP 9: Get Pods data
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('🔍 GMKB DATA PREP - STEP 9: Loading Pods data...');
+    }
+    $pods_data = gmkb_get_pods_data($post_id);
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        $pods_field_count = is_array($pods_data) ? count($pods_data) : 0;
+        error_log('✅ GMKB DATA PREP - STEP 9: Pods data loaded (' . $pods_field_count . ' fields)');
+    }
+    
+    // STEP 10: Build final data array
     $gmkb_data = array(
         'ajaxUrl'           => admin_url('admin-ajax.php'),
         'nonce'             => $nonce,
@@ -399,45 +516,39 @@ function gmkb_inject_data_object_script() {
         'timestamp'         => time(),
         'architecture'      => 'pure-vue',
         'debugMode'         => defined('WP_DEBUG') && WP_DEBUG,
-        'componentRegistry' => gmkb_get_component_registry_data(),
-        'themes'            => gmkb_get_theme_data(),
-        'savedState'        => gmkb_get_saved_state($post_id),
-        'pods_data'         => gmkb_get_pods_data($post_id),
+        'componentRegistry' => $component_registry,
+        'themes'            => $themes,
+        'savedState'        => $saved_state,
+        'pods_data'         => $pods_data,
+        // CARRD-STYLE: User status for frontend (can view/edit without login, but need login to save)
+        'user'              => array(
+            'isLoggedIn'    => $is_logged_in,
+            'userId'        => $user_id,
+            'canSave'       => $can_edit,
+            'loginUrl'      => wp_login_url($_SERVER['REQUEST_URI'] ?? ''),
+        ),
     );
 
-    // DEBUG: Output component registry info to console
-    $component_count = is_array($gmkb_data['componentRegistry']) ? count($gmkb_data['componentRegistry']) : 0;
-    echo '<script type="text/javascript">';
-    echo 'console.log("🔍 PHP DEBUG: Component count from PHP:", ' . $component_count . ');';
-    echo 'console.log("🔍 PHP DEBUG: ComponentRegistry type from PHP:", "' . gettype($gmkb_data['componentRegistry']) . '");';
-    if ($component_count > 0) {
-        $first_key = array_key_first($gmkb_data['componentRegistry']);
-        echo 'console.log("🔍 PHP DEBUG: First component key:", "' . esc_js($first_key) . '");';
+    // STEP 11: Final validation and debugging
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB DATA PREP - STEP 10: Final data array built');
+        error_log('📊 GMKB DATA PREP - FINAL SUMMARY:');
+        error_log('  - Post ID: ' . $post_id);
+        error_log('  - User Status: ' . ($is_logged_in ? 'Logged in (ID: ' . $user_id . ')' : 'Guest (view/edit only)'));
+        error_log('  - Can Save: ' . ($can_edit ? 'YES' : 'NO (login required)'));
+        error_log('  - Components: ' . $component_count);
+        error_log('  - Themes: ' . $theme_count);
+        error_log('  - Has saved state: ' . ($saved_state ? 'YES' : 'NO'));
+        error_log('  - Pods fields: ' . $pods_field_count);
+        error_log('  - Data keys: ' . implode(', ', array_keys($gmkb_data)));
+        
+        // Critical check: Verify componentRegistry is not empty
+        if (empty($gmkb_data['componentRegistry'])) {
+            error_log('❌ GMKB DATA PREP - WARNING: componentRegistry is EMPTY!');
+        }
     }
     
-    // DEBUG: Output pods_data structure
-    if (defined('WP_DEBUG') && WP_DEBUG && !empty($gmkb_data['pods_data'])) {
-        echo 'console.log("🔍 PHP DEBUG: Pods data keys:", ' . json_encode(array_keys($gmkb_data['pods_data'])) . ');';
-        // Check for non-string values
-        $non_string_fields = array();
-        foreach ($gmkb_data['pods_data'] as $key => $value) {
-            if (!is_null($value) && !is_string($value) && !is_numeric($value)) {
-                $non_string_fields[$key] = gettype($value);
-            }
-        }
-        if (!empty($non_string_fields)) {
-            echo 'console.warn("⚠️ PHP DEBUG: Non-string Pods fields:", ' . json_encode($non_string_fields) . ');';
-        }
-    }
-    echo '</script>';
-
-    echo '<script type="text/javascript">';
-    echo '/* GMKB Data Injection - Priority -999 */';
-    echo 'console.log("🔧 GMKB: Injecting gmkbData into window...");';
-    echo 'var gmkbData = ' . wp_json_encode($gmkb_data) . ';';
-    echo 'console.log("✅ GMKB: gmkbData injected successfully", gmkbData);';
-    echo 'console.log("📊 GMKB: Component count:", Object.keys(gmkbData.componentRegistry || {}).length);';
-    echo '</script>';
+    return $gmkb_data;
 }
 
 

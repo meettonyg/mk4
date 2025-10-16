@@ -1,6 +1,6 @@
 <template>
   <!-- ROOT FIX: Use design system classes -->
-  <div class="gmkb-component gmkb-component--video-intro" :data-component-id="componentId">
+  <div class="gmkb-component gmkb-component--videointro" :data-component-id="componentId">
     <h2 v-if="title" class="section-title">{{ title }}</h2>
     <div class="video-container">
       <iframe

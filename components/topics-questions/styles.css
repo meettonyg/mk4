@@ -1,0 +1,14 @@
+/**
+ * Topics Questions Component Styles
+ * Additional styles beyond what's in TopicsQuestionsRenderer.vue
+ */
+
+/* Utility class for hidden elements (used in accordion) */
+.hidden {
+  display: none;
+}
+
+/* Ensure answer placeholder can be shown when toggled */
+.answer-placeholder:not(.hidden) {
+  display: block;
+}

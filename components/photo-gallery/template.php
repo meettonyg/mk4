@@ -7,7 +7,7 @@ $title = $props['title'] ?? 'Photo Gallery';
 $photos = $props['photos'] ?? [];
 if (!is_array($photos)) $photos = [];
 ?>
-<div class="gmkb-component gmkb-component--photo-gallery" data-component-id="<?php echo esc_attr($component_id); ?>">
+<div class="gmkb-component gmkb-component--photogallery" data-component-id="<?php echo esc_attr($component_id); ?>">
     <?php if ($title): ?>
         <h2 class="section-title"><?php echo esc_html($title); ?></h2>
     <?php endif; ?>

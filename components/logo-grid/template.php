@@ -7,7 +7,7 @@ $title = $props['title'] ?? 'As Featured On';
 $logos = $props['logos'] ?? [];
 if (!is_array($logos)) $logos = [];
 ?>
-<div class="gmkb-component gmkb-component--logo-grid" data-component-id="<?php echo esc_attr($component_id); ?>">
+<div class="gmkb-component gmkb-component--logogrid" data-component-id="<?php echo esc_attr($component_id); ?>">
     <?php if ($title): ?>
         <h2 class="section-title"><?php echo esc_html($title); ?></h2>
     <?php endif; ?>

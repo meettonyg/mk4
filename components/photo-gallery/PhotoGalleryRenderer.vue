@@ -1,6 +1,6 @@
 <template>
   <!-- ROOT FIX: Use design system classes -->
-  <div class="gmkb-component gmkb-component--photo-gallery" :data-component-id="componentId">
+  <div class="gmkb-component gmkb-component--photogallery" :data-component-id="componentId">
     <h2 v-if="title" class="section-title">{{ title }}</h2>
     
     <div class="photo-gallery-grid">

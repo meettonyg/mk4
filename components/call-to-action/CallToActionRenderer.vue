@@ -1,6 +1,6 @@
 <template>
   <!-- ROOT FIX: Use design system classes -->
-  <div class="gmkb-component gmkb-component--cta" :data-component-id="componentId">
+  <div class="gmkb-component gmkb-component--calltoaction" :data-component-id="componentId">
     <h2 v-if="title" class="cta-title">{{ title }}</h2>
     <p v-if="description" class="cta-description">{{ description }}</p>
     

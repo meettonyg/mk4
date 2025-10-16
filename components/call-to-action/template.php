@@ -17,7 +17,7 @@ if (!is_array($buttons)) {
 }
 ?>
 <!-- ROOT FIX: Exact same structure as Vue -->
-<div class="gmkb-component gmkb-component--cta" data-component-id="<?php echo esc_attr($component_id); ?>">
+<div class="gmkb-component gmkb-component--calltoaction" data-component-id="<?php echo esc_attr($component_id); ?>">
     <?php if ($title): ?>
         <h2 class="cta-title"><?php echo esc_html($title); ?></h2>
     <?php endif; ?>

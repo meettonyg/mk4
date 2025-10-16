@@ -1,5 +1,5 @@
 <template>
-  <div class="gmkb-topics-questions">
+  <div class="gmkb-component gmkb-component--topicsquestions" :data-component-id="componentId">
     <!-- Display Mode Selector -->
     <div class="display-mode-selector" v-if="showModeSelector">
       <button 
@@ -234,8 +234,8 @@ export default {
 };
 </script>
 
-<style scoped>
-.gmkb-topics-questions {
+<style>
+.gmkb-component--topicsquestions {
   padding: var(--gmkb-spacing-lg, 1.5rem) 0;
 }
 

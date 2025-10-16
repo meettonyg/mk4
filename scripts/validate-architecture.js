@@ -6,8 +6,13 @@
  * Usage: node scripts/validate-architecture.js
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const COMPONENTS_DIR = path.join(__dirname, '..', 'components');
 
@@ -233,10 +238,14 @@ class ArchitectureValidator {
   }
 
   /**
-   * Capitalize first letter
+   * Convert kebab-case to PascalCase
+   * Examples: "booking-calendar" -> "BookingCalendar", "call-to-action" -> "CallToAction"
    */
   capitalize(str) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
+    return str
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join('');
   }
 
   /**
