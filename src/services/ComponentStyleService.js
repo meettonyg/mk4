@@ -307,15 +307,19 @@ class ComponentStyleService {
    * @param {string} componentId - Component ID to debug
    */
   debugSettings(componentId) {
-    if (!window.gmkbStore) {
+    // ROOT FIX: Access store via GMKB namespace (support both old and new structure)
+    const store = window.GMKB?.stores?.mediaKit || window.GMKB?.store;
+    if (!store) {
       console.error('❌ Store not available. Make sure you\'re in the builder.');
+      console.log('💡 TIP: Store should be at window.GMKB.stores.mediaKit or window.GMKB.store');
+      console.log('💡 Current GMKB:', window.GMKB);
       return;
     }
 
-    const component = window.gmkbStore.components[componentId];
+    const component = store.components[componentId];
     if (!component) {
       console.error(`❌ Component ${componentId} not found in store`);
-      console.log('Available components:', Object.keys(window.gmkbStore.components));
+      console.log('Available components:', Object.keys(store.components));
       return;
     }
 
@@ -499,13 +503,17 @@ class ComponentStyleService {
   debugList() {
     console.group('📋 All Components with Styles');
     
-    if (!window.gmkbStore) {
+    // ROOT FIX: Access store via GMKB namespace (support both old and new structure)
+    const store = window.GMKB?.stores?.mediaKit || window.GMKB?.store;
+    if (!store) {
       console.error('❌ Store not available');
+      console.log('💡 TIP: Store should be at window.GMKB.stores.mediaKit or window.GMKB.store');
+      console.log('💡 Current GMKB:', window.GMKB);
       console.groupEnd();
       return;
     }
     
-    const components = window.gmkbStore.components;
+    const components = store.components;
     console.log(`Found ${Object.keys(components).length} components in store`);
     console.log(`${this.styleElements.size} have injected styles`);
     
@@ -542,19 +550,23 @@ if (typeof window !== 'undefined') {
   
   // Add helper to get Bio component ID
   window.debugBioComponent = () => {
-    if (!window.gmkbStore) {
+    // ROOT FIX: Access store via GMKB namespace (support both old and new structure)
+    const store = window.GMKB?.stores?.mediaKit || window.GMKB?.store;
+    if (!store) {
       console.error('❌ Store not available');
+      console.log('💡 TIP: Store should be at window.GMKB.stores.mediaKit or window.GMKB.store');
+      console.log('💡 Current window.GMKB:', window.GMKB);
       return;
     }
     
     // Find biography component
-    const bioComp = Object.entries(window.gmkbStore.components).find(
+    const bioComp = Object.entries(store.components).find(
       ([id, comp]) => comp.type === 'biography'
     );
     
     if (!bioComp) {
       console.error('❌ No Biography component found');
-      console.log('Available components:', Object.keys(window.gmkbStore.components));
+      console.log('Available components:', Object.keys(store.components));
       return;
     }
     

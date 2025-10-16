@@ -18,48 +18,62 @@ export class ConsoleAPI {
       return;
     }
     
-    // Create main console object
-    window.GMKB = {
-      // Version info
-      version: '4.0.0-pure-vue',
+    // ROOT FIX: Don't replace window.GMKB, extend it!
+    // The stores object is already set by main.js
+    if (!window.GMKB) {
+      window.GMKB = {};
+    }
+    
+    // Add console API methods to existing GMKB object
+    // ROOT FIX: Single namespace pattern - NO duplicate accessors
+    Object.assign(window.GMKB, {
       
-      // Store references (read-only)
-      get store() { return mediaKitStore; },
-      get themeStore() { return themeStore; },
-      get api() { return apiService; },
-      
-      // Component operations
+      // Component operations (use stores.mediaKit internally)
       addComponent: (type, data) => {
-        if (typeof type === 'object') {
-          return mediaKitStore.addComponent(type);
+        const store = window.GMKB.stores?.mediaKit;
+        if (!store) {
+          console.error('❌ Media kit store not available');
+          return null;
         }
-        return mediaKitStore.addComponent({ type, data });
+        if (typeof type === 'object') {
+          return store.addComponent(type);
+        }
+        return store.addComponent({ type, data });
       },
       
-      removeComponent: (id) => mediaKitStore.removeComponent(id),
+      removeComponent: (id) => window.GMKB.stores?.mediaKit?.removeComponent(id),
       
-      duplicateComponent: (id) => mediaKitStore.duplicateComponent(id),
+      duplicateComponent: (id) => window.GMKB.stores?.mediaKit?.duplicateComponent(id),
       
-      updateComponent: (id, updates) => mediaKitStore.updateComponent(id, updates),
+      updateComponent: (id, updates) => window.GMKB.stores?.mediaKit?.updateComponent(id, updates),
       
       // Section operations
-      addSection: (type = 'full_width') => mediaKitStore.addSection(type),
+      addSection: (type = 'full_width') => window.GMKB.stores?.mediaKit?.addSection(type),
       
-      removeSection: (id) => mediaKitStore.removeSection(id),
+      removeSection: (id) => window.GMKB.stores?.mediaKit?.removeSection(id),
       
-      updateSection: (id, updates) => mediaKitStore.updateSection(id, updates),
+      updateSection: (id, updates) => window.GMKB.stores?.mediaKit?.updateSection(id, updates),
       
       // State operations
-      getState: () => ({
-        components: mediaKitStore.components,
-        sections: mediaKitStore.sections,
-        theme: mediaKitStore.theme,
-        podsData: mediaKitStore.podsData
-      }),
+      getState: () => {
+        const store = window.GMKB.stores?.mediaKit;
+        if (!store) return null;
+        return {
+          components: store.components,
+          sections: store.sections,
+          theme: store.theme,
+          podsData: store.podsData
+        };
+      },
       
       save: async () => {
+        const store = window.GMKB.stores?.mediaKit;
+        if (!store) {
+          console.error('❌ Media kit store not available');
+          return false;
+        }
         try {
-          await mediaKitStore.save();
+          await store.save();
           showToast('Saved successfully', 'success');
           return true;
         } catch (error) {
@@ -71,19 +85,21 @@ export class ConsoleAPI {
       
       // Theme operations
       switchTheme: (themeId) => {
-        if (themeStore) {
-          themeStore.selectTheme(themeId);
+        const store = window.GMKB.stores?.theme;
+        if (store) {
+          store.selectTheme(themeId);
           console.log(`✅ Switched to ${themeId} theme`);
         } else {
-          console.error('Theme store not available');
+          console.error('❌ Theme store not available');
         }
       },
       
       openThemeCustomizer: () => {
-        if (themeStore) {
-          themeStore.openCustomizer();
+        const store = window.GMKB.stores?.theme;
+        if (store) {
+          store.openCustomizer();
         } else {
-          console.error('Theme store not available');
+          console.error('❌ Theme store not available');
         }
       },
       
@@ -98,22 +114,29 @@ export class ConsoleAPI {
       
       // Debug operations
       cacheStatus: () => {
-        if (apiService?.getCacheStatus) {
-          return apiService.getCacheStatus();
+        const api = window.GMKB.services?.api;
+        if (api?.getCacheStatus) {
+          return api.getCacheStatus();
         }
         return { error: 'API service not available' };
       },
       
       inflightStatus: () => {
-        if (apiService?.getInflightStatus) {
-          return apiService.getInflightStatus();
+        const api = window.GMKB.services?.api;
+        if (api?.getInflightStatus) {
+          return api.getInflightStatus();
         }
         return { error: 'API service not available' };
       },
       
       // Orphaned components operations
       checkOrphans: () => {
-        const result = mediaKitStore.checkForOrphanedComponents();
+        const store = window.GMKB.stores?.mediaKit;
+        if (!store) {
+          console.error('❌ Media kit store not available');
+          return null;
+        }
+        const result = store.checkForOrphanedComponents();
         console.log('📊 Orphaned Components Report:');
         console.log(`  Total components: ${result.total}`);
         console.log(`  In sections: ${result.inSections}`);
@@ -125,8 +148,13 @@ export class ConsoleAPI {
       },
       
       fixOrphans: () => {
+        const store = window.GMKB.stores?.mediaKit;
+        if (!store) {
+          console.error('❌ Media kit store not available');
+          return null;
+        }
         console.log('🔧 Fixing orphaned components...');
-        const result = mediaKitStore.fixOrphanedComponents();
+        const result = store.fixOrphanedComponents();
         if (result.fixed > 0) {
           showToast(`Fixed ${result.fixed} orphaned components`, 'success', 5000);
         } else {
@@ -137,20 +165,31 @@ export class ConsoleAPI {
       
       // History operations
       undo: () => {
-        mediaKitStore.undo();
-        console.log('↩️ Undo performed');
+        const store = window.GMKB.stores?.mediaKit;
+        if (store) {
+          store.undo();
+          console.log('↩️ Undo performed');
+        }
       },
       
       redo: () => {
-        mediaKitStore.redo();
-        console.log('↪️ Redo performed');
+        const store = window.GMKB.stores?.mediaKit;
+        if (store) {
+          store.redo();
+          console.log('↪️ Redo performed');
+        }
       },
       
       // Clear operations
       clearAll: () => {
+        const store = window.GMKB.stores?.mediaKit;
+        if (!store) {
+          console.error('❌ Media kit store not available');
+          return false;
+        }
         if (confirm('Are you sure you want to clear all components and sections?')) {
-          mediaKitStore.clearAllComponents();
-          mediaKitStore.clearAllSections();
+          store.clearAllComponents();
+          store.clearAllSections();
           showToast('Cleared all content', 'warning');
           return true;
         }
@@ -159,12 +198,17 @@ export class ConsoleAPI {
       
       // Auto-generate content
       autoGenerate: async () => {
+        const store = window.GMKB.stores?.mediaKit;
+        if (!store) {
+          console.error('❌ Media kit store not available');
+          return false;
+        }
         const componentsToAdd = ['hero', 'biography', 'topics', 'authority-hook', 'contact'];
         componentsToAdd.forEach(type => {
-          mediaKitStore.addComponent({ type });
+          store.addComponent({ type });
         });
         showToast('Generated media kit components', 'success');
-        await mediaKitStore.save();
+        await store.save();
         return true;
       },
       
@@ -210,12 +254,13 @@ Utility Commands:
   GMKB.help()                      - Show this help
 
 Store Access:
-  GMKB.store                       - Media kit store
-  GMKB.themeStore                  - Theme store
-  GMKB.api                         - API service
+  GMKB.stores.mediaKit             - Media kit store
+  GMKB.stores.theme                - Theme store
+  GMKB.stores.ui                   - UI store
+  GMKB.services.api                - API service
         `);
       }
-    };
+    });
     
     // Also add convenience global function
     window.switchTheme = (themeId) => {

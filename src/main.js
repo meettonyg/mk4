@@ -311,48 +311,12 @@ async function initializeVue() {
       showToast,
       logger
     };
-      
-    // Legacy aliases for backwards compatibility (deprecated - will be removed in v5)
-    Object.defineProperty(window.GMKB, 'gmkbStore', {
-      get() { 
-        console.warn('⚠️ window.GMKB.gmkbStore is deprecated. Use GMKB.stores.mediaKit');
-        return this.stores.mediaKit; 
-      }
-    });
-    Object.defineProperty(window.GMKB, 'mediaKitStore', {
-      get() { 
-        console.warn('⚠️ window.GMKB.mediaKitStore is deprecated. Use GMKB.stores.mediaKit');
-        return this.stores.mediaKit; 
-      }
-    });
-    Object.defineProperty(window.GMKB, 'themeStore', {
-      get() { 
-        console.warn('⚠️ window.GMKB.themeStore is deprecated. Use GMKB.stores.theme');
-        return this.stores.theme; 
-      }
-    });
-    Object.defineProperty(window.GMKB, 'gmkbAPI', {
-      get() { 
-        console.warn('⚠️ window.GMKB.gmkbAPI is deprecated. Use GMKB.services.api');
-        return this.services.api; 
-      }
-    });
-    Object.defineProperty(window.GMKB, 'gmkbApp', {
-      get() { 
-        console.warn('⚠️ window.GMKB.gmkbApp is deprecated. Use GMKB.app');
-        return this.app; 
-      }
-    });
     
-    // P0 FIX #6: Clean up old global references
-    // Remove any lingering window.* assignments from other parts of the codebase
-    // Only GMKB namespace should be exposed
-    
-    // Log cleanup message
+    // ROOT FIX: Single namespace pattern - no legacy aliases
+    // Everything accessed through GMKB.stores.* and GMKB.services.*
     if (window.gmkbData?.debugMode) {
-      console.log('✅ P0 FIX #6: Single GMKB namespace created');
+      console.log('✅ Single GMKB namespace created');
       console.log('📦 Available: GMKB.stores, GMKB.services, GMKB.utils');
-      console.log('⚠️ Legacy window.gmkbStore etc. are deprecated');
     }
     
     // ROOT FIX: Use ConsoleAPI service instead of inline code
