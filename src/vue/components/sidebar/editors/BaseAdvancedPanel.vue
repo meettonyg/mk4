@@ -294,12 +294,19 @@ const updateLayoutWidth = (property, value) => {
     applySectionStyles(props.sectionId, section.settings);
   } else {
     const component = store.components[props.componentId];
-    if (component) {
-      component.settings.advanced.layout.width[property] = value;
-      store.updateComponent(props.componentId, { settings: component.settings });
-      
-      componentStyleService.applyStyling(props.componentId, component.settings);
-    }
+    if (!component || !component.settings) return;
+    
+    // CRITICAL FIX: Mutate in place instead of creating new object
+    if (!component.settings.advanced) component.settings.advanced = {};
+    if (!component.settings.advanced.layout) component.settings.advanced.layout = {};
+    if (!component.settings.advanced.layout.width) component.settings.advanced.layout.width = {};
+    
+    component.settings.advanced.layout.width[property] = value;
+    
+    componentStyleService.applyStyling(props.componentId, component.settings);
+    
+    // Mark store as dirty without triggering full component replacement
+    store.isDirty = true;
   }
 };
 
@@ -318,12 +325,18 @@ const updateLayout = (property, value) => {
     applySectionStyles(props.sectionId, section.settings);
   } else {
     const component = store.components[props.componentId];
-    if (component) {
-      component.settings.advanced.layout[property] = value;
-      store.updateComponent(props.componentId, { settings: component.settings });
-      
-      componentStyleService.applyStyling(props.componentId, component.settings);
-    }
+    if (!component || !component.settings) return;
+    
+    // CRITICAL FIX: Mutate in place
+    if (!component.settings.advanced) component.settings.advanced = {};
+    if (!component.settings.advanced.layout) component.settings.advanced.layout = {};
+    
+    component.settings.advanced.layout[property] = value;
+    
+    componentStyleService.applyStyling(props.componentId, component.settings);
+    
+    // Mark store as dirty without triggering full component replacement
+    store.isDirty = true;
   }
 };
 
@@ -345,15 +358,18 @@ const updateResponsive = (updates) => {
     applySectionStyles(props.sectionId, section.settings);
   } else {
     const component = store.components[props.componentId];
-    if (component) {
-      component.settings.advanced.responsive = {
-        ...component.settings.advanced.responsive,
-        ...updates
-      };
-      store.updateComponent(props.componentId, { settings: component.settings });
-      
-      componentStyleService.applyStyling(props.componentId, component.settings);
-    }
+    if (!component || !component.settings) return;
+    
+    // CRITICAL FIX: Mutate in place with Object.assign
+    if (!component.settings.advanced) component.settings.advanced = {};
+    if (!component.settings.advanced.responsive) component.settings.advanced.responsive = {};
+    
+    Object.assign(component.settings.advanced.responsive, updates);
+    
+    componentStyleService.applyStyling(props.componentId, component.settings);
+    
+    // Mark store as dirty without triggering full component replacement
+    store.isDirty = true;
   }
 };
 
@@ -372,12 +388,18 @@ const updateCustom = (property, value) => {
     applySectionStyles(props.sectionId, section.settings);
   } else {
     const component = store.components[props.componentId];
-    if (component) {
-      component.settings.advanced.custom[property] = value;
-      store.updateComponent(props.componentId, { settings: component.settings });
-      
-      componentStyleService.applyStyling(props.componentId, component.settings);
-    }
+    if (!component || !component.settings) return;
+    
+    // CRITICAL FIX: Mutate in place
+    if (!component.settings.advanced) component.settings.advanced = {};
+    if (!component.settings.advanced.custom) component.settings.advanced.custom = {};
+    
+    component.settings.advanced.custom[property] = value;
+    
+    componentStyleService.applyStyling(props.componentId, component.settings);
+    
+    // Mark store as dirty without triggering full component replacement
+    store.isDirty = true;
   }
 };
 </script>
