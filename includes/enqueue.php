@@ -236,9 +236,9 @@ function gmkb_close_auto_sizes_buffer() {
     }
 }
 
-// Hook to print the critical data object directly into the head.
-add_action('wp_head', 'gmkb_inject_data_object_script', 1);
-add_action('admin_head', 'gmkb_inject_data_object_script', 1);
+// Hook to print the critical data object directly into the head - VERY EARLY
+add_action('wp_head', 'gmkb_inject_data_object_script', -999);  // ROOT FIX: Priority -999 (very early)
+add_action('admin_head', 'gmkb_inject_data_object_script', -999);
 
 
 /**
@@ -338,27 +338,40 @@ function gmkb_enqueue_vue_only_assets() {
  * Directly prints the gmkbData object into the <head> of the document.
  */
 function gmkb_inject_data_object_script() {
+    // ROOT FIX: Add comprehensive debugging
+    echo '<script>console.log("🔍 GMKB: gmkb_inject_data_object_script() called");</script>';
+    
     if (!gmkb_is_builder_page()) {
+        echo '<script>console.warn("⚠️ GMKB: Not a builder page, exiting injection");</script>';
         return;
     }
+    
+    echo '<script>console.log("✅ GMKB: Is builder page, continuing...");</script>';
 
     $post_id = gmkb_get_post_id();
+    echo '<script>console.log("🎯 GMKB: Post ID:", ' . intval($post_id) . ');</script>';
     
     // Validate post exists and user has permission (Issue #15 fix)
     if (!$post_id || !get_post($post_id)) {
+        echo '<script>console.error("❌ GMKB: Invalid post_id, assets not loaded");</script>';
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('⚠️ GMKB: Invalid post_id, assets not loaded');
         }
         return; // Don't inject data if post is invalid
     }
     
+    echo '<script>console.log("✅ GMKB: Post exists");</script>';
+    
     // Check user has permission to edit this post
     if (!current_user_can('edit_post', $post_id)) {
+        echo '<script>console.error("❌ GMKB: User lacks permission for post_id ' . intval($post_id) . '");</script>';
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('⚠️ GMKB: User lacks permission for post_id ' . $post_id);
         }
         return; // Don't inject data if user lacks permission
     }
+    
+    echo '<script>console.log("✅ GMKB: User has permission");</script>';
     
     $nonce = wp_create_nonce('gmkb_nonce');
 
@@ -419,7 +432,11 @@ function gmkb_inject_data_object_script() {
     echo '</script>';
 
     echo '<script type="text/javascript">';
+    echo '/* GMKB Data Injection - Priority -999 */';
+    echo 'console.log("🔧 GMKB: Injecting gmkbData into window...");';
     echo 'var gmkbData = ' . wp_json_encode($gmkb_data) . ';';
+    echo 'console.log("✅ GMKB: gmkbData injected successfully", gmkbData);';
+    echo 'console.log("📊 GMKB: Component count:", Object.keys(gmkbData.componentRegistry || {}).length);';
     echo '</script>';
 }
 
