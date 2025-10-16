@@ -140,6 +140,7 @@ import { useMediaKitStore } from '../../../../stores/mediaKit';
 import componentStyleService from '../../../../services/ComponentStyleService';
 import ResponsiveToggle from './shared/ResponsiveToggle.vue';
 import Tooltip from '../../shared/Tooltip.vue';
+import { getDefaultSettings } from '../../../../utils/componentSchema.js';
 
 const props = defineProps({
   componentId: {
@@ -178,56 +179,19 @@ const componentSettings = computed(() => {
     return getDefaultSettings();
   }
   
-  // Ensure nested structure exists
+  // Get centralized defaults
+  const defaults = getDefaultSettings();
+  
+  // Ensure nested structure exists with proper defaults
   return {
-    style: settings.style || getDefaultSettings().style,
+    style: settings.style || defaults.style,
     advanced: {
-      layout: settings.advanced?.layout || getDefaultSettings().advanced.layout,
-      responsive: settings.advanced?.responsive || getDefaultSettings().advanced.responsive,
-      custom: settings.advanced?.custom || getDefaultSettings().advanced.custom
+      layout: settings.advanced?.layout || defaults.advanced.layout,
+      responsive: settings.advanced?.responsive || defaults.advanced.responsive,
+      custom: settings.advanced?.custom || defaults.advanced.custom
     }
   };
 });
-
-// Default settings structure
-function getDefaultSettings() {
-  return {
-    style: {
-      spacing: {
-        margin: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px' },
-        padding: { top: 20, right: 20, bottom: 20, left: 20, unit: 'px' }
-      },
-      background: {
-        color: '#ffffff',
-        opacity: 100
-      },
-      border: {
-        width: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px' },
-        style: 'solid',
-        color: '#e5e7eb',
-        radius: { topLeft: 0, topRight: 0, bottomRight: 0, bottomLeft: 0, unit: 'px' }
-      },
-      effects: {
-        boxShadow: 'none'
-      }
-    },
-    advanced: {
-      layout: {
-        width: { type: 'auto', value: 100, unit: '%' },
-        alignment: 'left'
-      },
-      responsive: {
-        desktop: true,
-        tablet: true,
-        mobile: true
-      },
-      custom: {
-        cssClasses: '',
-        cssId: ''
-      }
-    }
-  };
-}
 
 // Helper to apply styles to sections
 function applySectionStyles(sectionId, settings) {

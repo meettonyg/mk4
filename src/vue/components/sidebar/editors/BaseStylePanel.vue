@@ -178,6 +178,7 @@ import SpacingControl from './shared/SpacingControl.vue';
 import ColorPicker from './shared/ColorPicker.vue';
 import TypographyControl from './shared/TypographyControl.vue';
 import Tooltip from '../../shared/Tooltip.vue';
+import { getDefaultSettings } from '../../../../utils/componentSchema.js';
 
 const props = defineProps({
   componentId: {
@@ -224,66 +225,21 @@ const componentSettings = computed(() => {
     return getDefaultSettings();
   }
   
-  // Ensure nested structure exists
+  // Get centralized defaults
+  const defaults = getDefaultSettings();
+  
+  // Ensure nested structure exists with proper defaults
   return {
     style: {
-      spacing: settings.style?.spacing || getDefaultSettings().style.spacing,
-      background: settings.style?.background || getDefaultSettings().style.background,
-      border: settings.style?.border || getDefaultSettings().style.border,
-      effects: settings.style?.effects || getDefaultSettings().style.effects,
-      typography: settings.style?.typography || getDefaultSettings().style.typography
+      spacing: settings.style?.spacing || defaults.style.spacing,
+      background: settings.style?.background || defaults.style.background,
+      border: settings.style?.border || defaults.style.border,
+      effects: settings.style?.effects || defaults.style.effects,
+      typography: settings.style?.typography || defaults.style.typography
     },
-    advanced: settings.advanced || getDefaultSettings().advanced
+    advanced: settings.advanced || defaults.advanced
   };
 });
-
-// Default settings structure
-function getDefaultSettings() {
-  return {
-    style: {
-      spacing: {
-        margin: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px' },
-        padding: { top: 20, right: 20, bottom: 20, left: 20, unit: 'px' }
-      },
-      background: {
-        color: '#ffffff',
-        opacity: 100
-      },
-      border: {
-        width: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px' },
-        style: 'solid',
-        color: '#e5e7eb',
-        radius: { topLeft: 0, topRight: 0, bottomRight: 0, bottomLeft: 0, unit: 'px' }
-      },
-      effects: {
-        boxShadow: 'none'
-      },
-      typography: {
-        fontFamily: 'inherit',
-        fontSize: 16,
-        fontWeight: 400,
-        lineHeight: 1.5,
-        color: '#000000',
-        textAlign: 'left'
-      }
-    },
-    advanced: {
-      layout: {
-        width: { type: 'auto', value: 100, unit: '%' },
-        alignment: 'left'
-      },
-      responsive: {
-        desktop: true,
-        tablet: true,
-        mobile: true
-      },
-      custom: {
-        cssClasses: '',
-        cssId: ''
-      }
-    }
-  };
-}
 
 // Helper to apply styles to sections
 function applySectionStyles(sectionId, settings) {
