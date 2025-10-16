@@ -2,106 +2,23 @@
 /**
  * Video Intro Component Template
  */
-
-// ROOT FIX: Handle props data structure
-if (isset($props) && is_array($props)) {
-    // Extract from props array
-    $title = $props['title'] ?? null;
-    $description = $props['description'] ?? null;
-    $videoUrl = $props['videoUrl'] ?? null;
-    $videoType = $props['videoType'] ?? null;
-    $componentId = $props['component_id'] ?? $props['componentId'] ?? null;
-} else {
-    // Direct variables might be set
-    $title = $title ?? null;
-    $description = $description ?? null;
-    $videoUrl = $videoUrl ?? null;
-    $videoType = $videoType ?? null;
-    $componentId = $componentId ?? $id ?? null;
-}
-
-// Set defaults
-$title = $title ?? 'Video Introduction';
-$componentId = $componentId ?? 'video-intro-' . time();
+$component_id = $props['component_id'] ?? $componentId ?? 'video-intro-' . uniqid();
+$title = $props['title'] ?? '';
+$videoUrl = $props['videoUrl'] ?? $props['video_url'] ?? '';
+$description = $props['description'] ?? '';
 ?>
-<div class="video-intro-component editable-element" data-element="video-intro" data-component="video-intro" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="video-intro">
-    <div class="element-controls">
-        <button class="control-btn" title="Move Up">↑</button>
-        <button class="control-btn" title="Move Down">↓</button>
-        <button class="control-btn" title="Duplicate">⧉</button>
-        <button class="control-btn" title="Delete">×</button>
-    </div>
-    <h2 class="video-intro-title"><?php echo $title ?? 'Video Introduction'; ?></h2>
-    <?php if (isset($description)): ?>
-        <div class="video-intro-description"><?php echo $description; ?></div>
+<div class="gmkb-component gmkb-component--video-intro" data-component-id="<?php echo esc_attr($component_id); ?>">
+    <?php if ($title): ?>
+        <h2 class="section-title"><?php echo esc_html($title); ?></h2>
     <?php endif; ?>
-    
     <div class="video-container">
-        <?php if (isset($videoUrl) && !empty($videoUrl)): ?>
-            <?php 
-            // Determine video source (YouTube, Vimeo, or direct file)
-            $videoType = 'unknown';
-            if (strpos($videoUrl, 'youtube.com') !== false || strpos($videoUrl, 'youtu.be') !== false) {
-                $videoType = 'youtube';
-                // Extract YouTube video ID
-                if (strpos($videoUrl, 'youtube.com/watch?v=') !== false) {
-                    $videoId = substr($videoUrl, strpos($videoUrl, 'watch?v=') + 8);
-                    if (strpos($videoId, '&') !== false) {
-                        $videoId = substr($videoId, 0, strpos($videoId, '&'));
-                    }
-                } elseif (strpos($videoUrl, 'youtu.be/') !== false) {
-                    $videoId = substr($videoUrl, strpos($videoUrl, 'youtu.be/') + 9);
-                }
-                
-                if (isset($videoId)):
-            ?>
-                <div class="video-embed">
-                    <iframe 
-                        src="https://www.youtube.com/embed/<?php echo $videoId; ?>?rel=0" 
-                        frameborder="0" 
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                        allowfullscreen
-                    ></iframe>
-                </div>
-            <?php endif; ?>
-            <?php } elseif (strpos($videoUrl, 'vimeo.com') !== false) {
-                $videoType = 'vimeo';
-                // Extract Vimeo video ID
-                $vimeoId = substr($videoUrl, strrpos($videoUrl, '/') + 1);
-                if (isset($vimeoId)):
-            ?>
-                <div class="video-embed">
-                    <iframe 
-                        src="https://player.vimeo.com/video/<?php echo $vimeoId; ?>" 
-                        frameborder="0" 
-                        allow="autoplay; fullscreen; picture-in-picture" 
-                        allowfullscreen
-                    ></iframe>
-                </div>
-            <?php endif; ?>
-            <?php } else {
-                // Direct video file
-                $videoType = 'direct';
-            ?>
-                <div class="video-player">
-                    <video controls>
-                        <source src="<?php echo $videoUrl; ?>" type="<?php echo $videoType ?? 'video/mp4'; ?>">
-                        Your browser does not support the video tag.
-                    </video>
-                </div>
-            <?php } ?>
+        <?php if ($videoUrl): ?>
+            <iframe src="<?php echo esc_url($videoUrl); ?>" frameborder="0" allowfullscreen class="video-embed"></iframe>
         <?php else: ?>
-            <div class="video-placeholder">
-                <div class="video-placeholder-content">
-                    <div class="video-placeholder-icon"></div>
-                    <p>Add a video introduction to showcase your work or introduce yourself.</p>
-                    <button class="add-video-btn">+ Add Video</button>
-                </div>
-            </div>
+            <p class="video-placeholder">Add your video URL</p>
         <?php endif; ?>
     </div>
-    
-    <?php if (isset($videoUrl) && !empty($videoUrl)): ?>
-        <button class="edit-video-btn">Edit Video</button>
+    <?php if ($description): ?>
+        <p class="video-description"><?php echo esc_html($description); ?></p>
     <?php endif; ?>
 </div>

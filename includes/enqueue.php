@@ -128,6 +128,34 @@ function gmkb_filter_style_tag($tag, $handle, $href, $media) {
 add_action('wp_enqueue_scripts', 'gmkb_enqueue_vue_only_assets', 20);
 add_action('admin_enqueue_scripts', 'gmkb_enqueue_vue_only_assets', 20);
 
+// ROOT FIX: Enqueue design system CSS on frontend media kit pages
+add_action('wp_enqueue_scripts', 'gmkb_enqueue_frontend_assets', 20);
+
+function gmkb_enqueue_frontend_assets() {
+    // Only load on frontend media kit display pages
+    if (!gmkb_is_frontend_display()) {
+        return;
+    }
+    
+    // Enqueue design system CSS (single source of truth)
+    $design_system_path = GUESTIFY_PLUGIN_DIR . 'design-system/index.css';
+    if (file_exists($design_system_path)) {
+        $design_system_version = filemtime($design_system_path);
+        $design_system_url = GUESTIFY_PLUGIN_URL . 'design-system/index.css';
+        
+        wp_enqueue_style(
+            'gmkb-design-system',
+            $design_system_url,
+            array(),
+            $design_system_version
+        );
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB: Design system CSS enqueued for frontend');
+        }
+    }
+}
+
 // ROOT FIX: Block jQuery script tags from outputting on frontend media kit pages
 // This is the cleanest approach - filters the HTML output
 add_filter('script_loader_tag', 'gmkb_filter_jquery_script_tag', 10, 3);

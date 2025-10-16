@@ -205,9 +205,9 @@ if (class_exists('GMKB_Frontend_Display')) {
                             if (isset($section_layout['padding'])) echo 'padding: ' . esc_attr($section_layout['padding']) . ';';
                         ?>">
                             
-                            <?php if ($section_type === 'two_column' || $section_type === 'three_column'): ?>
+                            <?php if ($section_type === 'two_column' || $section_type === 'three_column' || $section_type === 'main_sidebar' || $section_type === 'sidebar_main'): ?>
                                 <!-- Multi-column layout -->
-                                <div class="gmkb-section-columns gmkb-columns--<?php echo esc_attr($section_layout['columns'] ?? 1); ?>">
+                                <div class="gmkb-section-columns gmkb-columns--<?php echo esc_attr($section_layout['columns'] ?? ($section_type === 'three_column' ? 3 : 2)); ?>">
                                     <?php 
                                     // Group components by column
                                     $columns = array();
@@ -217,8 +217,16 @@ if (class_exists('GMKB_Frontend_Display')) {
                                         $columns[$column][] = $comp_ref;
                                     }
                                     
+                                    // Determine number of columns based on layout type
+                                    $num_columns = 1;
+                                    if ($section_type === 'three_column') {
+                                        $num_columns = 3;
+                                    } elseif ($section_type === 'two_column' || $section_type === 'main_sidebar' || $section_type === 'sidebar_main') {
+                                        $num_columns = 2;
+                                    }
+                                    
                                     // Render each column
-                                    for ($col = 1; $col <= ($section_layout['columns'] ?? 1); $col++):
+                                    for ($col = 1; $col <= $num_columns; $col++):
                                     ?>
                                         <div class="gmkb-section-column" data-column="<?php echo $col; ?>">
                                             <?php if (isset($columns[$col])): 

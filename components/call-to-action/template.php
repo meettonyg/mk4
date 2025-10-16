@@ -1,53 +1,46 @@
 <?php
 /**
  * Call to Action Component Template
+ * ROOT FIX: Mirrors Vue component structure exactly
+ * Uses standardized data contract
  */
 
-// ROOT FIX: Handle props data structure
-if (isset($props) && is_array($props)) {
-    // Extract from props array
-    $title = $props['title'] ?? null;
-    $description = $props['description'] ?? null;
-    $buttonText = $props['buttonText'] ?? null;
-    $buttonUrl = $props['buttonUrl'] ?? null;
-    $buttonTarget = $props['buttonTarget'] ?? null;
-    $componentId = $props['component_id'] ?? $props['componentId'] ?? null;
-} else {
-    // Direct variables might be set
-    $title = $title ?? null;
-    $description = $description ?? null;
-    $buttonText = $buttonText ?? null;
-    $buttonUrl = $buttonUrl ?? null;
-    $buttonTarget = $buttonTarget ?? null;
-    $componentId = $componentId ?? $id ?? null;
-}
+// Data contract - standardized variable names
+$component_id = $props['component_id'] ?? $componentId ?? 'cta-' . uniqid();
+$title = $props['title'] ?? 'Ready to Take Action?';
+$description = $props['description'] ?? '';
+$buttons = $props['buttons'] ?? [];
 
-// Set defaults
-$componentId = $componentId ?? 'cta-' . time();
+// Ensure buttons is an array
+if (!is_array($buttons)) {
+    $buttons = [];
+}
 ?>
-<div class="cta-component editable-element" data-element="call-to-action" data-component="call-to-action" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="call-to-action">
-    <!-- ROOT FIX: Controls now created dynamically by JavaScript - no server-side duplication -->
-    <?php if (isset($title) || isset($description) || isset($buttonText) || isset($buttonUrl)): ?>
-        <div class="cta-content">
-            <?php if (isset($title)): ?>
-                <h2 class="cta-title"><?php echo $title; ?></h2>
-            <?php endif; ?>
-            
-            <?php if (isset($description)): ?>
-                <div class="cta-description"><?php echo $description; ?></div>
-            <?php endif; ?>
-            
-            <?php if (isset($buttonText) && isset($buttonUrl)): ?>
-                <a href="<?php echo $buttonUrl; ?>" class="cta-button" target="<?php echo $buttonTarget ?? '_self'; ?>">
-                    <?php echo $buttonText; ?>
-                </a>
-            <?php endif; ?>
-        </div>
-    <?php else: ?>
-        <div class="cta-placeholder">
-            <h2 class="cta-placeholder-title">Add a Call to Action</h2>
-            <p class="cta-placeholder-text">Create a compelling call to action to prompt visitors to engage with you.</p>
-            <button class="cta-edit-btn">Edit Call to Action</button>
-        </div>
+<!-- ROOT FIX: Exact same structure as Vue -->
+<div class="gmkb-component gmkb-component--cta" data-component-id="<?php echo esc_attr($component_id); ?>">
+    <?php if ($title): ?>
+        <h2 class="cta-title"><?php echo esc_html($title); ?></h2>
     <?php endif; ?>
+    
+    <?php if ($description): ?>
+        <p class="cta-description"><?php echo esc_html($description); ?></p>
+    <?php endif; ?>
+    
+    <div class="cta-buttons">
+        <?php if (!empty($buttons)): ?>
+            <?php foreach ($buttons as $button): ?>
+                <?php
+                $text = is_array($button) ? ($button['text'] ?? 'Click Here') : 'Click Here';
+                $url = is_array($button) ? ($button['url'] ?? '#') : '#';
+                $style = is_array($button) ? ($button['style'] ?? 'primary') : 'primary';
+                $target = is_array($button) ? ($button['target'] ?? '_self') : '_self';
+                ?>
+                <a href="<?php echo esc_url($url); ?>" 
+                   class="cta-button <?php echo esc_attr($style); ?>"
+                   target="<?php echo esc_attr($target); ?>">
+                    <?php echo esc_html($text); ?>
+                </a>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
 </div>

@@ -183,6 +183,15 @@
   border-radius: 2px;
 }
 
+.biography-name {
+  font-family: var(--gmkb-font-heading);
+  font-size: var(--gmkb-font-size-3xl);
+  font-weight: var(--gmkb-font-weight-bold);
+  color: var(--gmkb-color-text);
+  margin-bottom: var(--gmkb-space-2);
+  line-height: var(--gmkb-line-height-tight);
+}
+
 .biography-content {
   font-size: var(--gmkb-font-size-base);
   line-height: var(--gmkb-line-height-relaxed);
@@ -195,6 +204,12 @@
 
 .biography-content p:last-child {
   margin-bottom: 0;
+}
+
+.biography-text {
+  font-size: var(--gmkb-font-size-base);
+  line-height: var(--gmkb-line-height-relaxed);
+  color: var(--gmkb-color-text);
 }
 
 .biography-placeholder {

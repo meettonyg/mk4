@@ -2,77 +2,29 @@
 /**
  * Photo Gallery Component Template
  */
-
-// ROOT FIX: Handle props data structure
-if (isset($props) && is_array($props)) {
-    // Extract from props array
-    $title = $props['title'] ?? null;
-    $description = $props['description'] ?? null;
-    $photos = $props['photos'] ?? null;
-    $componentId = $props['component_id'] ?? $props['componentId'] ?? null;
-} else {
-    // Direct variables might be set
-    $title = $title ?? null;
-    $description = $description ?? null;
-    $photos = $photos ?? null;
-    $componentId = $componentId ?? $id ?? null;
-}
-
-// Set defaults
-$title = $title ?? 'Photo Gallery';
-$componentId = $componentId ?? 'photo-gallery-' . time();
+$component_id = $props['component_id'] ?? $componentId ?? 'photo-gallery-' . uniqid();
+$title = $props['title'] ?? 'Photo Gallery';
+$photos = $props['photos'] ?? [];
+if (!is_array($photos)) $photos = [];
 ?>
-<div class="photo-gallery-component editable-element" data-element="photo-gallery" data-component="photo-gallery" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="photo-gallery">
-    <div class="element-controls">
-        <button class="control-btn" title="Move Up">↑</button>
-        <button class="control-btn" title="Move Down">↓</button>
-        <button class="control-btn" title="Duplicate">⧉</button>
-        <button class="control-btn" title="Delete">×</button>
-    </div>
-    <h2 class="photo-gallery-title"><?php echo $title ?? 'Photo Gallery'; ?></h2>
-    <?php if (isset($description)): ?>
-        <div class="photo-gallery-description"><?php echo $description; ?></div>
+<div class="gmkb-component gmkb-component--photo-gallery" data-component-id="<?php echo esc_attr($component_id); ?>">
+    <?php if ($title): ?>
+        <h2 class="section-title"><?php echo esc_html($title); ?></h2>
     <?php endif; ?>
-    
-    <div class="photo-gallery-container">
-        <?php if (isset($photos) && !empty($photos)): ?>
-            <div class="photo-gallery-grid">
-                <?php foreach ($photos as $index => $photo): ?>
-                    <div class="photo-item" data-index="<?php echo $index; ?>">
-                        <div class="photo-wrapper">
-                            <img 
-                                src="<?php echo $photo['src']; ?>" 
-                                alt="<?php echo $photo['caption'] ?? 'Gallery image'; ?>" 
-                                class="photo-image"
-                            >
-                            <?php if (isset($photo['caption']) && !empty($photo['caption'])): ?>
-                                <div class="photo-caption"><?php echo $photo['caption']; ?></div>
-                            <?php endif; ?>
-                        </div>
+    <div class="photo-gallery-grid">
+        <?php if (!empty($photos)): ?>
+            <?php foreach ($photos as $index => $photo): ?>
+                <?php $url = is_array($photo) ? ($photo['url'] ?? '') : $photo; ?>
+                <?php $caption = is_array($photo) ? ($photo['caption'] ?? '') : ''; ?>
+                <?php if ($url): ?>
+                    <div class="photo-item">
+                        <img src="<?php echo esc_url($url); ?>" alt="<?php echo esc_attr($caption ?: "Photo " . ($index + 1)); ?>" />
+                        <?php if ($caption): ?>
+                            <div class="photo-caption"><?php echo esc_html($caption); ?></div>
+                        <?php endif; ?>
                     </div>
-                <?php endforeach; ?>
-            </div>
-            
-            <!-- Lightbox for photo viewing -->
-            <div class="photo-lightbox">
-                <div class="lightbox-content">
-                    <img src="" alt="" class="lightbox-image">
-                    <div class="lightbox-caption"></div>
-                </div>
-                <button class="lightbox-prev">&lt;</button>
-                <button class="lightbox-next">&gt;</button>
-                <button class="lightbox-close">&times;</button>
-            </div>
-            
-            <button class="add-photo-btn">+ Add Photo</button>
-        <?php else: ?>
-            <div class="photo-gallery-placeholder">
-                <div class="placeholder-content">
-                    <div class="placeholder-icon"></div>
-                    <p>Add photos to your gallery to showcase your work or portfolio.</p>
-                    <button class="add-photo-btn">+ Add Photos</button>
-                </div>
-            </div>
+                <?php endif; ?>
+            <?php endforeach; ?>
         <?php endif; ?>
     </div>
 </div>

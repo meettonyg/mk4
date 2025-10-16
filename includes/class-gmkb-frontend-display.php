@@ -363,6 +363,16 @@ class GMKB_Frontend_Display {
                             $section_data = isset($section['columns']) ? $section['columns'] : $section_components;
                             $this->render_two_column_section($section_data, $components, $post_id, $atts);
                             break;
+                        case 'main_sidebar':
+                            // Main + Sidebar (70% / 30%) - use two column rendering
+                            $section_data = isset($section['columns']) ? $section['columns'] : $section_components;
+                            $this->render_two_column_section($section_data, $components, $post_id, $atts);
+                            break;
+                        case 'sidebar_main':
+                            // Sidebar + Main (30% / 70%) - use two column rendering
+                            $section_data = isset($section['columns']) ? $section['columns'] : $section_components;
+                            $this->render_two_column_section($section_data, $components, $post_id, $atts);
+                            break;
                         case 'three_column':
                             // Pass columns data if it exists, otherwise components
                             $section_data = isset($section['columns']) ? $section['columns'] : $section_components;

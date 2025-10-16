@@ -1,52 +1,52 @@
 <?php
 /**
  * Social Component Template
+ * ROOT FIX: Mirrors Vue component structure exactly
+ * Uses standardized data contract
  */
 
-// ROOT FIX: Handle props data structure
-if (isset($props) && is_array($props)) {
-    // Extract from props array
-    $links = $props['links'] ?? null;
-    $componentId = $props['component_id'] ?? $props['componentId'] ?? null;
-} else {
-    // Direct variables might be set
-    $links = $links ?? null;
-    $componentId = $componentId ?? null;
+// Data contract - standardized variable names
+$component_id = $props['component_id'] ?? $componentId ?? 'social-' . uniqid();
+$links = $props['links'] ?? [];
+
+// Ensure links is an array
+if (!is_array($links)) {
+    $links = [];
 }
 
-// Default social links if none provided
-$defaultLinks = [
-    ['url' => '#', 'title' => 'Twitter', 'icon' => 'twitter'],
-    ['url' => '#', 'title' => 'LinkedIn', 'icon' => 'linkedin'],
-    ['url' => '#', 'title' => 'Instagram', 'icon' => 'instagram']
-];
-$socialLinks = $links ?? $defaultLinks;
-$componentId = $componentId ?? 'social-' . time();
+// Helper function to get social icon class
+function getSocialIcon($platform) {
+    $icons = [
+        'facebook' => 'fab fa-facebook-f',
+        'twitter' => 'fab fa-twitter',
+        'linkedin' => 'fab fa-linkedin-in',
+        'instagram' => 'fab fa-instagram',
+        'youtube' => 'fab fa-youtube',
+        'github' => 'fab fa-github',
+        'pinterest' => 'fab fa-pinterest',
+        'tiktok' => 'fab fa-tiktok'
+    ];
+    $lowerPlatform = strtolower($platform);
+    return $icons[$lowerPlatform] ?? 'fas fa-link';
+}
 ?>
-<div class="social-links editable-element" data-element="social" data-component="social" data-component-id="<?php echo esc_attr($componentId); ?>" data-component-type="social">
-    <!-- ROOT FIX: Controls now created dynamically by JavaScript - no server-side duplication -->
-    <?php foreach ($socialLinks as $link): ?>
-        <a href="<?php echo esc_url($link['url']); ?>" class="social-link" title="<?php echo esc_attr($link['title']); ?>">
-            <?php if ($link['icon'] === 'twitter' || $link['title'] === 'Twitter'): ?>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"/>
-                </svg>
-            <?php elseif ($link['icon'] === 'linkedin' || $link['title'] === 'LinkedIn'): ?>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/>
-                    <circle cx="4" cy="4" r="2"/>
-                </svg>
-            <?php elseif ($link['icon'] === 'instagram' || $link['title'] === 'Instagram'): ?>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-                    <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/>
-                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-                </svg>
-            <?php else: ?>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <circle cx="12" cy="12" r="10"/>
-                </svg>
-            <?php endif; ?>
-        </a>
-    <?php endforeach; ?>
+<!-- ROOT FIX: Exact same structure as Vue -->
+<div class="gmkb-component gmkb-component--social" data-component-id="<?php echo esc_attr($component_id); ?>">
+    <div class="social-links">
+        <?php if (!empty($links)): ?>
+            <?php foreach ($links as $link): ?>
+                <?php
+                $url = is_array($link) ? ($link['url'] ?? '#') : '#';
+                $platform = is_array($link) ? ($link['platform'] ?? 'Link') : 'Link';
+                ?>
+                <a href="<?php echo esc_url($url); ?>" 
+                   title="<?php echo esc_attr($platform); ?>"
+                   class="social-link"
+                   target="_blank"
+                   rel="noopener noreferrer">
+                    <i class="<?php echo esc_attr(getSocialIcon($platform)); ?>"></i>
+                </a>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
 </div>

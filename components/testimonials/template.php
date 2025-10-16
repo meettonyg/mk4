@@ -1,71 +1,48 @@
 <?php
 /**
  * Testimonials Component Template
+ * ROOT FIX: Mirrors Vue component structure exactly
+ * Uses standardized data contract
  */
 
-// ROOT FIX: Handle props data structure
-if (isset($props) && is_array($props)) {
-    // Extract from props array
-    $title = $props['title'] ?? null;
-    $description = $props['description'] ?? null;
-    $testimonials = $props['testimonials'] ?? null;
-    $componentId = $props['component_id'] ?? $props['componentId'] ?? null;
-} else {
-    // Direct variables might be set
-    $title = $title ?? null;
-    $description = $description ?? null;
-    $testimonials = $testimonials ?? null;
-    $componentId = $componentId ?? $id ?? null;
-}
+// Data contract - standardized variable names
+$component_id = $props['component_id'] ?? $componentId ?? 'testimonials-' . uniqid();
+$title = $props['title'] ?? 'What People Say';
+$testimonials = $props['testimonials'] ?? [];
 
-// Set defaults
-$title = $title ?? 'Testimonials';
-$componentId = $componentId ?? 'testimonials-' . time();
+// Ensure testimonials is an array
+if (!is_array($testimonials)) {
+    $testimonials = [];
+}
 ?>
-<div class="testimonials-component editable-element" data-element="testimonials" data-component="testimonials" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="testimonials">
-    <div class="element-controls">
-        <button class="control-btn" title="Move Up">↑</button>
-        <button class="control-btn" title="Move Down">↓</button>
-        <button class="control-btn" title="Duplicate">⧉</button>
-        <button class="control-btn" title="Delete">×</button>
-    </div>
-    <h2 class="testimonials-title"><?php echo $title ?? 'Testimonials'; ?></h2>
-    <?php if (isset($description)): ?>
-        <div class="testimonials-description"><?php echo $description; ?></div>
+<!-- ROOT FIX: Exact same structure as Vue -->
+<div class="gmkb-component gmkb-component--testimonials" data-component-id="<?php echo esc_attr($component_id); ?>">
+    <?php if ($title): ?>
+        <h2 class="section-title"><?php echo esc_html($title); ?></h2>
     <?php endif; ?>
     
     <div class="testimonials-grid">
-        <?php if (isset($testimonials) && !empty($testimonials)): ?>
+        <?php if (!empty($testimonials)): ?>
             <?php foreach ($testimonials as $testimonial): ?>
-                <div class="testimonial-item">
-                    <div class="testimonial-content">
-                        <div class="testimonial-quote-icon">❝</div>
-                        <div class="testimonial-text"><?php echo $testimonial['text']; ?></div>
-                    </div>
-                    <div class="testimonial-author">
-                        <?php if (isset($testimonial['authorImage']) && !empty($testimonial['authorImage'])): ?>
-                            <div class="testimonial-author-image">
-                                <img src="<?php echo $testimonial['authorImage']; ?>" alt="<?php echo $testimonial['authorName']; ?>">
-                            </div>
-                        <?php endif; ?>
-                        <div class="testimonial-author-info">
-                            <div class="testimonial-author-name"><?php echo $testimonial['authorName']; ?></div>
-                            <?php if (isset($testimonial['authorTitle'])): ?>
-                                <div class="testimonial-author-title"><?php echo $testimonial['authorTitle']; ?></div>
+                <?php
+                $text = is_array($testimonial) ? ($testimonial['text'] ?? '') : '';
+                $author = is_array($testimonial) ? ($testimonial['author'] ?? 'Client') : 'Client';
+                $author_title = is_array($testimonial) ? ($testimonial['title'] ?? '') : '';
+                ?>
+                <?php if ($text): ?>
+                    <div class="testimonial-item">
+                        <div class="testimonial-quote">"<?php echo esc_html($text); ?>"</div>
+                        <div class="testimonial-author">
+                            <div class="author-name"><?php echo esc_html($author); ?></div>
+                            <?php if ($author_title): ?>
+                                <div class="author-title"><?php echo esc_html($author_title); ?></div>
                             <?php endif; ?>
                         </div>
                     </div>
-                </div>
+                <?php endif; ?>
             <?php endforeach; ?>
         <?php else: ?>
-            <div class="testimonials-placeholder">
-                <p>Add testimonials from clients, colleagues, or partners.</p>
-                <button class="add-testimonial-btn">+ Add Testimonial</button>
-            </div>
+            <p class="testimonials-placeholder">Add testimonials here.</p>
         <?php endif; ?>
     </div>
-    
-    <?php if (isset($testimonials) && !empty($testimonials)): ?>
-        <button class="add-testimonial-btn">+ Add Testimonial</button>
-    <?php endif; ?>
 </div>
