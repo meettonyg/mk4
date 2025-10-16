@@ -70,6 +70,20 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             width: 100%;
             height: 100%;
         }
+        
+        /* ROOT FIX: Hide builder wrapper until Vue is ready */
+        #gmkb-builder-wrapper {
+            display: none;
+        }
+        
+        body.gmkb-vue-ready #gmkb-builder-wrapper {
+            display: flex;
+        }
+        
+        /* Hide loading screen when Vue is ready */
+        body.gmkb-vue-ready #app {
+            display: none;
+        }
 
         /* Loading screen - Shows until Vue takes over */
         .gmkb-loading {
@@ -199,7 +213,8 @@ if (!in_array($post->post_type, $allowed_post_types)) {
     </div>
     
     <!-- Builder UI Structure - Mount points for Vue Teleport -->
-    <div id="gmkb-builder-wrapper" style="display: none;">
+    <!-- ROOT FIX: Don't hide wrapper - let Vue control visibility -->
+    <div id="gmkb-builder-wrapper">
         <!-- Toolbar mount point -->
         <div id="gmkb-toolbar"></div>
         

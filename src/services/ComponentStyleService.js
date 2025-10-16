@@ -300,6 +300,229 @@ class ComponentStyleService {
     
     console.log('🗑️ Cleared all component styles');
   }
+
+  /**
+   * DEBUG: Output component settings from store
+   * Usage: window.GMKB.services.componentStyle.debugSettings('component-id')
+   * @param {string} componentId - Component ID to debug
+   */
+  debugSettings(componentId) {
+    if (!window.gmkbStore) {
+      console.error('❌ Store not available. Make sure you\'re in the builder.');
+      return;
+    }
+
+    const component = window.gmkbStore.components[componentId];
+    if (!component) {
+      console.error(`❌ Component ${componentId} not found in store`);
+      console.log('Available components:', Object.keys(window.gmkbStore.components));
+      return;
+    }
+
+    console.group(`🔍 Settings Debug for ${componentId}`);
+    console.log('Full Component:', component);
+    console.log('Settings Object:', component.settings);
+    
+    if (component.settings && component.settings.style) {
+      console.group('📐 Style Settings');
+      console.log('Spacing:', component.settings.style.spacing);
+      console.log('Background:', component.settings.style.background);
+      console.log('Typography:', component.settings.style.typography);
+      console.log('Border:', component.settings.style.border);
+      console.log('Effects:', component.settings.style.effects);
+      console.groupEnd();
+    }
+    
+    if (component.settings && component.settings.advanced) {
+      console.group('⚙️ Advanced Settings');
+      console.log('Layout:', component.settings.advanced.layout);
+      console.log('Responsive:', component.settings.advanced.responsive);
+      console.log('Custom:', component.settings.advanced.custom);
+      console.groupEnd();
+    }
+    
+    // Output as copyable JSON
+    console.group('📋 Copyable JSON');
+    console.log(JSON.stringify(component.settings, null, 2));
+    console.groupEnd();
+    
+    console.groupEnd();
+    
+    return component.settings;
+  }
+
+  /**
+   * DEBUG: Output computed styles from DOM
+   * Usage: window.GMKB.services.componentStyle.debugRendered('component-id')
+   * @param {string} componentId - Component ID to debug
+   */
+  debugRendered(componentId) {
+    const wrapper = document.querySelector(`[data-component-id="${componentId}"]`);
+    const componentRoot = document.querySelector(`[data-component-id="${componentId}"] .component-root`);
+    
+    if (!wrapper) {
+      console.error(`❌ Component wrapper [data-component-id="${componentId}"] not found in DOM`);
+      return;
+    }
+
+    console.group(`🖼️ Rendered Styles for ${componentId}`);
+    
+    console.group('📦 Wrapper Element');
+    console.log('Element:', wrapper);
+    const wrapperStyles = window.getComputedStyle(wrapper);
+    const marginData = {
+      top: wrapperStyles.marginTop,
+      right: wrapperStyles.marginRight,
+      bottom: wrapperStyles.marginBottom,
+      left: wrapperStyles.marginLeft
+    };
+    console.log('Margin:', marginData);
+    console.log('Width:', wrapperStyles.width);
+    console.log('Display:', wrapperStyles.display);
+    console.groupEnd();
+    
+    if (componentRoot) {
+      console.group('🎯 Component Root Element');
+      console.log('Element:', componentRoot);
+      const rootStyles = window.getComputedStyle(componentRoot);
+      
+      const paddingData = {
+        top: rootStyles.paddingTop,
+        right: rootStyles.paddingRight,
+        bottom: rootStyles.paddingBottom,
+        left: rootStyles.paddingLeft
+      };
+      console.log('Padding:', paddingData);
+      
+      const bgData = {
+        color: rootStyles.backgroundColor,
+        opacity: rootStyles.opacity
+      };
+      console.log('Background:', bgData);
+      
+      const typographyData = {
+        fontFamily: rootStyles.fontFamily,
+        fontSize: rootStyles.fontSize,
+        fontWeight: rootStyles.fontWeight,
+        lineHeight: rootStyles.lineHeight,
+        color: rootStyles.color,
+        textAlign: rootStyles.textAlign
+      };
+      console.log('Typography:', typographyData);
+      
+      const borderData = {
+        width: {
+          top: rootStyles.borderTopWidth,
+          right: rootStyles.borderRightWidth,
+          bottom: rootStyles.borderBottomWidth,
+          left: rootStyles.borderLeftWidth
+        },
+        style: rootStyles.borderStyle,
+        color: rootStyles.borderColor,
+        radius: rootStyles.borderRadius
+      };
+      console.log('Border:', borderData);
+      
+      const effectsData = {
+        boxShadow: rootStyles.boxShadow
+      };
+      console.log('Effects:', effectsData);
+      
+      // Output as copyable JSON
+      console.group('📋 Copyable JSON');
+      console.log(JSON.stringify({
+        margin: marginData,
+        padding: paddingData,
+        background: bgData,
+        typography: typographyData,
+        border: borderData,
+        effects: effectsData
+      }, null, 2));
+      console.groupEnd();
+      
+      console.groupEnd();
+    } else {
+      console.warn('⚠️ No .component-root element found. Component may not be using V2 architecture.');
+    }
+    
+    // Show injected style tag
+    const styleTag = document.getElementById(`component-styles-${componentId}`);
+    if (styleTag) {
+      console.group('📝 Injected CSS');
+      console.log('Style Tag:', styleTag);
+      console.log('CSS Content:');
+      console.log(styleTag.textContent);
+      console.groupEnd();
+    } else {
+      console.warn('⚠️ No injected style tag found for this component');
+    }
+    
+    console.groupEnd();
+    
+    return {
+      wrapper: wrapper,
+      componentRoot: componentRoot,
+      styleTag: styleTag
+    };
+  }
+
+  /**
+   * DEBUG: Compare settings vs rendered
+   * Usage: window.GMKB.services.componentStyle.debugCompare('component-id')
+   * @param {string} componentId - Component ID to debug
+   */
+  debugCompare(componentId) {
+    console.log(`\n${'='.repeat(80)}`);
+    console.log(`🔬 COMPREHENSIVE DEBUG: ${componentId}`);
+    console.log(`${'='.repeat(80)}\n`);
+    
+    const settings = this.debugSettings(componentId);
+    const rendered = this.debugRendered(componentId);
+    
+    console.log('\n' + '='.repeat(80));
+    console.log('✅ Debug complete. Check the groups above for details.');
+    console.log('\n📝 INSTRUCTIONS:');
+    console.log('1. Expand the "Settings Debug" group above to see settings from the store');
+    console.log('2. Expand the "Rendered Styles" group above to see computed DOM styles');
+    console.log('3. Compare the "Copyable JSON" sections to identify mismatches');
+    console.log('4. Settings should match what you see in the Bio panel');
+    console.log('5. Rendered should match what you see in the frontend');
+    console.log('='.repeat(80) + '\n');
+    
+    return { settings, rendered };
+  }
+
+  /**
+   * DEBUG: List all components with styles
+   * Usage: window.GMKB.services.componentStyle.debugList()
+   */
+  debugList() {
+    console.group('📋 All Components with Styles');
+    
+    if (!window.gmkbStore) {
+      console.error('❌ Store not available');
+      console.groupEnd();
+      return;
+    }
+    
+    const components = window.gmkbStore.components;
+    console.log(`Found ${Object.keys(components).length} components in store`);
+    console.log(`${this.styleElements.size} have injected styles`);
+    
+    console.table(
+      Object.entries(components).map(([id, component]) => ({
+        'Component ID': id,
+        'Type': component.type,
+        'Has Settings': !!component.settings,
+        'Has Styles': this.styleElements.has(id),
+        'Visible': component.visible !== false
+      }))
+    );
+    
+    console.groupEnd();
+    
+    return Object.keys(components);
+  }
 }
 
 // Create singleton instance
@@ -310,6 +533,43 @@ if (typeof window !== 'undefined') {
   if (!window.GMKB) window.GMKB = {};
   if (!window.GMKB.services) window.GMKB.services = {};
   window.GMKB.services.componentStyle = componentStyleService;
+  
+  // Add convenient global debug commands
+  window.debugComponentSettings = (id) => componentStyleService.debugSettings(id);
+  window.debugComponentRendered = (id) => componentStyleService.debugRendered(id);
+  window.debugComponentCompare = (id) => componentStyleService.debugCompare(id);
+  window.debugComponentList = () => componentStyleService.debugList();
+  
+  // Add helper to get Bio component ID
+  window.debugBioComponent = () => {
+    if (!window.gmkbStore) {
+      console.error('❌ Store not available');
+      return;
+    }
+    
+    // Find biography component
+    const bioComp = Object.entries(window.gmkbStore.components).find(
+      ([id, comp]) => comp.type === 'biography'
+    );
+    
+    if (!bioComp) {
+      console.error('❌ No Biography component found');
+      console.log('Available components:', Object.keys(window.gmkbStore.components));
+      return;
+    }
+    
+    const bioId = bioComp[0];
+    console.log(`✅ Found Biography component: ${bioId}`);
+    console.log('\nUsing this ID to run debug commands:\n');
+    return componentStyleService.debugCompare(bioId);
+  };
+  
+  console.log('\n🔧 Component Style Debug Commands Available:');
+  console.log('  debugComponentList()                  - List all components');
+  console.log('  debugComponentSettings("component-id") - Show settings from store');
+  console.log('  debugComponentRendered("component-id") - Show computed DOM styles');
+  console.log('  debugComponentCompare("component-id")  - Compare settings vs DOM');
+  console.log('  debugBioComponent()                   - Quick debug for Biography component\n');
 }
 
 export default componentStyleService;
