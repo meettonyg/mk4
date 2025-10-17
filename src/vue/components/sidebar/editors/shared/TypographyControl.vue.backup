@@ -27,8 +27,8 @@
         <input
           type="number"
           min="1"
-          v-model="localFontSizeValue"
-          @input="debouncedUpdateFontSize"
+          :value="typography.fontSize.value"
+          @input="updateFontSize('value', parseInt($event.target.value) || 16)"
         />
         <select
           :value="typography.fontSize.unit"
@@ -67,8 +67,8 @@
         type="number"
         min="0.5"
         step="0.1"
-        v-model="localLineHeight"
-        @input="debouncedUpdateLineHeight"
+        :value="typography.lineHeight"
+        @input="updateTypography('lineHeight', parseFloat($event.target.value) || 1.5)"
       />
     </div>
 
@@ -100,7 +100,7 @@
           title="Align Center"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M7 12h10M3 18h18" stroke-width="2" stroke-linecap="round"/>
+            <path d="M3 6h18M7 12h10M3 18h18" stroke-width="2" stroke-linecap="round"/>
           </svg>
         </button>
         <button
@@ -142,7 +142,6 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
 import ColorPicker from './ColorPicker.vue';
 
 const props = defineProps({
@@ -153,23 +152,6 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update']);
-
-// ROOT FIX: Local state for inputs to prevent focus loss
-const localFontSizeValue = ref(props.typography.fontSize?.value || 16);
-const localLineHeight = ref(props.typography.lineHeight || 1.5);
-
-// Watch for external changes (like when switching components)
-watch(() => props.typography.fontSize?.value, (newVal) => {
-  if (newVal !== undefined && newVal !== localFontSizeValue.value) {
-    localFontSizeValue.value = newVal;
-  }
-});
-
-watch(() => props.typography.lineHeight, (newVal) => {
-  if (newVal !== undefined && newVal !== localLineHeight.value) {
-    localLineHeight.value = newVal;
-  }
-});
 
 const presets = [
   { name: 'body', label: 'Body' },
@@ -239,43 +221,8 @@ const updateFontSize = (property, value) => {
   });
 };
 
-// ROOT FIX: Debounced updates to prevent focus loss
-let fontSizeTimeout = null;
-const debouncedUpdateFontSize = () => {
-  if (fontSizeTimeout) clearTimeout(fontSizeTimeout);
-  
-  fontSizeTimeout = setTimeout(() => {
-    const value = parseInt(localFontSizeValue.value) || 16;
-    emit('update', {
-      ...props.typography,
-      fontSize: {
-        ...props.typography.fontSize,
-        value: value
-      }
-    });
-  }, 300);
-};
-
-let lineHeightTimeout = null;
-const debouncedUpdateLineHeight = () => {
-  if (lineHeightTimeout) clearTimeout(lineHeightTimeout);
-  
-  lineHeightTimeout = setTimeout(() => {
-    const value = parseFloat(localLineHeight.value) || 1.5;
-    emit('update', {
-      ...props.typography,
-      lineHeight: value
-    });
-  }, 300);
-};
-
 const applyPreset = (presetName) => {
-  const preset = presetValues[presetName];
-  // Update local state
-  localFontSizeValue.value = preset.fontSize.value;
-  localLineHeight.value = preset.lineHeight;
-  // Emit immediately for presets
-  emit('update', preset);
+  emit('update', presetValues[presetName]);
 };
 </script>
 
