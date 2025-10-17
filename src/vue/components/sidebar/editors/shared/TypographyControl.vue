@@ -8,15 +8,15 @@
         @change="updateTypography('fontFamily', $event.target.value)"
       >
         <option value="inherit">Inherit</option>
-        <option value="'Inter', sans-serif">Inter</option>
-        <option value="'Roboto', sans-serif">Roboto</option>
-        <option value="'Open Sans', sans-serif">Open Sans</option>
-        <option value="'Lato', sans-serif">Lato</option>
-        <option value="'Montserrat', sans-serif">Montserrat</option>
-        <option value="'Poppins', sans-serif">Poppins</option>
+        <option value="Inter, sans-serif">Inter</option>
+        <option value="Roboto, sans-serif">Roboto</option>
+        <option value="Open Sans, sans-serif">Open Sans</option>
+        <option value="Lato, sans-serif">Lato</option>
+        <option value="Montserrat, sans-serif">Montserrat</option>
+        <option value="Poppins, sans-serif">Poppins</option>
         <option value="Georgia, serif">Georgia</option>
-        <option value="'Times New Roman', serif">Times New Roman</option>
-        <option value="'Courier New', monospace">Courier New</option>
+        <option value="Times New Roman, serif">Times New Roman</option>
+        <option value="Courier New, monospace">Courier New</option>
       </select>
     </div>
 

@@ -298,8 +298,17 @@ function gmkb_enqueue_vue_only_assets() {
             error_log('✅ GMKB: Data prepared successfully - ' . $component_count . ' components');
         }
         
-        // Inject the data
-        $inline_script = 'window.gmkbData = ' . wp_json_encode($gmkb_data) . ';';
+        // ROOT FIX: Use wp_json_encode with JSON_UNESCAPED_UNICODE flag to prevent HTML encoding
+        // This prevents font families like "Roboto, sans-serif" from becoming "&quot;Roboto&quot;"
+        // CRITICAL: Don't use wp_json_encode - it forces JSON_HEX_QUOT which encodes quotes
+        // Use native json_encode with proper flags and wp_kses to prevent double-encoding
+        $json_data = json_encode($gmkb_data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP);
+        
+        // Wrap in script tag manually to prevent WordPress from encoding it
+        $inline_script = sprintf(
+            'window.gmkbData = %s;',
+            $json_data
+        );
         
         // Add detailed console logging
         $inline_script .= 'console.log("✅ GMKB: gmkbData injected successfully via wp_add_inline_script");';

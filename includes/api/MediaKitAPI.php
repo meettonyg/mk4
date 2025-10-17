@@ -172,6 +172,9 @@ class MediaKitAPI {
             return new \WP_Error('missing_data', 'Incomplete state data: components and layout are required.', array('status' => 400));
         }
 
+        // ROOT FIX: Sanitize font families to prevent HTML encoding on every save
+        $data = $this->sanitize_font_families($data);
+
         $state = array(
             'components' => $data['components'] ?? new \stdClass(),
             'layout' => $data['layout'] ?? array(),
@@ -193,6 +196,70 @@ class MediaKitAPI {
             'timestamp' => $state['timestamp'],
             'message' => 'Media kit saved successfully.'
         );
+    }
+
+    /**
+     * Sanitize font families in data to prevent HTML encoding
+     * This is a self-healing function that cleans data on every save
+     * 
+     * @param array $data The media kit data
+     * @return array Sanitized data
+     */
+    private function sanitize_font_families($data) {
+        // Sanitize components
+        if (isset($data['components']) && is_array($data['components'])) {
+            foreach ($data['components'] as $component_id => $component) {
+                if (isset($component['settings']['style']['typography']['fontFamily'])) {
+                    $data['components'][$component_id]['settings']['style']['typography']['fontFamily'] = 
+                        $this->clean_font_family($component['settings']['style']['typography']['fontFamily']);
+                }
+            }
+        }
+
+        // Sanitize sections
+        if (isset($data['layout']) && is_array($data['layout'])) {
+            foreach ($data['layout'] as $section_id => $section) {
+                if (isset($section['settings']['style']['typography']['fontFamily'])) {
+                    $data['layout'][$section_id]['settings']['style']['typography']['fontFamily'] = 
+                        $this->clean_font_family($section['settings']['style']['typography']['fontFamily']);
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Clean a font family string by removing HTML encoding and quotes
+     * 
+     * @param string $fontFamily The font family value
+     * @return string Cleaned font family
+     */
+    private function clean_font_family($fontFamily) {
+        if (empty($fontFamily) || !is_string($fontFamily)) {
+            return 'inherit';
+        }
+
+        // Recursively decode HTML entities (handles cascaded encoding)
+        $decoded = $fontFamily;
+        $previous = '';
+        $iterations = 0;
+        $max_iterations = 10;
+        
+        while ($decoded !== $previous && $iterations < $max_iterations) {
+            $previous = $decoded;
+            $decoded = html_entity_decode($decoded, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $iterations++;
+        }
+
+        // Remove all quotes (single and double)
+        // Quotes will be added back by CSS generation in ComponentStyleService
+        $cleaned = preg_replace('/[\'"]/', '', $decoded);
+
+        // Trim whitespace
+        $cleaned = trim($cleaned);
+
+        return $cleaned;
     }
     
     /**

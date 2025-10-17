@@ -134,6 +134,60 @@ class ComponentStyleService {
   }
 
   /**
+   * HTML decode a string to prevent double-encoding issues
+   * @param {string} str - String to decode
+   * @returns {string} Decoded string
+   */
+  htmlDecode(str) {
+    if (typeof str !== 'string') return str;
+    
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = str;
+    return textarea.value;
+  }
+
+  /**
+   * Format font family for CSS
+   * Adds quotes around font names with spaces, removes HTML encoding
+   * @param {string} fontFamily - Font family value from store
+   * @returns {string} Properly formatted CSS font-family value
+   */
+  formatFontFamily(fontFamily) {
+    if (!fontFamily || typeof fontFamily !== 'string') return 'inherit';
+    
+    // First decode any HTML entities
+    const decoded = this.htmlDecode(fontFamily);
+    
+    // Split by comma to handle font stacks (e.g., "Roboto, sans-serif")
+    const fonts = decoded.split(',').map(font => font.trim());
+    
+    // Process each font in the stack
+    const formatted = fonts.map(font => {
+      // Don't quote generic families (serif, sans-serif, monospace, cursive, fantasy)
+      const genericFamilies = ['serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'inherit'];
+      if (genericFamilies.includes(font.toLowerCase())) {
+        return font;
+      }
+      
+      // If font name has spaces and isn't already quoted, add quotes
+      if (font.includes(' ') && !font.startsWith("'") && !font.startsWith('"')) {
+        return `'${font}'`;
+      }
+      
+      // If already quoted, remove quotes and re-add to ensure consistency
+      const unquoted = font.replace(/^['"]|['"]$/g, '');
+      if (unquoted.includes(' ')) {
+        return `'${unquoted}'`;
+      }
+      
+      // Single word fonts don't need quotes
+      return unquoted;
+    });
+    
+    return formatted.join(', ');
+  }
+
+  /**
    * Apply styling to a component
    * @param {string} componentId - Component ID
    * @param {Object} settings - Component settings object
@@ -232,7 +286,8 @@ class ComponentStyleService {
     // Background - Apply to component root
     if (style.background) {
       if (style.background.color) {
-        componentRules.push(`background-color: ${style.background.color} !important`);
+        // ROOT FIX: HTML decode color to prevent double-encoding
+        componentRules.push(`background-color: ${this.htmlDecode(style.background.color)} !important`);
       }
       if (style.background.opacity !== undefined && style.background.opacity !== 100) {
         componentRules.push(`opacity: ${style.background.opacity / 100}`);
@@ -243,7 +298,11 @@ class ComponentStyleService {
     // CRITICAL FIX: Add !important to override component-specific styles
     if (style.typography) {
       const t = style.typography;
-      if (t.fontFamily) componentRules.push(`font-family: ${t.fontFamily} !important`);
+      // ROOT FIX: Format font family with proper CSS quotes
+      if (t.fontFamily) {
+        const fontFamily = this.formatFontFamily(t.fontFamily);
+        componentRules.push(`font-family: ${fontFamily} !important`);
+      }
       if (t.fontSize) componentRules.push(`font-size: ${t.fontSize.value}${t.fontSize.unit} !important`);
       if (t.fontWeight) componentRules.push(`font-weight: ${t.fontWeight} !important`);
       
@@ -262,7 +321,8 @@ class ComponentStyleService {
         // Otherwise skip invalid lineHeight
       }
       
-      if (t.color) componentRules.push(`color: ${t.color} !important`);
+      // ROOT FIX: HTML decode color to prevent double-encoding
+      if (t.color) componentRules.push(`color: ${this.htmlDecode(t.color)} !important`);
       if (t.textAlign) componentRules.push(`text-align: ${t.textAlign} !important`);
     }
 
@@ -275,7 +335,8 @@ class ComponentStyleService {
         const hasWidth = b.width.top || b.width.right || b.width.bottom || b.width.left;
         if (hasWidth) {
           componentRules.push(`border-width: ${b.width.top}${b.width.unit} ${b.width.right}${b.width.unit} ${b.width.bottom}${b.width.unit} ${b.width.left}${b.width.unit}`);
-          if (b.color) componentRules.push(`border-color: ${b.color}`);
+          // ROOT FIX: HTML decode color to prevent double-encoding
+          if (b.color) componentRules.push(`border-color: ${this.htmlDecode(b.color)}`);
           if (b.style) componentRules.push(`border-style: ${b.style}`);
         }
       }
