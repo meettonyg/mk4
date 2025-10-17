@@ -55,7 +55,7 @@ function gmkb_sanitize_components_before_save($state, $post_id) {
     error_log('================================');
     
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('🧹 GMKB: Sanitizing components before save (removing Pods bloat)');
+        error_log('🧹 GMKB: Sanitizing components before save (removing Pods bloat + decoding HTML entities)');
     }
     
     $total_cleaned = 0;
@@ -67,6 +67,9 @@ function gmkb_sanitize_components_before_save($state, $post_id) {
             if (!is_array($component) || empty($component['type'])) {
                 continue;
             }
+            
+            // ROOT FIX: Decode HTML entities BEFORE saving to prevent accumulation
+            gmkb_decode_html_entities_recursive($component);
             
             $cleaned = gmkb_clean_component_pods_data($component);
             if ($cleaned) {
@@ -171,6 +174,50 @@ function gmkb_clean_component_pods_data(&$component) {
     $component['_podsType'] = $type;
     
     return $cleaned;
+}
+
+/**
+ * ROOT FIX: Recursively decode HTML entities in all string values
+ * This prevents the accumulation of HTML encoding over multiple save/load cycles
+ * Critical for font-family values which get encoded as &amp; → &amp;amp; → &amp;amp;amp; etc.
+ * 
+ * @param array $data Data array to decode (passed by reference)
+ * @return void
+ */
+function gmkb_decode_html_entities_recursive(&$data) {
+    if (!is_array($data)) {
+        return;
+    }
+    
+    foreach ($data as $key => &$value) {
+        if (is_string($value)) {
+            // Decode repeatedly until no more entities exist
+            // This handles cases where values have been encoded multiple times
+            $decoded = $value;
+            $previous = '';
+            $iterations = 0;
+            $max_iterations = 10; // Safety limit
+            
+            while ($decoded !== $previous && $iterations < $max_iterations) {
+                $previous = $decoded;
+                $decoded = html_entity_decode($decoded, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $iterations++;
+            }
+            
+            // Only update if decoding changed the value
+            if ($decoded !== $value) {
+                $value = $decoded;
+                
+                if (defined('WP_DEBUG') && WP_DEBUG && $iterations > 1) {
+                    error_log("🔧 GMKB DECODE: Decoded '{$key}' {$iterations} times: {$value}");
+                }
+            }
+        } elseif (is_array($value)) {
+            // Recursively decode nested arrays
+            gmkb_decode_html_entities_recursive($value);
+        }
+    }
+    unset($value); // Clear reference
 }
 
 /**

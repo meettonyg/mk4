@@ -359,37 +359,32 @@ async function initializeVue() {
     console.log('✅ Component styles initialized');
     
     // ROOT FIX: Set up reactivity watcher for style updates
-    // Use Vue's watch API for deep reactivity on component settings
+    // CRITICAL FIX: Watch $state.components instead of components getter
+    // This ensures Vue's reactivity system properly detects all changes
     console.log('👁️ Setting up component style watcher...');
     
-    // Import watch and toRaw from Vue
-    const { watch, toRaw } = await import('vue');
+    // Import watch from Vue
+    const { watch } = await import('vue');
     
-    // Watch the entire components object deeply
+    // ROOT FIX: Watch the store's $state.components directly
+    // The getter-based approach was missing deeply nested changes
     watch(
-      () => mediaKitStore.components,
-      (newComponents, oldComponents) => {
-        console.log('🔥 WATCHER FIRED!', {
-          newComponentsCount: Object.keys(newComponents).length,
-          oldComponentsCount: oldComponents ? Object.keys(oldComponents).length : 0
-        });
+      () => mediaKitStore.$state.components,
+      () => {
+        console.log('🔥 WATCHER FIRED! Updating all component styles');
         
-        // CRITICAL FIX: Force style update for ALL components on every change
-        // The JSON comparison was failing to detect changes reliably
-        Object.entries(newComponents).forEach(([componentId, component]) => {
-          if (!component || !component.settings) {
-            console.log(`⚠️ Component ${componentId} has no settings`);
-            return;
+        // Force update ALL component styles
+        Object.entries(mediaKitStore.components).forEach(([id, comp]) => {
+          if (comp?.settings) {
+            componentStyleService.applyStyling(id, comp.settings);
           }
-          
-          console.log(`🎨 FORCING STYLE UPDATE: ${componentId}`);
-          componentStyleService.applyStyling(componentId, component.settings);
         });
       },
-      { deep: true } // Deep watch to catch nested changes
+      { deep: true, immediate: false } // immediate: false to avoid double-render on init
     );
     
-    console.log('✅ Component style watcher active (Vue deep watch)');
+    console.log('✅ Component style watcher active (watching $state.components)');
+    
     
     // Console API now handled by ConsoleAPI service (see ConsoleAPI.install above)
     

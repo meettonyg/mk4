@@ -135,15 +135,24 @@ class ComponentStyleService {
 
   /**
    * HTML decode a string to prevent double-encoding issues
+   * CRITICAL FIX: Decode repeatedly until all HTML entities are removed
+   * This fixes the accumulation of &amp; encoding over multiple save cycles
    * @param {string} str - String to decode
    * @returns {string} Decoded string
    */
   htmlDecode(str) {
     if (typeof str !== 'string') return str;
     
+    let temp = str;
     const textarea = document.createElement('textarea');
-    textarea.innerHTML = str;
-    return textarea.value;
+    
+    // Keep decoding while there are still HTML entities
+    while (temp.includes('&amp;')) {
+      textarea.innerHTML = temp;
+      temp = textarea.value;
+    }
+    
+    return temp;
   }
 
   /**

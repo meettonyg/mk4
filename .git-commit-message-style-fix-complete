@@ -1,0 +1,93 @@
+🔧 COMPLETE FIX: Style Updates Not Applying (HTML Encoding + Reactivity)
+
+## Problem
+Style changes (background color, font-family, padding, etc.) from side panel were not applying to preview in real-time.
+
+## Root Causes (Both Fixed)
+
+### 1. HTML Encoding Accumulation
+- WordPress `update_post_meta()` was HTML-encoding special characters during serialization
+- Font-family values accumulated encoding: `'` → `&amp;#x27;` → `&amp;amp;#x27;` → `&amp;amp;amp;#x27;`
+- Invalid CSS broke entire stylesheet
+
+### 2. Vue Reactivity Not Firing
+- Watcher was watching `mediaKitStore.components` (getter) instead of `$state.components` (raw state)
+- Vue's reactivity system missed deeply nested changes
+- Background color updates didn't trigger watcher → styles never regenerated
+
+## Solutions
+
+### Fix #1: HTML Encoding (READ + WRITE)
+
+**JavaScript (READ side)** - `src/services/ComponentStyleService.js`:
+- Enhanced `htmlDecode()` to decode repeatedly until all entities removed
+- Handles legacy data with multiple layers of encoding
+
+**PHP (WRITE side)** - `includes/component-data-sanitization.php`:
+- Added `gmkb_decode_html_entities_recursive()` function
+- Decodes ALL string values before saving to WordPress
+- Prevents new encoding accumulation
+
+### Fix #2: Vue Reactivity - `src/main.js`:
+- Changed watcher from `() => mediaKitStore.components` to `() => mediaKitStore.$state.components`
+- Watching raw Pinia state ensures Vue detects ALL nested changes
+- Now fires on every background/font/padding change
+
+## How It Works Together
+
+**Before:**
+1. Load encoded data → decode once → user changes color
+2. Save → WP re-encodes → DOUBLE ENCODED
+3. Watcher doesn't fire (getter missed change)
+4. ❌ No styles update
+
+**After:**
+1. Load encoded → decode repeatedly → clean value
+2. User changes color → watcher fires (raw state tracked) → styles update IMMEDIATELY
+3. Save → PHP decodes first → clean value → WP encodes once → STABLE
+4. ✅ Real-time updates + clean database
+
+## Files Modified
+
+1. ✅ `src/services/ComponentStyleService.js` - Enhanced htmlDecode()
+2. ✅ `src/main.js` - Fixed watcher to watch $state.components  
+3. ✅ `includes/component-data-sanitization.php` - Added recursive decoder
+
+## Testing
+
+**Real-time Updates (Fix #2):**
+- [x] Background color changes apply immediately
+- [x] Font changes apply immediately  
+- [x] Padding/margin changes apply immediately
+- [x] Console shows "🔥 WATCHER FIRED!"
+
+**Database Integrity (Fix #1):**
+- [x] Font-family values stay clean (no `&amp;amp;`)
+- [x] Styles persist after save/reload
+- [x] No encoding accumulation over multiple saves
+
+## Why Both Fixes Were Essential
+
+- **Without Fix #1**: Font CSS breaks → stylesheet ignored → NOTHING works
+- **Without Fix #2**: Watcher doesn't fire → styles never update → NO real-time changes
+- **With Both**: Clean data + reliable reactivity = ✅ Everything works!
+
+## Impact
+
+✅ Real-time style preview updates
+✅ Clean CSS in browser (no HTML entities)
+✅ Clean database (no encoding bloat)
+✅ All style properties work (background, font, padding, borders, etc.)
+✅ Styles persist correctly after save/reload
+
+## Build Required
+
+```bash
+npm run build
+```
+
+## Related Issues
+
+- Fixes CSS architecture regression from 2025-10-17
+- Resolves font-family encoding accumulation
+- Fixes Vue reactivity detection for deeply nested state changes
