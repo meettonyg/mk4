@@ -156,17 +156,16 @@ onMounted(() => {
 
 .questions-title {
   text-align: center;
-  font-size: 2rem;
-  font-weight: 700;
+  /* font-size and font-weight inherited from component-root */
   margin: 0 0 1rem 0;
   color: inherit;
 }
 
 .questions-description {
   text-align: center;
-  color: #64748b;
+  opacity: 0.8; /* Use opacity instead of fixed color */
   margin: 0 0 2rem 0;
-  line-height: 1.6;
+  /* line-height inherited from component-root */
 }
 
 .questions-list {
@@ -178,8 +177,8 @@ onMounted(() => {
 }
 
 .question-item {
-  background: #f8fafc;
-  border-radius: 8px;
+  background: var(--card-bg, rgba(248, 250, 252, 0.8));
+  border-radius: var(--component-border-radius, 8px);
   overflow: hidden;
   transition: all 0.3s ease;
 }
@@ -206,15 +205,14 @@ onMounted(() => {
 }
 
 .question-text {
-  color: #1e293b;
-  font-size: 1.125rem;
-  font-weight: 600;
+  color: inherit;
+  /* font-size and font-weight inherited from component-root */
   flex: 1;
   padding-right: 1rem;
 }
 
 .question-toggle {
-  color: #3b82f6;
+  color: var(--primary-color, #3b82f6);
   font-size: 1.5rem;
   font-weight: 300;
   transition: transform 0.3s ease;
@@ -235,9 +233,8 @@ onMounted(() => {
 }
 
 .question-answer p {
-  color: #64748b;
-  font-size: 1rem;
-  line-height: 1.6;
+  opacity: 0.85; /* Use opacity instead of fixed color */
+  /* font-size and line-height inherited from component-root */
   margin: 0;
 }
 

@@ -153,8 +153,7 @@ onMounted(() => {
 }
 
 .topics-title {
-  font-size: 2rem;
-  font-weight: 700;
+  /* font-size and font-weight inherited from component-root */
   margin: 0 0 1rem 0;
   text-align: center;
   color: inherit;
@@ -162,7 +161,7 @@ onMounted(() => {
 
 .topics-description {
   text-align: center;
-  color: #64748b;
+  opacity: 0.8; /* Use opacity instead of fixed color */
   margin: 0 0 2rem 0;
 }
 
@@ -185,8 +184,8 @@ onMounted(() => {
 
 .topic-card {
   padding: 1.5rem;
-  background: #f8fafc;
-  border-radius: 8px;
+  background: var(--card-bg, rgba(248, 250, 252, 0.8));
+  border-radius: var(--component-border-radius, 8px);
   transition: all 0.3s ease;
 }
 
@@ -196,26 +195,25 @@ onMounted(() => {
 }
 
 .topic-icon {
-  color: #3b82f6;
-  font-size: 2rem;
+  color: var(--primary-color, #3b82f6);
+  font-size: 2rem; /* Keep for icon sizing */
   margin-bottom: 1rem;
   text-align: center;
 }
 
 .topic-name {
-  font-size: 1.25rem;
-  font-weight: 600;
+  /* font-size and font-weight inherited from component-root */
   margin: 0 0 0.5rem 0;
   color: inherit;
   text-align: center;
 }
 
 .topic-description {
-  font-size: 0.9rem;
-  color: #64748b;
+  /* font-size inherited from component-root */
+  opacity: 0.85; /* Use opacity for hierarchy */
   margin: 0;
   text-align: center;
-  line-height: 1.6;
+  /* line-height inherited from component-root */
 }
 
 /* Responsive */

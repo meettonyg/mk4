@@ -117,17 +117,16 @@ onMounted(() => {
 
 .logo-title {
   text-align: center;
-  font-size: 2rem;
-  font-weight: 700;
+  /* font-size and font-weight inherited from component-root */
   margin: 0 0 1rem 0;
   color: inherit;
 }
 
 .logo-description {
   text-align: center;
-  color: #64748b;
+  opacity: 0.8; /* Use opacity instead of fixed color */
   margin: 0 0 3rem 0;
-  line-height: 1.6;
+  /* line-height inherited from component-root */
 }
 
 .logo-grid {
@@ -160,8 +159,8 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  background: #f8fafc;
-  border-radius: 8px;
+  background: var(--card-bg, rgba(248, 250, 252, 0.8));
+  border-radius: var(--component-border-radius, 8px);
   transition: all 0.3s ease;
 }
 

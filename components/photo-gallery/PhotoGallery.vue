@@ -195,17 +195,16 @@ onUnmounted(() => {
 
 .gallery-title {
   text-align: center;
-  font-size: 2rem;
-  font-weight: 700;
+  /* font-size and font-weight inherited from component-root */
   margin: 0 0 1rem 0;
   color: inherit;
 }
 
 .gallery-description {
   text-align: center;
-  color: #64748b;
+  opacity: 0.8; /* Use opacity instead of fixed color */
   margin: 0 0 2rem 0;
-  line-height: 1.6;
+  /* line-height inherited from component-root */
 }
 
 .gallery-grid {
@@ -229,7 +228,7 @@ onUnmounted(() => {
   position: relative;
   cursor: pointer;
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: var(--component-border-radius, 8px);
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 

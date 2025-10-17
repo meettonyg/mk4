@@ -168,17 +168,16 @@ onMounted(() => {
 
 .video-title {
   text-align: center;
-  font-size: 2rem;
-  font-weight: 700;
+  /* font-size and font-weight inherited from component-root */
   margin: 0 0 1rem 0;
   color: inherit;
 }
 
 .video-description {
   text-align: center;
-  color: #64748b;
+  opacity: 0.8; /* Use opacity instead of fixed color */
   margin: 0 0 2rem 0;
-  line-height: 1.6;
+  /* line-height inherited from component-root */
 }
 
 .video-wrapper {
@@ -186,7 +185,7 @@ onMounted(() => {
   padding-bottom: 56.25%; /* 16:9 aspect ratio */
   height: 0;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: var(--component-border-radius, 8px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
@@ -197,7 +196,7 @@ onMounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  border-radius: 12px;
+  border-radius: var(--component-border-radius, 8px);
 }
 
 .video-placeholder {
@@ -206,12 +205,12 @@ onMounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: #f8fafc;
+  background: var(--card-bg, rgba(248, 250, 252, 0.8));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: var(--component-border-radius, 8px);
 }
 
 .placeholder-icon {
@@ -221,7 +220,7 @@ onMounted(() => {
 }
 
 .video-placeholder p {
-  color: #64748b;
+  opacity: 0.8; /* Use opacity instead of fixed color */
   text-align: center;
   padding: 0 2rem;
 }

@@ -157,16 +157,15 @@ onMounted(() => {
 }
 
 .social-title {
-  font-size: 2rem;
-  font-weight: 700;
+  /* font-size and font-weight inherited from component-root */
   margin: 0 0 1rem 0;
   color: inherit;
 }
 
 .social-description {
-  color: #64748b;
+  opacity: 0.8; /* Use opacity instead of fixed color */
   margin: 0 0 2rem 0;
-  line-height: 1.6;
+  /* line-height inherited from component-root */
 }
 
 .social-links {
@@ -181,18 +180,18 @@ onMounted(() => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  background: #f8fafc;
-  color: #1e293b;
+  background: var(--card-bg, rgba(248, 250, 252, 0.8));
+  color: inherit;
   text-decoration: none;
   border-radius: 50px;
   transition: all 0.3s ease;
-  font-weight: 500;
+  /* font-weight inherited from component-root */
 }
 
 .social-link:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  background: #3b82f6;
+  background: var(--primary-color, #3b82f6);
   color: white;
 }
 

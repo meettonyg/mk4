@@ -208,32 +208,30 @@ onMounted(() => {
 
 .mode-btn {
   padding: 0.5rem 1rem;
-  background: #f8fafc;
+  background: var(--card-bg, rgba(248, 250, 252, 0.8));
   border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  color: #1e293b;
-  font-size: 1rem;
+  border-radius: var(--component-border-radius, 8px);
+  color: inherit;
+  /* font-size and font-weight inherited from component-root */
   cursor: pointer;
   transition: all 0.3s;
-  font-weight: 500;
 }
 
 .mode-btn:hover {
-  background: #3b82f6;
+  background: var(--primary-color, #3b82f6);
   color: white;
-  border-color: #3b82f6;
+  border-color: var(--primary-color, #3b82f6);
 }
 
 .mode-btn.active {
-  background: #3b82f6;
+  background: var(--primary-color, #3b82f6);
   color: white;
-  border-color: #3b82f6;
+  border-color: var(--primary-color, #3b82f6);
 }
 
 /* Section Titles */
 .section-title {
-  font-size: 1.5rem;
-  font-weight: 600;
+  /* font-size and font-weight inherited from component-root */
   margin: 0 0 1.5rem 0;
   text-align: center;
   color: inherit;
@@ -263,8 +261,8 @@ onMounted(() => {
   align-items: center;
   gap: 0.75rem;
   padding: 1rem;
-  background: #f8fafc;
-  border-radius: 8px;
+  background: var(--card-bg, rgba(248, 250, 252, 0.8));
+  border-radius: var(--component-border-radius, 8px);
   transition: transform 0.3s;
 }
 
@@ -284,19 +282,17 @@ onMounted(() => {
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: #3b82f6;
+  background: var(--primary-color, #3b82f6);
   color: white;
   border-radius: 50%;
-  font-weight: 600;
-  font-size: 0.875rem;
+  /* font-weight and font-size inherited from component-root */
   flex-shrink: 0;
 }
 
 .topic-text {
   flex: 1;
-  font-size: 1rem;
-  color: #1e293b;
-  line-height: 1.6;
+  /* font-size and line-height inherited from component-root */
+  color: inherit;
 }
 
 /* Questions Section */
@@ -313,9 +309,9 @@ onMounted(() => {
 }
 
 .question-item {
-  background: #f8fafc;
+  background: var(--card-bg, rgba(248, 250, 252, 0.8));
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: var(--component-border-radius, 8px);
   overflow: hidden;
 }
 
@@ -337,21 +333,20 @@ onMounted(() => {
 }
 
 .question-number {
-  font-weight: 600;
-  color: #3b82f6;
+  /* font-weight inherited from component-root */
+  color: var(--primary-color, #3b82f6);
   flex-shrink: 0;
 }
 
 .question-text {
   flex: 1;
-  font-size: 1rem;
-  color: #1e293b;
-  line-height: 1.6;
+  /* font-size and line-height inherited from component-root */
+  color: inherit;
 }
 
 .accordion-icon {
   font-size: 1.5rem;
-  color: #3b82f6;
+  color: var(--primary-color, #3b82f6);
   flex-shrink: 0;
   width: 24px;
   text-align: center;
@@ -365,7 +360,7 @@ onMounted(() => {
 
 .answer-placeholder p {
   margin: 0;
-  color: #64748b;
+  opacity: 0.8; /* Use opacity instead of fixed color */
   font-style: italic;
 }
 

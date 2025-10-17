@@ -112,10 +112,9 @@ const displayTitle = computed(() => guestTitle.value || '');
 
 /* Name styling */
 .guest-name {
-  font-size: 2rem;
-  font-weight: 700;
+  /* font-size and font-weight inherited from component-root */
   margin: 0 0 0.5rem 0;
-  line-height: 1.2;
+  /* line-height inherited from component-root */
   color: inherit;
 }
 
@@ -123,8 +122,8 @@ const displayTitle = computed(() => guestTitle.value || '');
 .guest-title-line {
   display: flex;
   gap: 0.5rem;
-  font-size: 1.25rem;
-  color: #666666;
+  /* font-size inherited from component-root */
+  opacity: 0.8; /* Use opacity instead of fixed color */
   margin-bottom: 1rem;
   flex-wrap: wrap;
 }
@@ -154,8 +153,8 @@ const displayTitle = computed(() => guestTitle.value || '');
 .guest-tagline {
   margin: 1rem 0;
   padding: 1rem;
-  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-  border-radius: 8px;
+  background: var(--primary-gradient, linear-gradient(135deg, #3b82f6 0%, #2563eb 100%));
+  border-radius: var(--component-border-radius, 8px);
   position: relative;
   overflow: hidden;
 }
@@ -163,8 +162,7 @@ const displayTitle = computed(() => guestTitle.value || '');
 .tagline-text {
   position: relative;
   display: inline-block;
-  font-size: 1.25rem;
-  font-weight: 600;
+  /* font-size and font-weight inherited from component-root */
   color: white;
   font-style: italic;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
@@ -187,8 +185,7 @@ const displayTitle = computed(() => guestTitle.value || '');
 }
 
 .guest-introduction p {
-  font-size: 1rem;
-  line-height: 1.6;
+  /* font-size and line-height inherited from component-root */
   color: inherit;
   margin: 0;
 }

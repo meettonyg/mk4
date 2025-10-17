@@ -125,10 +125,10 @@ const alignment = computed(() => {
 }
 
 .hero-title {
-  font-size: clamp(2rem, 5vw, 3.5rem);
-  font-weight: 700;
+  font-size: clamp(2rem, 5vw, 3.5rem); /* Keep responsive */
+  /* font-weight inherited from component-root */
   margin: 0 0 1rem;
-  line-height: 1.2;
+  /* line-height inherited from component-root */
   color: inherit;
 }
 
@@ -139,7 +139,7 @@ const alignment = computed(() => {
 .hero-subtitle {
   font-size: clamp(1rem, 2vw, 1.25rem);
   margin: 0 0 2rem;
-  line-height: 1.6;
+  /* line-height inherited from component-root */
   opacity: 0.9;
 }
 
@@ -155,28 +155,28 @@ const alignment = computed(() => {
   display: inline-block;
   padding: 12px 32px;
   font-size: 1rem;
-  font-weight: 600;
+  /* font-weight inherited from component-root */
   text-decoration: none;
-  border-radius: 6px;
+  border-radius: var(--button-radius, 6px);
   transition: all 0.3s ease;
-  background-color: #3b82f6;
-  color: white;
+  background-color: var(--primary-color, #3b82f6);
+  color: var(--button-text-color, white);
   cursor: pointer;
 }
 
 .hero-cta:hover {
-  background-color: #2563eb;
+  background-color: var(--primary-hover, #2563eb);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .hero--has-bg .hero-cta {
-  background-color: white;
-  color: #3b82f6;
+  background-color: var(--button-bg-on-image, white);
+  color: var(--button-text-on-image, #3b82f6);
 }
 
 .hero--has-bg .hero-cta:hover {
-  background-color: #f8f9fa;
+  background-color: var(--button-bg-hover-on-image, #f8f9fa);
 }
 
 /* Responsive */

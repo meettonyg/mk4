@@ -166,17 +166,16 @@ onMounted(() => {
 
 .podcast-title {
   text-align: center;
-  font-size: 2rem;
-  font-weight: 700;
+  /* font-size and font-weight inherited from component-root */
   margin: 0 0 1rem 0;
   color: inherit;
 }
 
 .podcast-description {
   text-align: center;
-  color: #64748b;
+  opacity: 0.8; /* Use opacity instead of fixed color */
   margin: 0 0 2rem 0;
-  line-height: 1.6;
+  /* line-height inherited from component-root */
 }
 
 .podcast-episodes {
@@ -186,9 +185,9 @@ onMounted(() => {
 }
 
 .episode-card {
-  background: #f8fafc;
+  background: var(--card-bg, rgba(248, 250, 252, 0.8));
   padding: 1.5rem;
-  border-radius: 12px;
+  border-radius: var(--component-border-radius, 8px);
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   transition: all 0.3s ease;
 }
@@ -206,22 +205,21 @@ onMounted(() => {
 }
 
 .episode-title {
-  color: #1e293b;
-  font-size: 1.25rem;
-  font-weight: 600;
+  color: inherit;
+  /* font-size and font-weight inherited from component-root */
   margin: 0;
   flex: 1;
 }
 
 .episode-duration {
-  color: #64748b;
-  font-size: 0.9rem;
+  opacity: 0.8; /* Use opacity instead of fixed color */
+  /* font-size inherited from component-root */
   flex-shrink: 0;
 }
 
 .episode-description {
-  color: #64748b;
-  line-height: 1.6;
+  opacity: 0.85; /* Use opacity instead of fixed color */
+  /* line-height inherited from component-root */
   margin: 0 0 1rem 0;
 }
 
@@ -241,9 +239,9 @@ onMounted(() => {
   padding: 0.75rem 1.5rem;
   color: white;
   text-decoration: none;
-  border-radius: 6px;
+  border-radius: var(--button-radius, 6px);
   transition: all 0.3s ease;
-  font-weight: 500;
+  /* font-weight inherited from component-root */
 }
 
 .podcast-link:hover {

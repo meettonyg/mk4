@@ -164,8 +164,7 @@ onMounted(() => {
 }
 
 .stats-title {
-  font-size: 2rem;
-  font-weight: 700;
+  /* font-size and font-weight inherited from component-root */
   margin: 0 0 1rem 0;
   text-align: center;
   color: inherit;
@@ -173,7 +172,7 @@ onMounted(() => {
 
 .stats-description {
   text-align: center;
-  color: #64748b;
+  opacity: 0.8; /* Use opacity instead of fixed color */
   margin: 0 0 3rem 0;
 }
 
@@ -197,8 +196,8 @@ onMounted(() => {
 .stat-card {
   text-align: center;
   padding: 2rem 1rem;
-  background: #f8fafc;
-  border-radius: 8px;
+  background: var(--card-bg, rgba(248, 250, 252, 0.8));
+  border-radius: var(--component-border-radius, 8px);
   transition: all 0.3s ease;
 }
 
@@ -243,9 +242,9 @@ onMounted(() => {
 
 .stat-prefix,
 .stat-suffix {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #3b82f6;
+  font-size: 1.5rem; /* Keep for visual hierarchy with numbers */
+  /* font-weight inherited from component-root */
+  color: var(--primary-color, #3b82f6);
 }
 
 .stat-card.style-bold .stat-prefix,
@@ -254,10 +253,10 @@ onMounted(() => {
 }
 
 .stat-number {
-  font-size: 3rem;
-  font-weight: 700;
-  color: #3b82f6;
-  line-height: 1;
+  font-size: 3rem; /* Keep large for emphasis */
+  /* font-weight inherited from component-root */
+  color: var(--primary-color, #3b82f6);
+  line-height: 1; /* Keep tight for numbers */
 }
 
 .stat-card.style-bold .stat-number {
@@ -265,8 +264,7 @@ onMounted(() => {
 }
 
 .stat-label {
-  font-size: 1.125rem;
-  font-weight: 600;
+  /* font-size and font-weight inherited from component-root */
   margin-bottom: 0.5rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -274,10 +272,10 @@ onMounted(() => {
 }
 
 .stat-description-text {
-  font-size: 0.875rem;
-  color: #64748b;
+  /* font-size inherited from component-root */
+  opacity: 0.75; /* Use opacity for hierarchy */
   margin: 0;
-  line-height: 1.4;
+  /* line-height inherited from component-root */
 }
 
 /* Responsive */

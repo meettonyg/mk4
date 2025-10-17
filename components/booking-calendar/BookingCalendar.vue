@@ -255,29 +255,28 @@ onUnmounted(() => {
 
 .booking-title {
   text-align: center;
-  font-size: 2rem;
-  font-weight: 700;
+  /* font-size and font-weight inherited from component-root */
   margin: 0 0 1rem 0;
   color: inherit;
 }
 
 .booking-description {
   text-align: center;
-  color: #64748b;
+  opacity: 0.8; /* Use opacity instead of fixed color */
   margin: 0 0 2rem 0;
-  line-height: 1.6;
+  /* line-height inherited from component-root */
 }
 
 .calendar-embed {
-  background: #f8fafc;
+  background: var(--card-bg, rgba(248, 250, 252, 0.8));
   padding: 1rem;
-  border-radius: 12px;
+  border-radius: var(--component-border-radius, 8px);
 }
 
 .booking-form {
-  background: #f8fafc;
+  background: var(--card-bg, rgba(248, 250, 252, 0.8));
   padding: 2rem;
-  border-radius: 12px;
+  border-radius: var(--component-border-radius, 8px);
   max-width: 500px;
   margin: 0 auto;
 }
@@ -288,9 +287,9 @@ onUnmounted(() => {
 
 .form-group label {
   display: block;
-  color: #1e293b;
+  color: inherit;
   margin-bottom: 0.5rem;
-  font-weight: 600;
+  /* font-weight inherited from component-root */
 }
 
 .form-group input,
@@ -299,8 +298,8 @@ onUnmounted(() => {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 1rem;
+  border-radius: var(--component-border-radius, 8px);
+  /* font-size inherited from component-root */
   font-family: inherit;
   background: white;
   transition: all 0.3s ease;
@@ -310,7 +309,7 @@ onUnmounted(() => {
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--primary-color, #3b82f6);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -320,19 +319,18 @@ onUnmounted(() => {
 
 .submit-button {
   width: 100%;
-  background: #3b82f6;
+  background: var(--primary-color, #3b82f6);
   color: white;
   border: none;
   padding: 1rem;
-  border-radius: 8px;
-  font-size: 1.1rem;
-  font-weight: 600;
+  border-radius: var(--component-border-radius, 8px);
+  /* font-size and font-weight inherited from component-root */
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .submit-button:hover {
-  background: #2563eb;
+  background: var(--primary-hover, #2563eb);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }

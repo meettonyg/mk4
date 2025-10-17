@@ -140,7 +140,8 @@ const formattedBiography = computed(() => {
   width: 100%;
   max-width: 200px;
   height: auto;
-  border-radius: 8px;
+  /* border-radius inherited from theme/settings */
+  border-radius: var(--component-border-radius, 8px);
   display: block;
 }
 
@@ -149,26 +150,25 @@ const formattedBiography = computed(() => {
 }
 
 .biography-name {
-  font-size: 2rem;
-  font-weight: 700;
+  /* font-size and font-weight inherited from component-root */
   margin: 0 0 0.5rem 0;
   color: inherit; /* Inherit from component-root */
 }
 
 .biography-title {
-  font-size: 1.125rem;
-  color: #64748b;
+  /* font-size inherited, use opacity for subtle difference */
+  opacity: 0.8;
   margin: 0 0 0.5rem 0;
 }
 
 .biography-location {
-  font-size: 0.875rem;
-  color: #94a3b8;
+  /* font-size inherited, use opacity for hierarchy */
+  opacity: 0.7;
   margin: 0 0 1rem 0;
 }
 
 .biography-text {
-  line-height: 1.6;
+  /* line-height inherited from component-root via ComponentStyleService */
   color: inherit;
 }
 
@@ -187,14 +187,14 @@ const formattedBiography = computed(() => {
 }
 
 .social-link {
-  font-size: 1.5rem;
-  color: #3b82f6;
+  font-size: 1.5rem; /* Keep for icons */
+  color: var(--primary-color, #3b82f6);
   transition: color 0.2s;
   text-decoration: none;
 }
 
 .social-link:hover {
-  color: #2563eb;
+  color: var(--primary-hover, #2563eb);
 }
 
 /* Responsive */

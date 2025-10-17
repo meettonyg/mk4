@@ -109,8 +109,7 @@ const hasSocialLinks = computed(() => {
 }
 
 .contact-title {
-  font-size: 2rem;
-  font-weight: 700;
+  /* font-size and font-weight inherited from component-root */
   margin: 0 0 1rem 0;
   text-align: center;
   color: inherit;
@@ -118,7 +117,7 @@ const hasSocialLinks = computed(() => {
 
 .contact-description {
   text-align: center;
-  color: #64748b;
+  opacity: 0.8; /* Use opacity instead of fixed color */
   margin: 0 0 2rem 0;
 }
 
@@ -134,8 +133,8 @@ const hasSocialLinks = computed(() => {
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  background: #f8fafc;
-  border-radius: 8px;
+  background: var(--card-bg, rgba(248, 250, 252, 0.8));
+  border-radius: var(--component-border-radius, 8px);
   text-decoration: none;
   color: inherit;
   transition: all 0.2s;
@@ -148,7 +147,7 @@ const hasSocialLinks = computed(() => {
 
 .contact-item i {
   font-size: 1.5rem;
-  color: #3b82f6;
+  color: var(--primary-color, #3b82f6);
   min-width: 1.5rem;
   text-align: center;
 }
@@ -170,15 +169,15 @@ const hasSocialLinks = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8fafc;
+  background: var(--card-bg, rgba(248, 250, 252, 0.8));
   border-radius: 50%;
-  color: #3b82f6;
+  color: var(--primary-color, #3b82f6);
   text-decoration: none;
   transition: all 0.2s;
 }
 
 .social-link:hover {
-  background: #3b82f6;
+  background: var(--primary-color, #3b82f6);
   color: white;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);

@@ -185,21 +185,17 @@ onMounted(() => {
 }
 
 .cta-title {
-  font-size: 2.5rem;
-  font-weight: 700;
+  /* font-size and font-weight inherited from component-root */
   margin: 0 0 1rem 0;
-  line-height: 1.2;
+  /* line-height inherited from component-root */
   color: inherit;
 }
 
 .cta-description {
-  font-size: 1.25rem;
-  line-height: 1.6;
-  margin: 0 0 2rem 0;
+  /* font-size and line-height inherited from component-root */
+  margin: 0 auto 2rem auto;
   opacity: 0.95;
   max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .cta-buttons {
@@ -212,19 +208,18 @@ onMounted(() => {
 .cta-button {
   display: inline-block;
   padding: 1rem 2rem;
-  font-size: 1.1rem;
-  font-weight: 600;
+  /* font-size and font-weight inherited from component-root */
   text-decoration: none;
-  border-radius: 4px;
+  border-radius: var(--button-radius, 6px);
   transition: all 0.3s ease;
   cursor: pointer;
   text-align: center;
 }
 
 .cta-button.primary {
-  background: white;
-  color: #3b82f6;
-  border: 2px solid white;
+  background: var(--button-bg-on-dark, white);
+  color: var(--primary-color, #3b82f6);
+  border: 2px solid var(--button-bg-on-dark, white);
 }
 
 .cta-button.primary:hover {
@@ -235,13 +230,13 @@ onMounted(() => {
 
 .cta-button.secondary {
   background: transparent;
-  color: white;
-  border: 2px solid white;
+  color: var(--button-text-on-dark, white);
+  border: 2px solid var(--button-text-on-dark, white);
 }
 
 .cta-button.secondary:hover {
-  background: white;
-  color: #3b82f6;
+  background: var(--button-bg-on-dark, white);
+  color: var(--primary-color, #3b82f6);
   transform: translateY(-2px);
 }
 

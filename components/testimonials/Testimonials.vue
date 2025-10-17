@@ -200,17 +200,16 @@ onUnmounted(() => {
 
 .testimonials-title {
   text-align: center;
-  font-size: 2rem;
-  font-weight: 700;
+  /* font-size and font-weight inherited from component-root */
   margin: 0 0 1rem 0;
   color: inherit;
 }
 
 .testimonials-description {
   text-align: center;
-  color: #64748b;
+  opacity: 0.8; /* Use opacity instead of fixed color */
   margin: 0 0 2rem 0;
-  line-height: 1.6;
+  /* line-height inherited from component-root */
 }
 
 .testimonials-carousel {
@@ -240,16 +239,16 @@ onUnmounted(() => {
 }
 
 .carousel-control:hover {
-  background: #3b82f6;
+  background: var(--primary-color, #3b82f6);
   color: white;
   transform: scale(1.1);
 }
 
 .testimonial-slide {
   flex: 1;
-  background: #f8fafc;
+  background: var(--card-bg, rgba(248, 250, 252, 0.8));
   padding: 2rem;
-  border-radius: 12px;
+  border-radius: var(--component-border-radius, 8px);
   min-height: 250px;
   display: flex;
   align-items: center;
@@ -261,16 +260,15 @@ onUnmounted(() => {
 
 .quote-mark {
   font-size: 3rem;
-  color: #3b82f6;
+  color: var(--primary-color, #3b82f6);
   line-height: 1;
   margin-bottom: -0.5rem;
   font-family: Georgia, serif;
 }
 
 .testimonial-text {
-  color: #1e293b;
-  font-size: 1.125rem;
-  line-height: 1.7;
+  color: inherit;
+  /* font-size and line-height inherited from component-root */
   margin: 0 0 1.5rem 0;
   font-style: italic;
   min-height: 80px;
@@ -291,15 +289,14 @@ onUnmounted(() => {
 }
 
 .author-name {
-  font-size: 1rem;
-  font-weight: 600;
+  /* font-size and font-weight inherited from component-root */
   margin: 0 0 0.25rem 0;
   color: inherit;
 }
 
 .author-title {
-  color: #64748b;
-  font-size: 0.9rem;
+  opacity: 0.8; /* Use opacity instead of fixed color */
+  /* font-size inherited from component-root */
   margin: 0;
 }
 
@@ -326,7 +323,7 @@ onUnmounted(() => {
 }
 
 .indicator.active {
-  background: #3b82f6;
+  background: var(--primary-color, #3b82f6);
   transform: scale(1.2);
 }
 
