@@ -362,27 +362,52 @@ async function initializeVue() {
     // Use Vue's watch API for deep reactivity on component settings
     console.log('👁️ Setting up component style watcher...');
     
-    // Import watch from Vue
-    const { watch } = await import('vue');
+    // Import watch and toRaw from Vue
+    const { watch, toRaw } = await import('vue');
     
     // Watch the entire components object deeply
     watch(
       () => mediaKitStore.components,
       (newComponents, oldComponents) => {
+        console.log('🔥 WATCHER FIRED!', {
+          newComponentsCount: Object.keys(newComponents).length,
+          oldComponentsCount: oldComponents ? Object.keys(oldComponents).length : 0
+        });
+        
         // Check each component for settings changes
         Object.entries(newComponents).forEach(([componentId, component]) => {
-          if (!component || !component.settings) return;
+          if (!component || !component.settings) {
+            console.log(`⚠️ Component ${componentId} has no settings`);
+            return;
+          }
           
           // Check if settings changed
           const oldComponent = oldComponents?.[componentId];
+          
+          // ROOT FIX: Use toRaw() to unwrap Vue Proxies before comparison
+          const newSettingsRaw = toRaw(component.settings);
+          const oldSettingsRaw = oldComponent?.settings ? toRaw(oldComponent.settings) : null;
+          
           const settingsChanged = !oldComponent || 
-            JSON.stringify(component.settings) !== JSON.stringify(oldComponent.settings);
+            JSON.stringify(newSettingsRaw) !== JSON.stringify(oldSettingsRaw);
+          
+          console.log(`🔍 Checking ${componentId}:`, {
+            hasOldComponent: !!oldComponent,
+            settingsChanged,
+            newSettings: newSettingsRaw,
+            oldSettings: oldSettingsRaw
+          });
+          
+          // DEBUG: Log the actual JSON strings being compared
+          console.log(`📋 JSON COMPARISON for ${componentId}:`);
+          console.log('  New JSON:', JSON.stringify(newSettingsRaw));
+          console.log('  Old JSON:', JSON.stringify(oldSettingsRaw));
+          console.log('  Are they equal?', JSON.stringify(newSettingsRaw) === JSON.stringify(oldSettingsRaw));
           
           if (settingsChanged) {
+            console.log(`🎨 APPLYING STYLES TO: ${componentId}`);
             componentStyleService.applyStyling(componentId, component.settings);
-            if (window.gmkbData?.debugMode) {
-              console.log(`🎨 Reactive style update for ${componentId}`);
-            }
+            console.log(`✅ Reactive style update for ${componentId}`);
           }
         });
       },

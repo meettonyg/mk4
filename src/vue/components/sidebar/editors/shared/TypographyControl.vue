@@ -155,8 +155,15 @@ const props = defineProps({
 const emit = defineEmits(['update']);
 
 // ROOT FIX: Local state for inputs to prevent focus loss
+// Handle both object and number formats for lineHeight
 const localFontSizeValue = ref(props.typography.fontSize?.value || 16);
-const localLineHeight = ref(props.typography.lineHeight || 1.5);
+const getLineHeightValue = (lineHeight) => {
+  if (typeof lineHeight === 'object' && lineHeight !== null) {
+    return lineHeight.value || 1.5;
+  }
+  return lineHeight || 1.5;
+};
+const localLineHeight = ref(getLineHeightValue(props.typography.lineHeight));
 
 // Watch for external changes (like when switching components)
 watch(() => props.typography.fontSize?.value, (newVal) => {
@@ -166,8 +173,11 @@ watch(() => props.typography.fontSize?.value, (newVal) => {
 });
 
 watch(() => props.typography.lineHeight, (newVal) => {
-  if (newVal !== undefined && newVal !== localLineHeight.value) {
-    localLineHeight.value = newVal;
+  if (newVal !== undefined) {
+    const newLineHeightValue = getLineHeightValue(newVal);
+    if (newLineHeightValue !== localLineHeight.value) {
+      localLineHeight.value = newLineHeightValue;
+    }
   }
 });
 
@@ -179,12 +189,13 @@ const presets = [
   { name: 'small', label: 'Small' }
 ];
 
+// ROOT CAUSE FIX: All presets must use lineHeight as {value, unit} object
 const presetValues = {
   body: {
     fontFamily: 'inherit',
     fontSize: { value: 16, unit: 'px' },
     fontWeight: 400,
-    lineHeight: 1.5,
+    lineHeight: { value: 1.5, unit: 'unitless' },
     color: props.typography.color,
     textAlign: props.typography.textAlign
   },
@@ -192,7 +203,7 @@ const presetValues = {
     fontFamily: 'inherit',
     fontSize: { value: 32, unit: 'px' },
     fontWeight: 700,
-    lineHeight: 1.2,
+    lineHeight: { value: 1.2, unit: 'unitless' },
     color: props.typography.color,
     textAlign: props.typography.textAlign
   },
@@ -200,7 +211,7 @@ const presetValues = {
     fontFamily: 'inherit',
     fontSize: { value: 24, unit: 'px' },
     fontWeight: 600,
-    lineHeight: 1.3,
+    lineHeight: { value: 1.3, unit: 'unitless' },
     color: props.typography.color,
     textAlign: props.typography.textAlign
   },
@@ -208,7 +219,7 @@ const presetValues = {
     fontFamily: 'inherit',
     fontSize: { value: 20, unit: 'px' },
     fontWeight: 600,
-    lineHeight: 1.4,
+    lineHeight: { value: 1.4, unit: 'unitless' },
     color: props.typography.color,
     textAlign: props.typography.textAlign
   },
@@ -216,7 +227,7 @@ const presetValues = {
     fontFamily: 'inherit',
     fontSize: { value: 14, unit: 'px' },
     fontWeight: 400,
-    lineHeight: 1.5,
+    lineHeight: { value: 1.5, unit: 'unitless' },
     color: props.typography.color,
     textAlign: props.typography.textAlign
   }
@@ -256,24 +267,29 @@ const debouncedUpdateFontSize = () => {
   }, 300);
 };
 
+// ROOT CAUSE FIX: lineHeight must be emitted as {value, unit} object, not a plain number
 let lineHeightTimeout = null;
 const debouncedUpdateLineHeight = () => {
   if (lineHeightTimeout) clearTimeout(lineHeightTimeout);
   
   lineHeightTimeout = setTimeout(() => {
     const value = parseFloat(localLineHeight.value) || 1.5;
+    // CRITICAL: Emit lineHeight as object to match ComponentStyleService expectations
     emit('update', {
       ...props.typography,
-      lineHeight: value
+      lineHeight: {
+        value: value,
+        unit: 'unitless' // Line height is typically unitless (1.5 = 150% of font size)
+      }
     });
   }, 300);
 };
 
 const applyPreset = (presetName) => {
   const preset = presetValues[presetName];
-  // Update local state
+  // Update local state - extract value from lineHeight object
   localFontSizeValue.value = preset.fontSize.value;
-  localLineHeight.value = preset.lineHeight;
+  localLineHeight.value = preset.lineHeight.value;
   // Emit immediately for presets
   emit('update', preset);
 };
