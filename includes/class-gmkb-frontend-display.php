@@ -523,6 +523,7 @@ class GMKB_Frontend_Display {
     /**
      * Render single component (includes user customizations)
      * ROOT FIX: Enhanced to support advanced settings (custom classes, IDs, responsive visibility)
+     * ROOT FIX 2: Inject ComponentStyleService-compatible CSS
      * 
      * @param array $component Component data
      * @param string $component_id Component ID
@@ -535,8 +536,11 @@ class GMKB_Frontend_Display {
         $component_props = $component['props'] ?? array();
         $component_settings = $component['settings'] ?? array();
         
-        // Build inline styles from component settings (user customizations)
-        $inline_styles = $this->build_component_inline_styles($component_settings);
+        // ROOT FIX: Generate ComponentStyleService-compatible CSS instead of inline styles
+        $this->inject_component_css($component_id, $component_settings);
+        
+        // Build inline styles from component settings (user customizations) - DEPRECATED but kept for legacy
+        $inline_styles = ''; // No longer use inline styles - use injected CSS instead
         
         // Component classes
         $component_classes = array(
@@ -1422,6 +1426,243 @@ class GMKB_Frontend_Display {
         // But we can add a data attribute for JavaScript to handle
         
         return implode('; ', $styles);
+    }
+    
+    /**
+     * ROOT FIX: Inject component CSS matching ComponentStyleService logic
+     * This mirrors the JavaScript generateCSS() method for frontend consistency
+     * 
+     * @param string $component_id Component ID
+     * @param array $settings Component settings
+     */
+    private function inject_component_css($component_id, $settings) {
+        if (empty($settings) || !is_array($settings)) {
+            return;
+        }
+        
+        $style = isset($settings['style']) ? $settings['style'] : array();
+        $advanced = isset($settings['advanced']) ? $settings['advanced'] : array();
+        
+        if (empty($style) && empty($advanced)) {
+            return;
+        }
+        
+        $rules = array();
+        
+        // Selectors matching ComponentStyleService (both builder and frontend)
+        $wrapper_selector = ".gmkb-component[data-component-id=\"{$component_id}\"]";
+        $component_selector = ".gmkb-component[data-component-id=\"{$component_id}\"] .component-root";
+        
+        $wrapper_rules = array(); // For margin only
+        $component_rules = array(); // For everything else
+        
+        // SPACING
+        if (!empty($style['spacing'])) {
+            // Margin (wrapper)
+            if (!empty($style['spacing']['margin'])) {
+                $m = $style['spacing']['margin'];
+                $unit = isset($m['unit']) ? $m['unit'] : 'px';
+                $wrapper_rules[] = "margin: {$m['top']}{$unit} {$m['right']}{$unit} {$m['bottom']}{$unit} {$m['left']}{$unit}";
+            }
+            // Padding (component root)
+            if (!empty($style['spacing']['padding'])) {
+                $p = $style['spacing']['padding'];
+                $unit = isset($p['unit']) ? $p['unit'] : 'px';
+                $component_rules[] = "padding: {$p['top']}{$unit} {$p['right']}{$unit} {$p['bottom']}{$unit} {$p['left']}{$unit}";
+            }
+        }
+        
+        // BACKGROUND
+        if (!empty($style['background'])) {
+            if (!empty($style['background']['color'])) {
+                $component_rules[] = "background-color: {$style['background']['color']} !important";
+            }
+            if (isset($style['background']['opacity']) && $style['background']['opacity'] !== 100) {
+                $opacity = $style['background']['opacity'] / 100;
+                $component_rules[] = "opacity: {$opacity}";
+            }
+        }
+        
+        // TYPOGRAPHY - CRITICAL: Must include !important to override component defaults
+        if (!empty($style['typography'])) {
+            $t = $style['typography'];
+            
+            if (!empty($t['fontFamily'])) {
+                $font_family = $this->format_font_family($t['fontFamily']);
+                $component_rules[] = "font-family: {$font_family} !important";
+            }
+            
+            if (!empty($t['fontSize'])) {
+                $unit = isset($t['fontSize']['unit']) ? $t['fontSize']['unit'] : 'px';
+                $component_rules[] = "font-size: {$t['fontSize']['value']}{$unit} !important";
+            }
+            
+            if (!empty($t['fontWeight'])) {
+                $component_rules[] = "font-weight: {$t['fontWeight']} !important";
+            }
+            
+            if (!empty($t['lineHeight'])) {
+                if (is_array($t['lineHeight']) && isset($t['lineHeight']['value'])) {
+                    $lh_value = $t['lineHeight']['value'];
+                    $lh_unit = isset($t['lineHeight']['unit']) && $t['lineHeight']['unit'] !== 'unitless' ? $t['lineHeight']['unit'] : '';
+                    $component_rules[] = "line-height: {$lh_value}{$lh_unit} !important";
+                } else {
+                    $component_rules[] = "line-height: {$t['lineHeight']} !important";
+                }
+            }
+            
+            if (!empty($t['color'])) {
+                $component_rules[] = "color: {$t['color']} !important";
+            }
+            
+            if (!empty($t['textAlign'])) {
+                $component_rules[] = "text-align: {$t['textAlign']} !important";
+            }
+        }
+        
+        // BORDER
+        if (!empty($style['border'])) {
+            $b = $style['border'];
+            
+            if (!empty($b['width'])) {
+                $unit = isset($b['width']['unit']) ? $b['width']['unit'] : 'px';
+                $has_width = !empty($b['width']['top']) || !empty($b['width']['right']) || 
+                            !empty($b['width']['bottom']) || !empty($b['width']['left']);
+                
+                if ($has_width) {
+                    $top = isset($b['width']['top']) ? $b['width']['top'] : 0;
+                    $right = isset($b['width']['right']) ? $b['width']['right'] : 0;
+                    $bottom = isset($b['width']['bottom']) ? $b['width']['bottom'] : 0;
+                    $left = isset($b['width']['left']) ? $b['width']['left'] : 0;
+                    
+                    $component_rules[] = "border-width: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}";
+                    
+                    if (!empty($b['color'])) {
+                        $component_rules[] = "border-color: {$b['color']}";
+                    }
+                    if (!empty($b['style'])) {
+                        $component_rules[] = "border-style: {$b['style']}";
+                    }
+                }
+            }
+            
+            if (!empty($b['radius'])) {
+                $unit = isset($b['radius']['unit']) ? $b['radius']['unit'] : 'px';
+                $tl = isset($b['radius']['topLeft']) ? $b['radius']['topLeft'] : 0;
+                $tr = isset($b['radius']['topRight']) ? $b['radius']['topRight'] : 0;
+                $br = isset($b['radius']['bottomRight']) ? $b['radius']['bottomRight'] : 0;
+                $bl = isset($b['radius']['bottomLeft']) ? $b['radius']['bottomLeft'] : 0;
+                
+                $component_rules[] = "border-radius: {$tl}{$unit} {$tr}{$unit} {$br}{$unit} {$bl}{$unit}";
+            }
+        }
+        
+        // EFFECTS
+        if (!empty($style['effects'])) {
+            if (!empty($style['effects']['boxShadow']) && $style['effects']['boxShadow'] !== 'none') {
+                $component_rules[] = "box-shadow: {$style['effects']['boxShadow']} !important";
+            }
+            if (isset($style['effects']['opacity']) && $style['effects']['opacity'] !== 100) {
+                $opacity = $style['effects']['opacity'] / 100;
+                $component_rules[] = "opacity: {$opacity} !important";
+            }
+        }
+        
+        // ADVANCED LAYOUT
+        if (!empty($advanced['layout'])) {
+            $layout = $advanced['layout'];
+            
+            if (!empty($layout['width'])) {
+                if ($layout['width']['type'] === 'full') {
+                    $wrapper_rules[] = 'width: 100%';
+                } elseif ($layout['width']['type'] === 'custom' && isset($layout['width']['value'])) {
+                    $unit = isset($layout['width']['unit']) ? $layout['width']['unit'] : 'px';
+                    $wrapper_rules[] = "width: {$layout['width']['value']}{$unit}";
+                }
+            }
+            
+            if (!empty($layout['alignment'])) {
+                if ($layout['alignment'] === 'center') {
+                    $wrapper_rules[] = 'margin-left: auto';
+                    $wrapper_rules[] = 'margin-right: auto';
+                } elseif ($layout['alignment'] === 'right') {
+                    $wrapper_rules[] = 'margin-left: auto';
+                }
+            }
+        }
+        
+        // Build CSS
+        $css = '';
+        
+        if (!empty($wrapper_rules)) {
+            $css .= $wrapper_selector . " { " . implode('; ', $wrapper_rules) . "; }\n";
+        }
+        
+        if (!empty($component_rules)) {
+            $css .= $component_selector . " { " . implode('; ', $component_rules) . "; }\n";
+        }
+        
+        // RESPONSIVE
+        if (!empty($advanced['responsive'])) {
+            $resp = $advanced['responsive'];
+            
+            if (!empty($resp['hideOnMobile'])) {
+                $css .= "@media (max-width: 767px) { {$wrapper_selector} { display: none !important; } }\n";
+            }
+            
+            if (!empty($resp['hideOnTablet'])) {
+                $css .= "@media (min-width: 768px) and (max-width: 1024px) { {$wrapper_selector} { display: none !important; } }\n";
+            }
+            
+            if (!empty($resp['hideOnDesktop'])) {
+                $css .= "@media (min-width: 1025px) { {$wrapper_selector} { display: none !important; } }\n";
+            }
+        }
+        
+        if (!empty($css)) {
+            echo "<style id=\"component-styles-{$component_id}\">\n{$css}</style>\n";
+        }
+    }
+    
+    /**
+     * Format font family for CSS (helper method)
+     * 
+     * @param string $font_family Font family value
+     * @return string Formatted CSS font-family value
+     */
+    private function format_font_family($font_family) {
+        if (!$font_family) return 'inherit';
+        
+        // Decode HTML entities
+        $decoded = html_entity_decode($font_family, ENT_QUOTES, 'UTF-8');
+        
+        // Split by comma to handle font stacks
+        $fonts = array_map('trim', explode(',', $decoded));
+        
+        $formatted = array();
+        $generic_families = array('serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'inherit');
+        
+        foreach ($fonts as $font) {
+            // Don't quote generic families
+            if (in_array(strtolower($font), $generic_families)) {
+                $formatted[] = $font;
+            }
+            // Quote fonts with spaces
+            elseif (strpos($font, ' ') !== false && strpos($font, "'") !== 0 && strpos($font, '"') !== 0) {
+                $formatted[] = "'{$font}'";
+            }
+            // Remove and re-add quotes for consistency
+            else {
+                $unquoted = trim($font, '"\' ');
+                if (strpos($unquoted, ' ') !== false) {
+                    $formatted[] = "'{$unquoted}'";
+                } else {
+                    $formatted[] = $unquoted;
+                }
+            }
+        }
+        
+        return implode(', ', $formatted);
     }
     
     /**
