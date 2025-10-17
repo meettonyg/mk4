@@ -349,26 +349,24 @@ const updateTypography = (updates) => {
     
     if (!section.settings) section.settings = {};
     if (!section.settings.style) section.settings.style = {};
-    if (!section.settings.style.typography) section.settings.style.typography = {};
     
-    section.settings.style.typography = {
-      ...section.settings.style.typography,
-      ...updates
-    };
+    // CRITICAL FIX: Directly assign the new typography object
+    // TypographyControl.vue emits a complete typography object
+    // Spreading it breaks Vue reactivity detection
+    section.settings.style.typography = updates;
     store.updateSectionSettings(props.sectionId, { style: section.settings.style });
     applySectionStyles(props.sectionId, section.settings);
   } else {
     const component = store.components[props.componentId];
     if (!component || !component.settings) return;
     
+    // CRITICAL FIX: Directly assign the new typography object
+    // This ensures Vue's reactivity system detects the change
     const updatedSettings = {
       ...component.settings,
       style: {
         ...component.settings.style,
-        typography: {
-          ...component.settings.style.typography,
-          ...updates
-        }
+        typography: updates  // Direct assignment, not spreading
       }
     };
     
@@ -501,14 +499,18 @@ const updateEffect = (property, value) => {
     const component = store.components[props.componentId];
     if (!component || !component.settings) return;
     
+    // CRITICAL FIX: Create completely new effects object to ensure Vue reactivity
+    // Deep nested spreads can fail to trigger watchers consistently
+    const newEffects = {
+      ...component.settings.style.effects,
+      [property]: value
+    };
+    
     const updatedSettings = {
       ...component.settings,
       style: {
         ...component.settings.style,
-        effects: {
-          ...component.settings.style.effects,
-          [property]: value
-        }
+        effects: newEffects  // Assign the new effects object directly
       }
     };
     

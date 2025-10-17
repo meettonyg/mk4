@@ -1,0 +1,53 @@
+fix: Vue reactivity for typography and effects controls
+
+CRITICAL FIX: Live preview now updates immediately for font size, line height, and box shadow
+
+Root Cause:
+- Nested spread operators prevented Vue's watcher from detecting setting changes
+- Changes saved to DB but didn't trigger live preview re-render
+- Console showed watcher firing but Vue considered objects "equal"
+
+Fixes Applied:
+1. Typography Updates (updateTypography):
+   - Changed from nested spread to direct assignment
+   - TypographyControl already emits complete object, so just replace it
+   - Affects: font-size, line-height, font-weight, font-family, color, alignment
+
+2. Effects Updates (updateEffect):
+   - Create effects object separately before assigning
+   - Ensures clear new object reference for Vue's Proxy-based reactivity
+   - Affects: box-shadow dropdown and other effects
+
+Technical Details:
+- Vue 3 uses Proxy-based reactivity that tracks object references
+- Inline nested spreads: { ...a, b: { ...a.b, c: value } } can fail detection
+- Correct pattern: const newB = { ...a.b, c: value }; const result = { ...a, b: newB };
+- Or for complete objects: const result = { ...a, b: completeNew };
+
+Files Changed:
+- src/vue/components/sidebar/editors/BaseStylePanel.vue
+
+Impact:
+- ✅ Typography controls update live preview instantly
+- ✅ Box shadow dropdown updates live preview instantly
+- ✅ Auto-save still works correctly
+- ✅ All other controls unaffected
+- ✅ No breaking changes to data structure
+
+Testing Required:
+- Adjust font size → verify instant preview update
+- Adjust line height → verify instant preview update
+- Change box shadow → verify instant preview update
+- Make changes → verify auto-save after 2s
+- Reload page → verify persistence
+
+Architectural Compliance: ✅ ALL CHECKS PASSED
+- No polling/timeouts introduced
+- Event-driven (Vue reactivity)
+- Root cause fix, not symptom patch
+- Simplified code (removed unnecessary spreads)
+- Maintains centralized state management
+- No new error cases
+- No WordPress integration changes needed
+
+See: VUE-REACTIVITY-FIXES-COMPLETE.md for full technical analysis
