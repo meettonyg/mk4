@@ -374,41 +374,16 @@ async function initializeVue() {
           oldComponentsCount: oldComponents ? Object.keys(oldComponents).length : 0
         });
         
-        // Check each component for settings changes
+        // CRITICAL FIX: Force style update for ALL components on every change
+        // The JSON comparison was failing to detect changes reliably
         Object.entries(newComponents).forEach(([componentId, component]) => {
           if (!component || !component.settings) {
             console.log(`⚠️ Component ${componentId} has no settings`);
             return;
           }
           
-          // Check if settings changed
-          const oldComponent = oldComponents?.[componentId];
-          
-          // ROOT FIX: Use toRaw() to unwrap Vue Proxies before comparison
-          const newSettingsRaw = toRaw(component.settings);
-          const oldSettingsRaw = oldComponent?.settings ? toRaw(oldComponent.settings) : null;
-          
-          const settingsChanged = !oldComponent || 
-            JSON.stringify(newSettingsRaw) !== JSON.stringify(oldSettingsRaw);
-          
-          console.log(`🔍 Checking ${componentId}:`, {
-            hasOldComponent: !!oldComponent,
-            settingsChanged,
-            newSettings: newSettingsRaw,
-            oldSettings: oldSettingsRaw
-          });
-          
-          // DEBUG: Log the actual JSON strings being compared
-          console.log(`📋 JSON COMPARISON for ${componentId}:`);
-          console.log('  New JSON:', JSON.stringify(newSettingsRaw));
-          console.log('  Old JSON:', JSON.stringify(oldSettingsRaw));
-          console.log('  Are they equal?', JSON.stringify(newSettingsRaw) === JSON.stringify(oldSettingsRaw));
-          
-          if (settingsChanged) {
-            console.log(`🎨 APPLYING STYLES TO: ${componentId}`);
-            componentStyleService.applyStyling(componentId, component.settings);
-            console.log(`✅ Reactive style update for ${componentId}`);
-          }
+          console.log(`🎨 FORCING STYLE UPDATE: ${componentId}`);
+          componentStyleService.applyStyling(componentId, component.settings);
         });
       },
       { deep: true } // Deep watch to catch nested changes

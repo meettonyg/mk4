@@ -27,12 +27,9 @@ class ComponentStyleService {
     }
 
     try {
-      // Check if settings actually changed (optimization)
-      const settingsHash = JSON.stringify(settings);
-      if (this.settingsCache.get(componentId) === settingsHash) {
-        // No changes, skip update
-        return;
-      }
+      // CRITICAL FIX: Remove cache check - always apply styles when called
+      // The watcher in main.js will only call this when changes occur
+      // The previous cache was preventing legitimate updates
       
       // Generate CSS
       const css = this.generateCSS(componentId, settings);
@@ -40,7 +37,8 @@ class ComponentStyleService {
       // Inject or update styles
       this.injectStyles(componentId, css);
       
-      // Cache settings hash
+      // Cache settings hash for debugging
+      const settingsHash = JSON.stringify(settings);
       this.settingsCache.set(componentId, settingsHash);
       
       if (window.gmkbData?.debugMode) {
