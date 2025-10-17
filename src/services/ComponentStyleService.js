@@ -273,8 +273,18 @@ class ComponentStyleService {
 
     // PHASE 5: Higher specificity selectors (0,2,1) to beat component base styles (0,1,0)
     // Wrapper = margin only, Component root = everything else
-    const wrapperSelector = `.gmkb-component[data-component-id="${componentId}"]`;
-    const componentSelector = `.gmkb-component[data-component-id="${componentId}"] .component-root`;
+    // ROOT FIX: Support BOTH builder (.component-wrapper) AND frontend (.gmkb-component)
+    // Generate CSS for both selectors to ensure styles work everywhere
+    const builderWrapperSelector = `.component-wrapper[data-component-id="${componentId}"]`;
+    const builderComponentSelector = `.component-wrapper[data-component-id="${componentId}"] .component-root`;
+    
+    // Frontend uses different class names
+    const frontendWrapperSelector = `.gmkb-component[data-component-id="${componentId}"]`;
+    const frontendComponentSelector = `.gmkb-component[data-component-id="${componentId}"] .component-root`;
+    
+    // Combine selectors with comma for both environments
+    const wrapperSelector = `${builderWrapperSelector}, ${frontendWrapperSelector}`;
+    const componentSelector = `${builderComponentSelector}, ${frontendComponentSelector}`;
 
     // Build CSS rules
     const wrapperRules = []; // For margin only

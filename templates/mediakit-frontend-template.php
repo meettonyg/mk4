@@ -338,50 +338,56 @@ function render_component($component, $post_id, $index = 0) {
     }
     ?>
     
-    <div class="gmkb-component gmkb-component--<?php echo esc_attr($component_type); ?>" 
-         data-component-id="<?php echo esc_attr($component_id); ?>"
-         data-component-type="<?php echo esc_attr($component_type); ?>"
-         data-component-index="<?php echo esc_attr($index); ?>">
+    <?php
+    // ROOT FIX: Don't double-wrap - component templates already include the wrapper
+    // Try to load component template
+    $component_template = GMKB_PLUGIN_DIR . "components/{$component_type}/frontend-template.php";
+    
+    // If no frontend template, try regular template
+    if (!file_exists($component_template)) {
+        $component_template = GMKB_PLUGIN_DIR . "components/{$component_type}/template.php";
+    }
+    
+    if (file_exists($component_template)) {
+        // ROOT FIX: Merge props and data - props take precedence
+        $merged_props = array_merge($component_data, $component_props);
         
-        <?php
-        // Try to load component template
-        $component_template = GMKB_PLUGIN_DIR . "components/{$component_type}/frontend-template.php";
-        
-        // If no frontend template, try regular template
-        if (!file_exists($component_template)) {
-            $component_template = GMKB_PLUGIN_DIR . "components/{$component_type}/template.php";
+        // ROOT FIX: Extract merged props as variables for the template
+        if (!empty($merged_props)) {
+            extract($merged_props, EXTR_SKIP);
         }
         
-        if (file_exists($component_template)) {
-            // ROOT FIX: Merge props and data - props take precedence
-            $merged_props = array_merge($component_data, $component_props);
-            
-            // ROOT FIX: Extract merged props as variables for the template
-            if (!empty($merged_props)) {
-                extract($merged_props, EXTR_SKIP);
-            }
-            
-            // ROOT FIX: Set up the $props array that templates expect
-            $props = array_merge($merged_props, array(
-                'component_id' => $component_id,
-                'is_frontend' => true,
-                'post_id' => $post_id
-            ));
-            
-            // ROOT FIX: Also make data available separately
-            $data = $component_data;
-            
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('Template variables for ' . $component_type . ': ' . print_r(array_keys($merged_props), true));
-            }
-            
-            // Include template
-            include $component_template;
-        } else {
-            echo render_component_fallback($component_type, $component_data, $component_props);
+        // ROOT FIX: Set up the $props array that templates expect
+        $props = array_merge($merged_props, array(
+            'component_id' => $component_id,
+            'is_frontend' => true,
+            'post_id' => $post_id
+        ));
+        
+        // ROOT FIX: Also make data available separately
+        $data = $component_data;
+        
+        // ROOT FIX: Pass componentId for template compatibility
+        $componentId = $component_id;
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('Template variables for ' . $component_type . ': ' . print_r(array_keys($merged_props), true));
         }
+        
+        // Include template (which includes its own wrapper)
+        include $component_template;
+    } else {
+        // Fallback still needs wrapper since it doesn't have a template
         ?>
-    </div>
+        <div class="gmkb-component gmkb-component--<?php echo esc_attr($component_type); ?>" 
+             data-component-id="<?php echo esc_attr($component_id); ?>"
+             data-component-type="<?php echo esc_attr($component_type); ?>"
+             data-component-index="<?php echo esc_attr($index); ?>">
+            <?php echo render_component_fallback($component_type, $component_data, $component_props); ?>
+        </div>
+        <?php
+    }
+    ?>
     <?php
 }
 
