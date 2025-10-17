@@ -1,7 +1,7 @@
 <template>
   <!-- ROOT FIX: Use design system classes -->
   <div class="gmkb-component gmkb-component--biography" :data-component-id="componentId">
-    <div class="biography-content">
+    <div class="component-root biography-content">
       <h2 v-if="name" class="biography-name">{{ name }}</h2>
       <p v-if="title" class="biography-title">{{ title }}</p>
       <div v-if="biography" class="biography-text" v-html="formattedBio"></div>

@@ -1,6 +1,6 @@
 <template>
   <div class="gmkb-component gmkb-component--podcastplayer" :data-component-id="componentId">
-    <div class="podcast-container">
+    <div class="component-root podcast-container">
       <h2 v-if="title" class="podcast-title">{{ title }}</h2>
       <p v-if="description" class="podcast-description">{{ description }}</p>
       

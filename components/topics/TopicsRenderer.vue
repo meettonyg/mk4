@@ -1,7 +1,7 @@
 <template>
   <!-- ROOT FIX: Use design system classes -->
   <div class="gmkb-component gmkb-component--topics" :data-component-id="componentId">
-    <div class="topics-container">
+    <div class="component-root topics-container">
       <h2 v-if="title" class="topics-title">{{ title }}</h2>
       <p v-if="description" class="topics-description">{{ description }}</p>
       

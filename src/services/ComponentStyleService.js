@@ -16,6 +16,124 @@ class ComponentStyleService {
   }
 
   /**
+   * Apply section styling (PHASE 6)
+   * @param {string} sectionId - Section ID
+   * @param {Object} settings - Section settings
+   */
+  applySectionStyling(sectionId, settings) {
+    if (!sectionId || typeof sectionId !== 'string') {
+      console.warn('⚠️ Invalid sectionId for applySectionStyling:', sectionId);
+      return;
+    }
+
+    if (!settings || typeof settings !== 'object') {
+      console.warn('⚠️ Invalid settings for applySectionStyling:', settings);
+      return;
+    }
+
+    try {
+      console.log(`🎨 applySectionStyling CALLED for ${sectionId}`);
+      console.log('  Settings:', settings);
+
+      // Generate CSS variables for section
+      const css = this.generateSectionCSS(sectionId, settings);
+
+      console.log(`🎨 Generated section CSS for ${sectionId}:`);
+      console.log(css || '(empty CSS)');
+
+      // Inject or update styles
+      this.injectStyles(`section-${sectionId}`, css);
+
+      console.log(`✅ Applied section styles to ${sectionId}`);
+    } catch (error) {
+      console.error(`❌ Failed to apply section styles to ${sectionId}:`, error);
+      console.error('  Error stack:', error.stack);
+    }
+  }
+
+  /**
+   * Generate section CSS variables (PHASE 6)
+   * Section variables cascade to all components within the section
+   * @param {string} sectionId - Section ID
+   * @param {Object} settings - Section settings
+   * @returns {string} CSS string
+   */
+  generateSectionCSS(sectionId, settings) {
+    if (!settings || typeof settings !== 'object') {
+      return '';
+    }
+
+    const { style } = settings;
+    if (!style) {
+      return '';
+    }
+
+    const vars = [];
+    const selector = `[data-section-id="${sectionId}"]`;
+
+    // Section-level typography variables
+    if (style.typography) {
+      const t = style.typography;
+      if (t.fontFamily) vars.push(`--section-font-family: ${t.fontFamily}`);
+      if (t.fontSize) vars.push(`--section-font-size: ${t.fontSize.value}${t.fontSize.unit}`);
+      if (t.fontWeight) vars.push(`--section-font-weight: ${t.fontWeight}`);
+      
+      if (t.lineHeight) {
+        if (typeof t.lineHeight === 'object' && t.lineHeight.value !== undefined) {
+          const lineHeightValue = t.lineHeight.unit === 'unitless' 
+            ? t.lineHeight.value
+            : `${t.lineHeight.value}${t.lineHeight.unit}`;
+          vars.push(`--section-line-height: ${lineHeightValue}`);
+        } else if (typeof t.lineHeight === 'number' || typeof t.lineHeight === 'string') {
+          vars.push(`--section-line-height: ${t.lineHeight}`);
+        }
+      }
+      
+      if (t.color) vars.push(`--section-color: ${t.color}`);
+      if (t.textAlign) vars.push(`--section-text-align: ${t.textAlign}`);
+    }
+
+    // Section-level spacing variables
+    if (style.spacing) {
+      if (style.spacing.padding) {
+        const p = style.spacing.padding;
+        vars.push(`--section-padding: ${p.top}${p.unit} ${p.right}${p.unit} ${p.bottom}${p.unit} ${p.left}${p.unit}`);
+      }
+    }
+
+    // Section-level background
+    if (style.background) {
+      if (style.background.color) {
+        vars.push(`--section-background-color: ${style.background.color}`);
+      }
+    }
+
+    if (vars.length === 0) {
+      return '';
+    }
+
+    return `${selector} {\n  ${vars.join(';\n  ')};\n}`;
+  }
+
+  /**
+   * Clear section styles
+   * @param {string} sectionId - Section ID
+   */
+  clearSectionStyles(sectionId) {
+    const styleKey = `section-${sectionId}`;
+    const styleEl = this.styleElements.get(styleKey);
+    if (styleEl) {
+      styleEl.remove();
+      this.styleElements.delete(styleKey);
+      this.settingsCache.delete(styleKey);
+      
+      if (window.gmkbData?.debugMode) {
+        console.log(`🗑️ Cleared section styles for ${sectionId}`);
+      }
+    }
+  }
+
+  /**
    * Apply styling to a component
    * @param {string} componentId - Component ID
    * @param {Object} settings - Component settings object
@@ -90,10 +208,10 @@ class ComponentStyleService {
 
     const rules = [];
 
-    // V2 ARCHITECTURE: Simplified selectors - target component-root directly
+    // PHASE 5: Higher specificity selectors (0,2,1) to beat component base styles (0,1,0)
     // Wrapper = margin only, Component root = everything else
-    const wrapperSelector = `[data-component-id="${componentId}"]`;
-    const componentSelector = `[data-component-id="${componentId}"] .component-root`;
+    const wrapperSelector = `.gmkb-component[data-component-id="${componentId}"]`;
+    const componentSelector = `.gmkb-component[data-component-id="${componentId}"] .component-root`;
 
     // Build CSS rules
     const wrapperRules = []; // For margin only

@@ -18,6 +18,7 @@ if (!is_array($buttons)) {
 ?>
 <!-- ROOT FIX: Exact same structure as Vue -->
 <div class="gmkb-component gmkb-component--calltoaction" data-component-id="<?php echo esc_attr($component_id); ?>">
+    <div class="component-root cta-content">
     <?php if ($title): ?>
         <h2 class="cta-title"><?php echo esc_html($title); ?></h2>
     <?php endif; ?>
@@ -43,4 +44,5 @@ if (!is_array($buttons)) {
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
+    </div>  <!-- close component-root -->
 </div>

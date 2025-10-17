@@ -16,6 +16,7 @@ $ctaUrl = $props['ctaUrl'] ?? $props['cta_url'] ?? $props['buttonUrl'] ?? '#';
 ?>
 <!-- ROOT FIX: Exact same structure as Vue -->
 <div class="gmkb-component gmkb-component--hero" data-component-id="<?php echo esc_attr($component_id); ?>">
+    <div class="component-root hero-content">
     <?php if ($imageUrl): ?>
         <div class="hero__avatar">
             <img src="<?php echo esc_url($imageUrl); ?>" alt="<?php echo esc_attr($name ?: 'Profile Avatar'); ?>">
@@ -39,4 +40,5 @@ $ctaUrl = $props['ctaUrl'] ?? $props['cta_url'] ?? $props['buttonUrl'] ?? '#';
             <button class="btn"><?php echo esc_html($ctaText); ?></button>
         </div>
     <?php endif; ?>
+    </div>
 </div>

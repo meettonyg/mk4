@@ -8,6 +8,7 @@ $questions = $props['questions'] ?? [];
 if (!is_array($questions)) $questions = [];
 ?>
 <div class="gmkb-component gmkb-component--questions" data-component-id="<?php echo esc_attr($component_id); ?>">
+    <div class="component-root questions-content">
     <?php if ($title): ?>
         <h2 class="section-title"><?php echo esc_html($title); ?></h2>
     <?php endif; ?>
@@ -27,4 +28,5 @@ if (!is_array($questions)) $questions = [];
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
+    </div>  <!-- close component-root -->
 </div>

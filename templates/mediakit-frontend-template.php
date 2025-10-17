@@ -176,7 +176,9 @@ if (class_exists('GMKB_Frontend_Display')) {
     // Basic display mode (when enhanced display class is not available)
     ?>
     <!-- Media Kit Container -->
-    <article id="gmkb-media-kit-<?php echo esc_attr($post_id); ?>" class="gmkb-media-kit-container gmkb-frontend-display">
+    <article id="gmkb-media-kit-<?php echo esc_attr($post_id); ?>" 
+             class="gmkb-media-kit-container gmkb-frontend-display"
+             data-gmkb-theme="<?php echo esc_attr($global_settings['theme'] ?? 'professional_clean'); ?>">
     
     <?php if (empty($components) && empty($sections)): ?>
         <!-- Empty State -->

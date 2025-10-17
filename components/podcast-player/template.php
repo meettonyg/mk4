@@ -29,6 +29,7 @@ $title = $title ?? 'Podcast Episodes';
 $componentId = $componentId ?? 'podcast-player-' . time();
 ?>
 <div class="gmkb-component gmkb-component--podcastplayer editable-element" data-element="podcast-player" data-component="podcast-player" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="podcast-player">
+    <div class="component-root podcast-container">
     <div class="element-controls">
         <button class="control-btn" title="Move Up">↑</button>
         <button class="control-btn" title="Move Down">↓</button>
@@ -125,4 +126,5 @@ $componentId = $componentId ?? 'podcast-player-' . time();
             </div>
         </div>
     <?php endif; ?>
+    </div>  <!-- close component-root -->
 </div>

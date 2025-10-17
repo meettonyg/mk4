@@ -1,6 +1,7 @@
 <template>
   <!-- ROOT FIX: Use design system classes -->
   <div class="gmkb-component gmkb-component--testimonials" :data-component-id="componentId">
+    <div class="component-root testimonials-content">
     <h2 v-if="title" class="section-title">{{ title }}</h2>
     
     <div class="testimonials-grid">
@@ -15,6 +16,7 @@
           <div v-if="testimonial.title" class="author-title">{{ testimonial.title }}</div>
         </div>
       </div>
+    </div>
     </div>
   </div>
 </template>

@@ -1,6 +1,7 @@
 <template>
   <!-- ROOT FIX: Use design system classes -->
   <div class="gmkb-component gmkb-component--videointro" :data-component-id="componentId">
+    <div class="component-root video-intro-content">
     <h2 v-if="title" class="section-title">{{ title }}</h2>
     <div class="video-container">
       <iframe
@@ -13,6 +14,7 @@
       <p v-else class="video-placeholder">Add your video URL</p>
     </div>
     <p v-if="description" class="video-description">{{ description }}</p>
+    </div>
   </div>
 </template>
 

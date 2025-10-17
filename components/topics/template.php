@@ -18,7 +18,7 @@ if (!is_array($topics)) {
 ?>
 <!-- ROOT FIX: Exact same structure as Vue -->
 <div class="gmkb-component gmkb-component--topics" data-component-id="<?php echo esc_attr($component_id); ?>">
-    <div class="topics-container">
+    <div class="component-root topics-container">
         <?php if ($title): ?>
             <h2 class="topics-title"><?php echo esc_html($title); ?></h2>
         <?php endif; ?>

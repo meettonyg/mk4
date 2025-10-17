@@ -20,7 +20,7 @@ if ($company) {
 ?>
 <!-- ROOT FIX: Exact same structure as Vue -->
 <div class="gmkb-component gmkb-component--biography" data-component-id="<?php echo esc_attr($component_id); ?>">
-    <div class="biography-content">
+    <div class="component-root biography-content">
         <?php if ($name): ?>
             <h2 class="biography-name"><?php echo esc_html($name); ?></h2>
         <?php endif; ?>

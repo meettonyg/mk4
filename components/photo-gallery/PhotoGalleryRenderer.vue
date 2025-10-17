@@ -1,6 +1,7 @@
 <template>
   <!-- ROOT FIX: Use design system classes -->
   <div class="gmkb-component gmkb-component--photogallery" :data-component-id="componentId">
+    <div class="component-root photo-gallery-content">
     <h2 v-if="title" class="section-title">{{ title }}</h2>
     
     <div class="photo-gallery-grid">
@@ -12,6 +13,7 @@
         <img :src="photo.url" :alt="photo.caption || `Photo ${index + 1}`" />
         <div v-if="photo.caption" class="photo-caption">{{ photo.caption }}</div>
       </div>
+    </div>
     </div>
   </div>
 </template>

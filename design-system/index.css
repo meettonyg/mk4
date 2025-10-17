@@ -70,6 +70,120 @@ button {
 }
 
 /* ==========================================
+   BASE TYPOGRAPHY - CASCADES TO ALL ELEMENTS
+   Applied at root, inherited by all children
+   Can be overridden by theme, section, or component custom styles
+   ========================================== */
+
+/* Apply to body and theme wrapper */
+body,
+.gmkb-frontend-display,
+[data-gmkb-theme] {
+  font-family: var(--gmkb-font-primary);
+  font-size: var(--gmkb-font-size-base);
+  font-weight: var(--gmkb-font-weight-normal);
+  line-height: var(--gmkb-line-height-normal);
+  color: var(--gmkb-color-text);
+  text-align: left;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Semantic Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--gmkb-font-heading);
+  font-weight: var(--gmkb-font-weight-bold);
+  line-height: var(--gmkb-line-height-tight);
+  color: inherit; /* Inherit color from parent (allows theming) */
+}
+
+h1 { font-size: var(--gmkb-font-size-5xl); }
+h2 { font-size: var(--gmkb-font-size-4xl); }
+h3 { font-size: var(--gmkb-font-size-3xl); }
+h4 { font-size: var(--gmkb-font-size-2xl); }
+h5 { font-size: var(--gmkb-font-size-xl); }
+h6 { font-size: var(--gmkb-font-size-lg); }
+
+/* Paragraphs */
+p {
+  line-height: inherit;
+  color: inherit;
+}
+
+/* Links */
+a {
+  color: var(--gmkb-color-primary);
+  text-decoration: none;
+  transition: color var(--gmkb-transition-base);
+}
+
+a:hover {
+  color: var(--gmkb-color-primary-hover);
+  text-decoration: underline;
+}
+
+a:focus {
+  outline: 2px solid var(--gmkb-color-primary);
+  outline-offset: 2px;
+}
+
+/* Strong/Bold */
+strong, b {
+  font-weight: var(--gmkb-font-weight-bold);
+}
+
+/* Emphasis/Italic */
+em, i {
+  font-style: italic;
+}
+
+/* Lists */
+ul, ol {
+  padding-left: var(--gmkb-space-6);
+}
+
+li {
+  margin-bottom: var(--gmkb-space-2);
+}
+
+ul ul, ol ul {
+  margin-top: var(--gmkb-space-2);
+}
+
+/* Code */
+code, pre {
+  font-family: var(--gmkb-font-mono);
+  font-size: 0.9em;
+}
+
+code {
+  padding: 0.2em 0.4em;
+  background: var(--gmkb-color-surface);
+  border-radius: var(--gmkb-radius-sm);
+}
+
+pre {
+  padding: var(--gmkb-space-4);
+  background: var(--gmkb-color-surface);
+  border-radius: var(--gmkb-radius-base);
+  overflow-x: auto;
+}
+
+pre code {
+  padding: 0;
+  background: none;
+}
+
+/* Blockquotes */
+blockquote {
+  margin: 0;
+  padding-left: var(--gmkb-space-6);
+  border-left: 4px solid var(--gmkb-color-border);
+  font-style: italic;
+  color: var(--gmkb-color-text-light);
+}
+
+/* ==========================================
    FRONTEND DISPLAY WRAPPER
    ========================================== */
 

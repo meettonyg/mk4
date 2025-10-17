@@ -1,7 +1,7 @@
 <template>
   <!-- ROOT FIX: Use design system classes -->
   <div class="gmkb-component gmkb-component--social" :data-component-id="componentId">
-    <div class="social-links">
+    <div class="component-root social-links">
       <a
         v-for="(link, index) in links"
         :key="index"

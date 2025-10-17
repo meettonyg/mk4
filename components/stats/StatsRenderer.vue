@@ -1,6 +1,7 @@
 <template>
   <!-- ROOT FIX: Use design system classes -->
   <div class="gmkb-component gmkb-component--stats" :data-component-id="componentId">
+    <div class="component-root stats-content">
     <h2 v-if="title" class="section-title">{{ title }}</h2>
     <div class="stats-container">
       <div
@@ -11,6 +12,7 @@
         <div class="stat-value">{{ stat.value }}</div>
         <div class="stat-label">{{ stat.label }}</div>
       </div>
+    </div>
     </div>
   </div>
 </template>

@@ -4,6 +4,7 @@
  */
 import { defineStore } from 'pinia';
 import { useMediaKitStore } from './mediaKit';
+import ThemeStyleInjector from '../services/ThemeStyleInjector';
 
 export const useThemeStore = defineStore('theme', {
   state: () => ({
@@ -384,8 +385,20 @@ export const useThemeStore = defineStore('theme', {
         this.tempCustomizations = savedCustomizations;
       }
       
-      // Apply theme to DOM
-      this.applyThemeToDOM();
+      // PHASE 4: Apply theme to DOM using ThemeStyleInjector
+      const activeTheme = this.availableThemes.find(t => t.id === this.activeThemeId);
+      if (activeTheme) {
+        try {
+          ThemeStyleInjector.applyTheme(activeTheme, this.activeThemeId);
+          console.log('[Theme Store] Initial theme applied via ThemeStyleInjector:', this.activeThemeId);
+        } catch (error) {
+          console.error('[Theme Store] Failed to apply initial theme via ThemeStyleInjector:', error);
+          // Fallback to old method
+          this.applyThemeToDOM();
+        }
+      } else {
+        console.warn('[Theme Store] Could not find active theme to apply:', this.activeThemeId);
+      }
     },
     
     // Open theme customizer
@@ -444,7 +457,16 @@ export const useThemeStore = defineStore('theme', {
           effects: {}
         };
         this.hasUnsavedChanges = true;
-        this.applyThemeToDOM();
+        
+        // PHASE 4: Use ThemeStyleInjector to apply theme as CSS variables
+        try {
+          ThemeStyleInjector.applyTheme(theme, themeId);
+          console.log('[Theme Store] Theme applied via ThemeStyleInjector:', themeId);
+        } catch (error) {
+          console.error('[Theme Store] Failed to apply theme via ThemeStyleInjector:', error);
+          // Fallback to old method
+          this.applyThemeToDOM();
+        }
         
         // CRITICAL FIX: Don't call useMediaKitStore() here - causes circular dependency!
         // The calling component should handle updating the media kit store

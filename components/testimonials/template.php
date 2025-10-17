@@ -17,6 +17,7 @@ if (!is_array($testimonials)) {
 ?>
 <!-- ROOT FIX: Exact same structure as Vue -->
 <div class="gmkb-component gmkb-component--testimonials" data-component-id="<?php echo esc_attr($component_id); ?>">
+    <div class="component-root testimonials-content">
     <?php if ($title): ?>
         <h2 class="section-title"><?php echo esc_html($title); ?></h2>
     <?php endif; ?>
@@ -45,4 +46,5 @@ if (!is_array($testimonials)) {
             <p class="testimonials-placeholder">Add testimonials here.</p>
         <?php endif; ?>
     </div>
+    </div>  <!-- close component-root -->
 </div>

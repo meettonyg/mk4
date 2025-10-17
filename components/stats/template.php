@@ -17,6 +17,7 @@ if (!is_array($stats)) {
 ?>
 <!-- ROOT FIX: Exact same structure as Vue -->
 <div class="gmkb-component gmkb-component--stats" data-component-id="<?php echo esc_attr($component_id); ?>">
+    <div class="component-root stats-content">
     <?php if ($title): ?>
         <h2 class="section-title"><?php echo esc_html($title); ?></h2>
     <?php endif; ?>
@@ -38,5 +39,6 @@ if (!is_array($stats)) {
         <?php else: ?>
             <p class="stats-placeholder">Add your statistics here.</p>
         <?php endif; ?>
+    </div>
     </div>
 </div>

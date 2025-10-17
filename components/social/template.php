@@ -32,7 +32,7 @@ function getSocialIcon($platform) {
 ?>
 <!-- ROOT FIX: Exact same structure as Vue -->
 <div class="gmkb-component gmkb-component--social" data-component-id="<?php echo esc_attr($component_id); ?>">
-    <div class="social-links">
+    <div class="component-root social-links">
         <?php if (!empty($links)): ?>
             <?php foreach ($links as $link): ?>
                 <?php

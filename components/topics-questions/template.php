@@ -31,6 +31,7 @@ for ($i = 1; $i <= 25; $i++) {
 }
 ?>
 <div class="gmkb-component gmkb-component--topicsquestions" data-component-id="<?php echo esc_attr($component_id); ?>">
+    <div class="component-root topics-questions-content">
     
     <?php if ($showModeSelector): ?>
     <div class="display-mode-selector">
@@ -95,4 +96,5 @@ for ($i = 1; $i <= 25; $i++) {
     </div>
     <?php endif; ?>
     
+    </div>  <!-- close component-root -->
 </div>

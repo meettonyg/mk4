@@ -8,6 +8,7 @@ $photos = $props['photos'] ?? [];
 if (!is_array($photos)) $photos = [];
 ?>
 <div class="gmkb-component gmkb-component--photogallery" data-component-id="<?php echo esc_attr($component_id); ?>">
+    <div class="component-root photo-gallery-content">
     <?php if ($title): ?>
         <h2 class="section-title"><?php echo esc_html($title); ?></h2>
     <?php endif; ?>
@@ -27,4 +28,5 @@ if (!is_array($photos)) $photos = [];
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
+    </div>  <!-- close component-root -->
 </div>

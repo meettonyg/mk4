@@ -1,7 +1,7 @@
 <template>
   <!-- ROOT FIX: Use design system classes -->
   <div class="gmkb-component gmkb-component--contact" :data-component-id="componentId">
-    <div class="contact-info">
+    <div class="component-root contact-info">
       <!-- Email -->
       <div v-if="email" class="contact-item">
         <i class="fas fa-envelope"></i>

@@ -20,7 +20,7 @@ function displayWebsite($website) {
 ?>
 <!-- ROOT FIX: Exact same structure as Vue -->
 <div class="gmkb-component gmkb-component--contact" data-component-id="<?php echo esc_attr($component_id); ?>">
-    <div class="contact-info">
+    <div class="component-root contact-info">
         <?php if ($email): ?>
             <div class="contact-item">
                 <i class="fas fa-envelope"></i>

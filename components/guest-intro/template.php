@@ -33,6 +33,7 @@ if (isset($props) && is_array($props)) {
 $componentId = $componentId ?? 'guest-intro-' . time();
 ?>
 <div class="gmkb-component gmkb-component--guestintro editable-element" data-element="guest-intro" data-component="guest-intro" data-component-id="<?php echo esc_attr($componentId); ?>" data-component-type="guest-intro">
+    <div class="component-root intro-container">
     <!-- ROOT FIX: Controls removed - ComponentControlsManager handles all control functionality dynamically -->
     <h2 class="section-title"><?php echo esc_html($title ?? 'Guest Introduction'); ?></h2>
     
@@ -81,4 +82,5 @@ $componentId = $componentId ?? 'guest-intro-' . time();
         </div>
         <?php endif; ?>
     </div>
+    </div>  <!-- close component-root -->
 </div>

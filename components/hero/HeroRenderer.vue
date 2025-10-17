@@ -1,6 +1,7 @@
 <template>
   <!-- ROOT FIX: Use design system classes -->
   <div class="gmkb-component gmkb-component--hero" :data-component-id="componentId">
+    <div class="component-root hero-content">
     <div v-if="imageUrl" class="hero__avatar">
       <img :src="imageUrl" :alt="name || 'Profile Avatar'" />
     </div>
@@ -9,6 +10,7 @@
     <p v-if="bio" class="hero__bio">{{ bio }}</p>
     <div v-if="ctaText" class="hero__cta">
       <button class="btn" @click="handleCtaClick">{{ ctaText }}</button>
+    </div>
     </div>
   </div>
 </template>
