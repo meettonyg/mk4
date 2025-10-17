@@ -1,8 +1,8 @@
 <template>
   <!-- V2 ARCHITECTURE: Single root element with component-root class -->
+  <!-- ROOT FIX: Removed data-component-id - it's on the wrapper, not here -->
   <div 
     class="component-root cta-component"
-    :data-component-id="componentId"
     :style="containerStyle"
   >
     <h2 v-if="title" class="cta-title">{{ title }}</h2>

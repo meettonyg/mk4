@@ -1,8 +1,8 @@
 <template>
   <!-- V2 ARCHITECTURE: Single root element with component-root class -->
+  <!-- ROOT FIX: Removed data-component-id - it's on the wrapper, not here -->
   <div 
     class="component-root logo-grid-component"
-    :data-component-id="componentId"
   >
     <h2 v-if="title" class="logo-title">{{ title }}</h2>
     <p v-if="description" class="logo-description">{{ description }}</p>

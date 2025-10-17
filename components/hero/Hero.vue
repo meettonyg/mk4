@@ -1,8 +1,8 @@
 <template>
   <!-- V2 ARCHITECTURE: Single root element with component-root class -->
+  <!-- ROOT FIX: Removed data-component-id - it's on the wrapper, not here -->
   <div 
     class="component-root hero-component"
-    :data-component-id="componentId"
     :class="{ 'hero--has-bg': backgroundImage }"
   >
     <div class="hero-overlay" v-if="backgroundImage"></div>

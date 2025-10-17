@@ -1,8 +1,8 @@
 <template>
   <!-- V2 ARCHITECTURE: Single root element with component-root class -->
+  <!-- ROOT FIX: Removed data-component-id - it's on the wrapper, not here -->
   <div 
     class="component-root biography-component"
-    :data-component-id="componentId"
   >
     <!-- Biography Content - simplified structure -->
     <div v-if="imageUrl" class="biography-image">

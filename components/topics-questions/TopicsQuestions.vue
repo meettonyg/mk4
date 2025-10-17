@@ -1,8 +1,8 @@
 <template>
   <!-- V2 ARCHITECTURE: Single root element with component-root class -->
+  <!-- ROOT FIX: Removed data-component-id - it's on the wrapper, not here -->
   <div 
     class="component-root topics-questions-component"
-    :data-component-id="componentId"
   >
     <!-- Display Mode Selector -->
     <div v-if="showModeSelector" class="display-mode-selector">

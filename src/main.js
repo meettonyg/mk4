@@ -358,6 +358,39 @@ async function initializeVue() {
     componentStyleService.initializeAll(mediaKitStore.components);
     console.log('✅ Component styles initialized');
     
+    // ROOT FIX: Set up reactivity watcher for style updates
+    // Use Vue's watch API for deep reactivity on component settings
+    console.log('👁️ Setting up component style watcher...');
+    
+    // Import watch from Vue
+    const { watch } = await import('vue');
+    
+    // Watch the entire components object deeply
+    watch(
+      () => mediaKitStore.components,
+      (newComponents, oldComponents) => {
+        // Check each component for settings changes
+        Object.entries(newComponents).forEach(([componentId, component]) => {
+          if (!component || !component.settings) return;
+          
+          // Check if settings changed
+          const oldComponent = oldComponents?.[componentId];
+          const settingsChanged = !oldComponent || 
+            JSON.stringify(component.settings) !== JSON.stringify(oldComponent.settings);
+          
+          if (settingsChanged) {
+            componentStyleService.applyStyling(componentId, component.settings);
+            if (window.gmkbData?.debugMode) {
+              console.log(`🎨 Reactive style update for ${componentId}`);
+            }
+          }
+        });
+      },
+      { deep: true } // Deep watch to catch nested changes
+    );
+    
+    console.log('✅ Component style watcher active (Vue deep watch)');
+    
     // Console API now handled by ConsoleAPI service (see ConsoleAPI.install above)
     
     console.log('✅ Vue Media Kit Builder initialized successfully');
