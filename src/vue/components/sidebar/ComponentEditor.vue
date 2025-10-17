@@ -3,9 +3,11 @@
     <!-- Dynamic Component Editor (editors handle their own headers, tabs, everything) -->
     <div class="editor-content">
       <!-- Component-specific editor or fallback to generic -->
+      <!-- ROOT FIX: Add stable :key to prevent remounting on store updates -->
       <component
         v-if="editorComponent"
         :is="editorComponent"
+        :key="componentId"
         :component-id="componentId"
         @close="handleBack"
       />
@@ -23,7 +25,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, defineAsyncComponent } from 'vue'
+import { ref, computed, onMounted, watch, defineAsyncComponent, shallowRef } from 'vue'
 import { useMediaKitStore } from '../../../stores/mediaKit'
 import { useUIStore } from '../../../stores/ui'
 import GenericComponentEditor from './GenericComponentEditor.vue'
@@ -38,16 +40,22 @@ const props = defineProps({
 const store = useMediaKitStore()
 const uiStore = useUIStore()
 
-// Get component
+// Get component TYPE only (shallow, won't trigger on data changes)
+const componentType = computed(() => {
+  return store.components[props.componentId]?.type
+})
+
+// Get full component data (for checking existence)
 const component = computed(() => {
   return store.components[props.componentId]
 })
 
-// Dynamically load component-specific editor
+// ROOT FIX: Cache the editor component to prevent remounting
+// Only reload if component TYPE changes, not on every data update
 const editorComponent = computed(() => {
-  if (!component.value?.type) return null
+  if (!componentType.value) return null
   
-  const componentType = component.value.type
+  const type = componentType.value
   
   // Map component types to their editor paths
   const editorMap = {
@@ -70,24 +78,24 @@ const editorComponent = computed(() => {
   }
   
   // Return the editor loader if it exists
-  if (editorMap[componentType]) {
-    console.log(`✅ Loading component-specific editor for: ${componentType}`);
+  if (editorMap[type]) {
+    console.log(`✅ Loading component-specific editor for: ${type}`);
     return defineAsyncComponent({
-      loader: editorMap[componentType],
+      loader: editorMap[type],
       loadingComponent: null,
       errorComponent: null,
       delay: 0,
       timeout: 3000,
       suspensible: false,
       onError(error, retry, fail, attempts) {
-        console.error(`❌ Failed to load editor for ${componentType}:`, error);
+        console.error(`❌ Failed to load editor for ${type}:`, error);
         console.log(`🔄 Falling back to GenericComponentEditor`);
         fail();
       }
     })
   }
   
-  console.log(`⚠️ No specific editor found for: ${componentType}, using GenericComponentEditor`);
+  console.log(`⚠️ No specific editor found for: ${type}, using GenericComponentEditor`);
   return null
 })
 
@@ -100,7 +108,7 @@ function handleBack() {
 onMounted(() => {
   console.log('✅ ComponentEditor mounted:', {
     componentId: props.componentId,
-    componentType: component.value?.type
+    componentType: componentType.value
   });
 });
 </script>
