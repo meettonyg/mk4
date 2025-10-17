@@ -173,6 +173,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useMediaKitStore } from '../../../../stores/mediaKit';
+import componentStyleService from '../../../../services/ComponentStyleService';
 import SpacingControl from './shared/SpacingControl.vue';
 import ColorPicker from './shared/ColorPicker.vue';
 import TypographyControl from './shared/TypographyControl.vue';
@@ -278,8 +279,7 @@ function applySectionStyles(sectionId, settings) {
   }
 }
 
-// ROOT FIX: ALL update methods must use store.updateComponent() to trigger Vue watcher
-// Direct mutations break reactivity - the watcher in main.js never fires
+// Update methods - ALL mutations must go through store.updateComponent to trigger reactivity
 const updateSpacing = (type, value) => {
   if (props.mode === 'section') {
     const section = entity.value;
@@ -291,11 +291,15 @@ const updateSpacing = (type, value) => {
     
     section.settings.style.spacing[type] = value;
     store.updateSectionSettings(props.sectionId, { style: section.settings.style });
+    
+    // Apply styles immediately to live preview
     applySectionStyles(props.sectionId, section.settings);
   } else {
+    // ROOT FIX: Use store.updateComponent to trigger Vue watcher
     const component = store.components[props.componentId];
     if (!component || !component.settings) return;
     
+    // Create updated settings object
     const updatedSettings = {
       ...component.settings,
       style: {
@@ -307,6 +311,7 @@ const updateSpacing = (type, value) => {
       }
     };
     
+    // Update through store action to trigger Vue watcher
     store.updateComponent(props.componentId, { settings: updatedSettings });
   }
 };
@@ -322,23 +327,22 @@ const updateBackground = (property, value) => {
     
     section.settings.style.background[property] = value;
     store.updateSectionSettings(props.sectionId, { style: section.settings.style });
+    
     applySectionStyles(props.sectionId, section.settings);
   } else {
     const component = store.components[props.componentId];
     if (!component || !component.settings) return;
     
-    const updatedSettings = {
-      ...component.settings,
-      style: {
-        ...component.settings.style,
-        background: {
-          ...component.settings.style.background,
-          [property]: value
-        }
-      }
-    };
+    // CRITICAL FIX: Mutate in place instead of creating new object
+    if (!component.settings.style) component.settings.style = {};
+    if (!component.settings.style.background) component.settings.style.background = {};
     
-    store.updateComponent(props.componentId, { settings: updatedSettings });
+    component.settings.style.background[property] = value;
+    
+    componentStyleService.applyStyling(props.componentId, component.settings);
+    
+    // Mark store as dirty without triggering full component replacement
+    store.isDirty = true;
   }
 };
 
@@ -356,23 +360,22 @@ const updateTypography = (updates) => {
       ...updates
     };
     store.updateSectionSettings(props.sectionId, { style: section.settings.style });
+    
     applySectionStyles(props.sectionId, section.settings);
   } else {
     const component = store.components[props.componentId];
     if (!component || !component.settings) return;
     
-    const updatedSettings = {
-      ...component.settings,
-      style: {
-        ...component.settings.style,
-        typography: {
-          ...component.settings.style.typography,
-          ...updates
-        }
-      }
-    };
+    // CRITICAL FIX: Mutate in place with Object.assign
+    if (!component.settings.style) component.settings.style = {};
+    if (!component.settings.style.typography) component.settings.style.typography = {};
     
-    store.updateComponent(props.componentId, { settings: updatedSettings });
+    Object.assign(component.settings.style.typography, updates);
+    
+    componentStyleService.applyStyling(props.componentId, component.settings);
+    
+    // Mark store as dirty without triggering full component replacement
+    store.isDirty = true;
   }
 };
 
@@ -388,26 +391,23 @@ const updateBorderWidth = (side, value) => {
     
     section.settings.style.border.width[side] = value;
     store.updateSectionSettings(props.sectionId, { style: section.settings.style });
+    
     applySectionStyles(props.sectionId, section.settings);
   } else {
     const component = store.components[props.componentId];
     if (!component || !component.settings) return;
     
-    const updatedSettings = {
-      ...component.settings,
-      style: {
-        ...component.settings.style,
-        border: {
-          ...component.settings.style.border,
-          width: {
-            ...component.settings.style.border.width,
-            [side]: value
-          }
-        }
-      }
-    };
+    // CRITICAL FIX: Mutate in place
+    if (!component.settings.style) component.settings.style = {};
+    if (!component.settings.style.border) component.settings.style.border = {};
+    if (!component.settings.style.border.width) component.settings.style.border.width = {};
     
-    store.updateComponent(props.componentId, { settings: updatedSettings });
+    component.settings.style.border.width[side] = value;
+    
+    componentStyleService.applyStyling(props.componentId, component.settings);
+    
+    // Mark store as dirty without triggering full component replacement
+    store.isDirty = true;
   }
 };
 
@@ -422,23 +422,22 @@ const updateBorder = (property, value) => {
     
     section.settings.style.border[property] = value;
     store.updateSectionSettings(props.sectionId, { style: section.settings.style });
+    
     applySectionStyles(props.sectionId, section.settings);
   } else {
     const component = store.components[props.componentId];
     if (!component || !component.settings) return;
     
-    const updatedSettings = {
-      ...component.settings,
-      style: {
-        ...component.settings.style,
-        border: {
-          ...component.settings.style.border,
-          [property]: value
-        }
-      }
-    };
+    // CRITICAL FIX: Mutate in place
+    if (!component.settings.style) component.settings.style = {};
+    if (!component.settings.style.border) component.settings.style.border = {};
     
-    store.updateComponent(props.componentId, { settings: updatedSettings });
+    component.settings.style.border[property] = value;
+    
+    componentStyleService.applyStyling(props.componentId, component.settings);
+    
+    // Mark store as dirty without triggering full component replacement
+    store.isDirty = true;
   }
 };
 
@@ -459,29 +458,28 @@ const updateBorderRadius = (value) => {
       unit: 'px'
     };
     store.updateSectionSettings(props.sectionId, { style: section.settings.style });
+    
     applySectionStyles(props.sectionId, section.settings);
   } else {
     const component = store.components[props.componentId];
     if (!component || !component.settings) return;
     
-    const updatedSettings = {
-      ...component.settings,
-      style: {
-        ...component.settings.style,
-        border: {
-          ...component.settings.style.border,
-          radius: {
-            topLeft: value,
-            topRight: value,
-            bottomRight: value,
-            bottomLeft: value,
-            unit: 'px'
-          }
-        }
-      }
+    // CRITICAL FIX: Mutate in place
+    if (!component.settings.style) component.settings.style = {};
+    if (!component.settings.style.border) component.settings.style.border = {};
+    
+    component.settings.style.border.radius = {
+      topLeft: value,
+      topRight: value,
+      bottomRight: value,
+      bottomLeft: value,
+      unit: 'px'
     };
     
-    store.updateComponent(props.componentId, { settings: updatedSettings });
+    componentStyleService.applyStyling(props.componentId, component.settings);
+    
+    // Mark store as dirty without triggering full component replacement
+    store.isDirty = true;
   }
 };
 
@@ -496,25 +494,26 @@ const updateEffect = (property, value) => {
     
     section.settings.style.effects[property] = value;
     store.updateSectionSettings(props.sectionId, { style: section.settings.style });
+    
     applySectionStyles(props.sectionId, section.settings);
   } else {
     const component = store.components[props.componentId];
     if (!component || !component.settings) return;
     
-    const updatedSettings = {
-      ...component.settings,
-      style: {
-        ...component.settings.style,
-        effects: {
-          ...component.settings.style.effects,
-          [property]: value
-        }
-      }
-    };
+    // CRITICAL FIX: Mutate in place
+    if (!component.settings.style) component.settings.style = {};
+    if (!component.settings.style.effects) component.settings.style.effects = {};
     
-    store.updateComponent(props.componentId, { settings: updatedSettings });
+    component.settings.style.effects[property] = value;
+    
+    componentStyleService.applyStyling(props.componentId, component.settings);
+    
+    // Mark store as dirty without triggering full component replacement
+    store.isDirty = true;
   }
 };
+
+
 </script>
 
 <style scoped>
@@ -601,4 +600,6 @@ const updateEffect = (property, value) => {
   font-size: 12px;
   color: #64748b;
 }
+
+
 </style>

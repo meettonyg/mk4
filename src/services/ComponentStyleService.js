@@ -113,7 +113,22 @@ class ComponentStyleService {
       if (t.fontFamily) componentRules.push(`font-family: ${t.fontFamily}`);
       if (t.fontSize) componentRules.push(`font-size: ${t.fontSize.value}${t.fontSize.unit}`);
       if (t.fontWeight) componentRules.push(`font-weight: ${t.fontWeight}`);
-      if (t.lineHeight) componentRules.push(`line-height: ${t.lineHeight}`);
+      
+      // ROOT FIX: Handle lineHeight object/value properly
+      if (t.lineHeight) {
+        if (typeof t.lineHeight === 'object' && t.lineHeight.value !== undefined) {
+          // Object format: { value: 1.6, unit: 'unitless' }
+          const lineHeightValue = t.lineHeight.unit === 'unitless' 
+            ? t.lineHeight.value  // No unit for unitless
+            : `${t.lineHeight.value}${t.lineHeight.unit}`; // Add unit
+          componentRules.push(`line-height: ${lineHeightValue}`);
+        } else if (typeof t.lineHeight === 'number' || typeof t.lineHeight === 'string') {
+          // Simple value: 1.6 or '1.6' or '24px'
+          componentRules.push(`line-height: ${t.lineHeight}`);
+        }
+        // Otherwise skip invalid lineHeight
+      }
+      
       if (t.color) componentRules.push(`color: ${t.color}`);
       if (t.textAlign) componentRules.push(`text-align: ${t.textAlign}`);
     }
