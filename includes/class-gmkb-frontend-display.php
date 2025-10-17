@@ -611,25 +611,18 @@ class GMKB_Frontend_Display {
         }
         
         ?>
-        <div class="<?php echo implode(' ', $component_classes); ?>"
-             id="<?php echo esc_attr($custom_id ?: $component_id); ?>"
-             <?php foreach ($data_attrs as $key => $value): ?>
-             <?php echo esc_attr($key); ?>="<?php echo esc_attr($value); ?>"
-             <?php endforeach; ?>
-             <?php if ($inline_styles): ?>style="<?php echo esc_attr($inline_styles); ?>"<?php endif; ?>>
             
             <?php
             // Inject custom CSS if provided
             if (!empty($component_settings['customCSS'])) {
                 $this->render_component_custom_css($component_id, $component_settings['customCSS']);
             }
-            ?>
             
-            <?php
             // ROOT FIX: Merge data and props - props take precedence
             $merged_data = array_merge($component_data, $component_props);
             
-            // Load component template with merged data
+            // ROOT FIX 3: The template ALREADY includes the wrapper, so don't add another one
+            // Just load the template directly
             $this->load_component_template($component_type, array_merge($merged_data, array(
                 'component_id' => $component_id,
                 'post_id' => $post_id,
@@ -638,9 +631,6 @@ class GMKB_Frontend_Display {
                 'theme' => $this->current_theme
             )));
             ?>
-            
-        </div>
-        <?php
     }
     
     /**
