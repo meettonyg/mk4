@@ -10,7 +10,7 @@
       <button 
         v-for="tab in tabs"
         :key="tab.id"
-        @click="emit('update:activeTab', tab.id)"
+        @click="uiStore.setEditorTab(tab.id)"
         :class="['tab-button', { active: activeTab === tab.id }]"
         :title="tab.label"
       >
@@ -50,7 +50,8 @@
 </template>
 
 <script setup>
-import { ref, h } from 'vue';
+import { computed, h } from 'vue';
+import { useUIStore } from '@/stores/ui';
 import BaseStylePanel from './BaseStylePanel.vue';
 import BaseAdvancedPanel from './BaseAdvancedPanel.vue';
 
@@ -74,6 +75,10 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close', 'update:activeTab']);
+
+// ROOT FIX: Use UI store for persistent tab state
+const uiStore = useUIStore();
+const activeTab = computed(() => uiStore.activeEditorTab);
 
 // Tab configuration
 const tabs = [

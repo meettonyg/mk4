@@ -25,6 +25,7 @@ export const useUIStore = defineStore('ui', {
         // ROOT FIX: Elementor-style sidebar mode
         sidebarMode: 'default', // 'default' | 'section' | 'component'
         editingSectionId: null,
+        activeEditorTab: 'content', // 'content' | 'style' | 'advanced' - persisted across updates
         
         // DEPRECATED: Old panel-based approach (keep for backwards compatibility during migration)
         sectionSettingsPanelOpen: false,
@@ -205,10 +206,13 @@ export const useUIStore = defineStore('ui', {
             this.editingComponentId = componentId;
             this.editingSectionId = null;
             this.sidebarOpen = true;
+            // ROOT FIX: Reset to content tab when opening new component
+            this.activeEditorTab = 'content';
             
             console.log('   ✅ Updated mode to:', this.sidebarMode);
             console.log('   ✅ Updated editingComponentId to:', this.editingComponentId);
             console.log('   ✅ Updated sidebarOpen to:', this.sidebarOpen);
+            console.log('   ✅ Updated activeEditorTab to:', this.activeEditorTab);
             
             // Close old panels (backwards compatibility)
             this.editPanelOpen = false;
@@ -221,6 +225,14 @@ export const useUIStore = defineStore('ui', {
                 detail: { componentId }
             }));
             console.log('   ✅ Dispatched gmkb:component-editor-opened event');
+        },
+        
+        // ROOT FIX: Tab management for component editor
+        setEditorTab(tab) {
+            if (['content', 'style', 'advanced'].includes(tab)) {
+                this.activeEditorTab = tab;
+                console.log('✅ UI Store: Editor tab changed to:', tab);
+            }
         },
         
         closeSidebarEditor() {
