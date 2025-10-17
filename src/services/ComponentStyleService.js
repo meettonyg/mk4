@@ -27,15 +27,30 @@ class ComponentStyleService {
     }
 
     try {
-      // CRITICAL FIX: Remove cache check - always apply styles when called
-      // The watcher in main.js will only call this when changes occur
-      // The previous cache was preventing legitimate updates
+      // CRITICAL DEBUG: Log what we're working with
+      console.log(`🔍 applyStyling CALLED for ${componentId}`);
+      console.log('  Settings:', settings);
+      console.log('  Has style?', !!settings.style);
+      console.log('  Has advanced?', !!settings.advanced);
       
       // Generate CSS
       const css = this.generateCSS(componentId, settings);
       
+      // CRITICAL DEBUG: Log generated CSS
+      console.log(`🎨 Generated CSS for ${componentId}:`);
+      console.log(css || '(empty CSS)');
+      
       // Inject or update styles
       this.injectStyles(componentId, css);
+      
+      // CRITICAL DEBUG: Verify injection
+      const styleEl = this.styleElements.get(componentId);
+      console.log(`✅ Style element exists?`, !!styleEl);
+      if (styleEl) {
+        console.log('  Style element ID:', styleEl.id);
+        console.log('  Style element parent:', styleEl.parentNode?.nodeName);
+        console.log('  CSS content length:', styleEl.textContent?.length);
+      }
       
       // Cache settings hash for debugging
       const settingsHash = JSON.stringify(settings);
@@ -46,6 +61,7 @@ class ComponentStyleService {
       }
     } catch (error) {
       console.error(`❌ Failed to apply styles to ${componentId}:`, error);
+      console.error('  Error stack:', error.stack);
     }
   }
 
@@ -106,11 +122,12 @@ class ComponentStyleService {
     }
 
     // Typography (if present) - Apply to component root
+    // CRITICAL FIX: Add !important to override component-specific styles
     if (style.typography) {
       const t = style.typography;
-      if (t.fontFamily) componentRules.push(`font-family: ${t.fontFamily}`);
-      if (t.fontSize) componentRules.push(`font-size: ${t.fontSize.value}${t.fontSize.unit}`);
-      if (t.fontWeight) componentRules.push(`font-weight: ${t.fontWeight}`);
+      if (t.fontFamily) componentRules.push(`font-family: ${t.fontFamily} !important`);
+      if (t.fontSize) componentRules.push(`font-size: ${t.fontSize.value}${t.fontSize.unit} !important`);
+      if (t.fontWeight) componentRules.push(`font-weight: ${t.fontWeight} !important`);
       
       // ROOT FIX: Handle lineHeight object/value properly
       if (t.lineHeight) {
@@ -119,16 +136,16 @@ class ComponentStyleService {
           const lineHeightValue = t.lineHeight.unit === 'unitless' 
             ? t.lineHeight.value  // No unit for unitless
             : `${t.lineHeight.value}${t.lineHeight.unit}`; // Add unit
-          componentRules.push(`line-height: ${lineHeightValue}`);
+          componentRules.push(`line-height: ${lineHeightValue} !important`);
         } else if (typeof t.lineHeight === 'number' || typeof t.lineHeight === 'string') {
           // Simple value: 1.6 or '1.6' or '24px'
-          componentRules.push(`line-height: ${t.lineHeight}`);
+          componentRules.push(`line-height: ${t.lineHeight} !important`);
         }
         // Otherwise skip invalid lineHeight
       }
       
-      if (t.color) componentRules.push(`color: ${t.color}`);
-      if (t.textAlign) componentRules.push(`text-align: ${t.textAlign}`);
+      if (t.color) componentRules.push(`color: ${t.color} !important`);
+      if (t.textAlign) componentRules.push(`text-align: ${t.textAlign} !important`);
     }
 
     // Border - Apply to component root
@@ -152,12 +169,13 @@ class ComponentStyleService {
     }
 
     // Effects - Apply to component root
+    // CRITICAL FIX: Add !important to override component-specific styles
     if (style.effects) {
       if (style.effects.boxShadow && style.effects.boxShadow !== 'none') {
-        componentRules.push(`box-shadow: ${style.effects.boxShadow}`);
+        componentRules.push(`box-shadow: ${style.effects.boxShadow} !important`);
       }
       if (style.effects.opacity !== undefined && style.effects.opacity !== 100) {
-        componentRules.push(`opacity: ${style.effects.opacity / 100}`);
+        componentRules.push(`opacity: ${style.effects.opacity / 100} !important`);
       }
     }
 
