@@ -155,12 +155,14 @@
    BIOGRAPHY COMPONENT - LAYOUT ONLY
    ========================================== */
 
+/* REMOVED: Duplicate padding with .component-root
 .gmkb-component--biography,
 .biography-component {
   padding: var(--gmkb-space-10);
   border-radius: var(--gmkb-radius-lg);
   transition: all var(--gmkb-transition-base);
 }
+*/
 
 .biography-header {
   margin-bottom: var(--gmkb-space-6);
@@ -181,7 +183,7 @@
   width: var(--gmkb-underline-width);
   height: var(--gmkb-underline-height);
   border-radius: var(--gmkb-radius-sm);
-  /* Color comes from theme */
+  background: var(--gmkb-color-primary);
 }
 
 .biography-name {
