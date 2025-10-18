@@ -1,8 +1,8 @@
 <?php
 /**
  * Call to Action Component Template
- * ROOT FIX: Mirrors Vue component structure exactly
- * Uses standardized data contract
+ * ROOT FIX: Template outputs CONTENT ONLY - parent system provides wrapper
+ * This prevents double-wrapper issue
  */
 
 // Data contract - standardized variable names
@@ -16,9 +16,8 @@ if (!is_array($buttons)) {
     $buttons = [];
 }
 ?>
-<!-- ROOT FIX: Exact same structure as Vue -->
-<div class="gmkb-component gmkb-component--calltoaction" data-component-id="<?php echo esc_attr($component_id); ?>">
-    <div class="component-root cta-content">
+<!-- ROOT FIX: Inner content only - outer wrapper provided by system -->
+<div class="component-root cta-content">
     <?php if ($title): ?>
         <h2 class="cta-title"><?php echo esc_html($title); ?></h2>
     <?php endif; ?>
@@ -44,5 +43,4 @@ if (!is_array($buttons)) {
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
-    </div>  <!-- close component-root -->
 </div>

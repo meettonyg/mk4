@@ -233,35 +233,110 @@ function gmkb_enrich_topics_data($props, $post_id) {
  * @return array Enriched props with biography data
  */
 function gmkb_enrich_biography_data($props, $post_id) {
+    // ROOT FIX: AGGRESSIVE debugging
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('========== BIOGRAPHY ENRICHMENT ==========');
+        error_log('Post ID: ' . $post_id);
+        error_log('Incoming props keys: ' . implode(', ', array_keys($props)));
+    }
+    
     // Validate post ID
     if (!$post_id || $post_id <= 0) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('❌ Invalid post ID: ' . $post_id);
+        }
         return $props;
     }
     
-    // Load full biography
-    $biography = get_post_meta($post_id, 'biography', true);
-    if (!empty($biography)) {
-        $props['biography'] = $biography;
-        $props['content'] = $biography;
-        $props['full_biography'] = $biography;
+    // ROOT FIX: Check if Pods is active and try to use it first
+    if (function_exists('pods')) {
+        try {
+            $pod = pods('guests', $post_id);
+            if ($pod && $pod->exists()) {
+                $first_name = $pod->field('first_name');
+                $last_name = $pod->field('last_name');
+                $bio = $pod->field('biography');
+                $prof_title = $pod->field('professional_title');
+                $company_name = $pod->field('company');
+                
+                if ($first_name || $last_name) {
+                    $props['name'] = trim($first_name . ' ' . $last_name);
+                }
+                if ($prof_title) {
+                    $props['title'] = $prof_title;
+                }
+                if ($company_name) {
+                    $props['company'] = $company_name;
+                }
+                if ($bio) {
+                    $props['biography'] = $bio;
+                    $props['bio'] = $bio;
+                    $props['bio_content'] = $bio;
+                    $props['content'] = $bio;
+                }
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('✅ Pods data loaded successfully');
+                    error_log('  - Name: ' . ($props['name'] ?? 'NONE'));
+                    error_log('  - Title: ' . ($props['title'] ?? 'NONE'));
+                    error_log('  - Bio length: ' . strlen($bio ?? ''));
+                }
+            } else {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('⚠️ Pods record not found for post ' . $post_id);
+                }
+            }
+        } catch (Exception $e) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('⚠️ Pods error: ' . $e->getMessage());
+            }
+        }
     }
     
-    // Load short biography
-    $short_bio = get_post_meta($post_id, 'biography_short', true);
-    if (!empty($short_bio)) {
-        $props['biography_short'] = $short_bio;
-        $props['excerpt'] = $short_bio;
+    // FALLBACK: Load from post meta if Pods didn't work
+    if (empty($props['biography'])) {
+        $biography = get_post_meta($post_id, 'biography', true);
+        if (!empty($biography)) {
+            $props['biography'] = $biography;
+            $props['content'] = $biography;
+            $props['full_biography'] = $biography;
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ Loaded biography from post meta (length: ' . strlen($biography) . ')');
+            }
+        } else {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ No biography found in post meta');
+            }
+        }
+    }
+    
+    // Load short biography if not already loaded
+    if (empty($props['biography_short'])) {
+        $short_bio = get_post_meta($post_id, 'biography_short', true);
+        if (!empty($short_bio)) {
+            $props['biography_short'] = $short_bio;
+            $props['excerpt'] = $short_bio;
+        }
     }
     
     // Additional biography-related fields
-    $professional_bio = get_post_meta($post_id, 'professional_bio', true);
-    if (!empty($professional_bio)) {
-        $props['professional_bio'] = $professional_bio;
+    if (empty($props['professional_bio'])) {
+        $professional_bio = get_post_meta($post_id, 'professional_bio', true);
+        if (!empty($professional_bio)) {
+            $props['professional_bio'] = $professional_bio;
+        }
     }
     
     // Mark data source
-    $props['data_source'] = 'pods_fields';
-    $props['has_biography'] = !empty($biography) || !empty($short_bio);
+    $props['data_source'] = function_exists('pods') ? 'pods_api' : 'post_meta';
+    $props['has_biography'] = !empty($props['biography']) || !empty($props['biography_short']);
+    
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('Final props keys: ' . implode(', ', array_keys($props)));
+        error_log('Has biography: ' . ($props['has_biography'] ? 'YES' : 'NO'));
+        error_log('==========================================');
+    }
     
     return $props;
 }

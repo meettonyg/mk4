@@ -165,17 +165,22 @@ class GMKB_Frontend_Display {
         // Apply Pods data enrichment
         $state = apply_filters('gmkb_load_media_kit_state', $state, $post_id);
         
-        // Load theme
-        $theme_id = $theme_id ?: ($state['globalSettings']['theme'] ?? 'professional_clean');
+        // ROOT FIX: Safe theme ID extraction with proper array key checks
+        if (!$theme_id) {
+            $theme_id = isset($state['globalSettings']) && is_array($state['globalSettings']) && isset($state['globalSettings']['theme']) 
+                ? $state['globalSettings']['theme'] 
+                : 'professional_clean';
+        }
         $this->current_theme = $this->load_theme($theme_id);
         
         // Enqueue necessary assets
         $this->enqueue_template_assets();
         
         // Render media kit
+        // ROOT FIX: Disable lazy_load on frontend - we don't have Vue to hydrate
         $atts = array(
             'responsive' => 'true',
-            'lazy_load' => 'true',
+            'lazy_load' => 'false',  // No Vue on frontend, use PHP templates
             'section_animation' => 'fade',
             'class' => 'gmkb-template-render'
         );
@@ -204,12 +209,13 @@ class GMKB_Frontend_Display {
      */
     public function render_shortcode($atts) {
         // Parse attributes
+        // ROOT FIX: Disable lazy_load by default - no Vue on frontend
         $atts = shortcode_atts(array(
             'id' => 0,
             'theme' => '',
             'class' => '',
             'responsive' => 'true',
-            'lazy_load' => 'true',
+            'lazy_load' => 'false',  // No Vue on frontend, use PHP templates
             'section_animation' => 'fade',
             'cache' => 'true'
         ), $atts, 'display_media_kit');
@@ -241,8 +247,14 @@ class GMKB_Frontend_Display {
         // Apply Pods data enrichment
         $state = apply_filters('gmkb_load_media_kit_state', $state, $post_id);
         
-        // Load theme
-        $theme_id = $atts['theme'] ?: ($state['globalSettings']['theme'] ?? 'professional_clean');
+        // ROOT FIX: Safe theme ID extraction with proper array key checks
+        if (!empty($atts['theme'])) {
+            $theme_id = $atts['theme'];
+        } elseif (isset($state['globalSettings']) && is_array($state['globalSettings']) && isset($state['globalSettings']['theme'])) {
+            $theme_id = $state['globalSettings']['theme'];
+        } else {
+            $theme_id = 'professional_clean';
+        }
         $this->current_theme = $this->load_theme($theme_id);
         
         // Start output buffering
@@ -271,7 +283,15 @@ class GMKB_Frontend_Display {
     private function render_media_kit($state, $post_id, $atts) {
         // Get theme customizations
         $theme_customizations = get_post_meta($post_id, 'gmkb_theme_customizations', true) ?: array();
-        $theme_id = $atts['theme'] ?: ($state['globalSettings']['theme'] ?? 'professional_clean');
+        
+        // ROOT FIX: Safe theme ID extraction with proper array key checks
+        if (!empty($atts['theme'])) {
+            $theme_id = $atts['theme'];
+        } elseif (isset($state['globalSettings']) && is_array($state['globalSettings']) && isset($state['globalSettings']['theme'])) {
+            $theme_id = $state['globalSettings']['theme'];
+        } else {
+            $theme_id = 'professional_clean';
+        }
         $sections = $state['sections'] ?? array();
         $components = $state['components'] ?? array();
         $layout = $state['layout'] ?? array();
@@ -320,6 +340,7 @@ class GMKB_Frontend_Display {
     
     /**
      * Render sections with components
+     * ROOT FIX: Inject collected CSS at section level for valid HTML structure
      * 
      * @param array $sections Sections array
      * @param array $components Components map
@@ -327,6 +348,9 @@ class GMKB_Frontend_Display {
      * @param array $atts Attributes
      */
     private function render_sections($sections, $components, $post_id, $atts) {
+        // Inject any collected CSS from previous sections
+        $this->inject_collected_css();
+        
         foreach ($sections as $section) {
             $section_id = $section['section_id'] ?? 'section-' . uniqid();
             // ROOT FIX: Check both 'section_type' and 'type' keys
@@ -385,6 +409,8 @@ class GMKB_Frontend_Display {
                 </div>
             </section>
             <?php
+            // Inject CSS for components in this section
+            $this->inject_collected_css();
         }
     }
     
@@ -420,16 +446,37 @@ class GMKB_Frontend_Display {
         // ROOT FIX: Handle both formats - columns object OR flat array
         $columns = array(1 => array(), 2 => array());
         
+        // DEBUG: Log what we received
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: render_two_column_section called');
+            error_log('GMKB: section_components type: ' . gettype($section_components));
+            error_log('GMKB: section_components: ' . print_r($section_components, true));
+            error_log('GMKB: components count: ' . count($components));
+            error_log('GMKB: components keys: ' . implode(', ', array_keys($components)));
+        }
+        
         // Check if we have a 'columns' key in the section (Vue format)
         if (is_array($section_components) && isset($section_components['1']) && isset($section_components['2'])) {
             // Vue saves as: columns: {1: [...], 2: [...], 3: [...]}
             $columns[1] = $section_components['1'] ?? array();
             $columns[2] = $section_components['2'] ?? array();
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB: Using Vue format columns');
+                error_log('GMKB: Column 1 items: ' . count($columns[1]));
+                error_log('GMKB: Column 2 items: ' . count($columns[2]));
+            }
         } else {
             // Legacy format: flat array with column property
             foreach ($section_components as $comp_ref) {
                 $column = is_array($comp_ref) ? ($comp_ref['column'] ?? 1) : 1;
                 $columns[$column][] = $comp_ref;
+            }
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB: Using legacy format columns');
+                error_log('GMKB: Column 1 items: ' . count($columns[1]));
+                error_log('GMKB: Column 2 items: ' . count($columns[2]));
             }
         }
         
@@ -438,7 +485,18 @@ class GMKB_Frontend_Display {
             <?php for ($col = 1; $col <= 2; $col++): ?>
                 <div class="gmkb-section__column" data-column="<?php echo $col; ?>">
                     <?php
-                    foreach ($columns[$col] as $comp_ref) {
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('GMKB: Rendering column ' . $col . ' with ' . count($columns[$col]) . ' items');
+                    }
+                    
+                    if (empty($columns[$col])) {
+                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                            error_log('GMKB: Column ' . $col . ' is EMPTY');
+                        }
+                        echo '<!-- GMKB: Column ' . $col . ' has no components -->';
+                    }
+                    
+                    foreach ($columns[$col] as $index => $comp_ref) {
                         // ROOT FIX: Handle both string and array format
                         if (is_string($comp_ref)) {
                             $component_id = $comp_ref;
@@ -447,8 +505,22 @@ class GMKB_Frontend_Display {
                         } else {
                             $component_id = null;
                         }
+                        
+                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                            error_log('GMKB: Column ' . $col . ' item ' . $index . ': component_id = ' . ($component_id ?? 'NULL'));
+                            error_log('GMKB: Component exists in map? ' . (isset($components[$component_id]) ? 'YES' : 'NO'));
+                        }
+                        
                         if ($component_id && isset($components[$component_id])) {
+                            if (defined('WP_DEBUG') && WP_DEBUG) {
+                                error_log('GMKB: Rendering component: ' . $component_id);
+                            }
                             $this->render_component($components[$component_id], $component_id, $post_id, $atts);
+                        } else {
+                            if (defined('WP_DEBUG') && WP_DEBUG) {
+                                error_log('GMKB: SKIPPING component - ID: ' . ($component_id ?? 'NULL') . ', exists: ' . (isset($components[$component_id]) ? 'yes' : 'no'));
+                            }
+                            echo '<!-- GMKB: Component not found: ' . esc_attr($component_id ?? 'null') . ' -->';
                         }
                     }
                     ?>
@@ -521,9 +593,13 @@ class GMKB_Frontend_Display {
     }
     
     /**
+     * Component CSS cache for batch injection
+     */
+    private $component_css_cache = array();
+    
+    /**
      * Render single component (includes user customizations)
-     * ROOT FIX: Enhanced to support advanced settings (custom classes, IDs, responsive visibility)
-     * ROOT FIX 2: Inject ComponentStyleService-compatible CSS
+     * ROOT FIX: Collect CSS for batch injection, not inline
      * 
      * @param array $component Component data
      * @param string $component_id Component ID
@@ -536,8 +612,8 @@ class GMKB_Frontend_Display {
         $component_props = $component['props'] ?? array();
         $component_settings = $component['settings'] ?? array();
         
-        // ROOT FIX: Generate ComponentStyleService-compatible CSS instead of inline styles
-        $this->inject_component_css($component_id, $component_settings);
+        // ROOT FIX: COLLECT CSS instead of injecting inline (prevents invalid HTML structure)
+        $this->collect_component_css($component_id, $component_settings);
         
         // Build inline styles from component settings (user customizations) - DEPRECATED but kept for legacy
         $inline_styles = ''; // No longer use inline styles - use injected CSS instead
@@ -548,9 +624,11 @@ class GMKB_Frontend_Display {
             'gmkb-component--' . $component_type
         );
         
-        if ($atts['lazy_load'] === 'true') {
-            $component_classes[] = 'gmkb-lazy';
-        }
+        // ROOT FIX: NEVER use lazy loading on frontend - no Vue to hydrate it
+        // Templates render directly via PHP
+        // if ($atts['lazy_load'] === 'true') {
+        //     $component_classes[] = 'gmkb-lazy';
+        // }
         
         // PHASE 2: Add custom CSS classes from settings.advanced.custom.cssClasses
         if (!empty($component_settings['advanced']['custom']['cssClasses'])) {
@@ -589,7 +667,6 @@ class GMKB_Frontend_Display {
             $custom_id = sanitize_html_class($component_settings['advanced']['custom']['cssId']);
         }
         
-        
         // Build data attributes
         $data_attrs = array(
             'data-component-id' => $component_id,
@@ -610,27 +687,42 @@ class GMKB_Frontend_Display {
             }
         }
         
+        // Collect custom CSS if provided (will be injected at section level)
+        if (!empty($component_settings['customCSS'])) {
+            $this->collect_custom_css($component_id, $component_settings['customCSS']);
+        }
+        
+        // ROOT FIX: Merge data and props - props take precedence
+        $merged_data = array_merge($component_data, $component_props);
+        
+        // Build data attributes string
+        $data_attrs_string = '';
+        foreach ($data_attrs as $key => $value) {
+            $data_attrs_string .= ' ' . esc_attr($key) . '="' . esc_attr($value) . '"';
+        }
+        
+        // ROOT FIX: Wrap component with proper div structure
         ?>
-            
+        <div class="<?php echo esc_attr(implode(' ', $component_classes)); ?>" 
+             <?php if ($custom_id): ?>id="<?php echo esc_attr($custom_id); ?>"<?php endif; ?>
+             <?php echo $data_attrs_string; ?>>
             <?php
-            // Inject custom CSS if provided
-            if (!empty($component_settings['customCSS'])) {
-                $this->render_component_custom_css($component_id, $component_settings['customCSS']);
+            // Load template with proper error handling
+            try {
+                $this->load_component_template($component_type, array_merge($merged_data, array(
+                    'component_id' => $component_id,
+                    'post_id' => $post_id,
+                    'data' => $component_data,
+                    'is_frontend' => true,
+                    'theme' => $this->current_theme
+                )));
+            } catch (Exception $e) {
+                error_log('GMKB Frontend Error: Failed to load component template - ' . $e->getMessage());
+                echo '<div class="gmkb-component-error">Component failed to load</div>';
             }
-            
-            // ROOT FIX: Merge data and props - props take precedence
-            $merged_data = array_merge($component_data, $component_props);
-            
-            // ROOT FIX 3: The template ALREADY includes the wrapper, so don't add another one
-            // Just load the template directly
-            $this->load_component_template($component_type, array_merge($merged_data, array(
-                'component_id' => $component_id,
-                'post_id' => $post_id,
-                'data' => $component_data,
-                'is_frontend' => true,
-                'theme' => $this->current_theme
-            )));
             ?>
+        </div>
+        <?php
     }
     
     /**
@@ -644,11 +736,30 @@ class GMKB_Frontend_Display {
         $frontend_template = GMKB_PLUGIN_DIR . "components/{$component_type}/frontend-template.php";
         $template = GMKB_PLUGIN_DIR . "components/{$component_type}/template.php";
         
+        // ROOT FIX: Debug template loading
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('🔍 GMKB Template Loading: ' . $component_type);
+            error_log('  - Frontend template path: ' . $frontend_template);
+            error_log('  - Frontend template exists: ' . (file_exists($frontend_template) ? 'YES' : 'NO'));
+            error_log('  - Standard template path: ' . $template);
+            error_log('  - Standard template exists: ' . (file_exists($template) ? 'YES' : 'NO'));
+            error_log('  - Props keys: ' . implode(', ', array_keys($props)));
+        }
+        
         if (file_exists($frontend_template)) {
             $template_file = $frontend_template;
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB: Using frontend template');
+            }
         } elseif (file_exists($template)) {
             $template_file = $template;
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB: Using standard template');
+            }
         } else {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB: NO TEMPLATE FOUND - showing fallback');
+            }
             echo $this->render_component_fallback($component_type, $props);
             return;
         }
@@ -658,11 +769,36 @@ class GMKB_Frontend_Display {
         $props = apply_filters('gmkb_enrich_component_props', $props, $component_type, $props['post_id'] ?? 0);
         $props = apply_filters("gmkb_enrich_{$component_type}_props", $props, $props['post_id'] ?? 0);
         
+        // ROOT FIX: Debug enriched props
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('📊 GMKB Enriched Props for ' . $component_type . ':');
+            error_log('  - Keys: ' . implode(', ', array_keys($props)));
+            if (isset($props['biography'])) {
+                error_log('  - Has biography: ' . (strlen($props['biography']) > 0 ? 'YES (' . strlen($props['biography']) . ' chars)' : 'EMPTY'));
+            }
+            if (isset($props['name'])) {
+                error_log('  - Name: ' . $props['name']);
+            }
+        }
+        
         // Extract props as variables for template
         extract($props, EXTR_SKIP);
         
-        // Include template
-        include $template_file;
+        // ROOT FIX: Include template with error handling
+        try {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB: Including template file: ' . $template_file);
+            }
+            include $template_file;
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB: Template included successfully');
+            }
+        } catch (Exception $e) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB Template Error: ' . $e->getMessage());
+            }
+            echo $this->render_component_fallback($component_type, $props);
+        }
     }
     
     /**
@@ -1419,13 +1555,13 @@ class GMKB_Frontend_Display {
     }
     
     /**
-     * ROOT FIX: Inject component CSS matching ComponentStyleService logic
-     * This mirrors the JavaScript generateCSS() method for frontend consistency
+     * ROOT FIX: COLLECT component CSS instead of injecting inline
+     * CSS will be batch-injected at section level to maintain valid HTML structure
      * 
      * @param string $component_id Component ID
      * @param array $settings Component settings
      */
-    private function inject_component_css($component_id, $settings) {
+    private function collect_component_css($component_id, $settings) {
         if (empty($settings) || !is_array($settings)) {
             return;
         }
@@ -1610,8 +1746,39 @@ class GMKB_Frontend_Display {
         }
         
         if (!empty($css)) {
-            echo "<style id=\"component-styles-{$component_id}\">\n{$css}</style>\n";
+            // Store CSS for batch injection
+            $this->component_css_cache[$component_id] = $css;
         }
+    }
+    
+    /**
+     * Inject all collected component CSS
+     */
+    private function inject_collected_css() {
+        if (empty($this->component_css_cache)) {
+            return;
+        }
+        
+        echo '<style id="gmkb-component-styles">';
+        foreach ($this->component_css_cache as $component_id => $css) {
+            echo "\n/* Component: {$component_id} */\n";
+            echo $css;
+        }
+        echo '</style>';
+        
+        // Clear cache after injection
+        $this->component_css_cache = array();
+    }
+    
+    /**
+     * Collect custom CSS for later injection
+     */
+    private function collect_custom_css($component_id, $custom_css) {
+        // Add to cache with special marker
+        if (!isset($this->component_css_cache[$component_id])) {
+            $this->component_css_cache[$component_id] = '';
+        }
+        $this->component_css_cache[$component_id] .= "\n/* Custom CSS */\n#{$component_id} { {$custom_css} }\n";
     }
     
     /**

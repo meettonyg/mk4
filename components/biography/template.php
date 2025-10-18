@@ -1,16 +1,30 @@
 <?php
 /**
  * Biography Component Template
- * ROOT FIX: Mirrors Vue component structure exactly
- * Uses standardized data contract
+ * ROOT FIX: Template outputs CONTENT ONLY - parent system provides wrapper
+ * This prevents double-wrapper issue
  */
 
 // Data contract - standardized variable names
 $component_id = $props['component_id'] ?? $componentId ?? 'bio-' . uniqid();
 $name = $props['name'] ?? '';
 $title = $props['title'] ?? '';
-$biography = $props['biography'] ?? $props['bio'] ?? '';
+$biography = $props['biography'] ?? $props['bio'] ?? $props['bio_content'] ?? '';
 $company = $props['company'] ?? '';
+
+// ROOT FIX: AGGRESSIVE debugging to see what data we actually have
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('========== BIOGRAPHY TEMPLATE DEBUG ==========');
+    error_log('Component ID: ' . $component_id);
+    error_log('Available props keys: ' . implode(', ', array_keys($props)));
+    error_log('Name: ' . ($name ?: 'EMPTY'));
+    error_log('Title: ' . ($title ?: 'EMPTY'));
+    error_log('Biography length: ' . strlen($biography));
+    error_log('Biography preview: ' . substr($biography, 0, 100));
+    error_log('Company: ' . ($company ?: 'EMPTY'));
+    error_log('Post ID: ' . ($props['post_id'] ?? 'NO POST ID'));
+    error_log('==============================================');
+}
 
 // Combine title and company
 $display_title = $title;
@@ -18,21 +32,28 @@ if ($company) {
     $display_title .= $company ? " • $company" : '';
 }
 ?>
-<!-- ROOT FIX: Exact same structure as Vue -->
-<div class="gmkb-component gmkb-component--biography" data-component-id="<?php echo esc_attr($component_id); ?>">
-    <div class="component-root biography-content">
-        <?php if ($name): ?>
-            <h2 class="biography-name"><?php echo esc_html($name); ?></h2>
-        <?php endif; ?>
-        
-        <?php if ($display_title): ?>
-            <p class="biography-title"><?php echo esc_html($display_title); ?></p>
-        <?php endif; ?>
-        
-        <?php if ($biography): ?>
-            <div class="biography-text"><?php echo wpautop(wp_kses_post($biography)); ?></div>
-        <?php else: ?>
-            <p class="biography-placeholder">Add your full biography and professional background here.</p>
-        <?php endif; ?>
-    </div>
+<!-- ROOT FIX: Inner content only - outer wrapper provided by system -->
+<div class="component-root biography-content">
+    <?php if ($name): ?>
+        <h2 class="biography-name"><?php echo esc_html($name); ?></h2>
+    <?php endif; ?>
+    
+    <?php if ($display_title): ?>
+        <p class="biography-title"><?php echo esc_html($display_title); ?></p>
+    <?php endif; ?>
+    
+    <?php if ($biography): ?>
+        <div class="biography-text"><?php echo wpautop(wp_kses_post($biography)); ?></div>
+    <?php else: ?>
+        <div class="biography-placeholder" style="padding: 20px; background: #f0f0f0; border: 2px dashed #ccc; border-radius: 8px;">
+            <p><strong>Biography Component - No Data Available</strong></p>
+            <p style="font-size: 14px; color: #666;">This component is waiting for biography data from Pods.</p>
+            <?php if (defined('WP_DEBUG') && WP_DEBUG): ?>
+                <details style="margin-top: 10px; font-size: 12px; color: #999;">
+                    <summary>Debug Info (WP_DEBUG mode)</summary>
+                    <pre><?php echo esc_html(print_r($props, true)); ?></pre>
+                </details>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
 </div>

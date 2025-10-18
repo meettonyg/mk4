@@ -1,8 +1,7 @@
 <?php
 /**
  * Contact Component Template
- * ROOT FIX: Mirrors Vue component structure exactly
- * Uses standardized data contract
+ * ROOT FIX: Template outputs CONTENT ONLY - parent system provides wrapper
  */
 
 // Data contract - standardized variable names
@@ -18,9 +17,8 @@ function displayWebsite($website) {
     return preg_replace('/^https?:\/\//', '', $website);
 }
 ?>
-<!-- ROOT FIX: Exact same structure as Vue -->
-<div class="gmkb-component gmkb-component--contact" data-component-id="<?php echo esc_attr($component_id); ?>">
-    <div class="component-root contact-info">
+<!-- ROOT FIX: Inner content only - outer wrapper provided by system -->
+<div class="component-root contact-info">
         <?php if ($email): ?>
             <div class="contact-item">
                 <i class="fas fa-envelope"></i>
@@ -50,5 +48,4 @@ function displayWebsite($website) {
                 <span><?php echo esc_html($location); ?></span>
             </div>
         <?php endif; ?>
-    </div>
 </div>

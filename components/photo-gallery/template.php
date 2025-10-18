@@ -1,14 +1,15 @@
 <?php
 /**
  * Photo Gallery Component Template
+ * ROOT FIX: Template outputs CONTENT ONLY - parent system provides wrapper
  */
 $component_id = $props['component_id'] ?? $componentId ?? 'photo-gallery-' . uniqid();
 $title = $props['title'] ?? 'Photo Gallery';
 $photos = $props['photos'] ?? [];
 if (!is_array($photos)) $photos = [];
 ?>
-<div class="gmkb-component gmkb-component--photogallery" data-component-id="<?php echo esc_attr($component_id); ?>">
-    <div class="component-root photo-gallery-content">
+<!-- ROOT FIX: Inner content only - outer wrapper provided by system -->
+<div class="component-root photo-gallery-content">
     <?php if ($title): ?>
         <h2 class="section-title"><?php echo esc_html($title); ?></h2>
     <?php endif; ?>
@@ -28,5 +29,4 @@ if (!is_array($photos)) $photos = [];
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
-    </div>  <!-- close component-root -->
 </div>

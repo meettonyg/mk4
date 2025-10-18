@@ -1,8 +1,7 @@
 <?php
 /**
  * Topics Component Template
- * ROOT FIX: Mirrors Vue component structure exactly
- * Uses standardized data contract
+ * ROOT FIX: Template outputs CONTENT ONLY - parent system provides wrapper
  */
 
 // Data contract - standardized variable names
@@ -16,9 +15,8 @@ if (!is_array($topics)) {
     $topics = [];
 }
 ?>
-<!-- ROOT FIX: Exact same structure as Vue -->
-<div class="gmkb-component gmkb-component--topics" data-component-id="<?php echo esc_attr($component_id); ?>">
-    <div class="component-root topics-container">
+<!-- ROOT FIX: Inner content only - outer wrapper provided by system -->
+<div class="component-root topics-container">
         <?php if ($title): ?>
             <h2 class="topics-title"><?php echo esc_html($title); ?></h2>
         <?php endif; ?>
@@ -46,5 +44,4 @@ if (!is_array($topics)) {
         <?php else: ?>
             <p class="topics-placeholder">Add your speaking topics here.</p>
         <?php endif; ?>
-    </div>
 </div>

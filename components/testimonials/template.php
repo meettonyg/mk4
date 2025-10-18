@@ -1,8 +1,7 @@
 <?php
 /**
  * Testimonials Component Template
- * ROOT FIX: Mirrors Vue component structure exactly
- * Uses standardized data contract
+ * ROOT FIX: Template outputs CONTENT ONLY - parent system provides wrapper
  */
 
 // Data contract - standardized variable names
@@ -15,9 +14,8 @@ if (!is_array($testimonials)) {
     $testimonials = [];
 }
 ?>
-<!-- ROOT FIX: Exact same structure as Vue -->
-<div class="gmkb-component gmkb-component--testimonials" data-component-id="<?php echo esc_attr($component_id); ?>">
-    <div class="component-root testimonials-content">
+<!-- ROOT FIX: Inner content only - outer wrapper provided by system -->
+<div class="component-root testimonials-content">
     <?php if ($title): ?>
         <h2 class="section-title"><?php echo esc_html($title); ?></h2>
     <?php endif; ?>
@@ -46,5 +44,4 @@ if (!is_array($testimonials)) {
             <p class="testimonials-placeholder">Add testimonials here.</p>
         <?php endif; ?>
     </div>
-    </div>  <!-- close component-root -->
 </div>

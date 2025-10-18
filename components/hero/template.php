@@ -1,8 +1,7 @@
 <?php
 /**
  * Hero Component Template
- * ROOT FIX: Mirrors Vue component structure exactly
- * Uses standardized data contract
+ * ROOT FIX: Template outputs CONTENT ONLY - parent system provides wrapper
  */
 
 // Data contract - standardized variable names
@@ -14,9 +13,8 @@ $imageUrl = $props['imageUrl'] ?? $props['image_url'] ?? $props['image'] ?? '';
 $ctaText = $props['ctaText'] ?? $props['cta_text'] ?? $props['buttonText'] ?? '';
 $ctaUrl = $props['ctaUrl'] ?? $props['cta_url'] ?? $props['buttonUrl'] ?? '#';
 ?>
-<!-- ROOT FIX: Exact same structure as Vue -->
-<div class="gmkb-component gmkb-component--hero" data-component-id="<?php echo esc_attr($component_id); ?>">
-    <div class="component-root hero-content">
+<!-- ROOT FIX: Inner content only - outer wrapper provided by system -->
+<div class="component-root hero-content">
     <?php if ($imageUrl): ?>
         <div class="hero__avatar">
             <img src="<?php echo esc_url($imageUrl); ?>" alt="<?php echo esc_attr($name ?: 'Profile Avatar'); ?>">
@@ -40,5 +38,4 @@ $ctaUrl = $props['ctaUrl'] ?? $props['cta_url'] ?? $props['buttonUrl'] ?? '#';
             <button class="btn"><?php echo esc_html($ctaText); ?></button>
         </div>
     <?php endif; ?>
-    </div>
 </div>

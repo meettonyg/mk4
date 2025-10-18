@@ -1,8 +1,7 @@
 <?php
 /**
  * Social Component Template
- * ROOT FIX: Mirrors Vue component structure exactly
- * Uses standardized data contract
+ * ROOT FIX: Template outputs CONTENT ONLY - parent system provides wrapper
  */
 
 // Data contract - standardized variable names
@@ -30,9 +29,8 @@ function getSocialIcon($platform) {
     return $icons[$lowerPlatform] ?? 'fas fa-link';
 }
 ?>
-<!-- ROOT FIX: Exact same structure as Vue -->
-<div class="gmkb-component gmkb-component--social" data-component-id="<?php echo esc_attr($component_id); ?>">
-    <div class="component-root social-links">
+<!-- ROOT FIX: Inner content only - outer wrapper provided by system -->
+<div class="component-root social-links">
         <?php if (!empty($links)): ?>
             <?php foreach ($links as $link): ?>
                 <?php
@@ -48,5 +46,4 @@ function getSocialIcon($platform) {
                 </a>
             <?php endforeach; ?>
         <?php endif; ?>
-    </div>
 </div>
