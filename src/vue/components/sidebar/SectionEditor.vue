@@ -6,7 +6,14 @@
         <i class="fa-solid fa-arrow-left"></i>
       </button>
       <h2 class="editor-title">Edit Section</h2>
-      <div class="header-spacer"></div>
+      
+      <!-- ROOT FIX: Add Section Reset Buttons -->
+      <div class="header-actions">
+        <SectionResetButton 
+          v-if="sectionId" 
+          :sectionId="sectionId" 
+        />
+      </div>
     </div>
     
     <!-- Editor Tabs -->
@@ -252,6 +259,8 @@
 import { ref, computed, reactive, watch, onMounted } from 'vue'
 import { useMediaKitStore } from '../../../stores/mediaKit'
 import { useUIStore } from '../../../stores/ui'
+// ROOT FIX: Import section reset button
+import SectionResetButton from '../ui/SectionResetButton.vue'
 
 const store = useMediaKitStore()
 const uiStore = useUIStore()
@@ -422,9 +431,26 @@ body.dark-mode .editor-title {
   color: #f3f4f6;
 }
 
-.header-spacer {
-  width: 32px;
-  flex-shrink: 0;
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* ROOT FIX: Override button styles from SectionResetButton for compact sidebar display */
+.header-actions :deep(.section-reset-controls) {
+  gap: 4px;
+}
+
+.header-actions :deep(.reset-button) {
+  padding: 6px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.header-actions :deep(.reset-button i) {
+  font-size: 11px;
 }
 
 /* Tabs */

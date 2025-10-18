@@ -2,6 +2,12 @@
   <div class="component-editor-template">
     <div class="editor-header">
       <h3>Edit {{ componentType }}</h3>
+      <!-- RESET BUTTON ADDED -->
+      <ComponentResetButton 
+        :component-id="componentId" 
+        mode="settings"
+        :show-label="false"
+      />
       <button @click="handleClose" class="close-btn">×</button>
     </div>
     
@@ -54,6 +60,7 @@ import { computed, h } from 'vue';
 import { useUIStore } from '@/stores/ui';
 import BaseStylePanel from './BaseStylePanel.vue';
 import BaseAdvancedPanel from './BaseAdvancedPanel.vue';
+import ComponentResetButton from '../../ui/ComponentResetButton.vue';
 
 const props = defineProps({
   componentId: {
@@ -170,6 +177,7 @@ body.dark-mode .component-editor-template {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
   padding: 16px 20px;
   background: white;
   border-bottom: 1px solid #e5e7eb;
@@ -185,6 +193,7 @@ body.dark-mode .editor-header {
   font-size: 18px;
   font-weight: 600;
   color: #1e293b;
+  flex-grow: 1;
 }
 
 body.dark-mode .editor-header h3 {

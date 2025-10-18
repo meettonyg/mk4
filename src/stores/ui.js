@@ -27,9 +27,6 @@ export const useUIStore = defineStore('ui', {
         editingSectionId: null,
         activeEditorTab: 'content', // 'content' | 'style' | 'advanced' - persisted across updates
         
-        // DEPRECATED: Old panel-based approach (keep for backwards compatibility during migration)
-        sectionSettingsPanelOpen: false,
-        
         // Modal state
         componentLibraryOpen: false,
         themeCustomizerOpen: false,
@@ -92,8 +89,7 @@ export const useUIStore = defineStore('ui', {
                    state.themeCustomizerOpen || 
                    state.importExportModalOpen ||
                    state.editPanelOpen ||
-                   state.designPanelOpen ||
-                   state.sectionSettingsPanelOpen;
+                   state.designPanelOpen;
         },
         
         // Get active toast count
@@ -189,7 +185,6 @@ export const useUIStore = defineStore('ui', {
             // Close old panels (backwards compatibility)
             this.editPanelOpen = false;
             this.designPanelOpen = false;
-            this.sectionSettingsPanelOpen = false;
             
             document.dispatchEvent(new CustomEvent('gmkb:section-editor-opened', {
                 detail: { sectionId }
@@ -217,7 +212,6 @@ export const useUIStore = defineStore('ui', {
             // Close old panels (backwards compatibility)
             this.editPanelOpen = false;
             this.designPanelOpen = false;
-            this.sectionSettingsPanelOpen = false;
             
             console.log('✅ UI Store: Sidebar mode → COMPONENT');
             
@@ -244,22 +238,10 @@ export const useUIStore = defineStore('ui', {
             // Close old panels (backwards compatibility)
             this.editPanelOpen = false;
             this.designPanelOpen = false;
-            this.sectionSettingsPanelOpen = false;
             
             console.log('✅ UI Store: Sidebar mode → DEFAULT');
             
             document.dispatchEvent(new CustomEvent('gmkb:sidebar-editor-closed'));
-        },
-        
-        // DEPRECATED: Old section settings methods (keep for backwards compatibility)
-        openSectionSettings(sectionId) {
-            console.warn('⚠️ openSectionSettings is deprecated, use openSectionEditor instead');
-            this.openSectionEditor(sectionId);
-        },
-        
-        closeSectionSettings() {
-            console.warn('⚠️ closeSectionSettings is deprecated, use closeSidebarEditor instead');
-            this.closeSidebarEditor();
         },
         
         // Modal actions
@@ -421,7 +403,6 @@ export const useUIStore = defineStore('ui', {
             // Close all panels and modals
             this.editPanelOpen = false;
             this.designPanelOpen = false;
-            this.sectionSettingsPanelOpen = false;
             this.componentLibraryOpen = false;
             this.themeCustomizerOpen = false;
             this.importExportModalOpen = false;

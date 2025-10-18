@@ -497,15 +497,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Section Settings Modal -->
-    <SectionSettings 
-      v-if="editingSectionId"
-      :section-id="editingSectionId"
-      :section="getSectionById(editingSectionId)"
-      @close="editingSectionId = null"
-      @update="updateSectionFromSettings"
-    />
   </div>
 </template>
 
@@ -514,7 +505,6 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
 import { useUIStore } from '../../stores/ui';
 import ComponentWrapper from './ComponentWrapper.vue';
-import SectionSettings from './sections/SectionSettings.vue';
 import draggable from 'vuedraggable';
 
 const store = useMediaKitStore();
@@ -541,8 +531,6 @@ const layoutOptions = [
 
 // Refs
 const sectionsContainer = ref(null);
-const sectionSettingsModal = ref(null);
-const editingSectionId = ref(null);
 
 // Reactive state
 const hoveredSection = ref(null);
@@ -746,36 +734,6 @@ const removeSection = (sectionId) => {
 // ROOT FIX: Open section editor in sidebar (Elementor-style)
 const openSectionSettings = (sectionId) => {
   uiStore.openSectionEditor(sectionId);
-};
-
-// Get section by ID
-const getSectionById = (sectionId) => {
-  return store.sections.find(s => s.section_id === sectionId);
-};
-
-// Update section from settings modal
-const updateSectionFromSettings = (updates) => {
-  if (!editingSectionId.value) return;
-  
-  const section = getSectionById(editingSectionId.value);
-  if (!section) return;
-  
-  // Update layout/type
-  if (updates.layout || updates.type) {
-    section.type = updates.layout || updates.type;
-    section.layout = updates.layout || updates.type;
-  }
-  
-  // Update settings
-  if (updates.settings) {
-    if (!section.settings) {
-      section.settings = {};
-    }
-    Object.assign(section.settings, updates.settings);
-  }
-  
-  store.hasUnsavedChanges = true;
-  editingSectionId.value = null;
 };
 
 // Drag and Drop Event Handlers

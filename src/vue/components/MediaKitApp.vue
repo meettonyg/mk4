@@ -43,9 +43,6 @@
         <!-- Design Panel -->
         <DesignPanel />
         
-        <!-- Section Settings Panel -->
-        <SectionSettings />
-        
         <!-- Import/Export Modal -->
         <ImportExportModal 
           v-model="showImportExportModal"
@@ -73,7 +70,6 @@ import DesignPanel from './panels/DesignPanel.vue';
 import ImportExportModal from './ImportExportModal.vue';
 import MediaKitToolbarComplete from './MediaKitToolbarComplete.vue';
 import ErrorBoundary from './ErrorBoundary.vue';
-import SectionSettings from './sections/SectionSettings.vue';
 import ToastContainer from './ToastContainer.vue';
 
 // Store references
