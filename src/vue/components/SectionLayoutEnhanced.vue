@@ -892,6 +892,7 @@ const getSectionStyles = (section) => {
       'small': '20px',
       'medium': '40px',
       'large': '60px',
+      'extra-large': '100px',
       'none': '0px'
     };
     
@@ -942,6 +943,7 @@ const getColumnStyles = (section) => {
     'small': '20px',
     'medium': '40px',
     'large': '60px',
+    'extra-large': '100px',
     'none': '0px'
   };
   const mappedPadding = paddingValue ? (paddingMap[paddingValue] || `${paddingValue}px`) : '0px';

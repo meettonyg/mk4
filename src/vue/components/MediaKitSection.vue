@@ -1,7 +1,11 @@
 <template>
   <div 
     class="gmkb-section"
-    :class="`gmkb-section--${section.type}`"
+    :class="[
+      `gmkb-section--${section.type}`,
+      `gmkb-section--padding-${sectionSettings.padding || 'medium'}`,
+      `gmkb-section--gap-${sectionSettings.gap || 'medium'}`
+    ]"
     :data-section-id="section.section_id"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
@@ -164,6 +168,11 @@ const emit = defineEmits(['move-up', 'move-down', 'remove']);
 // State
 const isHovered = ref(false);
 
+// ROOT FIX: Computed property for section settings
+const sectionSettings = computed(() => {
+  return props.section.settings || {};
+});
+
 // Computed properties for column layouts
 const leftColumnComponents = computed(() => {
   return props.components.filter(c => !c.columnIndex || c.columnIndex === 1);
@@ -198,10 +207,31 @@ const openSettings = () => {
 .gmkb-section {
   position: relative;
   margin-bottom: 20px;
-  padding: 20px;
+  padding: 20px; /* Default padding */
   background: rgba(255, 255, 255, 0.02);
   border-radius: 8px;
   transition: all 0.3s;
+}
+
+/* ROOT FIX: Dynamic padding classes */
+.gmkb-section--padding-none {
+  padding: 0;
+}
+
+.gmkb-section--padding-small {
+  padding: 12px;
+}
+
+.gmkb-section--padding-medium {
+  padding: 20px;
+}
+
+.gmkb-section--padding-large {
+  padding: 32px;
+}
+
+.gmkb-section--padding-extra-large {
+  padding: 48px;
 }
 
 .gmkb-section:hover {
@@ -254,7 +284,24 @@ const openSettings = () => {
 
 .gmkb-section__columns {
   display: flex;
+  gap: 20px; /* Default gap */
+}
+
+/* ROOT FIX: Dynamic gap classes */
+.gmkb-section--gap-none .gmkb-section__columns {
+  gap: 0;
+}
+
+.gmkb-section--gap-small .gmkb-section__columns {
+  gap: 12px;
+}
+
+.gmkb-section--gap-medium .gmkb-section__columns {
   gap: 20px;
+}
+
+.gmkb-section--gap-large .gmkb-section__columns {
+  gap: 32px;
 }
 
 .gmkb-section__columns--two .gmkb-section__column {

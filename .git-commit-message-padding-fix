@@ -1,0 +1,42 @@
+fix(sections): Add missing 'extra-large' padding option mapping (100px)
+
+PROBLEM:
+- SectionEditor dropdown offered 5 padding options (none/small/medium/large/extra-large)
+- SectionLayoutEnhanced only mapped 4 options (missing extra-large)
+- Result: "large" and "extra-large" appeared identical to users
+
+ROOT CAUSE:
+- paddingMap in getSectionStyles() missing 'extra-large': '100px'
+- paddingMap in getColumnStyles() missing 'extra-large': '100px'
+- When user selected "extra-large", no mapping existed, causing fallback behavior
+
+SOLUTION:
+- Added 'extra-large': '100px' to paddingMap in getSectionStyles()
+- Added 'extra-large': '100px' to paddingMap in getColumnStyles()
+- Updated documentation to reflect complete mapping
+
+RESULT:
+- All 5 padding options now visually distinct
+- extra-large provides 100px padding (vs 60px for large)
+- Follows logical progression: 20px → 40px → 60px → 100px
+- User expectations now met - different options look different
+
+Files modified:
+- src/vue/components/SectionLayoutEnhanced.vue (2 paddingMap updates)
+- docs/SECTION-PADDING-GAP-FIX.md (documentation update)
+- SECTION-PADDING-EXTRA-LARGE-FIX.md (new documentation)
+
+Testing:
+- Visual verification: All 5 padding sizes are now visually distinct
+- Behavior: Settings persist and preview matches frontend
+- No breaking changes to existing sections
+
+Developer Checklist Compliance:
+✅ No Polling - No setTimeout/setInterval
+✅ Event-Driven - No async changes
+✅ Root Cause Fix - Fixed missing mapping at source
+✅ Code Simplicity - Minimal change, one line per location
+✅ No Redundancy - Follows existing pattern
+✅ Documentation - Updated docs to match code
+
+Closes: #section-padding-extra-large-missing

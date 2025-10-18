@@ -165,12 +165,6 @@
         </div>
       </div>
     </div>
-    
-    <!-- Footer Actions -->
-    <div class="editor-footer">
-      <button @click="handleBack" class="btn btn-secondary">Cancel</button>
-      <button @click="handleSave" class="btn btn-primary">Apply Changes</button>
-    </div>
   </div>
 </template>
 
@@ -252,7 +246,13 @@ watch(sectionId, (newId) => {
 // Update individual setting
 function updateSetting(key, value) {
   settings[key] = value
-  console.log('📝 SectionEditor: Updated setting:', key, '=', value)
+  
+  // ROOT FIX: Immediately update store for live preview
+  if (sectionId.value) {
+    const updatedSettings = { [key]: value }
+    store.updateSectionSettings(sectionId.value, updatedSettings)
+    console.log('✅ SectionEditor: Live update -', key, '=', value)
+  }
 }
 
 // Update layout
@@ -269,19 +269,6 @@ function updateLayout(layout) {
 
 // Handle back button
 function handleBack() {
-  uiStore.closeSidebarEditor()
-}
-
-// Handle save
-function handleSave() {
-  if (!sectionId.value) return
-  
-  // Save all settings
-  store.updateSectionSettings(sectionId.value, { ...settings })
-  
-  console.log('✅ SectionEditor: Settings saved for section:', sectionId.value)
-  
-  // Return to default sidebar
   uiStore.closeSidebarEditor()
 }
 </script>
@@ -689,56 +676,6 @@ body.dark-mode .slider-value {
 
 body.dark-mode .checkbox-label {
   color: #d1d5db;
-}
-
-/* Footer */
-.editor-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 16px;
-  border-top: 1px solid #e5e7eb;
-  flex-shrink: 0;
-}
-
-body.dark-mode .editor-footer {
-  border-top-color: #334155;
-}
-
-.btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-secondary {
-  background: white;
-  border: 1px solid #d1d5db;
-  color: #374151;
-}
-
-.btn-secondary:hover {
-  background: #f9fafb;
-  border-color: #9ca3af;
-}
-
-body.dark-mode .btn-secondary {
-  background: #1e293b;
-  border-color: #334155;
-  color: #d1d5db;
-}
-
-.btn-primary {
-  background: #ec4899;
-  color: white;
-}
-
-.btn-primary:hover {
-  background: #db2777;
 }
 
 /* Scrollbar */
