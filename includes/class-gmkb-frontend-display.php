@@ -348,8 +348,8 @@ class GMKB_Frontend_Display {
      * @param array $atts Attributes
      */
     private function render_sections($sections, $components, $post_id, $atts) {
-        // Inject any collected CSS from previous sections
-        $this->inject_collected_css();
+        // PHASE 1 BLOAT ELIMINATION: Disabled competing CSS injection
+        // $this->inject_collected_css();
         
         foreach ($sections as $section) {
             $section_id = $section['section_id'] ?? 'section-' . uniqid();
@@ -409,8 +409,8 @@ class GMKB_Frontend_Display {
                 </div>
             </section>
             <?php
-            // Inject CSS for components in this section
-            $this->inject_collected_css();
+            // PHASE 1 BLOAT ELIMINATION: Disabled competing CSS injection
+            // $this->inject_collected_css();
         }
     }
     
@@ -592,10 +592,72 @@ class GMKB_Frontend_Display {
         <?php
     }
     
+    // PHASE 3 BLOAT ELIMINATION: Removed component_css_cache - no longer needed with token system
+    
     /**
-     * Component CSS cache for batch injection
+     * PHASE 2: Build CSS variable overrides from component settings
+     * Maps user customizations to theme tokens instead of generating CSS
+     * 
+     * @param array $settings Component settings
+     * @return string Inline CSS variable string
      */
-    private $component_css_cache = array();
+    private function build_token_overrides($settings) {
+        if (empty($settings['style'])) {
+            return '';
+        }
+        
+        $vars = array();
+        $style = $settings['style'];
+        
+        // Map background color to token
+        if (!empty($style['background']['color'])) {
+            $vars[] = '--gmkb-color-surface: ' . $style['background']['color'];
+        }
+        
+        // Map text color to token
+        if (!empty($style['typography']['color'])) {
+            $vars[] = '--gmkb-color-text: ' . $style['typography']['color'];
+        }
+        
+        // Map font family to token
+        if (!empty($style['typography']['fontFamily'])) {
+            $vars[] = '--gmkb-font-primary: ' . $this->format_font_family($style['typography']['fontFamily']);
+        }
+        
+        // Map font size to token
+        if (!empty($style['typography']['fontSize'])) {
+            $size = $style['typography']['fontSize'];
+            $value = is_array($size) ? ($size['value'] ?? $size) : $size;
+            $unit = is_array($size) && isset($size['unit']) ? $size['unit'] : 'px';
+            $vars[] = '--gmkb-font-size-base: ' . $value . $unit;
+        }
+        
+        // Map spacing tokens
+        if (!empty($style['spacing']['padding'])) {
+            $p = $style['spacing']['padding'];
+            if (is_array($p)) {
+                $unit = $p['unit'] ?? 'px';
+                $vars[] = '--gmkb-spacing-component: ' . $p['top'] . $unit . ' ' . $p['right'] . $unit . ' ' . $p['bottom'] . $unit . ' ' . $p['left'] . $unit;
+            }
+        }
+        
+        // Map border radius to token
+        if (!empty($style['border']['radius'])) {
+            $r = $style['border']['radius'];
+            if (is_array($r)) {
+                $unit = $r['unit'] ?? 'px';
+                $tl = $r['topLeft'] ?? 0;
+                $vars[] = '--gmkb-border-radius: ' . $tl . $unit;
+            }
+        }
+        
+        // Map box shadow to token
+        if (!empty($style['effects']['boxShadow']) && $style['effects']['boxShadow'] !== 'none') {
+            $vars[] = '--gmkb-shadow: ' . $style['effects']['boxShadow'];
+        }
+        
+        return implode('; ', $vars);
+    }
     
     /**
      * Render single component (includes user customizations)
@@ -612,8 +674,8 @@ class GMKB_Frontend_Display {
         $component_props = $component['props'] ?? array();
         $component_settings = $component['settings'] ?? array();
         
-        // ROOT FIX: COLLECT CSS instead of injecting inline (prevents invalid HTML structure)
-        $this->collect_component_css($component_id, $component_settings);
+        // PHASE 1 BLOAT ELIMINATION: Disabled competing CSS system - using theme tokens instead
+        // $this->collect_component_css($component_id, $component_settings);
         
         // Build inline styles from component settings (user customizations) - DEPRECATED but kept for legacy
         $inline_styles = ''; // No longer use inline styles - use injected CSS instead
@@ -687,10 +749,8 @@ class GMKB_Frontend_Display {
             }
         }
         
-        // Collect custom CSS if provided (will be injected at section level)
-        if (!empty($component_settings['customCSS'])) {
-            $this->collect_custom_css($component_id, $component_settings['customCSS']);
-        }
+        // PHASE 3 BLOAT ELIMINATION: Removed custom CSS collection
+        // Custom CSS should be minimal - use token overrides for styling
         
         // ROOT FIX: Merge data and props - props take precedence
         $merged_data = array_merge($component_data, $component_props);
@@ -701,10 +761,14 @@ class GMKB_Frontend_Display {
             $data_attrs_string .= ' ' . esc_attr($key) . '="' . esc_attr($value) . '"';
         }
         
+        // PHASE 2: Build inline CSS variable overrides from settings
+        $inline_vars = $this->build_token_overrides($component_settings);
+        
         // ROOT FIX: Wrap component with proper div structure
         ?>
         <div class="<?php echo esc_attr(implode(' ', $component_classes)); ?>" 
              <?php if ($custom_id): ?>id="<?php echo esc_attr($custom_id); ?>"<?php endif; ?>
+             <?php if ($inline_vars): ?>style="<?php echo esc_attr($inline_vars); ?>"<?php endif; ?>
              <?php echo $data_attrs_string; ?>>
             <?php
             // Load template with proper error handling
@@ -1264,522 +1328,8 @@ class GMKB_Frontend_Display {
         return implode('; ', $css_rules);
     }
     
-    /**
-     * Build component inline styles from settings (user customizations)
-     * ROOT FIX: Enhanced to parse nested settings.style structure from JSON
-     * 
-     * @param array $settings Component settings
-     * @return string CSS string
-     */
-    private function build_component_inline_styles($settings) {
-        if (empty($settings)) {
-            return '';
-        }
-        
-        $styles = array();
-        
-        // PHASE 2: Parse nested settings.style structure
-        $style_config = $settings['style'] ?? $settings;
-        
-        // SPACING - Handle nested spacing.margin and spacing.padding
-        if (!empty($style_config['spacing'])) {
-            $spacing = $style_config['spacing'];
-            
-            // Margin - support both string and array format
-            if (!empty($spacing['margin'])) {
-                if (is_array($spacing['margin'])) {
-                    // Array format: [top, right, bottom, left]
-                    $styles[] = 'margin: ' . implode('px ', $spacing['margin']) . 'px';
-                } else {
-                    // String format: "32px 0px 32px 0px"
-                    $styles[] = 'margin: ' . $spacing['margin'];
-                }
-            }
-            
-            // Padding - support both string and array format
-            if (!empty($spacing['padding'])) {
-                if (is_array($spacing['padding'])) {
-                    // Array format: [top, right, bottom, left]
-                    $styles[] = 'padding: ' . implode('px ', $spacing['padding']) . 'px';
-                } else {
-                    // String format: "40px 32px 40px 32px"
-                    $styles[] = 'padding: ' . $spacing['padding'];
-                }
-            }
-        }
-        
-        // BACKGROUND - Handle nested background.color and background.opacity
-        if (!empty($style_config['background'])) {
-            $background = $style_config['background'];
-            
-            if (!empty($background['color'])) {
-                $bg_color = $background['color'];
-                
-                // Apply opacity if specified
-                if (isset($background['opacity']) && $background['opacity'] < 1) {
-                    // Convert hex to rgba if needed
-                    if (strpos($bg_color, '#') === 0) {
-                        $hex = str_replace('#', '', $bg_color);
-                        if (strlen($hex) === 3) {
-                            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
-                        }
-                        $r = hexdec(substr($hex, 0, 2));
-                        $g = hexdec(substr($hex, 2, 2));
-                        $b = hexdec(substr($hex, 4, 2));
-                        $bg_color = "rgba({$r}, {$g}, {$b}, {$background['opacity']})";
-                    }
-                }
-                
-                $styles[] = 'background-color: ' . $bg_color;
-            }
-            
-            // Gradient support
-            if (!empty($background['gradient'])) {
-                $styles[] = 'background: ' . $background['gradient'];
-            }
-            
-            // Image support
-            if (!empty($background['image'])) {
-                $styles[] = 'background-image: url(' . esc_url($background['image']) . ')';
-                if (!empty($background['size'])) {
-                    $styles[] = 'background-size: ' . $background['size'];
-                }
-                if (!empty($background['position'])) {
-                    $styles[] = 'background-position: ' . $background['position'];
-                }
-                if (!empty($background['repeat'])) {
-                    $styles[] = 'background-repeat: ' . $background['repeat'];
-                }
-            }
-        }
-        
-        // TYPOGRAPHY - Handle nested typography settings
-        if (!empty($style_config['typography'])) {
-            $typography = $style_config['typography'];
-            
-            if (!empty($typography['fontFamily'])) {
-                $styles[] = 'font-family: ' . $typography['fontFamily'];
-            }
-            
-            if (!empty($typography['fontSize'])) {
-                $font_size = $typography['fontSize'];
-                // Add 'px' if not present
-                if (is_numeric($font_size)) {
-                    $font_size .= 'px';
-                }
-                $styles[] = 'font-size: ' . $font_size;
-            }
-            
-            if (!empty($typography['fontWeight'])) {
-                $styles[] = 'font-weight: ' . $typography['fontWeight'];
-            }
-            
-            if (!empty($typography['lineHeight'])) {
-                $styles[] = 'line-height: ' . $typography['lineHeight'];
-            }
-            
-            if (!empty($typography['letterSpacing'])) {
-                $styles[] = 'letter-spacing: ' . $typography['letterSpacing'];
-            }
-            
-            if (!empty($typography['textAlign'])) {
-                $styles[] = 'text-align: ' . $typography['textAlign'];
-            }
-            
-            if (!empty($typography['textTransform'])) {
-                $styles[] = 'text-transform: ' . $typography['textTransform'];
-            }
-            
-            if (!empty($typography['color'])) {
-                $styles[] = 'color: ' . $typography['color'];
-            }
-        }
-        
-        // BORDER - Handle nested border settings
-        if (!empty($style_config['border'])) {
-            $border = $style_config['border'];
-            
-            // Border width
-            if (isset($border['width'])) {
-                $width = is_numeric($border['width']) ? $border['width'] . 'px' : $border['width'];
-                $style = $border['style'] ?? 'solid';
-                $color = $border['color'] ?? 'currentColor';
-                $styles[] = 'border: ' . $width . ' ' . $style . ' ' . $color;
-            }
-            
-            // Border radius - support both single value and object
-            if (!empty($border['radius'])) {
-                if (is_array($border['radius'])) {
-                    // Object format: {topLeft, topRight, bottomRight, bottomLeft}
-                    $radius_parts = array(
-                        $border['radius']['topLeft'] ?? '0',
-                        $border['radius']['topRight'] ?? '0',
-                        $border['radius']['bottomRight'] ?? '0',
-                        $border['radius']['bottomLeft'] ?? '0'
-                    );
-                    $styles[] = 'border-radius: ' . implode('px ', $radius_parts) . 'px';
-                } else {
-                    // Single value
-                    $radius = is_numeric($border['radius']) ? $border['radius'] . 'px' : $border['radius'];
-                    $styles[] = 'border-radius: ' . $radius;
-                }
-            }
-            
-            // Individual borders
-            if (!empty($border['top'])) {
-                $styles[] = 'border-top: ' . $border['top'];
-            }
-            if (!empty($border['right'])) {
-                $styles[] = 'border-right: ' . $border['right'];
-            }
-            if (!empty($border['bottom'])) {
-                $styles[] = 'border-bottom: ' . $border['bottom'];
-            }
-            if (!empty($border['left'])) {
-                $styles[] = 'border-left: ' . $border['left'];
-            }
-        }
-        
-        // EFFECTS - Handle box shadow and other effects
-        if (!empty($style_config['effects'])) {
-            $effects = $style_config['effects'];
-            
-            if (!empty($effects['boxShadow'])) {
-                $styles[] = 'box-shadow: ' . $effects['boxShadow'];
-            }
-            
-            if (!empty($effects['opacity'])) {
-                $styles[] = 'opacity: ' . $effects['opacity'];
-            }
-            
-            if (!empty($effects['filter'])) {
-                $styles[] = 'filter: ' . $effects['filter'];
-            }
-            
-            if (!empty($effects['transform'])) {
-                $styles[] = 'transform: ' . $effects['transform'];
-            }
-            
-            if (!empty($effects['transition'])) {
-                $styles[] = 'transition: ' . $effects['transition'];
-            }
-        }
-        
-        // ADVANCED LAYOUT SETTINGS
-        if (!empty($settings['advanced'])) {
-            $advanced = $settings['advanced'];
-            
-            // Layout settings
-            if (!empty($advanced['layout'])) {
-                $layout = $advanced['layout'];
-                
-                if (!empty($layout['width'])) {
-                    $width = is_numeric($layout['width']) ? $layout['width'] . 'px' : $layout['width'];
-                    $styles[] = 'width: ' . $width;
-                }
-                
-                if (!empty($layout['maxWidth'])) {
-                    $max_width = is_numeric($layout['maxWidth']) ? $layout['maxWidth'] . 'px' : $layout['maxWidth'];
-                    $styles[] = 'max-width: ' . $max_width;
-                }
-                
-                if (!empty($layout['minHeight'])) {
-                    $min_height = is_numeric($layout['minHeight']) ? $layout['minHeight'] . 'px' : $layout['minHeight'];
-                    $styles[] = 'min-height: ' . $min_height;
-                }
-                
-                if (!empty($layout['alignment'])) {
-                    // Text alignment
-                    $styles[] = 'text-align: ' . $layout['alignment'];
-                }
-                
-                if (!empty($layout['display'])) {
-                    $styles[] = 'display: ' . $layout['display'];
-                }
-                
-                if (!empty($layout['flexDirection'])) {
-                    $styles[] = 'flex-direction: ' . $layout['flexDirection'];
-                }
-                
-                if (!empty($layout['justifyContent'])) {
-                    $styles[] = 'justify-content: ' . $layout['justifyContent'];
-                }
-                
-                if (!empty($layout['alignItems'])) {
-                    $styles[] = 'align-items: ' . $layout['alignItems'];
-                }
-            }
-        }
-        
-        // LEGACY FLAT STRUCTURE SUPPORT (for backwards compatibility)
-        // Only apply if not already set by nested structure
-        
-        if (empty($style_config['background']) && !empty($settings['backgroundColor'])) {
-            $styles[] = 'background-color: ' . $settings['backgroundColor'];
-        }
-        
-        if (empty($style_config['typography']) && !empty($settings['textColor'])) {
-            $styles[] = 'color: ' . $settings['textColor'];
-        }
-        
-        if (empty($style_config['typography']) && !empty($settings['fontSize'])) {
-            $styles[] = 'font-size: ' . $settings['fontSize'];
-        }
-        
-        if (empty($style_config['spacing']) && !empty($settings['padding'])) {
-            $styles[] = 'padding: ' . $settings['padding'];
-        }
-        
-        if (empty($style_config['spacing']) && !empty($settings['margin'])) {
-            $styles[] = 'margin: ' . $settings['margin'];
-        }
-        
-        if (empty($style_config['border']) && !empty($settings['borderRadius'])) {
-            $styles[] = 'border-radius: ' . $settings['borderRadius'];
-        }
-        
-        if (empty($style_config['effects']) && !empty($settings['boxShadow'])) {
-            $styles[] = 'box-shadow: ' . $settings['boxShadow'];
-        }
-        
-        // VISIBILITY - Handle hidden state
-        if (isset($settings['hidden']) && $settings['hidden']) {
-            $styles[] = 'display: none';
-        }
-        
-        // Responsive visibility (hideOnMobile, hideOnTablet, hideOnDesktop)
-        // Note: These should be handled via CSS classes for proper media query support
-        // But we can add a data attribute for JavaScript to handle
-        
-        return implode('; ', $styles);
-    }
-    
-    /**
-     * ROOT FIX: COLLECT component CSS instead of injecting inline
-     * CSS will be batch-injected at section level to maintain valid HTML structure
-     * 
-     * @param string $component_id Component ID
-     * @param array $settings Component settings
-     */
-    private function collect_component_css($component_id, $settings) {
-        if (empty($settings) || !is_array($settings)) {
-            return;
-        }
-        
-        $style = isset($settings['style']) ? $settings['style'] : array();
-        $advanced = isset($settings['advanced']) ? $settings['advanced'] : array();
-        
-        if (empty($style) && empty($advanced)) {
-            return;
-        }
-        
-        $rules = array();
-        
-        // Selectors matching ComponentStyleService (both builder and frontend)
-        $wrapper_selector = ".gmkb-component[data-component-id=\"{$component_id}\"]";
-        $component_selector = ".gmkb-component[data-component-id=\"{$component_id}\"] .component-root";
-        
-        $wrapper_rules = array(); // For margin only
-        $component_rules = array(); // For everything else
-        
-        // SPACING
-        if (!empty($style['spacing'])) {
-            // Margin (wrapper)
-            if (!empty($style['spacing']['margin'])) {
-                $m = $style['spacing']['margin'];
-                $unit = isset($m['unit']) ? $m['unit'] : 'px';
-                $wrapper_rules[] = "margin: {$m['top']}{$unit} {$m['right']}{$unit} {$m['bottom']}{$unit} {$m['left']}{$unit}";
-            }
-            // Padding (component root)
-            if (!empty($style['spacing']['padding'])) {
-                $p = $style['spacing']['padding'];
-                $unit = isset($p['unit']) ? $p['unit'] : 'px';
-                $component_rules[] = "padding: {$p['top']}{$unit} {$p['right']}{$unit} {$p['bottom']}{$unit} {$p['left']}{$unit}";
-            }
-        }
-        
-        // BACKGROUND
-        if (!empty($style['background'])) {
-            if (!empty($style['background']['color'])) {
-                $component_rules[] = "background-color: {$style['background']['color']} !important";
-            }
-            if (isset($style['background']['opacity']) && $style['background']['opacity'] !== 100) {
-                $opacity = $style['background']['opacity'] / 100;
-                $component_rules[] = "opacity: {$opacity}";
-            }
-        }
-        
-        // TYPOGRAPHY - CRITICAL: Must include !important to override component defaults
-        if (!empty($style['typography'])) {
-            $t = $style['typography'];
-            
-            if (!empty($t['fontFamily'])) {
-                $font_family = $this->format_font_family($t['fontFamily']);
-                $component_rules[] = "font-family: {$font_family} !important";
-            }
-            
-            if (!empty($t['fontSize'])) {
-                $unit = isset($t['fontSize']['unit']) ? $t['fontSize']['unit'] : 'px';
-                $component_rules[] = "font-size: {$t['fontSize']['value']}{$unit} !important";
-            }
-            
-            if (!empty($t['fontWeight'])) {
-                $component_rules[] = "font-weight: {$t['fontWeight']} !important";
-            }
-            
-            if (!empty($t['lineHeight'])) {
-                if (is_array($t['lineHeight']) && isset($t['lineHeight']['value'])) {
-                    $lh_value = $t['lineHeight']['value'];
-                    $lh_unit = isset($t['lineHeight']['unit']) && $t['lineHeight']['unit'] !== 'unitless' ? $t['lineHeight']['unit'] : '';
-                    $component_rules[] = "line-height: {$lh_value}{$lh_unit} !important";
-                } else {
-                    $component_rules[] = "line-height: {$t['lineHeight']} !important";
-                }
-            }
-            
-            if (!empty($t['color'])) {
-                $component_rules[] = "color: {$t['color']} !important";
-            }
-            
-            if (!empty($t['textAlign'])) {
-                $component_rules[] = "text-align: {$t['textAlign']} !important";
-            }
-        }
-        
-        // BORDER
-        if (!empty($style['border'])) {
-            $b = $style['border'];
-            
-            if (!empty($b['width'])) {
-                $unit = isset($b['width']['unit']) ? $b['width']['unit'] : 'px';
-                $has_width = !empty($b['width']['top']) || !empty($b['width']['right']) || 
-                            !empty($b['width']['bottom']) || !empty($b['width']['left']);
-                
-                if ($has_width) {
-                    $top = isset($b['width']['top']) ? $b['width']['top'] : 0;
-                    $right = isset($b['width']['right']) ? $b['width']['right'] : 0;
-                    $bottom = isset($b['width']['bottom']) ? $b['width']['bottom'] : 0;
-                    $left = isset($b['width']['left']) ? $b['width']['left'] : 0;
-                    
-                    $component_rules[] = "border-width: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}";
-                    
-                    if (!empty($b['color'])) {
-                        $component_rules[] = "border-color: {$b['color']}";
-                    }
-                    if (!empty($b['style'])) {
-                        $component_rules[] = "border-style: {$b['style']}";
-                    }
-                }
-            }
-            
-            if (!empty($b['radius'])) {
-                $unit = isset($b['radius']['unit']) ? $b['radius']['unit'] : 'px';
-                $tl = isset($b['radius']['topLeft']) ? $b['radius']['topLeft'] : 0;
-                $tr = isset($b['radius']['topRight']) ? $b['radius']['topRight'] : 0;
-                $br = isset($b['radius']['bottomRight']) ? $b['radius']['bottomRight'] : 0;
-                $bl = isset($b['radius']['bottomLeft']) ? $b['radius']['bottomLeft'] : 0;
-                
-                $component_rules[] = "border-radius: {$tl}{$unit} {$tr}{$unit} {$br}{$unit} {$bl}{$unit}";
-            }
-        }
-        
-        // EFFECTS
-        if (!empty($style['effects'])) {
-            if (!empty($style['effects']['boxShadow']) && $style['effects']['boxShadow'] !== 'none') {
-                $component_rules[] = "box-shadow: {$style['effects']['boxShadow']} !important";
-            }
-            if (isset($style['effects']['opacity']) && $style['effects']['opacity'] !== 100) {
-                $opacity = $style['effects']['opacity'] / 100;
-                $component_rules[] = "opacity: {$opacity} !important";
-            }
-        }
-        
-        // ADVANCED LAYOUT
-        if (!empty($advanced['layout'])) {
-            $layout = $advanced['layout'];
-            
-            if (!empty($layout['width'])) {
-                if ($layout['width']['type'] === 'full') {
-                    $wrapper_rules[] = 'width: 100%';
-                } elseif ($layout['width']['type'] === 'custom' && isset($layout['width']['value'])) {
-                    $unit = isset($layout['width']['unit']) ? $layout['width']['unit'] : 'px';
-                    $wrapper_rules[] = "width: {$layout['width']['value']}{$unit}";
-                }
-            }
-            
-            if (!empty($layout['alignment'])) {
-                if ($layout['alignment'] === 'center') {
-                    $wrapper_rules[] = 'margin-left: auto';
-                    $wrapper_rules[] = 'margin-right: auto';
-                } elseif ($layout['alignment'] === 'right') {
-                    $wrapper_rules[] = 'margin-left: auto';
-                }
-            }
-        }
-        
-        // Build CSS
-        $css = '';
-        
-        if (!empty($wrapper_rules)) {
-            $css .= $wrapper_selector . " { " . implode('; ', $wrapper_rules) . "; }\n";
-        }
-        
-        if (!empty($component_rules)) {
-            $css .= $component_selector . " { " . implode('; ', $component_rules) . "; }\n";
-        }
-        
-        // RESPONSIVE
-        if (!empty($advanced['responsive'])) {
-            $resp = $advanced['responsive'];
-            
-            if (!empty($resp['hideOnMobile'])) {
-                $css .= "@media (max-width: 767px) { {$wrapper_selector} { display: none !important; } }\n";
-            }
-            
-            if (!empty($resp['hideOnTablet'])) {
-                $css .= "@media (min-width: 768px) and (max-width: 1024px) { {$wrapper_selector} { display: none !important; } }\n";
-            }
-            
-            if (!empty($resp['hideOnDesktop'])) {
-                $css .= "@media (min-width: 1025px) { {$wrapper_selector} { display: none !important; } }\n";
-            }
-        }
-        
-        if (!empty($css)) {
-            // Store CSS for batch injection
-            $this->component_css_cache[$component_id] = $css;
-        }
-    }
-    
-    /**
-     * Inject all collected component CSS
-     */
-    private function inject_collected_css() {
-        if (empty($this->component_css_cache)) {
-            return;
-        }
-        
-        echo '<style id="gmkb-component-styles">';
-        foreach ($this->component_css_cache as $component_id => $css) {
-            echo "\n/* Component: {$component_id} */\n";
-            echo $css;
-        }
-        echo '</style>';
-        
-        // Clear cache after injection
-        $this->component_css_cache = array();
-    }
-    
-    /**
-     * Collect custom CSS for later injection
-     */
-    private function collect_custom_css($component_id, $custom_css) {
-        // Add to cache with special marker
-        if (!isset($this->component_css_cache[$component_id])) {
-            $this->component_css_cache[$component_id] = '';
-        }
-        $this->component_css_cache[$component_id] .= "\n/* Custom CSS */\n#{$component_id} { {$custom_css} }\n";
-    }
+    // PHASE 3 BLOAT ELIMINATION: Deleted build_component_inline_styles() - 330+ lines removed
+    // This legacy method generated CSS strings - replaced by token override system in build_token_overrides()
     
     /**
      * Format font family for CSS (helper method)
@@ -1822,53 +1372,11 @@ class GMKB_Frontend_Display {
         return implode(', ', $formatted);
     }
     
-    /**
-     * Render component custom CSS (scoped to component)
-     * 
-     * @param string $component_id Component ID
-     * @param string $custom_css Custom CSS
-     */
-    private function render_component_custom_css($component_id, $custom_css) {
-        // Scope custom CSS to this component only
-        $scoped_css = "#{$component_id} { {$custom_css} }";
-        
-        ?>
-        <style id="<?php echo esc_attr($component_id); ?>-custom">
-            <?php echo wp_strip_all_tags($scoped_css); ?>
-        </style>
-        <?php
-    }
+    // PHASE 3 BLOAT ELIMINATION: Deleted render_component_custom_css() - 15 lines removed
+    // Custom CSS rendering no longer needed with token-based system
     
-    /**
-     * Get component theme styles
-     * 
-     * @param string $component_type Component type
-     * @return string CSS string
-     */
-    private function get_component_theme_styles($component_type) {
-        if (!$this->current_theme) {
-            return '';
-        }
-        
-        $css_rules = array();
-        
-        // Apply component-specific theme styles
-        if (isset($this->current_theme['components'][$component_type])) {
-            $comp_styles = $this->current_theme['components'][$component_type];
-            
-            if (!empty($comp_styles['padding'])) {
-                $css_rules[] = 'padding: ' . $comp_styles['padding'];
-            }
-            if (!empty($comp_styles['margin'])) {
-                $css_rules[] = 'margin: ' . $comp_styles['margin'];
-            }
-            if (!empty($comp_styles['background'])) {
-                $css_rules[] = 'background: ' . $comp_styles['background'];
-            }
-        }
-        
-        return implode('; ', $css_rules);
-    }
+    // PHASE 3 BLOAT ELIMINATION: Deleted get_component_theme_styles() - 30 lines removed
+    // Component theme styles now handled via CSS token inheritance
     
     /**
      * Enqueue frontend assets
