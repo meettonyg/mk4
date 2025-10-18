@@ -21,17 +21,52 @@ class GMKB_Admin_Diagnostic {
     }
     
     public function add_admin_menu() {
-        add_submenu_page(
-            'edit.php?post_type=guest',
+        // PRIMARY: Add as top-level menu item (same as Data Viewer)
+        add_menu_page(
             'GMKB Diagnostics',
             'GMKB Diagnostics',
             'manage_options',
             'gmkb-diagnostics',
+            array($this, 'render_diagnostic_page'),
+            'dashicons-admin-tools',
+            86  // Right after Media Kit Data (85)
+        );
+        
+        // BACKUP: Also add to Tools menu
+        add_submenu_page(
+            'tools.php',
+            'GMKB Diagnostics',
+            'GMKB Diagnostics',
+            'manage_options',
+            'gmkb-diagnostics-tools',
             array($this, 'render_diagnostic_page')
         );
+        
+        // Debug: Log menu registration
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB Diagnostics menu registered as TOP-LEVEL menu');
+            error_log('✅ Current user can manage_options: ' . (current_user_can('manage_options') ? 'YES' : 'NO'));
+        }
     }
     
     public function render_diagnostic_page() {
+        // ROOT FIX: Explicit capability check with better error handling
+        if (!current_user_can('edit_posts') && !current_user_can('manage_options')) {
+            wp_die(
+                '<h1>Permission Denied</h1>' .
+                '<p>You do not have sufficient permissions to access this page.</p>' .
+                '<p><strong>Debug Info:</strong></p>' .
+                '<ul>' .
+                '<li>User ID: ' . get_current_user_id() . '</li>' .
+                '<li>Can edit_posts: ' . (current_user_can('edit_posts') ? 'Yes' : 'No') . '</li>' .
+                '<li>Can manage_options: ' . (current_user_can('manage_options') ? 'Yes' : 'No') . '</li>' .
+                '<li>User roles: ' . implode(', ', wp_get_current_user()->roles) . '</li>' .
+                '</ul>',
+                'Permission Denied',
+                array('response' => 403)
+            );
+        }
+        
         $post_id = isset($_GET['post_id']) ? intval($_GET['post_id']) : 0;
         ?>
         <div class="wrap">
@@ -987,7 +1022,7 @@ class GMKB_Admin_Diagnostic {
     public function ajax_validate_all_settings() {
         check_ajax_referer('gmkb_diagnostics', 'nonce');
         
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('manage_options')) { // Back to manage_options
             wp_send_json_error('Permission denied');
             return;
         }
@@ -1025,7 +1060,7 @@ class GMKB_Admin_Diagnostic {
     public function ajax_repair_state() {
         check_ajax_referer('gmkb_diagnostics', 'nonce');
         
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('manage_options')) { // Back to manage_options
             wp_send_json_error('Permission denied');
             return;
         }
@@ -1225,3 +1260,7 @@ class GMKB_Admin_Diagnostic {
 
 // Initialize the diagnostic tool
 new GMKB_Admin_Diagnostic();
+
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('✅ GMKB Diagnostics class instantiated');
+}
