@@ -253,11 +253,39 @@ function gmkb_enrich_biography_data($props, $post_id) {
         try {
             $pod = pods('guests', $post_id);
             if ($pod && $pod->exists()) {
-                $first_name = $pod->field('first_name');
-                $last_name = $pod->field('last_name');
-                $bio = $pod->field('biography');
-                $prof_title = $pod->field('professional_title');
-                $company_name = $pod->field('company');
+                // Helper function to safely extract Pods field value
+                $extract_value = function($value) {
+                    if (is_array($value)) {
+                        // Handle array returns from Pods
+                        if (isset($value[0])) {
+                            return is_string($value[0]) ? $value[0] : '';
+                        }
+                        // Handle associative arrays
+                        if (isset($value['name'])) return $value['name'];
+                        if (isset($value['post_title'])) return $value['post_title'];
+                        return '';
+                    }
+                    return is_string($value) ? $value : '';
+                };
+                
+                $first_name = $extract_value($pod->field('first_name'));
+                $last_name = $extract_value($pod->field('last_name'));
+                $bio = $extract_value($pod->field('biography'));
+                $prof_title = $extract_value($pod->field('professional_title'));
+                $company_name = $extract_value($pod->field('company'));
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('🔍 RAW Pods values:');
+                    error_log('  - first_name type: ' . gettype($pod->field('first_name')));
+                    error_log('  - professional_title type: ' . gettype($pod->field('professional_title')));
+                    error_log('  - company type: ' . gettype($pod->field('company')));
+                    if (is_array($pod->field('professional_title'))) {
+                        error_log('  - professional_title array: ' . print_r($pod->field('professional_title'), true));
+                    }
+                    if (is_array($pod->field('company'))) {
+                        error_log('  - company array: ' . print_r($pod->field('company'), true));
+                    }
+                }
                 
                 if ($first_name || $last_name) {
                     $props['name'] = trim($first_name . ' ' . $last_name);
@@ -279,6 +307,7 @@ function gmkb_enrich_biography_data($props, $post_id) {
                     error_log('✅ Pods data loaded successfully');
                     error_log('  - Name: ' . ($props['name'] ?? 'NONE'));
                     error_log('  - Title: ' . ($props['title'] ?? 'NONE'));
+                    error_log('  - Company: ' . ($props['company'] ?? 'NONE'));
                     error_log('  - Bio length: ' . strlen($bio ?? ''));
                 }
             } else {
