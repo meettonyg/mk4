@@ -44,7 +44,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { useMediaKitStore } from '@/stores/mediaKit';
+import { useMediaKitStore } from '../../../stores/mediaKit';
 
 const show = ref(false);
 const store = useMediaKitStore();

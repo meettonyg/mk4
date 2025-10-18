@@ -21,7 +21,7 @@
 </template>
 
 <script setup>
-import { useMediaKitStore } from '@/stores/mediaKit';
+import { useMediaKitStore } from '../../../stores/mediaKit';
 
 const props = defineProps({
   sectionId: {

@@ -12,7 +12,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { useMediaKitStore } from '@/stores/mediaKit';
+import { useMediaKitStore } from '../../../stores/mediaKit';
 
 const props = defineProps({
   componentId: {

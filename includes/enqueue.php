@@ -372,9 +372,18 @@ function gmkb_enqueue_vue_only_assets() {
     }
     
     // --- FONT AWESOME ---
-    // ROOT FIX: Don't load Font Awesome - the theme already loads it globally
-    // This prevents duplicate loading and reduces page weight
-    // The plugin uses Font Awesome icons which are available from the theme
+    // ROOT FIX: Load Font Awesome 6.5 for builder icons (reset buttons, component icons, etc.)
+    // The standalone builder template needs its own FA instance
+    wp_enqueue_style(
+        'gmkb-font-awesome',
+        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
+        array(),
+        '6.5.1'
+    );
+    
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB: Font Awesome 6.5.1 loaded');
+    }
 }
 
 

@@ -263,6 +263,11 @@ async function initializeVue() {
     app.component('DebouncedInput', () => import('./vue/components/DebouncedInput.vue'));
     app.component('ErrorBoundary', () => import('./vue/components/ErrorBoundary.vue'));
     
+    // RESET FUNCTIONALITY: Register reset button components globally
+    app.component('ComponentResetButton', () => import('./vue/components/ui/ComponentResetButton.vue'));
+    app.component('SectionResetButton', () => import('./vue/components/ui/SectionResetButton.vue'));
+    app.component('GlobalResetModal', () => import('./vue/components/ui/GlobalResetModal.vue'));
+    
     // P0 FIX #12: LazyComponents removed - components loaded dynamically via registry
     // All components registered through UnifiedComponentRegistry.getVueComponent()
     // No need to pre-register empty LazyComponents object
