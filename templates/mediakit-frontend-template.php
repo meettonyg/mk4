@@ -196,9 +196,22 @@ if (class_exists('GMKB_Frontend_Display')) {
                     $section_type = isset($section['section_type']) ? $section['section_type'] : 'full_width';
                     $section_layout = isset($section['layout']) ? $section['layout'] : array();
                     $section_components = isset($section['components']) ? $section['components'] : array();
+                    $section_settings = isset($section['settings']) ? $section['settings'] : array();
+                    
+                    // Build section classes
+                    $section_classes = array(
+                        'gmkb-section',
+                        'gmkb-section--' . $section_type
+                    );
+                    if (!empty($section_settings['fullWidth'])) {
+                        $section_classes[] = 'gmkb-section--full-width';
+                    }
+                    if (!empty($section_settings['reverseOnMobile'])) {
+                        $section_classes[] = 'gmkb-section--reverse-mobile';
+                    }
                     ?>
                     
-                    <section class="gmkb-section gmkb-section--<?php echo esc_attr($section_type); ?>" 
+                    <section class="<?php echo esc_attr(implode(' ', $section_classes)); ?>" 
                              data-section-id="<?php echo esc_attr($section_id); ?>"
                              data-section-type="<?php echo esc_attr($section_type); ?>">
                         

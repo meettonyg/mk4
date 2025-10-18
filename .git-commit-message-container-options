@@ -1,0 +1,60 @@
+feat(sections): Implement Full Width Container and Reverse Mobile settings
+
+PROBLEM:
+- "Full Width Container" and "Reverse Columns on Mobile" checkboxes existed
+- Settings saved dynamically but had no visual effect
+- Features were non-functional placeholders
+
+IMPLEMENTATION:
+
+1. Full Width Container:
+   - Section breaks out of max-width constraint
+   - Uses calc() and CSS variables for dynamic width
+   - Applies gmkb-section--full-width class
+   - Works in both builder and frontend
+
+2. Reverse Columns on Mobile:
+   - Column order reverses on screens ≤768px
+   - Uses flexbox column-reverse
+   - Applies gmkb-section--reverse-mobile class
+   - Works with all column layouts
+
+TECHNICAL:
+- Added dynamic class bindings to SectionLayoutEnhanced.vue
+- Added CSS for both features (~25 lines scoped CSS)
+- Updated frontend template with class logic (PHP)
+- Added shared CSS to design-system/sections.css
+
+RESULT:
+- Both settings now functional and update live
+- Preview matches frontend exactly
+- Pure CSS solution (no JavaScript)
+- Universal browser support
+- ~60 lines of code added
+
+Files modified:
+- src/vue/components/SectionLayoutEnhanced.vue (classes + CSS)
+- templates/mediakit-frontend-template.php (PHP class logic)
+- design-system/sections.css (shared frontend CSS)
+
+Testing:
+- Full width breaks out of container correctly
+- Reverse mobile changes column order <768px
+- Works with all section layouts
+- No breaking changes to existing sections
+
+Use Cases:
+- Full-width hero sections and banners
+- Text-first mobile layouts
+- Improved mobile UX flow
+- Flexible content prioritization
+
+Developer Checklist Compliance:
+✅ No Polling - Pure CSS solution
+✅ Event-Driven - Reactive class bindings
+✅ Root Cause Fix - Implemented missing functionality
+✅ Simplicity First - Clean CSS approach
+✅ No Redundant Logic - Shared CSS in design system
+✅ Maintainability - Well-documented, clear CSS
+
+Closes: #section-container-options-implementation

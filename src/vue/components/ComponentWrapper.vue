@@ -2,6 +2,7 @@
   <div 
     class="component-wrapper"
     :class="wrapperClass"
+    :id="customId"
     :data-component-id="componentId || component?.id"
     :data-draggable="true"
     @mouseenter="onMouseEnter"
@@ -30,7 +31,7 @@
       :is-editing="isEditing"
       :is-selected="isSelected"
       class="component-root"
-      :class="`${actualComponent.type}-component`"
+      :class="componentRootClass"
     />
     
     <!-- Fallback for unknown component or missing component -->
@@ -233,8 +234,20 @@ const showControlsComputed = computed(() => {
   }
 })
 
+// ROOT FIX: Custom CSS ID from settings
+const customId = computed(() => {
+  try {
+    if (!actualComponent.value) return null;
+    const customCssId = actualComponent.value.settings?.advanced?.custom?.cssId;
+    return customCssId || null;
+  } catch (error) {
+    console.error('[ComponentWrapper] Error in customId:', error);
+    return null;
+  }
+});
+
 // Wrapper classes
-// ROOT FIX: Added null safety for actualComponent.value
+// ROOT FIX: Added null safety for actualComponent.value + custom CSS classes
 const wrapperClass = computed(() => {
   try {
     const classes = {
@@ -248,11 +261,50 @@ const wrapperClass = computed(() => {
       classes[`component-wrapper--${actualComponent.value.type}`] = true;
     }
     
+    // ROOT FIX: Add custom CSS classes from settings
+    const customClasses = actualComponent.value?.settings?.advanced?.custom?.cssClasses;
+    if (customClasses) {
+      // Handle both string and array formats
+      const classArray = Array.isArray(customClasses) 
+        ? customClasses 
+        : customClasses.split(' ').filter(c => c.trim());
+      
+      classArray.forEach(className => {
+        if (className && className.trim()) {
+          classes[className.trim()] = true;
+        }
+      });
+    }
+    
     return classes;
   } catch (error) {
     console.error('[ComponentWrapper] Error in wrapperClass:', error);
     console.error('[ComponentWrapper] actualComponent:', actualComponent);
     return {};
+  }
+});
+
+// ROOT FIX: Component root classes (type + custom classes)
+const componentRootClass = computed(() => {
+  try {
+    if (!actualComponent.value) return '';
+    
+    const classes = [`${actualComponent.value.type}-component`];
+    
+    // ROOT FIX: Custom classes also apply to component root for more targeting flexibility
+    const customClasses = actualComponent.value.settings?.advanced?.custom?.cssClasses;
+    if (customClasses) {
+      const classArray = Array.isArray(customClasses) 
+        ? customClasses 
+        : customClasses.split(' ').filter(c => c.trim());
+      
+      classes.push(...classArray.map(c => c.trim()).filter(Boolean));
+    }
+    
+    return classes.join(' ');
+  } catch (error) {
+    console.error('[ComponentWrapper] Error in componentRootClass:', error);
+    return actualComponent.value?.type ? `${actualComponent.value.type}-component` : '';
   }
 })
 

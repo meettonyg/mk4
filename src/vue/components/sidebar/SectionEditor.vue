@@ -51,6 +51,86 @@
           </div>
         </div>
         
+        <!-- ROOT FIX: Vertical Alignment Control -->
+        <div v-if="currentLayout !== 'full_width'" class="setting-group">
+          <label class="setting-label">
+            Column Vertical Alignment
+            <span class="setting-tooltip" title="Controls how columns align vertically when they have different heights">
+              <i class="fa-solid fa-circle-info"></i>
+            </span>
+          </label>
+          <div class="valign-grid">
+            <button
+              @click="updateSetting('verticalAlign', 'start')"
+              class="valign-option"
+              :class="{ active: (settings.verticalAlign || 'start') === 'start' }"
+              title="Align to Top"
+            >
+              <div class="valign-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="4" y1="6" x2="20" y2="6" />
+                  <rect x="6" y="8" width="4" height="8" fill="currentColor" opacity="0.3" />
+                  <rect x="14" y="8" width="4" height="12" fill="currentColor" opacity="0.3" />
+                </svg>
+              </div>
+              <span class="valign-label">Top</span>
+            </button>
+            
+            <button
+              @click="updateSetting('verticalAlign', 'center')"
+              class="valign-option"
+              :class="{ active: settings.verticalAlign === 'center' }"
+              title="Align to Center"
+            >
+              <div class="valign-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="4" y1="12" x2="20" y2="12" />
+                  <rect x="6" y="10" width="4" height="8" fill="currentColor" opacity="0.3" />
+                  <rect x="14" y="8" width="4" height="12" fill="currentColor" opacity="0.3" />
+                </svg>
+              </div>
+              <span class="valign-label">Center</span>
+            </button>
+            
+            <button
+              @click="updateSetting('verticalAlign', 'end')"
+              class="valign-option"
+              :class="{ active: settings.verticalAlign === 'end' }"
+              title="Align to Bottom"
+            >
+              <div class="valign-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="4" y1="18" x2="20" y2="18" />
+                  <rect x="6" y="8" width="4" height="8" fill="currentColor" opacity="0.3" />
+                  <rect x="14" y="6" width="4" height="12" fill="currentColor" opacity="0.3" />
+                </svg>
+              </div>
+              <span class="valign-label">Bottom</span>
+            </button>
+            
+            <button
+              @click="updateSetting('verticalAlign', 'stretch')"
+              class="valign-option"
+              :class="{ active: settings.verticalAlign === 'stretch' }"
+              title="Stretch to Equal Height"
+            >
+              <div class="valign-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="4" y1="6" x2="20" y2="6" />
+                  <line x1="4" y1="18" x2="20" y2="18" />
+                  <rect x="6" y="6" width="4" height="12" fill="currentColor" opacity="0.3" />
+                  <rect x="14" y="6" width="4" height="12" fill="currentColor" opacity="0.3" />
+                </svg>
+              </div>
+              <span class="valign-label">Stretch</span>
+            </button>
+          </div>
+          <p class="input-hint">
+            Choose how columns should align when they have different heights.
+            <strong>Stretch</strong> will make all columns equal height.
+          </p>
+        </div>
+        
         <div class="setting-group">
           <label class="setting-label">Spacing</label>
           
@@ -706,5 +786,110 @@ body.dark-mode .editor-content::-webkit-scrollbar-thumb {
 
 body.dark-mode .editor-content::-webkit-scrollbar-thumb:hover {
   background: #6b7280;
+}
+
+/* ROOT FIX: Vertical Alignment Grid */
+.valign-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.valign-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.valign-option:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+.valign-option.active {
+  border-color: #ec4899;
+  background: #fdf2f8;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+}
+
+body.dark-mode .valign-option {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+body.dark-mode .valign-option:hover {
+  background: #334155;
+  border-color: #475569;
+}
+
+body.dark-mode .valign-option.active {
+  background: rgba(236, 72, 153, 0.1);
+  border-color: #ec4899;
+}
+
+.valign-icon {
+  width: 24px;
+  height: 24px;
+  color: #6b7280;
+  transition: color 0.2s;
+}
+
+.valign-option:hover .valign-icon {
+  color: #374151;
+}
+
+.valign-option.active .valign-icon {
+  color: #ec4899;
+}
+
+body.dark-mode .valign-icon {
+  color: #9ca3af;
+}
+
+body.dark-mode .valign-option:hover .valign-icon {
+  color: #d1d5db;
+}
+
+body.dark-mode .valign-option.active .valign-icon {
+  color: #ec4899;
+}
+
+.valign-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #374151;
+  text-align: center;
+}
+
+body.dark-mode .valign-label {
+  color: #d1d5db;
+}
+
+.setting-tooltip {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  color: #9ca3af;
+  font-size: 11px;
+  cursor: help;
+}
+
+.setting-tooltip:hover {
+  color: #6b7280;
+}
+
+body.dark-mode .setting-tooltip {
+  color: #6b7280;
+}
+
+body.dark-mode .setting-tooltip:hover {
+  color: #9ca3af;
 }
 </style>

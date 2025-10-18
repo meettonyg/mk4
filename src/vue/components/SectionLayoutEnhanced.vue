@@ -11,7 +11,9 @@
           class="gmkb-section"
           :class="[
             `gmkb-section--${section.type}`,
-            { 'gmkb-section--active': hoveredSection === section.section_id }
+            { 'gmkb-section--active': hoveredSection === section.section_id },
+            { 'gmkb-section--full-width': section.settings?.fullWidth },
+            { 'gmkb-section--reverse-mobile': section.settings?.reverseOnMobile }
           ]"
           :data-section-id="section.section_id"
           :id="section.settings?.customId || undefined"
@@ -68,10 +70,13 @@
             </div>
           </div>
 
-          <!-- Section Content Area - ROOT FIX: Corrected CSS class -->
+          <!-- Section Content Area - ROOT FIX: Corrected CSS class + vertical alignment -->
           <div 
             class="gmkb-section__content" 
-            :class="getLayoutClass(section.type)"
+            :class="[
+              getLayoutClass(section.type),
+              getVerticalAlignClass(section)
+            ]"
             :style="getColumnStyles(section)"
           >
             <!-- Full Width Layout -->
@@ -572,6 +577,20 @@ const getLayoutClass = (type) => {
     'sidebar_main': 'layout-sidebar-main'
   };
   return classMap[type] || `layout-${type}`;
+};
+
+// ROOT FIX: Get vertical alignment CSS class for multi-column sections
+const getVerticalAlignClass = (section) => {
+  // Only apply to multi-column layouts
+  if (section.type === 'full_width') {
+    return '';
+  }
+  
+  // Get vertical align setting (default to 'start')
+  const verticalAlign = section.settings?.verticalAlign || 'start';
+  
+  // Map to CSS class
+  return `gmkb-section__columns--valign-${verticalAlign}`;
 };
 
 const getComponent = (componentId) => {
@@ -1375,5 +1394,29 @@ onUnmounted(() => {
   text-align: center;
   font-size: 13px;
   margin-bottom: 8px;
+}
+
+/* Full Width Container */
+.gmkb-section--full-width {
+  margin-left: calc(-1 * var(--gmkb-container-padding, 16px));
+  margin-right: calc(-1 * var(--gmkb-container-padding, 16px));
+  width: calc(100% + 2 * var(--gmkb-container-padding, 16px));
+  max-width: none;
+}
+
+/* Reverse Columns on Mobile */
+@media (max-width: 768px) {
+  .gmkb-section--reverse-mobile .layout-two-column,
+  .gmkb-section--reverse-mobile .layout-three-column,
+  .gmkb-section--reverse-mobile .layout-main-sidebar,
+  .gmkb-section--reverse-mobile .layout-sidebar-main {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+  
+  /* Ensure columns still display in reverse */
+  .gmkb-section--reverse-mobile .gmkb-section__column {
+    width: 100%;
+  }
 }
 </style>

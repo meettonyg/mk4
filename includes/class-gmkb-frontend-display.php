@@ -45,6 +45,11 @@ class GMKB_Frontend_Display {
     private $theme_css_cache = array();
     
     /**
+     * Current section being rendered (for context in helper methods)
+     */
+    private $current_section = null;
+    
+    /**
      * Get instance
      */
     public static function get_instance() {
@@ -352,11 +357,16 @@ class GMKB_Frontend_Display {
         // $this->inject_collected_css();
         
         foreach ($sections as $section) {
+            // ROOT FIX: Store current section for helper methods
+            $this->current_section = $section;
+            
             $section_id = $section['section_id'] ?? 'section-' . uniqid();
             // ROOT FIX: Check both 'section_type' and 'type' keys
             $section_type = $section['section_type'] ?? $section['type'] ?? $section['layout'] ?? 'full_width';
             $section_components = $section['components'] ?? array();
-            $section_styles = $section['styles'] ?? array();
+            // ROOT FIX: Read from 'settings' (Vue format) not 'styles'
+            $section_settings = $section['settings'] ?? array();
+            $section_styles = $section_settings['style'] ?? array();
             
             // Build section classes
             $section_classes = array(
@@ -364,9 +374,29 @@ class GMKB_Frontend_Display {
                 'gmkb-section--' . $section_type
             );
             
+            // ROOT FIX: Add custom CSS classes from section settings
+            if (!empty($section_settings['advanced']['custom']['cssClasses'])) {
+                $custom_classes = $section_settings['advanced']['custom']['cssClasses'];
+                // Handle both string and array format
+                if (is_string($custom_classes)) {
+                    $custom_classes = explode(' ', $custom_classes);
+                }
+                if (is_array($custom_classes)) {
+                    foreach ($custom_classes as $class) {
+                        $section_classes[] = sanitize_html_class(trim($class));
+                    }
+                }
+            }
+            
             if ($atts['section_animation'] !== 'none') {
                 $section_classes[] = 'gmkb-animate';
                 $section_classes[] = 'gmkb-animate--' . $atts['section_animation'];
+            }
+            
+            // ROOT FIX: Add custom ID from section settings
+            $custom_section_id = null;
+            if (!empty($section_settings['advanced']['custom']['cssId'])) {
+                $custom_section_id = sanitize_html_class($section_settings['advanced']['custom']['cssId']);
             }
             
             // Build section styles
@@ -374,6 +404,7 @@ class GMKB_Frontend_Display {
             
             ?>
             <section class="<?php echo implode(' ', $section_classes); ?>"
+                     <?php if ($custom_section_id): ?>id="<?php echo esc_attr($custom_section_id); ?>"<?php endif; ?>
                      data-section-id="<?php echo esc_attr($section_id); ?>"
                      data-section-type="<?php echo esc_attr($section_type); ?>"
                      <?php if ($section_style): ?>style="<?php echo esc_attr($section_style); ?>"<?php endif; ?>>
@@ -480,8 +511,11 @@ class GMKB_Frontend_Display {
             }
         }
         
+        // ROOT FIX: Get vertical alignment class
+        $valign_class = $this->get_section_vertical_align_class();
+        
         ?>
-        <div class="gmkb-section__columns gmkb-section__columns--2">
+        <div class="gmkb-section__columns gmkb-section__columns--2 <?php echo esc_attr($valign_class); ?>">
             <?php for ($col = 1; $col <= 2; $col++): ?>
                 <div class="gmkb-section__column" data-column="<?php echo $col; ?>">
                     <?php
@@ -551,8 +585,11 @@ class GMKB_Frontend_Display {
             }
         }
         
+        // ROOT FIX: Get vertical alignment class
+        $valign_class = $this->get_section_vertical_align_class();
+        
         ?>
-        <div class="gmkb-section__columns gmkb-section__columns--3">
+        <div class="gmkb-section__columns gmkb-section__columns--3 <?php echo esc_attr($valign_class); ?>">
             <?php for ($col = 1; $col <= 3; $col++): ?>
                 <div class="gmkb-section__column" data-column="<?php echo $col; ?>">
                     <?php
@@ -1424,6 +1461,25 @@ class GMKB_Frontend_Display {
         }
         
         return implode('; ', $css_rules);
+    }
+    
+    /**
+     * ROOT FIX: Get vertical alignment CSS class for section columns
+     * Reads from current section settings and returns appropriate class
+     * 
+     * @return string CSS class for vertical alignment
+     */
+    private function get_section_vertical_align_class() {
+        if (!$this->current_section) {
+            return 'gmkb-section__columns--valign-start'; // Default
+        }
+        
+        // Get vertical align setting from section settings
+        $section_settings = $this->current_section['settings'] ?? array();
+        $vertical_align = $section_settings['verticalAlign'] ?? 'start';
+        
+        // Map to CSS class
+        return 'gmkb-section__columns--valign-' . esc_attr($vertical_align);
     }
     
     // PHASE 3 BLOAT ELIMINATION: Deleted build_component_inline_styles() - 330+ lines removed

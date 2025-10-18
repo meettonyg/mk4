@@ -29,7 +29,7 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--gmkb-column-gap);
-  align-items: start;
+  align-items: start; /* Default - can be overridden by vertical align classes */
 }
 
 /* Main + Sidebar Layout (70% / 30%) */
@@ -37,7 +37,7 @@
   display: grid;
   grid-template-columns: 7fr 3fr;
   gap: var(--gmkb-column-gap);
-  align-items: start;
+  align-items: start; /* Default - can be overridden by vertical align classes */
 }
 
 /* Sidebar + Main Layout (30% / 70%) */
@@ -45,7 +45,7 @@
   display: grid;
   grid-template-columns: 3fr 7fr;
   gap: var(--gmkb-column-gap);
-  align-items: start;
+  align-items: start; /* Default - can be overridden by vertical align classes */
 }
 
 /* Three Column Layout */
@@ -54,7 +54,42 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--gmkb-column-gap);
-  align-items: start;
+  align-items: start; /* Default - can be overridden by vertical align classes */
+}
+
+/* ==========================================
+   VERTICAL ALIGNMENT CONTROL
+   User-controlled vertical alignment for multi-column sections
+   ========================================== */
+
+/* Align columns to top (default) */
+.gmkb-section__columns--valign-start {
+  align-items: start !important;
+}
+
+/* Align columns to vertical center */
+.gmkb-section__columns--valign-center {
+  align-items: center !important;
+}
+
+/* Align columns to bottom */
+.gmkb-section__columns--valign-end {
+  align-items: end !important;
+}
+
+/* Stretch columns to equal height */
+.gmkb-section__columns--valign-stretch {
+  align-items: stretch !important;
+}
+
+/* When stretch is used, ensure components fill column height */
+.gmkb-section__columns--valign-stretch .gmkb-section__column {
+  display: flex;
+  flex-direction: column;
+}
+
+.gmkb-section__columns--valign-stretch .gmkb-section__column > * {
+  flex: 1;
 }
 
 /* Column Wrapper */
@@ -107,5 +142,30 @@
 @media (max-width: 1024px) and (min-width: 769px) {
   .gmkb-section__columns--3 {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Full Width Container */
+.gmkb-section--full-width {
+  margin-left: calc(-1 * var(--gmkb-container-padding, 20px));
+  margin-right: calc(-1 * var(--gmkb-container-padding, 20px));
+  width: calc(100% + 2 * var(--gmkb-container-padding, 20px));
+  max-width: none;
+}
+
+/* Reverse Columns on Mobile */
+@media (max-width: 768px) {
+  .gmkb-section--reverse-mobile .gmkb-section__columns,
+  .gmkb-section--reverse-mobile .gmkb-section__columns--2,
+  .gmkb-section--reverse-mobile .gmkb-section__columns--3,
+  .gmkb-section--reverse-mobile .gmkb-section-columns {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+  
+  /* Ensure columns display correctly when reversed */
+  .gmkb-section--reverse-mobile .gmkb-section__column,
+  .gmkb-section--reverse-mobile .gmkb-section-column {
+    width: 100%;
   }
 }
