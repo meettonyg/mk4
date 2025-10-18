@@ -20,6 +20,22 @@
   background: var(--gmkb-color-surface-elevated);
 }
 
+/* CRITICAL: Component Root - Applies CSS Variable Overrides */
+.component-root {
+  background: var(--gmkb-color-surface);
+  color: var(--gmkb-color-text);
+  font-family: var(--gmkb-font-primary);
+  font-size: var(--gmkb-font-size-base);
+  padding: var(--gmkb-spacing-component, var(--gmkb-space-10));
+  border-radius: var(--gmkb-border-radius, var(--gmkb-radius-lg));
+  box-shadow: var(--gmkb-shadow, var(--gmkb-shadow-base));
+  transition: all var(--gmkb-transition-base);
+}
+
+.component-root:hover {
+  box-shadow: var(--gmkb-shadow, var(--gmkb-shadow-md));
+}
+
 .gmkb-component:last-child {
   margin-bottom: 0;
 }
