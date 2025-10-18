@@ -139,6 +139,12 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-frontend-display.php'
 
 // ADMIN TOOLS: Load essential admin functionality only
 if (is_admin()) {
+    // ROOT FIX: Load comprehensive diagnostic tool
+    $diagnostic_file = GUESTIFY_PLUGIN_DIR . 'admin/diagnostic-tools.php';
+    if (file_exists($diagnostic_file)) {
+        require_once $diagnostic_file;
+    }
+    
     $viewer_file = GUESTIFY_PLUGIN_DIR . 'admin/media-kit-viewer.php';
     if (file_exists($viewer_file)) {
         require_once $viewer_file;

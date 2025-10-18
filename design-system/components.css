@@ -30,6 +30,11 @@
   border-radius: var(--gmkb-border-radius, var(--gmkb-radius-lg));
   box-shadow: var(--gmkb-shadow, var(--gmkb-shadow-base));
   transition: all var(--gmkb-transition-base);
+  
+  /* CRITICAL FIX: Border support */
+  border-width: var(--gmkb-border-width, 0);
+  border-style: var(--gmkb-border-style, solid);
+  border-color: var(--gmkb-border-color, transparent);
 }
 
 .component-root:hover {

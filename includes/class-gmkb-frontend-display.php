@@ -596,7 +596,7 @@ class GMKB_Frontend_Display {
     
     /**
      * PHASE 2: Build CSS variable overrides from component settings
-     * Maps user customizations to theme tokens instead of generating CSS
+     * Maps ALL user customizations to theme tokens
      * 
      * @param array $settings Component settings
      * @return string Inline CSS variable string
@@ -609,22 +609,25 @@ class GMKB_Frontend_Display {
         $vars = array();
         $style = $settings['style'];
         
-        // Map background color to token
+        // === BACKGROUND ===
         if (!empty($style['background']['color'])) {
             $vars[] = '--gmkb-color-surface: ' . $style['background']['color'];
         }
         
-        // Map text color to token
+        if (isset($style['background']['opacity'])) {
+            $opacity = floatval($style['background']['opacity']) / 100; // Convert 0-100 to 0-1
+            $vars[] = '--gmkb-background-opacity: ' . $opacity;
+        }
+        
+        // === TYPOGRAPHY ===
         if (!empty($style['typography']['color'])) {
             $vars[] = '--gmkb-color-text: ' . $style['typography']['color'];
         }
         
-        // Map font family to token
         if (!empty($style['typography']['fontFamily'])) {
             $vars[] = '--gmkb-font-primary: ' . $this->format_font_family($style['typography']['fontFamily']);
         }
         
-        // Map font size to token
         if (!empty($style['typography']['fontSize'])) {
             $size = $style['typography']['fontSize'];
             $value = is_array($size) ? ($size['value'] ?? $size) : $size;
@@ -632,26 +635,121 @@ class GMKB_Frontend_Display {
             $vars[] = '--gmkb-font-size-base: ' . $value . $unit;
         }
         
-        // Map spacing tokens
+        if (!empty($style['typography']['fontWeight'])) {
+            $vars[] = '--gmkb-font-weight: ' . $style['typography']['fontWeight'];
+        }
+        
+        if (!empty($style['typography']['lineHeight'])) {
+            $lineHeight = $style['typography']['lineHeight'];
+            $value = is_array($lineHeight) ? ($lineHeight['value'] ?? $lineHeight) : $lineHeight;
+            $vars[] = '--gmkb-line-height: ' . $value;
+        }
+        
+        if (!empty($style['typography']['textAlign'])) {
+            $vars[] = '--gmkb-text-align: ' . $style['typography']['textAlign'];
+        }
+        
+        // === SPACING - Padding ===
         if (!empty($style['spacing']['padding'])) {
             $p = $style['spacing']['padding'];
             if (is_array($p)) {
                 $unit = $p['unit'] ?? 'px';
-                $vars[] = '--gmkb-spacing-component: ' . $p['top'] . $unit . ' ' . $p['right'] . $unit . ' ' . $p['bottom'] . $unit . ' ' . $p['left'] . $unit;
+                $top = $p['top'] ?? 0;
+                $right = $p['right'] ?? 0;
+                $bottom = $p['bottom'] ?? 0;
+                $left = $p['left'] ?? 0;
+                $vars[] = '--gmkb-spacing-component: ' . $top . $unit . ' ' . $right . $unit . ' ' . $bottom . $unit . ' ' . $left . $unit;
+                
+                // Individual values for granular control
+                $vars[] = '--gmkb-padding-top: ' . $top . $unit;
+                $vars[] = '--gmkb-padding-right: ' . $right . $unit;
+                $vars[] = '--gmkb-padding-bottom: ' . $bottom . $unit;
+                $vars[] = '--gmkb-padding-left: ' . $left . $unit;
             }
         }
         
-        // Map border radius to token
+        // === SPACING - Margin ===
+        if (!empty($style['spacing']['margin'])) {
+            $m = $style['spacing']['margin'];
+            if (is_array($m)) {
+                $unit = $m['unit'] ?? 'px';
+                $top = $m['top'] ?? 0;
+                $right = $m['right'] ?? 0;
+                $bottom = $m['bottom'] ?? 0;
+                $left = $m['left'] ?? 0;
+                $vars[] = '--gmkb-margin: ' . $top . $unit . ' ' . $right . $unit . ' ' . $bottom . $unit . ' ' . $left . $unit;
+                
+                // Individual values for granular control
+                $vars[] = '--gmkb-margin-top: ' . $top . $unit;
+                $vars[] = '--gmkb-margin-right: ' . $right . $unit;
+                $vars[] = '--gmkb-margin-bottom: ' . $bottom . $unit;
+                $vars[] = '--gmkb-margin-left: ' . $left . $unit;
+            }
+        }
+        
+        // === BORDER - Width (all sides) ===
+        if (!empty($style['border']['width'])) {
+            $bw = $style['border']['width'];
+            if (is_array($bw)) {
+                $unit = $bw['unit'] ?? 'px';
+                $top = $bw['top'] ?? 0;
+                $right = $bw['right'] ?? 0;
+                $bottom = $bw['bottom'] ?? 0;
+                $left = $bw['left'] ?? 0;
+                
+                // Set individual border widths
+                $vars[] = '--gmkb-border-width-top: ' . $top . $unit;
+                $vars[] = '--gmkb-border-width-right: ' . $right . $unit;
+                $vars[] = '--gmkb-border-width-bottom: ' . $bottom . $unit;
+                $vars[] = '--gmkb-border-width-left: ' . $left . $unit;
+                
+                // If all equal, set shorthand
+                if ($top === $right && $right === $bottom && $bottom === $left) {
+                    $vars[] = '--gmkb-border-width: ' . $top . $unit;
+                }
+            } elseif (isset($bw) && $bw !== '' && $bw !== 0) {
+                // Single value format
+                $unit = 'px';
+                $vars[] = '--gmkb-border-width: ' . $bw . $unit;
+            }
+        }
+        
+        // === BORDER - Style ===
+        if (!empty($style['border']['style'])) {
+            $vars[] = '--gmkb-border-style: ' . $style['border']['style'];
+        }
+        
+        // === BORDER - Color ===
+        if (!empty($style['border']['color'])) {
+            $vars[] = '--gmkb-border-color: ' . $style['border']['color'];
+        }
+        
+        // === BORDER - Radius ===
         if (!empty($style['border']['radius'])) {
             $r = $style['border']['radius'];
             if (is_array($r)) {
                 $unit = $r['unit'] ?? 'px';
                 $tl = $r['topLeft'] ?? 0;
-                $vars[] = '--gmkb-border-radius: ' . $tl . $unit;
+                $tr = $r['topRight'] ?? 0;
+                $br = $r['bottomRight'] ?? 0;
+                $bl = $r['bottomLeft'] ?? 0;
+                
+                // Individual corners
+                $vars[] = '--gmkb-border-radius-tl: ' . $tl . $unit;
+                $vars[] = '--gmkb-border-radius-tr: ' . $tr . $unit;
+                $vars[] = '--gmkb-border-radius-br: ' . $br . $unit;
+                $vars[] = '--gmkb-border-radius-bl: ' . $bl . $unit;
+                
+                // If all equal, set shorthand
+                if ($tl === $tr && $tr === $br && $br === $bl) {
+                    $vars[] = '--gmkb-border-radius: ' . $tl . $unit;
+                } else {
+                    $vars[] = '--gmkb-border-radius: ' . $tl . $unit . ' ' . $tr . $unit . ' ' . $br . $unit . ' ' . $bl . $unit;
+                }
             }
         }
         
-        // Map box shadow to token
+        // === EFFECTS - Box Shadow ===
         if (!empty($style['effects']['boxShadow']) && $style['effects']['boxShadow'] !== 'none') {
             $vars[] = '--gmkb-shadow: ' . $style['effects']['boxShadow'];
         }
