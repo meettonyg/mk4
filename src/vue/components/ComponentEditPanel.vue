@@ -2,7 +2,19 @@
   <Transition name="slide-fade">
     <div v-if="editingComponent" class="component-edit-panel">
       <div class="edit-panel-header">
-        <button @click="close" class="back-btn">← Back to Components</button>
+        <div class="header-top">
+          <button @click="close" class="back-btn">← Back to Components</button>
+          
+          <!-- RESET FUNCTIONALITY: Reset button added -->
+          <div class="reset-buttons" v-if="editingComponent">
+            <ComponentResetButton 
+              :componentId="editingComponent.id" 
+              mode="settings"
+              :show-label="false"
+            />
+          </div>
+        </div>
+        
         <h3>Edit {{ componentTypeLabel }}</h3>
       </div>
       
@@ -29,6 +41,8 @@ import { useMediaKitStore } from '../../stores/mediaKit';
 
 // Import the generic edit form - specific forms will be created later
 import GenericEditForm from './edit-forms/GenericEditForm.vue';
+// RESET FUNCTIONALITY: Import reset button component
+import ComponentResetButton from './ui/ComponentResetButton.vue';
 
 const store = useMediaKitStore();
 
@@ -100,6 +114,19 @@ const close = () => {
 .edit-panel-header {
   padding: 20px;
   border-bottom: 1px solid #e5e7eb;
+}
+
+/* RESET FUNCTIONALITY: New header layout styles */
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.reset-buttons {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .edit-panel-header h3 {

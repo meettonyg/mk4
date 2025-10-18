@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia';
 import UnifiedComponentRegistry from '../services/UnifiedComponentRegistry';
+// GEMINI REFINEMENT #1: Direct store import for resetAll
+import { useThemeStore } from './theme';
 import { debounce } from '../utils/debounce';
 // P0 FIX #10: Removed EventBus import - using Pinia $subscribe instead
 import systemReadiness from '../services/SystemReadiness.js';
@@ -2371,6 +2373,240 @@ export const useMediaKitStore = defineStore('mediaKit', {
       }
     },
     
+    /**
+     * NUCLEAR OPTION: Reset entire media kit to initial state
+     * WARNING: This deletes ALL components, sections, and customizations
+     * SAFETY: Requires confirmed=true parameter + UI confirmation dialog
+     * RECOVERY: Can be undone via history
+     * 
+     * @param {boolean} confirmed - Must be true to proceed
+     * @returns {boolean} Success status
+     */
+    resetAll(confirmed = false) {
+      if (!confirmed) {
+        console.warn('resetAll() requires confirmed=true parameter');
+        return false;
+      }
+      
+      console.log('⚠️ Starting complete media kit reset...');
+      
+      // Save current state for undo
+      this._saveToHistory();
+      
+      // Count items for tracking
+      const stats = {
+        components: Object.keys(this.components).length,
+        sections: this.sections.length
+      };
+      
+      // Clear all components and sections
+      this.components = {};
+      this.sections = [];
+      
+      // Add one default section
+      const defaultSectionId = this.addSection('full_width');
+      console.log(`✅ Created default section: ${defaultSectionId}`);
+      
+      // GEMINI REFINEMENT #1: Use imported store directly
+      const themeStore = useThemeStore();
+      themeStore.resetThemeCustomizations();
+      
+      // Reset global settings
+      this.globalSettings = {};
+      this.themeCustomizations = {
+        colors: {},
+        typography: {},
+        spacing: {},
+        effects: {}
+      };
+      
+      // Clear UI state
+      this.selectedComponentIds = [];
+      this.selectedComponentId = null;
+      this.hoveredComponentId = null;
+      this.editingComponentId = null;
+      
+      this.isDirty = true;
+      this._trackChange();
+      
+      // Auto-save the reset (per Gemini recommendation)
+      this.autoSave();
+      
+      // Dispatch event for tracking
+      document.dispatchEvent(new CustomEvent('gmkb:complete-reset', {
+        detail: {
+          deletedComponents: stats.components,
+          deletedSections: stats.sections,
+          timestamp: Date.now()
+        }
+      }));
+      
+      console.log(`✅ Complete reset finished - deleted ${stats.components} components, ${stats.sections} sections`);
+      return true;
+    },
+
+    /**
+     * Reset section settings to defaults, preserve components
+     * @param {string} sectionId - Section to reset
+     * @returns {boolean} Success status
+     */
+    resetSectionSettings(sectionId) {
+      const section = this.sections.find(s => s.section_id === sectionId);
+      if (!section) {
+        console.warn(`Cannot reset section ${sectionId} - not found`);
+        return false;
+      }
+      
+      // Save current state for undo
+      this._saveToHistory();
+      
+      // NOTE: No DEFAULT_SECTION_SETTINGS schema found in codebase
+      // Using empty object as per plan
+      section.settings = {};
+      
+      this.isDirty = true;
+      this._trackChange();
+      
+      // Dispatch event
+      document.dispatchEvent(new CustomEvent('gmkb:section-settings-reset', {
+        detail: { sectionId }
+      }));
+      
+      console.log(`✅ Reset settings for section ${sectionId}`);
+      return true;
+    },
+
+    /**
+     * Clear all components from section
+     * NOTE: Does not delete components, just removes references
+     * @param {string} sectionId - Section to clear
+     * @returns {boolean} Success status
+     */
+    clearSection(sectionId) {
+      const section = this.sections.find(s => s.section_id === sectionId);
+      if (!section) {
+        console.warn(`Cannot clear section ${sectionId} - not found`);
+        return false;
+      }
+      
+      // Save current state for undo
+      this._saveToHistory();
+      
+      // Count components before clearing (for tracking)
+      let componentCount = 0;
+      
+      // Clear component references but keep section structure
+      if (section.components) {
+        componentCount = section.components.length;
+        section.components = [];
+      }
+      
+      if (section.columns) {
+        Object.keys(section.columns).forEach(col => {
+          componentCount += section.columns[col].length;
+          section.columns[col] = [];
+        });
+      }
+      
+      this.isDirty = true;
+      this._trackChange();
+      
+      // Dispatch event
+      document.dispatchEvent(new CustomEvent('gmkb:section-cleared', {
+        detail: { sectionId, componentCount }
+      }));
+      
+      console.log(`✅ Cleared ${componentCount} components from section ${sectionId}`);
+      return true;
+    },
+
+    /**
+     * Reset component settings to defaults while preserving data
+     * BEST PRACTICE: Preserves user content, only resets styling
+     * @param {string} componentId - Component to reset
+     * @returns {boolean} Success status
+     */
+    resetComponentSettings(componentId) {
+      const component = this.components[componentId];
+      if (!component) {
+        console.warn(`Cannot reset component ${componentId} - not found`);
+        return false;
+      }
+      
+      // Get fresh defaults for this component type
+      const defaults = getComponentDefaults(component.type);
+      
+      // Save current state for undo
+      this._saveToHistory();
+      
+      // Reset only settings, preserve data and id
+      this.components[componentId] = {
+        ...component,
+        settings: defaults,
+        props: UnifiedComponentRegistry.getDefaultProps(component.type)
+      };
+      
+      this.isDirty = true;
+      this._trackChange();
+      
+      // Dispatch event for tracking/UI updates
+      document.dispatchEvent(new CustomEvent('gmkb:component-reset', {
+        detail: { 
+          componentId,
+          componentType: component.type,
+          resetType: 'settings'
+        }
+      }));
+      
+      console.log(`✅ Reset settings for component ${componentId}`);
+      return true;
+    },
+
+    /**
+     * Reset component entirely (settings + data)
+     * WARNING: More destructive - clears all user content
+     * @param {string} componentId - Component to reset
+     * @returns {boolean} Success status
+     */
+    resetComponent(componentId) {
+      const component = this.components[componentId];
+      if (!component) {
+        console.warn(`Cannot reset component ${componentId} - not found`);
+        return false;
+      }
+      
+      // Save current state for undo
+      this._saveToHistory();
+      
+      const defaults = getComponentDefaults(component.type);
+      const defaultProps = UnifiedComponentRegistry.getDefaultProps(component.type);
+      
+      // Complete reset - back to factory state
+      this.components[componentId] = {
+        id: componentId,
+        type: component.type,
+        data: defaultProps,
+        props: defaultProps,
+        settings: defaults,
+        schema: component.schema
+      };
+      
+      this.isDirty = true;
+      this._trackChange();
+      
+      // Dispatch event for tracking/UI updates
+      document.dispatchEvent(new CustomEvent('gmkb:component-fully-reset', {
+        detail: { 
+          componentId,
+          componentType: component.type,
+          resetType: 'full'
+        }
+      }));
+      
+      console.log(`✅ Fully reset component ${componentId}`);
+      return true;
+    },
+
     /**
      * GEMINI FIX #2: Update column components (for drag-and-drop)
      * Moves column mutation from view layer to store action

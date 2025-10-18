@@ -87,6 +87,21 @@
         <span>Share</span>
       </button>
 
+      <!-- RESET FUNCTIONALITY: Global Reset Button -->
+      <button
+        @click="resetModal.open()"
+        class="gmkb-toolbar__btn gmkb-toolbar__btn--danger"
+        title="Reset entire media kit"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+          <path d="M21 3v5h-5"></path>
+          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+          <path d="M3 21v-5h5"></path>
+        </svg>
+        <span>Reset All</span>
+      </button>
+
       <!-- Undo -->
       <button
         @click="handleUndo"
@@ -130,6 +145,9 @@
     <!-- Export Modal -->
     <ExportModal ref="exportModal" />
     
+    <!-- RESET FUNCTIONALITY: Global Reset Modal -->
+    <GlobalResetModal ref="resetModal" />
+    
     <!-- Share Modal -->
     <Teleport to="body">
       <div v-if="showShareModal" class="gmkb-modal-overlay" @click.self="showShareModal = false">
@@ -162,11 +180,15 @@ import { ref, computed, provide, watch, onMounted, onUnmounted } from 'vue'
 import { useMediaKitStore } from '../../stores/mediaKit'
 import { useToast } from '../../composables/useToast'
 import ExportModal from './ExportModal.vue'
+// RESET FUNCTIONALITY: Import global reset modal
+import GlobalResetModal from './ui/GlobalResetModal.vue'
 
 const store = useMediaKitStore()
 const { showSuccess, showInfo, showError } = useToast()
 const exportModal = ref(null)
 const showShareModal = ref(false)
+// RESET FUNCTIONALITY: Global reset modal ref
+const resetModal = ref(null)
 
 // Dark mode state
 const isDarkMode = ref(false)
@@ -646,6 +668,33 @@ onUnmounted(() => {
   border-color: #059669;
   box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
   transform: translateY(-1px);
+}
+
+/* RESET FUNCTIONALITY: Element Modifier: danger button (Reset All) */
+.gmkb-toolbar__btn--danger {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.gmkb-toolbar__btn--danger:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border-color: #ef4444;
+  color: white;
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
+  transform: translateY(-1px);
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__btn--danger {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(220, 38, 38, 0.3);
+  color: #fca5a5;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__btn--danger:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border-color: #ef4444;
+  color: white;
 }
 
 /* SVG Icons */

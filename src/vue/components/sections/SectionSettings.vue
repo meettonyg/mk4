@@ -5,12 +5,23 @@
         <div class="section-settings-panel__content">
           <!-- Header -->
           <div class="settings-header">
-            <h3>Section Settings</h3>
-            <button @click="handleClose" class="close-btn" title="Close">
-              <svg viewBox="0 0 24 24" width="20" height="20">
-                <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </button>
+            <div class="header-left">
+              <h3>Section Settings</h3>
+            </div>
+            
+            <div class="header-right">
+              <!-- RESET FUNCTIONALITY: Section reset button added -->
+              <SectionResetButton 
+                v-if="sectionId" 
+                :sectionId="sectionId" 
+              />
+              
+              <button @click="handleClose" class="close-btn" title="Close">
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                  <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
           </div>
           
           <!-- NEW: Tab Navigation -->
@@ -70,6 +81,8 @@ import { useUIStore } from '@/stores/ui'
 import SectionContentPanel from './SectionContentPanel.vue'
 import BaseStylePanel from '../sidebar/editors/BaseStylePanel.vue'
 import BaseAdvancedPanel from '../sidebar/editors/BaseAdvancedPanel.vue'
+// RESET FUNCTIONALITY: Import section reset button
+import SectionResetButton from '../ui/SectionResetButton.vue'
 
 const store = useMediaKitStore()
 const uiStore = useUIStore()
@@ -206,6 +219,19 @@ onUnmounted(() => {
   padding: 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   flex-shrink: 0;
+}
+
+/* RESET FUNCTIONALITY: Header layout for reset buttons */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .settings-header h3 {

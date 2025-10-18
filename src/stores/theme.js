@@ -687,6 +687,66 @@ export const useThemeStore = defineStore('theme', {
       }
     },
     
+    /**
+     * Reset all theme customizations to active theme defaults
+     * @returns {boolean} Success status
+     */
+    resetThemeCustomizations() {
+      // NOTE: Theme store doesn't have _saveToHistory() method
+      // History tracking is handled by mediaKit store
+      
+      this.tempCustomizations = {
+        colors: {},
+        typography: {},
+        spacing: {},
+        effects: {}
+      };
+      
+      this.hasUnsavedChanges = true;
+      
+      // Reapply the active theme without customizations
+      if (this.activeTheme) {
+        ThemeStyleInjector.applyTheme(this.activeTheme, this.activeThemeId);
+      }
+      
+      // Dispatch event for tracking
+      document.dispatchEvent(new CustomEvent('gmkb:theme-reset', {
+        detail: { themeId: this.activeThemeId }
+      }));
+      
+      console.log(`✅ Reset customizations for theme ${this.activeThemeId}`);
+      return true;
+    },
+
+    /**
+     * Switch to a different theme and reset customizations
+     * @param {string} themeId - Target theme ID
+     * @returns {boolean} Success status
+     */
+    switchAndResetTheme(themeId) {
+      const theme = this.availableThemes.find(t => t.id === themeId) ||
+                    this.customThemes.find(t => t.id === themeId);
+      
+      if (!theme) {
+        console.warn(`Cannot switch to theme ${themeId} - not found`);
+        return false;
+      }
+      
+      // NOTE: Theme store doesn't have _saveToHistory() method
+      // History tracking is handled by mediaKit store
+      
+      this.activeThemeId = themeId;
+      this.resetThemeCustomizations();
+      
+      // Dispatch event
+      document.dispatchEvent(new CustomEvent('gmkb:theme-switched', {
+        detail: { themeId }
+      }));
+      
+      console.log(`✅ Switched to theme ${themeId}`);
+      return true;
+    },
+
     // Load custom themes from database
     async loadCustomThemes() {
       // ROOT FIX: Custom themes endpoint doesn't exist yet in v2 API
