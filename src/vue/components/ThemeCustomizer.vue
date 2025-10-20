@@ -207,11 +207,20 @@ const cardStyles = computed(() => ({
 }));
 
 // ROOT FIX: Dynamic preview frame background based on active theme
-const previewFrameStyles = computed(() => ({
-  background: currentTheme.value.colors?.background || '#ffffff',
-  color: currentTheme.value.colors?.text || '#1f2937',
-  transition: 'background-color 0.3s ease, color 0.3s ease'
-}));
+const previewFrameStyles = computed(() => {
+  const styles = {
+    background: currentTheme.value.colors?.background || '#ffffff',
+    color: currentTheme.value.colors?.text || '#1f2937',
+    transition: 'background-color 0.3s ease, color 0.3s ease'
+  };
+  
+  // CRITICAL DEBUG: Log when preview styles change
+  if (window.gmkbData?.debugMode) {
+    console.log('[ThemeCustomizer] Preview styles updated:', styles);
+  }
+  
+  return styles;
+});
 
 // ROOT FIX: Event-driven scroll detection
 const detectScrollableContent = () => {
@@ -268,9 +277,23 @@ const handleKeydown = (e) => {
 };
 
 // ROOT FIX: Watch for theme changes to update preview
-watch(() => themeStore.mergedTheme, () => {
+watch(() => themeStore.mergedTheme, (newTheme, oldTheme) => {
+  // CRITICAL DEBUG: Log theme changes
+  if (window.gmkbData?.debugMode) {
+    console.log('[ThemeCustomizer] mergedTheme changed');
+    console.log('  Old background:', oldTheme?.colors?.background);
+    console.log('  New background:', newTheme?.colors?.background);
+  }
+  
   // Theme changed, scroll detection may be needed
   nextTick(detectScrollableContent);
+}, { deep: true });
+
+// CRITICAL FIX: Also watch tempCustomizations directly
+watch(() => themeStore.tempCustomizations, (newCustomizations) => {
+  if (window.gmkbData?.debugMode) {
+    console.log('[ThemeCustomizer] tempCustomizations changed:', newCustomizations);
+  }
 }, { deep: true });
 
 // ROOT FIX: Watch for customizer open state to detect scroll

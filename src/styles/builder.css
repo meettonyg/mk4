@@ -56,8 +56,10 @@ body.dark-mode #gmkb-sidebar {
 #media-kit-preview {
     flex: 1;
     overflow-y: auto;
-    background: #ffffff;
+    /* CRITICAL FIX: Use theme background color variable instead of hardcoded white */
+    background: var(--gmkb-color-background, #ffffff);
     padding: 32px;
+    transition: background-color 0.3s ease;
 }
 
 #media-kit-preview::-webkit-scrollbar {

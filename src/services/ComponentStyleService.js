@@ -315,8 +315,10 @@ class ComponentStyleService {
         if (bgColor && bgColor !== 'transparent' && bgColor !== '#ffffff') {
           componentRules.push(`background-color: ${bgColor} !important`);
         } else {
-          // Use theme variable as fallback
-          componentRules.push(`background-color: var(--gmkb-color-background, ${bgColor}) !important`);
+          // CRITICAL FIX: Use surface (component bg) not background (page bg)!
+          // background = page background
+          // surface = component/card background
+          componentRules.push(`background-color: var(--gmkb-color-surface, ${bgColor}) !important`);
         }
       }
       if (style.background.opacity !== undefined && style.background.opacity !== 100) {

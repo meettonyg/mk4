@@ -479,41 +479,63 @@ export const useThemeStore = defineStore('theme', {
     applyColorPreset(presetName) {
       const preset = this.colorPresets[presetName];
       if (preset) {
+        // CRITICAL FIX: Already using immutable update - good!
         this.tempCustomizations.colors = {
           ...this.tempCustomizations.colors,
           ...preset
         };
         this.hasUnsavedChanges = true;
         this.applyThemeToDOM();
+        console.log(`[Theme Store] Applied color preset: ${presetName}`, preset);
       }
     },
     
     // Update color
     updateColor(colorKey, value) {
-      this.tempCustomizations.colors[colorKey] = value;
+      // CRITICAL FIX: Use immutable update to ensure Vue reactivity
+      this.tempCustomizations.colors = {
+        ...this.tempCustomizations.colors,
+        [colorKey]: value
+      };
       this.hasUnsavedChanges = true;
       this.applyThemeToDOM();
+      console.log(`[Theme Store] Updated color ${colorKey}:`, value);
     },
     
     // Update typography
     updateTypography(key, value) {
-      this.tempCustomizations.typography[key] = value;
+      // CRITICAL FIX: Use immutable update to ensure Vue reactivity
+      this.tempCustomizations.typography = {
+        ...this.tempCustomizations.typography,
+        [key]: value
+      };
       this.hasUnsavedChanges = true;
       this.applyThemeToDOM();
+      console.log(`[Theme Store] Updated typography ${key}:`, value);
     },
     
     // Update spacing
     updateSpacing(key, value) {
-      this.tempCustomizations.spacing[key] = value;
+      // CRITICAL FIX: Use immutable update to ensure Vue reactivity
+      this.tempCustomizations.spacing = {
+        ...this.tempCustomizations.spacing,
+        [key]: value
+      };
       this.hasUnsavedChanges = true;
       this.applyThemeToDOM();
+      console.log(`[Theme Store] Updated spacing ${key}:`, value);
     },
     
     // Update effects
     updateEffects(key, value) {
-      this.tempCustomizations.effects[key] = value;
+      // CRITICAL FIX: Use immutable update to ensure Vue reactivity
+      this.tempCustomizations.effects = {
+        ...this.tempCustomizations.effects,
+        [key]: value
+      };
       this.hasUnsavedChanges = true;
       this.applyThemeToDOM();
+      console.log(`[Theme Store] Updated effects ${key}:`, value);
     },
     
     // Reset to original theme
