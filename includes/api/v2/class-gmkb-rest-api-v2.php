@@ -225,8 +225,16 @@ class GMKB_REST_API_V2 {
             if (!is_array($state_data)) {
                 $state_data = array();
             }
+            
+            // CRITICAL FIX: Log theme data for debugging
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('🎨 GMKB REST API v2: Loading theme for post #' . $post_id);
+                error_log('  - Theme ID from DB: "' . $theme_data['id'] . '"');
+                error_log('  - Has customizations: ' . (empty($theme_data['customizations']) ? 'NO' : 'YES'));
+            }
 
             // Build response
+            // ROOT FIX: Return theme as string directly (frontend expects string, not object)
             $response = array(
                 'success' => true,
                 'version' => '2.0',
@@ -244,7 +252,8 @@ class GMKB_REST_API_V2 {
                     'layout' => $state_data['layout'] ?? array(),
                     'globalSettings' => $state_data['globalSettings'] ?? new stdClass()
                 ),
-                'theme' => $theme_data,
+                'theme' => $theme_data['id'], // CRITICAL FIX: Return theme ID as string, not object
+                'themeCustomizations' => $theme_data['customizations'], // Separate customizations
                 'podsData' => $pods_data,
                 'metadata' => array(
                     'componentCount' => is_object($state_data['components'] ?? null) ? 0 : count($state_data['components'] ?? array()),
@@ -420,12 +429,17 @@ class GMKB_REST_API_V2 {
                 'error' => null
             );
             
-            // CRITICAL FIX: Save theme with comprehensive error handling
+            // CRITICAL FIX: Validate and save theme with comprehensive error handling
             if (isset($body['theme']) && $body['theme'] !== '') {
                 $theme_save_status['attempted'] = true;
                 $theme_save_status['theme_value'] = $body['theme'];
                 
-                if (defined('WP_DEBUG') && WP_DEBUG) {
+                // CRITICAL: Validate theme ID before saving
+                $valid_themes = array('professional_clean', 'creative_bold', 'minimal_elegant', 'modern_dark');
+                if (!in_array($body['theme'], $valid_themes)) {
+                    $theme_save_status['error'] = 'Invalid theme ID: ' . $body['theme'];
+                    error_log('❌ GMKB REST API v2: Invalid theme ID "' . $body['theme'] . '", must be one of: ' . implode(', ', $valid_themes));
+                } else if (defined('WP_DEBUG') && WP_DEBUG) {
                     error_log('🎨 GMKB REST API v2: Attempting to save theme: "' . $body['theme'] . '"');
                     
                     // Log current theme before save
@@ -433,17 +447,19 @@ class GMKB_REST_API_V2 {
                     error_log('  - Current theme in DB: "' . ($current_theme ?: 'NOT SET') . '"');
                 }
                 
-                // Clear any previous database errors
-                $wpdb->flush();
-                
-                // Attempt to save theme
-                $theme_result = update_post_meta($post_id, 'gmkb_theme', $body['theme']);
-                
-                // Check for database errors
-                if ($wpdb->last_error) {
-                    $theme_save_status['error'] = 'Database error: ' . $wpdb->last_error;
-                    error_log('❌ GMKB REST API v2: Theme save database error: ' . $wpdb->last_error);
-                } else {
+                // Only proceed with save if validation passed
+                if (empty($theme_save_status['error'])) {
+                    // Clear any previous database errors
+                    $wpdb->flush();
+                    
+                    // Attempt to save theme
+                    $theme_result = update_post_meta($post_id, 'gmkb_theme', $body['theme']);
+                    
+                    // Check for database errors
+                    if ($wpdb->last_error) {
+                        $theme_save_status['error'] = 'Database error: ' . $wpdb->last_error;
+                        error_log('❌ GMKB REST API v2: Theme save database error: ' . $wpdb->last_error);
+                    } else {
                     if ($theme_result !== false) {
                         $theme_save_status['success'] = true;
                         
@@ -486,6 +502,7 @@ class GMKB_REST_API_V2 {
                             error_log('  - Current theme: "' . $current_theme . '"');
                             error_log('  - update_post_meta returned: false');
                         }
+                    }
                     }
                 }
             } else {

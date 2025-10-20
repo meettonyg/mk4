@@ -408,6 +408,14 @@ export const useMediaKitStore = defineStore('mediaKit', {
             throw new Error('No data returned from API');
           }
 
+          // CRITICAL DEBUG: Log what theme data we received from API
+          console.log('🎨 MediaKit Store INITIALIZE: Theme data from API:', {
+            'data.theme': data.theme,
+            'data.theme type': typeof data.theme,
+            'data.themeCustomizations present': !!data.themeCustomizations,
+            'Will set store theme to': data.theme || 'professional_clean'
+          });
+
           // Update state in one batch
           this.$patch({
             components: data.components || {},
@@ -417,6 +425,12 @@ export const useMediaKitStore = defineStore('mediaKit', {
             podsData: data.podsData || {}, // CRITICAL: Store Pods data
             lastSaved: Date.now(),
             isDirty: false
+          });
+          
+          // CRITICAL DEBUG: Confirm what theme was actually set
+          console.log('🎨 MediaKit Store INITIALIZED: Theme set in store:', {
+            'this.theme': this.theme,
+            'this.theme type': typeof this.theme
           });
           
           // ROOT FIX: Enrich ALL loaded components with Pods data
@@ -534,6 +548,15 @@ export const useMediaKitStore = defineStore('mediaKit', {
           globalSettings: this.globalSettings,
           layout: this.sections.map(s => s.section_id) // Add layout for compatibility
         };
+        
+        // CRITICAL DEBUG: Log what theme we're about to save
+        console.log('🎨 MediaKit Store SAVE: Preparing to save theme:', {
+          'this.theme': this.theme,
+          'this.theme type': typeof this.theme,
+          'state.theme': state.theme,
+          'state.theme type': typeof state.theme,
+          'themeCustomizations present': !!state.themeCustomizations
+        });
         
         // CRITICAL FIX: Ensure APIService exists, create if needed
         if (!this.apiService) {

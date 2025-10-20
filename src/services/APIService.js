@@ -245,17 +245,28 @@ export class APIService {
             // PHASE 6: Validate response structure
             DataValidator.validateAPIResponse(data);
             
-            // Transform response to expected format
+            // CRITICAL FIX: Backend now returns theme as STRING (not object)
+            // After fixing class-gmkb-rest-api-v2.php, theme is now data.theme (string)
+            // not data.theme.id (object property)
             const result = {
               components: data.state.components || {},
               sections: data.state.sections || [],
               layout: data.state.layout || [],
               globalSettings: data.state.globalSettings || {},
-              theme: data.theme.id || 'professional_clean',
-              themeCustomizations: data.theme.customizations || {},
+              theme: data.theme || 'professional_clean', // ✅ NOW STRING!
+              themeCustomizations: data.themeCustomizations || {},
               podsData: data.podsData || {},
               metadata: data.metadata || {}
             };
+            
+            // CRITICAL DEBUG: Log theme loading
+            console.log('🎨 APIService LOAD: Theme data received:', {
+              'data.theme (should be string)': data.theme,
+              'data.theme type': typeof data.theme,
+              'data.themeCustomizations': data.themeCustomizations ? 'present' : 'missing',
+              'result.theme (what store will get)': result.theme,
+              'Full response keys': Object.keys(data)
+            });
             
             // Cache response
             this.setCache('load', result);
@@ -357,6 +368,14 @@ export class APIService {
         themeCustomizations: sanitizedState.themeCustomizations || {}
       };
       
+      // CRITICAL DEBUG: Log what theme is being saved
+      console.log('🎨 APIService SAVE: Sending theme to backend:', {
+        'payload.theme': payload.theme,
+        'payload.theme type': typeof payload.theme,
+        'sanitizedState.theme': sanitizedState.theme,
+        'themeCustomizations present': !!payload.themeCustomizations
+      });
+      
       // Log payload size in debug mode
       if (window.gmkbData?.debugMode) {
         console.log('💾 Saving media kit:', {
@@ -410,6 +429,17 @@ export class APIService {
             if (!result.success) {
               throw new Error(result.message || 'Save failed');
             }
+            
+            // CRITICAL DEBUG: Log theme save response
+            console.log('🎨 APIService SAVE: Backend response received:', {
+              'result.theme_save_status': result.theme_save_status,
+              'theme attempted': result.theme_save_status?.attempted,
+              'theme success': result.theme_save_status?.success,
+              'theme verified': result.theme_save_status?.verified,
+              'theme value sent': result.theme_save_status?.theme_value,
+              'theme value saved': result.theme_save_status?.saved_value,
+              'theme error': result.theme_save_status?.error || 'none'
+            });
             
             // Clear cache after successful save
             this.clearCache();
