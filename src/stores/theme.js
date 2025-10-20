@@ -518,14 +518,38 @@ export const useThemeStore = defineStore('theme', {
     
     // Reset to original theme
     resetToOriginal() {
+      console.log('[Theme Store] Resetting to original theme:', this.activeThemeId);
+      
+      // Clear all temporary customizations
       this.tempCustomizations = {
         colors: {},
         typography: {},
         spacing: {},
         effects: {}
       };
-      this.hasUnsavedChanges = false;
-      this.applyThemeToDOM();
+      this.hasUnsavedChanges = true; // ROOT FIX: Keep as true so UI shows pending state
+      
+      // ROOT FIX: Re-apply the base theme using ThemeStyleInjector (same as selectTheme)
+      const theme = this.activeTheme;
+      if (theme) {
+        try {
+          ThemeStyleInjector.applyTheme(theme, this.activeThemeId);
+          console.log('[Theme Store] Original theme re-applied via ThemeStyleInjector:', this.activeThemeId);
+        } catch (error) {
+          console.error('[Theme Store] Failed to re-apply theme via ThemeStyleInjector:', error);
+          // Fallback to old method
+          this.applyThemeToDOM();
+        }
+      } else {
+        console.warn('[Theme Store] Could not find active theme to reset:', this.activeThemeId);
+        // Fallback
+        this.applyThemeToDOM();
+      }
+      
+      // Dispatch event for tracking
+      document.dispatchEvent(new CustomEvent('gmkb:theme-reset', {
+        detail: { themeId: this.activeThemeId }
+      }));
     },
     
     // Apply customizations permanently

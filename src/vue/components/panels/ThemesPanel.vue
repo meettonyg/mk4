@@ -96,8 +96,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useThemeStore } from '../../../stores/theme';
+import { useMediaKitStore } from '../../../stores/mediaKit';
 
 const themeStore = useThemeStore();
+const mediaKitStore = useMediaKitStore();
 const importFileName = ref('');
 
 // ROOT FIX: Debug active theme ID
@@ -118,6 +120,13 @@ onMounted(() => {
 const selectTheme = (themeId) => {
   console.log('[ThemesPanel] Selecting theme:', themeId);
   themeStore.selectTheme(themeId);
+  
+  // CRITICAL FIX: Update mediaKitStore immediately after selecting theme
+  // This ensures the theme change is persisted when the user saves
+  mediaKitStore.theme = themeId;
+  mediaKitStore.themeCustomizations = { ...themeStore.tempCustomizations };
+  mediaKitStore._trackChange();
+  console.log('[ThemesPanel] Updated mediaKitStore with theme:', themeId);
 };
 
 const deleteTheme = (themeId) => {

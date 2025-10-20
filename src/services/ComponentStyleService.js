@@ -305,8 +305,19 @@ class ComponentStyleService {
     // Background - Apply to component root
     if (style.background) {
       if (style.background.color) {
-        // ROOT FIX: HTML decode color to prevent double-encoding
-        componentRules.push(`background-color: ${this.htmlDecode(style.background.color)} !important`);
+        // CRITICAL FIX: Use CSS variable fallback for theme support
+        // If component has custom color, use it
+        // If not, fall back to theme variable
+        const bgColor = this.htmlDecode(style.background.color);
+        
+        // Only apply background if it's not the theme's default background
+        // This allows theme colors to show through
+        if (bgColor && bgColor !== 'transparent' && bgColor !== '#ffffff') {
+          componentRules.push(`background-color: ${bgColor} !important`);
+        } else {
+          // Use theme variable as fallback
+          componentRules.push(`background-color: var(--gmkb-color-background, ${bgColor}) !important`);
+        }
       }
       if (style.background.opacity !== undefined && style.background.opacity !== 100) {
         componentRules.push(`opacity: ${style.background.opacity / 100}`);
@@ -341,7 +352,17 @@ class ComponentStyleService {
       }
       
       // ROOT FIX: HTML decode color to prevent double-encoding
-      if (t.color) componentRules.push(`color: ${this.htmlDecode(t.color)} !important`);
+      // CRITICAL FIX: Use theme CSS variable as fallback
+      if (t.color) {
+        const textColor = this.htmlDecode(t.color);
+        // Only apply custom color if it's different from theme defaults
+        if (textColor && textColor !== '#1e293b' && textColor !== '#000000') {
+          componentRules.push(`color: ${textColor} !important`);
+        } else {
+          // Use theme variable as fallback
+          componentRules.push(`color: var(--gmkb-color-text, ${textColor}) !important`);
+        }
+      }
       if (t.textAlign) componentRules.push(`text-align: ${t.textAlign} !important`);
     }
 

@@ -60,8 +60,10 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useThemeStore } from '../../stores/theme';
+import { useMediaKitStore } from '../../stores/mediaKit';
 
 const themeStore = useThemeStore();
+const mediaKitStore = useMediaKitStore();
 const dropdownOpen = ref(false);
 const dropdown = ref(null);
 const wrapperRef = ref(null);
@@ -109,6 +111,14 @@ const selectTheme = (themeId) => {
   
   console.log('[ThemeSwitcher] Selecting theme:', themeId);
   themeStore.selectTheme(themeId);
+  
+  // CRITICAL FIX: Update mediaKitStore immediately after selecting theme
+  // This ensures the theme change is persisted when the user saves
+  mediaKitStore.theme = themeId;
+  mediaKitStore.themeCustomizations = { ...themeStore.tempCustomizations };
+  mediaKitStore._trackChange();
+  console.log('[ThemeSwitcher] Updated mediaKitStore with theme:', themeId);
+  
   dropdownOpen.value = false;
   
   // Show toast notification
