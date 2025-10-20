@@ -139,11 +139,22 @@ class MediaKitAPI {
                 'sections' => array(),
                 'theme' => 'professional_clean',
                 'themeSettings' => new \stdClass(),
+                'themeCustomizations' => new \stdClass(),
                 'globalSettings' => new \stdClass(),
             );
         }
 
         $pods_data = $this->fetch_all_pods_data($post_id);
+        
+        // ROOT FIX: Load theme customizations from separate post meta if not in state
+        // This ensures backwards compatibility with existing media kits
+        $theme_customizations = $media_kit_state['themeCustomizations'] ?? new \stdClass();
+        if (empty((array)$theme_customizations)) {
+            $saved_customizations = get_post_meta($post_id, 'gmkb_theme_customizations', true);
+            if (!empty($saved_customizations) && is_array($saved_customizations)) {
+                $theme_customizations = $saved_customizations;
+            }
+        }
         
         return array(
             'version' => '1.0-ajax',
@@ -154,6 +165,7 @@ class MediaKitAPI {
             'sections' => $media_kit_state['sections'] ?? $media_kit_state['layout'] ?? array(), // Handle legacy 'layout' as sections
             'theme' => $media_kit_state['theme'] ?? 'professional_clean',
             'themeSettings' => $media_kit_state['themeSettings'] ?? new \stdClass(),
+            'themeCustomizations' => $theme_customizations,
             'globalSettings' => $media_kit_state['globalSettings'] ?? new \stdClass(),
             'podsData' => $pods_data,
             'timestamp' => current_time('mysql')
@@ -181,6 +193,7 @@ class MediaKitAPI {
             'sections' => $data['layout'] ?? array(), // Ensure sections and layout are synced.
             'theme' => $data['theme'] ?? 'professional_clean',
             'themeSettings' => $data['themeSettings'] ?? new \stdClass(),
+            'themeCustomizations' => $data['themeCustomizations'] ?? new \stdClass(), // ROOT FIX: Store customizations in state too
             'globalSettings' => $data['globalSettings'] ?? new \stdClass(),
             'timestamp' => current_time('mysql')
         );
@@ -189,6 +202,66 @@ class MediaKitAPI {
         
         if ($updated === false) {
             return new \WP_Error('save_failed', 'Failed to write media kit state to the database.', array('status' => 500));
+        }
+
+        // ROOT FIX: Save theme customizations as separate post meta for frontend display
+        // Frontend class-gmkb-frontend-display.php looks for 'gmkb_theme_customizations'
+        // This allows theme customizations to persist from customizer to preview to frontend
+        $theme_customizations = $data['themeCustomizations'] ?? array();
+        if (!empty($theme_customizations)) {
+            // Convert from Vue format (colors: {primary: '#xxx'}) to PHP format expected by frontend
+            $customizations_for_frontend = array();
+            
+            // Process colors
+            if (!empty($theme_customizations['colors']) && is_array($theme_customizations['colors'])) {
+                $customizations_for_frontend['colors'] = $theme_customizations['colors'];
+            }
+            
+            // Process typography
+            if (!empty($theme_customizations['typography']) && is_array($theme_customizations['typography'])) {
+                $customizations_for_frontend['typography'] = array();
+                foreach ($theme_customizations['typography'] as $key => $value) {
+                    // Map camelCase to snake_case for PHP convention
+                    if ($key === 'fontFamily') {
+                        $customizations_for_frontend['typography']['fontFamily'] = $value;
+                    } elseif ($key === 'headingFamily') {
+                        $customizations_for_frontend['typography']['headingFont'] = $value;
+                    } elseif ($key === 'baseFontSize') {
+                        $customizations_for_frontend['typography']['fontSize'] = $value;
+                    } elseif ($key === 'lineHeight') {
+                        $customizations_for_frontend['typography']['lineHeight'] = $value;
+                    } else {
+                        $customizations_for_frontend['typography'][$key] = $value;
+                    }
+                }
+            }
+            
+            // Process spacing
+            if (!empty($theme_customizations['spacing']) && is_array($theme_customizations['spacing'])) {
+                $customizations_for_frontend['spacing'] = array();
+                foreach ($theme_customizations['spacing'] as $key => $value) {
+                    // Map camelCase to snake_case for PHP convention
+                    if ($key === 'componentGap') {
+                        $customizations_for_frontend['spacing']['componentGap'] = $value;
+                    } elseif ($key === 'sectionPadding') {
+                        $customizations_for_frontend['spacing']['sectionGap'] = $value;
+                    } elseif ($key === 'containerMaxWidth') {
+                        $customizations_for_frontend['spacing']['containerPadding'] = $value;
+                    } else {
+                        $customizations_for_frontend['spacing'][$key] = $value;
+                    }
+                }
+            }
+            
+            // Process effects
+            if (!empty($theme_customizations['effects']) && is_array($theme_customizations['effects'])) {
+                $customizations_for_frontend['effects'] = $theme_customizations['effects'];
+            }
+            
+            update_post_meta($post_id, 'gmkb_theme_customizations', $customizations_for_frontend);
+        } else {
+            // Clear customizations if empty
+            delete_post_meta($post_id, 'gmkb_theme_customizations');
         }
 
         return array(
