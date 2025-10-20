@@ -73,17 +73,26 @@
           <div class="preview-body" :style="{ background: currentTheme.colors.background }">
             <div class="preview-card" :style="{ 
               background: currentTheme.colors.surface,
-              borderColor: currentTheme.colors.border
+              border: '1px solid ' + (currentTheme.colors.surface || '#e2e8f0')
             }">
               <h5 :style="{ color: currentTheme.colors.text }">Card Title</h5>
-              <p :style="{ color: currentTheme.colors.textLight }">
-                This is a preview of how your colors will look in the media kit.
+              <p :style="{ color: currentTheme.colors.text, opacity: 0.7 }">
+                This is a preview of how your colors will look. 
+                <a href="#" :style="{ color: currentTheme.colors.linkColor || currentTheme.colors.primary }" 
+                   @mouseover="$event.target.style.color = currentTheme.colors.linkHover || currentTheme.colors.primary"
+                   @mouseout="$event.target.style.color = currentTheme.colors.linkColor || currentTheme.colors.primary">Learn more</a>.
               </p>
               <button class="preview-btn" :style="{ 
+                background: currentTheme.colors.primary,
+                color: currentTheme.colors.primaryText || getContrastColor(currentTheme.colors.primary)
+              }">
+                Primary Button
+              </button>
+              <button class="preview-btn preview-btn-secondary" :style="{ 
                 background: currentTheme.colors.secondary,
                 color: getContrastColor(currentTheme.colors.secondary)
               }">
-                Button
+                Secondary
               </button>
             </div>
           </div>
@@ -101,33 +110,33 @@ const themeStore = useThemeStore();
 
 const currentTheme = computed(() => themeStore.mergedTheme);
 
+// ROOT FIX: Streamlined to ~8 essential color settings per design philosophy
+// REMOVED: textLight (auto-generated), border (auto-generated), status colors (dev responsibility)
+// ADDED: primaryText (button text), linkColor, linkHover (critical for UX)
 const colorDefinitions = [
-  { key: 'primary', label: 'Primary Color', description: 'Main brand color for buttons and links' },
+  { key: 'primary', label: 'Primary Color', description: 'Brand color for buttons and accents' },
+  { key: 'primaryText', label: 'Primary Text Color', description: 'Text color on primary buttons (ensure good contrast)' },
   { key: 'secondary', label: 'Secondary Color', description: 'Accent color for secondary actions' },
-  { key: 'background', label: 'Background', description: 'Main background color' },
-  { key: 'surface', label: 'Surface', description: 'Card and component backgrounds' },
-  { key: 'text', label: 'Text Color', description: 'Primary text color' },
-  { key: 'textLight', label: 'Text Light', description: 'Secondary text and descriptions' },
-  { key: 'border', label: 'Border Color', description: 'Borders and dividers' },
-  { key: 'success', label: 'Success', description: 'Success states and messages' },
-  { key: 'warning', label: 'Warning', description: 'Warning states and messages' },
-  { key: 'error', label: 'Error', description: 'Error states and messages' }
+  { key: 'background', label: 'Page Background', description: 'Main page background' },
+  { key: 'surface', label: 'Card Background', description: 'Background for cards and components' },
+  { key: 'text', label: 'Text Color', description: 'Primary text color for content' },
+  { key: 'linkColor', label: 'Link Color', description: 'Color for text links (typically matches primary)' },
+  { key: 'linkHover', label: 'Link Hover Color', description: 'Link color on hover (darker than link color)' }
 ];
 
 const getColorValue = (key) => {
   if (!currentTheme.value || !currentTheme.value.colors) {
     // Return default colors if theme not ready
+    // ROOT FIX: Updated defaults to match streamlined color palette
     const defaults = {
       primary: '#3b82f6',
+      primaryText: '#ffffff',
       secondary: '#2563eb',
       background: '#ffffff',
       surface: '#f8fafc',
       text: '#1e293b',
-      textLight: '#64748b',
-      border: '#e2e8f0',
-      success: '#10b981',
-      warning: '#f59e0b',
-      error: '#ef4444'
+      linkColor: '#3b82f6',
+      linkHover: '#2563eb'
     };
     return defaults[key] || '#000000';
   }
@@ -345,5 +354,10 @@ const getContrastColor = (hexColor) => {
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
+  margin-right: 8px;
+}
+
+.preview-btn:last-child {
+  margin-right: 0;
 }
 </style>

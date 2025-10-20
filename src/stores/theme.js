@@ -99,12 +99,13 @@ export const useThemeStore = defineStore('theme', {
           return {
             colors: {
               primary: '#3b82f6',
+              primaryText: '#ffffff',
               secondary: '#2563eb',
               background: '#ffffff',
               surface: '#f8fafc',
               text: '#1e293b',
-              textLight: '#64748b',
-              border: '#e2e8f0'
+              linkColor: '#3b82f6',
+              linkHover: '#2563eb'
             },
             typography: {
               fontFamily: "'Inter', system-ui, sans-serif",
@@ -320,15 +321,13 @@ export const useThemeStore = defineStore('theme', {
           category: 'professional',
           colors: {
             primary: '#3b82f6',
+            primaryText: '#ffffff',
             secondary: '#2563eb',
             background: '#ffffff',
             surface: '#f8fafc',
             text: '#1e293b',
-            textLight: '#64748b',
-            border: '#e2e8f0',
-            success: '#10b981',
-            warning: '#f59e0b',
-            error: '#ef4444'
+            linkColor: '#3b82f6',
+            linkHover: '#2563eb'
           },
           typography: {
             fontFamily: "'Inter', system-ui, sans-serif",
