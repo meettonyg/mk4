@@ -6,8 +6,14 @@
  * NO PHP RENDERING - pure data API.
  * Implements Phase 2 of Pure Vue Migration Plan
  * 
+ * THEME PERSISTENCE FIX APPLIED: October 20, 2025
+ * - Enhanced debug logging for theme saves
+ * - Database error detection
+ * - Save verification via immediate readback
+ * - Comprehensive status tracking
+ * 
  * @package GMKB
- * @version 2.0.0
+ * @version 2.0.1
  */
 
 if (!defined('ABSPATH')) {
@@ -319,12 +325,15 @@ class GMKB_REST_API_V2 {
             // Get request body
             $body = $request->get_json_params();
             
-            // ROOT FIX: Debug logging for troubleshooting
+            // ROOT FIX: Enhanced debug logging with theme tracking
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log('💾 GMKB REST API v2: Saving media kit #' . $post_id);
                 error_log('  - Request body size: ' . strlen(json_encode($body)) . ' bytes');
                 error_log('  - Components: ' . (isset($body['components']) ? count((array)$body['components']) : 0));
                 error_log('  - Sections: ' . (isset($body['sections']) ? count($body['sections']) : 0));
+                error_log('  - Theme in body: ' . (isset($body['theme']) ? '"' . $body['theme'] . '"' : 'NOT SET'));
+                error_log('  - Theme empty() check: ' . (empty($body['theme']) ? 'TRUE (will skip save)' : 'FALSE (will save)'));
+                error_log('  - Theme value type: ' . (isset($body['theme']) ? gettype($body['theme']) : 'N/A'));
             }
 
             // Validate data structure
@@ -398,14 +407,104 @@ class GMKB_REST_API_V2 {
                 }
             }
 
-            // Save theme if provided
-            if (!empty($body['theme'])) {
-                update_post_meta($post_id, 'gmkb_theme', $body['theme']);
+            // ═══════════════════════════════════════════════════════════════
+            // THEME PERSISTENCE FIX: Enhanced theme save with verification
+            // ═══════════════════════════════════════════════════════════════
+            
+            $theme_save_status = array(
+                'attempted' => false,
+                'success' => false,
+                'verified' => false,
+                'theme_value' => null,
+                'saved_value' => null,
+                'error' => null
+            );
+            
+            // CRITICAL FIX: Save theme with comprehensive error handling
+            if (isset($body['theme']) && $body['theme'] !== '') {
+                $theme_save_status['attempted'] = true;
+                $theme_save_status['theme_value'] = $body['theme'];
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('🎨 GMKB REST API v2: Attempting to save theme: "' . $body['theme'] . '"');
+                    
+                    // Log current theme before save
+                    $current_theme = get_post_meta($post_id, 'gmkb_theme', true);
+                    error_log('  - Current theme in DB: "' . ($current_theme ?: 'NOT SET') . '"');
+                }
+                
+                // Clear any previous database errors
+                $wpdb->flush();
+                
+                // Attempt to save theme
+                $theme_result = update_post_meta($post_id, 'gmkb_theme', $body['theme']);
+                
+                // Check for database errors
+                if ($wpdb->last_error) {
+                    $theme_save_status['error'] = 'Database error: ' . $wpdb->last_error;
+                    error_log('❌ GMKB REST API v2: Theme save database error: ' . $wpdb->last_error);
+                } else {
+                    if ($theme_result !== false) {
+                        $theme_save_status['success'] = true;
+                        
+                        // CRITICAL: Verify the save by reading it back immediately
+                        $saved_theme = get_post_meta($post_id, 'gmkb_theme', true);
+                        $theme_save_status['saved_value'] = $saved_theme;
+                        
+                        if ($saved_theme === $body['theme']) {
+                            $theme_save_status['verified'] = true;
+                            
+                            if (defined('WP_DEBUG') && WP_DEBUG) {
+                                error_log('✅ GMKB REST API v2: Theme saved and verified: "' . $body['theme'] . '"');
+                            }
+                        } else {
+                            $theme_save_status['error'] = 'Theme verification failed';
+                            error_log('⚠️ GMKB REST API v2: Theme verification FAILED');
+                            error_log('  - Expected: "' . $body['theme'] . '"');
+                            error_log('  - Got: "' . $saved_theme . '"');
+                        }
+                    } else {
+                        // update_post_meta returned false - check why
+                        $current_theme = get_post_meta($post_id, 'gmkb_theme', true);
+                        
+                        if ($current_theme === $body['theme']) {
+                            // No change needed - theme already has this value
+                            $theme_save_status['success'] = true;
+                            $theme_save_status['verified'] = true;
+                            $theme_save_status['saved_value'] = $current_theme;
+                            
+                            if (defined('WP_DEBUG') && WP_DEBUG) {
+                                error_log('ℹ️ GMKB REST API v2: Theme unchanged (already "' . $body['theme'] . '")');
+                            }
+                        } else {
+                            // Save actually failed
+                            $theme_save_status['error'] = 'update_post_meta returned false and theme value is incorrect';
+                            $theme_save_status['saved_value'] = $current_theme;
+                            
+                            error_log('❌ GMKB REST API v2: Theme save FAILED');
+                            error_log('  - Requested theme: "' . $body['theme'] . '"');
+                            error_log('  - Current theme: "' . $current_theme . '"');
+                            error_log('  - update_post_meta returned: false');
+                        }
+                    }
+                }
+            } else {
+                // Theme not provided or is empty string
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('⏭️ GMKB REST API v2: Skipping theme save (not provided or empty)');
+                    error_log('  - isset($body[\'theme\']): ' . (isset($body['theme']) ? 'true' : 'false'));
+                    error_log('  - $body[\'theme\'] value: ' . (isset($body['theme']) ? '"' . $body['theme'] . '"' : 'NOT SET'));
+                }
             }
             
             // Save theme customizations if provided
             if (!empty($body['themeCustomizations'])) {
-                update_post_meta($post_id, 'gmkb_theme_customizations', $body['themeCustomizations']);
+                $customizations_result = update_post_meta($post_id, 'gmkb_theme_customizations', $body['themeCustomizations']);
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('🎨 GMKB REST API v2: Saved theme customizations');
+                    error_log('  - Result: ' . ($customizations_result !== false ? 'SUCCESS' : 'NO CHANGE'));
+                }
             }
 
             // ROOT FIX: Clear cache after successful save
@@ -415,23 +514,36 @@ class GMKB_REST_API_V2 {
             // Trigger action for extensibility
             do_action('gmkb_after_save_mediakit', $post_id, $state_data);
             
-            // ROOT FIX: Log successful save
+            // ROOT FIX: Enhanced save success logging
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log('✅ GMKB REST API v2: Media kit #' . $post_id . ' saved successfully');
                 error_log('  - Data size: ' . size_format($data_size));
                 error_log('  - Components: ' . (is_object($state_data['components']) ? 0 : count($state_data['components'])));
                 error_log('  - Sections: ' . count($state_data['sections']));
+                error_log('  - Theme save: ' . ($theme_save_status['verified'] ? 'VERIFIED ✓' : 
+                                              ($theme_save_status['success'] ? 'SUCCESS (unverified)' : 
+                                              ($theme_save_status['attempted'] ? 'FAILED ✗' : 'NOT ATTEMPTED'))));
             }
 
-            // Return success response
-            return rest_ensure_response(array(
+            // ROOT FIX: Enhanced response with theme save diagnostics
+            $response = array(
                 'success' => true,
                 'timestamp' => time(),
                 'post_id' => $post_id,
                 'data_size' => $data_size,
                 'components_saved' => is_object($state_data['components']) ? 0 : count($state_data['components']),
-                'sections_saved' => count($state_data['sections'])
-            ));
+                'sections_saved' => count($state_data['sections']),
+                'theme_save_status' => $theme_save_status // THEME FIX: Include diagnostics
+            );
+            
+            // If theme save failed, add warning to response
+            if ($theme_save_status['attempted'] && !$theme_save_status['verified']) {
+                $response['warnings'] = array(
+                    'theme_persistence' => 'Theme may not have been saved correctly. Check debug logs.'
+                );
+            }
+            
+            return rest_ensure_response($response);
 
         } catch (Exception $e) {
             // ROOT FIX: Enhanced error logging
@@ -767,5 +879,5 @@ class GMKB_REST_API_V2 {
 new GMKB_REST_API_V2();
 
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ GMKB REST API v2: Class instantiated immediately');
+    error_log('✅ GMKB REST API v2: Class instantiated immediately with THEME PERSISTENCE FIX');
 }
