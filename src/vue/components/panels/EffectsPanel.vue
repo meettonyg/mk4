@@ -102,26 +102,7 @@
       </div>
     </div>
     
-    <!-- Effects Preview -->
-    <div class="section">
-      <h4>Effects Preview</h4>
-      <div class="preview-container">
-        <div class="effects-grid">
-          <div class="effect-card" :style="cardStyles">
-            <h5>Card with Effects</h5>
-            <p>This card demonstrates the current effect settings.</p>
-            <button class="effect-button" :style="buttonStyles">
-              Sample Button
-            </button>
-          </div>
-          
-          <div v-if="currentTheme.effects.blurEffects" class="glass-card">
-            <h5>Glassmorphism</h5>
-            <p>Blur effect enabled</p>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- ROOT FIX: Preview removed - use main left preview panel -->
   </div>
 </template>
 
@@ -137,43 +118,7 @@ const updateEffects = (key, value) => {
   themeStore.updateEffects(key, value);
 };
 
-const shadowMap = {
-  none: 'none',
-  subtle: '0 1px 3px rgba(0, 0, 0, 0.1)',
-  medium: '0 4px 6px rgba(0, 0, 0, 0.1)',
-  strong: '0 10px 25px rgba(0, 0, 0, 0.15)'
-};
-
-const speedMap = {
-  none: '0ms',
-  fast: '150ms',
-  normal: '300ms',
-  slow: '500ms'
-};
-
-const cardStyles = computed(() => {
-  const theme = currentTheme.value;
-  return {
-    borderRadius: theme.effects.borderRadius,
-    boxShadow: shadowMap[theme.effects.shadowIntensity] || shadowMap.medium,
-    transition: `all ${speedMap[theme.effects.animationSpeed] || speedMap.normal}`,
-    background: theme.effects.gradients 
-      ? `linear-gradient(135deg, ${theme.colors.surface} 0%, ${theme.colors.background} 100%)`
-      : theme.colors.surface
-  };
-});
-
-const buttonStyles = computed(() => {
-  const theme = currentTheme.value;
-  return {
-    borderRadius: theme.effects.borderRadius,
-    transition: `all ${speedMap[theme.effects.animationSpeed] || speedMap.normal}`,
-    background: theme.effects.gradients
-      ? `linear-gradient(135deg, ${theme.colors.primary} 0%, ${theme.colors.secondary} 100%)`
-      : theme.colors.primary,
-    color: '#ffffff'
-  };
-});
+// ROOT FIX: Preview styles removed - using main left preview
 </script>
 
 <style scoped>
@@ -263,74 +208,5 @@ const buttonStyles = computed(() => {
   color: #9ca3af;
 }
 
-.preview-container {
-  background: #f9fafb;
-  border-radius: 8px;
-  padding: 20px;
-}
-
-.effects-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-}
-
-.effect-card {
-  background: white;
-  border: 1px solid #e5e7eb;
-  padding: 20px;
-}
-
-.effect-card:hover {
-  transform: translateY(-2px);
-}
-
-.effect-card h5 {
-  margin: 0 0 8px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.effect-card p {
-  margin: 0 0 16px 0;
-  font-size: 14px;
-  color: #6b7280;
-  line-height: 1.5;
-}
-
-.effect-button {
-  padding: 8px 16px;
-  border: none;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.effect-button:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.1);
-}
-
-.glass-card {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  padding: 20px;
-}
-
-.glass-card h5 {
-  margin: 0 0 8px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.glass-card p {
-  margin: 0;
-  font-size: 14px;
-  color: #6b7280;
-}
+/* ROOT FIX: Preview CSS removed - using main left preview */
 </style>

@@ -62,43 +62,7 @@
       </div>
     </div>
     
-    <!-- Live Preview -->
-    <div class="section">
-      <h4>Live Preview</h4>
-      <div class="preview-container">
-        <div class="preview-mockup">
-          <div class="preview-header" :style="{ background: currentTheme.colors.primary }">
-            <span :style="{ color: getContrastColor(currentTheme.colors.primary) }">Header</span>
-          </div>
-          <div class="preview-body" :style="{ background: currentTheme.colors.background }">
-            <div class="preview-card" :style="{ 
-              background: currentTheme.colors.surface,
-              border: '1px solid ' + (currentTheme.colors.surface || '#e2e8f0')
-            }">
-              <h5 :style="{ color: currentTheme.colors.text }">Card Title</h5>
-              <p :style="{ color: currentTheme.colors.text, opacity: 0.7 }">
-                This is a preview of how your colors will look. 
-                <a href="#" :style="{ color: currentTheme.colors.linkColor || currentTheme.colors.primary }" 
-                   @mouseover="$event.target.style.color = currentTheme.colors.linkHover || currentTheme.colors.primary"
-                   @mouseout="$event.target.style.color = currentTheme.colors.linkColor || currentTheme.colors.primary">Learn more</a>.
-              </p>
-              <button class="preview-btn" :style="{ 
-                background: currentTheme.colors.primary,
-                color: currentTheme.colors.primaryText || getContrastColor(currentTheme.colors.primary)
-              }">
-                Primary Button
-              </button>
-              <button class="preview-btn preview-btn-secondary" :style="{ 
-                background: currentTheme.colors.secondary,
-                color: getContrastColor(currentTheme.colors.secondary)
-              }">
-                Secondary
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- ROOT FIX: Preview removed - use main left preview panel -->
   </div>
 </template>
 
@@ -306,58 +270,5 @@ const getContrastColor = (hexColor) => {
   color: #9ca3af;
 }
 
-.preview-container {
-  background: #f3f4f6;
-  border-radius: 8px;
-  padding: 20px;
-}
-
-.preview-mockup {
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.preview-header {
-  padding: 16px 20px;
-  font-weight: 600;
-}
-
-.preview-body {
-  padding: 20px;
-  min-height: 200px;
-}
-
-.preview-card {
-  padding: 20px;
-  border: 1px solid;
-  border-radius: 8px;
-}
-
-.preview-card h5 {
-  margin: 0 0 8px 0;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.preview-card p {
-  margin: 0 0 16px 0;
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.preview-btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  margin-right: 8px;
-}
-
-.preview-btn:last-child {
-  margin-right: 0;
-}
+/* ROOT FIX: Preview CSS removed - using main left preview */
 </style>

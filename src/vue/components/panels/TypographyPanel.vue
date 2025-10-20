@@ -132,25 +132,7 @@
       </div>
     </div>
     
-    <!-- Live Preview -->
-    <div class="section">
-      <h4>Typography Preview</h4>
-      <div class="preview-container" :style="previewStyles">
-        <h1>Heading Level 1</h1>
-        <h2>Heading Level 2</h2>
-        <h3>Heading Level 3</h3>
-        <p class="lead">
-          This is a lead paragraph with slightly larger text to make it stand out from regular body text.
-        </p>
-        <p>
-          This is regular body text. Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
-          Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-        </p>
-        <p class="small">
-          This is small text, typically used for captions or secondary information.
-        </p>
-      </div>
-    </div>
+    <!-- ROOT FIX: Preview removed - use main left preview panel -->
   </div>
 </template>
 
@@ -166,30 +148,7 @@ const updateTypography = (key, value) => {
   themeStore.updateTypography(key, value);
 };
 
-const previewStyles = computed(() => {
-  const theme = currentTheme.value;
-  const baseSize = theme.typography.baseFontSize;
-  const scale = theme.typography.headingScale;
-  
-  return {
-    '--font-family': theme.typography.fontFamily,
-    '--heading-family': theme.typography.headingFamily === 'inherit' 
-      ? theme.typography.fontFamily 
-      : theme.typography.headingFamily,
-    '--font-size-base': `${baseSize}px`,
-    '--font-size-h1': `${baseSize * Math.pow(scale, 4)}px`,
-    '--font-size-h2': `${baseSize * Math.pow(scale, 3)}px`,
-    '--font-size-h3': `${baseSize * Math.pow(scale, 2)}px`,
-    '--font-size-lead': `${baseSize * 1.25}px`,
-    '--font-size-small': `${baseSize * 0.875}px`,
-    '--line-height': theme.typography.lineHeight,
-    '--font-weight': theme.typography.fontWeight,
-    'fontFamily': theme.typography.fontFamily,
-    'lineHeight': theme.typography.lineHeight,
-    'fontSize': `${baseSize}px`,
-    'fontWeight': theme.typography.fontWeight
-  };
-});
+// ROOT FIX: previewStyles removed - using main left preview
 </script>
 
 <style scoped>
@@ -307,49 +266,5 @@ const previewStyles = computed(() => {
   color: #9ca3af;
 }
 
-.preview-container {
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 24px;
-}
-
-.preview-container h1 {
-  font-family: var(--heading-family);
-  font-size: var(--font-size-h1);
-  line-height: 1.2;
-  margin: 0 0 16px 0;
-  color: #1f2937;
-}
-
-.preview-container h2 {
-  font-family: var(--heading-family);
-  font-size: var(--font-size-h2);
-  line-height: 1.3;
-  margin: 0 0 12px 0;
-  color: #1f2937;
-}
-
-.preview-container h3 {
-  font-family: var(--heading-family);
-  font-size: var(--font-size-h3);
-  line-height: 1.4;
-  margin: 0 0 8px 0;
-  color: #1f2937;
-}
-
-.preview-container p {
-  margin: 0 0 12px 0;
-  color: #4b5563;
-}
-
-.preview-container p.lead {
-  font-size: var(--font-size-lead);
-  color: #374151;
-}
-
-.preview-container p.small {
-  font-size: var(--font-size-small);
-  color: #6b7280;
-}
+/* ROOT FIX: Preview CSS removed - using main left preview */
 </style>
