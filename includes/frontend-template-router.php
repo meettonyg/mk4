@@ -81,6 +81,37 @@ class GMKB_Frontend_Template_Router {
      * @return string Modified template path
      */
     public function route_media_kit_template($template) {
+        // ROOT FIX: Check for media_kit_id query parameter for quick display
+        if (isset($_GET['media_kit_id'])) {
+            $post_id = intval($_GET['media_kit_id']);
+            if ($post_id > 0) {
+                // Override post query to display this media kit
+                global $post, $wp_query;
+                $post = get_post($post_id);
+                if ($post && $post->post_type === 'guests') {
+                    setup_postdata($post);
+                    $media_kit_state = get_post_meta($post_id, 'gmkb_media_kit_state', true);
+                    
+                    if (!empty($media_kit_state) && (isset($media_kit_state['components']) || isset($media_kit_state['saved_components']))) {
+                        $media_kit_template = GMKB_PLUGIN_DIR . 'templates/mediakit-frontend-template.php';
+                        
+                        if (file_exists($media_kit_template)) {
+                            // Set globals for template use
+                            $GLOBALS['gmkb_using_media_kit_template'] = true;
+                            $GLOBALS['gmkb_media_kit_state'] = $media_kit_state;
+                            $GLOBALS['gmkb_media_kit_post_id'] = $post_id;
+                            
+                            if (defined('WP_DEBUG') && WP_DEBUG) {
+                                error_log('✅ GMKB: Loading media kit via query parameter - Post ID: ' . $post_id);
+                            }
+                            
+                            return $media_kit_template;
+                        }
+                    }
+                }
+            }
+        }
+        
         // ROOT FIX: STRICT URL check - only load on media kit URLs
         // This prevents loading on other tools pages with post_id parameters
         $is_builder_page = false;

@@ -95,6 +95,13 @@ function gmkb_enrich_components_with_pods_data($saved_state, $post_id) {
                     $component['data'] = $component['props'];
                     break;
                     
+                case 'topics-questions':
+                    // Combined component needs both topics and questions data
+                    $component['props'] = gmkb_enrich_topics_data($component['props'], $post_id);
+                    $component['props'] = gmkb_enrich_questions_data($component['props'], $post_id);
+                    $component['data'] = $component['props'];
+                    break;
+                    
                 // Additional component types can be added here
                 default:
                     // Log unhandled component types in debug mode
@@ -152,6 +159,13 @@ function gmkb_enrich_components_with_pods_data($saved_state, $post_id) {
                     break;
                 case 'guest-intro':
                     $component['props'] = gmkb_enrich_guest_intro_data($component['props'], $post_id);
+                    $component['data'] = $component['props'];
+                    break;
+                    
+                case 'topics-questions':
+                    // Combined component needs both topics and questions data
+                    $component['props'] = gmkb_enrich_topics_data($component['props'], $post_id);
+                    $component['props'] = gmkb_enrich_questions_data($component['props'], $post_id);
                     $component['data'] = $component['props'];
                     break;
             }

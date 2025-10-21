@@ -170,13 +170,58 @@ class GMKB_Frontend_Display {
         // Apply Pods data enrichment
         $state = apply_filters('gmkb_load_media_kit_state', $state, $post_id);
         
-        // ROOT FIX: Safe theme ID extraction with proper array key checks
+        // ROOT FIX: Safe theme ID extraction - check root level FIRST (where Vue stores it)
         if (!$theme_id) {
-            $theme_id = isset($state['globalSettings']) && is_array($state['globalSettings']) && isset($state['globalSettings']['theme']) 
-                ? $state['globalSettings']['theme'] 
-                : 'professional_clean';
+            // CRITICAL: Check root level first (correct location)
+            if (isset($state['theme']) && !empty($state['theme'])) {
+                $theme_id = $state['theme'];
+                $theme_source = 'root level (Vue store)';
+            }
+            // Then check globalSettings for backward compatibility
+            elseif (isset($state['globalSettings']) && is_array($state['globalSettings']) && isset($state['globalSettings']['theme'])) {
+                $theme_id = $state['globalSettings']['theme'];
+                $theme_source = 'globalSettings (legacy)';
+            }
+            // Finally default
+            else {
+                $theme_id = 'professional_clean';
+                $theme_source = 'default fallback';
+            }
+        } else {
+            $theme_source = 'parameter override';
         }
+        
+        // DEBUG: Log theme loading for troubleshooting
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("[GMKB Theme Debug] Loading theme: {$theme_id} (source: {$theme_source})");
+            error_log("[GMKB Theme Debug] State structure: " . json_encode(array(
+                'has_root_theme' => isset($state['theme']),
+                'root_theme_value' => $state['theme'] ?? null,
+                'has_globalSettings' => isset($state['globalSettings']),
+                'globalSettings_is_array' => is_array($state['globalSettings'] ?? null),
+                'has_globalSettings_theme' => isset($state['globalSettings']['theme'])
+            )));
+        }
+        
         $this->current_theme = $this->load_theme($theme_id);
+        
+        // DEBUG: Output to browser console
+        ?>
+        <script>
+        console.group('🎨 GMKB Frontend - Theme Loading');
+        console.log('Post ID:', <?php echo json_encode($post_id); ?>);
+        console.log('Theme ID:', <?php echo json_encode($theme_id); ?>);
+        console.log('Theme Source:', <?php echo json_encode($theme_source ?? 'unknown'); ?>);
+        console.log('Theme Object:', <?php echo json_encode($this->current_theme); ?>);
+        console.log('State Structure:', {
+            has_root_theme: <?php echo isset($state['theme']) ? 'true' : 'false'; ?>,
+            root_theme_value: <?php echo json_encode($state['theme'] ?? null); ?>,
+            has_globalSettings: <?php echo isset($state['globalSettings']) ? 'true' : 'false'; ?>,
+            globalSettings_type: <?php echo json_encode(gettype($state['globalSettings'] ?? null)); ?>
+        });
+        console.groupEnd();
+        </script>
+        <?php
         
         // Enqueue necessary assets
         $this->enqueue_template_assets();
@@ -252,10 +297,16 @@ class GMKB_Frontend_Display {
         // Apply Pods data enrichment
         $state = apply_filters('gmkb_load_media_kit_state', $state, $post_id);
         
-        // ROOT FIX: Safe theme ID extraction with proper array key checks
+        // ROOT FIX: Safe theme ID extraction - check root level FIRST (where Vue stores it)
         if (!empty($atts['theme'])) {
             $theme_id = $atts['theme'];
-        } elseif (isset($state['globalSettings']) && is_array($state['globalSettings']) && isset($state['globalSettings']['theme'])) {
+        }
+        // CRITICAL: Check root level first (correct location)
+        elseif (isset($state['theme']) && !empty($state['theme'])) {
+            $theme_id = $state['theme'];
+        }
+        // Then check globalSettings for backward compatibility  
+        elseif (isset($state['globalSettings']) && is_array($state['globalSettings']) && isset($state['globalSettings']['theme'])) {
             $theme_id = $state['globalSettings']['theme'];
         } else {
             $theme_id = 'professional_clean';
@@ -289,10 +340,16 @@ class GMKB_Frontend_Display {
         // Get theme customizations
         $theme_customizations = get_post_meta($post_id, 'gmkb_theme_customizations', true) ?: array();
         
-        // ROOT FIX: Safe theme ID extraction with proper array key checks
+        // ROOT FIX: Safe theme ID extraction - check root level FIRST (where Vue stores it)
         if (!empty($atts['theme'])) {
             $theme_id = $atts['theme'];
-        } elseif (isset($state['globalSettings']) && is_array($state['globalSettings']) && isset($state['globalSettings']['theme'])) {
+        }
+        // CRITICAL: Check root level first (correct location)
+        elseif (isset($state['theme']) && !empty($state['theme'])) {
+            $theme_id = $state['theme'];
+        }
+        // Then check globalSettings for backward compatibility
+        elseif (isset($state['globalSettings']) && is_array($state['globalSettings']) && isset($state['globalSettings']['theme'])) {
             $theme_id = $state['globalSettings']['theme'];
         } else {
             $theme_id = 'professional_clean';
@@ -341,6 +398,61 @@ class GMKB_Frontend_Display {
         <?php
         // Add inline theme CSS
         $this->add_inline_theme_css();
+        
+        // DEBUG: Summary of rendering
+        ?>
+        <script>
+        console.group('✅ GMKB Frontend - Rendering Complete');
+        console.log('Post ID:', <?php echo json_encode($post_id); ?>);
+        console.log('Theme:', <?php echo json_encode($theme_id); ?>);
+        console.log('Sections:', <?php echo count($sections); ?>);
+        console.log('Components:', <?php echo count($ordered_components ?? $components); ?>);
+        console.log('Timestamp:', new Date().toISOString());
+        console.groupEnd();
+        
+        // Add helper for debugging
+        window.GMKB_DEBUG = window.GMKB_DEBUG || {
+            postId: <?php echo json_encode($post_id); ?>,
+            theme: <?php echo json_encode($theme_id); ?>,
+            themeObject: <?php echo json_encode($this->current_theme); ?>,
+            sections: <?php echo json_encode($sections); ?>,
+            components: <?php echo json_encode($components); ?>,
+            getComponentInfo: function(componentId) {
+                const el = document.querySelector('[data-component-id="' + componentId + '"]');
+                if (!el) return null;
+                return {
+                    element: el,
+                    type: el.dataset.componentType,
+                    classes: Array.from(el.classList),
+                    styles: getComputedStyle(el),
+                    position: el.getBoundingClientRect()
+                };
+            },
+            listComponents: function() {
+                return Array.from(document.querySelectorAll('[data-component-id]')).map(el => ({
+                    id: el.dataset.componentId,
+                    type: el.dataset.componentType,
+                    visible: el.offsetParent !== null
+                }));
+            },
+            getThemeVariables: function() {
+                const root = document.documentElement;
+                const computed = getComputedStyle(root);
+                const vars = {};
+                for (let i = 0; i < computed.length; i++) {
+                    const prop = computed[i];
+                    if (prop.startsWith('--gmkb-')) {
+                        vars[prop] = computed.getPropertyValue(prop).trim();
+                    }
+                }
+                return vars;
+            }
+        };
+        
+        console.log('🛠️ GMKB Debug Helper: Use window.GMKB_DEBUG to inspect the media kit');
+        console.log('Available methods:', Object.keys(window.GMKB_DEBUG).filter(k => typeof window.GMKB_DEBUG[k] === 'function'));
+        </script>
+        <?php
     }
     
     /**
@@ -355,6 +467,20 @@ class GMKB_Frontend_Display {
     private function render_sections($sections, $components, $post_id, $atts) {
         // PHASE 1 BLOAT ELIMINATION: Disabled competing CSS injection
         // $this->inject_collected_css();
+        
+        // DEBUG: Log section rendering
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('[GMKB Frontend Debug] Rendering ' . count($sections) . ' sections');
+        }
+        ?>
+        <script>
+        console.group('🏛️ GMKB Frontend - Section Rendering');
+        console.log('Sections Count:', <?php echo count($sections); ?>);
+        console.log('Components Count:', <?php echo count($components); ?>);
+        console.log('Post ID:', <?php echo json_encode($post_id); ?>);
+        console.groupEnd();
+        </script>
+        <?php
         
         foreach ($sections as $section) {
             // ROOT FIX: Store current section for helper methods
@@ -809,6 +935,11 @@ class GMKB_Frontend_Display {
         $component_props = $component['props'] ?? array();
         $component_settings = $component['settings'] ?? array();
         
+        // DEBUG: Log component rendering start
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("[GMKB Frontend Debug] Rendering component: {$component_id} (type: {$component_type})");
+        }
+        
         // PHASE 1 BLOAT ELIMINATION: Disabled competing CSS system - using theme tokens instead
         // $this->collect_component_css($component_id, $component_settings);
         
@@ -901,6 +1032,16 @@ class GMKB_Frontend_Display {
         
         // ROOT FIX: Wrap component with proper div structure
         ?>
+        <script>
+        console.log('🧩 GMKB: Rendering component', {
+            id: <?php echo json_encode($component_id); ?>,
+            type: <?php echo json_encode($component_type); ?>,
+            hasData: <?php echo !empty($component_data) ? 'true' : 'false'; ?>,
+            hasProps: <?php echo !empty($component_props) ? 'true' : 'false'; ?>,
+            hasSettings: <?php echo !empty($component_settings) ? 'true' : 'false'; ?>,
+            customClasses: <?php echo json_encode($component_classes); ?>
+        });
+        </script>
         <div class="<?php echo esc_attr(implode(' ', $component_classes)); ?>" 
              <?php if ($custom_id): ?>id="<?php echo esc_attr($custom_id); ?>"<?php endif; ?>
              <?php if ($inline_vars): ?>style="<?php echo esc_attr($inline_vars); ?>"<?php endif; ?>
@@ -916,8 +1057,20 @@ class GMKB_Frontend_Display {
                     'theme' => $this->current_theme
                 )));
             } catch (Exception $e) {
-                error_log('GMKB Frontend Error: Failed to load component template - ' . $e->getMessage());
-                echo '<div class="gmkb-component-error">Component failed to load</div>';
+                $error_msg = 'GMKB Frontend Error: Failed to load component template - ' . $e->getMessage();
+                error_log($error_msg);
+                ?>
+                <script>console.error('❌ GMKB Component Error:', <?php echo json_encode(array(
+                    'component_id' => $component_id,
+                    'component_type' => $component_type,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                )); ?>);</script>
+                <?php
+                echo '<div class="gmkb-component-error" style="padding: 20px; background: #fee; border: 2px solid #c00; border-radius: 8px; margin: 10px 0;">'
+                    . '<strong>Component Failed to Load:</strong> ' . esc_html($component_type) 
+                    . '<br><small>' . esc_html($e->getMessage()) . '</small>'
+                    . '</div>';
             }
             ?>
         </div>
@@ -1228,10 +1381,21 @@ class GMKB_Frontend_Display {
      */
     private function inject_theme_css_variables($post_id) {
         if (!$this->current_theme) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('[GMKB Theme Debug] Cannot inject CSS variables - no theme loaded');
+            }
+            ?>
+            <script>console.warn('🎨 GMKB: No theme loaded for CSS variables injection');</script>
+            <?php
             return;
         }
         
         $theme = $this->current_theme;
+        
+        // DEBUG: Log CSS variable injection
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('[GMKB Theme Debug] Injecting CSS variables for theme: ' . ($theme['theme_id'] ?? 'unknown'));
+        }
         
         ?>
         <style id="gmkb-theme-vars-<?php echo esc_attr($post_id); ?>">
@@ -1383,6 +1547,19 @@ class GMKB_Frontend_Display {
                 ?>
             }
         </style>
+        <script>
+        console.group('📦 GMKB Frontend - CSS Variables Injected');
+        console.log('Post ID:', <?php echo json_encode($post_id); ?>);
+        console.log('Theme ID:', <?php echo json_encode($theme['theme_id'] ?? 'unknown'); ?>);
+        console.log('Theme Name:', <?php echo json_encode($theme['theme_name'] ?? $theme['name'] ?? 'unknown'); ?>);
+        console.log('CSS Variables Count:', document.querySelector('[data-gmkb-post-id="<?php echo esc_attr($post_id); ?>"]')?.style?.length || 0);
+        console.log('Sample Variables:', {
+            primary_color: getComputedStyle(document.documentElement).getPropertyValue('--gmkb-color-primary'),
+            font_primary: getComputedStyle(document.documentElement).getPropertyValue('--gmkb-font-primary'),
+            border_radius: getComputedStyle(document.documentElement).getPropertyValue('--gmkb-border-radius')
+        });
+        console.groupEnd();
+        </script>
         <?php
     }
     
