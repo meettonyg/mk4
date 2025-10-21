@@ -203,6 +203,33 @@ class MediaKitAPI {
         if ($updated === false) {
             return new \WP_Error('save_failed', 'Failed to write media kit state to the database.', array('status' => 500));
         }
+        
+        // ROOT FIX: Clear ALL caches for this post to ensure fresh data on next load
+        // This fixes the theme persistence issue where saves work but loads show stale data
+        if (function_exists('clean_post_cache')) {
+            clean_post_cache($post_id);
+        }
+        
+        // Clear post meta cache for this specific post
+        if (function_exists('wp_cache_delete')) {
+            wp_cache_delete($post_id, 'post_meta');
+            // Also clear the individual meta keys
+            wp_cache_delete('gmkb_media_kit_state', 'post_meta_' . $post_id);
+            wp_cache_delete('gmkb_theme_customizations', 'post_meta_' . $post_id);
+        }
+        
+        // Force delete the meta cache for this post
+        delete_post_meta_cache($post_id);
+        
+        // Clear any transients related to this post
+        if (function_exists('delete_transient')) {
+            delete_transient('gmkb_frontend_' . $post_id . '_*');
+        }
+        
+        // Log cache clearing for debugging
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log(sprintf('[GMKB Cache Clear] Post ID: %d, Theme: %s', $post_id, $state['theme']));
+        }
 
         // ROOT FIX: Save theme customizations as separate post meta for frontend display
         // Frontend class-gmkb-frontend-display.php looks for 'gmkb_theme_customizations'
@@ -259,9 +286,25 @@ class MediaKitAPI {
             }
             
             update_post_meta($post_id, 'gmkb_theme_customizations', $customizations_for_frontend);
+            
+            // ROOT FIX: Clear cache after saving theme customizations
+            if (function_exists('clean_post_cache')) {
+                clean_post_cache($post_id);
+            }
+            if (function_exists('wp_cache_delete')) {
+                wp_cache_delete($post_id, 'post_meta');
+            }
         } else {
             // Clear customizations if empty
             delete_post_meta($post_id, 'gmkb_theme_customizations');
+            
+            // ROOT FIX: Clear cache after deleting theme customizations
+            if (function_exists('clean_post_cache')) {
+                clean_post_cache($post_id);
+            }
+            if (function_exists('wp_cache_delete')) {
+                wp_cache_delete($post_id, 'post_meta');
+            }
         }
 
         return array(

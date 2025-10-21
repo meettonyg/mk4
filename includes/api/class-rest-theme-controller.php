@@ -392,6 +392,10 @@ class GMKB_REST_Theme_Controller {
                 update_post_meta($post_id, 'gmkb_media_kit_state', $state);
             }
             
+            // ROOT FIX: Clear cache after updating theme selection
+            clean_post_cache($post_id);
+            wp_cache_delete($post_id, 'post_meta');
+            
             $saved_to = 'post_meta';
         } else {
             // Save global theme
