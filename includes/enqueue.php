@@ -15,26 +15,49 @@ if (!defined('ABSPATH')) {
 // ===============================================
 
 function gmkb_is_builder_page() {
-    // ROOT FIX: Check for explicit builder mode first
-    if (isset($_GET['mkcg_id']) && is_numeric($_GET['mkcg_id'])) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('🔍 GMKB: Detected BUILDER page (via mkcg_id parameter)');
-        }
-        return true; // Explicit builder mode
-    }
+    // ROOT FIX: STRICT URL-based detection ONLY
+    // This prevents loading on ANY other tools pages
     
-    // Admin edit screen
+    // Admin edit screen - check first
     if (is_admin()) {
         $screen = get_current_screen();
         if ($screen && $screen->post_type === 'mkcg' && $screen->base === 'post') {
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log('🔍 GMKB: Detected BUILDER page (admin edit screen)');
             }
-            return true; // Admin editor
+            return true;
         }
+        return false; // Not a media kit admin page
     }
     
-    return false;
+    // Frontend: ONLY check URL pattern - no WordPress functions that could be unreliable
+    if (!isset($_SERVER['REQUEST_URI'])) {
+        return false;
+    }
+    
+    $uri = $_SERVER['REQUEST_URI'];
+    
+    // STRICT: Must contain /tools/media-kit/ OR be exactly /media-kit/ page
+    // This will NOT match /tools/topics/, /tools/questions/, /tools/offer-generator/
+    $is_media_kit_url = (
+        preg_match('#/tools/media-kit/?($|\?|&)#', $uri) !== 0 ||
+        preg_match('#^/media-kit/?($|\?|&)#', $uri) !== 0 ||
+        preg_match('#^/guestify-media-kit/?($|\?|&)#', $uri) !== 0
+    );
+    
+    if (!$is_media_kit_url) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('❌ GMKB: NOT a media kit URL, skipping. URI: ' . $uri);
+        }
+        return false;
+    }
+    
+    // If we get here, the URL matches /tools/media-kit/ pattern
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB: Detected BUILDER page (URL pattern match): ' . $uri);
+    }
+    
+    return true;
 }
 
 function gmkb_is_frontend_display() {

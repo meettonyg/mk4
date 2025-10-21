@@ -81,18 +81,33 @@ class GMKB_Frontend_Template_Router {
      * @return string Modified template path
      */
     public function route_media_kit_template($template) {
-        // PHASE 3: Check if this is a builder page (has mkcg_id parameter)
-        $is_builder_page = isset($_GET['mkcg_id']) || isset($_GET['post_id']);
+        // ROOT FIX: STRICT URL check - only load on media kit URLs
+        // This prevents loading on other tools pages with post_id parameters
+        $is_builder_page = false;
+        
+        if (isset($_SERVER['REQUEST_URI'])) {
+            $uri = $_SERVER['REQUEST_URI'];
+            
+            // Only match /tools/media-kit/ URLs specifically
+            if (preg_match('#/tools/media-kit/?($|\?|&)#', $uri)) {
+                // Now check for builder parameters
+                if (isset($_GET['mkcg_id']) || isset($_GET['post_id'])) {
+                    $is_builder_page = true;
+                }
+            }
+        }
         
         if ($is_builder_page) {
             $vue_pure_template = GMKB_PLUGIN_DIR . 'templates/builder-template-vue-pure.php';
             
             if (file_exists($vue_pure_template)) {
                 if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('🎯 GMKB Phase 3: Using Pure Vue template for builder');
+                    error_log('🎯 GMKB Phase 3: Using Pure Vue template for builder on /tools/media-kit/');
                 }
                 return $vue_pure_template;
             }
+        } else if (defined('WP_DEBUG') && WP_DEBUG && (isset($_GET['mkcg_id']) || isset($_GET['post_id']))) {
+            error_log('❌ GMKB: Not loading builder template - URL is not /tools/media-kit/. URI: ' . ($_SERVER['REQUEST_URI'] ?? 'unknown'));
         }
         // ROOT FIX: Debug current template being used
         if (defined('WP_DEBUG') && WP_DEBUG) {
