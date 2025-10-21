@@ -177,6 +177,34 @@ function gmkb_enqueue_frontend_assets() {
             error_log('✅ GMKB: Design system CSS enqueued for frontend');
         }
     }
+    
+    // ROOT FIX: Also load individual component CSS files
+    // These contain detailed styles not in the minimal design system
+    $components_dir = GUESTIFY_PLUGIN_DIR . 'components/';
+    if (is_dir($components_dir)) {
+        $component_folders = glob($components_dir . '*', GLOB_ONLYDIR);
+        
+        foreach ($component_folders as $component_path) {
+            $component_name = basename($component_path);
+            $styles_path = $component_path . '/styles.css';
+            
+            if (file_exists($styles_path)) {
+                $component_version = filemtime($styles_path);
+                $styles_url = GUESTIFY_PLUGIN_URL . 'components/' . $component_name . '/styles.css';
+                
+                wp_enqueue_style(
+                    'gmkb-component-' . $component_name,
+                    $styles_url,
+                    array('gmkb-design-system'),
+                    $component_version
+                );
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('✅ GMKB: Component CSS loaded: ' . $component_name);
+                }
+            }
+        }
+    }
 }
 
 // ROOT FIX: Block jQuery script tags from outputting on frontend media kit pages

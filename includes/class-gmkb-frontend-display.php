@@ -1316,7 +1316,7 @@ class GMKB_Frontend_Display {
         ?>
         <style id="gmkb-theme-customizations-<?php echo esc_attr($post_id); ?>">
             /* User's custom theme overrides */
-            [data-gmkb-post-id="<?php echo esc_attr($post_id); ?>"] {
+            :root {
                 <?php
                 // Color overrides
                 if (!empty($customizations['colors'])) {
@@ -1397,18 +1397,18 @@ class GMKB_Frontend_Display {
             error_log('[GMKB Theme Debug] Injecting CSS variables for theme: ' . ($theme['theme_id'] ?? 'unknown'));
         }
         
-        ?>
-        <style id="gmkb-theme-vars-<?php echo esc_attr($post_id); ?>">
-            /* Base theme CSS variables (matches builder) */
-            [data-gmkb-post-id="<?php echo esc_attr($post_id); ?>"] {
-                <?php
-                // COLORS - Already in correct format, just convert keys to kebab-case
-                if (!empty($theme['colors'])) {
-                    foreach ($theme['colors'] as $key => $value) {
-                        $css_key = strtolower(preg_replace('/([A-Z])/', '-$1', $key));
-                        echo '--gmkb-color-' . esc_attr($css_key) . ': ' . esc_attr($value) . ';' . "\n";
-                    }
-                }
+        // ROOT FIX: Count variables for accurate debug output
+        $var_count = 0;
+        ob_start(); // Buffer CSS output so we can count variables
+        
+        // COLORS - Already in correct format, just convert keys to kebab-case
+        if (!empty($theme['colors'])) {
+            foreach ($theme['colors'] as $key => $value) {
+                $css_key = strtolower(preg_replace('/([A-Z])/', '-$1', $key));
+                echo '--gmkb-color-' . esc_attr($css_key) . ': ' . esc_attr($value) . ';' . "\n";
+                $var_count++;
+            }
+        }
                 
                 // TYPOGRAPHY - Handle both formats
                 $typo = $theme['typography'] ?? array();
@@ -1418,6 +1418,7 @@ class GMKB_Frontend_Display {
                 $heading_font = $typo['headingFamily'] ?? ($typo['heading_font']['family'] ?? $primary_font);
                 echo '--gmkb-font-primary: ' . esc_attr($primary_font) . ';' . "\n";
                 echo '--gmkb-font-heading: ' . esc_attr($heading_font) . ';' . "\n";
+                $var_count += 2;
                 
                 // Font sizes
                 $base_size = $typo['baseFontSize'] ?? 16;
@@ -1427,18 +1428,22 @@ class GMKB_Frontend_Display {
                 echo '--gmkb-font-size-xl: ' . esc_attr($base_size * 1.25) . 'px;' . "\n";
                 echo '--gmkb-font-size-2xl: ' . esc_attr($base_size * 1.5) . 'px;' . "\n";
                 echo '--gmkb-font-size-3xl: ' . esc_attr($base_size * 1.875) . 'px;' . "\n";
+                $var_count += 6;
                 
                 // Line height - handle both formats
                 $line_height = $typo['lineHeight'] ?? (isset($typo['line_height']['body']) ? $typo['line_height']['body'] : 1.6);
                 echo '--gmkb-line-height: ' . esc_attr($line_height) . ';' . "\n";
+                $var_count++;
                 
                 // Font weight
                 $font_weight = $typo['fontWeight'] ?? 400;
                 echo '--gmkb-font-weight: ' . esc_attr($font_weight) . ';' . "\n";
+                $var_count++;
                 
                 // Heading scale
                 $heading_scale = $typo['headingScale'] ?? ($typo['font_scale'] ?? 1.25);
                 echo '--gmkb-heading-scale: ' . esc_attr($heading_scale) . ';' . "\n";
+                $var_count++;
                 
                 // SPACING - Handle both formats
                 $spacing = $theme['spacing'] ?? array();
@@ -1457,6 +1462,7 @@ class GMKB_Frontend_Display {
                 echo '--gmkb-spacing-xl: ' . esc_attr($unit * 2) . 'px;' . "\n";
                 echo '--gmkb-spacing-2xl: ' . esc_attr($unit * 3) . 'px;' . "\n";
                 echo '--gmkb-spacing-3xl: ' . esc_attr($unit * 4) . 'px;' . "\n";
+                $var_count += 7;
                 
                 // Component gap - handle both formats
                 if (isset($spacing['component_gap'])) {
@@ -1465,6 +1471,7 @@ class GMKB_Frontend_Display {
                     $gap = $spacing['componentGap'] ?? 48;
                 }
                 echo '--gmkb-spacing-component-gap: ' . esc_attr($gap) . 'px;' . "\n";
+                $var_count++;
                 
                 // Section padding - maps from section_gap in JSON or sectionPadding in camelCase
                 if (isset($spacing['section_gap'])) {
@@ -1473,6 +1480,7 @@ class GMKB_Frontend_Display {
                     $section_padding = $spacing['sectionPadding'] ?? 96;
                 }
                 echo '--gmkb-spacing-section-padding: ' . esc_attr($section_padding) . 'px;' . "\n";
+                $var_count++;
                 
                 // Container max width
                 if (isset($spacing['content_max_width'])) {
@@ -1481,6 +1489,7 @@ class GMKB_Frontend_Display {
                     $max_width = $spacing['containerMaxWidth'] ?? 1200;
                 }
                 echo '--gmkb-container-max-width: ' . esc_attr($max_width) . 'px;' . "\n";
+                $var_count++;
                 
                 // EFFECTS - Handle both formats
                 $effects = $theme['effects'] ?? array();
@@ -1490,6 +1499,7 @@ class GMKB_Frontend_Display {
                 echo '--gmkb-border-radius: ' . esc_attr($radius) . ';' . "\n";
                 echo '--gmkb-border-radius-sm: calc(' . esc_attr($radius) . ' * 0.5);' . "\n";
                 echo '--gmkb-border-radius-lg: calc(' . esc_attr($radius) . ' * 1.5);' . "\n";
+                $var_count += 3;
                 
                 // Shadow - use shadowIntensity if available, otherwise analyze shadow property
                 $shadows = array(
@@ -1518,33 +1528,44 @@ class GMKB_Frontend_Display {
                 echo '--gmkb-shadow: ' . esc_attr($shadows[$intensity] ?? $shadows['medium']) . ';' . "\n";
                 echo '--gmkb-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);' . "\n";
                 echo '--gmkb-shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.2);' . "\n";
+                $var_count += 3;
                 
-                // Animation speed
-                $speeds = array(
-                    'none' => '0ms',
-                    'fast' => '150ms',
-                    'normal' => '300ms',
-                    'slow' => '500ms'
-                );
-                
-                if (isset($effects['animationSpeed'])) {
-                    $speed = $effects['animationSpeed'];
-                } elseif (isset($effects['transitions'])) {
-                    // Analyze transitions to determine speed
-                    $transition = $effects['transitions'];
-                    if (strpos($transition, '0.5s') !== false || strpos($transition, '500ms') !== false) {
-                        $speed = 'slow';
-                    } elseif (strpos($transition, '0.15s') !== false || strpos($transition, '150ms') !== false) {
-                        $speed = 'fast';
-                    } else {
-                        $speed = 'normal';
-                    }
-                } else {
-                    $speed = 'normal';
-                }
-                
-                echo '--gmkb-transition-speed: ' . esc_attr($speeds[$speed] ?? $speeds['normal']) . ';' . "\n";
-                ?>
+        // Animation speed
+        $speeds = array(
+            'none' => '0ms',
+            'fast' => '150ms',
+            'normal' => '300ms',
+            'slow' => '500ms'
+        );
+        
+        if (isset($effects['animationSpeed'])) {
+            $speed = $effects['animationSpeed'];
+        } elseif (isset($effects['transitions'])) {
+            // Analyze transitions to determine speed
+            $transition = $effects['transitions'];
+            if (strpos($transition, '0.5s') !== false || strpos($transition, '500ms') !== false) {
+                $speed = 'slow';
+            } elseif (strpos($transition, '0.15s') !== false || strpos($transition, '150ms') !== false) {
+                $speed = 'fast';
+            } else {
+                $speed = 'normal';
+            }
+        } else {
+            $speed = 'normal';
+        }
+        
+        echo '--gmkb-transition-speed: ' . esc_attr($speeds[$speed] ?? $speeds['normal']) . ';' . "\n";
+        $var_count++;
+        
+        $css_variables = ob_get_clean(); // Get all CSS variables
+        
+        // ROOT FIX: Output CSS with :root scope so all elements can access variables
+        ?>
+        <style id="gmkb-theme-vars-<?php echo esc_attr($post_id); ?>">
+            /* Base theme CSS variables (matches builder) */
+            /* ROOT FIX: Using :root for global access instead of scoped selector */
+            :root {
+                <?php echo $css_variables; ?>
             }
         </style>
         <script>
@@ -1552,7 +1573,7 @@ class GMKB_Frontend_Display {
         console.log('Post ID:', <?php echo json_encode($post_id); ?>);
         console.log('Theme ID:', <?php echo json_encode($theme['theme_id'] ?? 'unknown'); ?>);
         console.log('Theme Name:', <?php echo json_encode($theme['theme_name'] ?? $theme['name'] ?? 'unknown'); ?>);
-        console.log('CSS Variables Count:', document.querySelector('[data-gmkb-post-id="<?php echo esc_attr($post_id); ?>"]')?.style?.length || 0);
+        console.log('CSS Variables Count:', <?php echo json_encode($var_count); ?>);
         console.log('Sample Variables:', {
             primary_color: getComputedStyle(document.documentElement).getPropertyValue('--gmkb-color-primary'),
             font_primary: getComputedStyle(document.documentElement).getPropertyValue('--gmkb-font-primary'),

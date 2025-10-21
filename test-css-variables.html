@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSS Variables Test</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            padding: 40px;
+            background: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-box h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        .result {
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .variable-list {
+            max-height: 400px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .variable-item {
+            padding: 5px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .var-name {
+            color: #6f42c1;
+            font-weight: bold;
+        }
+        .var-value {
+            color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 GMKB CSS Variables Test Suite</h1>
+    
+    <div class="test-box">
+        <h2>Test 1: Check if Variables Exist</h2>
+        <button onclick="testVariablesExist()">Run Test</button>
+        <div id="test1-result"></div>
+    </div>
+    
+    <div class="test-box">
+        <h2>Test 2: Count Variables</h2>
+        <button onclick="countVariables()">Run Test</button>
+        <div id="test2-result"></div>
+    </div>
+    
+    <div class="test-box">
+        <h2>Test 3: Check Debug Helper</h2>
+        <button onclick="testDebugHelper()">Run Test</button>
+        <div id="test3-result"></div>
+    </div>
+    
+    <div class="test-box">
+        <h2>Test 4: List All Variables</h2>
+        <button onclick="listAllVariables()">Run Test</button>
+        <div id="test4-result"></div>
+    </div>
+    
+    <div class="test-box">
+        <h2>Test 5: Check Specific Theme Values</h2>
+        <button onclick="testThemeValues()">Run Test</button>
+        <div id="test5-result"></div>
+    </div>
+
+    <script>
+        function testVariablesExist() {
+            const result = document.getElementById('test1-result');
+            const style = getComputedStyle(document.documentElement);
+            
+            // Check for key variables
+            const primaryColor = style.getPropertyValue('--gmkb-color-primary').trim();
+            const fontPrimary = style.getPropertyValue('--gmkb-font-primary').trim();
+            const borderRadius = style.getPropertyValue('--gmkb-border-radius').trim();
+            
+            let html = '';
+            if (primaryColor && fontPrimary && borderRadius) {
+                html = `<div class="result success">
+                    ✅ SUCCESS: CSS Variables are accessible!<br>
+                    Primary Color: ${primaryColor}<br>
+                    Primary Font: ${fontPrimary}<br>
+                    Border Radius: ${borderRadius}
+                </div>`;
+            } else {
+                html = `<div class="result error">
+                    ❌ FAIL: CSS Variables not found!<br>
+                    Primary Color: ${primaryColor || 'NOT FOUND'}<br>
+                    Primary Font: ${fontPrimary || 'NOT FOUND'}<br>
+                    Border Radius: ${borderRadius || 'NOT FOUND'}
+                </div>`;
+            }
+            result.innerHTML = html;
+        }
+        
+        function countVariables() {
+            const result = document.getElementById('test2-result');
+            const style = getComputedStyle(document.documentElement);
+            let count = 0;
+            
+            for (let i = 0; i < style.length; i++) {
+                if (style[i].startsWith('--gmkb-')) {
+                    count++;
+                }
+            }
+            
+            let html = '';
+            if (count >= 35) {
+                html = `<div class="result success">
+                    ✅ SUCCESS: Found ${count} CSS variables (expected ~40+)
+                </div>`;
+            } else if (count > 0) {
+                html = `<div class="result info">
+                    ⚠️ PARTIAL: Found ${count} CSS variables (expected ~40+)<br>
+                    Some variables may be missing.
+                </div>`;
+            } else {
+                html = `<div class="result error">
+                    ❌ FAIL: Found 0 CSS variables!<br>
+                    CSS scope is likely incorrect. Variables should be on :root
+                </div>`;
+            }
+            result.innerHTML = html;
+        }
+        
+        function testDebugHelper() {
+            const result = document.getElementById('test3-result');
+            let html = '';
+            
+            if (typeof window.GMKB_DEBUG !== 'undefined') {
+                if (typeof window.GMKB_DEBUG.getThemeVariables === 'function') {
+                    const vars = window.GMKB_DEBUG.getThemeVariables();
+                    const count = Object.keys(vars).length;
+                    
+                    if (count >= 35) {
+                        html = `<div class="result success">
+                            ✅ SUCCESS: Debug helper works! Found ${count} variables
+                        </div>`;
+                    } else if (count > 0) {
+                        html = `<div class="result info">
+                            ⚠️ PARTIAL: Debug helper found ${count} variables (expected ~40+)
+                        </div>`;
+                    } else {
+                        html = `<div class="result error">
+                            ❌ FAIL: Debug helper returns empty object!
+                        </div>`;
+                    }
+                } else {
+                    html = `<div class="result error">
+                        ❌ FAIL: getThemeVariables() method not found
+                    </div>`;
+                }
+            } else {
+                html = `<div class="result error">
+                    ❌ FAIL: window.GMKB_DEBUG not found!<br>
+                    Make sure you're on a page with a media kit.
+                </div>`;
+            }
+            result.innerHTML = html;
+        }
+        
+        function listAllVariables() {
+            const result = document.getElementById('test4-result');
+            const style = getComputedStyle(document.documentElement);
+            const vars = [];
+            
+            for (let i = 0; i < style.length; i++) {
+                const prop = style[i];
+                if (prop.startsWith('--gmkb-')) {
+                    const value = style.getPropertyValue(prop).trim();
+                    vars.push({ name: prop, value: value });
+                }
+            }
+            
+            if (vars.length === 0) {
+                result.innerHTML = `<div class="result error">
+                    ❌ No CSS variables found!
+                </div>`;
+                return;
+            }
+            
+            let html = `<div class="result info">
+                Found ${vars.length} CSS variables:
+            </div>
+            <div class="variable-list">`;
+            
+            vars.forEach(v => {
+                html += `<div class="variable-item">
+                    <span class="var-name">${v.name}:</span>
+                    <span class="var-value">${v.value}</span>
+                </div>`;
+            });
+            
+            html += '</div>';
+            result.innerHTML = html;
+        }
+        
+        function testThemeValues() {
+            const result = document.getElementById('test5-result');
+            const style = getComputedStyle(document.documentElement);
+            
+            // Expected values for professional_clean theme
+            const tests = [
+                { name: 'Primary Color', var: '--gmkb-color-primary', expected: '#2563eb' },
+                { name: 'Primary Font', var: '--gmkb-font-primary', expected: 'Inter' },
+                { name: 'Border Radius', var: '--gmkb-border-radius', expected: '12px' },
+                { name: 'Base Font Size', var: '--gmkb-font-size-base', expected: '16px' }
+            ];
+            
+            let passed = 0;
+            let html = '<div class="result info">Theme Value Tests:</div>';
+            
+            tests.forEach(test => {
+                const value = style.getPropertyValue(test.var).trim();
+                const matches = value.includes(test.expected);
+                
+                if (matches) {
+                    passed++;
+                    html += `<div class="result success" style="padding: 8px; margin: 5px 0;">
+                        ✅ ${test.name}: ${value}
+                    </div>`;
+                } else {
+                    html += `<div class="result error" style="padding: 8px; margin: 5px 0;">
+                        ❌ ${test.name}: Expected "${test.expected}", got "${value || 'NOT FOUND'}"
+                    </div>`;
+                }
+            });
+            
+            html += `<div class="result ${passed === tests.length ? 'success' : 'info'}" style="margin-top: 10px;">
+                Passed ${passed}/${tests.length} tests
+            </div>`;
+            
+            result.innerHTML = html;
+        }
+        
+        // Auto-run first test on load
+        window.addEventListener('load', () => {
+            console.log('🧪 Test suite loaded. Click buttons to run tests.');
+        });
+    </script>
+</body>
+</html>
