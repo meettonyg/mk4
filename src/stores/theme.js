@@ -398,6 +398,18 @@ export const useThemeStore = defineStore('theme', {
       } else {
         console.warn('[Theme Store] Could not find active theme to apply:', this.activeThemeId);
       }
+      
+      // ROOT FIX #2: Sync initial theme to mediaKit store
+      // This ensures the default/saved theme persists on first save
+      try {
+        const mediaKitStore = useMediaKitStore();
+        mediaKitStore.theme = this.activeThemeId;
+        // DON'T call _trackChange() here - we don't want to mark as dirty on initial load
+        console.log('[Theme Store] ✅ Synced initial theme to mediaKit store:', this.activeThemeId);
+      } catch (error) {
+        console.error('[Theme Store] ❌ Failed to sync initial theme to mediaKit store:', error);
+        // Non-fatal - theme still applied to UI
+      }
     },
     
     // Open theme customizer
@@ -467,9 +479,17 @@ export const useThemeStore = defineStore('theme', {
           this.applyThemeToDOM();
         }
         
-        // CRITICAL FIX: Don't call useMediaKitStore() here - causes circular dependency!
-        // The calling component should handle updating the media kit store
-        console.log('[Theme Store] Theme selected (caller must update mediaKitStore):', themeId);
+        // ROOT FIX: Sync theme to mediaKit store immediately
+        // This ensures the theme persists when the user saves
+        try {
+          const mediaKitStore = useMediaKitStore();
+          mediaKitStore.theme = themeId;
+          mediaKitStore._trackChange(); // Mark as dirty so it saves
+          console.log('[Theme Store] ✅ Synced theme to mediaKit store:', themeId);
+        } catch (error) {
+          console.error('[Theme Store] ❌ Failed to sync theme to mediaKit store:', error);
+          // Non-fatal - theme still applied to UI
+        }
       } else {
         console.error('[Theme Store] Could not find theme with ID:', themeId);
       }
@@ -566,6 +586,21 @@ export const useThemeStore = defineStore('theme', {
         console.warn('[Theme Store] Could not find active theme to reset:', this.activeThemeId);
         // Fallback
         this.applyThemeToDOM();
+      }
+      
+      // ROOT FIX: Sync reset to mediaKit store
+      try {
+        const mediaKitStore = useMediaKitStore();
+        mediaKitStore.themeCustomizations = {
+          colors: {},
+          typography: {},
+          spacing: {},
+          effects: {}
+        };
+        mediaKitStore._trackChange(); // Mark as dirty so it saves
+        console.log('[Theme Store] ✅ Synced theme reset to mediaKit store');
+      } catch (error) {
+        console.error('[Theme Store] ❌ Failed to sync theme reset to mediaKit store:', error);
       }
       
       // Dispatch event for tracking
