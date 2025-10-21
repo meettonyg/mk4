@@ -449,39 +449,77 @@ class GMKB_REST_API_V2 {
                 
                 // Only proceed with save if validation passed
                 if (empty($theme_save_status['error'])) {
-                    // Clear any previous database errors
-                    $wpdb->flush();
+                // Clear any previous database errors
+                $wpdb->flush();
+                
+                // ROOT FIX: Clear ALL caches before save to prevent stale data
+                wp_cache_delete($post_id, 'post_meta');
+                clean_post_cache($post_id);
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('🧹 GMKB REST API v2: Cleared all caches before theme save');
+                }
+                
+                // Attempt to save theme
+                $theme_result = update_post_meta($post_id, 'gmkb_theme', $body['theme']);
+                
+                // ROOT FIX: Force cache clear immediately after save
+                wp_cache_delete($post_id, 'post_meta');
+                clean_post_cache($post_id);
+                
+                // ROOT FIX: Clear the transient cache immediately
+                $cache_key = 'gmkb_mediakit_' . $post_id;
+                delete_transient($cache_key);
+                
+                // Check for database errors
+                if ($wpdb->last_error) {
+                $theme_save_status['error'] = 'Database error: ' . $wpdb->last_error;
+                error_log('❌ GMKB REST API v2: Theme save database error: ' . $wpdb->last_error);
+                } else {
+                if ($theme_result !== false) {
+                $theme_save_status['success'] = true;
                     
-                    // Attempt to save theme
-                    $theme_result = update_post_meta($post_id, 'gmkb_theme', $body['theme']);
+                        // ROOT FIX: Force fresh read from database (bypass all caches)
+                    // Use direct database query to verify
+                    $saved_theme_direct = $wpdb->get_var($wpdb->prepare(
+                        "SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = %s",
+                        $post_id,
+                    'gmkb_theme'
+                ));
+                
+                // Also try the cached version for comparison
+                $saved_theme_cached = get_post_meta($post_id, 'gmkb_theme', true);
+                
+                $theme_save_status['saved_value'] = $saved_theme_direct;
+                $theme_save_status['saved_value_cached'] = $saved_theme_cached;
                     
-                    // Check for database errors
-                    if ($wpdb->last_error) {
-                        $theme_save_status['error'] = 'Database error: ' . $wpdb->last_error;
-                        error_log('❌ GMKB REST API v2: Theme save database error: ' . $wpdb->last_error);
-                    } else {
-                    if ($theme_result !== false) {
-                        $theme_save_status['success'] = true;
-                        
-                        // CRITICAL: Verify the save by reading it back immediately
-                        $saved_theme = get_post_meta($post_id, 'gmkb_theme', true);
-                        $theme_save_status['saved_value'] = $saved_theme;
-                        
-                        if ($saved_theme === $body['theme']) {
-                            $theme_save_status['verified'] = true;
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('🔍 GMKB REST API v2: Verification check:');
+                    error_log('  - Requested theme: "' . $body['theme'] . '"');
+                    error_log('  - Direct DB read: "' . $saved_theme_direct . '"');
+                    error_log('  - Cached read: "' . $saved_theme_cached . '"');
+                }
+                
+                if ($saved_theme_direct === $body['theme']) {
+                        $theme_save_status['verified'] = true;
                             
                             if (defined('WP_DEBUG') && WP_DEBUG) {
-                                error_log('✅ GMKB REST API v2: Theme saved and verified: "' . $body['theme'] . '"');
+                                    error_log('✅ GMKB REST API v2: Theme saved and verified: "' . $body['theme'] . '"');
                             }
                         } else {
                             $theme_save_status['error'] = 'Theme verification failed';
                             error_log('⚠️ GMKB REST API v2: Theme verification FAILED');
                             error_log('  - Expected: "' . $body['theme'] . '"');
-                            error_log('  - Got: "' . $saved_theme . '"');
+                            error_log('  - Got from DB: "' . $saved_theme_direct . '"');
                         }
                     } else {
                         // update_post_meta returned false - check why
-                        $current_theme = get_post_meta($post_id, 'gmkb_theme', true);
+                        // ROOT FIX: Use direct database query to check current value
+                        $current_theme = $wpdb->get_var($wpdb->prepare(
+                            "SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = %s",
+                            $post_id,
+                            'gmkb_theme'
+                        ));
                         
                         if ($current_theme === $body['theme']) {
                             // No change needed - theme already has this value
@@ -499,12 +537,12 @@ class GMKB_REST_API_V2 {
                             
                             error_log('❌ GMKB REST API v2: Theme save FAILED');
                             error_log('  - Requested theme: "' . $body['theme'] . '"');
-                            error_log('  - Current theme: "' . $current_theme . '"');
+                            error_log('  - Current theme in DB: "' . $current_theme . '"');
                             error_log('  - update_post_meta returned: false');
                         }
                     }
-                    }
                 }
+            }
             } else {
                 // Theme not provided or is empty string
                 if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -637,8 +675,42 @@ class GMKB_REST_API_V2 {
      * @return array Theme data
      */
     private function fetch_theme_data($post_id) {
-        $theme_id = get_post_meta($post_id, 'gmkb_theme', true) ?: 'professional_clean';
-        $customizations = get_post_meta($post_id, 'gmkb_theme_customizations', true) ?: new stdClass();
+        // ROOT FIX: Clear cache before reading to ensure fresh data
+        wp_cache_delete($post_id, 'post_meta');
+        
+        global $wpdb;
+        
+        // ROOT FIX: Read directly from database to bypass any caching issues
+        $theme_id = $wpdb->get_var($wpdb->prepare(
+            "SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = %s",
+            $post_id,
+            'gmkb_theme'
+        ));
+        
+        // If no theme is set, use default
+        if (empty($theme_id)) {
+            $theme_id = 'professional_clean';
+        }
+        
+        // Also read customizations directly from DB
+        $customizations_raw = $wpdb->get_var($wpdb->prepare(
+            "SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = %s",
+            $post_id,
+            'gmkb_theme_customizations'
+        ));
+        
+        // Unserialize customizations if present
+        $customizations = new stdClass();
+        if (!empty($customizations_raw)) {
+            $unserialized = maybe_unserialize($customizations_raw);
+            if (is_object($unserialized) || is_array($unserialized)) {
+                $customizations = $unserialized;
+            }
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('🎨 GMKB REST API v2: Fetched theme directly from DB: "' . $theme_id . '"');
+        }
 
         return array(
             'id' => $theme_id,

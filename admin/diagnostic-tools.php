@@ -104,6 +104,35 @@ class GMKB_Admin_Diagnostic {
             </div>
             
             <script>
+            function gmkbCopyJSON() {
+                const jsonData = document.getElementById('full-json-data');
+                const textArea = document.createElement('textarea');
+                textArea.value = jsonData.textContent;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                const status = document.getElementById('copy-status');
+                status.style.display = 'inline';
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 2000);
+            }
+            
+            function gmkbDownloadJSON(postId) {
+                const jsonData = document.getElementById('full-json-data').textContent;
+                const blob = new Blob([jsonData], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `media-kit-state-${postId}-${Date.now()}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            
             function gmkbClearLocalStorage() {
                 localStorage.clear();
                 alert('Browser storage cleared. Please reload the media kit editor.');
@@ -588,11 +617,14 @@ class GMKB_Admin_Diagnostic {
             <!-- RAW STATE DATA -->
             <details style="margin-top: 20px;">
                 <summary style="cursor: pointer; font-weight: bold; padding: 10px; background: #f0f0f0;">
-                    🔍 Raw State Data (First 1000 characters)
+                    🔍 Complete Raw State Data (Full JSON)
                 </summary>
-                <pre style="background: #f0f0f0; padding: 10px; overflow: auto; max-height: 300px;">
-<?php echo esc_html(substr(json_encode($saved_state, JSON_PRETTY_PRINT), 0, 1000)); ?>
-                </pre>
+                <div style="background: #f0f0f0; padding: 10px; margin-bottom: 10px;">
+                    <button class="button button-secondary" onclick="gmkbCopyJSON()">📋 Copy Full JSON</button>
+                    <button class="button button-secondary" onclick="gmkbDownloadJSON(<?php echo $post_id; ?>)">💾 Download as File</button>
+                    <span id="copy-status" style="margin-left: 10px; color: green; display: none;">✅ Copied!</span>
+                </div>
+                <pre id="full-json-data" style="background: #f0f0f0; padding: 10px; overflow: auto; max-height: 500px; white-space: pre-wrap; word-wrap: break-word;"><?php echo esc_html(json_encode($saved_state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)); ?></pre>
             </details>
         </div>
         <?php

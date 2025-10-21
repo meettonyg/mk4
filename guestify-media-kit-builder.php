@@ -101,6 +101,19 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/ComponentDiscoveryAPI.php'))
     }, 5);
 }
 
+// ROOT FIX: Theme REST API Controller - CRITICAL for theme saving functionality
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/class-rest-theme-controller.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/class-rest-theme-controller.php';
+    add_action('init', function() {
+        if (class_exists('GMKB_REST_Theme_Controller')) {
+            new GMKB_REST_Theme_Controller();
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB: Theme REST API Controller instantiated');
+            }
+        }
+    }, 5);
+}
+
 // Component system files
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php';

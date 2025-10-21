@@ -520,10 +520,14 @@ export const useMediaKitStore = defineStore('mediaKit', {
      * PHASE 3: Enhanced save with auto-save
      */
     async save() {
-      if (!this.isDirty) return;
+      if (!this.isDirty) {
+        console.log('⏭️ Save skipped: No changes to save');
+        return;
+      }
       
       try {
         this.isSaving = true;
+        console.log('💾 Starting save operation...');
         
         // Create local backup before saving
         this.backupToLocalStorage();
@@ -549,14 +553,49 @@ export const useMediaKitStore = defineStore('mediaKit', {
           layout: this.sections.map(s => s.section_id) // Add layout for compatibility
         };
         
-        // CRITICAL DEBUG: Log what theme we're about to save
-        console.log('🎨 MediaKit Store SAVE: Preparing to save theme:', {
-          'this.theme': this.theme,
-          'this.theme type': typeof this.theme,
-          'state.theme': state.theme,
-          'state.theme type': typeof state.theme,
-          'themeCustomizations present': !!state.themeCustomizations
+        // ═══════════════════════════════════════════════════════════════
+        // COMPREHENSIVE DEBUG LOGGING
+        // ═══════════════════════════════════════════════════════════════
+        console.group('📊 SAVE OPERATION DETAILS');
+        
+        console.log('📦 Components:', {
+          count: Object.keys(cleanComponents).length,
+          ids: Object.keys(cleanComponents),
+          types: Object.values(cleanComponents).map(c => c.type)
         });
+        
+        console.log('📑 Sections:', {
+          count: this.sections.length,
+          layouts: this.sections.map(s => s.layout || s.type),
+          ids: this.sections.map(s => s.section_id)
+        });
+        
+        console.log('🎨 Theme Data:', {
+          theme: this.theme,
+          themeType: typeof this.theme,
+          themeValue: JSON.stringify(this.theme),
+          hasCustomizations: !!this.themeCustomizations && Object.keys(this.themeCustomizations).length > 0,
+          customizationKeys: this.themeCustomizations ? Object.keys(this.themeCustomizations) : []
+        });
+        
+        console.log('📏 Payload Size:', {
+          totalBytes: new Blob([JSON.stringify(state)]).size,
+          componentsBytes: new Blob([JSON.stringify(cleanComponents)]).size,
+          sectionsBytes: new Blob([JSON.stringify(this.sections)]).size,
+          themeBytes: new Blob([JSON.stringify({
+            theme: this.theme,
+            themeCustomizations: this.themeCustomizations
+          })]).size
+        });
+        
+        console.log('🔧 Store State:', {
+          isDirty: this.isDirty,
+          isSaving: this.isSaving,
+          lastSaved: this.lastSaved ? new Date(this.lastSaved).toLocaleString() : 'Never',
+          postId: this.postId
+        });
+        
+        console.groupEnd();
         
         // CRITICAL FIX: Ensure APIService exists, create if needed
         if (!this.apiService) {
@@ -571,15 +610,49 @@ export const useMediaKitStore = defineStore('mediaKit', {
         
         // OPTION C FIX: Use APIService which calls REST API v2
         // Use our store's apiService instance
+        console.log('🚀 Sending to API...');
         const result = await this.apiService.save(state);
+        
+        // ═══════════════════════════════════════════════════════════════
+        // API RESPONSE LOGGING
+        // ═══════════════════════════════════════════════════════════════
+        console.group('💬 API RESPONSE');
+        
+        console.log('✅ Success:', result?.success);
+        console.log('🆔 Post ID:', result?.post_id);
+        console.log('⏱️ Timestamp:', result?.timestamp ? new Date(result.timestamp * 1000).toLocaleString() : 'N/A');
+        console.log('📊 Data Size:', result?.data_size ? `${(result.data_size / 1024).toFixed(2)} KB` : 'N/A');
+        console.log('📦 Components Saved:', result?.components_saved);
+        console.log('📑 Sections Saved:', result?.sections_saved);
+        
+        if (result?.theme_save_status) {
+          console.group('🎨 Theme Save Status');
+          console.log('Attempted:', result.theme_save_status.attempted);
+          console.log('Success:', result.theme_save_status.success);
+          console.log('Verified:', result.theme_save_status.verified);
+          console.log('Theme Value Sent:', result.theme_save_status.theme_value);
+          console.log('Saved Value (Direct DB):', result.theme_save_status.saved_value);
+          console.log('Saved Value (Cached):', result.theme_save_status.saved_value_cached);
+          if (result.theme_save_status.error) {
+            console.error('Error:', result.theme_save_status.error);
+          }
+          console.groupEnd();
+        }
+        
+        if (result?.warnings) {
+          console.warn('⚠️ Warnings:', result.warnings);
+        }
+        
+        console.log('🔍 Full Response:', result);
+        console.groupEnd();
         
         // Check response
         if (!result || !result.success) {
-          console.error('Save failed:', result);
+          console.error('❌ Save failed:', result);
           throw new Error('Save failed');
         }
         
-        console.log('✅ Saved to WordPress via REST API v2:', result);
+        console.log('✅ Save operation completed successfully!');
         this.isDirty = false;
         // hasUnsavedChanges removed - using isDirty only
         this.lastSaved = Date.now();
@@ -595,10 +668,36 @@ export const useMediaKitStore = defineStore('mediaKit', {
         return true;
         
       } catch (error) {
-        console.error('Failed to save:', error);
+        // ═══════════════════════════════════════════════════════════════
+        // ERROR LOGGING
+        // ═══════════════════════════════════════════════════════════════
+        console.group('❌ SAVE ERROR');
+        console.error('Error Type:', error.name);
+        console.error('Error Message:', error.message);
+        console.error('Stack Trace:', error.stack);
+        
+        if (error.response) {
+          console.error('HTTP Response:', {
+            status: error.response.status,
+            statusText: error.response.statusText,
+            data: error.response.data
+          });
+        }
+        
+        console.log('🔧 Store State at Error:', {
+          isDirty: this.isDirty,
+          isSaving: this.isSaving,
+          componentCount: Object.keys(this.components).length,
+          sectionCount: this.sections.length,
+          theme: this.theme,
+          postId: this.postId
+        });
+        
+        console.groupEnd();
         throw error;
       } finally {
         this.isSaving = false;
+        console.log('➡️ Save operation finished (isSaving = false)');
       }
     },
 
