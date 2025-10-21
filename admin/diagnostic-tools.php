@@ -232,7 +232,7 @@ class GMKB_Admin_Diagnostic {
             return;
         }
         
-        $validation_results = $this->validate_complete_state($saved_state);
+        $validation_results = $this->validate_complete_state($saved_state, $post_id);
         
         ?>
         <div class="card">
@@ -634,7 +634,7 @@ class GMKB_Admin_Diagnostic {
      * COMPREHENSIVE STATE VALIDATION
      * Validates ALL settings from all sidepanels and editors
      */
-    private function validate_complete_state($state) {
+    private function validate_complete_state($state, $post_id = null) {
         $results = array(
             'components' => array('total' => 0, 'valid' => 0, 'missing' => 0),
             'sections' => array('total' => 0, 'valid' => 0, 'missing' => 0),
@@ -689,7 +689,7 @@ class GMKB_Admin_Diagnostic {
         }
         
         // Validate Theme
-        $theme_validation = $this->validate_theme_settings();
+        $theme_validation = $this->validate_theme_settings($state, $post_id);
         $results['theme']['valid'] = $theme_validation['is_valid'];
         $results['theme_details'] = $theme_validation;
         if (!$theme_validation['is_valid']) {
@@ -892,11 +892,88 @@ class GMKB_Admin_Diagnostic {
     }
     
     /**
+     * Get theme data by theme ID
+     * Fetches from custom themes or built-in themes
+     * 
+     * @param string $theme_id The theme ID to fetch
+     * @return array The theme data or empty array if not found
+     */
+    private function get_theme_data_by_id($theme_id) {
+        if (empty($theme_id)) {
+            return array();
+        }
+        
+        // Check if it's already a full theme object (has colors array)
+        if (is_array($theme_id) && isset($theme_id['colors'])) {
+            return $theme_id;
+        }
+        
+        // Convert to string if needed
+        $theme_id = is_string($theme_id) ? $theme_id : '';
+        
+        // Try custom themes first
+        $custom_themes = get_option('gmkb_custom_themes', array());
+        if (isset($custom_themes[$theme_id])) {
+            return $custom_themes[$theme_id];
+        }
+        
+        // Try built-in themes
+        $theme_file = GMKB_PLUGIN_DIR . 'themes/' . $theme_id . '/theme.json';
+        if (file_exists($theme_file)) {
+            $theme_json = file_get_contents($theme_file);
+            $theme_data = json_decode($theme_json, true);
+            if (is_array($theme_data)) {
+                // Normalize property names for built-in themes
+                if (!isset($theme_data['id']) && isset($theme_data['theme_id'])) {
+                    $theme_data['id'] = $theme_data['theme_id'];
+                }
+                if (!isset($theme_data['name']) && isset($theme_data['theme_name'])) {
+                    $theme_data['name'] = $theme_data['theme_name'];
+                }
+                return $theme_data;
+            }
+        }
+        
+        // Theme not found
+        return array();
+    }
+    
+    /**
      * Validate Theme Settings
      * Checks all settings from ThemeCustomizer panels
+     * 
+     * @param array $state The complete state data
+     * @param int $post_id The post ID for additional context
      */
-    private function validate_theme_settings() {
-        $theme = get_option('gmkb_active_theme', array());
+    private function validate_theme_settings($state = array(), $post_id = null) {
+        // Step 1: Find the theme ID from multiple sources
+        $theme_id = null;
+        
+        // Source 1: State's theme property (may be ID or object)
+        if (isset($state['theme'])) {
+            $theme_id = is_array($state['theme']) ? ($state['theme']['id'] ?? null) : $state['theme'];
+        } elseif (isset($state['activeTheme'])) {
+            $theme_id = is_array($state['activeTheme']) ? ($state['activeTheme']['id'] ?? null) : $state['activeTheme'];
+        }
+        
+        // Source 2: Post meta (if post_id provided)
+        if (!$theme_id && $post_id) {
+            $theme_id = get_post_meta($post_id, 'gmkb_selected_theme', true);
+            if (!$theme_id) {
+                $post_state = get_post_meta($post_id, 'gmkb_media_kit_state', true);
+                if (is_array($post_state) && isset($post_state['theme'])) {
+                    $theme_id = is_array($post_state['theme']) ? ($post_state['theme']['id'] ?? null) : $post_state['theme'];
+                }
+            }
+        }
+        
+        // Source 3: WordPress option (global fallback)
+        if (!$theme_id) {
+            $theme_id = get_option('gmkb_active_theme', 'professional_clean');
+        }
+        
+        // Step 2: Fetch the actual theme data if we have a theme ID
+        $theme = $this->get_theme_data_by_id($theme_id);
         
         $validation = array(
             'is_valid' => true,
@@ -941,16 +1018,21 @@ class GMKB_Admin_Diagnostic {
         
         if (empty($theme) || !is_array($theme)) {
             $validation['is_valid'] = false;
-            $validation['issues'][] = "Theme: No active theme configuration found";
+            $validation['issues'][] = sprintf(
+                'Theme: No theme configuration found for theme ID "%s" in custom themes, built-in themes, state, or post meta',
+                esc_html($theme_id)
+            );
             return $validation;
         }
         
         // Validate Themes Panel - Active theme and custom themes
-        if (isset($theme['id'])) {
+        // We know we have a theme_id from earlier, so mark as having active theme
+        if ($theme_id) {
             $validation['has_active_theme'] = true;
-            $validation['active_theme_id'] = $theme['id'];
+            $validation['active_theme_id'] = $theme_id;
         }
         
+        // Get theme name from theme data
         if (isset($theme['name'])) {
             $validation['active_theme_name'] = $theme['name'];
         }
@@ -980,14 +1062,15 @@ class GMKB_Admin_Diagnostic {
         }
         
         // Validate Colors - ALL 10 individual colors from ColorsPanel.vue
+        // Support both camelCase and snake_case property names
         if (isset($theme['colors']) && is_array($theme['colors'])) {
             $colors = $theme['colors'];
             if (isset($colors['primary'])) $validation['has_primary_color'] = true;
             if (isset($colors['secondary'])) $validation['has_secondary_color'] = true;
-            if (isset($colors['background']) && isset($colors['surface'])) {
+            if ((isset($colors['background']) || isset($colors['background_color'])) && isset($colors['surface'])) {
                 $validation['has_background_colors'] = true;
             }
-            if (isset($colors['text']) && isset($colors['textLight'])) {
+            if (isset($colors['text']) && (isset($colors['textLight']) || isset($colors['text_light']))) {
                 $validation['has_text_colors'] = true;
             }
             if (isset($colors['border'])) $validation['has_border_color'] = true;
@@ -997,35 +1080,77 @@ class GMKB_Admin_Diagnostic {
         }
         
         // Validate Typography - ALL 6 settings from TypographyPanel.vue
+        // Support both camelCase and snake_case property names
         if (isset($theme['typography']) && is_array($theme['typography'])) {
-            $typo = $theme['typography'];
-            if (isset($typo['fontFamily'])) $validation['has_font_family'] = true;
-            if (isset($typo['headingFamily'])) $validation['has_heading_family'] = true;
-            if (isset($typo['baseFontSize']) && isset($typo['headingScale'])) {
+            $typography = $theme['typography'];
+            if (isset($typography['fontFamily']) || isset($typography['font_family'])) {
+                $validation['has_font_family'] = true;
+            }
+            if (isset($typography['headingFamily']) || isset($typography['heading_family'])) {
+                $validation['has_heading_family'] = true;
+            }
+            if ((isset($typography['baseFontSize']) || isset($typography['base_font_size'])) &&
+                (isset($typography['headingScale']) || isset($typography['heading_scale']))) {
                 $validation['has_font_sizes'] = true;
             }
-            if (isset($typo['lineHeight']) && isset($typo['fontWeight'])) {
+            if ((isset($typography['lineHeight']) || isset($typography['line_height'])) &&
+                (isset($typography['fontWeight']) || isset($typography['font_weight']))) {
                 $validation['has_text_properties'] = true;
             }
         }
         
         // Validate Spacing - ALL 4 settings from SpacingPanel.vue
+        // Support both camelCase and snake_case property names
         if (isset($theme['spacing']) && is_array($theme['spacing'])) {
             $spacing = $theme['spacing'];
-            if (isset($spacing['baseUnit'])) $validation['has_base_unit'] = true;
-            if (isset($spacing['componentGap'])) $validation['has_component_gap'] = true;
-            if (isset($spacing['sectionPadding'])) $validation['has_section_padding'] = true;
-            if (isset($spacing['containerMaxWidth'])) $validation['has_container_max_width'] = true;
+            if (isset($spacing['baseUnit']) || isset($spacing['base_unit'])) {
+                $validation['has_base_unit'] = true;
+            }
+            if (isset($spacing['componentGap']) || isset($spacing['component_gap'])) {
+                $validation['has_component_gap'] = true;
+            }
+            if (isset($spacing['sectionPadding']) || isset($spacing['section_padding'])) {
+                $validation['has_section_padding'] = true;
+            }
+            if (isset($spacing['containerMaxWidth']) || isset($spacing['container_max_width'])) {
+                $validation['has_container_max_width'] = true;
+            }
         }
         
         // Validate Effects - ALL 5 settings from EffectsPanel.vue
+        // Support both camelCase and snake_case property names
         if (isset($theme['effects']) && is_array($theme['effects'])) {
             $effects = $theme['effects'];
-            if (isset($effects['borderRadius'])) $validation['has_border_settings'] = true;
-            if (isset($effects['shadowIntensity'])) $validation['has_shadow_settings'] = true;
-            if (isset($effects['animationSpeed'])) $validation['has_animation_settings'] = true;
-            if (isset($effects['gradients'])) $validation['has_gradients'] = true;
-            if (isset($effects['blurEffects'])) $validation['has_blur_effects'] = true;
+            if (isset($effects['borderRadius']) || isset($effects['border_radius'])) {
+                $validation['has_border_settings'] = true;
+            }
+            if (isset($effects['shadowIntensity']) || isset($effects['shadow_intensity'])) {
+                $validation['has_shadow_settings'] = true;
+            }
+            if (isset($effects['animationSpeed']) || isset($effects['animation_speed'])) {
+                $validation['has_animation_settings'] = true;
+            }
+            if (array_key_exists('gradients', $effects)) {
+                $validation['has_gradients'] = true;
+            }
+            if (array_key_exists('blurEffects', $effects) || array_key_exists('blur_effects', $effects)) {
+                $validation['has_blur_effects'] = true;
+            }
+        }
+        
+        // Determine overall validity
+        // A theme is considered valid if it has:
+        // 1. An active theme ID
+        // 2. At least the primary color (the most critical color)
+        if (!$validation['has_active_theme']) {
+            $validation['is_valid'] = false;
+            $validation['issues'][] = 'Theme: No active theme ID detected in saved state or post meta';
+        }
+        
+        if (!$validation['has_primary_color']) {
+            $validation['is_valid'] = false;
+            $theme_id = $validation['active_theme_id'] ?? 'unknown';
+            $validation['issues'][] = sprintf('Theme: Active theme "%s" is missing required primary color configuration', esc_html($theme_id));
         }
         
         return $validation;
@@ -1071,7 +1196,7 @@ class GMKB_Admin_Diagnostic {
             return;
         }
         
-        $validation = $this->validate_complete_state($saved_state);
+        $validation = $this->validate_complete_state($saved_state, $post_id);
         
         $total_issues = count($validation['issues']);
         
