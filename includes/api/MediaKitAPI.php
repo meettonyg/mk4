@@ -156,6 +156,11 @@ class MediaKitAPI {
             }
         }
         
+        // CRITICAL FIX: Ensure themeCustomizations always has proper object structure
+        // When empty arrays come from DB, convert them to empty objects for JS
+        // This prevents "Cannot read property 'primary' of undefined" errors in ThemeStyleInjector
+        $theme_customizations = $this->normalize_theme_customizations($theme_customizations);
+        
         return array(
             'version' => '1.0-ajax',
             'postId' => $post_id,
@@ -186,6 +191,11 @@ class MediaKitAPI {
 
         // ROOT FIX: Sanitize font families to prevent HTML encoding on every save
         $data = $this->sanitize_font_families($data);
+        
+        // CRITICAL FIX: Normalize theme customizations before saving
+        // This prevents empty arrays [] from being saved instead of empty objects {}
+        $theme_customizations = isset($data['themeCustomizations']) ? $data['themeCustomizations'] : new \stdClass();
+        $theme_customizations = $this->normalize_theme_customizations($theme_customizations);
 
         $state = array(
             'components' => $data['components'] ?? new \stdClass(),
@@ -193,7 +203,7 @@ class MediaKitAPI {
             'sections' => $data['layout'] ?? array(), // Ensure sections and layout are synced.
             'theme' => $data['theme'] ?? 'professional_clean',
             'themeSettings' => $data['themeSettings'] ?? new \stdClass(),
-            'themeCustomizations' => $data['themeCustomizations'] ?? new \stdClass(), // ROOT FIX: Store customizations in state too
+            'themeCustomizations' => $theme_customizations, // ROOT FIX: Store normalized customizations
             'globalSettings' => $data['globalSettings'] ?? new \stdClass(),
             'timestamp' => current_time('mysql')
         );
@@ -234,8 +244,8 @@ class MediaKitAPI {
         // ROOT FIX: Save theme customizations as separate post meta for frontend display
         // Frontend class-gmkb-frontend-display.php looks for 'gmkb_theme_customizations'
         // This allows theme customizations to persist from customizer to preview to frontend
-        $theme_customizations = $data['themeCustomizations'] ?? array();
-        if (!empty($theme_customizations)) {
+        // Use the already-normalized $theme_customizations from above
+        if ($this->has_theme_customizations($theme_customizations)) {
             // Convert from Vue format (colors: {primary: '#xxx'}) to PHP format expected by frontend
             $customizations_for_frontend = array();
             
@@ -314,6 +324,97 @@ class MediaKitAPI {
         );
     }
 
+    /**
+     * Check if theme customizations have any actual values
+     * 
+     * @param mixed $customizations Theme customizations
+     * @return bool True if has values, false if empty
+     */
+    private function has_theme_customizations($customizations) {
+        if (empty($customizations)) {
+            return false;
+        }
+        
+        // Convert to array if object
+        if (is_object($customizations)) {
+            $customizations = (array)$customizations;
+        }
+        
+        // Check if any of the sections have values
+        foreach (['colors', 'typography', 'spacing', 'effects'] as $section) {
+            if (isset($customizations[$section])) {
+                $section_data = $customizations[$section];
+                // Convert to array if object
+                if (is_object($section_data)) {
+                    $section_data = (array)$section_data;
+                }
+                // If section has any data, customizations exist
+                if (is_array($section_data) && !empty($section_data)) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Normalize theme customizations structure
+     * Ensures colors, typography, spacing, effects are always objects, never arrays
+     * 
+     * @param mixed $customizations Theme customizations from database
+     * @return array Normalized structure with objects
+     */
+    private function normalize_theme_customizations($customizations) {
+        // If it's completely empty, return proper structure
+        if (empty($customizations)) {
+            return array(
+                'colors' => new \stdClass(),
+                'typography' => new \stdClass(),
+                'spacing' => new \stdClass(),
+                'effects' => new \stdClass()
+            );
+        }
+        
+        // Ensure it's an array
+        if (is_object($customizations)) {
+            $customizations = (array)$customizations;
+        }
+        
+        // Ensure each property exists and is properly structured
+        $normalized = array();
+        
+        // Process colors
+        if (isset($customizations['colors']) && is_array($customizations['colors']) && !empty($customizations['colors'])) {
+            $normalized['colors'] = $customizations['colors'];
+        } else {
+            $normalized['colors'] = new \stdClass();
+        }
+        
+        // Process typography
+        if (isset($customizations['typography']) && is_array($customizations['typography']) && !empty($customizations['typography'])) {
+            $normalized['typography'] = $customizations['typography'];
+        } else {
+            $normalized['typography'] = new \stdClass();
+        }
+        
+        // Process spacing
+        if (isset($customizations['spacing']) && is_array($customizations['spacing']) && !empty($customizations['spacing'])) {
+            $normalized['spacing'] = $customizations['spacing'];
+        } else {
+            $normalized['spacing'] = new \stdClass();
+        }
+        
+        // Process effects
+        if (isset($customizations['effects']) && is_array($customizations['effects']) && !empty($customizations['effects'])) {
+            $normalized['effects'] = $customizations['effects'];
+        } else {
+            $normalized['effects'] = new \stdClass();
+        }
+        
+        return $normalized;
+    }
+    
     /**
      * Sanitize font families in data to prevent HTML encoding
      * This is a self-healing function that cleans data on every save
