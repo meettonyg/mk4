@@ -283,10 +283,12 @@ class GMKB_Frontend_Display {
             return '<div class="gmkb-error">No media kit ID specified</div>';
         }
         
-        // Check cache if enabled
+        // TEMPORARY: Disable cache for debugging
+        // TODO: Re-enable after confirming CSS variables work
         if ($atts['cache'] === 'true') {
             $cache_key = 'gmkb_frontend_' . $post_id . '_' . md5(serialize($atts));
-            $cached_html = get_transient($cache_key);
+            $cached_html = false; // DISABLED FOR DEBUGGING
+            // $cached_html = get_transient($cache_key);
             
             if ($cached_html !== false) {
                 return $cached_html;
@@ -334,8 +336,10 @@ class GMKB_Frontend_Display {
         $html = ob_get_clean();
         
         // Cache if enabled
+        // TEMPORARY: Disabled for debugging
+        // TODO: Re-enable after confirming CSS variables work
         if ($atts['cache'] === 'true') {
-            set_transient($cache_key, $html, 15 * MINUTE_IN_SECONDS);
+            // set_transient($cache_key, $html, 15 * MINUTE_IN_SECONDS);
         }
         
         return $html;
@@ -1468,6 +1472,11 @@ class GMKB_Frontend_Display {
      * @param int $post_id Post ID
      */
     private function render_theme_customizations($customizations, $post_id) {
+        // ROOT FIX: ALWAYS output a marker so we know this method was called
+        ?>
+        <script>console.log('🔍 GMKB: render_theme_customizations() called for post <?php echo $post_id; ?>');</script>
+        <?php
+        
         // ROOT FIX: First inject BASE theme CSS variables (same as builder)
         $this->inject_theme_css_variables($post_id);
         

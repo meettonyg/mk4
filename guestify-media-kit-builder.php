@@ -79,6 +79,7 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/version-control/VersionManager.php
 }
 
 // PHASE 2 IMPLEMENTATION: Pure Vue REST API v2 - Unified Endpoint
+// ROOT FIX: Removed MediaKitAPI (v1) - redundant code, frontend only uses v2
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-rest-api-v2.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-rest-api-v2.php';
     
