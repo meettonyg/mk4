@@ -200,8 +200,19 @@
               v-for="(section, index) in sections"
               :key="section.section_id"
               class="section-item"
+              :class="{ 
+                'dragging': draggingSection === section.section_id,
+                'drag-over': dragOverSection === section.section_id
+              }"
+              draggable="true"
+              @dragstart="onSectionDragStart($event, section.section_id)"
+              @dragover="onSectionDragOver($event, section.section_id)"
+              @dragenter="onSectionDragEnter($event, section.section_id)"
+              @dragleave="onSectionDragLeave($event)"
+              @drop="onSectionDrop($event, section.section_id)"
+              @dragend="onSectionDragEnd($event)"
             >
-              <button class="drag-handle">
+              <button class="drag-handle" @mousedown.stop>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="9" cy="5" r="1"></circle>
                   <circle cx="9" cy="12" r="1"></circle>
@@ -574,6 +585,10 @@ export default {
     }));
     const draggingComponent = ref(null);
     
+    // ROOT FIX: Section drag-and-drop state
+    const draggingSection = ref(null);
+    const dragOverSection = ref(null);
+    
     // Page background - Enhanced with multiple types
     const backgroundType = ref('color');
     const pageBackgroundColor = ref('#ffffff');
@@ -710,6 +725,74 @@ export default {
       draggingComponent.value = null;
     };
     
+    // ROOT FIX: Section drag-and-drop handlers
+    const onSectionDragStart = (event, sectionId) => {
+      draggingSection.value = sectionId;
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('section-id', sectionId);
+      
+      // Add visual feedback
+      if (event.target) {
+        event.target.style.opacity = '0.5';
+      }
+      
+      console.log('✅ Section drag started:', sectionId);
+    };
+    
+    const onSectionDragOver = (event, sectionId) => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      dragOverSection.value = sectionId;
+    };
+    
+    const onSectionDragEnter = (event, sectionId) => {
+      event.preventDefault();
+      dragOverSection.value = sectionId;
+    };
+    
+    const onSectionDragLeave = (event) => {
+      dragOverSection.value = null;
+    };
+    
+    const onSectionDrop = (event, targetSectionId) => {
+      event.preventDefault();
+      
+      const sourceSectionId = draggingSection.value;
+      
+      if (!sourceSectionId || sourceSectionId === targetSectionId) {
+        return;
+      }
+      
+      // Find the indices of source and target sections
+      const sourceIndex = store.sections.findIndex(s => s.section_id === sourceSectionId);
+      const targetIndex = store.sections.findIndex(s => s.section_id === targetSectionId);
+      
+      if (sourceIndex === -1 || targetIndex === -1) {
+        console.error('Section not found:', { sourceSectionId, targetSectionId });
+        return;
+      }
+      
+      // Reorder sections in the store
+      const sections = [...store.sections];
+      const [movedSection] = sections.splice(sourceIndex, 1);
+      sections.splice(targetIndex, 0, movedSection);
+      
+      store.sections = sections;
+      store._trackChange();
+      
+      console.log('✅ Section reordered:', { from: sourceIndex, to: targetIndex });
+    };
+    
+    const onSectionDragEnd = (event) => {
+      // Clear visual feedback
+      if (event.target) {
+        event.target.style.opacity = '';
+      }
+      
+      draggingSection.value = null;
+      dragOverSection.value = null;
+    };
+    
     const addComponent = (componentId) => {
       // Ensure we have at least one section
       if (store.sections.length === 0) {
@@ -805,8 +888,29 @@ export default {
       return labels[type] || type;
     };
     
+    /**
+     * ROOT FIX: Accurately count components in BOTH section structures
+     * - Full-width sections: section.components array
+     * - Multi-column sections: section.columns object (sum all column arrays)
+     */
     const getComponentCount = (section) => {
-      return section.components?.length || 0;
+      let count = 0;
+      
+      // Count components in full-width sections
+      if (section.components && Array.isArray(section.components)) {
+        count += section.components.length;
+      }
+      
+      // Count components in multi-column sections
+      if (section.columns && typeof section.columns === 'object') {
+        Object.values(section.columns).forEach(column => {
+          if (Array.isArray(column)) {
+            count += column.length;
+          }
+        });
+      }
+      
+      return count;
     };
     
     const handleFooterAction = () => {
@@ -1067,7 +1171,16 @@ export default {
       updatePageBackground,
       openMediaLibrary,
       removeBackgroundImage,
-      openThemeCustomizer
+      openThemeCustomizer,
+      // ROOT FIX: Section drag-and-drop methods
+      draggingSection,
+      dragOverSection,
+      onSectionDragStart,
+      onSectionDragOver,
+      onSectionDragEnter,
+      onSectionDragLeave,
+      onSectionDrop,
+      onSectionDragEnd
     };
   }
 };
@@ -1727,10 +1840,25 @@ body.dark-mode .action-btn:hover {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   transition: all 0.2s;
+  cursor: move;
 }
 
 .section-item:hover {
   background: #f9fafb;
+}
+
+/* ROOT FIX: Drag-and-drop visual feedback */
+.section-item.dragging {
+  opacity: 0.5;
+  border-color: #ec4899;
+  background: #fdf2f8;
+}
+
+.section-item.drag-over {
+  border-color: #ec4899;
+  border-width: 2px;
+  background: #fdf2f8;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
 }
 
 body.dark-mode .section-item {
@@ -1742,12 +1870,36 @@ body.dark-mode .section-item:hover {
   background: #334155;
 }
 
+/* ROOT FIX: Dark mode drag-and-drop styles */
+body.dark-mode .section-item.dragging {
+  opacity: 0.5;
+  border-color: #ec4899;
+  background: rgba(236, 72, 153, 0.1);
+}
+
+body.dark-mode .section-item.drag-over {
+  border-color: #ec4899;
+  background: rgba(236, 72, 153, 0.15);
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.2);
+}
+
 .drag-handle {
-  padding: 0;
+  padding: 4px;
   background: transparent;
   border: none;
   color: #9ca3af;
-  cursor: move;
+  cursor: grab;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.drag-handle:hover {
+  background: rgba(156, 163, 175, 0.1);
+  color: #6b7280;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
 }
 
 .section-number {
