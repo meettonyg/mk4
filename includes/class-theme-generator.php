@@ -652,24 +652,34 @@ class GMKB_Theme_Generator {
     
     /**
      * Generate component-specific styles
+     * DYNAMIC LOADING: Only generates CSS for components actually present on the page
      * 
      * @param array $theme Theme configuration
+     * @param array $used_components Optional array of component types to generate CSS for (e.g., ['biography', 'hero', 'contact'])
      * @return string Component CSS
      */
-    private function generate_component_styles($theme) {
+    public function generate_component_styles($theme, $used_components = array()) {
         $css = "";
         
-        // Apply theme to components
-        $css .= "/* Theme Component Styles */\n";
+        // If no used_components specified, generate ALL styles (backward compatibility for builder)
+        $generate_all = empty($used_components);
         
-        // Base text styles
+        // Helper function to check if we should generate CSS for a component
+        $should_generate = function($component_type) use ($generate_all, $used_components) {
+            return $generate_all || in_array($component_type, $used_components);
+        };
+        
+        // Apply theme to components
+        $css .= "/* Theme Component Styles" . ($generate_all ? " (ALL)" : " (DYNAMIC: " . implode(', ', $used_components) . ")") . " */\n";
+        
+        // Base text styles (ALWAYS include - required for all pages)
         $css .= ".gmkb-media-kit-builder {\n";
         $css .= "  font-family: var(--gmkb-font-primary);\n";
         $css .= "  color: var(--gmkb-color-text);\n";
         $css .= "  line-height: var(--gmkb-line-height-normal);\n";
         $css .= "}\n\n";
         
-        // Headings
+        // Headings (ALWAYS include - required for all pages)
         $css .= ".gmkb-media-kit-builder h1,\n";
         $css .= ".gmkb-media-kit-builder h2,\n";
         $css .= ".gmkb-media-kit-builder h3,\n";
@@ -681,7 +691,7 @@ class GMKB_Theme_Generator {
         $css .= "  color: var(--gmkb-color-text);\n";
         $css .= "}\n\n";
         
-        // Component containers
+        // Component containers (ALWAYS include - required for all pages)
         $css .= ".gmkb-component {\n";
         $css .= "  background: var(--gmkb-color-surface);\n";
         $css .= "  border-radius: var(--gmkb-border-radius);\n";
@@ -689,84 +699,96 @@ class GMKB_Theme_Generator {
         $css .= "  transition: var(--gmkb-transition-normal);\n";
         $css .= "}\n\n";
         
-        // Sections
+        // Sections (ALWAYS include - required for all pages)
         $css .= ".gmkb-section {\n";
         $css .= "  margin-bottom: var(--gmkb-spacing-section-gap);\n";
         $css .= "}\n\n";
         
-        // Buttons
-        if (isset($theme['components']['button'])) {
-            $button = $theme['components']['button'];
-            $css .= ".gmkb-button {\n";
-            $css .= "  background: var(--gmkb-color-primary);\n";
-            $css .= "  color: var(--gmkb-color-background);\n";
-            $css .= "  border-radius: var(--gmkb-border-radius);\n";
-            $css .= "  transition: var(--gmkb-transition-normal);\n";
-            
-            if (isset($button['padding'])) {
-                $css .= "  padding: " . $button['padding'] . ";\n";
+        // === DYNAMIC COMPONENT STYLES ===
+        // Only generate CSS for components that are actually used
+        
+        // Buttons (used by: call-to-action, contact, booking-calendar)
+        if ($should_generate('call-to-action') || $should_generate('contact') || $should_generate('booking-calendar')) {
+            if (isset($theme['components']['button'])) {
+                $button = $theme['components']['button'];
+                $css .= "/* Button Styles */\n";
+                $css .= ".gmkb-button {\n";
+                $css .= "  background: var(--gmkb-color-primary);\n";
+                $css .= "  color: var(--gmkb-color-background);\n";
+                $css .= "  border-radius: var(--gmkb-border-radius);\n";
+                $css .= "  transition: var(--gmkb-transition-normal);\n";
+                
+                if (isset($button['padding'])) {
+                    $css .= "  padding: " . $button['padding'] . ";\n";
+                }
+                if (isset($button['font_weight'])) {
+                    $css .= "  font-weight: " . $button['font_weight'] . ";\n";
+                }
+                if (isset($button['letter_spacing'])) {
+                    $css .= "  letter-spacing: " . $button['letter_spacing'] . ";\n";
+                }
+                
+                $css .= "}\n\n";
+                
+                $css .= ".gmkb-button:hover {\n";
+                $css .= "  background: var(--gmkb-color-primary-dark);\n";
+                $css .= "  transform: translateY(-2px);\n";
+                $css .= "  box-shadow: var(--gmkb-shadow-md);\n";
+                $css .= "}\n\n";
             }
-            if (isset($button['font_weight'])) {
-                $css .= "  font-weight: " . $button['font_weight'] . ";\n";
-            }
-            if (isset($button['letter_spacing'])) {
-                $css .= "  letter-spacing: " . $button['letter_spacing'] . ";\n";
-            }
-            
-            $css .= "}\n\n";
-            
-            $css .= ".gmkb-button:hover {\n";
-            $css .= "  background: var(--gmkb-color-primary-dark);\n";
-            $css .= "  transform: translateY(-2px);\n";
-            $css .= "  box-shadow: var(--gmkb-shadow-md);\n";
-            $css .= "}\n\n";
         }
         
-        // Cards
-        if (isset($theme['components']['card'])) {
-            $card = $theme['components']['card'];
-            $css .= ".gmkb-card {\n";
-            
-            if (isset($card['padding'])) {
-                $css .= "  padding: " . $card['padding'] . ";\n";
+        // Cards (used by: testimonials, stats, topics)
+        if ($should_generate('testimonials') || $should_generate('stats') || $should_generate('topics')) {
+            if (isset($theme['components']['card'])) {
+                $card = $theme['components']['card'];
+                $css .= "/* Card Styles */\n";
+                $css .= ".gmkb-card {\n";
+                
+                if (isset($card['padding'])) {
+                    $css .= "  padding: " . $card['padding'] . ";\n";
+                }
+                if (isset($card['shadow'])) {
+                    $css .= "  box-shadow: " . $card['shadow'] . ";\n";
+                }
+                
+                $css .= "  background: var(--gmkb-color-surface);\n";
+                $css .= "  border-radius: var(--gmkb-border-radius);\n";
+                $css .= "}\n\n";
             }
-            if (isset($card['shadow'])) {
-                $css .= "  box-shadow: " . $card['shadow'] . ";\n";
-            }
-            
-            $css .= "  background: var(--gmkb-color-surface);\n";
-            $css .= "  border-radius: var(--gmkb-border-radius);\n";
-            $css .= "}\n\n";
         }
         
-        // Inputs
-        if (isset($theme['components']['input'])) {
-            $input = $theme['components']['input'];
-            $css .= ".gmkb-input,\n";
-            $css .= ".gmkb-textarea,\n";
-            $css .= ".gmkb-select {\n";
-            
-            if (isset($input['padding'])) {
-                $css .= "  padding: " . $input['padding'] . ";\n";
+        // Inputs (used by: contact)
+        if ($should_generate('contact')) {
+            if (isset($theme['components']['input'])) {
+                $input = $theme['components']['input'];
+                $css .= "/* Input Styles */\n";
+                $css .= ".gmkb-input,\n";
+                $css .= ".gmkb-textarea,\n";
+                $css .= ".gmkb-select {\n";
+                
+                if (isset($input['padding'])) {
+                    $css .= "  padding: " . $input['padding'] . ";\n";
+                }
+                if (isset($input['border_width'])) {
+                    $css .= "  border-width: " . $input['border_width'] . ";\n";
+                }
+                
+                $css .= "  border-color: var(--gmkb-color-border);\n";
+                $css .= "  border-radius: var(--gmkb-border-radius-sm);\n";
+                $css .= "  background: var(--gmkb-color-background);\n";
+                $css .= "  color: var(--gmkb-color-text);\n";
+                $css .= "  transition: var(--gmkb-transition-normal);\n";
+                $css .= "}\n\n";
+                
+                $css .= ".gmkb-input:focus,\n";
+                $css .= ".gmkb-textarea:focus,\n";
+                $css .= ".gmkb-select:focus {\n";
+                $css .= "  border-color: var(--gmkb-color-primary);\n";
+                $css .= "  outline: none;\n";
+                $css .= "  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);\n";
+                $css .= "}\n\n";
             }
-            if (isset($input['border_width'])) {
-                $css .= "  border-width: " . $input['border_width'] . ";\n";
-            }
-            
-            $css .= "  border-color: var(--gmkb-color-border);\n";
-            $css .= "  border-radius: var(--gmkb-border-radius-sm);\n";
-            $css .= "  background: var(--gmkb-color-background);\n";
-            $css .= "  color: var(--gmkb-color-text);\n";
-            $css .= "  transition: var(--gmkb-transition-normal);\n";
-            $css .= "}\n\n";
-            
-            $css .= ".gmkb-input:focus,\n";
-            $css .= ".gmkb-textarea:focus,\n";
-            $css .= ".gmkb-select:focus {\n";
-            $css .= "  border-color: var(--gmkb-color-primary);\n";
-            $css .= "  outline: none;\n";
-            $css .= "  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);\n";
-            $css .= "}\n\n";
         }
         
         return $css;

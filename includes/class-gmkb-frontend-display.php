@@ -346,6 +346,37 @@ class GMKB_Frontend_Display {
     }
     
     /**
+     * Track which component types are used on this page
+     * Used for selective CSS loading
+     * @var array
+     */
+    private $used_component_types = array();
+    
+    /**
+     * Track component usage for dynamic CSS loading
+     * 
+     * @param string $component_type Component type (e.g., 'biography', 'hero')
+     */
+    private function track_component_usage($component_type) {
+        if (!in_array($component_type, $this->used_component_types)) {
+            $this->used_component_types[] = $component_type;
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('[GMKB Dynamic CSS] Tracked component: ' . $component_type);
+            }
+        }
+    }
+    
+    /**
+     * Get all tracked component types
+     * 
+     * @return array Array of component types used on this page
+     */
+    private function get_tracked_components() {
+        return $this->used_component_types;
+    }
+    
+    /**
      * Render media kit
      * 
      * @param array $state Media kit state
@@ -353,6 +384,8 @@ class GMKB_Frontend_Display {
      * @param array $atts Attributes
      */
     private function render_media_kit($state, $post_id, $atts) {
+        // OPTIMIZATION: Reset component tracking for this render
+        $this->used_component_types = array();
         // ROOT FIX: Get theme customizations from state FIRST, then fall back to post meta
         // This is the correct order - state is the single source of truth
         $theme_customizations = null;
@@ -1000,6 +1033,9 @@ class GMKB_Frontend_Display {
         $component_data = $component['data'] ?? array();
         $component_props = $component['props'] ?? array();
         $component_settings = $component['settings'] ?? array();
+        
+        // DYNAMIC CSS: Track component usage for selective CSS loading
+        $this->track_component_usage($component_type);
         
         // DEBUG: Log component rendering start
         if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -1743,7 +1779,7 @@ class GMKB_Frontend_Display {
     
     /**
      * ROOT FIX: Inject base theme CSS variables to frontend
-     * Simplified version that ALWAYS outputs CSS variables
+     * DYNAMIC CSS: Only outputs component styles for components actually present on the page
      * 
      * @param int $post_id Post ID
      */
@@ -1757,6 +1793,14 @@ class GMKB_Frontend_Display {
                 error_log('[GMKB Theme Debug] WARNING: No theme loaded, using fallback CSS variables');
             }
             $theme = $this->get_minimal_theme_config();
+        }
+        
+        // DYNAMIC CSS: Get tracked components for selective CSS generation
+        $used_components = $this->get_tracked_components();
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('[GMKB Dynamic CSS] Components used on this page: ' . implode(', ', $used_components));
+            error_log('[GMKB Dynamic CSS] Total component types: ' . count($used_components));
         }
         
         // DEBUG: Log CSS variable injection START
@@ -1898,6 +1942,13 @@ class GMKB_Frontend_Display {
             error_log('[GMKB Theme Debug] Sample vars: ' . implode(', ', array_slice(array_keys($css_vars), 0, 5)));
         }
         
+        // DYNAMIC CSS: Generate component-specific styles based on tracked usage
+        $component_css = $this->theme_generator->generate_component_styles($theme, $used_components);
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('[GMKB Dynamic CSS] Component CSS size: ' . strlen($component_css) . ' bytes');
+        }
+        
         // ROOT FIX: Output CSS with :root scope so all elements can access variables
         ?>
         <style id="gmkb-theme-vars-<?php echo esc_attr($post_id); ?>">
@@ -1911,6 +1962,9 @@ class GMKB_Frontend_Display {
                 ?>
                 <?php endforeach; ?>
             }
+            
+            /* DYNAMIC COMPONENT STYLES - Only for components present on this page */
+            <?php echo $component_css; ?>
         </style>
         <script>
         console.group('📦 GMKB Frontend - CSS Variables Injected');
