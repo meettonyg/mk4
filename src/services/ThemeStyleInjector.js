@@ -82,25 +82,26 @@ class ThemeStyleInjector {
 
   /**
    * Get or create theme wrapper element
-   * Searches for existing wrapper or finds suitable fallback
+   * CRITICAL FIX: ONLY apply theme to preview area, NEVER to body/app
    * 
    * @returns {HTMLElement} Theme wrapper element
    * @throws {Error} If no suitable wrapper element found
    * @private
    */
   getThemeWrapper() {
-    // Try to find existing theme wrapper
-    let themeWrapper = document.querySelector('[data-gmkb-theme]');
+    // CRITICAL: ONLY allow preview area - prevents theme bleeding into UI
+    let themeWrapper = document.querySelector('#media-kit-preview')
+                    || document.querySelector('[data-gmkb-theme]')
+                    || document.querySelector('.gmkb-frontend-display');
 
     if (!themeWrapper) {
-      // Find appropriate fallback wrapper
-      themeWrapper = document.querySelector('.gmkb-frontend-display')
-                  || document.querySelector('#app')
-                  || document.body;
+      throw new Error('ThemeStyleInjector: Preview element (#media-kit-preview) not found in DOM. Theme styles cannot be applied.');
+    }
 
-      if (!themeWrapper) {
-        throw new Error('ThemeStyleInjector: No suitable theme wrapper element found in DOM');
-      }
+    // SECURITY: Verify we're NOT applying to body/app
+    if (themeWrapper === document.body || themeWrapper.id === 'app') {
+      console.error('❌ CRITICAL: Theme would apply to body/app - BLOCKED');
+      throw new Error('ThemeStyleInjector: Invalid theme wrapper (body/app) - theme scope violation prevented');
     }
 
     return themeWrapper;

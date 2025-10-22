@@ -48,6 +48,7 @@ export const useUIStore = defineStore('ui', {
         
         // Sidebar state
         sidebarOpen: true,
+        sidebarCollapsed: false, // NEW: Collapse state (thin bar vs full panel)
         sidebarTab: 'components', // components, sections, settings
         
         // Toast notifications
@@ -319,9 +320,57 @@ export const useUIStore = defineStore('ui', {
             this.sidebarOpen = !this.sidebarOpen;
         },
         
+        // NEW: Sidebar collapse/expand
+        toggleSidebarCollapse() {
+            this.sidebarCollapsed = !this.sidebarCollapsed;
+            
+            // Persist preference
+            try {
+                localStorage.setItem('gmkb-sidebar-collapsed', JSON.stringify(this.sidebarCollapsed));
+            } catch (e) {
+                console.warn('Could not save sidebar collapse state:', e);
+            }
+            
+            // Dispatch event for other components
+            document.dispatchEvent(new CustomEvent('gmkb:sidebar-collapse-changed', {
+                detail: { collapsed: this.sidebarCollapsed }
+            }));
+            
+            console.log('✅ UI Store: Sidebar collapsed state:', this.sidebarCollapsed);
+        },
+        
+        collapseSidebar() {
+            if (!this.sidebarCollapsed) {
+                this.toggleSidebarCollapse();
+            }
+        },
+        
+        expandSidebar() {
+            if (this.sidebarCollapsed) {
+                this.toggleSidebarCollapse();
+            }
+        },
+        
+        // Load sidebar collapse state from localStorage
+        loadSidebarCollapseState() {
+            try {
+                const saved = localStorage.getItem('gmkb-sidebar-collapsed');
+                if (saved !== null) {
+                    this.sidebarCollapsed = JSON.parse(saved);
+                    console.log('✅ UI Store: Loaded sidebar collapsed state:', this.sidebarCollapsed);
+                }
+            } catch (e) {
+                console.warn('Could not load sidebar collapse state:', e);
+            }
+        },
+        
         setSidebarTab(tab) {
             this.sidebarTab = tab;
             this.sidebarOpen = true; // Ensure sidebar is open
+            // Auto-expand when switching tabs
+            if (this.sidebarCollapsed) {
+                this.expandSidebar();
+            }
         },
         
         // Toast actions

@@ -1,19 +1,20 @@
 <template>
   <div class="sidebar-editor">
-    <!-- Header with Back Button -->
+    <!-- Header - Matches Component Editor Style -->
     <div class="editor-header">
-      <button @click="handleBack" class="back-btn" title="Back to sidebar">
-        <i class="fa-solid fa-arrow-left"></i>
-      </button>
-      <h2 class="editor-title">Edit Section</h2>
+      <h3 class="editor-title">Edit Section</h3>
       
-      <!-- ROOT FIX: Add Section Reset Buttons -->
-      <div class="header-actions">
-        <SectionResetButton 
-          v-if="sectionId" 
-          :sectionId="sectionId" 
-        />
-      </div>
+      <!-- Reset Button (icon only) -->
+      <button 
+        @click="handleReset" 
+        class="reset-button reset-settings"
+        title="Reset section settings to defaults"
+      >
+        <i class="fa-solid fa-rotate-left"></i>
+      </button>
+      
+      <!-- Close Button -->
+      <button @click="handleClose" class="close-btn">×</button>
     </div>
     
     <!-- Editor Tabs -->
@@ -177,25 +178,180 @@
         <div class="setting-group">
           <label class="setting-label">Background</label>
           
-          <div class="input-row">
-            <label class="input-label">Color</label>
-            <div class="color-input-wrapper">
-              <input
-                type="color"
-                :value="settings.backgroundColor || '#ffffff'"
-                @input="updateSetting('backgroundColor', $event.target.value)"
-                class="color-input"
-              />
-              <input
-                type="text"
-                :value="settings.backgroundColor || '#ffffff'"
-                @input="updateSetting('backgroundColor', $event.target.value)"
-                class="text-input color-hex"
-                placeholder="#ffffff"
-              />
+          <!-- Background Type Selector -->
+          <div class="bg-type-selector">
+            <button
+              @click="updateSetting('backgroundType', 'color')"
+              class="bg-type-btn"
+              :class="{ active: (settings.backgroundType || 'color') === 'color' }"
+              title="Solid Color Background"
+            >
+              <span class="bg-type-icon">
+                <i class="fa-solid fa-palette"></i>
+              </span>
+              <span class="bg-type-label">Color</span>
+            </button>
+            <button
+              @click="updateSetting('backgroundType', 'gradient')"
+              class="bg-type-btn"
+              :class="{ active: settings.backgroundType === 'gradient' }"
+              title="Gradient Background"
+            >
+              <span class="bg-type-icon">
+                <i class="fa-solid fa-brush"></i>
+              </span>
+              <span class="bg-type-label">Gradient</span>
+            </button>
+            <button
+              @click="updateSetting('backgroundType', 'image')"
+              class="bg-type-btn"
+              :class="{ active: settings.backgroundType === 'image' }"
+              title="Image Background"
+            >
+              <span class="bg-type-icon">
+                <i class="fa-solid fa-image"></i>
+              </span>
+              <span class="bg-type-label">Image</span>
+            </button>
+          </div>
+          
+          <!-- Color Background Options -->
+          <div v-if="(settings.backgroundType || 'color') === 'color'" class="bg-options">
+            <div class="input-row">
+              <label class="input-label">Color</label>
+              <div class="color-input-wrapper">
+                <input
+                  type="color"
+                  :value="settings.backgroundColor || '#ffffff'"
+                  @input="updateSetting('backgroundColor', $event.target.value)"
+                  class="color-input"
+                />
+                <input
+                  type="text"
+                  :value="settings.backgroundColor || '#ffffff'"
+                  @input="updateSetting('backgroundColor', $event.target.value)"
+                  class="text-input color-hex"
+                  placeholder="#ffffff"
+                />
+              </div>
             </div>
           </div>
           
+          <!-- Gradient Background Options -->
+          <div v-if="settings.backgroundType === 'gradient'" class="bg-options">
+            <div class="input-row">
+              <label class="input-label">Start Color</label>
+              <div class="color-input-wrapper">
+                <input
+                  type="color"
+                  :value="settings.gradientStart || '#3b82f6'"
+                  @input="updateSetting('gradientStart', $event.target.value)"
+                  class="color-input"
+                />
+                <input
+                  type="text"
+                  :value="settings.gradientStart || '#3b82f6'"
+                  @input="updateSetting('gradientStart', $event.target.value)"
+                  class="text-input color-hex"
+                  placeholder="#3b82f6"
+                />
+              </div>
+            </div>
+            <div class="input-row">
+              <label class="input-label">End Color</label>
+              <div class="color-input-wrapper">
+                <input
+                  type="color"
+                  :value="settings.gradientEnd || '#8b5cf6'"
+                  @input="updateSetting('gradientEnd', $event.target.value)"
+                  class="color-input"
+                />
+                <input
+                  type="text"
+                  :value="settings.gradientEnd || '#8b5cf6'"
+                  @input="updateSetting('gradientEnd', $event.target.value)"
+                  class="text-input color-hex"
+                  placeholder="#8b5cf6"
+                />
+              </div>
+            </div>
+            <div class="input-row">
+              <label class="input-label">Direction</label>
+              <select
+                :value="settings.gradientDirection || '135deg'"
+                @change="updateSetting('gradientDirection', $event.target.value)"
+                class="select-input"
+              >
+                <option value="0deg">Top to Bottom</option>
+                <option value="90deg">Left to Right</option>
+                <option value="180deg">Bottom to Top</option>
+                <option value="270deg">Right to Left</option>
+                <option value="45deg">Diagonal ↗</option>
+                <option value="135deg">Diagonal ↘</option>
+                <option value="225deg">Diagonal ↙</option>
+                <option value="315deg">Diagonal ↖</option>
+              </select>
+            </div>
+          </div>
+          
+          <!-- Image Background Options -->
+          <div v-if="settings.backgroundType === 'image'" class="bg-options">
+            <div class="input-row">
+              <label class="input-label">Image URL</label>
+              <input
+                type="text"
+                :value="settings.backgroundImage || ''"
+                @input="updateSetting('backgroundImage', $event.target.value)"
+                placeholder="https://example.com/image.jpg"
+                class="text-input"
+              />
+            </div>
+            <div class="input-row">
+              <label class="input-label">Size</label>
+              <select
+                :value="settings.backgroundSize || 'cover'"
+                @change="updateSetting('backgroundSize', $event.target.value)"
+                class="select-input"
+              >
+                <option value="cover">Cover</option>
+                <option value="contain">Contain</option>
+                <option value="auto">Auto</option>
+              </select>
+            </div>
+            <div class="input-row">
+              <label class="input-label">Position</label>
+              <select
+                :value="settings.backgroundPosition || 'center center'"
+                @change="updateSetting('backgroundPosition', $event.target.value)"
+                class="select-input"
+              >
+                <option value="center center">Center</option>
+                <option value="top left">Top Left</option>
+                <option value="top center">Top Center</option>
+                <option value="top right">Top Right</option>
+                <option value="center left">Center Left</option>
+                <option value="center right">Center Right</option>
+                <option value="bottom left">Bottom Left</option>
+                <option value="bottom center">Bottom Center</option>
+                <option value="bottom right">Bottom Right</option>
+              </select>
+            </div>
+            <div class="input-row">
+              <label class="input-label">Repeat</label>
+              <select
+                :value="settings.backgroundRepeat || 'no-repeat'"
+                @change="updateSetting('backgroundRepeat', $event.target.value)"
+                class="select-input"
+              >
+                <option value="no-repeat">No Repeat</option>
+                <option value="repeat">Repeat</option>
+                <option value="repeat-x">Repeat X</option>
+                <option value="repeat-y">Repeat Y</option>
+              </select>
+            </div>
+          </div>
+          
+          <!-- Opacity (applies to all background types) -->
           <div class="input-row">
             <label class="input-label">Opacity</label>
             <div class="slider-wrapper">
@@ -259,8 +415,6 @@
 import { ref, computed, reactive, watch, onMounted } from 'vue'
 import { useMediaKitStore } from '../../../stores/mediaKit'
 import { useUIStore } from '../../../stores/ui'
-// ROOT FIX: Import section reset button
-import SectionResetButton from '../ui/SectionResetButton.vue'
 
 const store = useMediaKitStore()
 const uiStore = useUIStore()
@@ -356,8 +510,56 @@ function updateLayout(layout) {
   console.log('✅ SectionEditor: Layout updated to:', layout)
 }
 
-// Handle back button
-function handleBack() {
+// Handle reset button
+function handleReset() {
+  if (!sectionId.value) return
+  
+  if (confirm('Reset all section settings to defaults? This will not affect components within the section.')) {
+    store.updateSectionSettings(sectionId.value, {
+      padding: 'medium',
+      gap: 'medium',
+      backgroundType: 'color',
+      backgroundColor: '#ffffff',
+      backgroundOpacity: 1,
+      gradientStart: '#3b82f6',
+      gradientEnd: '#8b5cf6',
+      gradientDirection: '135deg',
+      backgroundImage: '',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center center',
+      backgroundRepeat: 'no-repeat',
+      fullWidth: false,
+      reverseOnMobile: false,
+      customClass: '',
+      verticalAlign: 'start'
+    })
+    
+    // Update local settings
+    Object.assign(settings, {
+      padding: 'medium',
+      gap: 'medium',
+      backgroundType: 'color',
+      backgroundColor: '#ffffff',
+      backgroundOpacity: 1,
+      gradientStart: '#3b82f6',
+      gradientEnd: '#8b5cf6',
+      gradientDirection: '135deg',
+      backgroundImage: '',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center center',
+      backgroundRepeat: 'no-repeat',
+      fullWidth: false,
+      reverseOnMobile: false,
+      customClass: '',
+      verticalAlign: 'start'
+    })
+    
+    console.log('✅ Section settings reset to defaults')
+  }
+}
+
+// Handle close button
+function handleClose() {
   uiStore.closeSidebarEditor()
 }
 </script>
@@ -376,7 +578,7 @@ body.dark-mode .sidebar-editor {
   background: #0f172a;
 }
 
-/* Header */
+/* Header - Matches Component Editor Style */
 .editor-header {
   display: flex;
   align-items: center;
@@ -388,35 +590,6 @@ body.dark-mode .sidebar-editor {
 
 body.dark-mode .editor-header {
   border-bottom-color: #334155;
-}
-
-.back-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  color: #374151;
-  cursor: pointer;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
-
-.back-btn:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
-}
-
-body.dark-mode .back-btn {
-  border-color: #334155;
-  color: #d1d5db;
-}
-
-body.dark-mode .back-btn:hover {
-  background: #1e293b;
 }
 
 .editor-title {
@@ -431,26 +604,72 @@ body.dark-mode .editor-title {
   color: #f3f4f6;
 }
 
-.header-actions {
+/* Reset Button (icon only) */
+.reset-button {
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-left: auto;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  padding: 0;
 }
 
-/* ROOT FIX: Override button styles from SectionResetButton for compact sidebar display */
-.header-actions :deep(.section-reset-controls) {
-  gap: 4px;
+.reset-button:hover {
+  background: #fef3c7;
+  border-color: #fbbf24;
+  color: #d97706;
 }
 
-.header-actions :deep(.reset-button) {
-  padding: 6px 10px;
-  font-size: 12px;
-  white-space: nowrap;
+body.dark-mode .reset-button {
+  border-color: #334155;
+  color: #9ca3af;
 }
 
-.header-actions :deep(.reset-button i) {
-  font-size: 11px;
+body.dark-mode .reset-button:hover {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: #fbbf24;
+  color: #fbbf24;
+}
+
+/* Close Button */
+.close-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #6b7280;
+  font-size: 24px;
+  font-weight: 300;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.close-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+body.dark-mode .close-btn {
+  color: #9ca3af;
+}
+
+body.dark-mode .close-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
 }
 
 /* Tabs */
@@ -917,5 +1136,126 @@ body.dark-mode .setting-tooltip {
 
 body.dark-mode .setting-tooltip:hover {
   color: #9ca3af;
+}
+
+/* Background Type Selector */
+.bg-type-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.bg-type-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 8px;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 70px;
+}
+
+.bg-type-btn:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+  transform: translateY(-1px);
+}
+
+.bg-type-btn.active {
+  border-color: #ec4899;
+  background: #fdf2f8;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+}
+
+body.dark-mode .bg-type-btn {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+body.dark-mode .bg-type-btn:hover {
+  background: #334155;
+  border-color: #475569;
+}
+
+body.dark-mode .bg-type-btn.active {
+  background: rgba(236, 72, 153, 0.1);
+  border-color: #ec4899;
+}
+
+.bg-type-icon {
+  font-size: 20px;
+  color: #6b7280;
+  transition: color 0.2s;
+}
+
+.bg-type-btn:hover .bg-type-icon {
+  color: #374151;
+}
+
+.bg-type-btn.active .bg-type-icon {
+  color: #ec4899;
+}
+
+body.dark-mode .bg-type-icon {
+  color: #9ca3af;
+}
+
+body.dark-mode .bg-type-btn:hover .bg-type-icon {
+  color: #d1d5db;
+}
+
+body.dark-mode .bg-type-btn.active .bg-type-icon {
+  color: #ec4899;
+}
+
+.bg-type-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  transition: color 0.2s;
+}
+
+.bg-type-btn:hover .bg-type-label {
+  color: #111827;
+}
+
+.bg-type-btn.active .bg-type-label {
+  color: #ec4899;
+  font-weight: 600;
+}
+
+body.dark-mode .bg-type-label {
+  color: #d1d5db;
+}
+
+body.dark-mode .bg-type-btn:hover .bg-type-label {
+  color: #f3f4f6;
+}
+
+body.dark-mode .bg-type-btn.active .bg-type-label {
+  color: #ec4899;
+}
+
+/* Background Options Container */
+.bg-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+body.dark-mode .bg-options {
+  background: #1e293b;
+  border-color: #334155;
 }
 </style>

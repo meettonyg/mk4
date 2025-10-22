@@ -46,6 +46,15 @@ body.dark-mode #gmkb-main-content {
     background: white;
     border-right: 1px solid #e5e7eb;
     box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: visible; /* CRITICAL: Allow toggle button to be visible */
+    position: relative; /* Ensure absolute positioning works */
+}
+
+/* Collapsed sidebar state */
+#gmkb-sidebar.sidebar-collapsed {
+    width: 48px;
+    min-width: 48px;
 }
 
 body.dark-mode #gmkb-sidebar {

@@ -1,6 +1,46 @@
 <template>
-  <div class="gmkb-sidebar" :class="{ 'dark-mode': isDarkMode }">
+  <div class="gmkb-sidebar" :class="{ 'dark-mode': isDarkMode, 'sidebar-collapsed': sidebarCollapsed }">
     <!-- ROOT FIX: Elementor-style dynamic sidebar content -->
+    
+    <!-- Collapse Toggle Button - Middle-Left Edge -->
+    <button 
+      class="sidebar-collapse-toggle"
+      @click="toggleCollapse"
+      :title="sidebarCollapsed ? 'Expand Sidebar ([ or Ctrl+B)' : 'Collapse Sidebar ([ or Ctrl+B)'"
+    >
+      <svg 
+        class="collapse-icon" 
+        :class="{ 'collapsed': sidebarCollapsed }"
+        width="16" 
+        height="16" 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        stroke="currentColor" 
+        stroke-width="2"
+      >
+        <polyline points="15 18 9 12 15 6"></polyline>
+      </svg>
+    </button>
+    
+    <!-- Close Panel Button - Only visible in section/component editing modes -->
+    <button 
+      v-if="sidebarMode !== 'default'"
+      class="panel-close-button"
+      @click="closePanel"
+      title="Close Panel (Return to Main)"
+    >
+      <svg 
+        width="16" 
+        height="16" 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        stroke="currentColor" 
+        stroke-width="2"
+      >
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
     
     <!-- DEFAULT MODE: Show tabs -->
     <template v-if="sidebarMode === 'default'">
@@ -202,7 +242,9 @@
               class="bg-type-btn"
               :class="{ active: backgroundType === type.id }"
             >
-              <span class="bg-type-icon">{{ type.icon }}</span>
+              <span class="bg-type-icon">
+                <i :class="type.icon"></i>
+              </span>
               <span class="bg-type-label">{{ type.label }}</span>
             </button>
           </div>
@@ -427,15 +469,21 @@
         <div class="panel-section">
           <h3 class="panel-section-title">Customize</h3>
           <button class="customize-btn" @click="openThemeCustomizer('colors')">
-            <div class="customize-icon">🎨</div>
+            <div class="customize-icon">
+              <i class="fa-solid fa-palette"></i>
+            </div>
             <span>Global Colors</span>
           </button>
           <button class="customize-btn" @click="openThemeCustomizer('typography')">
-            <div class="customize-icon">📝</div>
+            <div class="customize-icon">
+              <i class="fa-solid fa-font"></i>
+            </div>
             <span>Global Fonts</span>
           </button>
           <button class="customize-btn" @click="openThemeCustomizer('spacing')">
-            <div class="customize-icon">⚙️</div>
+            <div class="customize-icon">
+              <i class="fa-solid fa-gear"></i>
+            </div>
             <span>Advanced Settings</span>
           </button>
         </div>
@@ -497,6 +545,9 @@ export default {
     const editingSectionId = computed(() => uiStore.editingSectionId);
     const editingComponentId = computed(() => uiStore.editingComponentId);
     
+    // NEW: Sidebar collapse state
+    const sidebarCollapsed = computed(() => uiStore.sidebarCollapsed);
+    
     // DEBUG: Watch sidebar mode changes
     watch(sidebarMode, (newMode, oldMode) => {
       console.log('🔄 SidebarTabs: Mode changed from', oldMode, 'to', newMode);
@@ -540,9 +591,9 @@ export default {
     
     // Background types
     const backgroundTypes = [
-      { id: 'color', icon: '🎨', label: 'Color' },
-      { id: 'gradient', icon: '🌈', label: 'Gradient' },
-      { id: 'image', icon: '🖼️', label: 'Image' }
+      { id: 'color', icon: 'fa-solid fa-palette', label: 'Color' },
+      { id: 'gradient', icon: 'fa-solid fa-brush', label: 'Gradient' },
+      { id: 'image', icon: 'fa-solid fa-image', label: 'Image' }
     ];
     
     // Tabs
@@ -887,8 +938,45 @@ export default {
       refreshComponents();
     };
     
+    // NEW: Toggle sidebar collapse
+    const toggleCollapse = () => {
+      uiStore.toggleSidebarCollapse();
+      console.log('✅ Sidebar collapse toggled:', uiStore.sidebarCollapsed);
+    };
+    
+    // NEW: Close panel and return to main sidebar
+    const closePanel = () => {
+      uiStore.closeSidebarEditor();
+      console.log('✅ Panel closed, returned to main sidebar');
+    };
+    
+    // NEW: Keyboard shortcut handler
+    const handleKeyboardShortcut = (event) => {
+      // Listen for [ key or Ctrl+B
+      if ((event.key === '[' && !event.ctrlKey && !event.metaKey) || 
+          ((event.ctrlKey || event.metaKey) && event.key === 'b')) {
+        // Only if not typing in an input/textarea
+        const activeElement = document.activeElement;
+        if (activeElement && 
+            (activeElement.tagName === 'INPUT' || 
+             activeElement.tagName === 'TEXTAREA' ||
+             activeElement.contentEditable === 'true')) {
+          return;
+        }
+        
+        event.preventDefault();
+        toggleCollapse();
+      }
+    };
+    
     // Lifecycle
     onMounted(() => {
+      // Load collapse state from localStorage
+      uiStore.loadSidebarCollapseState();
+      
+      // Add keyboard shortcut listener
+      document.addEventListener('keydown', handleKeyboardShortcut);
+      
       document.addEventListener('gmkb:components-discovered', handleComponentsDiscovered);
       refreshComponents();
       
@@ -925,6 +1013,7 @@ export default {
     });
     
     onBeforeUnmount(() => {
+      document.removeEventListener('keydown', handleKeyboardShortcut);
       document.removeEventListener('gmkb:components-discovered', handleComponentsDiscovered);
     });
     
@@ -933,6 +1022,9 @@ export default {
       sidebarMode,
       editingSectionId,
       editingComponentId,
+      sidebarCollapsed,
+      toggleCollapse,
+      closePanel,
       activeTab,
       searchTerm,
       expandedCategories,
@@ -995,7 +1087,130 @@ export default {
   flex-direction: column;
   background: white;
   border-right: 1px solid #e5e7eb;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
+  position: relative;
+  overflow: visible; /* CRITICAL: Allow toggle button to remain visible */
+}
+
+/* Collapsed State */
+.gmkb-sidebar.sidebar-collapsed {
+  width: 48px !important;
+  min-width: 48px !important;
+}
+
+.gmkb-sidebar.sidebar-collapsed .sidebar-tabs,
+.gmkb-sidebar.sidebar-collapsed .search-container,
+.gmkb-sidebar.sidebar-collapsed .sidebar-content,
+.gmkb-sidebar.sidebar-collapsed .sidebar-footer {
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+  transition: opacity 0.2s ease; /* Smooth fade out */
+}
+
+/* Collapse Toggle Button - Middle-Left Edge (Option 3) */
+.sidebar-collapse-toggle {
+  position: absolute;
+  left: -16px; /* Stick out from the left edge */
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  width: 32px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px 0 0 6px; /* Rounded on left side only */
+  cursor: pointer;
   transition: all 0.2s;
+  color: #6b7280;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.08);
+}
+
+.sidebar-collapse-toggle:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  color: #111827;
+  left: -18px; /* Slide out slightly on hover */
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.12);
+}
+
+.sidebar-collapsed .sidebar-collapse-toggle {
+  left: -16px; /* Keep same position when collapsed */
+}
+
+body.dark-mode .sidebar-collapse-toggle {
+  background: #1e293b;
+  border-color: #334155;
+  color: #9ca3af;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .sidebar-collapse-toggle:hover {
+  background: #334155;
+  border-color: #475569;
+  color: #f3f4f6;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Panel Close Button - Top-Right Corner */
+.panel-close-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 100;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #6b7280;
+}
+
+.panel-close-button:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+  transform: scale(1.05);
+}
+
+body.dark-mode .panel-close-button {
+  background: #1e293b;
+  border-color: #334155;
+  color: #9ca3af;
+}
+
+body.dark-mode .panel-close-button:hover {
+  background: rgba(220, 38, 38, 0.2);
+  border-color: #dc2626;
+  color: #fca5a5;
+}
+
+/* Hide close button when sidebar is collapsed */
+.sidebar-collapsed .panel-close-button {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.collapse-icon {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.collapse-icon.collapsed {
+  transform: rotate(180deg); /* Points right when collapsed */
+}
+
+/* Ensure button stays visible when collapsed */
+.sidebar-collapsed .sidebar-collapse-toggle:hover {
+  transform: translateY(-50%); /* Maintain vertical centering */
+  left: -18px; /* Same hover effect when collapsed */
 }
 
 /* Dark mode */
@@ -1003,6 +1218,8 @@ body.dark-mode .gmkb-sidebar {
   background: #0f172a;
   border-right-color: #334155;
 }
+
+/* Collapsed State - No visual indicator needed (collapse button always visible) */
 
 /* Tab Navigation */
 .sidebar-tabs {
@@ -1107,6 +1324,8 @@ body.dark-mode .search-input {
 .sidebar-content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden; /* Prevent horizontal overflow when collapsed */
+  transition: opacity 0.2s ease;
 }
 
 .tab-panel {
@@ -1775,7 +1994,37 @@ body.dark-mode .bg-type-btn.active {
 }
 
 .bg-type-icon {
-  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.bg-type-icon i {
+  font-size: 20px;
+  color: #6b7280;
+  transition: color 0.2s;
+}
+
+.bg-type-btn:hover .bg-type-icon i {
+  color: #374151;
+}
+
+.bg-type-btn.active .bg-type-icon i {
+  color: #ec4899;
+}
+
+body.dark-mode .bg-type-icon i {
+  color: #9ca3af;
+}
+
+body.dark-mode .bg-type-btn:hover .bg-type-icon i {
+  color: #d1d5db;
+}
+
+body.dark-mode .bg-type-btn.active .bg-type-icon i {
+  color: #ec4899;
 }
 
 .bg-type-label {
@@ -2061,7 +2310,19 @@ body.dark-mode .customize-btn {
   justify-content: center;
   background: rgba(236, 72, 153, 0.1);
   border-radius: 6px;
+}
+
+.customize-icon i {
   font-size: 16px;
+  color: #ec4899;
+}
+
+body.dark-mode .customize-icon {
+  background: rgba(236, 72, 153, 0.15);
+}
+
+body.dark-mode .customize-icon i {
+  color: #ec4899;
 }
 
 /* Footer */
