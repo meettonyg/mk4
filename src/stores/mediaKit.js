@@ -660,10 +660,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
         // Clear local backup after successful save
         this.clearLocalBackup();
         
-        // Show success message
-        if (typeof window.showToast === 'function') {
-          window.showToast('Media kit saved successfully', 'success');
-        }
+        // NOTE: Toast notification removed from store - handled by toolbar component
+        // This prevents duplicate toasts (store + toolbar both showing notifications)
         
         return true;
         

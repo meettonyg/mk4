@@ -32,8 +32,9 @@ const { toasts, removeToast } = useToast();
 <style scoped>
 .toast-container {
   position: fixed;
-  top: 20px;
-  right: 20px;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 999999;
   display: flex;
   flex-direction: column;
@@ -165,10 +166,11 @@ const { toasts, removeToast } = useToast();
 /* Responsive */
 @media (max-width: 768px) {
   .toast-container {
-    top: 10px;
-    right: 10px;
-    left: 10px;
-    max-width: none;
+    top: 70px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    max-width: calc(100% - 40px);
   }
   
   .toast {
