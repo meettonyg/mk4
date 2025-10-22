@@ -447,6 +447,16 @@ const layouts = [
     columns: [50, 50]
   },
   { 
+    value: 'main_sidebar', 
+    label: 'Main + Sidebar',
+    columns: [70, 30]
+  },
+  { 
+    value: 'sidebar_main', 
+    label: 'Sidebar + Main',
+    columns: [30, 70]
+  },
+  { 
     value: 'three_column', 
     label: 'Three Columns',
     columns: [33, 33, 34]

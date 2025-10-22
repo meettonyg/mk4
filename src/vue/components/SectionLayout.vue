@@ -67,6 +67,80 @@
         </div>
       </div>
 
+      <!-- Main + Sidebar Layout (70/30) -->
+      <div v-else-if="section.layout === 'main_sidebar'" class="layout-main-sidebar">
+        <div class="column main-column" data-column="0">
+          <div class="drop-zone" v-if="!hasComponents(0)">
+            <p>Drop components here</p>
+          </div>
+          <draggable
+            v-else
+            :list="getColumnComponents(0)"
+            group="components"
+            item-key="id"
+            class="component-list"
+          >
+            <template #item="{element}">
+              <ComponentRenderer :component="element" :section-id="section.id" />
+            </template>
+          </draggable>
+        </div>
+        
+        <div class="column sidebar-column" data-column="1">
+          <div class="drop-zone" v-if="!hasComponents(1)">
+            <p>Drop components here</p>
+          </div>
+          <draggable
+            v-else
+            :list="getColumnComponents(1)"
+            group="components"
+            item-key="id"
+            class="component-list"
+          >
+            <template #item="{element}">
+              <ComponentRenderer :component="element" :section-id="section.id" />
+            </template>
+          </draggable>
+        </div>
+      </div>
+
+      <!-- Sidebar + Main Layout (30/70) -->
+      <div v-else-if="section.layout === 'sidebar_main'" class="layout-sidebar-main">
+        <div class="column sidebar-column" data-column="0">
+          <div class="drop-zone" v-if="!hasComponents(0)">
+            <p>Drop components here</p>
+          </div>
+          <draggable
+            v-else
+            :list="getColumnComponents(0)"
+            group="components"
+            item-key="id"
+            class="component-list"
+          >
+            <template #item="{element}">
+              <ComponentRenderer :component="element" :section-id="section.id" />
+            </template>
+          </draggable>
+        </div>
+        
+        <div class="column main-column" data-column="1">
+          <div class="drop-zone" v-if="!hasComponents(1)">
+            <p>Drop components here</p>
+          </div>
+          <draggable
+            v-else
+            :list="getColumnComponents(1)"
+            group="components"
+            item-key="id"
+            class="component-list"
+          >
+            <template #item="{element}">
+              <ComponentRenderer :component="element" :section-id="section.id" />
+            </template>
+          </draggable>
+        </div>
+      </div>
+
       <!-- Three Column Layout -->
       <div v-else-if="section.layout === 'three_column'" class="layout-three-column">
         <div class="column" v-for="col in 3" :key="col" :data-column="col - 1">
@@ -230,6 +304,18 @@ export default {
   gap: 2rem;
 }
 
+.layout-main-sidebar {
+  display: grid;
+  grid-template-columns: 70fr 30fr;
+  gap: 2rem;
+}
+
+.layout-sidebar-main {
+  display: grid;
+  grid-template-columns: 30fr 70fr;
+  gap: 2rem;
+}
+
 .layout-three-column {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -269,6 +355,8 @@ export default {
 /* Responsive */
 @media (max-width: 768px) {
   .layout-two-column,
+  .layout-main-sidebar,
+  .layout-sidebar-main,
   .layout-three-column {
     grid-template-columns: 1fr;
   }
