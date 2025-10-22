@@ -61,7 +61,7 @@ class GMKB_Theme_Generator {
     
     /**
      * Enqueue theme styles
-     * ROOT FIX: Properly inject CSS using correct handle or direct output
+     * ROOT FIX: Load per-post customizations and merge with base theme
      */
     public function enqueue_theme_styles() {
         // Check if we're on a media kit page
@@ -69,9 +69,19 @@ class GMKB_Theme_Generator {
             return;
         }
         
+        // ROOT FIX: Get post ID to load customizations
+        global $post;
+        $post_id = null;
+        
+        if (is_admin()) {
+            $post_id = isset($_GET['post']) ? intval($_GET['post']) : null;
+        } elseif ($post) {
+            $post_id = $post->ID;
+        }
+        
         // Get current theme
         $theme_id = get_option('gmkb_current_theme', 'minimal_elegant');
-        $theme = $this->load_theme($theme_id);
+        $theme = $this->load_theme($theme_id, $post_id); // ROOT FIX: Pass post_id
         
         if ($theme) {
             // Generate CSS
@@ -79,6 +89,10 @@ class GMKB_Theme_Generator {
             
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log('✅ GMKB: Theme CSS generated (' . strlen($css) . ' bytes) for theme: ' . $theme_id);
+                if ($post_id) {
+                    error_log('  - Post ID: ' . $post_id);
+                    error_log('  - Has customizations: ' . (!empty($theme['_customizations_applied']) ? 'YES' : 'NO'));
+                }
             }
             
             // ROOT FIX: Use multiple approaches to ensure CSS is injected
@@ -121,9 +135,19 @@ class GMKB_Theme_Generator {
             return;
         }
         
+        // ROOT FIX: Get post ID to load customizations
+        global $post;
+        $post_id = null;
+        
+        if (is_admin()) {
+            $post_id = isset($_GET['post']) ? intval($_GET['post']) : null;
+        } elseif ($post) {
+            $post_id = $post->ID;
+        }
+        
         // Get current theme
         $theme_id = get_option('gmkb_current_theme', 'minimal_elegant');
-        $theme = $this->load_theme($theme_id);
+        $theme = $this->load_theme($theme_id, $post_id); // ROOT FIX: Pass post_id
         
         if (!$theme) {
             return;
@@ -134,6 +158,10 @@ class GMKB_Theme_Generator {
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('✅ GMKB: Direct CSS output (' . strlen($css) . ' bytes) for theme: ' . $theme_id);
+            if ($post_id) {
+                error_log('  - Post ID: ' . $post_id);
+                error_log('  - Has customizations: ' . (!empty($theme['_customizations_applied']) ? 'YES' : 'NO'));
+            }
         }
         
         // Output directly
@@ -162,25 +190,105 @@ class GMKB_Theme_Generator {
     
     /**
      * Load theme configuration
+     * ROOT FIX: Merge per-post customizations with base theme
      * 
      * @param string $theme_id Theme identifier
+     * @param int|null $post_id Post ID to load customizations from
      * @return array|false Theme configuration or false
      */
-    public function load_theme($theme_id) {
+    public function load_theme($theme_id, $post_id = null) {
         // First check for custom saved themes
         $custom_theme = get_option('gmkb_custom_theme_' . $theme_id);
         if ($custom_theme) {
-            return $custom_theme;
+            $theme = $custom_theme;
+        } else {
+            // Use theme discovery to load from self-contained theme directory
+            $theme = $this->theme_discovery->getTheme($theme_id);
+            if (!$theme) {
+                // Fallback to default theme
+                $theme = $this->get_default_theme();
+            }
         }
         
-        // Use theme discovery to load from self-contained theme directory
-        $theme = $this->theme_discovery->getTheme($theme_id);
-        if ($theme) {
+        // ROOT FIX: Load and merge per-post customizations if post_id provided
+        if ($post_id && $theme) {
+            $theme = $this->merge_post_customizations($theme, $post_id);
+        }
+        
+        return $theme;
+    }
+    
+    /**
+     * ROOT FIX: Load and merge per-post theme customizations
+     * 
+     * @param array $theme Base theme configuration
+     * @param int $post_id Post ID
+     * @return array Theme with customizations merged
+     */
+    private function merge_post_customizations($theme, $post_id) {
+        // Load saved state from post meta
+        $state = get_post_meta($post_id, 'gmkb_media_kit_state', true);
+        
+        if (empty($state) || !isset($state['themeCustomizations'])) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('🔵 GMKB: No customizations found for post #' . $post_id);
+            }
             return $theme;
         }
         
-        // Fallback to default theme
-        return $this->get_default_theme();
+        $customizations = $state['themeCustomizations'];
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('🎨 GMKB: Merging customizations for post #' . $post_id);
+            error_log('  - Customization categories: ' . implode(', ', array_keys((array)$customizations)));
+        }
+        
+        // Deep merge customizations into theme
+        // Customizations override theme defaults
+        if (isset($customizations->colors) || (is_array($customizations) && isset($customizations['colors']))) {
+            $custom_colors = is_object($customizations) ? (array)$customizations->colors : $customizations['colors'];
+            $theme['colors'] = array_merge($theme['colors'] ?? array(), $custom_colors);
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('  - Color customizations applied: ' . count($custom_colors));
+                foreach ($custom_colors as $key => $value) {
+                    error_log('    * ' . $key . ': ' . $value);
+                }
+            }
+        }
+        
+        if (isset($customizations->typography) || (is_array($customizations) && isset($customizations['typography']))) {
+            $custom_typo = is_object($customizations) ? (array)$customizations->typography : $customizations['typography'];
+            $theme['typography'] = array_merge($theme['typography'] ?? array(), $custom_typo);
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('  - Typography customizations applied: ' . count($custom_typo));
+            }
+        }
+        
+        if (isset($customizations->spacing) || (is_array($customizations) && isset($customizations['spacing']))) {
+            $custom_spacing = is_object($customizations) ? (array)$customizations->spacing : $customizations['spacing'];
+            $theme['spacing'] = array_merge($theme['spacing'] ?? array(), $custom_spacing);
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('  - Spacing customizations applied: ' . count($custom_spacing));
+            }
+        }
+        
+        if (isset($customizations->effects) || (is_array($customizations) && isset($customizations['effects']))) {
+            $custom_effects = is_object($customizations) ? (array)$customizations->effects : $customizations['effects'];
+            $theme['effects'] = array_merge($theme['effects'] ?? array(), $custom_effects);
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('  - Effects customizations applied: ' . count($custom_effects));
+            }
+        }
+        
+        // Mark that customizations were applied
+        $theme['_customizations_applied'] = true;
+        $theme['_post_id'] = $post_id;
+        
+        return $theme;
     }
     
     /**
@@ -800,7 +908,9 @@ class GMKB_Theme_Generator {
         }
         
         $theme_id = isset($_POST['theme_id']) ? sanitize_text_field($_POST['theme_id']) : 'default';
-        $theme = $this->load_theme($theme_id);
+        $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : null; // ROOT FIX: Accept post_id
+        
+        $theme = $this->load_theme($theme_id, $post_id); // ROOT FIX: Pass post_id
         
         if (!$theme) {
             wp_send_json_error('Theme not found');
@@ -811,7 +921,8 @@ class GMKB_Theme_Generator {
         
         wp_send_json_success(array(
             'css' => $css,
-            'theme' => $theme
+            'theme' => $theme,
+            'customizations_applied' => !empty($theme['_customizations_applied'])
         ));
     }
     

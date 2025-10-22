@@ -353,8 +353,31 @@ class GMKB_Frontend_Display {
      * @param array $atts Attributes
      */
     private function render_media_kit($state, $post_id, $atts) {
-        // Get theme customizations
-        $theme_customizations = get_post_meta($post_id, 'gmkb_theme_customizations', true) ?: array();
+        // ROOT FIX: Get theme customizations from state FIRST, then fall back to post meta
+        // This is the correct order - state is the single source of truth
+        $theme_customizations = null;
+        
+        // Priority 1: Check themeCustomizations in state (root level - correct location)
+        if (isset($state['themeCustomizations']) && !empty($state['themeCustomizations'])) {
+            $theme_customizations = $state['themeCustomizations'];
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('[GMKB Frontend] Loading customizations from state (root level)');
+            }
+        }
+        // Priority 2: Check separate post meta (legacy/backup location)
+        elseif (($meta_customizations = get_post_meta($post_id, 'gmkb_theme_customizations', true)) && !empty($meta_customizations)) {
+            $theme_customizations = $meta_customizations;
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('[GMKB Frontend] Loading customizations from separate post meta');
+            }
+        }
+        // Priority 3: Empty customizations (use base theme only)
+        else {
+            $theme_customizations = array();
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('[GMKB Frontend] No customizations found - using base theme only');
+            }
+        }
         
         // ROOT FIX: Safe theme ID extraction - check root level FIRST (where Vue stores it)
         if (!empty($atts['theme'])) {
@@ -412,8 +435,10 @@ class GMKB_Frontend_Display {
         </div>
         
         <?php
-        // Add inline theme CSS
-        $this->add_inline_theme_css();
+        // CRITICAL FIX: Removed add_inline_theme_css() call to prevent duplicate CSS
+        // All CSS is now injected via render_theme_customizations() which calls:
+        // 1. inject_theme_css_variables() - base theme CSS
+        // 2. Outputs customizations with !important and scoped to post ID
         
         // DEBUG: Summary of rendering
         ?>
@@ -812,7 +837,8 @@ class GMKB_Frontend_Display {
         
         // === BACKGROUND ===
         if (!empty($style['background']['color'])) {
-            $vars[] = '--gmkb-color-surface: ' . $style['background']['color'];
+            $clean_color = is_string($style['background']['color']) ? trim($style['background']['color'], '\'" ') : $style['background']['color'];
+            $vars[] = '--gmkb-color-surface: ' . $clean_color;
         }
         
         if (isset($style['background']['opacity'])) {
@@ -822,7 +848,8 @@ class GMKB_Frontend_Display {
         
         // === TYPOGRAPHY ===
         if (!empty($style['typography']['color'])) {
-            $vars[] = '--gmkb-color-text: ' . $style['typography']['color'];
+            $clean_color = is_string($style['typography']['color']) ? trim($style['typography']['color'], '\'" ') : $style['typography']['color'];
+            $vars[] = '--gmkb-color-text: ' . $clean_color;
         }
         
         if (!empty($style['typography']['fontFamily'])) {
@@ -922,7 +949,8 @@ class GMKB_Frontend_Display {
         
         // === BORDER - Color ===
         if (!empty($style['border']['color'])) {
-            $vars[] = '--gmkb-border-color: ' . $style['border']['color'];
+            $clean_color = is_string($style['border']['color']) ? trim($style['border']['color'], '\'" ') : $style['border']['color'];
+            $vars[] = '--gmkb-border-color: ' . $clean_color;
         }
         
         // === BORDER - Radius ===
@@ -1339,8 +1367,9 @@ class GMKB_Frontend_Display {
     /**
      * Map theme customizations to CSS variables with complete field coverage
      * Ensures ALL customizer fields propagate to frontend
+     * ROOT FIX: Handles both arrays and stdClass objects from database
      * 
-     * @param array $customizations Theme customizations from database
+     * @param array|object $customizations Theme customizations from database
      * @return array CSS variable declarations
      */
     private function map_theme_customizations_to_css_variables($customizations) {
@@ -1350,13 +1379,20 @@ class GMKB_Frontend_Display {
             return $css_vars;
         }
         
+        // ROOT FIX: Convert stdClass to array for consistent processing
+        if (is_object($customizations)) {
+            $customizations = json_decode(json_encode($customizations), true);
+        }
+        
         // === COLORS ===
         if (!empty($customizations['colors'])) {
             foreach ($customizations['colors'] as $key => $value) {
                 if ($value) {
                     // Convert camelCase to kebab-case: backgroundColor → background-color
                     $css_key = strtolower(preg_replace('/([A-Z])/', '-$1', $key));
-                    $css_vars['--gmkb-color-' . $css_key] = $value;
+                    // ROOT FIX: Strip quotes from JSON-encoded values
+                    $clean_value = is_string($value) ? trim($value, '\'" ') : $value;
+                    $css_vars['--gmkb-color-' . $css_key] = $clean_value;
                 }
             }
         }
@@ -1367,13 +1403,16 @@ class GMKB_Frontend_Display {
             
             // Font families
             if (!empty($typo['fontFamily'])) {
-                $css_vars['--gmkb-font-primary'] = $this->format_font_family($typo['fontFamily']);
+                $clean_font = is_string($typo['fontFamily']) ? trim($typo['fontFamily'], '\'" ') : $typo['fontFamily'];
+                $css_vars['--gmkb-font-primary'] = $this->format_font_family($clean_font);
             }
             if (!empty($typo['headingFamily'])) {
-                $css_vars['--gmkb-font-heading'] = $this->format_font_family($typo['headingFamily']);
+                $clean_font = is_string($typo['headingFamily']) ? trim($typo['headingFamily'], '\'" ') : $typo['headingFamily'];
+                $css_vars['--gmkb-font-heading'] = $this->format_font_family($clean_font);
             }
             if (!empty($typo['headingFont'])) {
-                $css_vars['--gmkb-font-heading'] = $this->format_font_family($typo['headingFont']);
+                $clean_font = is_string($typo['headingFont']) ? trim($typo['headingFont'], '\'" ') : $typo['headingFont'];
+                $css_vars['--gmkb-font-heading'] = $this->format_font_family($clean_font);
             }
             
             // Font sizes
@@ -1429,12 +1468,18 @@ class GMKB_Frontend_Display {
             $effects = $customizations['effects'];
             
             if (isset($effects['borderRadius'])) {
-                $css_vars['--gmkb-border-radius'] = $effects['borderRadius'] . 'px';
-                $css_vars['--gmkb-border-radius-sm'] = ($effects['borderRadius'] * 0.5) . 'px';
-                $css_vars['--gmkb-border-radius-lg'] = ($effects['borderRadius'] * 1.5) . 'px';
+                $clean_radius = is_string($effects['borderRadius']) ? trim($effects['borderRadius'], '\'" ') : $effects['borderRadius'];
+                // Handle if already has 'px' suffix
+                $radius_value = (is_numeric($clean_radius)) ? $clean_radius . 'px' : $clean_radius;
+                $css_vars['--gmkb-border-radius'] = $radius_value;
+                if (is_numeric($clean_radius)) {
+                    $css_vars['--gmkb-border-radius-sm'] = ($clean_radius * 0.5) . 'px';
+                    $css_vars['--gmkb-border-radius-lg'] = ($clean_radius * 1.5) . 'px';
+                }
             }
             if (!empty($effects['boxShadow'])) {
-                $css_vars['--gmkb-shadow'] = $effects['boxShadow'];
+                $clean_shadow = is_string($effects['boxShadow']) ? trim($effects['boxShadow'], '\'" ') : $effects['boxShadow'];
+                $css_vars['--gmkb-shadow'] = $clean_shadow;
             }
             if (!empty($effects['shadowIntensity'])) {
                 // Map intensity to actual shadow values
@@ -1468,7 +1513,25 @@ class GMKB_Frontend_Display {
     /**
      * Render theme customizations as inline CSS
      * 
-     * @param array $customizations User customizations
+     * CRITICAL FIX (2025-01-XX): Resolved duplicate CSS and specificity issues
+     * 
+     * PROBLEM:
+     * - CSS variables were output 6 times in HTML
+     * - Base theme CSS (#ffffff) was overriding customizations (#8f8494)
+     * - Customizations were scoped to :root but base theme came AFTER
+     * 
+     * SOLUTION:
+     * 1. Output base theme CSS variables FIRST (via inject_theme_css_variables)
+     * 2. Output customizations SECOND with proper scoping and !important
+     * 3. Removed duplicate call to add_inline_theme_css()
+     * 4. Scoped customizations to .gmkb-frontend-display[data-gmkb-post-id="X"]
+     * 
+     * RESULT:
+     * - Only 2 CSS blocks: base theme + customizations
+     * - Customizations always win due to !important and specificity
+     * - No duplicates, proper cascade
+     * 
+     * @param array|object $customizations User customizations (from state or post meta)
      * @param int $post_id Post ID
      */
     private function render_theme_customizations($customizations, $post_id) {
@@ -1477,15 +1540,36 @@ class GMKB_Frontend_Display {
         <script>console.log('🔍 GMKB: render_theme_customizations() called for post <?php echo $post_id; ?>');</script>
         <?php
         
-        // ROOT FIX: First inject BASE theme CSS variables (same as builder)
+        // CRITICAL FIX: Output base theme CSS variables FIRST
+        // Then customizations will override with !important
         $this->inject_theme_css_variables($post_id);
         
-        // DEBUG: Log customization loading
+        // ROOT FIX: Convert stdClass to array if necessary
+        if (is_object($customizations)) {
+            $customizations = (array) $customizations;
+            // Recursively convert nested objects
+            array_walk_recursive($customizations, function(&$value) {
+                if (is_object($value)) {
+                    $value = (array) $value;
+                }
+            });
+        }
+        
+        // DEBUG: Log customization loading with detailed info
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('[GMKB Customizations] Loading for post ' . $post_id);
+            error_log('[GMKB Customizations] Input type: ' . gettype($customizations));
             error_log('[GMKB Customizations] Has data: ' . (!empty($customizations) ? 'YES' : 'NO'));
             if (!empty($customizations)) {
                 error_log('[GMKB Customizations] Keys: ' . implode(', ', array_keys($customizations)));
+                // Log color data specifically since that's what users debug most
+                if (isset($customizations['colors'])) {
+                    $colors = is_object($customizations['colors']) ? (array) $customizations['colors'] : $customizations['colors'];
+                    error_log('[GMKB Customizations] Color keys: ' . implode(', ', array_keys($colors)));
+                    if (isset($colors['background'])) {
+                        error_log('[GMKB Customizations] Background color: ' . $colors['background']);
+                    }
+                }
             }
         }
         
@@ -1513,10 +1597,16 @@ class GMKB_Frontend_Display {
         
         ?>
         <style id="gmkb-theme-customizations-<?php echo esc_attr($post_id); ?>">
-            /* User's theme customizations - Override base theme */
-            :root {
+            /* CRITICAL: User customizations MUST come AFTER base theme and use !important */
+            /* This ensures customizations always win over base theme defaults */
+            .gmkb-frontend-display[data-gmkb-post-id="<?php echo esc_attr($post_id); ?>"] {
                 <?php foreach ($css_vars as $var => $value): ?>
-                    <?php echo esc_attr($var); ?>: <?php echo esc_attr($value); ?>;
+                    <?php 
+                    // ROOT FIX: Strip quotes from CSS values to prevent invalid CSS
+                    $clean_value = trim($value, '\'"');
+                    // CRITICAL: Use !important to guarantee customizations override base theme
+                    echo esc_attr($var) . ': ' . $clean_value . ' !important;';
+                    ?>
                 <?php endforeach; ?>
             }
         </style>
@@ -1524,7 +1614,14 @@ class GMKB_Frontend_Display {
         console.group('🎨 GMKB Theme Customizations Applied');
         console.log('Post ID:', <?php echo json_encode($post_id); ?>);
         console.log('Variables Applied:', <?php echo json_encode(count($css_vars)); ?>);
-        console.log('Sample Variables:', <?php echo json_encode(array_slice($css_vars, 0, 5)); ?>);
+        console.log('Sample Variables (cleaned):', <?php 
+            // Show cleaned values in console for debugging
+            $cleaned_sample = array();
+            foreach (array_slice($css_vars, 0, 5) as $k => $v) {
+                $cleaned_sample[$k] = trim($v, '\'"');
+            }
+            echo json_encode($cleaned_sample); 
+        ?>);
         console.groupEnd();
         </script>
         <?php
@@ -1676,7 +1773,9 @@ class GMKB_Frontend_Display {
         if (!empty($theme['colors'])) {
             foreach ($theme['colors'] as $key => $value) {
                 $css_key = strtolower(preg_replace('/([A-Z])/', '-$1', $key));
-                $css_vars['--gmkb-color-' . $css_key] = $value;
+                // ROOT FIX: Strip quotes from JSON-encoded values
+                $clean_value = is_string($value) ? trim($value, '\'" ') : $value;
+                $css_vars['--gmkb-color-' . $css_key] = $clean_value;
             }
         }
                 
@@ -1684,8 +1783,11 @@ class GMKB_Frontend_Display {
         $typo = $theme['typography'] ?? array();
         $primary_font = $typo['fontFamily'] ?? ($typo['primary_font']['family'] ?? "'Inter', sans-serif");
         $heading_font = $typo['headingFamily'] ?? ($typo['heading_font']['family'] ?? $primary_font);
-        $css_vars['--gmkb-font-primary'] = $primary_font;
-        $css_vars['--gmkb-font-heading'] = $heading_font;
+        // ROOT FIX: Strip quotes from JSON-encoded values
+        $clean_primary = is_string($primary_font) ? trim($primary_font, '\'" ') : $primary_font;
+        $clean_heading = is_string($heading_font) ? trim($heading_font, '\'" ') : $heading_font;
+        $css_vars['--gmkb-font-primary'] = $clean_primary;
+        $css_vars['--gmkb-font-heading'] = $clean_heading;
         
         $base_size = $typo['baseFontSize'] ?? 16;
         $css_vars['--gmkb-font-size-base'] = $base_size . 'px';
@@ -1729,9 +1831,11 @@ class GMKB_Frontend_Display {
         $effects = $theme['effects'] ?? array();
         
         $radius = $effects['borderRadius'] ?? ($effects['border_radius'] ?? '12px');
-        $css_vars['--gmkb-border-radius'] = $radius;
-        $css_vars['--gmkb-border-radius-sm'] = 'calc(' . $radius . ' * 0.5)';
-        $css_vars['--gmkb-border-radius-lg'] = 'calc(' . $radius . ' * 1.5)';
+        // ROOT FIX: Strip quotes from JSON-encoded values
+        $clean_radius = is_string($radius) ? trim($radius, '\'" ') : $radius;
+        $css_vars['--gmkb-border-radius'] = $clean_radius;
+        $css_vars['--gmkb-border-radius-sm'] = 'calc(' . $clean_radius . ' * 0.5)';
+        $css_vars['--gmkb-border-radius-lg'] = 'calc(' . $clean_radius . ' * 1.5)';
         
         $shadows = array(
             'none' => 'none',
@@ -1800,7 +1904,11 @@ class GMKB_Frontend_Display {
             /* Base theme CSS variables - SIMPLIFIED AND GUARANTEED TO OUTPUT */
             :root {
                 <?php foreach ($css_vars as $var_name => $var_value): ?>
-                <?php echo esc_attr($var_name); ?>: <?php echo esc_attr($var_value); ?>;
+                <?php 
+                // CRITICAL: Use esc_attr only on variable NAME, not the value
+                // esc_attr() on CSS values can add quotes which breaks CSS variables
+                echo esc_attr($var_name) . ': ' . $var_value . ';';
+                ?>
                 <?php endforeach; ?>
             }
         </style>
