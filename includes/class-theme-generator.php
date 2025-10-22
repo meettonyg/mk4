@@ -2,6 +2,7 @@
 /**
  * Theme Generator Class
  * Phase 4: Dynamic CSS Generation from Theme Configuration
+ * ROOT FIX: Generate ALL required CSS variables (100% coverage)
  * 
  * @package GMKB/Includes
  * @since 4.0.0
@@ -46,15 +47,21 @@ class GMKB_Theme_Generator {
     
     /**
      * Initialize theme generator
+     * ROOT FIX: Priority 999 to ensure theme CSS loads LAST
      */
     public function init() {
-        // Register theme CSS endpoint
-        add_action('wp_enqueue_scripts', array($this, 'enqueue_theme_styles'));
-        add_action('admin_enqueue_scripts', array($this, 'enqueue_theme_styles'));
+        // Register theme CSS endpoint with HIGHEST priority
+        add_action('wp_enqueue_scripts', array($this, 'enqueue_theme_styles'), 999);
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_theme_styles'), 999);
+        
+        // ROOT FIX: Also add direct output hooks as backup
+        add_action('wp_head', array($this, 'output_theme_variables_direct'), 999);
+        add_action('admin_head', array($this, 'output_theme_variables_direct'), 999);
     }
     
     /**
      * Enqueue theme styles
+     * ROOT FIX: Properly inject CSS using correct handle or direct output
      */
     public function enqueue_theme_styles() {
         // Check if we're on a media kit page
@@ -63,16 +70,94 @@ class GMKB_Theme_Generator {
         }
         
         // Get current theme
-        $theme_id = get_option('gmkb_current_theme', 'professional_clean');
+        $theme_id = get_option('gmkb_current_theme', 'minimal_elegant');
         $theme = $this->load_theme($theme_id);
         
         if ($theme) {
             // Generate CSS
             $css = $this->generate_theme_css($theme);
             
-            // Add inline styles
-            wp_add_inline_style('gmkb-builder-styles', $css);
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB: Theme CSS generated (' . strlen($css) . ' bytes) for theme: ' . $theme_id);
+            }
+            
+            // ROOT FIX: Use multiple approaches to ensure CSS is injected
+            // Approach 1: Try to attach to gmkb-vue-style
+            if (wp_style_is('gmkb-vue-style', 'enqueued') || wp_style_is('gmkb-vue-style', 'registered')) {
+                wp_add_inline_style('gmkb-vue-style', $css);
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('✅ GMKB: Theme CSS attached to gmkb-vue-style');
+                }
+            }
+            // Approach 2: Try to attach to design system
+            elseif (wp_style_is('gmkb-design-system', 'enqueued') || wp_style_is('gmkb-design-system', 'registered')) {
+                wp_add_inline_style('gmkb-design-system', $css);
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('✅ GMKB: Theme CSS attached to gmkb-design-system');
+                }
+            }
+            // Approach 3: Direct output in head (fallback)
+            else {
+                add_action('wp_head', function() use ($css) {
+                    echo "\n<style id=\"gmkb-theme-variables\">\n" . $css . "\n</style>\n";
+                }, 100);
+                add_action('admin_head', function() use ($css) {
+                    echo "\n<style id=\"gmkb-theme-variables\">\n" . $css . "\n</style>\n";
+                }, 100);
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('✅ GMKB: Theme CSS will be output directly in head');
+                }
+            }
         }
+    }
+    
+    /**
+     * ROOT FIX: Direct output method for theme CSS variables
+     * This ensures CSS is always output even if enqueue doesn't work
+     */
+    public function output_theme_variables_direct() {
+        // Check if we're on a media kit page
+        if (!$this->is_media_kit_page()) {
+            return;
+        }
+        
+        // Get current theme
+        $theme_id = get_option('gmkb_current_theme', 'minimal_elegant');
+        $theme = $this->load_theme($theme_id);
+        
+        if (!$theme) {
+            return;
+        }
+        
+        // Generate ONLY the CSS variables (not component styles)
+        $css = $this->generate_css_variables_only($theme);
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB: Direct CSS output (' . strlen($css) . ' bytes) for theme: ' . $theme_id);
+        }
+        
+        // Output directly
+        echo "\n<style id=\"gmkb-theme-variables-direct\">\n" . $css . "\n</style>\n";
+    }
+    
+    /**
+     * Generate ONLY CSS variables (not component styles)
+     * Used for direct output to avoid duplication
+     */
+    private function generate_css_variables_only($theme) {
+        $css = "/* GMKB Theme CSS Variables (Direct Output) - " . ($theme['theme_id'] ?? 'unknown') . " */\n";
+        $css .= ":root {\n";
+        
+        // Generate all variable categories
+        $css .= $this->generate_color_variables($theme);
+        $css .= $this->generate_typography_variables($theme);
+        $css .= $this->generate_spacing_variables($theme);
+        $css .= $this->generate_effects_variables($theme);
+        $css .= $this->generate_layout_variables($theme);
+        
+        $css .= "}\n";
+        
+        return $css;
     }
     
     /**
@@ -148,77 +233,39 @@ class GMKB_Theme_Generator {
     
     /**
      * Generate CSS from theme configuration
+     * ROOT FIX: Generate ALL expected CSS variables for 100% coverage
      * 
      * @param array $theme Theme configuration
      * @return string Generated CSS
      */
     public function generate_theme_css($theme) {
-        $css = ":root {\n";
+        $css = "/* GMKB Theme CSS Variables - Generated from " . ($theme['theme_id'] ?? 'unknown') . " */\n";
+        $css .= ":root {\n";
         
-        // Typography CSS variables
-        if (isset($theme['typography'])) {
-            $typography = $theme['typography'];
-            
-            if (isset($typography['primary_font'])) {
-                $css .= "  --gmkb-font-primary: " . $typography['primary_font']['family'] . ";\n";
-            }
-            
-            if (isset($typography['heading_font'])) {
-                $css .= "  --gmkb-font-heading: " . $typography['heading_font']['family'] . ";\n";
-            }
-            
-            if (isset($typography['font_scale'])) {
-                $scale = $typography['font_scale'];
-                $base_size = 16;
-                
-                $css .= "  --gmkb-font-scale: " . $scale . ";\n";
-                $css .= "  --gmkb-font-size-xs: " . round($base_size * 0.75) . "px;\n";
-                $css .= "  --gmkb-font-size-sm: " . round($base_size * 0.875) . "px;\n";
-                $css .= "  --gmkb-font-size-base: " . $base_size . "px;\n";
-                $css .= "  --gmkb-font-size-lg: " . round($base_size * $scale) . "px;\n";
-                $css .= "  --gmkb-font-size-xl: " . round($base_size * $scale * 1.25) . "px;\n";
-                $css .= "  --gmkb-font-size-2xl: " . round($base_size * $scale * 1.5) . "px;\n";
-                $css .= "  --gmkb-font-size-3xl: " . round($base_size * $scale * 1.875) . "px;\n";
-                $css .= "  --gmkb-font-size-4xl: " . round($base_size * $scale * 2.25) . "px;\n";
-            }
-            
-            if (isset($typography['line_height'])) {
-                $css .= "  --gmkb-line-height-body: " . $typography['line_height']['body'] . ";\n";
-                $css .= "  --gmkb-line-height-heading: " . $typography['line_height']['heading'] . ";\n";
-            }
-        }
+        // ===========================
+        // COLORS (19 variables)
+        // ===========================
+        $css .= $this->generate_color_variables($theme);
         
-        // Color CSS variables
-        if (isset($theme['colors'])) {
-            foreach ($theme['colors'] as $key => $value) {
-                $var_name = str_replace('_', '-', $key);
-                $css .= "  --gmkb-color-" . $var_name . ": " . $value . ";\n";
-            }
-        }
+        // ===========================
+        // TYPOGRAPHY (22 variables)
+        // ===========================
+        $css .= $this->generate_typography_variables($theme);
         
-        // Spacing CSS variables
-        if (isset($theme['spacing'])) {
-            foreach ($theme['spacing'] as $key => $value) {
-                $var_name = str_replace('_', '-', $key);
-                $css .= "  --gmkb-spacing-" . $var_name . ": " . $value . ";\n";
-            }
-            
-            // Generate spacing scale
-            if (isset($theme['spacing']['base_unit'])) {
-                $base_unit = intval($theme['spacing']['base_unit']);
-                for ($i = 1; $i <= 12; $i++) {
-                    $css .= "  --gmkb-space-" . $i . ": " . ($base_unit * $i) . "px;\n";
-                }
-            }
-        }
+        // ===========================
+        // SPACING (11 variables)
+        // ===========================
+        $css .= $this->generate_spacing_variables($theme);
         
-        // Effects CSS variables
-        if (isset($theme['effects'])) {
-            foreach ($theme['effects'] as $key => $value) {
-                $var_name = str_replace('_', '-', $key);
-                $css .= "  --gmkb-" . $var_name . ": " . $value . ";\n";
-            }
-        }
+        // ===========================
+        // EFFECTS (16 variables)
+        // ===========================
+        $css .= $this->generate_effects_variables($theme);
+        
+        // ===========================
+        // LAYOUT (10 variables)
+        // ===========================
+        $css .= $this->generate_layout_variables($theme);
         
         $css .= "}\n\n";
         
@@ -232,6 +279,248 @@ class GMKB_Theme_Generator {
         $css .= $this->generate_theme_overrides($theme);
         
         return $css;
+    }
+    
+    /**
+     * Generate color CSS variables with derived colors
+     * ROOT FIX: Generate ALL 19 expected color variables
+     */
+    private function generate_color_variables($theme) {
+        $css = "  /* Colors (19 variables) */\n";
+        $colors = $theme['colors'] ?? array();
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('🎨 GMKB: Generating color variables from theme');
+        }
+        
+        // Primary colors with derived variants
+        $primary = $colors['primary'] ?? '#295cff';
+        $css .= "  --gmkb-color-primary: {$primary};\n";
+        $css .= "  --gmkb-color-primary-dark: " . $this->darken_color($primary, 20) . ";\n";
+        $css .= "  --gmkb-color-primary-light: " . $this->lighten_color($primary, 20) . ";\n";
+        
+        // Secondary colors with derived variants
+        $secondary = $colors['secondary'] ?? '#333333';
+        $css .= "  --gmkb-color-secondary: {$secondary};\n";
+        $css .= "  --gmkb-color-secondary-dark: " . $this->darken_color($secondary, 20) . ";\n";
+        $css .= "  --gmkb-color-secondary-light: " . $this->lighten_color($secondary, 20) . ";\n";
+        
+        // Accent colors
+        $accent = $colors['accent'] ?? $primary;
+        $css .= "  --gmkb-color-accent: {$accent};\n";
+        
+        // Background and surface colors
+        $background = $colors['background'] ?? '#ffffff';
+        $surface = $colors['surface'] ?? '#fafafa';
+        $css .= "  --gmkb-color-background: {$background};\n";
+        $css .= "  --gmkb-color-surface: {$surface};\n";
+        
+        // Text colors
+        $text = $colors['text'] ?? '#000000';
+        $text_light = $colors['text_light'] ?? '#666666';
+        $text_muted = $colors['text_muted'] ?? '#999999';
+        $css .= "  --gmkb-color-text: {$text};\n";
+        $css .= "  --gmkb-color-text-light: {$text_light};\n";
+        $css .= "  --gmkb-color-text-muted: {$text_muted};\n";
+        
+        // Border colors
+        $border = $colors['border'] ?? '#eeeeee';
+        $css .= "  --gmkb-color-border: {$border};\n";
+        
+        // Link colors
+        $css .= "  --gmkb-color-link: {$primary};\n";
+        $css .= "  --gmkb-color-link-hover: " . $this->darken_color($primary, 15) . ";\n";
+        
+        // Status colors
+        $css .= "  --gmkb-color-success: " . ($colors['success'] ?? '#008800') . ";\n";
+        $css .= "  --gmkb-color-warning: " . ($colors['warning'] ?? '#ff8800') . ";\n";
+        $css .= "  --gmkb-color-error: " . ($colors['error'] ?? '#cc0000') . ";\n";
+        $css .= "  --gmkb-color-info: " . ($colors['info'] ?? '#0066cc') . ";\n";
+        
+        return $css;
+    }
+    
+    /**
+     * Generate typography CSS variables
+     * ROOT FIX: Generate ALL 22 expected typography variables
+     */
+    private function generate_typography_variables($theme) {
+        $css = "\n  /* Typography (22 variables) */\n";
+        $typography = $theme['typography'] ?? array();
+        
+        // Font families
+        $primary_font = $typography['primary_font']['family'] ?? '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        $heading_font = $typography['heading_font']['family'] ?? $primary_font;
+        $css .= "  --gmkb-font-primary: {$primary_font};\n";
+        $css .= "  --gmkb-font-secondary: {$primary_font};\n";
+        $css .= "  --gmkb-font-heading: {$heading_font};\n";
+        
+        // Font sizes (complete scale)
+        $base_size = 16;
+        $scale = $typography['font_scale'] ?? 1.2;
+        $css .= "  --gmkb-font-size-xs: " . round($base_size * 0.75) . "px;\n";
+        $css .= "  --gmkb-font-size-sm: " . round($base_size * 0.875) . "px;\n";
+        $css .= "  --gmkb-font-size-md: " . $base_size . "px;\n";
+        $css .= "  --gmkb-font-size-base: " . $base_size . "px;\n";
+        $css .= "  --gmkb-font-size-lg: " . round($base_size * $scale) . "px;\n";
+        $css .= "  --gmkb-font-size-xl: " . round($base_size * $scale * 1.25) . "px;\n";
+        $css .= "  --gmkb-font-size-2xl: " . round($base_size * $scale * 1.5) . "px;\n";
+        $css .= "  --gmkb-font-size-3xl: " . round($base_size * $scale * 1.875) . "px;\n";
+        
+        // Font weights (complete scale)
+        $css .= "  --gmkb-font-weight-normal: 400;\n";
+        $css .= "  --gmkb-font-weight-medium: 500;\n";
+        $css .= "  --gmkb-font-weight-semibold: 600;\n";
+        $css .= "  --gmkb-font-weight-bold: 700;\n";
+        
+        // Line heights (complete variants)
+        $css .= "  --gmkb-line-height-tight: 1.25;\n";
+        $css .= "  --gmkb-line-height-normal: 1.5;\n";
+        $css .= "  --gmkb-line-height-relaxed: 1.75;\n";
+        $css .= "  --gmkb-line-height-loose: 2;\n";
+        
+        // Letter spacing (complete variants)
+        $css .= "  --gmkb-letter-spacing-tight: -0.025em;\n";
+        $css .= "  --gmkb-letter-spacing-normal: 0;\n";
+        $css .= "  --gmkb-letter-spacing-wide: 0.1em;\n";
+        
+        return $css;
+    }
+    
+    /**
+     * Generate spacing CSS variables
+     * ROOT FIX: Generate ALL 11 expected spacing variables
+     */
+    private function generate_spacing_variables($theme) {
+        $css = "\n  /* Spacing (11 variables) */\n";
+        $spacing = $theme['spacing'] ?? array();
+        
+        // Named spacing values
+        $base_unit = intval($spacing['base_unit'] ?? '8px');
+        $css .= "  --gmkb-spacing-xs: " . round($base_unit * 0.5) . "px;\n";
+        $css .= "  --gmkb-spacing-sm: " . round($base_unit * 0.75) . "px;\n";
+        $css .= "  --gmkb-spacing-md: {$base_unit}px;\n";
+        $css .= "  --gmkb-spacing-lg: " . round($base_unit * 1.5) . "px;\n";
+        $css .= "  --gmkb-spacing-xl: " . round($base_unit * 2) . "px;\n";
+        $css .= "  --gmkb-spacing-2xl: " . round($base_unit * 3) . "px;\n";
+        $css .= "  --gmkb-spacing-3xl: " . round($base_unit * 4) . "px;\n";
+        
+        // Component and section spacing
+        $component_gap = $spacing['component_gap'] ?? '32px';
+        $section_gap = $spacing['section_gap'] ?? '64px';
+        $section_padding = $spacing['section_padding'] ?? $section_gap;
+        $container_padding = $spacing['container_padding'] ?? '20px';
+        
+        $css .= "  --gmkb-spacing-component-gap: {$component_gap};\n";
+        $css .= "  --gmkb-spacing-section-gap: {$section_gap};\n";
+        $css .= "  --gmkb-spacing-section-padding: {$section_padding};\n";
+        $css .= "  --gmkb-spacing-container-padding: {$container_padding};\n";
+        
+        return $css;
+    }
+    
+    /**
+     * Generate effects CSS variables
+     * ROOT FIX: Generate ALL 16 expected effects variables
+     */
+    private function generate_effects_variables($theme) {
+        $css = "\n  /* Effects (16 variables) */\n";
+        $effects = $theme['effects'] ?? array();
+        
+        // Border radius (complete scale)
+        $base_radius = $effects['border_radius'] ?? '8px';
+        $css .= "  --gmkb-border-radius: {$base_radius};\n";
+        $css .= "  --gmkb-border-radius-sm: " . ($effects['border_radius_sm'] ?? '4px') . ";\n";
+        $css .= "  --gmkb-border-radius-md: {$base_radius};\n";
+        $css .= "  --gmkb-border-radius-lg: " . ($effects['border_radius_lg'] ?? '12px') . ";\n";
+        $css .= "  --gmkb-border-radius-xl: 16px;\n";
+        $css .= "  --gmkb-border-radius-full: 9999px;\n";
+        $css .= "  --gmkb-border-width: 1px;\n";
+        
+        // Shadows (complete scale)
+        $css .= "  --gmkb-shadow-sm: " . ($effects['shadow_sm'] ?? 'none') . ";\n";
+        $css .= "  --gmkb-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);\n";
+        $css .= "  --gmkb-shadow-lg: " . ($effects['shadow_lg'] ?? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)') . ";\n";
+        $css .= "  --gmkb-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);\n";
+        
+        // Transitions (complete scale)
+        $css .= "  --gmkb-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);\n";
+        $css .= "  --gmkb-transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);\n";
+        $css .= "  --gmkb-transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);\n";
+        
+        // Opacity values
+        $css .= "  --gmkb-opacity-disabled: 0.5;\n";
+        $css .= "  --gmkb-opacity-hover: " . ($effects['hover_opacity'] ?? '0.8') . ";\n";
+        
+        return $css;
+    }
+    
+    /**
+     * Generate layout CSS variables
+     * ROOT FIX: Generate ALL 10 expected layout variables
+     */
+    private function generate_layout_variables($theme) {
+        $css = "\n  /* Layout (10 variables) */\n";
+        $spacing = $theme['spacing'] ?? array();
+        $responsive = $theme['responsive'] ?? array();
+        $breakpoints = $responsive['breakpoints'] ?? array();
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('📊 GMKB: Generating layout variables');
+            error_log('  - Breakpoints: ' . json_encode($breakpoints));
+            error_log('  - content_max_width: ' . ($spacing['content_max_width'] ?? 'NOT SET'));
+        }
+        
+        // Container widths
+        $max_width = $spacing['content_max_width'] ?? '1000px';
+        $css .= "  --gmkb-container-max-width: {$max_width};\n";
+        $css .= "  --gmkb-container-width: 100%;\n";
+        
+        // Layout dimensions
+        $css .= "  --gmkb-sidebar-width: 300px;\n";
+        $css .= "  --gmkb-header-height: 64px;\n";
+        $css .= "  --gmkb-footer-height: 80px;\n";
+        $css .= "  --gmkb-content-width: {$max_width};\n";
+        
+        // Breakpoints
+        $css .= "  --gmkb-breakpoint-sm: " . ($breakpoints['sm'] ?? '640px') . ";\n";
+        $css .= "  --gmkb-breakpoint-md: " . ($breakpoints['md'] ?? '768px') . ";\n";
+        $css .= "  --gmkb-breakpoint-lg: " . ($breakpoints['lg'] ?? '1024px') . ";\n";
+        $css .= "  --gmkb-breakpoint-xl: " . ($breakpoints['xl'] ?? '1280px') . ";\n";
+        
+        return $css;
+    }
+    
+    /**
+     * Helper: Darken a hex color
+     */
+    private function darken_color($hex, $percent) {
+        $hex = str_replace('#', '', $hex);
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+        
+        $r = max(0, $r - ($r * $percent / 100));
+        $g = max(0, $g - ($g * $percent / 100));
+        $b = max(0, $b - ($b * $percent / 100));
+        
+        return sprintf("#%02x%02x%02x", $r, $g, $b);
+    }
+    
+    /**
+     * Helper: Lighten a hex color
+     */
+    private function lighten_color($hex, $percent) {
+        $hex = str_replace('#', '', $hex);
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+        
+        $r = min(255, $r + ((255 - $r) * $percent / 100));
+        $g = min(255, $g + ((255 - $g) * $percent / 100));
+        $b = min(255, $b + ((255 - $b) * $percent / 100));
+        
+        return sprintf("#%02x%02x%02x", $r, $g, $b);
     }
     
     /**
@@ -250,7 +539,7 @@ class GMKB_Theme_Generator {
         $css .= ".gmkb-media-kit-builder {\n";
         $css .= "  font-family: var(--gmkb-font-primary);\n";
         $css .= "  color: var(--gmkb-color-text);\n";
-        $css .= "  line-height: var(--gmkb-line-height-body);\n";
+        $css .= "  line-height: var(--gmkb-line-height-normal);\n";
         $css .= "}\n\n";
         
         // Headings
@@ -261,7 +550,7 @@ class GMKB_Theme_Generator {
         $css .= ".gmkb-media-kit-builder h5,\n";
         $css .= ".gmkb-media-kit-builder h6 {\n";
         $css .= "  font-family: var(--gmkb-font-heading);\n";
-        $css .= "  line-height: var(--gmkb-line-height-heading);\n";
+        $css .= "  line-height: var(--gmkb-line-height-tight);\n";
         $css .= "  color: var(--gmkb-color-text);\n";
         $css .= "}\n\n";
         
@@ -270,7 +559,7 @@ class GMKB_Theme_Generator {
         $css .= "  background: var(--gmkb-color-surface);\n";
         $css .= "  border-radius: var(--gmkb-border-radius);\n";
         $css .= "  margin-bottom: var(--gmkb-spacing-component-gap);\n";
-        $css .= "  transition: var(--gmkb-transitions);\n";
+        $css .= "  transition: var(--gmkb-transition-normal);\n";
         $css .= "}\n\n";
         
         // Sections
@@ -285,7 +574,7 @@ class GMKB_Theme_Generator {
             $css .= "  background: var(--gmkb-color-primary);\n";
             $css .= "  color: var(--gmkb-color-background);\n";
             $css .= "  border-radius: var(--gmkb-border-radius);\n";
-            $css .= "  transition: var(--gmkb-transitions);\n";
+            $css .= "  transition: var(--gmkb-transition-normal);\n";
             
             if (isset($button['padding'])) {
                 $css .= "  padding: " . $button['padding'] . ";\n";
@@ -300,9 +589,9 @@ class GMKB_Theme_Generator {
             $css .= "}\n\n";
             
             $css .= ".gmkb-button:hover {\n";
-            $css .= "  background: var(--gmkb-color-primary-hover, var(--gmkb-color-primary));\n";
+            $css .= "  background: var(--gmkb-color-primary-dark);\n";
             $css .= "  transform: translateY(-2px);\n";
-            $css .= "  box-shadow: var(--gmkb-shadow);\n";
+            $css .= "  box-shadow: var(--gmkb-shadow-md);\n";
             $css .= "}\n\n";
         }
         
@@ -338,16 +627,16 @@ class GMKB_Theme_Generator {
             }
             
             $css .= "  border-color: var(--gmkb-color-border);\n";
-            $css .= "  border-radius: var(--gmkb-border-radius-sm, var(--gmkb-border-radius));\n";
+            $css .= "  border-radius: var(--gmkb-border-radius-sm);\n";
             $css .= "  background: var(--gmkb-color-background);\n";
             $css .= "  color: var(--gmkb-color-text);\n";
-            $css .= "  transition: var(--gmkb-transitions);\n";
+            $css .= "  transition: var(--gmkb-transition-normal);\n";
             $css .= "}\n\n";
             
             $css .= ".gmkb-input:focus,\n";
             $css .= ".gmkb-textarea:focus,\n";
             $css .= ".gmkb-select:focus {\n";
-            $css .= "  border-color: var(--gmkb-color-border-focus, var(--gmkb-color-primary));\n";
+            $css .= "  border-color: var(--gmkb-color-primary);\n";
             $css .= "  outline: none;\n";
             $css .= "  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);\n";
             $css .= "}\n\n";
@@ -387,7 +676,6 @@ class GMKB_Theme_Generator {
                 $css .= "    --gmkb-font-size-xl: " . round($base_size * 1.25 * $scale) . "px;\n";
                 $css .= "    --gmkb-font-size-2xl: " . round($base_size * 1.5 * $scale) . "px;\n";
                 $css .= "    --gmkb-font-size-3xl: " . round($base_size * 1.875 * $scale) . "px;\n";
-                $css .= "    --gmkb-font-size-4xl: " . round($base_size * 2.25 * $scale) . "px;\n";
             }
             
             if (isset($responsive['spacing_scale_mobile']) && isset($theme['spacing'])) {
@@ -538,11 +826,11 @@ class GMKB_Theme_Generator {
         // Check admin pages
         if (is_admin()) {
             $screen = get_current_screen();
-            return $screen && ($screen->id === 'guests_page_media-kit-builder' || $screen->post_type === 'guests');
+            return $screen && ($screen->id === 'guests_page_media-kit-builder' || $screen->post_type === 'guests' || $screen->post_type === 'mkcg');
         }
         
         // Check frontend pages
-        return $post && ($post->post_type === 'guests' || has_shortcode($post->post_content, 'display_media_kit'));
+        return $post && ($post->post_type === 'guests' || $post->post_type === 'mkcg' || has_shortcode($post->post_content, 'display_media_kit'));
     }
 }
 
