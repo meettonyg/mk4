@@ -47,23 +47,42 @@ class GMKB_Theme_Generator {
     
     /**
      * Initialize theme generator
-     * ROOT FIX: Priority 999 to ensure theme CSS loads LAST
+     * CRITICAL FIX: Removed direct output hooks to prevent CSS duplication
+     * CSS is now handled by:
+     * 1. Builder: wp_add_inline_style in enqueue_theme_styles()
+     * 2. Frontend: inject_theme_css_variables() in class-gmkb-frontend-display.php
      */
     public function init() {
-        // Register theme CSS endpoint with HIGHEST priority
+        // Register theme CSS endpoint
         add_action('wp_enqueue_scripts', array($this, 'enqueue_theme_styles'), 999);
         add_action('admin_enqueue_scripts', array($this, 'enqueue_theme_styles'), 999);
         
-        // ROOT FIX: Also add direct output hooks as backup
-        add_action('wp_head', array($this, 'output_theme_variables_direct'), 999);
-        add_action('admin_head', array($this, 'output_theme_variables_direct'), 999);
+        // CRITICAL FIX: REMOVED direct output hooks to prevent duplicate CSS
+        // These were causing 6 duplicate CSS blocks on frontend
+        // CSS is now handled properly via:
+        // - Frontend: inject_theme_css_variables() in frontend display class
+        // - Builder: wp_add_inline_style() in enqueue_theme_styles()
+        // add_action('wp_head', array($this, 'output_theme_variables_direct'), 999);  // REMOVED
+        // add_action('admin_head', array($this, 'output_theme_variables_direct'), 999);  // REMOVED
     }
     
     /**
      * Enqueue theme styles
-     * ROOT FIX: Load per-post customizations and merge with base theme
+     * CRITICAL FIX: Only run in BUILDER, not on frontend display
+     * Frontend CSS is handled by class-gmkb-frontend-display.php
      */
     public function enqueue_theme_styles() {
+        // CRITICAL FIX: Only run in BUILDER (admin or builder page)
+        // Frontend media kits use inject_theme_css_variables() instead
+        if (!is_admin()) {
+            // Check if this is a builder page (has mkcg_id parameter)
+            if (!isset($_GET['mkcg_id'])) {
+                // This is a FRONTEND display page, not builder
+                // CSS is handled by class-gmkb-frontend-display.php
+                return;
+            }
+        }
+        
         // Check if we're on a media kit page
         if (!$this->is_media_kit_page()) {
             return;
