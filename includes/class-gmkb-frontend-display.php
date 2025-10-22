@@ -170,25 +170,31 @@ class GMKB_Frontend_Display {
         // Apply Pods data enrichment
         $state = apply_filters('gmkb_load_media_kit_state', $state, $post_id);
         
-        // ROOT FIX: Safe theme ID extraction - check root level FIRST (where Vue stores it)
-        if (!$theme_id) {
-            // CRITICAL: Check root level first (correct location)
-            if (isset($state['theme']) && !empty($state['theme'])) {
-                $theme_id = $state['theme'];
-                $theme_source = 'root level (Vue store)';
+        // ROOT FIX: ALWAYS use saved theme from state - NEVER allow parameter override
+        // This prevents breaking customizations when wrong theme is passed
+        $param_theme_id = $theme_id; // Save original parameter for logging
+        
+        // CRITICAL: Check root level first (correct location where Vue stores theme)
+        if (isset($state['theme']) && !empty($state['theme'])) {
+            $theme_id = $state['theme'];
+            $theme_source = 'root level (saved)';
+        }
+        // Then check globalSettings for backward compatibility
+        elseif (isset($state['globalSettings']) && is_array($state['globalSettings']) && isset($state['globalSettings']['theme'])) {
+            $theme_id = $state['globalSettings']['theme'];
+            $theme_source = 'globalSettings (legacy)';
+        }
+        // Finally default
+        else {
+            $theme_id = 'professional_clean';
+            $theme_source = 'default fallback';
+        }
+        
+        // Log if parameter was passed but overridden (for debugging)
+        if (!empty($param_theme_id) && $param_theme_id !== $theme_id) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('[GMKB] Theme parameter (' . $param_theme_id . ') was passed but ignored. Using saved theme: ' . $theme_id);
             }
-            // Then check globalSettings for backward compatibility
-            elseif (isset($state['globalSettings']) && is_array($state['globalSettings']) && isset($state['globalSettings']['theme'])) {
-                $theme_id = $state['globalSettings']['theme'];
-                $theme_source = 'globalSettings (legacy)';
-            }
-            // Finally default
-            else {
-                $theme_id = 'professional_clean';
-                $theme_source = 'default fallback';
-            }
-        } else {
-            $theme_source = 'parameter override';
         }
         
         // DEBUG: Log theme loading for troubleshooting
@@ -297,12 +303,11 @@ class GMKB_Frontend_Display {
         // Apply Pods data enrichment
         $state = apply_filters('gmkb_load_media_kit_state', $state, $post_id);
         
-        // ROOT FIX: Safe theme ID extraction - check root level FIRST (where Vue stores it)
-        if (!empty($atts['theme'])) {
-            $theme_id = $atts['theme'];
-        }
-        // CRITICAL: Check root level first (correct location)
-        elseif (isset($state['theme']) && !empty($state['theme'])) {
+        // ROOT FIX: ALWAYS use saved theme from state - NEVER allow shortcode attribute override
+        // This prevents breaking customizations when wrong theme is passed via shortcode
+        
+        // CRITICAL: Check root level first (correct location where Vue stores theme)
+        if (isset($state['theme']) && !empty($state['theme'])) {
             $theme_id = $state['theme'];
         }
         // Then check globalSettings for backward compatibility  
@@ -310,6 +315,13 @@ class GMKB_Frontend_Display {
             $theme_id = $state['globalSettings']['theme'];
         } else {
             $theme_id = 'professional_clean';
+        }
+        
+        // Log if shortcode theme attribute was passed but ignored (for debugging)
+        if (!empty($atts['theme']) && $atts['theme'] !== $theme_id) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('[GMKB Shortcode] Theme attribute (' . $atts['theme'] . ') was passed but ignored. Using saved theme: ' . $theme_id);
+            }
         }
         $this->current_theme = $this->load_theme($theme_id);
         
@@ -453,6 +465,28 @@ class GMKB_Frontend_Display {
         console.log('Available methods:', Object.keys(window.GMKB_DEBUG).filter(k => typeof window.GMKB_DEBUG[k] === 'function'));
         </script>
         <?php
+        
+        // DEBUG: Run audit on theme customization propagation
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            $audit = $this->audit_theme_customization_propagation($post_id, $state);
+            error_log('[GMKB AUDIT] Theme Customization Audit Results:');
+            error_log(json_encode($audit, JSON_PRETTY_PRINT));
+            
+            // Also output to console for easy access
+            ?>
+            <script>
+            console.group('🔍 GMKB Theme Customization Audit');
+            console.log('Post ID:', <?php echo $post_id; ?>);
+            console.log('Timestamp:', <?php echo json_encode($audit['timestamp']); ?>);
+            console.log('Overall Success:', <?php echo json_encode($audit['overall']['success']); ?>);
+            console.log('Theme Match:', <?php echo json_encode($audit['overall']['theme_match']); ?>);
+            console.log('Has Customizations:', <?php echo json_encode($audit['overall']['has_customizations']); ?>);
+            console.log('Recommendation:', <?php echo json_encode($audit['overall']['recommendation']); ?>);
+            console.log('Detailed Steps:', <?php echo json_encode($audit['steps']); ?>);
+            console.groupEnd();
+            </script>
+            <?php
+        }
     }
     
     /**
@@ -1299,6 +1333,135 @@ class GMKB_Frontend_Display {
     }
     
     /**
+     * Map theme customizations to CSS variables with complete field coverage
+     * Ensures ALL customizer fields propagate to frontend
+     * 
+     * @param array $customizations Theme customizations from database
+     * @return array CSS variable declarations
+     */
+    private function map_theme_customizations_to_css_variables($customizations) {
+        $css_vars = array();
+        
+        if (empty($customizations)) {
+            return $css_vars;
+        }
+        
+        // === COLORS ===
+        if (!empty($customizations['colors'])) {
+            foreach ($customizations['colors'] as $key => $value) {
+                if ($value) {
+                    // Convert camelCase to kebab-case: backgroundColor → background-color
+                    $css_key = strtolower(preg_replace('/([A-Z])/', '-$1', $key));
+                    $css_vars['--gmkb-color-' . $css_key] = $value;
+                }
+            }
+        }
+        
+        // === TYPOGRAPHY ===
+        if (!empty($customizations['typography'])) {
+            $typo = $customizations['typography'];
+            
+            // Font families
+            if (!empty($typo['fontFamily'])) {
+                $css_vars['--gmkb-font-primary'] = $this->format_font_family($typo['fontFamily']);
+            }
+            if (!empty($typo['headingFamily'])) {
+                $css_vars['--gmkb-font-heading'] = $this->format_font_family($typo['headingFamily']);
+            }
+            if (!empty($typo['headingFont'])) {
+                $css_vars['--gmkb-font-heading'] = $this->format_font_family($typo['headingFont']);
+            }
+            
+            // Font sizes
+            if (!empty($typo['baseFontSize'])) {
+                $css_vars['--gmkb-font-size-base'] = $typo['baseFontSize'] . 'px';
+            }
+            if (!empty($typo['fontSize'])) {
+                $css_vars['--gmkb-font-size-base'] = $typo['fontSize'] . 'px';
+            }
+            
+            // Line height
+            if (!empty($typo['lineHeight'])) {
+                $css_vars['--gmkb-line-height'] = $typo['lineHeight'];
+            }
+            
+            // Font weight
+            if (!empty($typo['fontWeight'])) {
+                $css_vars['--gmkb-font-weight'] = $typo['fontWeight'];
+            }
+            
+            // Letter spacing
+            if (isset($typo['letterSpacing'])) {
+                $css_vars['--gmkb-letter-spacing'] = $typo['letterSpacing'] . 'px';
+            }
+        }
+        
+        // === SPACING ===
+        if (!empty($customizations['spacing'])) {
+            $spacing = $customizations['spacing'];
+            
+            if (isset($spacing['sectionGap'])) {
+                $css_vars['--gmkb-section-gap'] = $spacing['sectionGap'] . 'px';
+            }
+            if (isset($spacing['componentGap'])) {
+                $css_vars['--gmkb-component-gap'] = $spacing['componentGap'] . 'px';
+            }
+            if (isset($spacing['containerPadding'])) {
+                $css_vars['--gmkb-container-padding'] = $spacing['containerPadding'] . 'px';
+            }
+            if (isset($spacing['sectionPadding'])) {
+                $css_vars['--gmkb-spacing-section-padding'] = $spacing['sectionPadding'] . 'px';
+            }
+            if (isset($spacing['baseUnit'])) {
+                $css_vars['--gmkb-spacing-base-unit'] = $spacing['baseUnit'] . 'px';
+            }
+            if (isset($spacing['containerMaxWidth'])) {
+                $css_vars['--gmkb-container-max-width'] = $spacing['containerMaxWidth'] . 'px';
+            }
+        }
+        
+        // === EFFECTS ===
+        if (!empty($customizations['effects'])) {
+            $effects = $customizations['effects'];
+            
+            if (isset($effects['borderRadius'])) {
+                $css_vars['--gmkb-border-radius'] = $effects['borderRadius'] . 'px';
+                $css_vars['--gmkb-border-radius-sm'] = ($effects['borderRadius'] * 0.5) . 'px';
+                $css_vars['--gmkb-border-radius-lg'] = ($effects['borderRadius'] * 1.5) . 'px';
+            }
+            if (!empty($effects['boxShadow'])) {
+                $css_vars['--gmkb-shadow'] = $effects['boxShadow'];
+            }
+            if (!empty($effects['shadowIntensity'])) {
+                // Map intensity to actual shadow values
+                $shadows = array(
+                    'none' => 'none',
+                    'subtle' => '0 1px 3px rgba(0, 0, 0, 0.1)',
+                    'medium' => '0 4px 6px rgba(0, 0, 0, 0.1)',
+                    'strong' => '0 10px 25px rgba(0, 0, 0, 0.15)'
+                );
+                if (isset($shadows[$effects['shadowIntensity']])) {
+                    $css_vars['--gmkb-shadow'] = $shadows[$effects['shadowIntensity']];
+                }
+            }
+            if (!empty($effects['animationSpeed'])) {
+                // Map speed to milliseconds
+                $speeds = array(
+                    'none' => '0ms',
+                    'fast' => '150ms',
+                    'normal' => '300ms',
+                    'slow' => '500ms'
+                );
+                if (isset($speeds[$effects['animationSpeed']])) {
+                    $css_vars['--gmkb-transition-speed'] = $speeds[$effects['animationSpeed']];
+                }
+            }
+        }
+        
+        return $css_vars;
+    }
+    
+    /**
      * Render theme customizations as inline CSS
      * 
      * @param array $customizations User customizations
@@ -1308,227 +1471,284 @@ class GMKB_Frontend_Display {
         // ROOT FIX: First inject BASE theme CSS variables (same as builder)
         $this->inject_theme_css_variables($post_id);
         
-        // Then apply user customizations on top
+        // DEBUG: Log customization loading
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('[GMKB Customizations] Loading for post ' . $post_id);
+            error_log('[GMKB Customizations] Has data: ' . (!empty($customizations) ? 'YES' : 'NO'));
+            if (!empty($customizations)) {
+                error_log('[GMKB Customizations] Keys: ' . implode(', ', array_keys($customizations)));
+            }
+        }
+        
+        // Apply user customizations using comprehensive mapping
         if (empty($customizations)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('[GMKB Customizations] No customizations to apply');
+            }
             return;
+        }
+        
+        $css_vars = $this->map_theme_customizations_to_css_variables($customizations);
+        
+        if (empty($css_vars)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('[GMKB Customizations] Mapping produced no CSS variables');
+            }
+            return;
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('[GMKB Customizations] Mapped ' . count($css_vars) . ' CSS variables');
+            error_log('[GMKB Customizations] Sample variables: ' . implode(', ', array_slice(array_keys($css_vars), 0, 5)));
         }
         
         ?>
         <style id="gmkb-theme-customizations-<?php echo esc_attr($post_id); ?>">
-            /* User's custom theme overrides */
+            /* User's theme customizations - Override base theme */
             :root {
-                <?php
-                // Color overrides
-                if (!empty($customizations['colors'])) {
-                    foreach ($customizations['colors'] as $key => $value) {
-                        if ($value) {
-                            echo '--gmkb-color-' . esc_attr($key) . ': ' . esc_attr($value) . ';';
-                        }
-                    }
-                }
-                
-                // Typography overrides
-                if (!empty($customizations['typography'])) {
-                    if (!empty($customizations['typography']['fontFamily'])) {
-                        echo '--gmkb-font-primary: ' . esc_attr($customizations['typography']['fontFamily']) . ';';
-                    }
-                    if (!empty($customizations['typography']['headingFont'])) {
-                        echo '--gmkb-font-heading: ' . esc_attr($customizations['typography']['headingFont']) . ';';
-                    }
-                    if (!empty($customizations['typography']['fontSize'])) {
-                        echo '--gmkb-font-size-base: ' . esc_attr($customizations['typography']['fontSize']) . 'px;';
-                    }
-                    if (!empty($customizations['typography']['lineHeight'])) {
-                        echo '--gmkb-line-height-base: ' . esc_attr($customizations['typography']['lineHeight']) . ';';
-                    }
-                }
-                
-                // Spacing overrides
-                if (!empty($customizations['spacing'])) {
-                    if (!empty($customizations['spacing']['sectionGap'])) {
-                        echo '--gmkb-section-gap: ' . esc_attr($customizations['spacing']['sectionGap']) . 'px;';
-                    }
-                    if (!empty($customizations['spacing']['componentGap'])) {
-                        echo '--gmkb-component-gap: ' . esc_attr($customizations['spacing']['componentGap']) . 'px;';
-                    }
-                    if (!empty($customizations['spacing']['containerPadding'])) {
-                        echo '--gmkb-container-padding: ' . esc_attr($customizations['spacing']['containerPadding']) . 'px;';
-                    }
-                }
-                
-                // Effects overrides
-                if (!empty($customizations['effects'])) {
-                    if (isset($customizations['effects']['borderRadius'])) {
-                        echo '--gmkb-radius-base: ' . esc_attr($customizations['effects']['borderRadius']) . 'px;';
-                        echo '--gmkb-radius-lg: ' . esc_attr($customizations['effects']['borderRadius'] * 2) . 'px;';
-                    }
-                    if (!empty($customizations['effects']['boxShadow'])) {
-                        echo '--gmkb-shadow-base: ' . esc_attr($customizations['effects']['boxShadow']) . ';';
-                    }
-                }
-                ?>
+                <?php foreach ($css_vars as $var => $value): ?>
+                    <?php echo esc_attr($var); ?>: <?php echo esc_attr($value); ?>;
+                <?php endforeach; ?>
             }
         </style>
+        <script>
+        console.group('🎨 GMKB Theme Customizations Applied');
+        console.log('Post ID:', <?php echo json_encode($post_id); ?>);
+        console.log('Variables Applied:', <?php echo json_encode(count($css_vars)); ?>);
+        console.log('Sample Variables:', <?php echo json_encode(array_slice($css_vars, 0, 5)); ?>);
+        console.groupEnd();
+        </script>
         <?php
     }
     
     /**
+     * Audit theme customization propagation from database to frontend
+     * Logs each step to help diagnose where customizations are lost
+     * 
+     * @param int $post_id Post ID
+     * @param array $state Media kit state
+     * @return array Audit results
+     */
+    private function audit_theme_customization_propagation($post_id, $state) {
+        $audit = array(
+            'timestamp' => current_time('mysql'),
+            'post_id' => $post_id,
+            'steps' => array()
+        );
+        
+        // Step 1: Check saved theme in state
+        $saved_theme = null;
+        if (isset($state['theme'])) {
+            $saved_theme = $state['theme'];
+            $audit['steps'][] = array(
+                'step' => '1_saved_theme',
+                'success' => true,
+                'data' => array('theme' => $saved_theme, 'source' => 'root level')
+            );
+        } elseif (isset($state['globalSettings']['theme'])) {
+            $saved_theme = $state['globalSettings']['theme'];
+            $audit['steps'][] = array(
+                'step' => '1_saved_theme',
+                'success' => true,
+                'data' => array('theme' => $saved_theme, 'source' => 'globalSettings')
+            );
+        } else {
+            $audit['steps'][] = array(
+                'step' => '1_saved_theme',
+                'success' => false,
+                'error' => 'No saved theme found in state'
+            );
+        }
+        
+        // Step 2: Check theme customizations in state
+        $customizations_in_state = $state['themeCustomizations'] ?? null;
+        $has_customizations = !empty($customizations_in_state);
+        $audit['steps'][] = array(
+            'step' => '2_customizations_in_state',
+            'success' => $has_customizations,
+            'data' => $has_customizations ? array(
+                'sections' => array_keys((array)$customizations_in_state),
+                'colors_count' => count((array)($customizations_in_state['colors'] ?? [])),
+                'typography_count' => count((array)($customizations_in_state['typography'] ?? [])),
+                'spacing_count' => count((array)($customizations_in_state['spacing'] ?? [])),
+                'effects_count' => count((array)($customizations_in_state['effects'] ?? []))
+            ) : array('note' => 'No customizations in state')
+        );
+        
+        // Step 3: Check separate post meta
+        $customizations_meta = get_post_meta($post_id, 'gmkb_theme_customizations', true);
+        $has_meta = !empty($customizations_meta);
+        $audit['steps'][] = array(
+            'step' => '3_customizations_post_meta',
+            'success' => $has_meta,
+            'data' => $has_meta ? array(
+                'sections' => array_keys($customizations_meta),
+                'colors_count' => count($customizations_meta['colors'] ?? []),
+                'typography_count' => count($customizations_meta['typography'] ?? []),
+                'spacing_count' => count($customizations_meta['spacing'] ?? []),
+                'effects_count' => count($customizations_meta['effects'] ?? [])
+            ) : array('note' => 'No separate post meta')
+        );
+        
+        // Step 4: Check theme loaded
+        $loaded_theme = $this->current_theme['theme_id'] ?? null;
+        $theme_match = ($loaded_theme === $saved_theme);
+        $audit['steps'][] = array(
+            'step' => '4_theme_loaded',
+            'success' => ($loaded_theme !== null),
+            'data' => array(
+                'loaded_theme' => $loaded_theme,
+                'saved_theme' => $saved_theme,
+                'match' => $theme_match
+            ),
+            'warning' => !$theme_match ? 'Theme mismatch! Customizations may not apply.' : null
+        );
+        
+        // Step 5: Verify CSS variables in DOM
+        $audit['steps'][] = array(
+            'step' => '5_css_variables_verification',
+            'success' => true,
+            'data' => array(
+                'note' => 'Check browser console for CSS variable values',
+                'verify' => "getComputedStyle(document.documentElement).getPropertyValue('--gmkb-color-background')"
+            )
+        );
+        
+        // Overall result
+        $all_steps_success = true;
+        foreach ($audit['steps'] as $step) {
+            if (!$step['success']) {
+                $all_steps_success = false;
+                break;
+            }
+        }
+        
+        $audit['overall'] = array(
+            'success' => $all_steps_success,
+            'theme_match' => $theme_match,
+            'has_customizations' => ($has_customizations || $has_meta),
+            'recommendation' => !$all_steps_success 
+                ? 'Fix issues in failed steps' 
+                : ($theme_match ? 'All checks passed' : 'Theme mismatch detected')
+        );
+        
+        return $audit;
+    }
+    
+    /**
      * ROOT FIX: Inject base theme CSS variables to frontend
-     * Mirrors themeStore.applyThemeToDOM() from builder
-     * Handles both snake_case (JSON) and camelCase (custom) formats
+     * Simplified version that ALWAYS outputs CSS variables
      * 
      * @param int $post_id Post ID
      */
     private function inject_theme_css_variables($post_id) {
-        if (!$this->current_theme) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('[GMKB Theme Debug] Cannot inject CSS variables - no theme loaded');
-            }
-            ?>
-            <script>console.warn('🎨 GMKB: No theme loaded for CSS variables injection');</script>
-            <?php
-            return;
-        }
-        
+        // ROOT FIX: Always output CSS, even if theme not loaded properly
         $theme = $this->current_theme;
         
-        // DEBUG: Log CSS variable injection
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[GMKB Theme Debug] Injecting CSS variables for theme: ' . ($theme['theme_id'] ?? 'unknown'));
+        // If no theme loaded, use minimal fallback to ensure CSS variables exist
+        if (!$theme) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('[GMKB Theme Debug] WARNING: No theme loaded, using fallback CSS variables');
+            }
+            $theme = $this->get_minimal_theme_config();
         }
         
-        // ROOT FIX: Count variables for accurate debug output
-        $var_count = 0;
-        ob_start(); // Buffer CSS output so we can count variables
+        // DEBUG: Log CSS variable injection START
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('[GMKB Theme Debug] === INJECTING CSS VARIABLES ===');
+            error_log('[GMKB Theme Debug] Theme ID: ' . ($theme['theme_id'] ?? 'unknown'));
+            error_log('[GMKB Theme Debug] Theme keys: ' . implode(', ', array_keys($theme)));
+        }
         
-        // COLORS - Already in correct format, just convert keys to kebab-case
+        // Build CSS variable array (simpler approach - no buffering)
+        $css_vars = array();
+        
+        // COLORS
         if (!empty($theme['colors'])) {
             foreach ($theme['colors'] as $key => $value) {
                 $css_key = strtolower(preg_replace('/([A-Z])/', '-$1', $key));
-                echo '--gmkb-color-' . esc_attr($css_key) . ': ' . esc_attr($value) . ';' . "\n";
-                $var_count++;
+                $css_vars['--gmkb-color-' . $css_key] = $value;
             }
         }
                 
-                // TYPOGRAPHY - Handle both formats
-                $typo = $theme['typography'] ?? array();
+        // TYPOGRAPHY
+        $typo = $theme['typography'] ?? array();
+        $primary_font = $typo['fontFamily'] ?? ($typo['primary_font']['family'] ?? "'Inter', sans-serif");
+        $heading_font = $typo['headingFamily'] ?? ($typo['heading_font']['family'] ?? $primary_font);
+        $css_vars['--gmkb-font-primary'] = $primary_font;
+        $css_vars['--gmkb-font-heading'] = $heading_font;
+        
+        $base_size = $typo['baseFontSize'] ?? 16;
+        $css_vars['--gmkb-font-size-base'] = $base_size . 'px';
+        $css_vars['--gmkb-font-size-sm'] = ($base_size * 0.875) . 'px';
+        $css_vars['--gmkb-font-size-lg'] = ($base_size * 1.125) . 'px';
+        $css_vars['--gmkb-font-size-xl'] = ($base_size * 1.25) . 'px';
+        $css_vars['--gmkb-font-size-2xl'] = ($base_size * 1.5) . 'px';
+        $css_vars['--gmkb-font-size-3xl'] = ($base_size * 1.875) . 'px';
+        
+        $line_height = $typo['lineHeight'] ?? (isset($typo['line_height']['body']) ? $typo['line_height']['body'] : 1.6);
+        $css_vars['--gmkb-line-height'] = $line_height;
+        
+        $font_weight = $typo['fontWeight'] ?? 400;
+        $css_vars['--gmkb-font-weight'] = $font_weight;
+        
+        $heading_scale = $typo['headingScale'] ?? ($typo['font_scale'] ?? 1.25);
+        $css_vars['--gmkb-heading-scale'] = $heading_scale;
                 
-                // Font families - check both snake_case and camelCase
-                $primary_font = $typo['fontFamily'] ?? ($typo['primary_font']['family'] ?? "'Inter', sans-serif");
-                $heading_font = $typo['headingFamily'] ?? ($typo['heading_font']['family'] ?? $primary_font);
-                echo '--gmkb-font-primary: ' . esc_attr($primary_font) . ';' . "\n";
-                echo '--gmkb-font-heading: ' . esc_attr($heading_font) . ';' . "\n";
-                $var_count += 2;
+        // SPACING
+        $spacing = $theme['spacing'] ?? array();
+        $unit = isset($spacing['base_unit']) ? intval(str_replace('px', '', $spacing['base_unit'])) : ($spacing['baseUnit'] ?? 8);
+        
+        $css_vars['--gmkb-spacing-xs'] = ($unit * 0.5) . 'px';
+        $css_vars['--gmkb-spacing-sm'] = ($unit * 0.75) . 'px';
+        $css_vars['--gmkb-spacing-md'] = $unit . 'px';
+        $css_vars['--gmkb-spacing-lg'] = ($unit * 1.5) . 'px';
+        $css_vars['--gmkb-spacing-xl'] = ($unit * 2) . 'px';
+        $css_vars['--gmkb-spacing-2xl'] = ($unit * 3) . 'px';
+        $css_vars['--gmkb-spacing-3xl'] = ($unit * 4) . 'px';
+        
+        $gap = isset($spacing['component_gap']) ? intval(str_replace('px', '', $spacing['component_gap'])) : ($spacing['componentGap'] ?? 48);
+        $css_vars['--gmkb-spacing-component-gap'] = $gap . 'px';
+        
+        $section_padding = isset($spacing['section_gap']) ? intval(str_replace('px', '', $spacing['section_gap'])) : ($spacing['sectionPadding'] ?? 96);
+        $css_vars['--gmkb-spacing-section-padding'] = $section_padding . 'px';
+        
+        $max_width = isset($spacing['content_max_width']) ? intval(str_replace('px', '', $spacing['content_max_width'])) : ($spacing['containerMaxWidth'] ?? 1200);
+        $css_vars['--gmkb-container-max-width'] = $max_width . 'px';
                 
-                // Font sizes
-                $base_size = $typo['baseFontSize'] ?? 16;
-                echo '--gmkb-font-size-base: ' . esc_attr($base_size) . 'px;' . "\n";
-                echo '--gmkb-font-size-sm: ' . esc_attr($base_size * 0.875) . 'px;' . "\n";
-                echo '--gmkb-font-size-lg: ' . esc_attr($base_size * 1.125) . 'px;' . "\n";
-                echo '--gmkb-font-size-xl: ' . esc_attr($base_size * 1.25) . 'px;' . "\n";
-                echo '--gmkb-font-size-2xl: ' . esc_attr($base_size * 1.5) . 'px;' . "\n";
-                echo '--gmkb-font-size-3xl: ' . esc_attr($base_size * 1.875) . 'px;' . "\n";
-                $var_count += 6;
-                
-                // Line height - handle both formats
-                $line_height = $typo['lineHeight'] ?? (isset($typo['line_height']['body']) ? $typo['line_height']['body'] : 1.6);
-                echo '--gmkb-line-height: ' . esc_attr($line_height) . ';' . "\n";
-                $var_count++;
-                
-                // Font weight
-                $font_weight = $typo['fontWeight'] ?? 400;
-                echo '--gmkb-font-weight: ' . esc_attr($font_weight) . ';' . "\n";
-                $var_count++;
-                
-                // Heading scale
-                $heading_scale = $typo['headingScale'] ?? ($typo['font_scale'] ?? 1.25);
-                echo '--gmkb-heading-scale: ' . esc_attr($heading_scale) . ';' . "\n";
-                $var_count++;
-                
-                // SPACING - Handle both formats
-                $spacing = $theme['spacing'] ?? array();
-                
-                // Base unit - handle both base_unit (string with px) and baseUnit (number)
-                if (isset($spacing['base_unit'])) {
-                    $unit = intval(str_replace('px', '', $spacing['base_unit']));
-                } else {
-                    $unit = $spacing['baseUnit'] ?? 8;
-                }
-                
-                echo '--gmkb-spacing-xs: ' . esc_attr($unit * 0.5) . 'px;' . "\n";
-                echo '--gmkb-spacing-sm: ' . esc_attr($unit * 0.75) . 'px;' . "\n";
-                echo '--gmkb-spacing-md: ' . esc_attr($unit) . 'px;' . "\n";
-                echo '--gmkb-spacing-lg: ' . esc_attr($unit * 1.5) . 'px;' . "\n";
-                echo '--gmkb-spacing-xl: ' . esc_attr($unit * 2) . 'px;' . "\n";
-                echo '--gmkb-spacing-2xl: ' . esc_attr($unit * 3) . 'px;' . "\n";
-                echo '--gmkb-spacing-3xl: ' . esc_attr($unit * 4) . 'px;' . "\n";
-                $var_count += 7;
-                
-                // Component gap - handle both formats
-                if (isset($spacing['component_gap'])) {
-                    $gap = intval(str_replace('px', '', $spacing['component_gap']));
-                } else {
-                    $gap = $spacing['componentGap'] ?? 48;
-                }
-                echo '--gmkb-spacing-component-gap: ' . esc_attr($gap) . 'px;' . "\n";
-                $var_count++;
-                
-                // Section padding - maps from section_gap in JSON or sectionPadding in camelCase
-                if (isset($spacing['section_gap'])) {
-                    $section_padding = intval(str_replace('px', '', $spacing['section_gap']));
-                } else {
-                    $section_padding = $spacing['sectionPadding'] ?? 96;
-                }
-                echo '--gmkb-spacing-section-padding: ' . esc_attr($section_padding) . 'px;' . "\n";
-                $var_count++;
-                
-                // Container max width
-                if (isset($spacing['content_max_width'])) {
-                    $max_width = intval(str_replace('px', '', $spacing['content_max_width']));
-                } else {
-                    $max_width = $spacing['containerMaxWidth'] ?? 1200;
-                }
-                echo '--gmkb-container-max-width: ' . esc_attr($max_width) . 'px;' . "\n";
-                $var_count++;
-                
-                // EFFECTS - Handle both formats
-                $effects = $theme['effects'] ?? array();
-                
-                // Border radius - handle both formats
-                $radius = $effects['borderRadius'] ?? ($effects['border_radius'] ?? '12px');
-                echo '--gmkb-border-radius: ' . esc_attr($radius) . ';' . "\n";
-                echo '--gmkb-border-radius-sm: calc(' . esc_attr($radius) . ' * 0.5);' . "\n";
-                echo '--gmkb-border-radius-lg: calc(' . esc_attr($radius) . ' * 1.5);' . "\n";
-                $var_count += 3;
-                
-                // Shadow - use shadowIntensity if available, otherwise analyze shadow property
-                $shadows = array(
-                    'none' => 'none',
-                    'subtle' => '0 1px 3px rgba(0, 0, 0, 0.1)',
-                    'medium' => '0 4px 6px rgba(0, 0, 0, 0.1)',
-                    'strong' => '0 10px 25px rgba(0, 0, 0, 0.15)'
-                );
-                
-                if (isset($effects['shadowIntensity'])) {
-                    $intensity = $effects['shadowIntensity'];
-                } elseif (isset($effects['shadow'])) {
-                    // Analyze shadow to determine intensity
-                    $shadow = $effects['shadow'];
-                    if (strpos($shadow, '20px') !== false || strpos($shadow, '25px') !== false) {
-                        $intensity = 'strong';
-                    } elseif (strpos($shadow, '10px') !== false || strpos($shadow, '15px') !== false) {
-                        $intensity = 'medium';
-                    } else {
-                        $intensity = 'subtle';
-                    }
-                } else {
-                    $intensity = 'medium';
-                }
-                
-                echo '--gmkb-shadow: ' . esc_attr($shadows[$intensity] ?? $shadows['medium']) . ';' . "\n";
-                echo '--gmkb-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);' . "\n";
-                echo '--gmkb-shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.2);' . "\n";
-                $var_count += 3;
+        // EFFECTS
+        $effects = $theme['effects'] ?? array();
+        
+        $radius = $effects['borderRadius'] ?? ($effects['border_radius'] ?? '12px');
+        $css_vars['--gmkb-border-radius'] = $radius;
+        $css_vars['--gmkb-border-radius-sm'] = 'calc(' . $radius . ' * 0.5)';
+        $css_vars['--gmkb-border-radius-lg'] = 'calc(' . $radius . ' * 1.5)';
+        
+        $shadows = array(
+            'none' => 'none',
+            'subtle' => '0 1px 3px rgba(0, 0, 0, 0.1)',
+            'medium' => '0 4px 6px rgba(0, 0, 0, 0.1)',
+            'strong' => '0 10px 25px rgba(0, 0, 0, 0.15)'
+        );
+        
+        if (isset($effects['shadowIntensity'])) {
+            $intensity = $effects['shadowIntensity'];
+        } elseif (isset($effects['shadow'])) {
+            $shadow = $effects['shadow'];
+            if (strpos($shadow, '20px') !== false || strpos($shadow, '25px') !== false) {
+                $intensity = 'strong';
+            } elseif (strpos($shadow, '10px') !== false || strpos($shadow, '15px') !== false) {
+                $intensity = 'medium';
+            } else {
+                $intensity = 'subtle';
+            }
+        } else {
+            $intensity = 'medium';
+        }
+        
+        $css_vars['--gmkb-shadow'] = $shadows[$intensity] ?? $shadows['medium'];
+        $css_vars['--gmkb-shadow-sm'] = '0 1px 2px rgba(0, 0, 0, 0.05)';
+        $css_vars['--gmkb-shadow-lg'] = '0 20px 40px rgba(0, 0, 0, 0.2)';
                 
         // Animation speed
         $speeds = array(
@@ -1541,7 +1761,6 @@ class GMKB_Frontend_Display {
         if (isset($effects['animationSpeed'])) {
             $speed = $effects['animationSpeed'];
         } elseif (isset($effects['transitions'])) {
-            // Analyze transitions to determine speed
             $transition = $effects['transitions'];
             if (strpos($transition, '0.5s') !== false || strpos($transition, '500ms') !== false) {
                 $speed = 'slow';
@@ -1554,18 +1773,26 @@ class GMKB_Frontend_Display {
             $speed = 'normal';
         }
         
-        echo '--gmkb-transition-speed: ' . esc_attr($speeds[$speed] ?? $speeds['normal']) . ';' . "\n";
-        $var_count++;
+        $css_vars['--gmkb-transition-speed'] = $speeds[$speed] ?? $speeds['normal'];
         
-        $css_variables = ob_get_clean(); // Get all CSS variables
+        // ROOT FIX: NOW OUTPUT THE CSS - This was the missing piece!
+        $var_count = count($css_vars);
+        
+        // DEBUG: Log what we're about to output
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('[GMKB Theme Debug] === OUTPUTTING CSS VARIABLES ===');
+            error_log('[GMKB Theme Debug] Variable count: ' . $var_count);
+            error_log('[GMKB Theme Debug] Sample vars: ' . implode(', ', array_slice(array_keys($css_vars), 0, 5)));
+        }
         
         // ROOT FIX: Output CSS with :root scope so all elements can access variables
         ?>
         <style id="gmkb-theme-vars-<?php echo esc_attr($post_id); ?>">
-            /* Base theme CSS variables (matches builder) */
-            /* ROOT FIX: Using :root for global access instead of scoped selector */
+            /* Base theme CSS variables - SIMPLIFIED AND GUARANTEED TO OUTPUT */
             :root {
-                <?php echo $css_variables; ?>
+                <?php foreach ($css_vars as $var_name => $var_value): ?>
+                <?php echo esc_attr($var_name); ?>: <?php echo esc_attr($var_value); ?>;
+                <?php endforeach; ?>
             }
         </style>
         <script>
@@ -1574,7 +1801,8 @@ class GMKB_Frontend_Display {
         console.log('Theme ID:', <?php echo json_encode($theme['theme_id'] ?? 'unknown'); ?>);
         console.log('Theme Name:', <?php echo json_encode($theme['theme_name'] ?? $theme['name'] ?? 'unknown'); ?>);
         console.log('CSS Variables Count:', <?php echo json_encode($var_count); ?>);
-        console.log('Sample Variables:', {
+        console.log('All Variables:', <?php echo json_encode($css_vars); ?>);
+        console.log('Sample Variables (live from DOM):', {
             primary_color: getComputedStyle(document.documentElement).getPropertyValue('--gmkb-color-primary'),
             font_primary: getComputedStyle(document.documentElement).getPropertyValue('--gmkb-font-primary'),
             border_radius: getComputedStyle(document.documentElement).getPropertyValue('--gmkb-border-radius')

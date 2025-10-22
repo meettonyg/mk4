@@ -159,8 +159,23 @@ if (class_exists('GMKB_Frontend_Display')) {
     // Get the frontend display instance
     $frontend_display = GMKB_Frontend_Display::get_instance();
     
-    // Load theme from media kit state
-    $theme_id = isset($media_kit_state['globalSettings']['theme']) ? $media_kit_state['globalSettings']['theme'] : 'professional_clean';
+    // ROOT FIX: Load theme from correct location in state
+    // Check root level FIRST (where Vue stores it), then globalSettings for backward compatibility
+    if (isset($media_kit_state['theme']) && !empty($media_kit_state['theme'])) {
+        $theme_id = $media_kit_state['theme'];
+        $theme_source = 'saved (root level)';
+    } elseif (isset($media_kit_state['globalSettings']['theme'])) {
+        $theme_id = $media_kit_state['globalSettings']['theme'];
+        $theme_source = 'saved (globalSettings - legacy)';
+    } else {
+        $theme_id = 'professional_clean';
+        $theme_source = 'default fallback';
+    }
+    
+    // DEBUG: Log theme loading
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('[GMKB Frontend Template] Theme loaded: ' . $theme_id . ' (source: ' . $theme_source . ')');
+    }
     
     // Render the media kit with theme support
     $frontend_display->render_media_kit_template($media_kit_state, $post_id, $theme_id);
