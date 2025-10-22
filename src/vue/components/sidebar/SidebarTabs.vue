@@ -11,12 +11,14 @@
       <svg 
         class="collapse-icon" 
         :class="{ 'collapsed': sidebarCollapsed }"
-        width="16" 
-        height="16" 
+        width="20" 
+        height="20" 
         viewBox="0 0 24 24" 
         fill="none" 
         stroke="currentColor" 
-        stroke-width="2"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
       >
         <polyline points="15 18 9 12 15 6"></polyline>
       </svg>
@@ -1108,51 +1110,53 @@ export default {
   transition: opacity 0.2s ease; /* Smooth fade out */
 }
 
-/* Collapse Toggle Button - Middle-Left Edge (Option 3) */
+/* Collapse Toggle Button - Middle-Left Edge (Option 3 - Enhanced Visibility) */
 .sidebar-collapse-toggle {
   position: absolute;
-  left: -16px; /* Stick out from the left edge */
+  left: -8px; /* Reduced offset for better visibility */
   top: 50%;
   transform: translateY(-50%);
   z-index: 100;
-  width: 32px;
-  height: 48px;
+  width: 36px;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px 0 0 6px; /* Rounded on left side only */
+  background: linear-gradient(to right, white, #f9fafb);
+  border: 2px solid #d1d5db; /* Thicker border for visibility */
+  border-right: none; /* No border on right side */
+  border-radius: 8px 0 0 8px; /* More rounded for visibility */
   cursor: pointer;
   transition: all 0.2s;
-  color: #6b7280;
-  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.08);
+  color: #374151; /* Darker for better contrast */
+  box-shadow: -3px 0 10px rgba(0, 0, 0, 0.15); /* Stronger shadow */
 }
 
 .sidebar-collapse-toggle:hover {
-  background: #f9fafb;
-  border-color: #d1d5db;
-  color: #111827;
-  left: -18px; /* Slide out slightly on hover */
-  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.12);
+  background: linear-gradient(to right, #ec4899, #f472b6); /* Pink gradient on hover */
+  border-color: #ec4899;
+  color: white;
+  left: -10px; /* Slide out slightly on hover */
+  box-shadow: -6px 0 16px rgba(236, 72, 153, 0.4);
+  transform: translateY(-50%) scale(1.05);
 }
 
 .sidebar-collapsed .sidebar-collapse-toggle {
-  left: -16px; /* Keep same position when collapsed */
+  left: -8px; /* Keep same position when collapsed */
 }
 
 body.dark-mode .sidebar-collapse-toggle {
-  background: #1e293b;
-  border-color: #334155;
-  color: #9ca3af;
-  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(to right, #1e293b, #334155);
+  border-color: #475569;
+  color: #d1d5db;
+  box-shadow: -3px 0 10px rgba(0, 0, 0, 0.4);
 }
 
 body.dark-mode .sidebar-collapse-toggle:hover {
-  background: #334155;
-  border-color: #475569;
-  color: #f3f4f6;
-  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(to right, #ec4899, #f472b6);
+  border-color: #ec4899;
+  color: white;
+  box-shadow: -6px 0 16px rgba(236, 72, 153, 0.5);
 }
 
 /* Panel Close Button - Top-Right Corner */
@@ -1201,16 +1205,25 @@ body.dark-mode .panel-close-button:hover {
 
 .collapse-icon {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.5; /* Thicker stroke for visibility */
 }
 
 .collapse-icon.collapsed {
   transform: rotate(180deg); /* Points right when collapsed */
 }
 
+/* Enhanced icon visibility on hover */
+.sidebar-collapse-toggle:hover .collapse-icon {
+  stroke-width: 3; /* Even thicker on hover */
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5));
+}
+
 /* Ensure button stays visible when collapsed */
 .sidebar-collapsed .sidebar-collapse-toggle:hover {
-  transform: translateY(-50%); /* Maintain vertical centering */
-  left: -18px; /* Same hover effect when collapsed */
+  transform: translateY(-50%) scale(1.05); /* Maintain vertical centering with scale */
+  left: -10px; /* Same hover effect when collapsed */
 }
 
 /* Dark mode */
