@@ -14,6 +14,42 @@ if (!defined('ABSPATH')) {
 // HELPER FUNCTIONS (Must be defined first)
 // ===============================================
 
+/**
+ * Get list of components actually used on the current page
+ * Used for dynamic CSS loading optimization
+ * 
+ * @return array Array of component type names (e.g., ['biography', 'hero', 'contact'])
+ */
+function gmkb_get_used_components_for_page() {
+    // Get current post
+    global $post;
+    if (!$post || !is_singular(array('mkcg', 'guests'))) {
+        return array(); // Not a media kit page
+    }
+    
+    // Load the media kit state
+    $state = get_post_meta($post->ID, 'gmkb_media_kit_state', true);
+    if (empty($state)) {
+        return array(); // No state found
+    }
+    
+    $used_components = array();
+    
+    // Extract component types from the state
+    if (isset($state['components']) && is_array($state['components'])) {
+        foreach ($state['components'] as $component_id => $component) {
+            if (isset($component['type'])) {
+                $component_type = $component['type'];
+                if (!in_array($component_type, $used_components)) {
+                    $used_components[] = $component_type;
+                }
+            }
+        }
+    }
+    
+    return $used_components;
+}
+
 function gmkb_is_builder_page() {
     // ROOT FIX: STRICT URL-based detection ONLY
     // This prevents loading on ANY other tools pages
@@ -178,8 +214,24 @@ function gmkb_enqueue_frontend_assets() {
         }
     }
     
+    // DYNAMIC CSS: Get components actually used on this page
+    // This avoids loading CSS for ALL 16 components when only 2-3 are used
+    $used_components = gmkb_get_used_components_for_page();
+    
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        if (!empty($used_components)) {
+            error_log('✅ GMKB Dynamic CSS: Found ' . count($used_components) . ' components on this page: ' . implode(', ', $used_components));
+        } else {
+            error_log('⚠️ GMKB Dynamic CSS: No components detected, falling back to loading all CSS');
+        }
+    }
+    
+    // ROOT FIX: ONLY load CSS files for components actually present on the page
+    // If we couldn't detect components, fall back to loading all (backward compatibility)
+    $load_all_css = empty($used_components);
+    
     // ROOT FIX: Also load individual component CSS files
-    // These contain detailed styles not in the minimal design system
+    // OPTIMIZATION: Only load CSS for components actually present on the page
     $components_dir = GUESTIFY_PLUGIN_DIR . 'components/';
     if (is_dir($components_dir)) {
         $component_folders = glob($components_dir . '*', GLOB_ONLYDIR);
@@ -189,18 +241,25 @@ function gmkb_enqueue_frontend_assets() {
             $styles_path = $component_path . '/styles.css';
             
             if (file_exists($styles_path)) {
-                $component_version = filemtime($styles_path);
-                $styles_url = GUESTIFY_PLUGIN_URL . 'components/' . $component_name . '/styles.css';
-                
-                wp_enqueue_style(
-                    'gmkb-component-' . $component_name,
-                    $styles_url,
-                    array('gmkb-design-system'),
-                    $component_version
-                );
-                
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('✅ GMKB: Component CSS loaded: ' . $component_name);
+                // DYNAMIC CSS: Only load if this component is actually used on the page
+                if ($load_all_css || in_array($component_name, $used_components)) {
+                    $component_version = filemtime($styles_path);
+                    $styles_url = GUESTIFY_PLUGIN_URL . 'components/' . $component_name . '/styles.css';
+                    
+                    wp_enqueue_style(
+                        'gmkb-component-' . $component_name,
+                        $styles_url,
+                        array('gmkb-design-system'),
+                        $component_version
+                    );
+                    
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('✅ GMKB Dynamic CSS: Component CSS loaded: ' . $component_name);
+                    }
+                } else {
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('⏭️  GMKB Dynamic CSS: Skipped CSS for unused component: ' . $component_name);
+                    }
                 }
             }
         }
