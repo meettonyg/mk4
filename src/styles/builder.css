@@ -89,85 +89,8 @@ body.dark-mode #gmkb-sidebar {
     display: none;
 }
 
-/* ========================================
-   DEVICE PREVIEW MODE RESPONSIVE RULES
-   CRITICAL: These make device preview work!
-   ======================================== */
-
-/* Mobile Preview Mode - Stack all columns to 1 */
-.device-mobile .gmkb-section__columns--2,
-.device-mobile .gmkb-section__columns--3,
-.device-mobile .gmkb-section--two_column .gmkb-section__columns,
-.device-mobile .gmkb-section--three_column .gmkb-section__columns,
-.device-mobile .gmkb-section--main_sidebar .gmkb-section__columns,
-.device-mobile .gmkb-section--sidebar_main .gmkb-section__columns,
-#media-kit-preview.device-mobile .gmkb-section__columns--2,
-#media-kit-preview.device-mobile .gmkb-section__columns--3,
-#media-kit-preview.device-mobile .gmkb-section--two_column .gmkb-section__columns,
-#media-kit-preview.device-mobile .gmkb-section--three_column .gmkb-section__columns,
-#media-kit-preview.device-mobile .gmkb-section--main_sidebar .gmkb-section__columns,
-#media-kit-preview.device-mobile .gmkb-section--sidebar_main .gmkb-section__columns {
-    grid-template-columns: 1fr !important;
-    gap: var(--gmkb-component-gap, 20px);
-}
-
-/* Also target the layout classes directly used in SectionLayout.vue */
-.device-mobile .layout-two-column,
-.device-mobile .layout-three-column,
-.device-mobile .layout-main-sidebar,
-.device-mobile .layout-sidebar-main,
-.device-mobile .layout-two_column,
-.device-mobile .layout-three_column,
-#media-kit-preview.device-mobile .layout-two-column,
-#media-kit-preview.device-mobile .layout-three-column,
-#media-kit-preview.device-mobile .layout-main-sidebar,
-#media-kit-preview.device-mobile .layout-sidebar-main,
-#media-kit-preview.device-mobile .layout-two_column,
-#media-kit-preview.device-mobile .layout-three_column {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-    gap: var(--gmkb-component-gap, 20px);
-}
-
-/* ULTRA-SPECIFIC: Target any grid within device-mobile preview */
-#media-kit-preview.device-mobile [style*="grid-template-columns"],
-#media-kit-preview.device-mobile .gmkb-section__content > div[class*="layout-"] {
-    grid-template-columns: 1fr !important;
-}
-
-/* Target any element with display:grid inside mobile preview */
-#media-kit-preview.device-mobile [style*="display: grid"],
-#media-kit-preview.device-mobile [style*="display:grid"] {
-    grid-template-columns: 1fr !important;
-}
-
-/* Ensure all section content stacks in mobile preview */
-#media-kit-preview.device-mobile .gmkb-section__content {
-    display: block !important;
-}
-
-#media-kit-preview.device-mobile .gmkb-section__content > * {
-    width: 100% !important;
-    max-width: 100% !important;
-    margin-bottom: var(--gmkb-component-gap, 20px);
-}
-
-/* Tablet Preview Mode - 3 columns become 2 */
-.device-tablet .gmkb-section__columns--3,
-.device-tablet .gmkb-section--three_column .gmkb-section__columns,
-#media-kit-preview.device-tablet .gmkb-section__columns--3,
-#media-kit-preview.device-tablet .gmkb-section--three_column .gmkb-section__columns {
-    grid-template-columns: repeat(2, 1fr) !important;
-}
-
-/* Tablet mode for layout classes */
-.device-tablet .layout-three-column,
-.device-tablet .layout-three_column,
-#media-kit-preview.device-tablet .layout-three-column,
-#media-kit-preview.device-tablet .layout-three_column {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-}
+/* Device preview responsive rules removed - handled in SectionLayout.vue component */
+/* The proper fix is in the component where the layout styles are defined */
 
 /* ========================================
    RESPONSIVE: MOBILE BUILDER LAYOUT
