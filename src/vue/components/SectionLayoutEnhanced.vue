@@ -1377,4 +1377,45 @@ onUnmounted(() => {
     width: 100%;
   }
 }
+
+/* ============================================
+   DEVICE PREVIEW MODE - MOBILE OVERRIDES
+   ============================================
+   ROOT FIX: When the DevicePreview component applies
+   the gmkb-device--mobile class to #media-kit-preview,
+   force all multi-column layouts to stack.
+   
+   This restores the mobile preview functionality that
+   existed in the legacy SectionLayout.vue component.
+   ============================================ */
+
+/* Mobile Device Preview - Force Single Column */
+#media-kit-preview.gmkb-device--mobile .layout-two-column,
+#media-kit-preview.gmkb-device--mobile .layout-three-column,
+#media-kit-preview.gmkb-device--mobile .layout-main-sidebar,
+#media-kit-preview.gmkb-device--mobile .layout-sidebar-main,
+#media-kit-preview.gmkb-device--mobile .layout-two_column,
+#media-kit-preview.gmkb-device--mobile .layout-three_column {
+  grid-template-columns: 1fr !important;
+}
+
+/* Tablet Device Preview - Two Column Max */
+#media-kit-preview.gmkb-device--tablet .layout-three-column,
+#media-kit-preview.gmkb-device--tablet .layout-three_column {
+  grid-template-columns: repeat(2, 1fr) !important;
+}
+
+/* Ensure columns stack properly in mobile view */
+#media-kit-preview.gmkb-device--mobile .gmkb-section__column {
+  width: 100%;
+}
+
+/* Handle reverse mobile setting in device preview mode */
+#media-kit-preview.gmkb-device--mobile .gmkb-section--reverse-mobile .layout-two-column,
+#media-kit-preview.gmkb-device--mobile .gmkb-section--reverse-mobile .layout-three-column,
+#media-kit-preview.gmkb-device--mobile .gmkb-section--reverse-mobile .layout-main-sidebar,
+#media-kit-preview.gmkb-device--mobile .gmkb-section--reverse-mobile .layout-sidebar-main {
+  display: flex !important;
+  flex-direction: column-reverse !important;
+}
 </style>
