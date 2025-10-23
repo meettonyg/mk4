@@ -17,19 +17,19 @@
    DESIGN TOKENS
    Core variables that define the design system
    ========================================== */
-@import 'tokens.css';
+@import './tokens.css';
 
 /* ==========================================
    SECTION LAYOUTS
    Full-width, two-column, three-column sections
    ========================================== */
-@import 'sections.css';
+@import './sections.css';
 
 /* ==========================================
    COMPONENTS
    All component styles (hero, biography, topics, etc.)
    ========================================== */
-@import 'components.css';
+@import './components.css';
 
 /* ==========================================
    BASE RESETS & UTILITIES
