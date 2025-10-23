@@ -88,94 +88,18 @@ const setDevice = (device) => {
     previewArea.style.boxShadow = '';
   }
   
-  // ROOT FIX: Override inline styles for ALL layout elements
-  const overrideLayoutStyles = () => {
-    // Find ALL elements that might be layouts
-    const layouts = previewArea.querySelectorAll(
-      '.layout-two-column, .layout-three-column, .layout-main-sidebar, .layout-sidebar-main, ' +
-      '[class*="layout-two-column"], [class*="layout-three-column"], ' +
-      '.gmkb-section__content'
-    );
-    
-    if (device === 'mobile') {
-      layouts.forEach(layout => {
-        // Check if this is a two-column or three-column layout
-        if (layout.className.includes('two-column') || 
-            layout.className.includes('three-column') ||
-            layout.className.includes('main-sidebar') ||
-            layout.className.includes('sidebar-main')) {
-          // Force single column
-          layout.style.display = 'grid';
-          layout.style.gridTemplateColumns = '1fr';
-          layout.style.gap = '2rem';
-          console.log('📱 Forced mobile layout on:', layout.className);
-        }
-      });
-    } else if (device === 'tablet') {
-      layouts.forEach(layout => {
-        if (layout.className.includes('three-column')) {
-          layout.style.display = 'grid';
-          layout.style.gridTemplateColumns = 'repeat(2, 1fr)';
-          layout.style.gap = '2rem';
-        } else if (layout.className.includes('two-column') || 
-                   layout.className.includes('main-sidebar') ||
-                   layout.className.includes('sidebar-main')) {
-          // Reset two-column layouts
-          layout.style.display = '';
-          layout.style.gridTemplateColumns = '';
-          layout.style.gap = '';
-        }
-      });
-    } else {
-      // Desktop - remove all inline overrides
-      layouts.forEach(layout => {
-        layout.style.display = '';
-        layout.style.gridTemplateColumns = '';
-        layout.style.gap = '';
-      });
-    }
-  };
+  // ROOT FIX: Let CSS handle responsive layouts via device classes
+  // No need for inline styles - our CSS in sections.css handles this automatically
   
-  // Apply immediately
-  overrideLayoutStyles();
+  // Just log for debugging
+  console.log(`📱 Device class applied: device-${device}`);
+  console.log('📋 CSS will handle layout via .device-mobile, .device-tablet classes');
   
-  // Also apply after delays to override any async recalculations
-  setTimeout(overrideLayoutStyles, 100);
-  setTimeout(overrideLayoutStyles, 300);
-  setTimeout(overrideLayoutStyles, 500);
+  // Force a repaint to ensure CSS classes take effect
+  void previewArea.offsetHeight;
   
-  // Watch for changes and reapply (handles dynamic recalculations)
-  if (device !== 'desktop') {
-    // Set up observer to maintain our overrides
-    if (window.devicePreviewObserver) {
-      window.devicePreviewObserver.disconnect();
-    }
-    
-    window.devicePreviewObserver = new MutationObserver((mutations) => {
-      // Only reapply if styles were changed
-      let needsOverride = false;
-      mutations.forEach(m => {
-        if (m.attributeName === 'style' && m.target.style.gridTemplateColumns !== '1fr') {
-          needsOverride = true;
-        }
-      });
-      if (needsOverride) {
-        overrideLayoutStyles();
-      }
-    });
-    
-    // Observe ALL potential layout elements
-    const allLayouts = previewArea.querySelectorAll('[class*="layout"], .gmkb-section__content');
-    allLayouts.forEach(layout => {
-      window.devicePreviewObserver.observe(layout, {
-        attributes: true,
-        attributeFilter: ['style']
-      });
-    });
-    
-    console.log(`✅ Monitoring ${allLayouts.length} layout elements for changes`);
-  } else if (window.devicePreviewObserver) {
-    // Clean up observer on desktop
+  // Clean up any previous observer
+  if (window.devicePreviewObserver) {
     window.devicePreviewObserver.disconnect();
     window.devicePreviewObserver = null;
   }
