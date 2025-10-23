@@ -13,10 +13,10 @@
       </button>
     </div>
 
-    <!-- Section Content based on layout -->
-    <div class="gmkb-section-content">
+    <!-- Section Content -->
+    <div class="gmkb-section__content">
       <!-- Full Width Layout -->
-      <div v-if="section.layout === 'full_width'" class="section-full">
+      <template v-if="section.layout === 'full_width'">
         <ComponentWrapper
           v-for="(component, index) in components"
           :key="component.id"
@@ -26,14 +26,14 @@
           :total-components="components.length"
           :show-controls="showControls"
         />
-        <div v-if="components.length === 0" class="section-placeholder">
+        <div v-if="components.length === 0" class="gmkb-section__placeholder">
           Drop components here or click to add
         </div>
-      </div>
+      </template>
 
       <!-- Two Column Layout -->
-      <div v-else-if="section.layout === 'two_column'" class="section-columns section-columns--two">
-        <div class="section-column" data-column="1">
+      <div v-else-if="section.layout === 'two_column'" class="gmkb-section__columns gmkb-section__columns--2">
+        <div class="gmkb-section__column" data-column="1">
           <ComponentWrapper
             v-for="(component, index) in leftComponents"
             :key="component.id"
@@ -43,11 +43,11 @@
             :total-components="components.length"
             :show-controls="showControls"
           />
-          <div v-if="leftComponents.length === 0" class="section-placeholder">
+          <div v-if="leftComponents.length === 0" class="gmkb-section__placeholder">
             Left column
           </div>
         </div>
-        <div class="section-column" data-column="2">
+        <div class="gmkb-section__column" data-column="2">
           <ComponentWrapper
             v-for="(component, index) in rightComponents"
             :key="component.id"
@@ -57,18 +57,18 @@
             :total-components="components.length"
             :show-controls="showControls"
           />
-          <div v-if="rightComponents.length === 0" class="section-placeholder">
+          <div v-if="rightComponents.length === 0" class="gmkb-section__placeholder">
             Right column
           </div>
         </div>
       </div>
 
       <!-- Three Column Layout -->
-      <div v-else-if="section.layout === 'three_column'" class="section-columns section-columns--three">
+      <div v-else-if="section.layout === 'three_column'" class="gmkb-section__columns gmkb-section__columns--3">
         <div 
           v-for="col in 3" 
           :key="col"
-          class="section-column" 
+          class="gmkb-section__column" 
           :data-column="col"
         >
           <ComponentWrapper
@@ -80,7 +80,7 @@
             :total-components="components.length"
             :show-controls="showControls"
           />
-          <div v-if="getColumnComponents(col).length === 0" class="section-placeholder">
+          <div v-if="getColumnComponents(col).length === 0" class="gmkb-section__placeholder">
             Column {{ col }}
           </div>
         </div>
@@ -118,31 +118,24 @@ export default {
   emits: ['remove', 'move-up', 'move-down'],
   
   setup(props) {
-    // ROOT FIX: Respect explicit column assignments instead of using modulo
-    // For two-column layout
+    // Respect explicit column assignments
     const leftComponents = computed(() => {
-      // If components have explicit column property, use it
       const hasColumnProp = props.components.some(c => c.column !== undefined);
       if (hasColumnProp) {
         return props.components.filter(c => c.column === 1 || c.column === null || c.column === undefined);
       }
-      // Fallback to index-based distribution
       return props.components.filter((_, index) => index % 2 === 0);
     });
     
     const rightComponents = computed(() => {
-      // If components have explicit column property, use it
       const hasColumnProp = props.components.some(c => c.column !== undefined);
       if (hasColumnProp) {
         return props.components.filter(c => c.column === 2);
       }
-      // Fallback to index-based distribution
       return props.components.filter((_, index) => index % 2 === 1);
     });
     
-    // For three-column layout
     const getColumnComponents = (column) => {
-      // If components have explicit column property, use it
       const hasColumnProp = props.components.some(c => c.column !== undefined);
       if (hasColumnProp) {
         if (column === 1) {
@@ -150,18 +143,14 @@ export default {
         }
         return props.components.filter(c => c.column === column);
       }
-      // Fallback to index-based distribution
       return props.components.filter((_, index) => (index % 3) === (column - 1));
     };
     
-    // Get the actual index of the component in the main array
     const getComponentIndex = (column, localIndex) => {
-      // When using explicit columns, return the actual index from filtered array
       const columnComponents = getColumnComponents(column);
       if (localIndex < columnComponents.length) {
         return props.components.indexOf(columnComponents[localIndex]);
       }
-      // Fallback
       return (localIndex * 3) + (column - 1);
     };
     
@@ -176,6 +165,8 @@ export default {
 </script>
 
 <style scoped>
+/* Builder-specific styling only - Responsive handled globally in sections.css */
+
 .gmkb-section {
   position: relative;
   margin-bottom: 30px;
@@ -216,32 +207,7 @@ export default {
   color: #f1f5f9;
 }
 
-.gmkb-section-content {
-  width: 100%;
-}
-
-.section-full {
-  width: 100%;
-}
-
-.section-columns {
-  display: grid;
-  gap: 20px;
-}
-
-.section-columns--two {
-  grid-template-columns: 1fr 1fr;
-}
-
-.section-columns--three {
-  grid-template-columns: 1fr 1fr 1fr;
-}
-
-.section-column {
-  min-height: 200px;
-}
-
-.section-placeholder {
+.gmkb-section__placeholder {
   padding: 40px 20px;
   text-align: center;
   color: #64748b;
@@ -251,15 +217,8 @@ export default {
   transition: all 0.2s;
 }
 
-.section-placeholder:hover {
+.gmkb-section__placeholder:hover {
   border-color: #475569;
   background: rgba(71, 85, 105, 0.1);
-}
-
-@media (max-width: 768px) {
-  .section-columns--two,
-  .section-columns--three {
-    grid-template-columns: 1fr;
-  }
 }
 </style>

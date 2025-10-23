@@ -1,11 +1,18 @@
 /**
- * Section Layouts - Single Source of Truth
+ * Section Layouts - Clean BEM Architecture
  * 
- * Used by both Vue Builder and PHP Frontend
- * Class names MUST match exactly between Vue and PHP
+ * SINGLE NAMING CONVENTION: BEM (Block Element Modifier)
+ * Block: .gmkb-section
+ * Element: .gmkb-section__columns, .gmkb-section__column
+ * Modifier: .gmkb-section--two_column, .gmkb-section__columns--2
+ * 
+ * NO BACKWARD COMPATIBILITY - Clean slate implementation
  */
 
-/* Base Section */
+/* ==========================================
+   BASE SECTION
+   ========================================== */
+
 .gmkb-section {
   width: 100%;
   margin-bottom: var(--gmkb-section-gap);
@@ -18,71 +25,81 @@
   padding: 0 var(--gmkb-container-padding);
 }
 
-/* Full Width Section */
+/* ==========================================
+   FULL WIDTH SECTION
+   ========================================== */
+
 .gmkb-section--full_width .gmkb-section__content {
   width: 100%;
 }
 
-/* Two Column Layout */
+/* ==========================================
+   TWO COLUMN LAYOUT
+   ========================================== */
+
 .gmkb-section--two_column .gmkb-section__columns,
 .gmkb-section__columns--2 {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--gmkb-column-gap);
-  align-items: start; /* Default - can be overridden by vertical align classes */
+  align-items: start;
 }
 
-/* Main + Sidebar Layout (70% / 30%) */
-.gmkb-section--main_sidebar .gmkb-section__columns {
-  display: grid;
-  grid-template-columns: 7fr 3fr;
-  gap: var(--gmkb-column-gap);
-  align-items: start; /* Default - can be overridden by vertical align classes */
-}
+/* ==========================================
+   THREE COLUMN LAYOUT
+   ========================================== */
 
-/* Sidebar + Main Layout (30% / 70%) */
-.gmkb-section--sidebar_main .gmkb-section__columns {
-  display: grid;
-  grid-template-columns: 3fr 7fr;
-  gap: var(--gmkb-column-gap);
-  align-items: start; /* Default - can be overridden by vertical align classes */
-}
-
-/* Three Column Layout */
 .gmkb-section--three_column .gmkb-section__columns,
 .gmkb-section__columns--3 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--gmkb-column-gap);
-  align-items: start; /* Default - can be overridden by vertical align classes */
+  align-items: start;
 }
 
 /* ==========================================
-   VERTICAL ALIGNMENT CONTROL
-   User-controlled vertical alignment for multi-column sections
+   MAIN + SIDEBAR LAYOUT (70% / 30%)
    ========================================== */
 
-/* Align columns to top (default) */
+.gmkb-section--main_sidebar .gmkb-section__columns {
+  display: grid;
+  grid-template-columns: 7fr 3fr;
+  gap: var(--gmkb-column-gap);
+  align-items: start;
+}
+
+/* ==========================================
+   SIDEBAR + MAIN LAYOUT (30% / 70%)
+   ========================================== */
+
+.gmkb-section--sidebar_main .gmkb-section__columns {
+  display: grid;
+  grid-template-columns: 3fr 7fr;
+  gap: var(--gmkb-column-gap);
+  align-items: start;
+}
+
+/* ==========================================
+   VERTICAL ALIGNMENT MODIFIERS
+   ========================================== */
+
 .gmkb-section__columns--valign-start {
   align-items: start !important;
 }
 
-/* Align columns to vertical center */
 .gmkb-section__columns--valign-center {
   align-items: center !important;
 }
 
-/* Align columns to bottom */
 .gmkb-section__columns--valign-end {
   align-items: end !important;
 }
 
-/* Stretch columns to equal height */
 .gmkb-section__columns--valign-stretch {
   align-items: stretch !important;
 }
 
-/* When stretch is used, ensure components fill column height */
+/* When stretch is used, make columns fill height */
 .gmkb-section__columns--valign-stretch .gmkb-section__column {
   display: flex;
   flex-direction: column;
@@ -92,28 +109,41 @@
   flex: 1;
 }
 
-/* Column Wrapper */
+/* ==========================================
+   COLUMN WRAPPER
+   ========================================== */
+
 .gmkb-section__column {
   min-width: 0; /* Prevent grid blowout */
   width: 100%;
 }
 
-/* Section Animations */
-.gmkb-section.gmkb-animate--fade {
+/* ==========================================
+   FULL WIDTH CONTAINER MODIFIER
+   ========================================== */
+
+.gmkb-section--full-width {
+  margin-left: calc(-1 * var(--gmkb-container-padding, 20px));
+  margin-right: calc(-1 * var(--gmkb-container-padding, 20px));
+  width: calc(100% + 2 * var(--gmkb-container-padding, 20px));
+  max-width: none;
+}
+
+/* ==========================================
+   ANIMATIONS
+   ========================================== */
+
+.gmkb-section--animate-fade {
   animation: gmkb-fade-in 0.6s ease-out;
 }
 
-.gmkb-section.gmkb-animate--slide {
+.gmkb-section--animate-slide {
   animation: gmkb-slide-up 0.6s ease-out;
 }
 
 @keyframes gmkb-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes gmkb-slide-up {
@@ -127,45 +157,75 @@
   }
 }
 
-/* Responsive: Mobile Stacking */
+/* ==========================================
+   RESPONSIVE: VIEWPORT-BASED (Frontend)
+   ========================================== */
+
+/* Mobile: Stack all columns */
 @media (max-width: 768px) {
   .gmkb-section__columns--2,
   .gmkb-section__columns--3,
+  .gmkb-section--two_column .gmkb-section__columns,
+  .gmkb-section--three_column .gmkb-section__columns,
   .gmkb-section--main_sidebar .gmkb-section__columns,
   .gmkb-section--sidebar_main .gmkb-section__columns {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
     gap: var(--gmkb-component-gap);
   }
 }
 
-/* Responsive: Tablet (optional 2-col → 1-col) */
-@media (max-width: 1024px) and (min-width: 769px) {
-  .gmkb-section__columns--3 {
-    grid-template-columns: repeat(2, 1fr);
+/* Tablet: 3 columns become 2 columns */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .gmkb-section__columns--3,
+  .gmkb-section--three_column .gmkb-section__columns {
+    grid-template-columns: repeat(2, 1fr) !important;
   }
 }
 
-/* Full Width Container */
-.gmkb-section--full-width {
-  margin-left: calc(-1 * var(--gmkb-container-padding, 20px));
-  margin-right: calc(-1 * var(--gmkb-container-padding, 20px));
-  width: calc(100% + 2 * var(--gmkb-container-padding, 20px));
-  max-width: none;
+/* ==========================================
+   RESPONSIVE: DEVICE PREVIEW MODE (Builder)
+   Class-based overrides for preview functionality
+   ========================================== */
+
+/* Mobile Preview Mode */
+.device-mobile .gmkb-section__columns--2,
+.device-mobile .gmkb-section__columns--3,
+.device-mobile .gmkb-section--two_column .gmkb-section__columns,
+.device-mobile .gmkb-section--three_column .gmkb-section__columns,
+.device-mobile .gmkb-section--main_sidebar .gmkb-section__columns,
+.device-mobile .gmkb-section--sidebar_main .gmkb-section__columns {
+  grid-template-columns: 1fr !important;
+  gap: var(--gmkb-component-gap);
 }
 
-/* Reverse Columns on Mobile */
+/* Tablet Preview Mode */
+.device-tablet .gmkb-section__columns--3,
+.device-tablet .gmkb-section--three_column .gmkb-section__columns {
+  grid-template-columns: repeat(2, 1fr) !important;
+}
+
+/* ==========================================
+   REVERSE COLUMNS ON MOBILE MODIFIER
+   ========================================== */
+
+/* Viewport-based reverse */
 @media (max-width: 768px) {
-  .gmkb-section--reverse-mobile .gmkb-section__columns,
-  .gmkb-section--reverse-mobile .gmkb-section__columns--2,
-  .gmkb-section--reverse-mobile .gmkb-section__columns--3,
-  .gmkb-section--reverse-mobile .gmkb-section-columns {
-    display: flex;
+  .gmkb-section--reverse-mobile .gmkb-section__columns {
+    display: flex !important;
     flex-direction: column-reverse;
   }
   
-  /* Ensure columns display correctly when reversed */
-  .gmkb-section--reverse-mobile .gmkb-section__column,
-  .gmkb-section--reverse-mobile .gmkb-section-column {
+  .gmkb-section--reverse-mobile .gmkb-section__column {
     width: 100%;
   }
+}
+
+/* Device preview reverse */
+.device-mobile .gmkb-section--reverse-mobile .gmkb-section__columns {
+  display: flex !important;
+  flex-direction: column-reverse;
+}
+
+.device-mobile .gmkb-section--reverse-mobile .gmkb-section__column {
+  width: 100%;
 }

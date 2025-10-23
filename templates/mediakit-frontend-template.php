@@ -230,14 +230,14 @@ if (class_exists('GMKB_Frontend_Display')) {
                              data-section-id="<?php echo esc_attr($section_id); ?>"
                              data-section-type="<?php echo esc_attr($section_type); ?>">
                         
-                        <div class="gmkb-section-inner" style="<?php 
+                        <div class="gmkb-section__inner" style="<?php 
                             if (isset($section_layout['max_width'])) echo 'max-width: ' . esc_attr($section_layout['max_width']) . ';';
                             if (isset($section_layout['padding'])) echo 'padding: ' . esc_attr($section_layout['padding']) . ';';
                         ?>">
                             
                             <?php if ($section_type === 'two_column' || $section_type === 'three_column' || $section_type === 'main_sidebar' || $section_type === 'sidebar_main'): ?>
                                 <!-- Multi-column layout -->
-                                <div class="gmkb-section-columns gmkb-columns--<?php echo esc_attr($section_layout['columns'] ?? ($section_type === 'three_column' ? 3 : 2)); ?>">
+                                <div class="gmkb-section__columns gmkb-section__columns--<?php echo esc_attr($section_layout['columns'] ?? ($section_type === 'three_column' ? 3 : 2)); ?>">
                                     <?php 
                                     // Group components by column
                                     $columns = array();
@@ -258,7 +258,7 @@ if (class_exists('GMKB_Frontend_Display')) {
                                     // Render each column
                                     for ($col = 1; $col <= $num_columns; $col++):
                                     ?>
-                                        <div class="gmkb-section-column" data-column="<?php echo $col; ?>">
+                                        <div class="gmkb-section__column" data-column="<?php echo $col; ?>">
                                             <?php if (isset($columns[$col])): 
                                                 foreach ($columns[$col] as $comp_ref):
                                                     $component_id = $comp_ref['component_id'];
