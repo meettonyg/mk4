@@ -105,23 +105,9 @@ async function initializeVue() {
       logger.info('✅ Using Legacy mode - created mount point in #media-kit-preview');
     }
     
-    // ROOT FIX: Disable any legacy rendering systems
-    if (window.enhancedComponentManager) {
-      window.enhancedComponentManager.renderComponent = () => {
-        console.log('Legacy rendering disabled - Vue handles all rendering');
-      };
-    }
-    
-    if (window.ComponentRenderer) {
-      window.ComponentRenderer = {
-        render: () => console.log('Legacy ComponentRenderer disabled')
-      };
-    }
-    
-    if (window.stateManager && window.stateManager !== window.gmkbStore) {
-      window.stateManager.render = () => {};
-      window.stateManager.renderComponents = () => {};
-    }
+    // ROOT FIX: Legacy systems no longer loaded - pure Vue architecture
+    // No global object checks needed - if they exist, they're already inert
+    // Vue handles ALL rendering, state management, and component lifecycle
 
     // Create Pinia store
     const pinia = createPinia();

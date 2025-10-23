@@ -271,10 +271,8 @@ function gmkb_enqueue_frontend_assets() {
 add_filter('script_loader_tag', 'gmkb_filter_jquery_script_tag', 10, 3);
 add_filter('style_loader_tag', 'gmkb_filter_style_tag', 10, 4);
 
-// ROOT FIX: AGGRESSIVELY block WordPress 6.7+ auto-sizes CSS on media kit pages ONLY
-// Multiple approaches to ensure it's removed
-
-// Approach 1: Remove the WordPress core action that injects this CSS
+// ROOT FIX: Block WordPress 6.7+ auto-sizes CSS on media kit pages
+// Uses clean action removal approach (most efficient)
 add_action('template_redirect', 'gmkb_remove_wp_auto_sizes_action', 1);
 function gmkb_remove_wp_auto_sizes_action() {
     if (gmkb_is_frontend_display() || gmkb_is_builder_page()) {
@@ -287,63 +285,13 @@ function gmkb_remove_wp_auto_sizes_action() {
     }
 }
 
-// Approach 2: Disable the feature for media kit pages
+// Disable the feature for media kit pages as backup
 add_filter('wp_img_tag_add_auto_sizes', 'gmkb_disable_auto_sizes_mediakit_only', 1);
 function gmkb_disable_auto_sizes_mediakit_only($add_auto_sizes) {
     if (gmkb_is_frontend_display() || gmkb_is_builder_page()) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB: Disabled auto-sizes via filter');
-        }
         return false;
     }
     return $add_auto_sizes;
-}
-
-// Approach 3: Remove the inline style from wp_head output on media kit pages
-add_action('wp_head', 'gmkb_remove_auto_sizes_inline_style', 1);
-add_action('admin_head', 'gmkb_remove_auto_sizes_inline_style', 1);
-function gmkb_remove_auto_sizes_inline_style() {
-    if (gmkb_is_frontend_display() || gmkb_is_builder_page()) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB: Starting output buffer to strip auto-sizes CSS');
-        }
-        
-        // Start output buffering to catch and remove the style
-        ob_start(function($html) {
-            // Remove the contain-intrinsic-size CSS with multiple pattern variations
-            $patterns = array(
-                '/<style[^>]*>\s*img:is\(\[sizes="auto" i\][^}]+contain-intrinsic-size[^}]+}\s*<\/style>/i',
-                '/<style>img:is\(\[sizes="auto" i\][^<]+<\/style>/i',
-                '/<style[^>]*>\s*img:is\(\[sizes=.auto.\s+i\][^}]*contain-intrinsic-size[^}]*}\s*<\/style>/is'
-            );
-            
-            foreach ($patterns as $pattern) {
-                $original = $html;
-                $html = preg_replace($pattern, '', $html);
-                
-                if ($html !== $original && defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('✅ GMKB: Stripped auto-sizes CSS with pattern');
-                }
-            }
-            
-            return $html;
-        });
-    }
-}
-
-// Approach 4: Close the output buffer at the end of wp_head on media kit pages
-add_action('wp_head', 'gmkb_close_auto_sizes_buffer', 999);
-add_action('admin_head', 'gmkb_close_auto_sizes_buffer', 999);
-function gmkb_close_auto_sizes_buffer() {
-    if (gmkb_is_frontend_display() || gmkb_is_builder_page()) {
-        if (ob_get_level() > 0) {
-            ob_end_flush();
-            
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ GMKB: Closed output buffer');
-            }
-        }
-    }
 }
 
 // ROOT FIX: Data injection now handled via wp_add_inline_script in gmkb_enqueue_vue_only_assets
@@ -1008,64 +956,14 @@ function gmkb_display_build_error_notice() {
     <?php
 }
 
-add_action('wp_footer', 'gmkb_vue_init_scripts', 100);
-add_action('admin_footer', 'gmkb_vue_init_scripts', 100);
-function gmkb_vue_init_scripts() {
+// ROOT FIX: Debug console logging extracted to separate file
+// Only loads when WP_DEBUG is enabled
+add_action('wp_footer', 'gmkb_load_debug_console', 100);
+add_action('admin_footer', 'gmkb_load_debug_console', 100);
+function gmkb_load_debug_console() {
     if (!gmkb_is_builder_page()) return;
-    ?>
-    <script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('✅ GMKB: DOM ready, running diagnostics...');
-        if (window.gmkbData && window.gmkbData.ajaxUrl) {
-            console.log('✅ GMKB: Backend data (gmkbData) is available.');
-            
-            // DEBUG: Log ALL gmkbData keys
-            console.log('🔍 GMKB DEBUG: gmkbData keys:', Object.keys(window.gmkbData));
-            
-            // ROOT FIX: Comprehensive icon field debugging
-            if (window.gmkbData.componentRegistry) {
-                console.log('✅ GMKB: Component Registry exists');
-                console.log('🔍 GMKB DEBUG: Component Registry:', window.gmkbData.componentRegistry);
-                console.log('🔍 GMKB DEBUG: Component Registry type:', typeof window.gmkbData.componentRegistry);
-                console.log('🔍 GMKB DEBUG: Component Registry keys:', Object.keys(window.gmkbData.componentRegistry));
-                
-                // Check ALL components for icon field
-                const components = window.gmkbData.componentRegistry;
-                const componentsWithoutIcons = [];
-                const iconMap = {};
-                
-                Object.keys(components).forEach(type => {
-                    const comp = components[type];
-                    if (!comp.icon || comp.icon === 'fa-solid fa-cube') {
-                        componentsWithoutIcons.push(type);
-                    }
-                    iconMap[type] = comp.icon || 'MISSING';
-                });
-                
-                console.log('🎨 GMKB: Icon mapping for all components:', iconMap);
-                
-                if (componentsWithoutIcons.length > 0) {
-                    console.warn('⚠️ GMKB: Components using fallback cube icon:', componentsWithoutIcons);
-                } else {
-                    console.log('✅ GMKB: All components have custom icons defined');
-                }
-                
-                // Check first component for detailed debugging
-                const firstComponent = Object.values(components)[0];
-                if (firstComponent) {
-                    console.log('🔍 GMKB DEBUG: First component full data:', firstComponent);
-                    console.log('🔍 GMKB DEBUG: First component icon:', firstComponent.icon);
-                } else {
-                    console.warn('⚠️ GMKB: componentRegistry is EMPTY!');
-                }
-            } else {
-                console.error('❌ GMKB: componentRegistry is UNDEFINED or NULL!');
-                console.log('🔍 GMKB DEBUG: Full gmkbData:', window.gmkbData);
-            }
-        } else {
-            console.error('❌ GMKB CRITICAL: Backend data (gmkbData) is MISSING.');
-        }
-    });
-    </script>
-    <?php
+    
+    // Load debug console logger (only in debug mode)
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/debug/console-logger.php';
+    gmkb_debug_console_diagnostics();
 }

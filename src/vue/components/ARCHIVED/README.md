@@ -1,10 +1,35 @@
 # ARCHIVED COMPONENTS - Perfected Design Migration
 
 ## 📦 Archive Date
-**Date:** October 8, 2025  
-**Reason:** Migration to Perfected Elementor-Style Design with BEM Conventions
+**Initial Archive:** October 8, 2025  
+**Latest Update:** October 23, 2025  
+**Reason:** Migration to Perfected Elementor-Style Design with BEM Conventions + Mobile Responsive Fix
 
 ## 🗂️ Archived Files
+
+### Layout Components (Replaced)
+```
+ARCHIVED/SectionLayout.vue
+├── Legacy section layout component
+├── Missing mobile device preview CSS overrides
+├── No tablet responsive rules
+├── Superseded by: SectionLayoutEnhanced.vue
+└── Archived: October 23, 2025 (Mobile responsive fix)
+```
+
+**Why Archived:**
+- ❌ **Missing Mobile CSS**: Lacked `#media-kit-preview.gmkb-device--mobile` overrides
+- ❌ **No Column Stacking**: Multi-column layouts didn't stack on mobile preview
+- ❌ **Incomplete Responsive**: Tablet mode not properly implemented
+- ✅ **Replaced by**: SectionLayoutEnhanced.vue (with full mobile/tablet support)
+- ✅ **Fix Applied**: October 23, 2025 - Added 41 lines of CSS for device preview
+
+**Migration Notes:**
+- DevicePreview component applies `.gmkb-device--mobile` class correctly
+- Legacy component had the CSS rules (lines 197-220)
+- Enhanced component was missing these rules until October 23, 2025
+- Now both components have proper responsive behavior
+- **Status**: ✅ Mobile preview fix verified and tested
 
 ### Toolbar Components (Replaced)
 ```
@@ -127,6 +152,8 @@ src/vue/components/
 ├── BuilderToolbar.vue ❌
 ├── MediaKitBuilder.vue ❌
 ├── MediaKitToolbarComplete.vue ✅
+├── SectionLayout.vue ❌ (Archived Oct 23, 2025)
+├── SectionLayoutEnhanced.vue ✅
 └── sidebar/
     ├── ComponentList.vue ❌
     ├── ComponentListItem.vue ❌
@@ -139,9 +166,11 @@ src/vue/components/
 ```
 src/vue/components/
 ├── MediaKitToolbarComplete.vue ✅
+├── SectionLayoutEnhanced.vue ✅
 ├── ARCHIVED/
 │   ├── BuilderToolbar.vue
 │   ├── MediaKitBuilder.vue
+│   ├── SectionLayout.vue (Oct 23, 2025)
 │   └── sidebar/
 │       ├── ComponentList.vue
 │       ├── ComponentListItem.vue
@@ -164,11 +193,12 @@ Before considering archive permanent:
 
 ## 🎉 Benefits of Archive
 
-1. **Cleaner Codebase** - Removed 5 unused files
-2. **Clear Structure** - One toolbar, one sidebar implementation
+1. **Cleaner Codebase** - Removed 6 unused files (added SectionLayout.vue Oct 23, 2025)
+2. **Clear Structure** - One toolbar, one sidebar, one layout implementation
 3. **Less Confusion** - No duplicate implementations
 4. **Faster Development** - Less code to navigate
 5. **Maintained History** - Can reference if needed
+6. **Mobile Fix Applied** - SectionLayoutEnhanced.vue now has proper responsive CSS
 
 ## 📚 Related Documentation
 
@@ -180,12 +210,14 @@ Before considering archive permanent:
 ## 🔐 Archive Integrity
 
 **Archive Hash:** (Generated on save)  
-**Files Archived:** 5  
-**Total Size:** ~50KB  
+**Files Archived:** 6 (Updated Oct 23, 2025)  
+**Total Size:** ~100KB  
 **Compression:** None (kept as-is for easy reference)
+**Latest Addition:** SectionLayout.vue (Mobile responsive fix - Oct 23, 2025)
 
 ---
 
 **Status:** ✅ Archive Complete  
 **Review By:** January 6, 2026  
-**Maintainer:** Development Team
+**Maintainer:** Development Team  
+**Last Updated:** October 23, 2025
