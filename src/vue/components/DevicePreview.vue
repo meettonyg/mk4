@@ -60,16 +60,20 @@ const setDevice = (device) => {
     return;
   }
   
-  // Remove all device classes
+  // Remove all device classes - FIX: Use correct class names
   previewArea.classList.remove('device-desktop', 'device-tablet', 'device-mobile');
+  previewArea.classList.remove('gmkb-device--desktop', 'gmkb-device--tablet', 'gmkb-device--mobile');
   if (mainContent) {
     mainContent.classList.remove('device-desktop', 'device-tablet', 'device-mobile');
+    mainContent.classList.remove('gmkb-device--desktop', 'gmkb-device--tablet', 'gmkb-device--mobile');
   }
   
-  // Add current device class
+  // Add current device class - Use BOTH naming conventions
   previewArea.classList.add(`device-${device}`);
+  previewArea.classList.add(`gmkb-device--${device}`);
   if (mainContent) {
     mainContent.classList.add(`device-${device}`);
+    mainContent.classList.add(`gmkb-device--${device}`);
   }
   
   // Apply width constraints to preview area
@@ -84,36 +88,48 @@ const setDevice = (device) => {
     previewArea.style.boxShadow = '';
   }
   
-  // ROOT FIX: Override draggable's inline styles for device preview
-  // Since draggable.js sets pixel values, we must override with JS
+  // ROOT FIX: Override inline styles for ALL layout elements
   const overrideLayoutStyles = () => {
+    // Find ALL elements that might be layouts
     const layouts = previewArea.querySelectorAll(
-      '.layout-two-column, .layout-three-column, .layout-main-sidebar, .layout-sidebar-main'
+      '.layout-two-column, .layout-three-column, .layout-main-sidebar, .layout-sidebar-main, ' +
+      '[class*="layout-two-column"], [class*="layout-three-column"], ' +
+      '.gmkb-section__content'
     );
     
     if (device === 'mobile') {
       layouts.forEach(layout => {
-        // Force single column
-        layout.style.gridTemplateColumns = '1fr';
-        layout.style.gap = '2rem';
+        // Check if this is a two-column or three-column layout
+        if (layout.className.includes('two-column') || 
+            layout.className.includes('three-column') ||
+            layout.className.includes('main-sidebar') ||
+            layout.className.includes('sidebar-main')) {
+          // Force single column
+          layout.style.display = 'grid';
+          layout.style.gridTemplateColumns = '1fr';
+          layout.style.gap = '2rem';
+          console.log('📱 Forced mobile layout on:', layout.className);
+        }
       });
     } else if (device === 'tablet') {
-      // Handle tablet mode
-      const twoColLayouts = previewArea.querySelectorAll('.layout-two-column, .layout-main-sidebar, .layout-sidebar-main');
-      const threeColLayouts = previewArea.querySelectorAll('.layout-three-column');
-      
-      twoColLayouts.forEach(layout => {
-        layout.style.gridTemplateColumns = '';
-        layout.style.gap = '';
-      });
-      
-      threeColLayouts.forEach(layout => {
-        layout.style.gridTemplateColumns = 'repeat(2, 1fr)';
-        layout.style.gap = '2rem';
+      layouts.forEach(layout => {
+        if (layout.className.includes('three-column')) {
+          layout.style.display = 'grid';
+          layout.style.gridTemplateColumns = 'repeat(2, 1fr)';
+          layout.style.gap = '2rem';
+        } else if (layout.className.includes('two-column') || 
+                   layout.className.includes('main-sidebar') ||
+                   layout.className.includes('sidebar-main')) {
+          // Reset two-column layouts
+          layout.style.display = '';
+          layout.style.gridTemplateColumns = '';
+          layout.style.gap = '';
+        }
       });
     } else {
-      // Desktop - remove inline overrides
+      // Desktop - remove all inline overrides
       layouts.forEach(layout => {
+        layout.style.display = '';
         layout.style.gridTemplateColumns = '';
         layout.style.gap = '';
       });
@@ -123,31 +139,41 @@ const setDevice = (device) => {
   // Apply immediately
   overrideLayoutStyles();
   
-  // Also apply after a delay to override any async recalculations
+  // Also apply after delays to override any async recalculations
   setTimeout(overrideLayoutStyles, 100);
   setTimeout(overrideLayoutStyles, 300);
+  setTimeout(overrideLayoutStyles, 500);
   
-  // Watch for changes and reapply (handles draggable recalculations)
+  // Watch for changes and reapply (handles dynamic recalculations)
   if (device !== 'desktop') {
     // Set up observer to maintain our overrides
     if (window.devicePreviewObserver) {
       window.devicePreviewObserver.disconnect();
     }
     
-    window.devicePreviewObserver = new MutationObserver(() => {
-      overrideLayoutStyles();
+    window.devicePreviewObserver = new MutationObserver((mutations) => {
+      // Only reapply if styles were changed
+      let needsOverride = false;
+      mutations.forEach(m => {
+        if (m.attributeName === 'style' && m.target.style.gridTemplateColumns !== '1fr') {
+          needsOverride = true;
+        }
+      });
+      if (needsOverride) {
+        overrideLayoutStyles();
+      }
     });
     
-    const layouts = previewArea.querySelectorAll(
-      '.layout-two-column, .layout-three-column, .layout-main-sidebar, .layout-sidebar-main'
-    );
-    
-    layouts.forEach(layout => {
+    // Observe ALL potential layout elements
+    const allLayouts = previewArea.querySelectorAll('[class*="layout"], .gmkb-section__content');
+    allLayouts.forEach(layout => {
       window.devicePreviewObserver.observe(layout, {
         attributes: true,
         attributeFilter: ['style']
       });
     });
+    
+    console.log(`✅ Monitoring ${allLayouts.length} layout elements for changes`);
   } else if (window.devicePreviewObserver) {
     // Clean up observer on desktop
     window.devicePreviewObserver.disconnect();

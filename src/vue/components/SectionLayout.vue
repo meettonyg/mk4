@@ -363,15 +363,28 @@ export default {
   }
 }
 
-/* Device Preview Mode - Overrides for builder preview */
+/* Device Preview Mode - Support BOTH naming conventions */
+/* Original naming convention */
 #media-kit-preview.device-mobile .layout-two-column,
 #media-kit-preview.device-mobile .layout-main-sidebar,
 #media-kit-preview.device-mobile .layout-sidebar-main,
-#media-kit-preview.device-mobile .layout-three-column {
+#media-kit-preview.device-mobile .layout-three-column,
+/* BEM naming convention */
+#media-kit-preview.gmkb-device--mobile .layout-two-column,
+#media-kit-preview.gmkb-device--mobile .layout-main-sidebar,
+#media-kit-preview.gmkb-device--mobile .layout-sidebar-main,
+#media-kit-preview.gmkb-device--mobile .layout-three-column,
+/* Also target compound classes */
+#media-kit-preview.gmkb-device--mobile .gmkb-section__content.layout-two-column,
+#media-kit-preview.gmkb-device--mobile [class*="layout-two-column"],
+#media-kit-preview.gmkb-device--mobile [class*="layout-three-column"] {
   grid-template-columns: 1fr !important;
 }
 
-#media-kit-preview.device-tablet .layout-three-column {
+/* Tablet mode */
+#media-kit-preview.device-tablet .layout-three-column,
+#media-kit-preview.gmkb-device--tablet .layout-three-column,
+#media-kit-preview.gmkb-device--tablet [class*="layout-three-column"] {
   grid-template-columns: repeat(2, 1fr) !important;
 }
 </style>
