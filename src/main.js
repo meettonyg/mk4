@@ -13,6 +13,10 @@
 // This gets bundled into dist/gmkb.css by Vite
 import './styles/builder.css';
 
+// ROOT FIX: Import ENTIRE design system (includes sections.css with responsive rules)
+// CRITICAL: This ensures device-mobile and device-tablet classes work properly
+import '../design-system/index.css';
+
 // Vue 3 imports
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';

@@ -88,3 +88,48 @@ body.dark-mode #gmkb-sidebar {
 .gmkb-vue-ready #app {
     display: none;
 }
+
+/* ========================================
+   RESPONSIVE: MOBILE BUILDER LAYOUT
+   ======================================== */
+
+@media (max-width: 768px) {
+    /* Make main content area stack vertically on mobile */
+    #gmkb-main-content {
+        flex-direction: column;
+    }
+    
+    /* Sidebar takes full width when visible */
+    #gmkb-sidebar {
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+        max-height: 50vh;
+        border-right: none;
+        border-bottom: 1px solid #e5e7eb;
+        overflow-y: auto;
+    }
+    
+    body.dark-mode #gmkb-sidebar {
+        border-bottom-color: #334155;
+    }
+    
+    /* Collapsed sidebar is hidden on mobile */
+    #gmkb-sidebar.sidebar-collapsed {
+        display: none;
+    }
+    
+    /* Preview area adjustments */
+    #media-kit-preview {
+        flex: 1;
+        padding: 16px;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+    
+    /* Reduce preview padding for device preview modes */
+    #media-kit-preview.device-mobile,
+    #media-kit-preview.device-tablet {
+        padding: 8px;
+    }
+}
