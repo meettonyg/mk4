@@ -159,23 +159,31 @@
 
 /* ==========================================
    RESPONSIVE: VIEWPORT-BASED (Frontend)
+   Mobile-first approach with explicit stacking
    ========================================== */
 
-/* Mobile: Stack all columns */
-@media (max-width: 768px) {
+/* Mobile: Stack all columns (0-767px) */
+@media (max-width: 767px) {
   .gmkb-section__columns--2,
   .gmkb-section__columns--3,
   .gmkb-section--two_column .gmkb-section__columns,
   .gmkb-section--three_column .gmkb-section__columns,
   .gmkb-section--main_sidebar .gmkb-section__columns,
   .gmkb-section--sidebar_main .gmkb-section__columns {
-    grid-template-columns: 1fr !important;
+    display: flex !important;
+    flex-direction: column !important;
     gap: var(--gmkb-component-gap);
+  }
+  
+  /* Ensure columns take full width on mobile */
+  .gmkb-section__column {
+    width: 100% !important;
+    max-width: 100% !important;
   }
 }
 
-/* Tablet: 3 columns become 2 columns */
-@media (min-width: 769px) and (max-width: 1024px) {
+/* Tablet: 3 columns become 2 columns (768px-1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
   .gmkb-section__columns--3,
   .gmkb-section--three_column .gmkb-section__columns {
     grid-template-columns: repeat(2, 1fr) !important;
@@ -194,8 +202,15 @@
 .device-mobile .gmkb-section--three_column .gmkb-section__columns,
 .device-mobile .gmkb-section--main_sidebar .gmkb-section__columns,
 .device-mobile .gmkb-section--sidebar_main .gmkb-section__columns {
-  grid-template-columns: 1fr !important;
+  display: flex !important;
+  flex-direction: column !important;
   gap: var(--gmkb-component-gap);
+}
+
+/* Ensure columns take full width in mobile preview */
+.device-mobile .gmkb-section__column {
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 /* Tablet Preview Mode */
@@ -209,23 +224,25 @@
    ========================================== */
 
 /* Viewport-based reverse */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .gmkb-section--reverse-mobile .gmkb-section__columns {
     display: flex !important;
-    flex-direction: column-reverse;
+    flex-direction: column-reverse !important;
   }
   
   .gmkb-section--reverse-mobile .gmkb-section__column {
-    width: 100%;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 }
 
 /* Device preview reverse */
 .device-mobile .gmkb-section--reverse-mobile .gmkb-section__columns {
   display: flex !important;
-  flex-direction: column-reverse;
+  flex-direction: column-reverse !important;
 }
 
 .device-mobile .gmkb-section--reverse-mobile .gmkb-section__column {
-  width: 100%;
+  width: 100% !important;
+  max-width: 100% !important;
 }

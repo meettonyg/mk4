@@ -431,9 +431,18 @@
 
 /* ==========================================
    RESPONSIVE ADJUSTMENTS - LAYOUT ONLY
+   Mobile breakpoint: 0-767px (matches sections.css)
    ========================================== */
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
+  /* Ensure full width on mobile */
+  .gmkb-component {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  
   .gmkb-component--hero,
   .hero {
     padding: var(--gmkb-space-12) var(--gmkb-space-4);
@@ -456,6 +465,7 @@
   }
   
   .stats-container {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
+    gap: var(--gmkb-space-4);
   }
 }
