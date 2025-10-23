@@ -84,6 +84,76 @@ const setDevice = (device) => {
     previewArea.style.boxShadow = '';
   }
   
+  // ROOT FIX: Override draggable's inline styles for device preview
+  // Since draggable.js sets pixel values, we must override with JS
+  const overrideLayoutStyles = () => {
+    const layouts = previewArea.querySelectorAll(
+      '.layout-two-column, .layout-three-column, .layout-main-sidebar, .layout-sidebar-main'
+    );
+    
+    if (device === 'mobile') {
+      layouts.forEach(layout => {
+        // Force single column
+        layout.style.gridTemplateColumns = '1fr';
+        layout.style.gap = '2rem';
+      });
+    } else if (device === 'tablet') {
+      // Handle tablet mode
+      const twoColLayouts = previewArea.querySelectorAll('.layout-two-column, .layout-main-sidebar, .layout-sidebar-main');
+      const threeColLayouts = previewArea.querySelectorAll('.layout-three-column');
+      
+      twoColLayouts.forEach(layout => {
+        layout.style.gridTemplateColumns = '';
+        layout.style.gap = '';
+      });
+      
+      threeColLayouts.forEach(layout => {
+        layout.style.gridTemplateColumns = 'repeat(2, 1fr)';
+        layout.style.gap = '2rem';
+      });
+    } else {
+      // Desktop - remove inline overrides
+      layouts.forEach(layout => {
+        layout.style.gridTemplateColumns = '';
+        layout.style.gap = '';
+      });
+    }
+  };
+  
+  // Apply immediately
+  overrideLayoutStyles();
+  
+  // Also apply after a delay to override any async recalculations
+  setTimeout(overrideLayoutStyles, 100);
+  setTimeout(overrideLayoutStyles, 300);
+  
+  // Watch for changes and reapply (handles draggable recalculations)
+  if (device !== 'desktop') {
+    // Set up observer to maintain our overrides
+    if (window.devicePreviewObserver) {
+      window.devicePreviewObserver.disconnect();
+    }
+    
+    window.devicePreviewObserver = new MutationObserver(() => {
+      overrideLayoutStyles();
+    });
+    
+    const layouts = previewArea.querySelectorAll(
+      '.layout-two-column, .layout-three-column, .layout-main-sidebar, .layout-sidebar-main'
+    );
+    
+    layouts.forEach(layout => {
+      window.devicePreviewObserver.observe(layout, {
+        attributes: true,
+        attributeFilter: ['style']
+      });
+    });
+  } else if (window.devicePreviewObserver) {
+    // Clean up observer on desktop
+    window.devicePreviewObserver.disconnect();
+    window.devicePreviewObserver = null;
+  }
+  
   // Dispatch event for other components
   document.dispatchEvent(new CustomEvent('gmkb:device-changed', {
     detail: { device, width: deviceData.width, maxWidth: deviceData.maxWidth }

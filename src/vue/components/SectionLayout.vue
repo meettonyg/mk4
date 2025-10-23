@@ -246,7 +246,8 @@ export default {
 };
 </script>
 
-<style scoped>
+<style>
+/* Component styles - not scoped so device preview can override */
 .gmkb-section {
   position: relative;
   margin-bottom: 2rem;
@@ -362,16 +363,15 @@ export default {
   }
 }
 
-/* Device Preview Mode - These override the base layouts above */
-/* Using :global() to target parent class outside of scoped context */
-:global(#media-kit-preview.device-mobile) .layout-two-column,
-:global(#media-kit-preview.device-mobile) .layout-main-sidebar,
-:global(#media-kit-preview.device-mobile) .layout-sidebar-main,
-:global(#media-kit-preview.device-mobile) .layout-three-column {
+/* Device Preview Mode - Overrides for builder preview */
+#media-kit-preview.device-mobile .layout-two-column,
+#media-kit-preview.device-mobile .layout-main-sidebar,
+#media-kit-preview.device-mobile .layout-sidebar-main,
+#media-kit-preview.device-mobile .layout-three-column {
   grid-template-columns: 1fr !important;
 }
 
-:global(#media-kit-preview.device-tablet) .layout-three-column {
+#media-kit-preview.device-tablet .layout-three-column {
   grid-template-columns: repeat(2, 1fr) !important;
 }
 </style>
