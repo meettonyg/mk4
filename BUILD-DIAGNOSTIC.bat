@@ -1,81 +1,84 @@
 @echo off
-cls
 echo ========================================
-echo   BUILD DIAGNOSTIC
+echo  BUILD DIAGNOSTIC
 echo ========================================
 echo.
 
-echo Current time: %TIME%
+cd /d "C:\Users\seoge\OneDrive\Desktop\CODE-Guestify\MEDIAKIT\PLUGIN\mk4"
+
+echo [1] Current directory:
+cd
 echo.
 
-echo Step 1: Check current dist files...
+echo [2] Checking Node/NPM:
+node --version
+npm --version
 echo.
-if exist "dist\gmkb.iife.js" (
-    echo ✅ gmkb.iife.js EXISTS
-    dir dist\gmkb.iife.js | findstr "gmkb.iife.js"
-    echo.
-    echo First line of file:
-    for /f "delims=" %%a in ('type dist\gmkb.iife.js ^| more +0 ^| findstr /n "^" ^| findstr "^1:"') do echo %%a
+
+echo [3] Checking package.json exists:
+if exist package.json (
+    echo    ✓ package.json found
 ) else (
-    echo ❌ gmkb.iife.js DOES NOT EXIST
+    echo    ✗ package.json NOT FOUND!
 )
 echo.
 
-echo Step 2: Delete old file...
-if exist "dist\gmkb.iife.js" (
-    del dist\gmkb.iife.js
-    if exist "dist\gmkb.iife.js" (
-        echo ❌ FAILED to delete - file may be locked!
-        echo.
-        echo Is the file open in an editor?
-        echo Is a process using it?
-        pause
-        exit /b 1
-    ) else (
-        echo ✅ File deleted successfully
-    )
+echo [4] Checking node_modules:
+if exist node_modules (
+    echo    ✓ node_modules exists
+    dir node_modules | find "File(s)" | find /v "0 File(s)"
 ) else (
-    echo ℹ️  File doesn't exist
+    echo    ✗ node_modules NOT FOUND!
+    echo    Running: npm install
+    call npm install
 )
 echo.
 
-echo Step 3: Build...
-echo.
-call npm run build
-if %errorlevel% neq 0 (
-    echo ❌ Build failed!
-    pause
-    exit /b %errorlevel%
-)
-echo.
-
-echo Step 4: Check new file...
-echo.
-if exist "dist\gmkb.iife.js" (
-    echo ✅ NEW gmkb.iife.js created!
-    dir dist\gmkb.iife.js | findstr "gmkb.iife.js"
-    echo.
-    echo First line of new file:
-    for /f "delims=" %%a in ('type dist\gmkb.iife.js ^| more +0 ^| findstr /n "^" ^| findstr "^1:"') do echo %%a
-    echo.
-    echo File size:
-    for %%A in (dist\gmkb.iife.js) do echo %%~zA bytes
+echo [5] Checking vite:
+if exist node_modules\vite (
+    echo    ✓ Vite installed
 ) else (
-    echo ❌ File was NOT created!
-    echo Build succeeded but file is missing!
-    echo.
-    echo Check if vite is writing to a different location!
-    echo.
-    dir /s gmkb.iife.js
+    echo    ✗ Vite NOT installed!
 )
 echo.
 
+echo [6] Checking build script in package.json:
+type package.json | findstr /C:"build"
+echo.
+
+echo [7] Deleting old dist:
+if exist dist (
+    rmdir /s /q dist
+    echo    Deleted old dist
+) else (
+    echo    No dist to delete
+)
+echo.
+
+echo [8] Running build with verbose output:
+echo.
 echo ========================================
-echo DIAGNOSTIC COMPLETE
+call npm run build --verbose
 echo ========================================
 echo.
-echo Current time: %TIME%
+
+echo [9] Checking if dist was created:
+if exist dist\gmkb.iife.js (
+    echo    ✓ Build created gmkb.iife.js
+    echo    Size:
+    for %%A in (dist\gmkb.iife.js) do echo    %%~zA bytes
+    echo    Modified:
+    for %%A in (dist\gmkb.iife.js) do echo    %%~tA
+) else (
+    echo    ✗ BUILD FAILED - No gmkb.iife.js created!
+)
 echo.
-echo Compare timestamps above!
+
+echo [10] Checking for build errors in npm log:
+if exist npm-debug.log (
+    echo    Found npm-debug.log - showing last 20 lines:
+    type npm-debug.log | more +L-20
+)
 echo.
+
 pause
