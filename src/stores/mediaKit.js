@@ -2,6 +2,8 @@ import { defineStore } from 'pinia';
 import UnifiedComponentRegistry from '../services/UnifiedComponentRegistry';
 // GEMINI REFINEMENT #1: Direct store import for resetAll
 import { useThemeStore } from './theme';
+// ROOT FIX: Import UI store for proper state management coordination
+import { useUIStore } from './ui';
 import { debounce } from '../utils/debounce';
 // P0 FIX #10: Removed EventBus import - using Pinia $subscribe instead
 import systemReadiness from '../services/SystemReadiness.js';
@@ -1352,30 +1354,22 @@ export const useMediaKitStore = defineStore('mediaKit', {
         
         // ROOT FIX: Clear UI state if editing a component that's being deleted
         // This prevents "Component not found" error in the sidebar
-        const uiStore = window.$pinia?.state?.value?.ui;
-        if (uiStore) {
-          // Check if the currently editing component is being deleted
-          if (uiStore.editingComponentId && componentIdsToDelete.includes(uiStore.editingComponentId)) {
-            console.log(`🔧 Closing sidebar editor for deleted component: ${uiStore.editingComponentId}`);
-            // Import and call closeSidebarEditor
-            import('./ui.js').then(({ useUIStore }) => {
-              const uiStoreInstance = useUIStore();
-              uiStoreInstance.closeSidebarEditor();
-            });
-          }
-          
-          // Clear selection if any selected components are being deleted
-          if (uiStore.selectedComponentIds && Array.isArray(uiStore.selectedComponentIds)) {
-            const selectedToDelete = uiStore.selectedComponentIds.filter(id => 
-              componentIdsToDelete.includes(id)
-            );
-            if (selectedToDelete.length > 0) {
-              console.log(`🔧 Clearing selection for ${selectedToDelete.length} deleted components`);
-              import('./ui.js').then(({ useUIStore }) => {
-                const uiStoreInstance = useUIStore();
-                selectedToDelete.forEach(id => uiStoreInstance.deselectComponent(id));
-              });
-            }
+        const uiStore = useUIStore();
+        
+        // Check if the currently editing component is being deleted
+        if (uiStore.editingComponentId && componentIdsToDelete.includes(uiStore.editingComponentId)) {
+          console.log(`🔧 Closing sidebar editor for deleted component: ${uiStore.editingComponentId}`);
+          uiStore.closeSidebarEditor();
+        }
+        
+        // Clear selection if any selected components are being deleted
+        if (uiStore.selectedComponentIds && Array.isArray(uiStore.selectedComponentIds)) {
+          const selectedToDelete = uiStore.selectedComponentIds.filter(id => 
+            componentIdsToDelete.includes(id)
+          );
+          if (selectedToDelete.length > 0) {
+            console.log(`🔧 Clearing selection for ${selectedToDelete.length} deleted components`);
+            selectedToDelete.forEach(id => uiStore.deselectComponent(id));
           }
         }
         
@@ -1389,12 +1383,9 @@ export const useMediaKitStore = defineStore('mediaKit', {
         this.sections.splice(index, 1);
         
         // ROOT FIX: If this was the last section and we're in section editing mode, close the editor
-        if (this.sections.length === 0 && uiStore?.editingSectionId === sectionId) {
+        if (this.sections.length === 0 && uiStore.editingSectionId === sectionId) {
           console.log('🔧 Closing section editor after deleting last section');
-          import('./ui.js').then(({ useUIStore }) => {
-            const uiStoreInstance = useUIStore();
-            uiStoreInstance.closeSidebarEditor();
-          });
+          uiStore.closeSidebarEditor();
         }
         
         // Log the action
@@ -1954,26 +1945,18 @@ export const useMediaKitStore = defineStore('mediaKit', {
     removeComponent(componentId) {
       // ROOT FIX: Clear UI state if editing the component being deleted
       // This prevents "Component not found" error in the sidebar
-      const uiStore = window.$pinia?.state?.value?.ui;
-      if (uiStore) {
-        // Check if the currently editing component is being deleted
-        if (uiStore.editingComponentId === componentId) {
-          console.log(`🔧 Closing sidebar editor for deleted component: ${componentId}`);
-          // Import and call closeSidebarEditor
-          import('./ui.js').then(({ useUIStore }) => {
-            const uiStoreInstance = useUIStore();
-            uiStoreInstance.closeSidebarEditor();
-          });
-        }
-        
-        // Clear selection if this component is selected
-        if (uiStore.selectedComponentIds && uiStore.selectedComponentIds.includes(componentId)) {
-          console.log(`🔧 Clearing selection for deleted component: ${componentId}`);
-          import('./ui.js').then(({ useUIStore }) => {
-            const uiStoreInstance = useUIStore();
-            uiStoreInstance.deselectComponent(componentId);
-          });
-        }
+      const uiStore = useUIStore();
+      
+      // Check if the currently editing component is being deleted
+      if (uiStore.editingComponentId === componentId) {
+        console.log(`🔧 Closing sidebar editor for deleted component: ${componentId}`);
+        uiStore.closeSidebarEditor();
+      }
+      
+      // Clear selection if this component is selected
+      if (uiStore.selectedComponentIds && uiStore.selectedComponentIds.includes(componentId)) {
+        console.log(`🔧 Clearing selection for deleted component: ${componentId}`);
+        uiStore.deselectComponent(componentId);
       }
       
       // Remove from components map
