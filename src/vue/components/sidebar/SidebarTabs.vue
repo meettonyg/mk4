@@ -913,9 +913,15 @@ export default {
       return count;
     };
     
+    const openLibrary = () => {
+      // Dispatch event to open component library
+      document.dispatchEvent(new CustomEvent('gmkb:open-component-library'));
+      console.log('✅ Opening component library');
+    };
+    
     const handleFooterAction = () => {
       if (activeTab.value === 'components') {
-        console.log('Add component action');
+        openLibrary();
       } else if (activeTab.value === 'layout') {
         addSection();
       } else {
@@ -1167,6 +1173,7 @@ export default {
       removeSection,
       getSectionLabel,
       getComponentCount,
+      openLibrary,
       handleFooterAction,
       updatePageBackground,
       openMediaLibrary,
