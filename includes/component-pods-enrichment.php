@@ -287,6 +287,7 @@ function gmkb_enrich_biography_data($props, $post_id) {
                 $bio = $extract_value($pod->field('biography'));
                 $prof_title = $extract_value($pod->field('professional_title'));
                 $company_name = $extract_value($pod->field('company'));
+                $location = $extract_value($pod->field('location'));
                 
                 if (defined('WP_DEBUG') && WP_DEBUG) {
                     error_log('🔍 RAW Pods values:');
@@ -310,6 +311,9 @@ function gmkb_enrich_biography_data($props, $post_id) {
                 if ($company_name) {
                     $props['company'] = $company_name;
                 }
+                if ($location) {
+                    $props['location'] = $location;
+                }
                 if ($bio) {
                     $props['biography'] = $bio;
                     $props['bio'] = $bio;
@@ -322,6 +326,7 @@ function gmkb_enrich_biography_data($props, $post_id) {
                     error_log('  - Name: ' . ($props['name'] ?? 'NONE'));
                     error_log('  - Title: ' . ($props['title'] ?? 'NONE'));
                     error_log('  - Company: ' . ($props['company'] ?? 'NONE'));
+                    error_log('  - Location: ' . ($props['location'] ?? 'NONE'));
                     error_log('  - Bio length: ' . strlen($bio ?? ''));
                 }
             } else {

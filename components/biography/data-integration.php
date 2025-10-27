@@ -445,6 +445,7 @@ add_filter('gmkb_enrich_biography_props', function($props, $post_id) {
         $props['name'] = trim($first_name . ' ' . $last_name);
         $props['title'] = $extract_value($pod->field('professional_title'));
         $props['company'] = $extract_value($pod->field('company'));
+        $props['location'] = $extract_value($pod->field('location'));
         
         $bio = $extract_value($pod->field('biography'));
         $props['bio'] = $bio;
@@ -467,6 +468,7 @@ add_filter('gmkb_enrich_biography_props', function($props, $post_id) {
             error_log('   - Name: ' . $props['name']);
             error_log('   - Title: ' . $props['title']);
             error_log('   - Company: ' . $props['company']);
+            error_log('   - Location: ' . ($props['location'] ?? 'NONE'));
             error_log('   - Bio length: ' . strlen($bio));
         }
         

@@ -11,6 +11,7 @@ $name = $props['name'] ?? '';
 $title = $props['title'] ?? '';
 $biography = $props['biography'] ?? $props['bio'] ?? $props['bio_content'] ?? '';
 $company = $props['company'] ?? '';
+$location = $props['location'] ?? '';
 
 // ROOT FIX: AGGRESSIVE debugging to see what data we actually have
 if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -19,17 +20,23 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
     error_log('Available props keys: ' . implode(', ', array_keys($props)));
     error_log('Name: ' . ($name ?: 'EMPTY'));
     error_log('Title: ' . ($title ?: 'EMPTY'));
+    error_log('Company: ' . ($company ?: 'EMPTY'));
+    error_log('Location: ' . ($location ?: 'EMPTY'));
     error_log('Biography length: ' . strlen($biography));
     error_log('Biography preview: ' . substr($biography, 0, 100));
-    error_log('Company: ' . ($company ?: 'EMPTY'));
     error_log('Post ID: ' . ($props['post_id'] ?? 'NO POST ID'));
     error_log('==============================================');
 }
 
-// Combine title and company
-$display_title = $title;
-if ($company) {
-    $display_title .= $company ? " • $company" : '';
+// Build display title - only show if there's content
+// Match Vue component logic: title, then company with separator if both exist
+$display_title = '';
+if ($title && $company) {
+    $display_title = $title . ' • ' . $company;
+} elseif ($title) {
+    $display_title = $title;
+} elseif ($company) {
+    $display_title = $company;
 }
 ?>
 <!-- ROOT FIX: Inner content only - outer wrapper provided by system -->
@@ -40,6 +47,10 @@ if ($company) {
     
     <?php if ($display_title): ?>
         <p class="biography-title"><?php echo esc_html($display_title); ?></p>
+    <?php endif; ?>
+    
+    <?php if ($location): ?>
+        <p class="biography-location">📍 <?php echo esc_html($location); ?></p>
     <?php endif; ?>
     
     <?php if ($biography): ?>
