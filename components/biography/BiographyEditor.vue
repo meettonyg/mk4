@@ -10,43 +10,7 @@
     <!-- Content Tab -->
     <template #content>
       <div class="content-fields">
-        <section class="editor-section">
-          <h4>Personal Information</h4>
-          
-          <div class="field-group">
-            <label for="bio-name">Full Name</label>
-            <input 
-              id="bio-name"
-              v-model="localData.name" 
-              @input="updateComponent"
-              type="text"
-              placeholder="Enter full name..."
-            />
-          </div>
-          
-          <div class="field-group">
-            <label for="bio-title">Title / Role</label>
-            <input 
-              id="bio-title"
-              v-model="localData.title" 
-              @input="updateComponent"
-              type="text"
-              placeholder="e.g., CEO, Author, Speaker..."
-            />
-          </div>
-          
-          <div class="field-group">
-            <label for="bio-location">Location</label>
-            <input 
-              id="bio-location"
-              v-model="localData.location" 
-              @input="updateComponent"
-              type="text"
-              placeholder="City, Country"
-            />
-          </div>
-        </section>
-
+        <!-- SIMPLIFIED: Biography text only -->
         <section class="editor-section">
           <h4>Biography Text</h4>
           
@@ -56,13 +20,12 @@
               id="bio-text"
               v-model="localData.biography" 
               @input="updateComponent"
-              rows="8"
+              rows="12"
               placeholder="Enter biography text..."
             />
+            <p class="field-hint">Write your biography here. This will be displayed on the frontend.</p>
           </div>
         </section>
-
-
       </div>
     </template>
   </ComponentEditorTemplate>
@@ -87,24 +50,18 @@ const store = useMediaKitStore();
 // Active tab state
 const activeTab = ref('content');
 
-// Local data state
+// SIMPLIFIED: Local data state - biography text only
 const localData = ref({
-  name: '',
-  title: '',
-  biography: '',
-  location: ''
+  biography: ''
 });
 
 // Initialize local data from store
 const loadComponentData = () => {
   const component = store.components[props.componentId];
   if (component && component.data) {
-    // Merge existing data with defaults
+    // Load biography text only
     localData.value = {
-      name: component.data.name || component.data.fullName || '',
-      title: component.data.title || component.data.role || '',
-      biography: component.data.biography || component.data.bio || component.data.content || '',
-      location: component.data.location || ''
+      biography: component.data.biography || component.data.bio || component.data.content || ''
     };
   }
 };
@@ -122,16 +79,11 @@ const updateComponent = () => {
   }
   
   updateTimeout = setTimeout(() => {
+    // SIMPLIFIED: Only save biography text
     store.updateComponent(props.componentId, {
       data: {
-        // Primary fields
-        name: localData.value.name,
-        title: localData.value.title,
         biography: localData.value.biography,
-        location: localData.value.location,
-        // Legacy field compatibility
-        fullName: localData.value.name,
-        role: localData.value.title,
+        // Aliases for compatibility
         bio: localData.value.biography,
         content: localData.value.biography
       }
@@ -234,6 +186,17 @@ body.dark-mode .field-group textarea {
 .field-group textarea {
   resize: vertical;
   min-height: 120px;
+}
+
+.field-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+body.dark-mode .field-hint {
+  color: #64748b;
 }
 
 

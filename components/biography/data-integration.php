@@ -408,8 +408,9 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
 }
 
 /**
- * ROOT FIX: Hook into component prop enrichment filter (ARCHITECTURE COMPLIANT)
- * This keeps biography-specific logic in the biography component
+ * Biography Component Filter - SIMPLIFIED
+ * SINGLE RESPONSIBILITY: Load biography text only
+ * Other fields (name, title, location) will be handled by separate components
  */
 add_filter('gmkb_enrich_biography_props', function($props, $post_id) {
     // Only proceed if Pods is active
@@ -423,14 +424,10 @@ add_filter('gmkb_enrich_biography_props', function($props, $post_id) {
             return $props;
         }
         
-        // ROOT FIX: Helper to extract string value from Pods fields (handles arrays)
+        // Helper to extract string value from Pods fields
         $extract_value = function($value) {
             if (is_array($value)) {
-                // Handle array returns from Pods relationship/pick fields
-                if (isset($value[0])) {
-                    return is_string($value[0]) ? $value[0] : '';
-                }
-                // Handle associative arrays (post objects, etc)
+                if (isset($value[0])) return is_string($value[0]) ? $value[0] : '';
                 if (isset($value['name'])) return $value['name'];
                 if (isset($value['post_title'])) return $value['post_title'];
                 return '';
@@ -438,43 +435,20 @@ add_filter('gmkb_enrich_biography_props', function($props, $post_id) {
             return is_string($value) ? $value : '';
         };
         
-        // Load guest data from Pods - matching Vue component prop names
-        $first_name = $extract_value($pod->field('first_name'));
-        $last_name = $extract_value($pod->field('last_name'));
-        
-        $props['name'] = trim($first_name . ' ' . $last_name);
-        $props['title'] = $extract_value($pod->field('professional_title'));
-        $props['company'] = $extract_value($pod->field('company'));
-        $props['location'] = $extract_value($pod->field('location'));
-        
+        // Load biography text only
         $bio = $extract_value($pod->field('biography'));
         $props['bio'] = $bio;
-        $props['biography'] = $bio; // Alias
-        $props['bio_content'] = $bio; // Template uses this
-        
-        // Handle headshot image
-        $headshot = $pod->field('headshot');
-        if (is_array($headshot) && isset($headshot['guid'])) {
-            $props['image_url'] = $headshot['guid'];
-        } elseif (is_string($headshot)) {
-            $props['image_url'] = $headshot;
-        } else {
-            // Try dot notation
-            $props['image_url'] = $extract_value($pod->field('headshot.guid'));
-        }
+        $props['biography'] = $bio;
+        $props['bio_content'] = $bio;
+        $props['content'] = $bio;
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ Biography Filter: Enriched props for post ' . $post_id);
-            error_log('   - Name: ' . $props['name']);
-            error_log('   - Title: ' . $props['title']);
-            error_log('   - Company: ' . $props['company']);
-            error_log('   - Location: ' . ($props['location'] ?? 'NONE'));
-            error_log('   - Bio length: ' . strlen($bio));
+            error_log('[Biography Filter Simplified] Loaded for post ' . $post_id . ' - Length: ' . strlen($bio));
         }
         
     } catch (Exception $e) {
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('⚠️ Biography Filter: Error enriching props: ' . $e->getMessage());
+            error_log('[Biography Filter] Error: ' . $e->getMessage());
         }
     }
     

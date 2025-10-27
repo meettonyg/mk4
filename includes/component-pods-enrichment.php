@@ -241,40 +241,27 @@ function gmkb_enrich_topics_data($props, $post_id) {
 
 /**
  * Enrich biography component with Pods field data
+ * SIMPLIFIED: Only loads biography text - other fields moved to separate components
  * 
  * @param array $props Existing component props
  * @param int $post_id Post ID to load data from
  * @return array Enriched props with biography data
  */
 function gmkb_enrich_biography_data($props, $post_id) {
-    // ROOT FIX: AGGRESSIVE debugging
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('========== BIOGRAPHY ENRICHMENT ==========');
-        error_log('Post ID: ' . $post_id);
-        error_log('Incoming props keys: ' . implode(', ', array_keys($props)));
-    }
-    
     // Validate post ID
     if (!$post_id || $post_id <= 0) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('❌ Invalid post ID: ' . $post_id);
-        }
         return $props;
     }
     
-    // ROOT FIX: Check if Pods is active and try to use it first
+    // Try to load from Pods first
     if (function_exists('pods')) {
         try {
             $pod = pods('guests', $post_id);
             if ($pod && $pod->exists()) {
-                // Helper function to safely extract Pods field value
+                // Helper to extract string value from Pods
                 $extract_value = function($value) {
                     if (is_array($value)) {
-                        // Handle array returns from Pods
-                        if (isset($value[0])) {
-                            return is_string($value[0]) ? $value[0] : '';
-                        }
-                        // Handle associative arrays
+                        if (isset($value[0])) return is_string($value[0]) ? $value[0] : '';
                         if (isset($value['name'])) return $value['name'];
                         if (isset($value['post_title'])) return $value['post_title'];
                         return '';
@@ -282,61 +269,23 @@ function gmkb_enrich_biography_data($props, $post_id) {
                     return is_string($value) ? $value : '';
                 };
                 
-                $first_name = $extract_value($pod->field('first_name'));
-                $last_name = $extract_value($pod->field('last_name'));
+                // Load biography text only
                 $bio = $extract_value($pod->field('biography'));
-                $prof_title = $extract_value($pod->field('professional_title'));
-                $company_name = $extract_value($pod->field('company'));
-                $location = $extract_value($pod->field('location'));
                 
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('🔍 RAW Pods values:');
-                    error_log('  - first_name type: ' . gettype($pod->field('first_name')));
-                    error_log('  - professional_title type: ' . gettype($pod->field('professional_title')));
-                    error_log('  - company type: ' . gettype($pod->field('company')));
-                    if (is_array($pod->field('professional_title'))) {
-                        error_log('  - professional_title array: ' . print_r($pod->field('professional_title'), true));
-                    }
-                    if (is_array($pod->field('company'))) {
-                        error_log('  - company array: ' . print_r($pod->field('company'), true));
-                    }
-                }
-                
-                if ($first_name || $last_name) {
-                    $props['name'] = trim($first_name . ' ' . $last_name);
-                }
-                if ($prof_title) {
-                    $props['title'] = $prof_title;
-                }
-                if ($company_name) {
-                    $props['company'] = $company_name;
-                }
-                if ($location) {
-                    $props['location'] = $location;
-                }
                 if ($bio) {
                     $props['biography'] = $bio;
                     $props['bio'] = $bio;
                     $props['bio_content'] = $bio;
                     $props['content'] = $bio;
-                }
-                
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('✅ Pods data loaded successfully');
-                    error_log('  - Name: ' . ($props['name'] ?? 'NONE'));
-                    error_log('  - Title: ' . ($props['title'] ?? 'NONE'));
-                    error_log('  - Company: ' . ($props['company'] ?? 'NONE'));
-                    error_log('  - Location: ' . ($props['location'] ?? 'NONE'));
-                    error_log('  - Bio length: ' . strlen($bio ?? ''));
-                }
-            } else {
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('⚠️ Pods record not found for post ' . $post_id);
+                    
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('[Biography Simplified] Loaded from Pods - Length: ' . strlen($bio));
+                    }
                 }
             }
         } catch (Exception $e) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('⚠️ Pods error: ' . $e->getMessage());
+                error_log('[Biography Simplified] Pods error: ' . $e->getMessage());
             }
         }
     }
@@ -346,45 +295,19 @@ function gmkb_enrich_biography_data($props, $post_id) {
         $biography = get_post_meta($post_id, 'biography', true);
         if (!empty($biography)) {
             $props['biography'] = $biography;
+            $props['bio'] = $biography;
+            $props['bio_content'] = $biography;
             $props['content'] = $biography;
-            $props['full_biography'] = $biography;
             
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ Loaded biography from post meta (length: ' . strlen($biography) . ')');
+                error_log('[Biography Simplified] Loaded from post meta - Length: ' . strlen($biography));
             }
-        } else {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('❌ No biography found in post meta');
-            }
-        }
-    }
-    
-    // Load short biography if not already loaded
-    if (empty($props['biography_short'])) {
-        $short_bio = get_post_meta($post_id, 'biography_short', true);
-        if (!empty($short_bio)) {
-            $props['biography_short'] = $short_bio;
-            $props['excerpt'] = $short_bio;
-        }
-    }
-    
-    // Additional biography-related fields
-    if (empty($props['professional_bio'])) {
-        $professional_bio = get_post_meta($post_id, 'professional_bio', true);
-        if (!empty($professional_bio)) {
-            $props['professional_bio'] = $professional_bio;
         }
     }
     
     // Mark data source
     $props['data_source'] = function_exists('pods') ? 'pods_api' : 'post_meta';
-    $props['has_biography'] = !empty($props['biography']) || !empty($props['biography_short']);
-    
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('Final props keys: ' . implode(', ', array_keys($props)));
-        error_log('Has biography: ' . ($props['has_biography'] ? 'YES' : 'NO'));
-        error_log('==========================================');
-    }
+    $props['has_biography'] = !empty($props['biography']);
     
     return $props;
 }
