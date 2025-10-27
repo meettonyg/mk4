@@ -25,6 +25,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import { usePodsData } from '../../src/composables/usePodsData';
 
 const props = defineProps({
   componentId: {
@@ -53,16 +54,42 @@ const props = defineProps({
   }
 });
 
-// Extract data from both data and props for compatibility
+// PHASE 1 ARCHITECTURAL FIX: Self-contained data loading
+// Component loads own data via usePodsData() composable
+const { firstName, lastName, position, fullName: podsFullName } = usePodsData();
+
+// Extract data from both data and props for compatibility with Pods fallback
 // ROOT FIX: Added safety checks for undefined props
 const title = computed(() => {
   if (!props) return '';
-  return props.data?.title || props.props?.title || '';
+  
+  // 1. Try component saved data first (user customization)
+  const savedTitle = props.data?.title || props.props?.title;
+  if (savedTitle) return savedTitle;
+  
+  // 2. FALLBACK: Use Pods full name (self-contained)
+  if (podsFullName.value) return podsFullName.value;
+  
+  // 3. FALLBACK: Construct from first/last name
+  const constructedName = `${firstName.value || ''} ${lastName.value || ''}`.trim();
+  if (constructedName) return constructedName;
+  
+  // 4. Empty state
+  return '';
 });
 
 const subtitle = computed(() => {
   if (!props) return '';
-  return props.data?.subtitle || props.props?.subtitle || '';
+  
+  // 1. Try component saved data first
+  const savedSubtitle = props.data?.subtitle || props.props?.subtitle;
+  if (savedSubtitle) return savedSubtitle;
+  
+  // 2. FALLBACK: Use Pods position/title (self-contained)
+  if (position.value) return position.value;
+  
+  // 3. Empty state
+  return '';
 });
 
 const backgroundImage = computed(() => {

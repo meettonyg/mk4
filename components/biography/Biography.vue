@@ -11,6 +11,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import { usePodsData } from '../../src/composables/usePodsData';
 
 const props = defineProps({
   componentId: {
@@ -39,10 +40,24 @@ const props = defineProps({
   }
 });
 
-// SIMPLIFIED: Only extract biography text
+// PHASE 1 ARCHITECTURAL FIX: Self-contained data loading
+// Component loads own data via usePodsData() composable
+const { biography: podsBiography } = usePodsData();
+
+// SIMPLIFIED: Only extract biography text with Pods fallback
 const biography = computed(() => {
   if (!props) return '';
-  return props.data?.biography || props.props?.biography || props.data?.bio || props.props?.bio || '';
+  
+  // 1. Try component saved data first (user customization)
+  const savedBio = props.data?.biography || props.props?.biography || 
+                   props.data?.bio || props.props?.bio;
+  if (savedBio) return savedBio;
+  
+  // 2. FALLBACK: Use Pods data from store (self-contained)
+  if (podsBiography.value) return podsBiography.value;
+  
+  // 3. Empty state
+  return '';
 });
 
 // Format biography text

@@ -76,6 +76,15 @@ export function usePodsData() {
     position: computed(() => store.podsData?.professional_title || store.podsData?.position || ''),
     company: computed(() => store.podsData?.company || ''),
     
+    // ROOT FIX: Add individual contact fields for direct access
+    website: computed(() => store.podsData?.website || ''),
+    address: computed(() => store.podsData?.address || ''),
+    twitter: computed(() => store.podsData?.twitter || ''),
+    facebook: computed(() => store.podsData?.facebook || ''),
+    instagram: computed(() => store.podsData?.instagram || ''),
+    linkedin: computed(() => store.podsData?.linkedin || ''),
+    headshot: computed(() => store.podsData?.guest_headshot || ''),
+    
     // ROOT FIX: Add stats object for authority components
     stats: computed(() => ({
       downloads: store.podsData?.downloads || store.podsData?.podcast_downloads || null,
