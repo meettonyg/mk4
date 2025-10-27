@@ -471,9 +471,11 @@ export const useMediaKitStore = defineStore('mediaKit', {
         // P0 FIX #7: Normalize all component IDs after loading
         this._normalizeAllComponentIds();
         
-        // Ensure at least one section exists
+        // ROOT FIX: Ensure at least one structured section exists
+        // Changed from 'full_width' to 'two_column' for layout consistency
         if (this.sections.length === 0) {
-          this.addSection('full_width');
+          const sectionId = this.addSection('two_column');
+          console.log('✅ Auto-created two_column section on initialization:', sectionId);
         }
 
         // ROOT FIX: Auto-fix any orphaned components on initialization
@@ -741,9 +743,12 @@ export const useMediaKitStore = defineStore('mediaKit', {
       // GEMINI FIX #3: Use collision-resistant ID generation
       const componentId = componentData.id || generateUniqueId('comp');
       
-      // Ensure we have at least one section
+      // ROOT FIX: Auto-create a structured section when none exist
+      // Changed from 'full_width' to 'two_column' for better layout flexibility
+      // Component will be added to column 1 by default
       if (this.sections.length === 0) {
-        this.addSection('full_width');
+        const sectionId = this.addSection('two_column');
+        console.log('✅ Auto-created two_column section for component:', sectionId);
       }
       
       // Issue #14 FIX: Use the already-validated component from validateAndGet
@@ -1345,6 +1350,35 @@ export const useMediaKitStore = defineStore('mediaKit', {
           });
         }
         
+        // ROOT FIX: Clear UI state if editing a component that's being deleted
+        // This prevents "Component not found" error in the sidebar
+        const uiStore = window.$pinia?.state?.value?.ui;
+        if (uiStore) {
+          // Check if the currently editing component is being deleted
+          if (uiStore.editingComponentId && componentIdsToDelete.includes(uiStore.editingComponentId)) {
+            console.log(`🔧 Closing sidebar editor for deleted component: ${uiStore.editingComponentId}`);
+            // Import and call closeSidebarEditor
+            import('./ui.js').then(({ useUIStore }) => {
+              const uiStoreInstance = useUIStore();
+              uiStoreInstance.closeSidebarEditor();
+            });
+          }
+          
+          // Clear selection if any selected components are being deleted
+          if (uiStore.selectedComponentIds && Array.isArray(uiStore.selectedComponentIds)) {
+            const selectedToDelete = uiStore.selectedComponentIds.filter(id => 
+              componentIdsToDelete.includes(id)
+            );
+            if (selectedToDelete.length > 0) {
+              console.log(`🔧 Clearing selection for ${selectedToDelete.length} deleted components`);
+              import('./ui.js').then(({ useUIStore }) => {
+                const uiStoreInstance = useUIStore();
+                selectedToDelete.forEach(id => uiStoreInstance.deselectComponent(id));
+              });
+            }
+          }
+        }
+        
         // Delete all collected components
         componentIdsToDelete.forEach(componentId => {
           delete this.components[componentId];
@@ -1353,6 +1387,15 @@ export const useMediaKitStore = defineStore('mediaKit', {
         
         // Remove the section itself
         this.sections.splice(index, 1);
+        
+        // ROOT FIX: If this was the last section and we're in section editing mode, close the editor
+        if (this.sections.length === 0 && uiStore?.editingSectionId === sectionId) {
+          console.log('🔧 Closing section editor after deleting last section');
+          import('./ui.js').then(({ useUIStore }) => {
+            const uiStoreInstance = useUIStore();
+            uiStoreInstance.closeSidebarEditor();
+          });
+        }
         
         // Log the action
         console.log(`🗑️ Removed section ${sectionId} and ${componentIdsToDelete.length} components`);
@@ -1909,6 +1952,30 @@ export const useMediaKitStore = defineStore('mediaKit', {
 
     // Remove a component
     removeComponent(componentId) {
+      // ROOT FIX: Clear UI state if editing the component being deleted
+      // This prevents "Component not found" error in the sidebar
+      const uiStore = window.$pinia?.state?.value?.ui;
+      if (uiStore) {
+        // Check if the currently editing component is being deleted
+        if (uiStore.editingComponentId === componentId) {
+          console.log(`🔧 Closing sidebar editor for deleted component: ${componentId}`);
+          // Import and call closeSidebarEditor
+          import('./ui.js').then(({ useUIStore }) => {
+            const uiStoreInstance = useUIStore();
+            uiStoreInstance.closeSidebarEditor();
+          });
+        }
+        
+        // Clear selection if this component is selected
+        if (uiStore.selectedComponentIds && uiStore.selectedComponentIds.includes(componentId)) {
+          console.log(`🔧 Clearing selection for deleted component: ${componentId}`);
+          import('./ui.js').then(({ useUIStore }) => {
+            const uiStoreInstance = useUIStore();
+            uiStoreInstance.deselectComponent(componentId);
+          });
+        }
+      }
+      
       // Remove from components map
       delete this.components[componentId];
       
@@ -2359,10 +2426,11 @@ export const useMediaKitStore = defineStore('mediaKit', {
       
       console.warn(`Found ${check.orphaned} orphaned components:`, check.orphanedIds);
       
-      // Ensure at least one section exists
+      // ROOT FIX: Ensure at least one structured section exists
+      // Changed from 'full_width' to 'two_column' for layout consistency
       if (this.sections.length === 0) {
-        const sectionId = this.addSection('full_width');
-        console.log('Created default section for orphaned components:', sectionId);
+        const sectionId = this.addSection('two_column');
+        console.log('✅ Created two_column section for orphaned components:', sectionId);
       }
       
       // Get the first section
@@ -2523,9 +2591,10 @@ export const useMediaKitStore = defineStore('mediaKit', {
       this.components = {};
       this.sections = [];
       
-      // Add one default section
-      const defaultSectionId = this.addSection('full_width');
-      console.log(`✅ Created default section: ${defaultSectionId}`);
+      // ROOT FIX: Add one default structured section
+      // Changed from 'full_width' to 'two_column' for layout consistency
+      const defaultSectionId = this.addSection('two_column');
+      console.log(`✅ Created two_column section: ${defaultSectionId}`);
       
       // GEMINI REFINEMENT #1: Use imported store directly
       const themeStore = useThemeStore();

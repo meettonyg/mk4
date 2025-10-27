@@ -487,12 +487,19 @@
           </div>
         </div>
 
-        <!-- Empty State - ROOT FIX: Removed add buttons per user request -->
-        <div v-if="sections.length === 0" class="gmkb-empty-sections">
+        <!-- Empty State - ROOT FIX: Made it a drop zone -->
+        <div 
+          v-if="sections.length === 0" 
+          class="gmkb-empty-sections"
+          @dragover.prevent="onEmptyDragOver"
+          @dragleave="onEmptyDragLeave"
+          @drop.prevent="onEmptyDrop"
+          :class="{ 'drag-over': isEmptyDragOver }"
+        >
           <div class="empty-message">
             <span class="empty-icon">🎨</span>
             <h3>Start Building Your Media Kit</h3>
-            <p>Use the Layout tab in the sidebar to add sections</p>
+            <p>Drag components here or use the Layout tab to add sections</p>
           </div>
         </div>
       </div>
@@ -534,6 +541,7 @@ const sectionsContainer = ref(null);
 
 // Reactive state
 const hoveredSection = ref(null);
+const isEmptyDragOver = ref(false); // Track drag over empty state
 const sections = computed({
   get: () => store.sections,
   set: (value) => {
@@ -833,6 +841,90 @@ const onDrop = (e, sectionId, column) => {
     console.error('❌ Failed to add component:', error);
     
     // GEMINI FIX #3: Show error to user
+    document.dispatchEvent(new CustomEvent('gmkb:error', {
+      detail: {
+        message: 'Failed to add component: ' + error.message,
+        type: 'error'
+      }
+    }));
+  }
+};
+
+// ROOT FIX: Empty state drop handlers
+const onEmptyDragOver = (e) => {
+  isEmptyDragOver.value = true;
+};
+
+const onEmptyDragLeave = (e) => {
+  isEmptyDragOver.value = false;
+};
+
+const onEmptyDrop = async (e) => {
+  isEmptyDragOver.value = false;
+  
+  // Handle multiple data transfer formats
+  const textData = e.dataTransfer.getData('text/plain');
+  const jsonData = e.dataTransfer.getData('application/json');
+  const componentType = e.dataTransfer.getData('component-type');
+  
+  // Try to get component data from various sources
+  let data = jsonData || textData || componentType;
+  if (!data) {
+    console.warn('⚠️ No data in drop event');
+    return;
+  }
+  
+  try {
+    // Try to parse as JSON first (for complex component data)
+    let componentData;
+    try {
+      componentData = typeof data === 'string' ? JSON.parse(data) : data;
+    } catch {
+      // If not JSON, treat as component type
+      componentData = { type: data };
+    }
+    
+    // Ensure we have a type
+    if (!componentData.type && typeof data === 'string') {
+      componentData.type = data;
+    }
+    
+    console.log('🎯 Dropping component on empty canvas:', componentData.type);
+    
+    // ROOT FIX: Add component without specifying section
+    // The store's addComponent will auto-create a two-column section
+    const newComponentId = store.addComponent(componentData);
+    
+    if (!newComponentId) {
+      throw new Error('addComponent returned no ID');
+    }
+    
+    // Verify component was added
+    const component = store.components[newComponentId];
+    if (!component) {
+      throw new Error(`Component ${newComponentId} not found in store after adding`);
+    }
+    
+    console.log('✅ Component added to auto-created section:', newComponentId);
+    console.log('✅ Sections now:', store.sections.length);
+    
+    // Wait for Vue to update the DOM
+    await nextTick();
+    
+    // Trigger success event
+    document.dispatchEvent(new CustomEvent('gmkb:component-dropped', {
+      detail: {
+        componentId: newComponentId,
+        componentType: componentData.type,
+        sectionId: store.sections[0]?.section_id,
+        column: 1
+      }
+    }));
+    
+  } catch (error) {
+    console.error('❌ Failed to add component:', error);
+    
+    // Show error to user
     document.dispatchEvent(new CustomEvent('gmkb:error', {
       detail: {
         message: 'Failed to add component: ' + error.message,
@@ -1287,13 +1379,30 @@ onUnmounted(() => {
   opacity: 0.5;
 }
 
-/* Empty State */
+/* Empty State - ROOT FIX: Made it a drop zone */
 .gmkb-empty-sections {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 400px;
   padding: 40px;
+  border: 3px dashed rgba(59, 130, 246, 0.3);
+  border-radius: 12px;
+  transition: all 0.3s;
+  cursor: pointer;
+  background: rgba(59, 130, 246, 0.02);
+}
+
+.gmkb-empty-sections:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(59, 130, 246, 0.04);
+}
+
+.gmkb-empty-sections.drag-over {
+  border-color: rgba(59, 130, 246, 0.8);
+  background: rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
+  transform: scale(1.02);
 }
 
 .empty-message {

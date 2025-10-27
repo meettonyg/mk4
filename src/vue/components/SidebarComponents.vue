@@ -8,8 +8,11 @@
           v-for="component in quickComponents"
           :key="component.type"
           class="gmkb-quick-item"
+          draggable="true"
           @click="addComponent(component)"
-          :title="`Add ${component.name}`"
+          @dragstart="onDragStart($event, component)"
+          @dragend="onDragEnd"
+          :title="`Click to add or drag ${component.name} to canvas`"
         >
           <component :is="getIcon(component.icon)" class="gmkb-quick-icon" />
           <span class="gmkb-quick-label">{{ component.name }}</span>
@@ -38,7 +41,11 @@
           v-for="component in recentComponents"
           :key="`recent-${component.type}`"
           class="gmkb-recent-item"
+          draggable="true"
           @click="addComponent(component)"
+          @dragstart="onDragStart($event, component)"
+          @dragend="onDragEnd"
+          :title="`Click to add or drag ${component.name} to canvas`"
         >
           <component :is="getIcon(component.icon)" class="gmkb-recent-icon" />
           <span class="gmkb-recent-name">{{ component.name }}</span>
@@ -58,6 +65,7 @@
 <script>
 import { ref, computed, h } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
+import { useUIStore } from '../../stores/ui';
 import ComponentLibrary from './ComponentLibraryNew.vue';
 import { componentDefinitions } from '../../data/componentDefinitions';
 
@@ -93,6 +101,7 @@ export default {
   
   setup() {
     const store = useMediaKitStore();
+    const uiStore = useUIStore();
     const componentLibrary = ref(null);
     const recentTypes = ref([]);
     
@@ -160,6 +169,40 @@ export default {
       }
     };
     
+    // ROOT FIX: Add drag-and-drop handlers for sidebar components
+    const onDragStart = (event, component) => {
+      // Set drag data with component information
+      event.dataTransfer.effectAllowed = 'copy';
+      event.dataTransfer.dropEffect = 'copy';
+      
+      // Set multiple data formats for compatibility
+      event.dataTransfer.setData('text/plain', component.type);
+      event.dataTransfer.setData('component-type', component.type);
+      event.dataTransfer.setData('application/json', JSON.stringify({
+        type: component.type,
+        name: component.name,
+        defaultData: component.defaultData || {}
+      }));
+      
+      // Set dragging state in UI store
+      uiStore.startDrag(null, component.type);
+      
+      // Add visual feedback
+      event.target.classList.add('dragging');
+      
+      console.log('🎯 Started dragging component from sidebar:', component.type);
+    };
+    
+    const onDragEnd = (event) => {
+      // Clear dragging state
+      uiStore.endDrag();
+      
+      // Remove visual feedback
+      event.target.classList.remove('dragging');
+      
+      console.log('✅ Drag ended');
+    };
+    
     const getIcon = (iconName) => {
       return icons[iconName] || icons.default;
     };
@@ -180,7 +223,9 @@ export default {
       componentLibrary,
       addComponent,
       openLibrary,
-      getIcon
+      getIcon,
+      onDragStart,
+      onDragEnd
     };
   }
 };
@@ -228,6 +273,15 @@ export default {
   background: #334155;
   border-color: #3b82f6;
   transform: translateY(-2px);
+}
+
+.gmkb-quick-item.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+.gmkb-quick-item[draggable="true"] {
+  cursor: grab;
 }
 
 .gmkb-quick-icon {
@@ -302,6 +356,15 @@ export default {
 .gmkb-recent-item:hover {
   background: #1e293b;
   border-color: #334155;
+}
+
+.gmkb-recent-item.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+.gmkb-recent-item[draggable="true"] {
+  cursor: grab;
 }
 
 .gmkb-recent-icon {

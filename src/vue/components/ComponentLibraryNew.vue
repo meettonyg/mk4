@@ -182,6 +182,7 @@
 <script>
 import { ref, computed, onMounted, onUnmounted, watch, watchEffect, h } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
+import { useUIStore } from '../../stores/ui';
 import UnifiedComponentRegistry from '../../services/UnifiedComponentRegistry';
 import { APIService } from '../../services/APIService';
 import { debounce } from '../../utils/debounce';
@@ -224,6 +225,7 @@ export default {
   
   setup() {
     const store = useMediaKitStore();
+    const uiStore = useUIStore();
     
     // State
     const isOpen = ref(false);
@@ -371,9 +373,8 @@ export default {
         defaultData: component.defaultData || {}
       }));
       
-      // Set dragging state in store
-      store.isDragging = true;
-      store.draggedComponentId = null; // This is a new component, not existing
+      // Set dragging state in UI store
+      uiStore.startDrag(null, component.type);
       
       // Add visual feedback
       event.target.classList.add('dragging');
@@ -383,8 +384,7 @@ export default {
     
     const onDragEnd = (event) => {
       // Clear dragging state
-      store.isDragging = false;
-      store.draggedComponentId = null;
+      uiStore.endDrag();
       
       // Remove visual feedback
       event.target.classList.remove('dragging');
