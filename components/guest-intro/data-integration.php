@@ -28,16 +28,10 @@ class Guest_Intro_Data_Integration {
     /**
      * Field mappings for guest intro
      * Maps to Pods fields in guest post type
+     * ROOT FIX: Only introduction field needed
      */
     protected static $field_mappings = array(
-        'name' => 'full_name',
-        'first_name' => 'first_name',
-        'last_name' => 'last_name',
-        'tagline' => 'tagline',
-        'title' => 'professional_title',
-        'company' => 'company',
-        'introduction' => 'introduction',
-        'headshot' => 'headshot'
+        'introduction' => 'introduction'
     );
     
     /**
@@ -91,35 +85,8 @@ class Guest_Intro_Data_Integration {
                 return $result;
             }
             
-            // Load fields
-            $first_name = $pod->field('first_name');
-            $last_name = $pod->field('last_name');
-            
-            $result['intro']['name'] = trim($first_name . ' ' . $last_name);
-            $result['intro']['first_name'] = $first_name;
-            $result['intro']['last_name'] = $last_name;
-            $result['intro']['tagline'] = $pod->field('tagline');
-            $result['intro']['title'] = $pod->field('professional_title');
-            $result['intro']['company'] = $pod->field('company');
+            // ROOT FIX: Load only introduction field
             $result['intro']['introduction'] = $pod->field('introduction');
-            
-            // Handle headshot - can be URL string or array
-            $headshot = $pod->field('headshot');
-            if (is_array($headshot) && isset($headshot['guid'])) {
-                $result['intro']['headshot'] = $headshot['guid'];
-            } elseif (is_string($headshot)) {
-                $result['intro']['headshot'] = $headshot;
-            } else {
-                $result['intro']['headshot'] = '';
-            }
-            
-            // Try .guid format
-            if (empty($result['intro']['headshot'])) {
-                $headshot_url = $pod->field('headshot.guid');
-                if (!empty($headshot_url)) {
-                    $result['intro']['headshot'] = $headshot_url;
-                }
-            }
             
             // Count non-empty fields
             foreach ($result['intro'] as $value) {
@@ -155,29 +122,15 @@ class Guest_Intro_Data_Integration {
         $props = $existing_props;
         
         if (!empty($component_data['success']) && !empty($component_data['intro'])) {
-            // Flatten intro data into props
-            foreach ($component_data['intro'] as $key => $value) {
-                $props[$key] = $value;
-            }
-            
-            // Add convenience flags
-            $props['has_name'] = !empty($props['name']);
-            $props['has_tagline'] = !empty($props['tagline']);
-            $props['has_title'] = !empty($props['title']);
+            // ROOT FIX: Only introduction field
+            $props['introduction'] = $component_data['intro']['introduction'] ?? '';
             $props['has_intro'] = !empty($props['introduction']);
-            $props['has_headshot'] = !empty($props['headshot']);
         } else {
-            // Ensure fields exist even if empty
-            foreach (self::$field_mappings as $field_key => $meta_key) {
-                if (!isset($props[$field_key])) {
-                    $props[$field_key] = '';
-                }
+            // Ensure introduction field exists even if empty
+            if (!isset($props['introduction'])) {
+                $props['introduction'] = '';
             }
-            $props['has_name'] = false;
-            $props['has_tagline'] = false;
-            $props['has_title'] = false;
             $props['has_intro'] = false;
-            $props['has_headshot'] = false;
         }
         
         return $props;
@@ -224,16 +177,12 @@ class Guest_Intro_Data_Integration {
             
             $intro = isset($intro_data['intro']) ? $intro_data['intro'] : $intro_data;
             
-            // Save fields via Pods
+            // ROOT FIX: Save only introduction field via Pods
             $save_data = array();
             
-            if (isset($intro['first_name'])) $save_data['first_name'] = sanitize_text_field($intro['first_name']);
-            if (isset($intro['last_name'])) $save_data['last_name'] = sanitize_text_field($intro['last_name']);
-            if (isset($intro['tagline'])) $save_data['tagline'] = sanitize_text_field($intro['tagline']);
-            if (isset($intro['title'])) $save_data['professional_title'] = sanitize_text_field($intro['title']);
-            if (isset($intro['company'])) $save_data['company'] = sanitize_text_field($intro['company']);
-            if (isset($intro['introduction'])) $save_data['introduction'] = sanitize_textarea_field($intro['introduction']);
-            if (isset($intro['headshot'])) $save_data['headshot'] = esc_url_raw($intro['headshot']);
+            if (isset($intro['introduction'])) {
+                $save_data['introduction'] = sanitize_textarea_field($intro['introduction']);
+            }
             
             if (!empty($save_data)) {
                 $pod->save($save_data);
@@ -275,12 +224,10 @@ class Guest_Intro_Data_Integration {
                 return false;
             }
             
-            // Check for essential fields
-            $first_name = $pod->field('first_name');
-            $tagline = $pod->field('tagline');
+            // ROOT FIX: Check only for introduction field
             $introduction = $pod->field('introduction');
             
-            return (!empty($first_name) || !empty($tagline) || !empty($introduction));
+            return !empty($introduction);
             
         } catch (Exception $e) {
             return false;
@@ -305,8 +252,7 @@ add_filter('gmkb_enrich_guest-intro_props', function($props, $post_id) {
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('✅ Guest Intro: Enriched props for post ' . $post_id);
-            error_log('   - Name: ' . ($props['name'] ?? 'N/A'));
-            error_log('   - Has tagline: ' . ($props['has_tagline'] ? 'Yes' : 'No'));
+            error_log('   - Has introduction: ' . ($props['has_intro'] ? 'Yes' : 'No'));
         }
     }
     

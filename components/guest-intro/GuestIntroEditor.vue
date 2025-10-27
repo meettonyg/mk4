@@ -19,41 +19,8 @@
     
     <div class="editor-content">
       <!-- CONTENT TAB -->
+      <!-- ROOT FIX: Only introduction field editor -->
       <div v-show="activeTab === 'content'" class="tab-panel">
-        <section class="editor-section">
-          <h4>Guest Information</h4>
-          
-          <div class="field-group">
-            <label for="guest-name">Guest Name</label>
-            <input 
-              id="guest-name"
-              v-model="localData.name" 
-              @input="updateComponent"
-              placeholder="Full name of the guest"
-            >
-          </div>
-          
-          <div class="field-group">
-            <label for="guest-title">Title / Position</label>
-            <input 
-              id="guest-title"
-              v-model="localData.title" 
-              @input="updateComponent"
-              placeholder="e.g., CEO of Company, Author, Speaker"
-            >
-          </div>
-          
-          <div class="field-group">
-            <label for="company">Company/Organization</label>
-            <input 
-              id="company"
-              v-model="localData.company" 
-              @input="updateComponent"
-              placeholder="Company or organization name"
-            >
-          </div>
-        </section>
-
         <section class="editor-section">
           <h4>Introduction Text</h4>
           
@@ -63,9 +30,10 @@
               id="intro-text"
               v-model="localData.introduction" 
               @input="updateComponent"
-              rows="8"
-              placeholder="Brief introduction about the guest..."
+              rows="12"
+              placeholder="Enter the guest introduction text..."
             />
+            <p class="field-hint">This text will be displayed from the 'introduction' field in the Pods database.</p>
           </div>
         </section>
       </div>
@@ -112,10 +80,8 @@ const tabs = [
   { id: 'advanced', label: 'Advanced' }
 ];
 
+// ROOT FIX: Only introduction field
 const localData = ref({
-  name: '',
-  title: '',
-  company: '',
   introduction: ''
 });
 
@@ -124,9 +90,6 @@ const loadComponentData = () => {
   const component = store.components[props.componentId];
   if (component && component.data) {
     localData.value = {
-      name: component.data.name || '',
-      title: component.data.title || '',
-      company: component.data.company || '',
       introduction: component.data.introduction || ''
     };
   }
@@ -135,6 +98,7 @@ const loadComponentData = () => {
 watch(() => props.componentId, loadComponentData, { immediate: true });
 
 // Update component
+// ROOT FIX: Only save introduction field
 let updateTimeout = null;
 const updateComponent = () => {
   if (updateTimeout) clearTimeout(updateTimeout);
@@ -142,9 +106,6 @@ const updateComponent = () => {
   updateTimeout = setTimeout(() => {
     store.updateComponent(props.componentId, {
       data: {
-        name: localData.value.name,
-        title: localData.value.title,
-        company: localData.value.company,
         introduction: localData.value.introduction
       }
     });
@@ -302,6 +263,13 @@ const closeEditor = () => {
 .field-group textarea {
   resize: vertical;
   font-family: inherit;
+}
+
+.field-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #64748b;
+  font-style: italic;
 }
 
 /* Scrollbar styling */
