@@ -32,16 +32,17 @@ class Social_Pods_Integration extends Abstract_Component_Integration {
     
     /**
      * Pods field mappings for social media platforms
+     * ARCHITECTURE FIX: Use actual Pods field names
      */
     protected static $field_mappings = array(
-        'twitter' => 'social_twitter',
-        'linkedin' => 'social_linkedin',
-        'instagram' => 'social_instagram',
-        'facebook' => 'social_facebook',
-        'youtube' => 'social_youtube',
-        'tiktok' => 'social_tiktok',
-        'website' => 'social_website',
-        'podcast' => 'social_podcast'
+        'twitter' => '1_twitter',
+        'linkedin' => '1_linkedin',
+        'instagram' => '1_instagram',
+        'facebook' => '1_facebook',
+        'youtube' => 'guest_youtube',
+        'tiktok' => '1_tiktok',
+        'pinterest' => '1_pinterest',
+        'website' => '1_website'
     );
     
     /**

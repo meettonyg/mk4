@@ -163,9 +163,20 @@ const updatePodsField = (fieldKey) => {
   if (podsUpdateTimeout) clearTimeout(podsUpdateTimeout);
   
   podsUpdateTimeout = setTimeout(() => {
-    const metaKey = `social_${fieldKey}`;
-    updatePodsFieldComposable(metaKey, socialUrls.value[fieldKey]);
-    console.log(`Updated Pods field: ${metaKey} = ${socialUrls.value[fieldKey]}`);
+    // ARCHITECTURE FIX: Map UI keys to actual Pods field names
+    const fieldMap = {
+      'facebook': '1_facebook',
+      'twitter': '1_twitter',
+      'instagram': '1_instagram',
+      'linkedin': '1_linkedin',
+      'youtube': 'guest_youtube',
+      'tiktok': '1_tiktok',
+      'pinterest': '1_pinterest'
+    };
+    
+    const podsFieldName = fieldMap[fieldKey] || fieldKey;
+    updatePodsFieldComposable(podsFieldName, socialUrls.value[fieldKey]);
+    console.log(`Updated Pods field: ${podsFieldName} = ${socialUrls.value[fieldKey]}`);
   }, 500);
 };
 

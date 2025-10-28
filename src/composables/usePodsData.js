@@ -113,16 +113,16 @@ export function usePodsData() {
       return questions;
     }),
     
-    // Social media links - ARCHITECTURE FIX: Read from Pods only
+    // Social media links - ARCHITECTURE FIX: Map actual Pods field names
     socialLinks: computed(() => ({
-      twitter: store.podsData?.social_twitter || '',
-      facebook: store.podsData?.social_facebook || '',
-      instagram: store.podsData?.social_instagram || '',
-      linkedin: store.podsData?.social_linkedin || '',
-      youtube: store.podsData?.social_youtube || '',
-      tiktok: store.podsData?.social_tiktok || '',
-      pinterest: store.podsData?.social_pinterest || '',
-      website: store.podsData?.website || ''
+      twitter: store.podsData?.['1_twitter'] || '',
+      facebook: store.podsData?.['1_facebook'] || '',
+      instagram: store.podsData?.['1_instagram'] || '',
+      linkedin: store.podsData?.['1_linkedin'] || '',
+      youtube: store.podsData?.guest_youtube || '',
+      tiktok: store.podsData?.['1_tiktok'] || '',
+      pinterest: store.podsData?.['1_pinterest'] || '',
+      website: store.podsData?.['1_website'] || store.podsData?.['2_website'] || ''
     })),
     
     // Professional information
@@ -137,13 +137,13 @@ export function usePodsData() {
     position: computed(() => store.podsData?.professional_title || store.podsData?.position || ''),
     company: computed(() => store.podsData?.company || ''),
     
-    // ROOT FIX: Add individual contact fields for direct access
-    website: computed(() => store.podsData?.website || ''),
+    // ROOT FIX: Add individual contact fields for direct access (using actual Pods field names)
+    website: computed(() => store.podsData?.['1_website'] || store.podsData?.['2_website'] || ''),
     address: computed(() => store.podsData?.address || ''),
-    twitter: computed(() => store.podsData?.social_twitter || ''),
-    facebook: computed(() => store.podsData?.social_facebook || ''),
-    instagram: computed(() => store.podsData?.social_instagram || ''),
-    linkedin: computed(() => store.podsData?.social_linkedin || ''),
+    twitter: computed(() => store.podsData?.['1_twitter'] || ''),
+    facebook: computed(() => store.podsData?.['1_facebook'] || ''),
+    instagram: computed(() => store.podsData?.['1_instagram'] || ''),
+    linkedin: computed(() => store.podsData?.['1_linkedin'] || ''),
     headshot: computed(() => store.podsData?.guest_headshot || ''),
     
     // ROOT FIX: Add stats object for authority components

@@ -91,6 +91,7 @@ class GMKB_REST_API_V2 {
         $this->pods_fields = array(
             'biography',
             'biography_long',
+            'introduction', // ARCHITECTURE FIX: Guest Introduction content field
             'first_name',
             'last_name',
             'email',
@@ -111,11 +112,16 @@ class GMKB_REST_API_V2 {
             $this->pods_fields[] = "question_$i";
         }
         
-        // Add social media fields
-        $social_platforms = array('linkedin', 'twitter', 'facebook', 'instagram', 'youtube', 'tiktok');
-        foreach ($social_platforms as $platform) {
-            $this->pods_fields[] = $platform;
-        }
+        // Add social media fields (ARCHITECTURE FIX: Use actual Pods field names)
+        $this->pods_fields[] = '1_facebook';
+        $this->pods_fields[] = '1_instagram';
+        $this->pods_fields[] = '1_linkedin';
+        $this->pods_fields[] = '1_pinterest';
+        $this->pods_fields[] = '1_tiktok';
+        $this->pods_fields[] = '1_twitter';
+        $this->pods_fields[] = 'guest_youtube';
+        $this->pods_fields[] = '1_website';
+        $this->pods_fields[] = '2_website';
         
         // Add media fields
         $this->pods_fields[] = 'profile_image';

@@ -29,7 +29,7 @@
             <textarea 
               id="intro-text"
               v-model="localData.introduction" 
-              @input="updateComponent"
+              @input="updatePodsField"
               rows="12"
               placeholder="Enter the guest introduction text..."
             />
@@ -87,17 +87,20 @@ const tabs = [
   { id: 'advanced', label: 'Advanced' }
 ];
 
-// ROOT FIX: Initialize with Pods data if no component data exists
+// ARCHITECTURE FIX: Initialize with Pods data (single source of truth)
 const localData = ref({
   introduction: ''
 });
 
-// Load component data - text from Pods, layout from component JSON
+// Load component data - text from Pods ONLY
 const loadComponentData = () => {
-  const component = store.components[props.componentId];
-  
   // ALWAYS load text from Pods (single source of truth)
-  // Layout/styling comes from component JSON
+  console.log('[GuestIntroEditor] Loading Pods data:', {
+    introduction: podsData.introduction?.value,
+    isLoaded: podsData.isLoaded?.value,
+    allData: podsData.allData?.value
+  });
+  
   localData.value = {
     introduction: podsData.introduction?.value || ''
   };
@@ -112,57 +115,28 @@ watch(() => props.componentId, loadComponentData, { immediate: true });
 
 // Watch for Pods data changes to update local data
 watch(() => podsData.introduction?.value, (newValue) => {
-  if (newValue && !localData.value.introduction) {
-    localData.value.introduction = newValue;
-  }
+  console.log('[GuestIntroEditor] Pods introduction changed:', newValue);
+  localData.value.introduction = newValue || '';
 });
 
-// Update component - Save text to PODS, not component JSON
-// Only layout/styling goes to component JSON
+// ARCHITECTURE FIX: Update Pods field using the same method as Social component
 let updateTimeout = null;
-const updateComponent = async () => {
+const updatePodsField = async () => {
   if (updateTimeout) clearTimeout(updateTimeout);
   
   updateTimeout = setTimeout(async () => {
     try {
-      // Save text content directly to Pods field
-      const postId = store.currentPostId;
-      if (postId) {
-        const response = await fetch(`${window.gmkbData.restUrl}guestify-media-kit-builder/v1/pods/update-field`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-WP-Nonce': window.gmkbData.nonce
-          },
-          body: JSON.stringify({
-            post_id: postId,
-            field: 'introduction',
-            value: localData.value.introduction
-          })
-        });
-        
-        if (response.ok) {
-          // Update store's Pods data to reflect the change
-          store.podsData = {
-            ...store.podsData,
-            introduction: localData.value.introduction
-          };
-          
-          console.log('✅ Saved introduction to Pods field');
-        } else {
-          console.error('❌ Failed to save to Pods:', await response.text());
-        }
-      }
+      console.log('[GuestIntroEditor] Updating Pods field: introduction =', localData.value.introduction);
       
-      // DO NOT save text to component JSON
-      // Only layout/styling settings would go here
-      // (currently none for this component)
+      // Use the composable's updatePodsField method
+      await podsData.updatePodsField('introduction', localData.value.introduction);
       
+      console.log('✅ Saved introduction to Pods field');
       store.isDirty = true;
     } catch (error) {
       console.error('❌ Error saving to Pods:', error);
     }
-  }, 500); // Longer debounce for API calls
+  }, 500); // Debounce for better UX
 };
 
 const closeEditor = () => {
