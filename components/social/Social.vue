@@ -60,31 +60,31 @@ const props = defineProps({
 const store = useMediaKitStore();
 const { socialLinks: podsSocialLinks } = usePodsData();
 
-// Extract data from both data and props for compatibility
+// ARCHITECTURE FIX: Display settings from component JSON only
 const title = computed(() => props.data?.title || props.props?.title || 'Connect With Me');
 const description = computed(() => props.data?.description || props.props?.description || '');
 const showLabels = computed(() => {
-  const val = props.data?.show_labels ?? props.props?.show_labels;
+  const val = props.data?.show_labels ?? props.props?.show_labels ?? props.data?.showLabels;
   return val !== false;
 });
 
+// ARCHITECTURE FIX: Content (URLs) from Pods only - single source of truth
 const socialLinks = computed(() => {
-  // Handle array format
-  if (Array.isArray(props.data?.links) && props.data.links.length > 0) {
-    return props.data.links;
+  const links = [];
+  
+  // Read from Pods data ONLY - this is the single source of truth
+  if (!podsSocialLinks.value) {
+    return links;
   }
   
-  // Build from individual fields with Pods data fallback
-  const links = [];
   const socialData = {
-    facebook: props.data?.facebook || props.props?.facebook || podsSocialLinks.value?.facebook,
-    twitter: props.data?.twitter || props.props?.twitter || podsSocialLinks.value?.twitter,
-    linkedin: props.data?.linkedin || props.props?.linkedin || podsSocialLinks.value?.linkedin,
-    instagram: props.data?.instagram || props.props?.instagram || podsSocialLinks.value?.instagram,
-    youtube: props.data?.youtube || props.props?.youtube || podsSocialLinks.value?.youtube,
-    github: props.data?.github || props.props?.github,
-    pinterest: props.data?.pinterest || props.props?.pinterest,
-    tiktok: props.data?.tiktok || props.props?.tiktok
+    facebook: podsSocialLinks.value.facebook,
+    twitter: podsSocialLinks.value.twitter,
+    linkedin: podsSocialLinks.value.linkedin,
+    instagram: podsSocialLinks.value.instagram,
+    youtube: podsSocialLinks.value.youtube,
+    tiktok: podsSocialLinks.value.tiktok,
+    pinterest: podsSocialLinks.value.pinterest
   };
   
   Object.entries(socialData).forEach(([platform, url]) => {
@@ -138,9 +138,8 @@ onMounted(() => {
       detail: {
         type: 'social',
         id: props.componentId,
-        podsDataUsed: socialLinks.value.some(link => 
-          podsSocialLinks.value && Object.values(podsSocialLinks.value).includes(link.url)
-        )
+        podsDataUsed: socialLinks.value.length > 0,
+        dataSource: 'pods_only'
       }
     }));
   }

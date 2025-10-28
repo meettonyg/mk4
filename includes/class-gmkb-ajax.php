@@ -49,6 +49,9 @@ class GMKB_Ajax {
         // Cache management endpoints
         add_action('wp_ajax_gmkb_clear_component_cache', array($this, 'ajax_clear_component_cache'));
         add_action('wp_ajax_gmkb_refresh_components', array($this, 'ajax_refresh_components'));
+        
+        // ARCHITECTURE FIX: Pods data update endpoint
+        add_action('wp_ajax_gmkb_update_pods_field', array($this, 'ajax_update_pods_field'));
     }
 
     /**
@@ -252,6 +255,77 @@ class GMKB_Ajax {
             ));
         } catch (Exception $e) {
             wp_send_json_error('Failed to refresh components: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ARCHITECTURE FIX: Update individual Pods field
+     * Allows direct updates to Pods data (single source of truth)
+     */
+    public function ajax_update_pods_field() {
+        // Verify nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'gmkb_nonce')) {
+            wp_send_json_error(array('message' => 'Security verification failed'));
+            return;
+        }
+        
+        // Check user permissions
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        // Get parameters
+        $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
+        $field_name = isset($_POST['field_name']) ? sanitize_text_field($_POST['field_name']) : '';
+        $field_value = isset($_POST['field_value']) ? wp_kses_post($_POST['field_value']) : '';
+        
+        // Validate parameters
+        if (empty($post_id) || empty($field_name)) {
+            wp_send_json_error(array('message' => 'Missing required parameters'));
+            return;
+        }
+        
+        // Verify post exists and is correct type
+        $post = get_post($post_id);
+        if (!$post || $post->post_type !== 'mkcg') {
+            wp_send_json_error(array('message' => 'Invalid post'));
+            return;
+        }
+        
+        // Update the post meta (Pods field)
+        $result = update_post_meta($post_id, $field_name, $field_value);
+        
+        if ($result !== false) {
+            // Success - meta was updated or already had this value
+            wp_send_json_success(array(
+                'message' => 'Pods field updated successfully',
+                'field_name' => $field_name,
+                'field_value' => $field_value,
+                'post_id' => $post_id,
+                'timestamp' => time()
+            ));
+        } else {
+            // This could mean the value was the same or an error occurred
+            // Check if the current value matches what we're trying to set
+            $current_value = get_post_meta($post_id, $field_name, true);
+            if ($current_value === $field_value) {
+                wp_send_json_success(array(
+                    'message' => 'Pods field already has this value',
+                    'field_name' => $field_name,
+                    'field_value' => $field_value,
+                    'post_id' => $post_id,
+                    'timestamp' => time(),
+                    'was_same' => true
+                ));
+            } else {
+                wp_send_json_error(array(
+                    'message' => 'Failed to update Pods field',
+                    'field_name' => $field_name,
+                    'current_value' => $current_value,
+                    'attempted_value' => $field_value
+                ));
+            }
         }
     }
 }

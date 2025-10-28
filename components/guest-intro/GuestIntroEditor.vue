@@ -33,7 +33,12 @@
               rows="12"
               placeholder="Enter the guest introduction text..."
             />
-            <p class="field-hint">This text will be displayed from the 'introduction' field in the Pods database.</p>
+            <p v-if="isUsingPodsData" class="field-hint field-hint--pods">
+              <strong>📄 Pods Field:</strong> Editing this text updates the 'introduction' field in the Pods database. Changes apply to ALL media kits for this guest.
+            </p>
+            <p v-else class="field-hint field-hint--empty">
+              <strong>⚠️ No data:</strong> The 'introduction' field is empty in the Pods database. Add text to populate it.
+            </p>
           </div>
         </section>
       </div>
@@ -58,8 +63,9 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
+import { usePodsData } from '../../src/composables/usePodsData';
 import BaseStylePanel from '../../src/vue/components/sidebar/editors/BaseStylePanel.vue';
 import BaseAdvancedPanel from '../../src/vue/components/sidebar/editors/BaseAdvancedPanel.vue';
 
@@ -71,6 +77,7 @@ const props = defineProps({
 });
 
 const store = useMediaKitStore();
+const podsData = usePodsData();
 
 // Tab state
 const activeTab = ref('content');
@@ -80,37 +87,82 @@ const tabs = [
   { id: 'advanced', label: 'Advanced' }
 ];
 
-// ROOT FIX: Only introduction field
+// ROOT FIX: Initialize with Pods data if no component data exists
 const localData = ref({
   introduction: ''
 });
 
-// Load component data
+// Load component data - text from Pods, layout from component JSON
 const loadComponentData = () => {
   const component = store.components[props.componentId];
-  if (component && component.data) {
-    localData.value = {
-      introduction: component.data.introduction || ''
-    };
-  }
+  
+  // ALWAYS load text from Pods (single source of truth)
+  // Layout/styling comes from component JSON
+  localData.value = {
+    introduction: podsData.introduction?.value || ''
+  };
 };
+
+// Check if we're displaying Pods data (always true for text content)
+const isUsingPodsData = computed(() => {
+  return !!podsData.introduction?.value;
+});
 
 watch(() => props.componentId, loadComponentData, { immediate: true });
 
-// Update component
-// ROOT FIX: Only save introduction field
+// Watch for Pods data changes to update local data
+watch(() => podsData.introduction?.value, (newValue) => {
+  if (newValue && !localData.value.introduction) {
+    localData.value.introduction = newValue;
+  }
+});
+
+// Update component - Save text to PODS, not component JSON
+// Only layout/styling goes to component JSON
 let updateTimeout = null;
-const updateComponent = () => {
+const updateComponent = async () => {
   if (updateTimeout) clearTimeout(updateTimeout);
   
-  updateTimeout = setTimeout(() => {
-    store.updateComponent(props.componentId, {
-      data: {
-        introduction: localData.value.introduction
+  updateTimeout = setTimeout(async () => {
+    try {
+      // Save text content directly to Pods field
+      const postId = store.currentPostId;
+      if (postId) {
+        const response = await fetch(`${window.gmkbData.restUrl}guestify-media-kit-builder/v1/pods/update-field`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-WP-Nonce': window.gmkbData.nonce
+          },
+          body: JSON.stringify({
+            post_id: postId,
+            field: 'introduction',
+            value: localData.value.introduction
+          })
+        });
+        
+        if (response.ok) {
+          // Update store's Pods data to reflect the change
+          store.podsData = {
+            ...store.podsData,
+            introduction: localData.value.introduction
+          };
+          
+          console.log('✅ Saved introduction to Pods field');
+        } else {
+          console.error('❌ Failed to save to Pods:', await response.text());
+        }
       }
-    });
-    store.isDirty = true;
-  }, 300);
+      
+      // DO NOT save text to component JSON
+      // Only layout/styling settings would go here
+      // (currently none for this component)
+      
+      store.isDirty = true;
+    } catch (error) {
+      console.error('❌ Error saving to Pods:', error);
+    }
+  }, 500); // Longer debounce for API calls
 };
 
 const closeEditor = () => {
@@ -270,6 +322,32 @@ const closeEditor = () => {
   font-size: 12px;
   color: #64748b;
   font-style: italic;
+}
+
+.field-hint--pods {
+  color: #0ea5e9;
+  font-style: normal;
+  padding: 8px 12px;
+  background: #f0f9ff;
+  border-radius: 4px;
+  border-left: 3px solid #0ea5e9;
+}
+
+.field-hint--pods strong {
+  color: #0284c7;
+}
+
+.field-hint--empty {
+  color: #f59e0b;
+  font-style: normal;
+  padding: 8px 12px;
+  background: #fffbeb;
+  border-radius: 4px;
+  border-left: 3px solid #f59e0b;
+}
+
+.field-hint--empty strong {
+  color: #d97706;
 }
 
 /* Scrollbar styling */

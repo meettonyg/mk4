@@ -17,8 +17,8 @@
             <label for="social-title">Section Title</label>
             <input 
               id="social-title"
-              v-model="localData.title" 
-              @input="updateComponent"
+              v-model="displaySettings.title" 
+              @input="updateDisplaySettings"
               type="text"
               placeholder="e.g., Connect With Me"
             />
@@ -28,8 +28,8 @@
             <label for="social-description">Description</label>
             <textarea 
               id="social-description"
-              v-model="localData.description" 
-              @input="updateComponent"
+              v-model="displaySettings.description" 
+              @input="updateDisplaySettings"
               rows="2"
               placeholder="Optional description..."
             />
@@ -38,6 +38,9 @@
         
         <section class="editor-section">
           <h4>Social Networks</h4>
+          <p class="editor-note">
+            📝 These URLs are saved globally and will update across all your media kits.
+          </p>
           
           <div class="social-network" v-for="(network, key) in socialNetworks" :key="key">
             <div class="network-header">
@@ -45,8 +48,8 @@
               <span class="network-name">{{ network.name }}</span>
             </div>
             <input 
-              v-model="localData[key]" 
-              @input="updateComponent"
+              v-model="socialUrls[key]" 
+              @input="updatePodsField(key)"
               :placeholder="network.placeholder"
               type="url"
             />
@@ -60,8 +63,8 @@
             <label>
               <input 
                 type="checkbox"
-                v-model="localData.showLabels" 
-                @change="updateComponent"
+                v-model="displaySettings.showLabels" 
+                @change="updateDisplaySettings"
               />
               Show Network Names
             </label>
@@ -73,8 +76,9 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
+import { usePodsData } from '../../src/composables/usePodsData';
 import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 
 const props = defineProps({
@@ -87,6 +91,7 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 const store = useMediaKitStore();
+const { socialLinks: podsSocialLinks, updatePodsField: updatePodsFieldComposable } = usePodsData();
 
 // Active tab state
 const activeTab = ref('content');
@@ -95,56 +100,86 @@ const socialNetworks = {
   facebook: { name: 'Facebook', icon: '👤', placeholder: 'https://facebook.com/username' },
   twitter: { name: 'Twitter/X', icon: '🐦', placeholder: 'https://twitter.com/username' },
   linkedin: { name: 'LinkedIn', icon: '💼', placeholder: 'https://linkedin.com/in/username' },
-  instagram: { name: 'Instagram', icon: '📷', placeholder: 'https://instagram.com/username' },
+  instagram: { name: 'Instagram', icon: '📷', placeholder: 'https://instagram.com/instagram' },
   youtube: { name: 'YouTube', icon: '📺', placeholder: 'https://youtube.com/@channel' },
   tiktok: { name: 'TikTok', icon: '🎵', placeholder: 'https://tiktok.com/@username' },
   pinterest: { name: 'Pinterest', icon: '📌', placeholder: 'https://pinterest.com/username' }
 };
 
-const localData = ref({
-  title: 'Connect With Me',
-  description: '',
+// ARCHITECTURE FIX: Separate content (Pods) from display settings (component JSON)
+const socialUrls = ref({
   facebook: '',
   twitter: '',
   linkedin: '',
   instagram: '',
   youtube: '',
   tiktok: '',
-  pinterest: '',
+  pinterest: ''
+});
+
+const displaySettings = ref({
+  title: 'Connect With Me',
+  description: '',
   showLabels: false
 });
 
 // Load component data
 const loadComponentData = () => {
   const component = store.components[props.componentId];
+  
+  // Load display settings from component JSON
   if (component && component.data) {
-    localData.value = {
+    displaySettings.value = {
       title: component.data.title || 'Connect With Me',
       description: component.data.description || '',
-      facebook: component.data.facebook || '',
-      twitter: component.data.twitter || '',
-      linkedin: component.data.linkedin || '',
-      instagram: component.data.instagram || '',
-      youtube: component.data.youtube || '',
-      tiktok: component.data.tiktok || '',
-      pinterest: component.data.pinterest || '',
-      showLabels: component.data.showLabels || false
+      showLabels: component.data.showLabels !== undefined ? component.data.showLabels : false
+    };
+  }
+  
+  // Load URLs from Pods (single source of truth)
+  if (podsSocialLinks.value) {
+    socialUrls.value = {
+      facebook: podsSocialLinks.value.facebook || '',
+      twitter: podsSocialLinks.value.twitter || '',
+      linkedin: podsSocialLinks.value.linkedin || '',
+      instagram: podsSocialLinks.value.instagram || '',
+      youtube: podsSocialLinks.value.youtube || '',
+      tiktok: podsSocialLinks.value.tiktok || '',
+      pinterest: podsSocialLinks.value.pinterest || ''
     };
   }
 };
 
 watch(() => props.componentId, loadComponentData, { immediate: true });
+watch(() => podsSocialLinks.value, loadComponentData);
 
-// Update component with debouncing
-let updateTimeout = null;
-const updateComponent = () => {
-  if (updateTimeout) clearTimeout(updateTimeout);
+onMounted(() => {
+  loadComponentData();
+});
+
+// Update Pods field (content)
+let podsUpdateTimeout = null;
+const updatePodsField = (fieldKey) => {
+  if (podsUpdateTimeout) clearTimeout(podsUpdateTimeout);
   
-  updateTimeout = setTimeout(() => {
+  podsUpdateTimeout = setTimeout(() => {
+    const metaKey = `social_${fieldKey}`;
+    updatePodsFieldComposable(metaKey, socialUrls.value[fieldKey]);
+    console.log(`Updated Pods field: ${metaKey} = ${socialUrls.value[fieldKey]}`);
+  }, 500);
+};
+
+// Update display settings (styling/layout)
+let displayUpdateTimeout = null;
+const updateDisplaySettings = () => {
+  if (displayUpdateTimeout) clearTimeout(displayUpdateTimeout);
+  
+  displayUpdateTimeout = setTimeout(() => {
     store.updateComponent(props.componentId, {
-      data: { ...localData.value }
+      data: { ...displaySettings.value }
     });
     store.isDirty = true;
+    console.log('Updated display settings:', displaySettings.value);
   }, 300);
 };
 
@@ -187,6 +222,21 @@ body.dark-mode .editor-section {
 
 body.dark-mode .editor-section h4 {
   color: #94a3b8;
+}
+
+.editor-note {
+  background: #f0f9ff;
+  border-left: 3px solid #3b82f6;
+  padding: 12px;
+  margin: 0 0 16px 0;
+  font-size: 13px;
+  color: #1e40af;
+  border-radius: 4px;
+}
+
+body.dark-mode .editor-note {
+  background: #1e3a5f;
+  color: #93c5fd;
 }
 
 .field-group {

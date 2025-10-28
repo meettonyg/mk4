@@ -18,8 +18,9 @@
 
 <script setup>
 import { computed } from 'vue';
+import { usePodsData } from '../../src/composables/usePodsData';
 
-// ROOT FIX: Simplified to only handle introduction field
+// ROOT FIX: Pods data is PRIMARY source for introduction
 const props = defineProps({
   componentId: {
     type: String,
@@ -47,8 +48,24 @@ const props = defineProps({
   }
 });
 
-// Extract introduction from data or props
-const introduction = computed(() => props.data?.introduction || props.props?.introduction || '');
+// Load Pods data - THIS IS THE ONLY SOURCE FOR TEXT CONTENT
+const podsData = usePodsData();
+
+// Extract introduction - ONLY from Pods (no component data override for text)
+const introduction = computed(() => {
+  // Debug logging
+  if (import.meta.env.DEV || window.gmkbDebug) {
+    console.log('[GuestIntro] Pods data (ONLY source for text):', {
+      podsIntroduction: podsData.introduction?.value,
+      isLoaded: podsData.isLoaded?.value
+    });
+  }
+  
+  // ONLY SOURCE: Pods introduction field
+  // Text content is NEVER stored in component JSON
+  return podsData.introduction?.value || '';
+});
+
 const layout = computed(() => props.data?.layout || props.props?.layout || 'centered');
 </script>
 

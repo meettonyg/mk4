@@ -11,9 +11,68 @@ export function usePodsData() {
   // NO onMounted, NO fetch - just computed refs to store data
   // Data was already fetched ONCE in store.initialize()
 
+  /**
+   * ARCHITECTURE FIX: Update individual Pods field
+   * This is the single source of truth for content updates
+   */
+  const updatePodsField = async (fieldName, value) => {
+    try {
+      console.log(`📝 Updating Pods field: ${fieldName} = ${value}`);
+      
+      // CRITICAL: Update store immediately (optimistic update)
+      if (!store.podsData) {
+        store.podsData = {};
+      }
+      store.podsData[fieldName] = value;
+      
+      // Make API call to save to WordPress
+      const formData = new FormData();
+      formData.append('action', 'gmkb_update_pods_field');
+      formData.append('nonce', window.gmkbData?.nonce || '');
+      formData.append('post_id', store.postId || '');
+      formData.append('field_name', fieldName);
+      formData.append('field_value', value);
+      
+      const response = await fetch(window.gmkbData?.ajaxUrl || '/wp-admin/admin-ajax.php', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.data?.message || 'Failed to update Pods field');
+      }
+      
+      console.log(`✅ Pods field updated: ${fieldName}`);
+      
+      // Dispatch event for other components to react
+      document.dispatchEvent(new CustomEvent('gmkb:pods-field-updated', {
+        detail: { fieldName, value }
+      }));
+      
+      return result;
+      
+    } catch (error) {
+      console.error(`❌ Failed to update Pods field ${fieldName}:`, error);
+      
+      // Revert optimistic update on error
+      if (store.podsData && store.podsData[fieldName] === value) {
+        delete store.podsData[fieldName];
+      }
+      
+      throw error;
+    }
+  };
+
   return {
     // Basic information
     biography: computed(() => store.podsData?.biography || ''),
+    introduction: computed(() => store.podsData?.introduction || ''),
     firstName: computed(() => store.podsData?.first_name || ''),
     lastName: computed(() => store.podsData?.last_name || ''),
     email: computed(() => store.podsData?.email || ''),
@@ -54,13 +113,15 @@ export function usePodsData() {
       return questions;
     }),
     
-    // Social media links
+    // Social media links - ARCHITECTURE FIX: Read from Pods only
     socialLinks: computed(() => ({
-      twitter: store.podsData?.twitter || '',
-      facebook: store.podsData?.facebook || '',
-      instagram: store.podsData?.instagram || '',
-      linkedin: store.podsData?.linkedin || '',
-      youtube: store.podsData?.youtube || '',
+      twitter: store.podsData?.social_twitter || '',
+      facebook: store.podsData?.social_facebook || '',
+      instagram: store.podsData?.social_instagram || '',
+      linkedin: store.podsData?.social_linkedin || '',
+      youtube: store.podsData?.social_youtube || '',
+      tiktok: store.podsData?.social_tiktok || '',
+      pinterest: store.podsData?.social_pinterest || '',
       website: store.podsData?.website || ''
     })),
     
@@ -79,10 +140,10 @@ export function usePodsData() {
     // ROOT FIX: Add individual contact fields for direct access
     website: computed(() => store.podsData?.website || ''),
     address: computed(() => store.podsData?.address || ''),
-    twitter: computed(() => store.podsData?.twitter || ''),
-    facebook: computed(() => store.podsData?.facebook || ''),
-    instagram: computed(() => store.podsData?.instagram || ''),
-    linkedin: computed(() => store.podsData?.linkedin || ''),
+    twitter: computed(() => store.podsData?.social_twitter || ''),
+    facebook: computed(() => store.podsData?.social_facebook || ''),
+    instagram: computed(() => store.podsData?.social_instagram || ''),
+    linkedin: computed(() => store.podsData?.social_linkedin || ''),
     headshot: computed(() => store.podsData?.guest_headshot || ''),
     
     // ROOT FIX: Add stats object for authority components
@@ -108,6 +169,9 @@ export function usePodsData() {
     isLoaded: computed(() => Object.keys(store.podsData || {}).length > 0),
     
     // Get all pods data (for debugging)
-    allData: computed(() => store.podsData)
+    allData: computed(() => store.podsData),
+    
+    // ARCHITECTURE FIX: Method to update Pods fields
+    updatePodsField
   };
 }
