@@ -380,6 +380,24 @@ function render_component($component, $post_id, $index = 0) {
         // ROOT FIX: Merge props and data - props take precedence
         $merged_props = array_merge($component_data, $component_props);
         
+        // ROOT FIX: CRITICAL - Apply Pods data enrichment filter BEFORE rendering
+        // This loads Pods data into component props on the frontend
+        $enrichment_filter = "gmkb_enrich_{$component_type}_props";
+        if (has_filter($enrichment_filter)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('🔄 Applying Pods enrichment filter: ' . $enrichment_filter . ' for post ' . $post_id);
+            }
+            $merged_props = apply_filters($enrichment_filter, $merged_props, $post_id);
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ Enriched ' . $component_type . ' props: ' . print_r(array_keys($merged_props), true));
+            }
+        } else {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('⚠️ No enrichment filter found: ' . $enrichment_filter);
+            }
+        }
+        
         // ROOT FIX: Extract merged props as variables for the template
         if (!empty($merged_props)) {
             extract($merged_props, EXTR_SKIP);
@@ -399,7 +417,7 @@ function render_component($component, $post_id, $index = 0) {
         $componentId = $component_id;
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('Template variables for ' . $component_type . ': ' . print_r(array_keys($merged_props), true));
+            error_log('📝 Final template variables for ' . $component_type . ': ' . print_r(array_keys($merged_props), true));
         }
         
         // Include template (which includes its own wrapper)

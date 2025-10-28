@@ -79,13 +79,16 @@ class Guest_Intro_Data_Integration {
         }
         
         try {
+            // ROOT FIX: Create Pods object but don't check exists() - it fails early in WP lifecycle
             $pod = pods('guests', $post_id);
-            if (!$pod || !$pod->exists()) {
-                $result['message'] = 'Guest post not found';
+            
+            // ROOT FIX: More thorough validity check without exists()
+            if (!$pod || !is_object($pod) || !method_exists($pod, 'field')) {
+                $result['message'] = 'Invalid Pods object';
                 return $result;
             }
             
-            // ROOT FIX: Load only introduction field
+            // ROOT FIX: Load only introduction field - Pod object is valid if we got here
             $result['intro']['introduction'] = $pod->field('introduction');
             
             // Count non-empty fields
@@ -169,9 +172,12 @@ class Guest_Intro_Data_Integration {
         }
         
         try {
+            // ROOT FIX: Create Pods object but don't check exists() - it fails early in WP lifecycle
             $pod = pods('guests', $post_id);
-            if (!$pod || !$pod->exists()) {
-                $result['message'] = 'Guest post not found';
+            
+            // ROOT FIX: More thorough validity check without exists()
+            if (!$pod || !is_object($pod) || !method_exists($pod, 'save')) {
+                $result['message'] = 'Invalid Pods object for saving';
                 return $result;
             }
             
@@ -219,8 +225,11 @@ class Guest_Intro_Data_Integration {
         }
         
         try {
+            // ROOT FIX: Create Pods object but don't check exists() - it fails early in WP lifecycle
             $pod = pods('guests', $post_id);
-            if (!$pod || !$pod->exists()) {
+            
+            // ROOT FIX: More thorough validity check without exists()
+            if (!$pod || !is_object($pod) || !method_exists($pod, 'field')) {
                 return false;
             }
             

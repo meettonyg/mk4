@@ -411,16 +411,34 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
  * Biography Component Filter - SIMPLIFIED
  * SINGLE RESPONSIBILITY: Load biography text only
  * Other fields (name, title, location) will be handled by separate components
+ * 
+ * ROOT FIX: Removed $pod->exists() check to match enqueue.php fix
  */
 add_filter('gmkb_enrich_biography_props', function($props, $post_id) {
     // Only proceed if Pods is active
     if (!function_exists('pods')) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('[Biography Filter] Pods function not available');
+        }
+        return $props;
+    }
+    
+    if (!class_exists('Pods')) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('[Biography Filter] Pods class not loaded');
+        }
         return $props;
     }
     
     try {
+        // ROOT FIX: Create Pods object but don't check exists() - it fails early in WP lifecycle
         $pod = pods('guests', $post_id);
-        if (!$pod || !$pod->exists()) {
+        
+        // ROOT FIX: More thorough validity check without exists()
+        if (!$pod || !is_object($pod) || !method_exists($pod, 'field')) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('[Biography Filter] Invalid Pods object for post ' . $post_id);
+            }
             return $props;
         }
         
@@ -435,20 +453,32 @@ add_filter('gmkb_enrich_biography_props', function($props, $post_id) {
             return is_string($value) ? $value : '';
         };
         
-        // Load biography text only
+        // ROOT FIX: Just fetch the field directly - Pod object is valid if we got here
         $bio = $extract_value($pod->field('biography'));
+        
+        // Fallback to introduction if biography is empty
+        if (empty($bio)) {
+            $bio = $extract_value($pod->field('introduction'));
+        }
+        
         $props['bio'] = $bio;
         $props['biography'] = $bio;
         $props['bio_content'] = $bio;
         $props['content'] = $bio;
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[Biography Filter Simplified] Loaded for post ' . $post_id . ' - Length: ' . strlen($bio));
+            error_log('[Biography Filter] Loaded for post ' . $post_id . ' - Length: ' . strlen($bio));
+            if (!empty($bio)) {
+                error_log('[Biography Filter] Bio preview: ' . substr($bio, 0, 100) . '...');
+            } else {
+                error_log('[Biography Filter] WARNING: Biography is empty!');
+            }
         }
         
     } catch (Exception $e) {
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('[Biography Filter] Error: ' . $e->getMessage());
+            error_log('[Biography Filter] Stack trace: ' . $e->getTraceAsString());
         }
     }
     
