@@ -1,27 +1,61 @@
 {
   "dataSource": "pods",
+  "description": "Social media component requires all social profile URLs and contact info",
   "fields": {
-    "linkedin": ["linkedin", "linkedin_url", "linkedin_profile"],
-    "twitter": ["twitter", "twitter_handle", "twitter_url", "x_handle"],
-    "facebook": ["facebook", "facebook_url", "facebook_page"],
-    "instagram": ["instagram", "instagram_handle", "instagram_url"],
-    "youtube": ["youtube", "youtube_channel", "youtube_url"],
-    "tiktok": ["tiktok", "tiktok_handle", "tiktok_url"],
-    "website": ["website", "web_url", "personal_website"],
-    "email": ["email", "contact_email"],
-    "github": ["github", "github_url", "github_handle"],
-    "medium": ["medium", "medium_url", "medium_profile"]
-  },
-  "defaults": {
-    "linkedin": "",
-    "twitter": "",
-    "facebook": "",
-    "instagram": "",
-    "youtube": "",
-    "tiktok": "",
-    "website": "",
-    "email": "",
-    "github": "",
-    "medium": ""
+    "1_twitter": {
+      "type": "website",
+      "required": false,
+      "description": "Twitter/X profile URL"
+    },
+    "1_facebook": {
+      "type": "website",
+      "required": false,
+      "description": "Facebook profile URL"
+    },
+    "1_instagram": {
+      "type": "website",
+      "required": false,
+      "description": "Instagram profile URL"
+    },
+    "1_linkedin": {
+      "type": "website",
+      "required": false,
+      "description": "LinkedIn profile URL"
+    },
+    "1_tiktok": {
+      "type": "website",
+      "required": false,
+      "description": "TikTok profile URL"
+    },
+    "1_pinterest": {
+      "type": "website",
+      "required": false,
+      "description": "Pinterest profile URL"
+    },
+    "guest_youtube": {
+      "type": "website",
+      "required": false,
+      "description": "YouTube channel URL"
+    },
+    "1_website": {
+      "type": "website",
+      "required": false,
+      "description": "Primary website URL"
+    },
+    "2_website": {
+      "type": "website",
+      "required": false,
+      "description": "Secondary website URL"
+    },
+    "email": {
+      "type": "email",
+      "required": false,
+      "description": "Contact email address"
+    },
+    "website": {
+      "type": "website",
+      "required": false,
+      "description": "Website URL (legacy field)"
+    }
   }
 }

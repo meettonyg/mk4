@@ -1,17 +1,31 @@
 {
   "dataSource": "pods",
+  "description": "Hero section requires name, bio, and profile image",
   "fields": {
-    "title": {
-      "type": "composite",
-      "fields": ["first_name", "last_name"],
-      "format": "{first_name} {last_name}"
+    "first_name": {
+      "type": "text",
+      "required": false,
+      "description": "Guest's first name"
     },
-    "subtitle": ["guest_title", "tagline", "professional_title"],
-    "description": ["tagline", "introduction", "bio_short"]
-  },
-  "defaults": {
-    "title": "Guest Name",
-    "subtitle": "Professional Title",
-    "description": "Welcome to my media kit"
+    "last_name": {
+      "type": "text",
+      "required": false,
+      "description": "Guest's last name"
+    },
+    "biography": {
+      "type": "wysiwyg",
+      "required": false,
+      "description": "Short biography for hero section"
+    },
+    "headshot": {
+      "type": "file",
+      "required": false,
+      "description": "Profile headshot image"
+    },
+    "guest_headshot": {
+      "type": "file",
+      "required": false,
+      "description": "Guest headshot (alternative field name)"
+    }
   }
 }

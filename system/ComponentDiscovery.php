@@ -13,6 +13,53 @@ class ComponentDiscovery {
     private $aliases = [];
     
     /**
+     * ARCHITECTURE FIX: Get all required Pods fields from component declarations
+     * This implements the self-contained component architecture where each component
+     * declares its own data requirements via pods-config.json
+     * 
+     * @return array Array of unique Pods field names required by all components
+     */
+    public function getRequiredPodsFields() {
+        $all_fields = array();
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('ComponentDiscovery: Scanning components for Pods field requirements...');
+        }
+        
+        foreach ($this->components as $component_name => $component_data) {
+            $component_dir = $this->componentsDir . $component_name;
+            $pods_config_path = $component_dir . '/pods-config.json';
+            
+            if (file_exists($pods_config_path)) {
+                $config = json_decode(file_get_contents($pods_config_path), true);
+                
+                if ($config && isset($config['fields']) && is_array($config['fields'])) {
+                    $field_names = array_keys($config['fields']);
+                    $all_fields = array_merge($all_fields, $field_names);
+                    
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log("ComponentDiscovery: Component '{$component_name}' requires " . count($field_names) . " Pods fields: " . implode(', ', $field_names));
+                    }
+                } else {
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log("ComponentDiscovery: Component '{$component_name}' has pods-config.json but no fields array");
+                    }
+                }
+            }
+        }
+        
+        // Remove duplicates and re-index
+        $unique_fields = array_values(array_unique($all_fields));
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('ComponentDiscovery: Total unique Pods fields required: ' . count($unique_fields));
+            error_log('ComponentDiscovery: Field list: ' . implode(', ', $unique_fields));
+        }
+        
+        return $unique_fields;
+    }
+
+    /**
      * Component type aliases mapping
      * Maps requested component types to actual directory names
      */

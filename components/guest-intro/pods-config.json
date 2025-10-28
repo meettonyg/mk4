@@ -1,25 +1,21 @@
 {
   "dataSource": "pods",
+  "description": "Guest introduction component requires name fields and introduction text",
   "fields": {
-    "first_name": ["first_name", "fname"],
-    "last_name": ["last_name", "lname"],
-    "full_name": {
-      "type": "composite",
-      "fields": ["first_name", "last_name"],
-      "format": "{first_name} {last_name}"
+    "introduction": {
+      "type": "paragraph",
+      "required": false,
+      "description": "Main introduction text for the guest"
     },
-    "title": ["guest_title", "professional_title", "job_title"],
-    "company": ["company", "organization", "employer"],
-    "introduction": ["introduction", "intro", "guest_intro"],
-    "tagline": ["tagline", "slogan", "motto"]
-  },
-  "defaults": {
-    "first_name": "",
-    "last_name": "",
-    "full_name": "Guest Name",
-    "title": "Professional Title",
-    "company": "",
-    "introduction": "",
-    "tagline": ""
+    "first_name": {
+      "type": "text",
+      "required": false,
+      "description": "Guest's first name"
+    },
+    "last_name": {
+      "type": "text",
+      "required": false,
+      "description": "Guest's last name"
+    }
   }
 }

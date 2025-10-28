@@ -1,13 +1,31 @@
 {
   "dataSource": "pods",
+  "description": "Topics component requires topic fields 1-5",
   "fields": {
-    "topics": {
-      "type": "array",
-      "fields": ["topic_1", "topic_2", "topic_3", "topic_4", "topic_5"],
-      "filter": "non-empty"
+    "topic_1": {
+      "type": "text",
+      "required": false,
+      "description": "Speaking topic 1"
+    },
+    "topic_2": {
+      "type": "text",
+      "required": false,
+      "description": "Speaking topic 2"
+    },
+    "topic_3": {
+      "type": "text",
+      "required": false,
+      "description": "Speaking topic 3"
+    },
+    "topic_4": {
+      "type": "text",
+      "required": false,
+      "description": "Speaking topic 4"
+    },
+    "topic_5": {
+      "type": "text",
+      "required": false,
+      "description": "Speaking topic 5"
     }
-  },
-  "defaults": {
-    "topics": []
   }
 }

@@ -85,48 +85,66 @@ class GMKB_REST_API_V2 {
 
     /**
      * Initialize list of Pods fields to fetch
+     * ARCHITECTURE FIX: Use ComponentDiscovery to get fields from component declarations
+     * This implements self-contained component architecture
      */
     private function initialize_pods_fields() {
-        // Base fields
-        $this->pods_fields = array(
-            'biography',
-            'biography_long',
-            'introduction', // ARCHITECTURE FIX: Guest Introduction content field
-            'first_name',
-            'last_name',
-            'email',
-            'phone',
-            'website',
-            'headshot',
-            'expertise',
-            'achievements'
-        );
+        global $gmkb_component_discovery;
         
-        // Add topics (1-5)
-        for ($i = 1; $i <= 5; $i++) {
-            $this->pods_fields[] = "topic_$i";
+        // ARCHITECTURE FIX: Get fields from component pods-config.json files
+        if ($gmkb_component_discovery && method_exists($gmkb_component_discovery, 'getRequiredPodsFields')) {
+            $this->pods_fields = $gmkb_component_discovery->getRequiredPodsFields();
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB REST API v2: Using ' . count($this->pods_fields) . ' Pods fields from component discovery');
+            }
+        } else {
+            // FALLBACK: Manual field list if component discovery not available
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('⚠️ GMKB REST API v2: Component discovery not available, using fallback field list');
+            }
+            
+            $this->pods_fields = array(
+                // Base fields
+                'biography',
+                'biography_long',
+                'introduction',
+                'first_name',
+                'last_name',
+                'email',
+                'phone',
+                'website',
+                'headshot',
+                'expertise',
+                'achievements'
+            );
+            
+            // Add topics (1-5)
+            for ($i = 1; $i <= 5; $i++) {
+                $this->pods_fields[] = "topic_$i";
+            }
+            
+            // Add questions (1-10)
+            for ($i = 1; $i <= 10; $i++) {
+                $this->pods_fields[] = "question_$i";
+            }
+            
+            // Add social media fields
+            $this->pods_fields[] = '1_facebook';
+            $this->pods_fields[] = '1_instagram';
+            $this->pods_fields[] = '1_linkedin';
+            $this->pods_fields[] = '1_pinterest';
+            $this->pods_fields[] = '1_tiktok';
+            $this->pods_fields[] = '1_twitter';
+            $this->pods_fields[] = 'guest_youtube';
+            $this->pods_fields[] = '1_website';
+            $this->pods_fields[] = '2_website';
+            
+            // Add media fields
+            $this->pods_fields[] = 'profile_image';
+            $this->pods_fields[] = 'gallery_images';
+            $this->pods_fields[] = 'video_intro';
         }
-        
-        // Add questions (1-10) 
-        for ($i = 1; $i <= 10; $i++) {
-            $this->pods_fields[] = "question_$i";
-        }
-        
-        // Add social media fields (ARCHITECTURE FIX: Use actual Pods field names)
-        $this->pods_fields[] = '1_facebook';
-        $this->pods_fields[] = '1_instagram';
-        $this->pods_fields[] = '1_linkedin';
-        $this->pods_fields[] = '1_pinterest';
-        $this->pods_fields[] = '1_tiktok';
-        $this->pods_fields[] = '1_twitter';
-        $this->pods_fields[] = 'guest_youtube';
-        $this->pods_fields[] = '1_website';
-        $this->pods_fields[] = '2_website';
-        
-        // Add media fields
-        $this->pods_fields[] = 'profile_image';
-        $this->pods_fields[] = 'gallery_images';
-        $this->pods_fields[] = 'video_intro';
     }
 
     /**

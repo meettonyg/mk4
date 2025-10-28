@@ -1,27 +1,5 @@
 {
-  "dataSource": "pods",
-  "fields": {
-    "years_experience": ["years_experience", "experience_years", "years_in_field"],
-    "projects_completed": ["projects_completed", "total_projects", "projects"],
-    "clients_served": ["clients_served", "total_clients", "clients"],
-    "awards_won": ["awards_won", "total_awards", "awards"],
-    "books_written": ["books_written", "books_published", "publications"],
-    "speaking_engagements": ["speaking_engagements", "talks_given", "speeches"],
-    "countries_visited": ["countries_visited", "countries_worked"],
-    "team_size": ["team_size", "employees", "staff_count"],
-    "revenue": ["revenue", "annual_revenue"],
-    "growth_rate": ["growth_rate", "growth_percentage"]
-  },
-  "defaults": {
-    "years_experience": "10+",
-    "projects_completed": "100+",
-    "clients_served": "50+",
-    "awards_won": "5",
-    "books_written": "0",
-    "speaking_engagements": "20+",
-    "countries_visited": "10",
-    "team_size": "5",
-    "revenue": "",
-    "growth_rate": ""
-  }
+  "dataSource": "none",
+  "description": "Stats component uses custom data, not Pods fields",
+  "fields": {}
 }

@@ -1,19 +1,31 @@
 {
   "dataSource": "pods",
+  "description": "Contact component requires email, phone, and website information",
   "fields": {
-    "email": ["email", "contact_email"],
-    "phone": ["phone", "contact_phone"],
-    "website": ["website", "web_url"],
-    "linkedin": ["linkedin", "linkedin_url"],
-    "twitter": ["twitter", "twitter_handle"],
-    "facebook": ["facebook", "facebook_url"]
-  },
-  "defaults": {
-    "email": "",
-    "phone": "",
-    "website": "",
-    "linkedin": "",
-    "twitter": "",
-    "facebook": ""
+    "email": {
+      "type": "email",
+      "required": false,
+      "description": "Contact email address"
+    },
+    "phone": {
+      "type": "phone",
+      "required": false,
+      "description": "Contact phone number"
+    },
+    "website": {
+      "type": "website",
+      "required": false,
+      "description": "Website URL"
+    },
+    "1_website": {
+      "type": "website",
+      "required": false,
+      "description": "Primary website URL"
+    },
+    "2_website": {
+      "type": "website",
+      "required": false,
+      "description": "Secondary website URL"
+    }
   }
 }

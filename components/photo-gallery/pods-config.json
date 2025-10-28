@@ -1,35 +1,16 @@
 {
   "dataSource": "pods",
+  "description": "Photo gallery component requires image fields",
   "fields": {
     "gallery_images": {
-      "type": "array",
-      "fields": [
-        "gallery_image_1", "gallery_image_2", "gallery_image_3",
-        "gallery_image_4", "gallery_image_5", "gallery_image_6",
-        "gallery_image_7", "gallery_image_8", "gallery_image_9",
-        "gallery_image_10"
-      ],
-      "filter": "non-empty"
+      "type": "file",
+      "required": false,
+      "description": "Gallery images"
     },
-    "gallery_captions": {
-      "type": "array",
-      "fields": [
-        "gallery_caption_1", "gallery_caption_2", "gallery_caption_3",
-        "gallery_caption_4", "gallery_caption_5", "gallery_caption_6",
-        "gallery_caption_7", "gallery_caption_8", "gallery_caption_9",
-        "gallery_caption_10"
-      ],
-      "filter": "non-empty"
-    },
-    "portfolio_images": {
-      "type": "array",
-      "fields": ["portfolio_1", "portfolio_2", "portfolio_3", "portfolio_4", "portfolio_5"],
-      "filter": "non-empty"
+    "profile_image": {
+      "type": "file",
+      "required": false,
+      "description": "Profile image"
     }
-  },
-  "defaults": {
-    "gallery_images": [],
-    "gallery_captions": [],
-    "portfolio_images": []
   }
 }

@@ -893,48 +893,96 @@ function gmkb_get_pods_data($post_id) {
     }
     
     try {
-        $pod = pods('guests', $post_id);
-        if ($pod && $pod->exists()) {
+        // ARCHITECTURE FIX: Get post type (support both 'mkcg' and 'guests')
+        $post = get_post($post_id);
+        if (!$post || !in_array($post->post_type, array('mkcg', 'guests'))) {
+            return $pods_data;
+        }
+        
+        $pod = pods($post->post_type, $post_id);
+        if (!$pod || !$pod->exists()) {
+            return $pods_data;
+        }
+        
+        // ARCHITECTURE FIX: Get fields from ComponentDiscovery
+        global $gmkb_component_discovery;
+        
+        if ($gmkb_component_discovery && method_exists($gmkb_component_discovery, 'getRequiredPodsFields')) {
+            $fields = $gmkb_component_discovery->getRequiredPodsFields();
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('gmkb_get_pods_data: Using ' . count($fields) . ' fields from component discovery');
+            }
+        } else {
+            // FALLBACK: Manual field list if discovery not available
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('⚠️ gmkb_get_pods_data: Component discovery not available, using fallback');
+            }
+            
             $fields = array(
-                'biography', 'first_name', 'last_name', 'email', 
-                'phone', 'website', 'headshot'
+                // Base fields
+                'biography',
+                'biography_long',
+                'introduction',
+                'first_name',
+                'last_name',
+                'email',
+                'phone',
+                'website',
+                'headshot',
+                'expertise',
+                'achievements',
+                // Social media fields
+                '1_facebook',
+                '1_instagram',
+                '1_linkedin',
+                '1_pinterest',
+                '1_tiktok',
+                '1_twitter',
+                'guest_youtube',
+                '1_website',
+                '2_website',
+                // Media fields
+                'profile_image',
+                'gallery_images',
+                'video_intro'
             );
             
-            foreach ($fields as $field) {
-                $value = $pod->field($field);
-                
-                // ROOT FIX: Ensure all values are simple types (string/null)
-                // Pods can return complex objects/arrays for relationship fields
-                if (is_array($value) || is_object($value)) {
-                    // For complex types, try to extract a simple value
-                    if (is_array($value) && isset($value['guid'])) {
-                        // Image/file field - use URL
-                        $pods_data[$field] = $value['guid'];
-                    } elseif (is_array($value) && isset($value[0])) {
-                        // Array of values - use first one
-                        $pods_data[$field] = is_string($value[0]) ? $value[0] : null;
-                    } else {
-                        // Can't convert - use null
-                        $pods_data[$field] = null;
-                    }
-                } else {
-                    // Simple value (string/number/null) - use as is
-                    $pods_data[$field] = $value;
-                }
+            // Add topics (1-5)
+            for ($i = 1; $i <= 5; $i++) {
+                $fields[] = "topic_$i";
             }
             
-            // Add topics
-            for ($i = 1; $i <= 5; $i++) {
-                $value = $pod->field("topic_$i");
-                
-                // ROOT FIX: Sanitize topic values too
-                if (is_array($value) || is_object($value)) {
-                    $pods_data["topic_$i"] = null;
-                } else {
-                    $pods_data["topic_$i"] = $value;
-                }
+            // Add questions (1-10)
+            for ($i = 1; $i <= 10; $i++) {
+                $fields[] = "question_$i";
             }
         }
+        
+        // Fetch all discovered fields
+        foreach ($fields as $field) {
+            $value = $pod->field($field);
+            
+            // ROOT FIX: Ensure all values are simple types (string/null)
+            // Pods can return complex objects/arrays for relationship fields
+            if (is_array($value) || is_object($value)) {
+                // For complex types, try to extract a simple value
+                if (is_array($value) && isset($value['guid'])) {
+                    // Image/file field - use URL
+                    $pods_data[$field] = $value['guid'];
+                } elseif (is_array($value) && isset($value[0])) {
+                    // Array of values - use first one
+                    $pods_data[$field] = is_string($value[0]) ? $value[0] : null;
+                } else {
+                    // Can't convert - use null
+                    $pods_data[$field] = null;
+                }
+            } else {
+                // Simple value (string/number/null) - use as is
+                $pods_data[$field] = $value;
+            }
+        }
+        
     } catch (Exception $e) {
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('⚠️ GMKB: Error loading Pods data: ' . $e->getMessage());
