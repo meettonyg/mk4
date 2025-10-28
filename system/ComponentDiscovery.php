@@ -23,11 +23,26 @@ class ComponentDiscovery {
         $all_fields = array();
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('ComponentDiscovery: Scanning components for Pods field requirements...');
+            error_log('ComponentDiscovery: Scanning ' . count($this->components) . ' components for Pods field requirements...');
         }
         
-        foreach ($this->components as $component_name => $component_data) {
-            $component_dir = $this->componentsDir . $component_name;
+        // ROOT FIX: Ensure components are loaded before scanning
+        if (empty($this->components)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('⚠️ ComponentDiscovery: No components loaded, attempting scan...');
+            }
+            $this->scan(false);
+        }
+        
+        // ROOT FIX: Also scan component directories directly if components list is still empty
+        $component_dirs = is_dir($this->componentsDir) ? glob($this->componentsDir . '/*', GLOB_ONLYDIR) : array();
+        
+        if (defined('WP_DEBUG') && WP_DEBUG && !empty($component_dirs)) {
+            error_log('ComponentDiscovery: Found ' . count($component_dirs) . ' component directories to scan');
+        }
+        
+        foreach ($component_dirs as $component_dir) {
+            $component_name = basename($component_dir);
             $pods_config_path = $component_dir . '/pods-config.json';
             
             if (file_exists($pods_config_path)) {
@@ -45,6 +60,11 @@ class ComponentDiscovery {
                         error_log("ComponentDiscovery: Component '{$component_name}' has pods-config.json but no fields array");
                     }
                 }
+            } else {
+                if (defined('WP_DEBUG') && WP_DEBUG && count($all_fields) < 5) {
+                    // Only log for first few to avoid noise
+                    error_log("ComponentDiscovery: Component '{$component_name}' has no pods-config.json");
+                }
             }
         }
         
@@ -53,7 +73,11 @@ class ComponentDiscovery {
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('ComponentDiscovery: Total unique Pods fields required: ' . count($unique_fields));
-            error_log('ComponentDiscovery: Field list: ' . implode(', ', $unique_fields));
+            if (count($unique_fields) > 0) {
+                error_log('ComponentDiscovery: Field list: ' . implode(', ', $unique_fields));
+            } else {
+                error_log('❌ ComponentDiscovery: WARNING - No Pods fields discovered! Check component pods-config.json files.');
+            }
         }
         
         return $unique_fields;

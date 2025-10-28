@@ -37,14 +37,15 @@ class GMKB_REST_API_V2 {
     private $cache_duration = 300; // 5 minutes
 
     public function __construct() {
-        add_action('rest_api_init', array($this, 'register_routes'));
+        // ROOT FIX: Use high priority (999) to ensure Pods is fully initialized before REST API runs
+        add_action('rest_api_init', array($this, 'register_routes'), 999);
         
         // ROOT FIX: Disable WordPress cookie authentication check for our endpoints
         // This allows logged-in users to access the API without strict cookie validation
         add_filter('rest_authentication_errors', array($this, 'bypass_cookie_auth_for_logged_in_users'), 100);
         
-        // Initialize Pods fields list
-        $this->initialize_pods_fields();
+        // ROOT FIX: Delay Pods field initialization until REST API init to ensure Pods is ready
+        add_action('rest_api_init', array($this, 'initialize_pods_fields'), 998);
     }
     
     /**
@@ -87,21 +88,54 @@ class GMKB_REST_API_V2 {
      * Initialize list of Pods fields to fetch
      * ARCHITECTURE FIX: Use ComponentDiscovery to get fields from component declarations
      * This implements self-contained component architecture
+     * ROOT FIX: Made public for hook compatibility
      */
-    private function initialize_pods_fields() {
+    public function initialize_pods_fields() {
         global $gmkb_component_discovery;
         
-        // ARCHITECTURE FIX: Get fields from component pods-config.json files
-        if ($gmkb_component_discovery && method_exists($gmkb_component_discovery, 'getRequiredPodsFields')) {
-            $this->pods_fields = $gmkb_component_discovery->getRequiredPodsFields();
-            
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB REST API v2: Using ' . count($this->pods_fields) . ' Pods fields from component discovery');
+        // ROOT FIX: Enhanced initialization with better error handling
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('🔍 GMKB REST API v2: Starting Pods field initialization...');
+            error_log('  - ComponentDiscovery available: ' . (isset($gmkb_component_discovery) && is_object($gmkb_component_discovery) ? 'YES' : 'NO'));
+            error_log('  - Has getRequiredPodsFields method: ' . (isset($gmkb_component_discovery) && method_exists($gmkb_component_discovery, 'getRequiredPodsFields') ? 'YES' : 'NO'));
+        }
+        
+        // ROOT FIX: Ensure ComponentDiscovery has scanned components before getting fields
+        if ($gmkb_component_discovery && is_object($gmkb_component_discovery)) {
+            // Check if components have been scanned
+            $components = $gmkb_component_discovery->getComponents();
+            if (empty($components)) {
+                // Force a scan if no components found
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('⚠️ GMKB REST API v2: No components found, forcing scan...');
+                }
+                try {
+                    $gmkb_component_discovery->scan(false);
+                } catch (Exception $e) {
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('❌ GMKB REST API v2: Component scan failed: ' . $e->getMessage());
+                    }
+                }
             }
-        } else {
+            
+            // Now try to get the Pods fields
+            if (method_exists($gmkb_component_discovery, 'getRequiredPodsFields')) {
+                $this->pods_fields = $gmkb_component_discovery->getRequiredPodsFields();
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('✅ GMKB REST API v2: Using ' . count($this->pods_fields) . ' Pods fields from component discovery');
+                    if (count($this->pods_fields) > 0) {
+                        error_log('  Sample fields: ' . implode(', ', array_slice($this->pods_fields, 0, 5)) . '...');
+                    }
+                }
+            }
+        }
+        
+        // FALLBACK: If still no fields, use manual list
+        if (empty($this->pods_fields)) {
             // FALLBACK: Manual field list if component discovery not available
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('⚠️ GMKB REST API v2: Component discovery not available, using fallback field list');
+                error_log('⚠️ GMKB REST API v2: No Pods fields from component discovery, using fallback field list');
             }
             
             $this->pods_fields = array(
@@ -492,6 +526,7 @@ class GMKB_REST_API_V2 {
      * Fetch ALL Pods data in one query
      * 
      * OPTIMIZATION: Single query instead of N queries
+     * ROOT FIX: Enhanced error handling and debugging
      * 
      * @param int $post_id The post ID
      * @param string $post_type The post type
@@ -500,39 +535,105 @@ class GMKB_REST_API_V2 {
     private function fetch_all_pods_data($post_id, $post_type) {
         $data = array();
         
-        // ROOT FIX: Fetch Pods data for both mkcg and guests post types
-        if (!in_array($post_type, array('mkcg', 'guests')) || !function_exists('pods')) {
+        // ROOT FIX: Comprehensive checks before attempting Pods access
+        if (!function_exists('pods')) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB API v2: Skipping Pods data - post_type=' . $post_type . ', pods_available=' . (function_exists('pods') ? 'YES' : 'NO'));
+                error_log('❌ GMKB API v2: Pods plugin not active or pods() function not available');
             }
             return $data;
         }
         
+        if (!class_exists('Pods')) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB API v2: Pods class not loaded - plugin may not be fully initialized');
+            }
+            return $data;
+        }
+        
+        if (!in_array($post_type, array('mkcg', 'guests'))) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('⚠️ GMKB API v2: Skipping Pods data - invalid post_type: ' . $post_type);
+            }
+            return $data;
+        }
+        
+        // ROOT FIX: Ensure we have fields to fetch
+        if (empty($this->pods_fields)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('⚠️ GMKB API v2: No Pods fields configured to fetch!');
+                error_log('  Attempting to initialize Pods fields now...');
+            }
+            // Try to initialize fields if not done yet
+            $this->initialize_pods_fields();
+            
+            if (empty($this->pods_fields)) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('❌ GMKB API v2: Still no Pods fields after initialization attempt');
+                }
+                return $data;
+            }
+        }
+        
         try {
-            // ROOT FIX: Use correct post type for Pods
+            // ROOT FIX: Add timing information for debugging
+            $start_time = microtime(true);
+            
+            // ROOT FIX: Use correct post type for Pods with better error handling
             $pod = pods($post_type, $post_id);
             
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB API v2: Loading Pods data for ' . $post_type . ' #' . $post_id);
+                error_log('🔍 GMKB API v2: Created Pods object for ' . $post_type . ' #' . $post_id);
+                error_log('  Pods fields to fetch: ' . count($this->pods_fields));
             }
             
-            if (!$pod || !$pod->exists()) {
+            // ROOT FIX: More thorough existence check
+            if (!$pod || !is_object($pod) || !method_exists($pod, 'exists') || !$pod->exists()) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('❌ GMKB API v2: Pods object invalid or post does not exist');
+                    error_log('  - Pod object: ' . (is_object($pod) ? 'YES' : 'NO'));
+                    error_log('  - Has exists method: ' . (is_object($pod) && method_exists($pod, 'exists') ? 'YES' : 'NO'));
+                    error_log('  - Post exists in Pods: ' . ($pod && method_exists($pod, 'exists') && $pod->exists() ? 'YES' : 'NO'));
+                }
                 return $data;
+            }
+            
+            // ROOT FIX: Log the fields we're about to fetch
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB API v2: Pods ready, fetching ' . count($this->pods_fields) . ' fields');
+                if (count($this->pods_fields) === 0) {
+                    error_log('⚠️ WARNING: No Pods fields configured to fetch!');
+                }
             }
             
             // Fetch all fields in one query
             foreach ($this->pods_fields as $field) {
-                $data[$field] = $pod->field($field);
+                $value = $pod->field($field);
+                
+                // ROOT FIX: Only store non-empty values to reduce payload size
+                if (!empty($value) || $value === '0' || $value === 0) {
+                    $data[$field] = $value;
+                }
             }
             
-            // Log for debugging in WP_DEBUG mode
+            // ROOT FIX: Enhanced debugging output
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB API v2: Fetched ' . count($data) . ' Pods fields for post ' . $post_id);
+                $elapsed = round((microtime(true) - $start_time) * 1000, 2);
+                $non_empty = count($data);
+                error_log('✅ GMKB API v2: Fetched ' . $non_empty . '/' . count($this->pods_fields) . ' non-empty Pods fields in ' . $elapsed . 'ms');
+                
+                // Sample some data for verification
+                if ($non_empty > 0) {
+                    $sample_fields = array_slice(array_keys($data), 0, 5);
+                    error_log('  Sample fields: ' . implode(', ', $sample_fields));
+                } else {
+                    error_log('⚠️ WARNING: All Pods fields are empty! This guest may have no data.');
+                }
             }
             
         } catch (Exception $e) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB API v2: Error fetching Pods data: ' . $e->getMessage());
+                error_log('❌ GMKB API v2: Exception fetching Pods data: ' . $e->getMessage());
+                error_log('  Stack trace: ' . $e->getTraceAsString());
             }
         }
 
@@ -787,9 +888,9 @@ class GMKB_REST_API_V2 {
     }
 }
 
-// Initialize API - instantiate immediately, the constructor adds the rest_api_init hook
-new GMKB_REST_API_V2();
+// ROOT FIX: Instantiation now happens via init hook in main plugin file
+// This ensures ComponentDiscovery is ready before REST API initializes
 
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ GMKB REST API v2: Class instantiated immediately with THEME PERSISTENCE FIX');
+    error_log('📄 GMKB REST API v2: Class defined, waiting for init hook instantiation');
 }

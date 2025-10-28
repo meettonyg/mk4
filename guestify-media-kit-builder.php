@@ -81,11 +81,6 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/version-control/VersionManager.php
 // ROOT FIX: Removed MediaKitAPI (v1) - redundant code, frontend only uses v2
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-rest-api-v2.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-rest-api-v2.php';
-    
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('✅ GMKB Phase 2: REST API v2 file loaded');
-        error_log('✅ GMKB Phase 2: GMKB_REST_API_V2 class exists: ' . (class_exists('GMKB_REST_API_V2') ? 'YES' : 'NO'));
-    }
 }
 
 // PHASE 3: Component Discovery API for scalable component architecture
@@ -179,6 +174,26 @@ class Guestify_Media_Kit_Builder extends GMKB_Plugin {}
 
 // Initialize the plugin
 $gmkb_plugin = GMKB_Plugin::get_instance();
+
+// ROOT FIX: Ensure ComponentDiscovery is globally available immediately
+// This fixes race condition where REST API can't find ComponentDiscovery
+global $gmkb_component_discovery;
+if (!isset($gmkb_component_discovery)) {
+    $gmkb_component_discovery = $gmkb_plugin->get_component_discovery();
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB: ComponentDiscovery made globally available from main plugin file');
+    }
+}
+
+// ROOT FIX: Initialize REST API v2 AFTER ComponentDiscovery is ready
+// This ensures Pods fields can be discovered from component configs
+global $gmkb_rest_api_v2;
+if (class_exists('GMKB_REST_API_V2')) {
+    $gmkb_rest_api_v2 = new GMKB_REST_API_V2();
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB: REST API v2 initialized with ComponentDiscovery ready');
+    }
+}
 
 // Initialize admin functionality
 $gmkb_admin = GMKB_Admin::get_instance();

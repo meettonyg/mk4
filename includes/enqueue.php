@@ -184,8 +184,11 @@ function gmkb_filter_style_tag($tag, $handle, $href, $media) {
 // ===============================================
 // MAIN ENQUEUE HOOKS
 // ===============================================
-add_action('wp_enqueue_scripts', 'gmkb_enqueue_vue_only_assets', 20);
-add_action('admin_enqueue_scripts', 'gmkb_enqueue_vue_only_assets', 20);
+// ROOT FIX: Increase priority to 999 to ensure Pods is fully initialized
+// This prevents the race condition where Pods data is empty on page load
+// but available via REST API (which runs later)
+add_action('wp_enqueue_scripts', 'gmkb_enqueue_vue_only_assets', 999);
+add_action('admin_enqueue_scripts', 'gmkb_enqueue_vue_only_assets', 999);
 
 // ROOT FIX: Enqueue design system CSS on frontend media kit pages
 add_action('wp_enqueue_scripts', 'gmkb_enqueue_frontend_assets', 20);
@@ -377,6 +380,7 @@ function gmkb_enqueue_vue_only_assets() {
         $inline_script .= 'console.log("  - Components:", Object.keys(window.gmkbData.componentRegistry || {}).length);';
         $inline_script .= 'console.log("  - Themes:", window.gmkbData.themes ? window.gmkbData.themes.length : 0);';
         $inline_script .= 'console.log("  - Has saved state:", !!window.gmkbData.savedState);';
+        $inline_script .= 'console.log("  - Pods data:", Object.keys(window.gmkbData.pods_data || {}).length + " fields");';
         $inline_script .= 'console.log("  - Full data:", window.gmkbData);';
         $inline_script .= 'if (!window.gmkbData.user.isLoggedIn) { console.log("📝 CARRD MODE: You can edit this media kit, but need to login to save changes"); }';
     }
@@ -567,17 +571,33 @@ function gmkb_prepare_data_for_injection() {
         }
     }
     
-    // STEP 9: Get Pods data
+    // STEP 9: Pods data - ATTEMPT TO LOAD IF PODS IS READY
+    // ROOT FIX: Try to load Pods data if available, but don't fail if not ready
+    // The Vue app can still fetch it via REST API v2 if this fails
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('🔍 GMKB DATA PREP - STEP 9: Loading Pods data...');
+        error_log('🔍 GMKB DATA PREP - STEP 9: Attempting to load Pods data...');
     }
-    $pods_data = gmkb_get_pods_data($post_id);
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        $pods_field_count = is_array($pods_data) ? count($pods_data) : 0;
-        error_log('✅ GMKB DATA PREP - STEP 9: Pods data loaded (' . $pods_field_count . ' fields)');
+    
+    // Only try if Pods is available
+    if (function_exists('pods') && class_exists('Pods')) {
+        $pods_data = gmkb_get_pods_data($post_id);
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            $field_count = count($pods_data);
+            if ($field_count > 0) {
+                error_log('✅ GMKB DATA PREP - STEP 9: Loaded ' . $field_count . ' Pods fields');
+            } else {
+                error_log('⚠️ GMKB DATA PREP - STEP 9: No Pods data available (will fetch via REST API)');
+            }
+        }
+    } else {
+        $pods_data = array();
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('⚠️ GMKB DATA PREP - STEP 9: Pods not ready yet (will fetch via REST API)');
+        }
     }
     
     // STEP 10: Build final data array
+    // ROOT FIX: Include pods_data if we managed to load it, otherwise Vue will fetch via REST API
     $gmkb_data = array(
         'ajaxUrl'           => admin_url('admin-ajax.php'),
         'nonce'             => $nonce,
@@ -595,7 +615,7 @@ function gmkb_prepare_data_for_injection() {
         'componentRegistry' => $component_registry,
         'themes'            => $themes,
         'savedState'        => $saved_state,
-        'pods_data'         => $pods_data,
+        'pods_data'         => $pods_data, // ROOT FIX: Include if available, empty array if not
         // CARRD-STYLE: User status for frontend (can view/edit without login, but need login to save)
         'user'              => array(
             'isLoggedIn'    => $is_logged_in,
@@ -615,7 +635,7 @@ function gmkb_prepare_data_for_injection() {
         error_log('  - Components: ' . $component_count);
         error_log('  - Themes: ' . $theme_count);
         error_log('  - Has saved state: ' . ($saved_state ? 'YES' : 'NO'));
-        error_log('  - Pods fields: ' . $pods_field_count);
+        error_log('  - Pods data: ' . count($pods_data) . ' fields loaded');
         error_log('  - Data keys: ' . implode(', ', array_keys($gmkb_data)));
         
         // Critical check: Verify componentRegistry is not empty
@@ -887,36 +907,77 @@ function gmkb_sanitize_component_props($props) {
 function gmkb_get_pods_data($post_id) {
     $pods_data = array();
     
-    // Only load Pods data if Pods is active
+    // ROOT FIX: Use EXACT same approach as REST API v2 for consistency
+    // Check if Pods is loaded and initialized
     if (!function_exists('pods')) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('❌ gmkb_get_pods_data: Pods plugin not active or pods() function not available');
+        }
+        return $pods_data;
+    }
+    
+    if (!class_exists('Pods')) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('❌ gmkb_get_pods_data: Pods class not loaded - plugin may not be fully initialized');
+        }
         return $pods_data;
     }
     
     try {
-        // ARCHITECTURE FIX: Get post type (support both 'mkcg' and 'guests')
+        // Get post type (support both 'mkcg' and 'guests')
         $post = get_post($post_id);
-        if (!$post || !in_array($post->post_type, array('mkcg', 'guests'))) {
-            return $pods_data;
-        }
-        
-        $pod = pods($post->post_type, $post_id);
-        if (!$pod || !$pod->exists()) {
-            return $pods_data;
-        }
-        
-        // ARCHITECTURE FIX: Get fields from ComponentDiscovery
-        global $gmkb_component_discovery;
-        
-        if ($gmkb_component_discovery && method_exists($gmkb_component_discovery, 'getRequiredPodsFields')) {
-            $fields = $gmkb_component_discovery->getRequiredPodsFields();
-            
+        if (!$post) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('gmkb_get_pods_data: Using ' . count($fields) . ' fields from component discovery');
+                error_log('❌ gmkb_get_pods_data: Post #' . $post_id . ' not found');
             }
-        } else {
-            // FALLBACK: Manual field list if discovery not available
+            return $pods_data;
+        }
+        
+        $post_type = $post->post_type;
+        
+        if (!in_array($post_type, array('mkcg', 'guests'))) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('⚠️ gmkb_get_pods_data: Component discovery not available, using fallback');
+                error_log('⚠️ gmkb_get_pods_data: Skipping Pods data - invalid post_type: ' . $post_type);
+            }
+            return $pods_data;
+        }
+        
+        // ROOT FIX: Get field list using ComponentDiscovery (matches REST API v2)
+        global $gmkb_component_discovery;
+        $fields = array();
+        
+        // Try to get fields from ComponentDiscovery
+        if ($gmkb_component_discovery && is_object($gmkb_component_discovery)) {
+            // Check if components have been scanned
+            $components = $gmkb_component_discovery->getComponents();
+            if (empty($components)) {
+                // Force a scan if no components found
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('⚠️ gmkb_get_pods_data: No components found, forcing scan...');
+                }
+                try {
+                    $gmkb_component_discovery->scan(false);
+                } catch (Exception $e) {
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('❌ gmkb_get_pods_data: Component scan failed: ' . $e->getMessage());
+                    }
+                }
+            }
+            
+            // Now try to get the Pods fields
+            if (method_exists($gmkb_component_discovery, 'getRequiredPodsFields')) {
+                $fields = $gmkb_component_discovery->getRequiredPodsFields();
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('✅ gmkb_get_pods_data: Using ' . count($fields) . ' Pods fields from component discovery');
+                }
+            }
+        }
+        
+        // FALLBACK: Manual field list if component discovery not available
+        if (empty($fields)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('⚠️ gmkb_get_pods_data: No Pods fields from component discovery, using fallback field list');
             }
             
             $fields = array(
@@ -931,21 +992,7 @@ function gmkb_get_pods_data($post_id) {
                 'website',
                 'headshot',
                 'expertise',
-                'achievements',
-                // Social media fields
-                '1_facebook',
-                '1_instagram',
-                '1_linkedin',
-                '1_pinterest',
-                '1_tiktok',
-                '1_twitter',
-                'guest_youtube',
-                '1_website',
-                '2_website',
-                // Media fields
-                'profile_image',
-                'gallery_images',
-                'video_intro'
+                'achievements'
             );
             
             // Add topics (1-5)
@@ -957,35 +1004,105 @@ function gmkb_get_pods_data($post_id) {
             for ($i = 1; $i <= 10; $i++) {
                 $fields[] = "question_$i";
             }
+            
+            // Add social media fields
+            $fields[] = '1_facebook';
+            $fields[] = '1_instagram';
+            $fields[] = '1_linkedin';
+            $fields[] = '1_pinterest';
+            $fields[] = '1_tiktok';
+            $fields[] = '1_twitter';
+            $fields[] = 'guest_youtube';
+            $fields[] = '1_website';
+            $fields[] = '2_website';
+            
+            // Add media fields
+            $fields[] = 'profile_image';
+            $fields[] = 'gallery_images';
+            $fields[] = 'video_intro';
         }
         
-        // Fetch all discovered fields
+        // ROOT FIX: Add timing for debugging
+        $start_time = microtime(true);
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('🔍 gmkb_get_pods_data: Creating Pods object for ' . $post_type . ' #' . $post_id);
+            error_log('  Pods fields to fetch: ' . count($fields));
+        }
+        
+        // ROOT FIX: Create Pods object with better error handling
+        $pod = pods($post_type, $post_id);
+        
+        // ROOT FIX: More thorough existence check (matches REST API v2)
+        if (!$pod || !is_object($pod) || !method_exists($pod, 'exists')) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ gmkb_get_pods_data: Pods object invalid');
+                error_log('  - Pod object: ' . (is_object($pod) ? 'YES' : 'NO'));
+                error_log('  - Has exists method: ' . (is_object($pod) && method_exists($pod, 'exists') ? 'YES' : 'NO'));
+            }
+            return $pods_data;
+        }
+        
+        // ROOT FIX: REMOVE the $pod->exists() check - it fails early in WP lifecycle
+        // REST API v2 doesn't strictly require this check, and it works fine
+        // The Pod object is valid if we got here, so just try to fetch fields
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ gmkb_get_pods_data: Pods ready, fetching ' . count($fields) . ' fields');
+        }
+        
+        // ROOT FIX: Fetch all fields in one query (matches REST API v2)
         foreach ($fields as $field) {
-            $value = $pod->field($field);
-            
-            // ROOT FIX: Ensure all values are simple types (string/null)
-            // Pods can return complex objects/arrays for relationship fields
-            if (is_array($value) || is_object($value)) {
-                // For complex types, try to extract a simple value
-                if (is_array($value) && isset($value['guid'])) {
-                    // Image/file field - use URL
-                    $pods_data[$field] = $value['guid'];
-                } elseif (is_array($value) && isset($value[0])) {
-                    // Array of values - use first one
-                    $pods_data[$field] = is_string($value[0]) ? $value[0] : null;
-                } else {
-                    // Can't convert - use null
-                    $pods_data[$field] = null;
+            try {
+                $value = $pod->field($field);
+                
+                // ROOT FIX: Only store non-empty values to reduce payload size
+                if (!empty($value) || $value === '0' || $value === 0) {
+                    // Handle complex types
+                    if (is_array($value) || is_object($value)) {
+                        if (is_array($value) && isset($value['guid'])) {
+                            // Image/file field - use URL
+                            $pods_data[$field] = $value['guid'];
+                        } elseif (is_array($value) && isset($value[0])) {
+                            // Array of values - use first one
+                            $pods_data[$field] = is_string($value[0]) ? $value[0] : null;
+                        } else {
+                            // Can't convert - skip it
+                            continue;
+                        }
+                    } else {
+                        // Simple value
+                        $pods_data[$field] = $value;
+                    }
                 }
+            } catch (Exception $e) {
+                // ROOT FIX: Individual field errors shouldn't stop the whole process
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('⚠️ gmkb_get_pods_data: Error fetching field "' . $field . '": ' . $e->getMessage());
+                }
+                continue;
+            }
+        }
+        
+        // ROOT FIX: Enhanced debugging output (matches REST API v2)
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            $elapsed = round((microtime(true) - $start_time) * 1000, 2);
+            $non_empty = count($pods_data);
+            error_log('✅ gmkb_get_pods_data: Fetched ' . $non_empty . '/' . count($fields) . ' non-empty Pods fields in ' . $elapsed . 'ms');
+            
+            // Sample some data for verification
+            if ($non_empty > 0) {
+                $sample_fields = array_slice(array_keys($pods_data), 0, 5);
+                error_log('  Sample fields: ' . implode(', ', $sample_fields));
             } else {
-                // Simple value (string/number/null) - use as is
-                $pods_data[$field] = $value;
+                error_log('⚠️ WARNING: All Pods fields are empty! This guest may have no data.');
             }
         }
         
     } catch (Exception $e) {
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('⚠️ GMKB: Error loading Pods data: ' . $e->getMessage());
+            error_log('❌ gmkb_get_pods_data: Exception: ' . $e->getMessage());
+            error_log('  Stack trace: ' . $e->getTraceAsString());
         }
     }
     
@@ -1011,7 +1128,16 @@ add_action('admin_footer', 'gmkb_load_debug_console', 100);
 function gmkb_load_debug_console() {
     if (!gmkb_is_builder_page()) return;
     
-    // Load debug console logger (only in debug mode)
-    require_once GUESTIFY_PLUGIN_DIR . 'includes/debug/console-logger.php';
-    gmkb_debug_console_diagnostics();
+    // ROOT FIX: Check if debug console file exists before loading
+    $debug_console_file = GUESTIFY_PLUGIN_DIR . 'includes/debug/console-logger.php';
+    if (file_exists($debug_console_file)) {
+        require_once $debug_console_file;
+        gmkb_debug_console_diagnostics();
+    } else {
+        // File doesn't exist - skip debug console logging
+        // This is not a critical error, so we just skip it silently
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('⚠️ GMKB: Debug console file not found (non-critical): ' . $debug_console_file);
+        }
+    }
 }

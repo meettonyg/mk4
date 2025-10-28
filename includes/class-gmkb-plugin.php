@@ -67,13 +67,21 @@ class GMKB_Plugin {
             error_log('✅ GMKB: ComponentDiscovery initialized');
         }
         
-        // Scan for components
+        // ROOT FIX: Force immediate scan to ensure components are available for REST API
+        // This ensures getRequiredPodsFields() has data when called
         try {
             $scan_result = $this->component_discovery->scan(false);
             $components_found = $this->component_discovery->getComponents();
             
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('📊 GMKB: Found ' . count($components_found) . ' components');
+                error_log('📊 GMKB: Found ' . count($components_found) . ' components during initialization');
+                
+                // Log Pods field discovery for debugging
+                $pods_fields = $this->component_discovery->getRequiredPodsFields();
+                error_log('🔍 GMKB: Discovered ' . count($pods_fields) . ' unique Pods fields from component configs');
+                if (count($pods_fields) > 0) {
+                    error_log('  Sample fields: ' . implode(', ', array_slice($pods_fields, 0, 10)));
+                }
             }
         } catch (Exception $e) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
