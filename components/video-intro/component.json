@@ -4,6 +4,7 @@
   "description": "Embedded video player",
   "icon": "fa-solid fa-video",
   "category": "media",
+  "accordionGroup": "basic",
   "version": "1.0.0",
   "renderers": {
     "php": "template.php",

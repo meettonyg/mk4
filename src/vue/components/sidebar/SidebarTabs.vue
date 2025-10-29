@@ -620,7 +620,8 @@ export default {
       { id: 'settings', label: 'Settings', icon: '⚙️' }
     ];
     
-    // Dynamic categories from registry (NO FALLBACKS - all icons in component.json)
+    // Dynamic categories from registry - SELF-CONTAINED ARCHITECTURE
+    // All component metadata including accordion grouping is defined in component.json
     const categories = computed(() => {
       const registryComponents = UnifiedComponentRegistry.getAll();
       
@@ -638,10 +639,13 @@ export default {
           isPro: comp.isPremium || false
         };
         
-        // Categorize components
-        if (comp.isPremium) {
+        // ROOT FIX: Read accordion group from component.json instead of hardcoded logic
+        // This maintains self-contained component architecture
+        const accordionGroup = comp.accordionGroup || 'basic'; // Default to basic if not specified
+        
+        if (accordionGroup === 'premium') {
           premium.push(componentData);
-        } else if (['logo-grid', 'testimonials', 'contact', 'questions'].includes(comp.type)) {
+        } else if (accordionGroup === 'media') {
           media.push(componentData);
         } else {
           basic.push(componentData);

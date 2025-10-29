@@ -4,6 +4,7 @@
   "description": "Display speaking or expertise topics",
   "icon": "fa-solid fa-bullhorn",
   "category": "content",
+  "accordionGroup": "basic",
   "version": "1.0.0",
   "renderers": {
     "php": "template.php",

@@ -4,6 +4,7 @@
   "description": "Client testimonials carousel",
   "icon": "fa-solid fa-comment",
   "category": "social-proof",
+  "accordionGroup": "media",
   "version": "1.0.0",
   "renderers": {
     "php": "template.php",

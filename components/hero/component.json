@@ -4,6 +4,7 @@
   "description": "Hero section with headline, description and call-to-action",
   "icon": "fa-solid fa-square",
   "category": "content",
+  "accordionGroup": "basic",
   "version": "1.0.0",
   "renderers": {
     "php": "template.php",

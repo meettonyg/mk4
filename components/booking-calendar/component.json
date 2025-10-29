@@ -4,6 +4,8 @@
   "description": "Appointment booking calendar",
   "icon": "fa-solid fa-calendar",
   "category": "conversion",
+  "accordionGroup": "premium",
+  "isPremium": true,
   "version": "1.0.0",
   "renderers": {
     "php": "template.php",

@@ -4,6 +4,7 @@
   "description": "Frequently asked questions accordion",
   "icon": "fa-solid fa-circle-question",
   "category": "content",
+  "accordionGroup": "media",
   "version": "1.0.0",
   "renderers": {
     "php": "template.php",

@@ -4,6 +4,7 @@
   "description": "Display client or partner logos",
   "icon": "fa-solid fa-table-cells",
   "category": "social-proof",
+  "accordionGroup": "media",
   "version": "1.0.0",
   "renderers": {
     "php": "template.php",

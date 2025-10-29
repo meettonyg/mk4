@@ -4,6 +4,7 @@
   "description": "Biography section with image and text content",
   "icon": "fa-solid fa-file-lines",
   "category": "content",
+  "accordionGroup": "basic",
   "version": "1.0.0",
   "renderers": {
     "php": "template.php",

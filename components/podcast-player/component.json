@@ -4,6 +4,7 @@
   "description": "Podcast episodes player",
   "icon": "fa-solid fa-microphone",
   "category": "media",
+  "accordionGroup": "basic",
   "version": "1.0.0",
   "renderers": {
     "php": "template.php",

@@ -4,6 +4,7 @@
   "description": "Social media links and icons",
   "icon": "fa-solid fa-share-nodes",
   "category": "social",
+  "accordionGroup": "basic",
   "version": "1.0.0",
   "renderers": {
     "php": "template.php",
