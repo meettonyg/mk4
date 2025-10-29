@@ -4,7 +4,7 @@
   "description": "Call to action section with buttons",
   "icon": "fa-solid fa-bolt",
   "category": "conversion",
-  "accordionGroup": "basic",
+  "accordionGroup": "premium",
   "version": "1.0.0",
   "renderers": {
     "php": "template.php",

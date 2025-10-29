@@ -4,7 +4,7 @@
   "description": "Contact information and form",
   "icon": "fa-solid fa-envelope",
   "category": "contact",
-  "accordionGroup": "media",
+  "accordionGroup": "basic",
   "version": "1.0.0",
   "renderers": {
     "php": "template.php",

@@ -4,7 +4,7 @@
   "description": "Display key statistics and numbers",
   "icon": "fa-solid fa-chart-column",
   "category": "social-proof",
-  "accordionGroup": "basic",
+  "accordionGroup": "premium",
   "version": "1.0.0",
   "renderers": {
     "php": "template.php",
