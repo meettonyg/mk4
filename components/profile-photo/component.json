@@ -13,6 +13,12 @@
   },
   "styles": "styles.css",
   "schema": "schema.json",
+  "defaultProps": {
+    "photo": null,
+    "usePodsData": true,
+    "shape": "circle",
+    "size": "medium"
+  },
   "supports": {
     "serverRender": false,
     "vueRender": true,

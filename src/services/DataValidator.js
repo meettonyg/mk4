@@ -52,7 +52,7 @@ export class DataValidator {
 
   /**
    * Validate component data structure
-   * ROOT FIX: Use dynamic validation against registered components instead of hardcoded list
+   * ROOT FIX: Use dynamic validation against UnifiedComponentRegistry instead of hardcoded list
    */
   static validateComponent(component) {
     if (!component || typeof component !== 'object') {
@@ -67,17 +67,16 @@ export class DataValidator {
       throw new Error('Invalid component type: unknown_type');
     }
 
-    // ROOT FIX: Validate against dynamically registered components
-    // Check if componentDefinitions are available in gmkbData
-    if (window.gmkbData?.componentDefinitions) {
-      const registeredTypes = window.gmkbData.componentDefinitions.map(c => c.type);
-      
-      if (!registeredTypes.includes(component.type)) {
-        console.warn(`Unknown component type: ${component.type}. Not found in registered components:`, registeredTypes);
+    // ROOT FIX: Validate against UnifiedComponentRegistry
+    // This is the single source of truth for all component types
+    if (window.gmkbComponentRegistry) {
+      if (!window.gmkbComponentRegistry.has(component.type)) {
+        const availableTypes = Object.keys(window.gmkbComponentRegistry.definitions || {});
+        console.warn(`Unknown component type: ${component.type}. Not found in registry. Available: ${availableTypes.join(', ')}`);
       }
     } else if (window.gmkbData?.debugMode) {
-      // Only log in debug mode if componentDefinitions aren't available
-      console.log(`Component validation: ${component.type} (componentDefinitions not yet loaded)`);
+      // Only log in debug mode if registry isn't available yet
+      console.log(`Component validation: ${component.type} (UnifiedComponentRegistry not yet available)`);
     }
 
     return true;
