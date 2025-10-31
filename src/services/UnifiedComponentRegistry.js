@@ -10,11 +10,11 @@ import FallbackRenderer from '../vue/components/FallbackRenderer.vue';
 
 // ROOT FIX: Use import.meta.glob to get all component renderers at build time
 // This allows Vite to properly resolve and bundle all components
-const componentModules = import.meta.glob('/components/*/*Renderer.vue');
+const componentModules = import.meta.glob('../../components/*/*Renderer.vue');
 
 // ARCHITECTURE COMPLIANCE: Load component metadata directly from component.json files
 // This keeps the registry synchronized with the self-contained component directories
-const componentMetaModules = import.meta.glob('/components/*/component.json', { eager: true });
+const componentMetaModules = import.meta.glob('../../components/*/component.json', { eager: true });
 
 class UnifiedComponentRegistry {
   constructor() {
@@ -56,11 +56,13 @@ class UnifiedComponentRegistry {
    */
   getAvailableComponentEntries() {
     return Object.keys(componentModules).map(path => {
-      const match = path.match(/\/components\/([^/]+)\//);
+      const match = path.match(/\/components\/([^/]+)\//);  
       if (!match) return null;
 
       const type = match[1];
-      const metaModule = componentMetaModules[`/components/${type}/component.json`];
+      // Match the relative path pattern from import.meta.glob
+      const metaPath = Object.keys(componentMetaModules).find(p => p.includes(`/${type}/component.json`));
+      const metaModule = metaPath ? componentMetaModules[metaPath] : null;
       const meta = metaModule ? (metaModule.default || metaModule) : null;
 
       return { type, path, meta };

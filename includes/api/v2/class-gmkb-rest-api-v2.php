@@ -223,12 +223,32 @@ class GMKB_REST_API_V2 {
             'callback' => array($this, 'get_components'),
             'permission_callback' => '__return_true'
         ));
+
+        // Pods field update endpoint
+        register_rest_route($this->namespace, '/pods/(?P<id>\d+)/field/(?P<field>[a-zA-Z0-9_-]+)', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'update_pods_field'),
+            'permission_callback' => array($this, 'check_write_permissions'),
+            'args' => array(
+                'id' => array(
+                    'validate_callback' => function($param) {
+                        return is_numeric($param);
+                    }
+                ),
+                'field' => array(
+                    'validate_callback' => function($param) {
+                        return preg_match('/^[a-zA-Z0-9_-]+$/', $param);
+                    }
+                )
+            )
+        ));
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('✅ GMKB REST API v2: Routes registered successfully:');
             error_log('  - GET  /' . $this->namespace . '/mediakit/{id}');
             error_log('  - POST /' . $this->namespace . '/mediakit/{id}');
             error_log('  - GET  /' . $this->namespace . '/components');
+            error_log('  - POST /' . $this->namespace . '/pods/{id}/field/{field}');
         }
     }
 
@@ -730,6 +750,144 @@ class GMKB_REST_API_V2 {
     public function check_write_permissions($request) {
         $post_id = (int) $request['id'];
         return current_user_can('edit_post', $post_id);
+    }
+
+    /**
+     * POST /gmkb/v2/pods/{id}/field/{field}
+     * 
+     * Updates a single Pods field value
+     * 
+     * Request body:
+     * {
+     *   "value": <field_value>
+     * }
+     * 
+     * @param WP_REST_Request $request The request
+     * @return WP_REST_Response|WP_Error The response
+     */
+    public function update_pods_field($request) {
+        $post_id = (int) $request['id'];
+        $field_name = sanitize_text_field($request['field']);
+        
+        // Verify post exists
+        $post = get_post($post_id);
+        if (!$post || !in_array($post->post_type, array('mkcg', 'guests'))) {
+            return new WP_Error(
+                'post_not_found',
+                'Post not found or invalid post type',
+                array('status' => 404)
+            );
+        }
+        
+        // Check permissions
+        if (!current_user_can('edit_post', $post_id)) {
+            return new WP_Error(
+                'forbidden',
+                'You do not have permission to edit this post',
+                array('status' => 403)
+            );
+        }
+        
+        // Check if Pods is available
+        if (!function_exists('pods') || !class_exists('Pods')) {
+            return new WP_Error(
+                'pods_not_available',
+                'Pods plugin is not active or not available',
+                array('status' => 500)
+            );
+        }
+        
+        try {
+            // Get request body
+            $body = $request->get_json_params();
+            
+            if (!isset($body['value'])) {
+                return new WP_Error(
+                    'missing_value',
+                    'Field value is required',
+                    array('status' => 400)
+                );
+            }
+            
+            $value = $body['value'];
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('💾 GMKB REST API v2: Updating Pods field');
+                error_log('  - Post ID: ' . $post_id);
+                error_log('  - Post Type: ' . $post->post_type);
+                error_log('  - Field: ' . $field_name);
+                error_log('  - Value type: ' . gettype($value));
+                if (is_scalar($value)) {
+                    error_log('  - Value: ' . $value);
+                }
+            }
+            
+            // Initialize Pods for this post
+            $pod = pods($post->post_type, $post_id);
+            
+            if (!$pod || !$pod->exists()) {
+                return new WP_Error(
+                    'pod_not_found',
+                    'Could not initialize Pods for this post',
+                    array('status' => 500)
+                );
+            }
+            
+            // Save the field value
+            $save_result = $pod->save($field_name, $value);
+            
+            if ($save_result === false || is_wp_error($save_result)) {
+                $error_message = is_wp_error($save_result) ? $save_result->get_error_message() : 'Unknown error';
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('❌ GMKB REST API v2: Failed to save Pods field');
+                    error_log('  - Error: ' . $error_message);
+                }
+                
+                return new WP_Error(
+                    'save_failed',
+                    'Failed to save field: ' . $error_message,
+                    array('status' => 500)
+                );
+            }
+            
+            // Clear cache for this post
+            $cache_key = 'gmkb_mediakit_' . $post_id;
+            delete_transient($cache_key);
+            
+            // Verify the save by reading back
+            $saved_value = $pod->field($field_name);
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB REST API v2: Pods field saved successfully');
+                error_log('  - Field: ' . $field_name);
+                error_log('  - Verified saved value type: ' . gettype($saved_value));
+            }
+            
+            // Return success response
+            $response = array(
+                'success' => true,
+                'post_id' => $post_id,
+                'field' => $field_name,
+                'value' => $saved_value,
+                'timestamp' => current_time('mysql')
+            );
+            
+            return rest_ensure_response($response);
+            
+        } catch (Exception $e) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB REST API v2: Exception updating Pods field');
+                error_log('  - Error: ' . $e->getMessage());
+                error_log('  - File: ' . $e->getFile() . ':' . $e->getLine());
+            }
+            
+            return new WP_Error(
+                'update_failed',
+                'Failed to update Pods field: ' . $e->getMessage(),
+                array('status' => 500)
+            );
+        }
     }
 
     /**

@@ -8,7 +8,8 @@
   "version": "1.0.0",
   "renderers": {
     "vue": "CompanyLogoRenderer.vue",
-    "editor": "CompanyLogoEditor.vue"
+    "editor": "CompanyLogoEditor.vue",
+    "component": "CompanyLogo.vue"
   },
   "styles": "styles.css",
   "schema": "schema.json",
@@ -17,5 +18,8 @@
     "vueRender": true,
     "inlineEdit": false,
     "designPanel": true
-  }
+  },
+  "podsFields": [
+    "company_logo"
+  ]
 }

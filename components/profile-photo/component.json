@@ -8,7 +8,8 @@
   "version": "1.0.0",
   "renderers": {
     "vue": "ProfilePhotoRenderer.vue",
-    "editor": "ProfilePhotoEditor.vue"
+    "editor": "ProfilePhotoEditor.vue",
+    "component": "ProfilePhoto.vue"
   },
   "styles": "styles.css",
   "schema": "schema.json",

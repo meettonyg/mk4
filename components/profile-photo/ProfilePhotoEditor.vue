@@ -40,8 +40,30 @@
 
           <!-- Custom Photo Section -->
           <div v-if="!localData.usePodsData || !hasPodsPhoto">
+            <!-- Upload Button -->
             <div class="field-group">
-              <label for="photo-url">Image URL *</label>
+              <button 
+                @click="handleUploadPhoto"
+                :disabled="isUploading || isSavingToPods"
+                class="upload-btn"
+                type="button"
+              >
+                <span v-if="isUploading">Selecting image...</span>
+                <span v-else-if="isSavingToPods">Saving to profile...</span>
+                <span v-else>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                  </svg>
+                  Upload Photo
+                </span>
+              </button>
+              <p class="field-hint">Upload or select from media library</p>
+            </div>
+
+            <div class="field-group">
+              <label for="photo-url">Or enter Image URL</label>
               <input
                 id="photo-url" 
                 v-model="localData.photo.url" 
@@ -107,9 +129,11 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue';
-import { useMediaKitStore } from '../../src/stores/mediaKit';
-import { usePodsData } from '../../src/composables/usePodsData';
-import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
+import { useMediaKitStore } from '@/stores/mediaKit';
+import { usePodsData } from '@composables/usePodsData';
+import { useMediaUploader } from '@composables/useMediaUploader';
+import { usePodsFieldUpdate } from '@composables/usePodsFieldUpdate';
+import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 
 const props = defineProps({ 
   componentId: { 
@@ -121,7 +145,9 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 const store = useMediaKitStore();
-const { podsData } = usePodsData();
+const { profilePhoto, allData: podsData } = usePodsData();
+const { selectImage, isUploading } = useMediaUploader();
+const { updatePodsField, isUpdating: isSavingToPods } = usePodsFieldUpdate();
 
 // Active tab state
 const activeTab = ref('content');
@@ -139,7 +165,7 @@ const localData = ref({
 
 // Get photo from Pods (SINGLE field - simple!)
 const podsPhoto = computed(() => {
-  const photo = podsData.value?.profile_photo;
+  const photo = profilePhoto.value;
   if (!photo) return null;
   
   return {
@@ -208,6 +234,90 @@ const updateComponent = () => {
     store.updateComponent(props.componentId, { data: dataToSave });
     store.isDirty = true;
   }, 300);
+};
+
+// Handle photo upload
+const handleUploadPhoto = async () => {
+  try {
+    // Step 1: Open WordPress media library and select image
+    const attachment = await selectImage();
+    if (!attachment) {
+      return; // User cancelled
+    }
+    
+    if (window.gmkbDebug) {
+      console.log('📸 Profile Photo: Image selected', {
+        id: attachment.id,
+        url: attachment.url
+      });
+    }
+    
+    // Step 2: Save attachment ID to Pods field
+    try {
+      const postId = store.postId;
+      if (!postId) {
+        console.error('❌ Profile Photo: No post ID available');
+        throw new Error('Post ID not available');
+      }
+      
+      if (window.gmkbDebug) {
+        console.log('💾 Profile Photo: Saving to Pods field', {
+          postId,
+          fieldName: 'profile_photo',
+          attachmentId: attachment.id
+        });
+      }
+      
+      // Save the attachment ID to the profile_photo Pods field
+      await updatePodsField(postId, 'profile_photo', attachment.id);
+      
+      if (window.gmkbDebug) {
+        console.log('✅ Profile Photo: Saved to Pods successfully');
+      }
+      
+      // Step 3: Update local state to show custom photo
+      localData.value.photo = {
+        url: attachment.url,
+        caption: attachment.caption || '',
+        alt: attachment.alt || 'Profile Photo',
+        id: attachment.id,
+        source: 'custom'
+      };
+      
+      // Since we saved to Pods, enable Pods data usage
+      localData.value.usePodsData = true;
+      
+      // Step 4: Update component state
+      updateComponent();
+      
+      if (window.gmkbDebug) {
+        console.log('✅ Profile Photo: Upload complete');
+      }
+      
+    } catch (saveError) {
+      console.error('❌ Profile Photo: Failed to save to Pods', saveError);
+      
+      // Still update local state even if Pods save fails
+      localData.value.photo = {
+        url: attachment.url,
+        caption: attachment.caption || '',
+        alt: attachment.alt || 'Profile Photo',
+        id: attachment.id,
+        source: 'custom'
+      };
+      localData.value.usePodsData = false; // Don't use Pods data if save failed
+      updateComponent();
+      
+      // Show user-friendly error
+      alert('Image selected but could not be saved to your profile. Please try again.');
+    }
+    
+  } catch (error) {
+    console.error('❌ Profile Photo: Upload failed', error);
+    if (error.message !== 'No media selected') {
+      alert('Failed to upload photo. Please try again.');
+    }
+  }
 };
 
 const handleBack = () => emit('close');
@@ -411,5 +521,50 @@ body.dark-mode .photo-caption {
   object-fit: cover;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-top: 8px;
+}
+
+/* Upload Button */
+.upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.upload-btn:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.25);
+}
+
+.upload-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.upload-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.upload-btn svg {
+  flex-shrink: 0;
+}
+
+body.dark-mode .upload-btn {
+  background: #2563eb;
+}
+
+body.dark-mode .upload-btn:hover:not(:disabled) {
+  background: #1d4ed8;
 }
 </style>

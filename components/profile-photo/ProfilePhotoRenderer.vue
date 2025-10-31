@@ -20,7 +20,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { usePodsData } from '../../src/composables/usePodsData';
+import { usePodsData } from '@composables/usePodsData';
 
 const props = defineProps({
   componentId: {
@@ -33,13 +33,13 @@ const props = defineProps({
   }
 });
 
-const { podsData } = usePodsData();
+const { profilePhoto, allData: podsData } = usePodsData();
 
 // SINGLE FIELD PATTERN: Simple photo object or null
 const photo = computed(() => {
   // Check if using Pods data
-  if (props.data?.usePodsData && podsData.value?.profile_photo) {
-    const podsPhoto = podsData.value.profile_photo;
+  if (props.data?.usePodsData && profilePhoto.value) {
+    const podsPhoto = profilePhoto.value;
     
     // Handle both simple URL and complex object formats
     return {
@@ -62,8 +62,8 @@ const photo = computed(() => {
 const componentClasses = computed(() => ({
   'has-photo': !!photo.value,
   'no-photo': !photo.value,
-  'pods-source': props.data?.usePodsData && !!podsData.value?.profile_photo,
-  'custom-source': !props.data?.usePodsData || !podsData.value?.profile_photo
+  'pods-source': props.data?.usePodsData && !!profilePhoto.value,
+  'custom-source': !props.data?.usePodsData || !profilePhoto.value
 }));
 </script>
 

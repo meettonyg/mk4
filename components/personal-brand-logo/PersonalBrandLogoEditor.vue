@@ -39,8 +39,30 @@
 
           <!-- Custom Logo Section -->
           <div v-if="!localData.usePodsData || !hasPodsLogo">
+            <!-- Upload Button -->
             <div class="field-group">
-              <label for="logo-url">Logo URL *</label>
+              <button 
+                @click="handleUploadLogo"
+                :disabled="isUploading || isSavingToPods"
+                class="upload-btn"
+                type="button"
+              >
+                <span v-if="isUploading">Selecting logo...</span>
+                <span v-else-if="isSavingToPods">Saving to profile...</span>
+                <span v-else>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                  </svg>
+                  Upload Logo
+                </span>
+              </button>
+              <p class="field-hint">Upload or select from media library</p>
+            </div>
+
+            <div class="field-group">
+              <label for="logo-url">Or enter Logo URL</label>
               <input
                 id="logo-url" 
                 v-model="localData.logo.url" 
@@ -97,6 +119,8 @@
 import { ref, watch, computed } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
 import { usePodsData } from '../../src/composables/usePodsData';
+import { useMediaUploader } from '../../src/composables/useMediaUploader';
+import { usePodsFieldUpdate } from '../../src/composables/usePodsFieldUpdate';
 import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 
 const props = defineProps({ 
@@ -110,6 +134,8 @@ const emit = defineEmits(['close']);
 
 const store = useMediaKitStore();
 const { podsData } = usePodsData();
+const { selectLogo, isUploading } = useMediaUploader();
+const { updatePodsField, isUpdating: isSavingToPods } = usePodsFieldUpdate();
 
 // Active tab state
 const activeTab = ref('content');
@@ -192,6 +218,88 @@ const updateComponent = () => {
     store.updateComponent(props.componentId, { data: dataToSave });
     store.isDirty = true;
   }, 300);
+};
+
+// Handle logo upload
+const handleUploadLogo = async () => {
+  try {
+    // Step 1: Open WordPress media library and select logo
+    const attachment = await selectLogo();
+    if (!attachment) {
+      return; // User cancelled
+    }
+    
+    if (window.gmkbDebug) {
+      console.log('🎨 Personal Brand Logo: Logo selected', {
+        id: attachment.id,
+        url: attachment.url
+      });
+    }
+    
+    // Step 2: Save attachment ID to Pods field
+    try {
+      const postId = store.postId;
+      if (!postId) {
+        console.error('❌ Personal Brand Logo: No post ID available');
+        throw new Error('Post ID not available');
+      }
+      
+      if (window.gmkbDebug) {
+        console.log('💾 Personal Brand Logo: Saving to Pods field', {
+          postId,
+          fieldName: 'personal_brand_logo',
+          attachmentId: attachment.id
+        });
+      }
+      
+      // Save the attachment ID to the personal_brand_logo Pods field
+      await updatePodsField(postId, 'personal_brand_logo', attachment.id);
+      
+      if (window.gmkbDebug) {
+        console.log('✅ Personal Brand Logo: Saved to Pods successfully');
+      }
+      
+      // Step 3: Update local state to show custom logo
+      localData.value.logo = {
+        url: attachment.url,
+        alt: attachment.alt || 'Personal Brand Logo',
+        id: attachment.id,
+        source: 'custom'
+      };
+      
+      // Since we saved to Pods, enable Pods data usage
+      localData.value.usePodsData = true;
+      
+      // Step 4: Update component state
+      updateComponent();
+      
+      if (window.gmkbDebug) {
+        console.log('✅ Personal Brand Logo: Upload complete');
+      }
+      
+    } catch (saveError) {
+      console.error('❌ Personal Brand Logo: Failed to save to Pods', saveError);
+      
+      // Still update local state even if Pods save fails
+      localData.value.logo = {
+        url: attachment.url,
+        alt: attachment.alt || 'Personal Brand Logo',
+        id: attachment.id,
+        source: 'custom'
+      };
+      localData.value.usePodsData = false; // Don't use Pods data if save failed
+      updateComponent();
+      
+      // Show user-friendly error
+      alert('Logo selected but could not be saved to your profile. Please try again.');
+    }
+    
+  } catch (error) {
+    console.error('❌ Personal Brand Logo: Upload failed', error);
+    if (error.message !== 'No media selected') {
+      alert('Failed to upload logo. Please try again.');
+    }
+  }
 };
 
 const handleBack = () => emit('close');
@@ -382,5 +490,50 @@ body.dark-mode .pods-logo-preview {
   object-fit: contain;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-top: 8px;
+}
+
+/* Upload Button */
+.upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.upload-btn:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.25);
+}
+
+.upload-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.upload-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.upload-btn svg {
+  flex-shrink: 0;
+}
+
+body.dark-mode .upload-btn {
+  background: #2563eb;
+}
+
+body.dark-mode .upload-btn:hover:not(:disabled) {
+  background: #1d4ed8;
 }
 </style>

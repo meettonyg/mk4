@@ -71,7 +71,28 @@
 
           <!-- Custom Logos Section -->
           <div v-if="!localData.usePodsData || !hasPodsLogos">
-            <p class="help-text">Add up to 12 custom logos</p>
+            <div class="field-group">
+              <button 
+                v-if="localData.logos.length < 12"
+                @click="handleUploadLogos"
+                :disabled="isUploading"
+                class="upload-btn"
+                type="button"
+              >
+                <span v-if="isUploading">Uploading...</span>
+                <span v-else>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                  </svg>
+                  Upload Logo(s)
+                </span>
+              </button>
+              <p class="field-hint">Upload or select logos from media library (up to 12 total)</p>
+            </div>
+
+            <p class="help-text">Or add logos manually:</p>
             
             <div class="logos-list">
               <div 
@@ -156,6 +177,7 @@
 import { ref, watch, computed } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
 import { usePodsData } from '../../src/composables/usePodsData';
+import { useMediaUploader } from '../../src/composables/useMediaUploader';
 import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 
 const props = defineProps({
@@ -171,6 +193,7 @@ const store = useMediaKitStore();
 
 // Load Pods data
 const { podsData } = usePodsData();
+const { selectLogo, selectImage, isUploading } = useMediaUploader();
 
 // Active tab state
 const activeTab = ref('content');
@@ -337,6 +360,24 @@ const updateComponent = () => {
     store.updateComponent(props.componentId, { data: dataToSave });
     store.isDirty = true;
   }, 300);
+};
+
+// Handle logo upload (single or multiple)
+const handleUploadLogos = async () => {
+  try {
+    const attachment = await selectLogo();
+    if (attachment) {
+      localData.value.logos.push({
+        url: attachment.url,
+        name: attachment.title || attachment.filename || 'Logo',
+        link: '',
+        id: attachment.id
+      });
+      updateComponent();
+    }
+  } catch (error) {
+    console.error('Failed to upload logo:', error);
+  }
 };
 
 // Handle close button
@@ -627,5 +668,51 @@ body.dark-mode .add-btn {
   background: #0c4a6e;
   border-color: #0369a1;
   color: #7dd3fc;
+}
+
+/* Upload Button */
+.upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 16px;
+}
+
+.upload-btn:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.25);
+}
+
+.upload-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.upload-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.upload-btn svg {
+  flex-shrink: 0;
+}
+
+body.dark-mode .upload-btn {
+  background: #2563eb;
+}
+
+body.dark-mode .upload-btn:hover:not(:disabled) {
+  background: #1d4ed8;
 }
 </style>

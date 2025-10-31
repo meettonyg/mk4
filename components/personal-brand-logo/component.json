@@ -17,5 +17,8 @@
     "vueRender": true,
     "inlineEdit": false,
     "designPanel": true
-  }
+  },
+  "podsFields": [
+    "personal_brand_logo"
+  ]
 }
