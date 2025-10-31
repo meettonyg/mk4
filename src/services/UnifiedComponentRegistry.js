@@ -10,7 +10,16 @@ import FallbackRenderer from '../vue/components/FallbackRenderer.vue';
 
 // ROOT FIX: Use import.meta.glob to get all component renderers at build time
 // This allows Vite to properly resolve and bundle all components
-const componentModules = import.meta.glob('../../components/*/*Renderer.vue');
+// CRITICAL: Use ** pattern for cross-platform compatibility
+const componentModules = import.meta.glob('../../components/**/*Renderer.vue');
+
+// DEBUG: Log what the glob pattern found at build time
+if (typeof window !== 'undefined') {
+  console.log('🔍 DEBUG: componentModules keys at runtime:', Object.keys(componentModules));
+  console.log('🔍 DEBUG: Total component modules found:', Object.keys(componentModules).length);
+  const hasProfilePhoto = Object.keys(componentModules).some(path => path.includes('profile-photo'));
+  console.log('🔍 DEBUG: profile-photo in componentModules?', hasProfilePhoto);
+}
 
 // ARCHITECTURE COMPLIANCE: Load component metadata directly from component.json files
 // This keeps the registry synchronized with the self-contained component directories
