@@ -1,0 +1,12 @@
+{
+  "dataSource": "pods",
+  "description": "Company logo component loads from company_logo Pods field (SINGLE field). Displays your company or organization logo. For personal brand logos, use the Personal Brand Logo component. For multiple client/partner logos, use the Logo Grid component.",
+  "fields": {
+    "company_logo": {
+      "type": "file",
+      "required": false,
+      "repeatable": false,
+      "description": "Company logo image (SINGLE field)"
+    }
+  }
+}

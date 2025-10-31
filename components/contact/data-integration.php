@@ -28,11 +28,12 @@ class Contact_Data_Integration {
     /**
      * Contact field mappings
      * Maps to Pods fields in guest post type
+     * Website removed - handled by Social component
      */
     protected static $field_mappings = array(
         'email' => 'email',
         'phone' => 'phone',
-        'website' => 'website',
+        'skype' => 'skype',
         'address' => 'address',
         'city' => 'city',
         'state' => 'state',

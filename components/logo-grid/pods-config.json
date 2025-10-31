@@ -1,47 +1,12 @@
 {
   "dataSource": "pods",
+  "description": "Logo grid component loads from featured_logos Pods field (REPEATABLE field). Displays multiple client/partner logos in a responsive grid. For personal/company brand logos, use the Brand Logo component instead.",
   "fields": {
-    "client_logos": {
-      "type": "array",
-      "fields": [
-        "client_logo_1", "client_logo_2", "client_logo_3",
-        "client_logo_4", "client_logo_5", "client_logo_6",
-        "client_logo_7", "client_logo_8", "client_logo_9",
-        "client_logo_10"
-      ],
-      "filter": "non-empty"
-    },
-    "client_names": {
-      "type": "array",
-      "fields": [
-        "client_name_1", "client_name_2", "client_name_3",
-        "client_name_4", "client_name_5", "client_name_6",
-        "client_name_7", "client_name_8", "client_name_9",
-        "client_name_10"
-      ],
-      "filter": "non-empty"
-    },
-    "partner_logos": {
-      "type": "array",
-      "fields": [
-        "partner_logo_1", "partner_logo_2", "partner_logo_3",
-        "partner_logo_4", "partner_logo_5"
-      ],
-      "filter": "non-empty"
-    },
-    "certification_logos": {
-      "type": "array",
-      "fields": [
-        "certification_logo_1", "certification_logo_2", "certification_logo_3",
-        "certification_logo_4", "certification_logo_5"
-      ],
-      "filter": "non-empty"
+    "featured_logos": {
+      "type": "file",
+      "required": false,
+      "repeatable": true,
+      "description": "Collection of featured/client logos (REPEATABLE field)"
     }
-  },
-  "defaults": {
-    "client_logos": [],
-    "client_names": [],
-    "partner_logos": [],
-    "certification_logos": []
   }
 }

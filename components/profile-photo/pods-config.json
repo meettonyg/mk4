@@ -1,0 +1,12 @@
+{
+  "dataSource": "pods",
+  "description": "Profile photo component loads from profile_photo Pods field (SINGLE field). Displays one featured headshot/profile image. For multiple photos, use the Photo Gallery component instead.",
+  "fields": {
+    "profile_photo": {
+      "type": "file",
+      "required": false,
+      "repeatable": false,
+      "description": "Profile photo image (SINGLE field)"
+    }
+  }
+}

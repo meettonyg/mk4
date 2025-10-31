@@ -1,0 +1,32 @@
+/* Personal Brand Logo Component Styles */
+
+.personal-brand-logo-component {
+  /* Base styles defined in Vue component */
+  /* This file is for any additional PHP template styles if needed */
+}
+
+/* Size variants */
+.personal-brand-logo-component[data-size="small"] .brand-logo-image {
+  max-width: 150px;
+}
+
+.personal-brand-logo-component[data-size="medium"] .brand-logo-image {
+  max-width: 250px;
+}
+
+.personal-brand-logo-component[data-size="large"] .brand-logo-image {
+  max-width: 350px;
+}
+
+/* Alignment variants */
+.personal-brand-logo-component[data-alignment="left"] {
+  text-align: left;
+}
+
+.personal-brand-logo-component[data-alignment="center"] {
+  text-align: center;
+}
+
+.personal-brand-logo-component[data-alignment="right"] {
+  text-align: right;
+}

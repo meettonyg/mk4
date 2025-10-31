@@ -1,6 +1,6 @@
 {
   "dataSource": "pods",
-  "description": "Questions component requires question fields 1-10",
+  "description": "Questions component supports all 25 interview questions available in Pods",
   "fields": {
     "question_1": {
       "type": "text",
@@ -51,6 +51,81 @@
       "type": "text",
       "required": false,
       "description": "Interview question 10"
+    },
+    "question_11": {
+      "type": "text",
+      "required": false,
+      "description": "Interview question 11"
+    },
+    "question_12": {
+      "type": "text",
+      "required": false,
+      "description": "Interview question 12"
+    },
+    "question_13": {
+      "type": "text",
+      "required": false,
+      "description": "Interview question 13"
+    },
+    "question_14": {
+      "type": "text",
+      "required": false,
+      "description": "Interview question 14"
+    },
+    "question_15": {
+      "type": "text",
+      "required": false,
+      "description": "Interview question 15"
+    },
+    "question_16": {
+      "type": "text",
+      "required": false,
+      "description": "Interview question 16"
+    },
+    "question_17": {
+      "type": "text",
+      "required": false,
+      "description": "Interview question 17"
+    },
+    "question_18": {
+      "type": "text",
+      "required": false,
+      "description": "Interview question 18"
+    },
+    "question_19": {
+      "type": "text",
+      "required": false,
+      "description": "Interview question 19"
+    },
+    "question_20": {
+      "type": "text",
+      "required": false,
+      "description": "Interview question 20"
+    },
+    "question_21": {
+      "type": "text",
+      "required": false,
+      "description": "Interview question 21"
+    },
+    "question_22": {
+      "type": "text",
+      "required": false,
+      "description": "Interview question 22"
+    },
+    "question_23": {
+      "type": "text",
+      "required": false,
+      "description": "Interview question 23"
+    },
+    "question_24": {
+      "type": "text",
+      "required": false,
+      "description": "Interview question 24"
+    },
+    "question_25": {
+      "type": "text",
+      "required": false,
+      "description": "Interview question 25"
     }
   }
 }

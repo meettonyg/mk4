@@ -1,9 +1,8 @@
 <template>
   <!-- ROOT FIX: Use design system classes -->
+  <!-- SIMPLIFIED: Biography component displays ONLY biography text -->
   <div class="gmkb-component gmkb-component--biography" :data-component-id="componentId">
     <div class="component-root biography-content">
-      <h2 v-if="name" class="biography-name">{{ name }}</h2>
-      <p v-if="title" class="biography-title">{{ title }}</p>
       <div v-if="biography" class="biography-text" v-html="formattedBio"></div>
       <p v-else class="biography-placeholder">
         Add your full biography and professional background here.
@@ -17,11 +16,9 @@ export default {
   name: 'BiographyRenderer',
   props: {
     componentId: String,
-    // ROOT FIX: Standardized prop names (data contract)
-    name: String,
-    title: String,
-    biography: String,
-    company: String
+    // SIMPLIFIED: Biography component handles ONLY biography text
+    // Name, title, company are handled by Guest-Intro and Hero components
+    biography: String
   },
   computed: {
     formattedBio() {

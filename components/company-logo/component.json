@@ -1,0 +1,21 @@
+{
+  "type": "company-logo",
+  "name": "Company Logo",
+  "description": "Display your company or organization logo",
+  "icon": "fa-solid fa-building",
+  "category": "branding",
+  "accordionGroup": "media",
+  "version": "1.0.0",
+  "renderers": {
+    "vue": "CompanyLogoRenderer.vue",
+    "editor": "CompanyLogoEditor.vue"
+  },
+  "styles": "styles.css",
+  "schema": "schema.json",
+  "supports": {
+    "serverRender": false,
+    "vueRender": true,
+    "inlineEdit": false,
+    "designPanel": true
+  }
+}

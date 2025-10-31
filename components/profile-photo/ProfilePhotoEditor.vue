@@ -1,0 +1,415 @@
+<template>
+  <ComponentEditorTemplate
+    :component-id="componentId"
+    component-type="Profile Photo"
+    :show-typography="false"
+    :active-tab="activeTab"
+    @update:active-tab="activeTab = $event"
+    @back="handleBack"
+  >
+    <template #content>
+      <div class="content-fields">
+        <section class="editor-section">
+          <h4>Photo Source</h4>
+          
+          <!-- Pods Data Toggle -->
+          <div v-if="hasPodsPhoto" class="pods-data-toggle">
+            <label class="toggle-label">
+              <input 
+                type="checkbox" 
+                v-model="localData.usePodsData" 
+                @change="updateComponent"
+              />
+              <span>Use profile photo from Pods</span>
+            </label>
+          </div>
+
+          <!-- Pods Photo Display -->
+          <div v-if="localData.usePodsData && podsPhoto" class="pods-photo-display">
+            <div class="field-group">
+              <label>Photo from Pods</label>
+              <div class="pods-photo-preview">
+                <img :src="podsPhoto.url" :alt="podsPhoto.alt || 'Profile Photo'" />
+                <div class="photo-info">
+                  <p class="photo-caption" v-if="podsPhoto.caption">{{ podsPhoto.caption }}</p>
+                  <p class="field-hint">Loaded from your guest profile</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Custom Photo Section -->
+          <div v-if="!localData.usePodsData || !hasPodsPhoto">
+            <div class="field-group">
+              <label for="photo-url">Image URL *</label>
+              <input
+                id="photo-url" 
+                v-model="localData.photo.url" 
+                @input="updateComponent"
+                type="url" 
+                placeholder="https://example.com/photo.jpg" 
+              />
+              <p class="field-hint">Enter the URL of your profile photo</p>
+            </div>
+            
+            <div class="field-group">
+              <label for="photo-caption">Caption</label>
+              <input
+                id="photo-caption" 
+                v-model="localData.photo.caption" 
+                @input="updateComponent"
+                type="text"
+                placeholder="Optional caption..."
+              />
+            </div>
+
+            <!-- Photo Preview -->
+            <div v-if="localData.photo.url" class="custom-photo-preview">
+              <label>Preview</label>
+              <img :src="localData.photo.url" :alt="localData.photo.alt || 'Profile Photo'" />
+            </div>
+          </div>
+        </section>
+
+        <section class="editor-section">
+          <h4>Display Options</h4>
+          
+          <div class="field-group">
+            <label for="photo-shape">Shape</label>
+            <select 
+              id="photo-shape"
+              v-model="localData.shape" 
+              @change="updateComponent"
+            >
+              <option value="circle">Circle</option>
+              <option value="square">Square</option>
+              <option value="rounded">Rounded Square</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label for="photo-size">Size</label>
+            <select 
+              id="photo-size"
+              v-model="localData.size" 
+              @change="updateComponent"
+            >
+              <option value="small">Small (150px)</option>
+              <option value="medium">Medium (250px)</option>
+              <option value="large">Large (350px)</option>
+            </select>
+          </div>
+        </section>
+      </div>
+    </template>
+  </ComponentEditorTemplate>
+</template>
+
+<script setup>
+import { ref, watch, computed } from 'vue';
+import { useMediaKitStore } from '../../src/stores/mediaKit';
+import { usePodsData } from '../../src/composables/usePodsData';
+import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
+
+const props = defineProps({ 
+  componentId: { 
+    type: String, 
+    required: true 
+  } 
+});
+
+const emit = defineEmits(['close']);
+
+const store = useMediaKitStore();
+const { podsData } = usePodsData();
+
+// Active tab state
+const activeTab = ref('content');
+
+const localData = ref({ 
+  photo: { 
+    url: '', 
+    caption: '', 
+    alt: 'Profile Photo' 
+  },
+  usePodsData: true,
+  shape: 'circle',
+  size: 'medium'
+});
+
+// Get photo from Pods (SINGLE field - simple!)
+const podsPhoto = computed(() => {
+  const photo = podsData.value?.profile_photo;
+  if (!photo) return null;
+  
+  return {
+    url: typeof photo === 'object' 
+      ? (photo.guid || photo.url || photo.ID) 
+      : photo,
+    caption: typeof photo === 'object' 
+      ? (photo.post_excerpt || photo.caption || '') 
+      : '',
+    alt: typeof photo === 'object' 
+      ? (photo.post_title || 'Profile Photo') 
+      : 'Profile Photo'
+  };
+});
+
+const hasPodsPhoto = computed(() => !!podsPhoto.value);
+
+// Determine effective photo (Pods or custom)
+const effectivePhoto = computed(() => {
+  if (localData.value.usePodsData && hasPodsPhoto.value) {
+    return podsPhoto.value;
+  }
+  return localData.value.photo;
+});
+
+// Load component data
+const loadComponentData = () => {
+  const component = store.components[props.componentId];
+  if (component?.data) {
+    localData.value = {
+      photo: component.data.photo || { url: '', caption: '', alt: 'Profile Photo' },
+      usePodsData: component.data.usePodsData !== false,
+      shape: component.data.shape || 'circle',
+      size: component.data.size || 'medium'
+    };
+  }
+  
+  // If no custom photo and Pods has data, use Pods
+  if ((!localData.value.photo.url || localData.value.photo.url === '') && hasPodsPhoto.value) {
+    localData.value.usePodsData = true;
+  }
+};
+
+watch(() => props.componentId, loadComponentData, { immediate: true });
+
+watch(podsPhoto, () => {
+  // If using Pods data and Pods value changes, trigger update
+  if (localData.value.usePodsData) {
+    updateComponent();
+  }
+}, { deep: true });
+
+// Update component with debouncing
+let updateTimeout = null;
+const updateComponent = () => {
+  if (updateTimeout) clearTimeout(updateTimeout);
+  
+  updateTimeout = setTimeout(() => {
+    const dataToSave = {
+      photo: effectivePhoto.value,
+      usePodsData: localData.value.usePodsData,
+      shape: localData.value.shape,
+      size: localData.value.size
+    };
+    
+    store.updateComponent(props.componentId, { data: dataToSave });
+    store.isDirty = true;
+  }, 300);
+};
+
+const handleBack = () => emit('close');
+</script>
+
+<style scoped>
+.content-fields {
+  padding: 20px;
+}
+
+.editor-section {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+  border: 1px solid #e5e7eb;
+}
+
+body.dark-mode .editor-section {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.editor-section:last-child {
+  margin-bottom: 0;
+}
+
+.editor-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+body.dark-mode .editor-section h4 {
+  color: #94a3b8;
+}
+
+.field-group {
+  margin-bottom: 12px;
+}
+
+.field-group:last-child {
+  margin-bottom: 0;
+}
+
+.field-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+body.dark-mode .field-group label {
+  color: #94a3b8;
+}
+
+.field-group input,
+.field-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  color: #1f2937;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+body.dark-mode .field-group input,
+body.dark-mode .field-group select {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f3f4f6;
+}
+
+.field-group input:focus,
+.field-group select:focus {
+  outline: none;
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+}
+
+.field-hint {
+  margin: 6px 0 0 0;
+  font-size: 12px;
+  color: #64748b;
+  font-style: italic;
+}
+
+body.dark-mode .field-hint {
+  color: #94a3b8;
+}
+
+/* Pods Data Toggle */
+.pods-data-toggle {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+body.dark-mode .pods-data-toggle {
+  background: #0c4a6e;
+  border-color: #0369a1;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #0369a1;
+  font-weight: 500;
+}
+
+body.dark-mode .toggle-label {
+  color: #7dd3fc;
+}
+
+.toggle-label input[type="checkbox"] {
+  margin-top: 2px;
+  cursor: pointer;
+  width: auto;
+}
+
+.toggle-label span {
+  flex: 1;
+}
+
+/* Pods Photo Display */
+.pods-photo-display {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+body.dark-mode .pods-photo-display {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.pods-photo-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+}
+
+body.dark-mode .pods-photo-preview {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.pods-photo-preview img {
+  max-width: 150px;
+  max-height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.photo-info {
+  text-align: center;
+  width: 100%;
+}
+
+.photo-caption {
+  margin: 0 0 6px 0;
+  font-size: 13px;
+  color: #475569;
+  font-weight: 500;
+}
+
+body.dark-mode .photo-caption {
+  color: #94a3b8;
+}
+
+/* Custom Photo Preview */
+.custom-photo-preview {
+  margin-top: 12px;
+  text-align: center;
+}
+
+.custom-photo-preview img {
+  max-width: 150px;
+  max-height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-top: 8px;
+}
+</style>

@@ -1,0 +1,192 @@
+/**
+ * Profile Photo Component Styles
+ * SINGLE FIELD PATTERN: Simple profile photo display
+ * 
+ * @package Guestify/Components/ProfilePhoto
+ * @version 1.0.0
+ */
+
+/* Base Component */
+.profile-photo-component {
+  --profile-photo-max-width: 300px;
+  --profile-photo-border-radius: 50%;
+  --profile-photo-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --profile-photo-shadow-hover: 0 8px 12px rgba(0, 0, 0, 0.15);
+  
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: var(--spacing-md, 1rem);
+}
+
+/* Container */
+.profile-photo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm, 0.75rem);
+  width: 100%;
+}
+
+/* Image */
+.profile-photo-image {
+  max-width: var(--profile-photo-max-width);
+  width: 100%;
+  height: auto;
+  border-radius: var(--profile-photo-border-radius);
+  box-shadow: var(--profile-photo-shadow);
+  object-fit: cover;
+  aspect-ratio: 1 / 1;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.profile-photo-image:hover {
+  transform: scale(1.05);
+  box-shadow: var(--profile-photo-shadow-hover);
+}
+
+/* Shape Variations */
+.profile-photo-component[data-shape="square"] .profile-photo-image {
+  border-radius: 0;
+}
+
+.profile-photo-component[data-shape="rounded"] .profile-photo-image {
+  border-radius: var(--border-radius-lg, 16px);
+}
+
+.profile-photo-component[data-shape="circle"] .profile-photo-image {
+  border-radius: 50%;
+}
+
+/* Size Variations */
+.profile-photo-component[data-size="small"] {
+  --profile-photo-max-width: 150px;
+}
+
+.profile-photo-component[data-size="medium"] {
+  --profile-photo-max-width: 250px;
+}
+
+.profile-photo-component[data-size="large"] {
+  --profile-photo-max-width: 350px;
+}
+
+/* Caption */
+.profile-photo-caption {
+  margin: 0;
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-muted, #64748b);
+  text-align: center;
+  max-width: var(--profile-photo-max-width);
+  line-height: 1.5;
+}
+
+/* Placeholder */
+.profile-photo-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl, 2rem);
+  color: var(--color-text-muted, #94a3b8);
+  background: var(--color-surface, #f8fafc);
+  border-radius: var(--border-radius, 8px);
+  border: 2px dashed var(--color-border, #e2e8f0);
+  min-height: 200px;
+}
+
+.profile-photo-placeholder i {
+  font-size: 4rem;
+  margin-bottom: var(--spacing-md, 1rem);
+  opacity: 0.5;
+}
+
+.profile-photo-placeholder p {
+  margin: 0;
+  font-size: var(--font-size-sm, 0.875rem);
+  font-style: italic;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .profile-photo-component {
+    padding: var(--spacing-sm, 0.75rem);
+  }
+  
+  .profile-photo-component[data-size="small"] {
+    --profile-photo-max-width: 120px;
+  }
+  
+  .profile-photo-component[data-size="medium"] {
+    --profile-photo-max-width: 180px;
+  }
+  
+  .profile-photo-component[data-size="large"] {
+    --profile-photo-max-width: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-photo-placeholder {
+    padding: var(--spacing-md, 1rem);
+    min-height: 150px;
+  }
+  
+  .profile-photo-placeholder i {
+    font-size: 3rem;
+  }
+}
+
+/* Dark Mode */
+body.dark-mode .profile-photo-placeholder {
+  background: var(--color-surface-dark, #1e293b);
+  border-color: var(--color-border-dark, #334155);
+  color: var(--color-text-muted-dark, #94a3b8);
+}
+
+body.dark-mode .profile-photo-caption {
+  color: var(--color-text-muted-dark, #94a3b8);
+}
+
+body.dark-mode .profile-photo-image {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .profile-photo-image:hover {
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Print Styles */
+@media print {
+  .profile-photo-component {
+    break-inside: avoid;
+  }
+  
+  .profile-photo-image {
+    box-shadow: none;
+  }
+  
+  .profile-photo-placeholder {
+    display: none;
+  }
+}
+
+/* Accessibility */
+.profile-photo-image:focus {
+  outline: 2px solid var(--color-primary, #3b82f6);
+  outline-offset: 4px;
+}
+
+/* Animation for loading state */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.profile-photo-component.loading .profile-photo-image {
+  animation: pulse 1.5s ease-in-out infinite;
+}

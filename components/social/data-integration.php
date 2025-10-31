@@ -27,33 +27,37 @@ class Social_Data_Integration {
     
     /**
      * Social platform field mappings
+     * ROOT FIX: Use actual Pods field names (with 1_ prefix and guest_ prefix)
      * Maps to Pods fields in guest post type
+     * 
+     * ARCHITECTURE FIX: Email and phone belong to Contact component, not Social
      */
     protected static $field_mappings = array(
-        'website' => 'website',
-        'linkedin' => 'linkedin',
-        'twitter' => 'twitter',
-        'facebook' => 'facebook',
-        'instagram' => 'instagram',
-        'youtube' => 'youtube',
-        'tiktok' => 'tiktok',
-        'email' => 'email',
-        'phone' => 'phone'
+        'twitter' => '1_twitter',
+        'facebook' => '1_facebook',
+        'instagram' => '1_instagram',
+        'linkedin' => '1_linkedin',
+        'tiktok' => '1_tiktok',
+        'pinterest' => '1_pinterest',
+        'youtube' => 'guest_youtube',
+        'website' => '1_website',
+        'website2' => '2_website'
     );
     
     /**
      * Platform display names and icons
+     * ROOT FIX: Removed email and phone (belong to Contact component)
      */
     protected static $platform_config = array(
-        'website' => array('label' => 'Website', 'icon' => 'fa-globe'),
-        'linkedin' => array('label' => 'LinkedIn', 'icon' => 'fa-linkedin'),
-        'twitter' => array('label' => 'Twitter', 'icon' => 'fa-twitter'),
+        'twitter' => array('label' => 'Twitter/X', 'icon' => 'fa-twitter'),
         'facebook' => array('label' => 'Facebook', 'icon' => 'fa-facebook'),
         'instagram' => array('label' => 'Instagram', 'icon' => 'fa-instagram'),
-        'youtube' => array('label' => 'YouTube', 'icon' => 'fa-youtube'),
+        'linkedin' => array('label' => 'LinkedIn', 'icon' => 'fa-linkedin'),
         'tiktok' => array('label' => 'TikTok', 'icon' => 'fa-tiktok'),
-        'email' => array('label' => 'Email', 'icon' => 'fa-envelope'),
-        'phone' => array('label' => 'Phone', 'icon' => 'fa-phone')
+        'pinterest' => array('label' => 'Pinterest', 'icon' => 'fa-pinterest'),
+        'youtube' => array('label' => 'YouTube', 'icon' => 'fa-youtube'),
+        'website' => array('label' => 'Website', 'icon' => 'fa-globe'),
+        'website2' => array('label' => 'Website 2', 'icon' => 'fa-globe')
     );
     
     /**
@@ -110,12 +114,7 @@ class Social_Data_Integration {
                         'icon' => self::$platform_config[$platform]['icon'] ?? 'fa-link'
                     );
                     
-                    // Special handling for email and phone
-                    if ($platform === 'email') {
-                        $link_data['url'] = 'mailto:' . $cleaned_value;
-                    } elseif ($platform === 'phone') {
-                        $link_data['url'] = 'tel:' . $cleaned_value;
-                    }
+                    // ROOT FIX: No special email/phone handling - those belong to Contact component
                     
                     $result['links'][] = $link_data;
                     $result['count']++;

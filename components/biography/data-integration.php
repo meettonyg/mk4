@@ -27,17 +27,11 @@ class Biography_Data_Integration {
     
     /**
      * Pods field mappings for biography
-     * ROOT FIX: Map to actual Pods fields from guest post type
+     * SIMPLIFIED: Biography component now handles ONLY biography text
+     * Other fields (name, title, company) are handled by Guest-Intro and Hero components
      */
     protected static $field_mappings = array(
-        'biography' => 'biography',          // Main biography field
-        'name' => 'full_name',              // Full name field  
-        'first_name' => 'first_name',      // First name
-        'last_name' => 'last_name',        // Last name
-        'title' => 'guest_title',          // Professional title
-        'company' => 'company',            // Company/organization
-        'tagline' => 'tagline',            // Tagline
-        'introduction' => 'introduction'    // Introduction field
+        'biography' => 'biography'  // Main biography field ONLY
     );
     
     /**
@@ -323,7 +317,7 @@ class Biography_Data_Integration {
     
     /**
      * COMPLIANT: Prepare template props from component data
-     * This keeps component-specific logic within the component
+     * SIMPLIFIED: Biography component now handles ONLY biography text
      * 
      * @param array $component_data Data from load_component_data
      * @param array $existing_props Existing props to merge with
@@ -333,39 +327,19 @@ class Biography_Data_Integration {
         $props = $existing_props;
         
         if (!empty($component_data['success']) && !empty($component_data['biography'])) {
-            // ROOT FIX: Get the main biography field from Pods
+            // Get the biography field from Pods
             $bio_content = $component_data['biography']['biography'] ?? '';
-            
-            // Fallback to introduction if biography is empty
-            if (empty($bio_content) && !empty($component_data['biography']['introduction'])) {
-                $bio_content = $component_data['biography']['introduction'];
-            }
             
             // Provide content in multiple formats for template compatibility
             $props['bio'] = $bio_content;
             $props['content'] = $bio_content;
             $props['biography'] = $bio_content;
-            $props['bio_content'] = $bio_content;  // Add bio_content key used in template
-            
-            // Add name data - combine first and last if full_name not available
-            $props['name'] = $component_data['biography']['name'] ?? '';
-            if (empty($props['name']) && (!empty($component_data['biography']['first_name']) || !empty($component_data['biography']['last_name']))) {
-                $props['name'] = trim(
-                    ($component_data['biography']['first_name'] ?? '') . ' ' . 
-                    ($component_data['biography']['last_name'] ?? '')
-                );
-            }
-            
-            $props['title'] = $component_data['biography']['title'] ?? '';
-            $props['company'] = $component_data['biography']['company'] ?? '';
-            $props['tagline'] = $component_data['biography']['tagline'] ?? '';
+            $props['bio_content'] = $bio_content;
             
             // Add debugging info
             self::debug_log('Biography props prepared: ' . json_encode(array(
                 'has_bio' => !empty($bio_content),
-                'bio_length' => strlen($bio_content),
-                'name' => $props['name'],
-                'title' => $props['title']
+                'bio_length' => strlen($bio_content)
             )));
         }
         
@@ -374,31 +348,21 @@ class Biography_Data_Integration {
     
     /**
      * Assess data quality
+     * SIMPLIFIED: Biography component only checks biography text
      * 
      * @param array $biography Biography data
      * @return string Quality level
      */
     private static function assess_data_quality($biography) {
-        // ROOT FIX: Use actual field names from Pods
-        $core_fields = array('biography', 'name', 'title');
-        $filled_core = 0;
-        $filled_optional = 0;
+        // Only checking biography field now
+        $bio_content = $biography['biography'] ?? '';
+        $bio_length = strlen(trim($bio_content));
         
-        foreach ($biography as $field_key => $value) {
-            if (!empty($value) && strlen(trim($value)) > 0) {
-                if (in_array($field_key, $core_fields)) {
-                    $filled_core++;
-                } else {
-                    $filled_optional++;
-                }
-            }
-        }
-        
-        // ROOT FIX: Adjust quality levels for actual fields
-        if ($filled_core >= 3 && $filled_optional >= 2) return 'excellent';
-        if ($filled_core >= 2 && $filled_optional >= 1) return 'good';
-        if ($filled_core >= 2) return 'fair';
-        if ($filled_core >= 1) return 'minimal';
+        // Quality based on biography text length
+        if ($bio_length >= 500) return 'excellent';
+        if ($bio_length >= 250) return 'good';
+        if ($bio_length >= 100) return 'fair';
+        if ($bio_length > 0) return 'minimal';
         return 'empty';
     }
 }

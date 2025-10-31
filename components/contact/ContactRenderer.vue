@@ -14,10 +14,10 @@
         <a :href="`tel:${phone}`">{{ phone }}</a>
       </div>
       
-      <!-- Website -->
-      <div v-if="website" class="contact-item">
-        <i class="fas fa-globe"></i>
-        <a :href="website" target="_blank" rel="noopener noreferrer">{{ displayWebsite }}</a>
+      <!-- Skype -->
+      <div v-if="skype" class="contact-item">
+        <i class="fab fa-skype"></i>
+        <a :href="`skype:${skype}?chat`">{{ skype }}</a>
       </div>
       
       <!-- Location -->
@@ -35,16 +35,11 @@ export default {
   props: {
     componentId: String,
     // ROOT FIX: Standardized prop names (data contract)
+    // Website removed - handled by Social component
     email: String,
     phone: String,
-    website: String,
+    skype: String,
     location: String
-  },
-  computed: {
-    displayWebsite() {
-      if (!this.website) return '';
-      return this.website.replace(/^https?:\/\//, '');
-    }
   }
 }
 </script>

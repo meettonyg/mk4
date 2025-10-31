@@ -162,6 +162,14 @@ export function usePodsData() {
       gallery: store.podsData?.photo_gallery || []
     })),
     
+    // ROOT FIX: Add individual logo/media fields for direct access
+    personalBrandLogo: computed(() => store.podsData?.personal_brand_logo || ''),
+    companyLogo: computed(() => store.podsData?.company_logo || ''),
+    featuredLogos: computed(() => store.podsData?.featured_logos || []),
+    profilePhoto: computed(() => store.podsData?.profile_photo || ''),
+    galleryPhotos: computed(() => store.podsData?.gallery_photos || []),
+    videoIntro: computed(() => store.podsData?.video_intro || ''),
+    
     // Helper method to get any pods field
     getField: (fieldName) => computed(() => store.podsData?.[fieldName] || ''),
     

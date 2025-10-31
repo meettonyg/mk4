@@ -62,13 +62,13 @@
           </div>
           
           <div class="field-group">
-            <label for="contact-website">Website</label>
+            <label for="contact-skype">Skype</label>
             <input 
-              id="contact-website"
-              v-model="localData.website" 
+              id="contact-skype"
+              v-model="localData.skype" 
               @input="updateComponent"
-              type="url"
-              placeholder="https://example.com"
+              type="text"
+              placeholder="skype_username"
             />
           </div>
           
@@ -115,7 +115,7 @@ const localData = ref({
   description: '',
   email: '',
   phone: '',
-  website: '',
+  skype: '',
   address: ''
 });
 
@@ -128,7 +128,7 @@ const loadComponentData = () => {
       description: component.data.description || '',
       email: component.data.email || '',
       phone: component.data.phone || '',
-      website: component.data.website || '',
+      skype: component.data.skype || '',
       address: component.data.address || ''
     };
   }

@@ -36,9 +36,9 @@ export default {
         'linkedin': 'fab fa-linkedin-in',
         'instagram': 'fab fa-instagram',
         'youtube': 'fab fa-youtube',
-        'github': 'fab fa-github',
         'pinterest': 'fab fa-pinterest',
         'tiktok': 'fab fa-tiktok'
+        // Note: GitHub removed - field does not exist in Pods schema
       };
       const lowerPlatform = platform.toLowerCase();
       return icons[lowerPlatform] || 'fas fa-link';

@@ -1,6 +1,6 @@
 {
   "dataSource": "pods",
-  "description": "Social media component requires all social profile URLs and contact info",
+  "description": "Social media profiles and website links. Email is handled by Contact component.",
   "fields": {
     "1_twitter": {
       "type": "website",
@@ -46,16 +46,6 @@
       "type": "website",
       "required": false,
       "description": "Secondary website URL"
-    },
-    "email": {
-      "type": "email",
-      "required": false,
-      "description": "Contact email address"
-    },
-    "website": {
-      "type": "website",
-      "required": false,
-      "description": "Website URL (legacy field)"
     }
   }
 }

@@ -37,62 +37,96 @@
         </section>
 
         <section class="editor-section">
-          <h4>Logos</h4>
-          <p class="help-text">Add up to 12 logos</p>
+          <h4>Logo Source</h4>
           
-          <div class="logos-list">
-            <div 
-              v-for="(logo, index) in localData.logos" 
-              :key="index"
-              class="logo-item"
-            >
-              <div class="logo-header">
-                <span class="logo-number">Logo {{ index + 1 }}</span>
-                <button 
-                  @click="removeLogo(index)"
-                  class="remove-btn"
-                  title="Remove logo"
-                >×</button>
+          <!-- Pods Data Toggle -->
+          <div v-if="hasPodsLogos" class="pods-data-toggle">
+            <label class="toggle-label">
+              <input 
+                type="checkbox" 
+                v-model="localData.usePodsData" 
+                @change="updateComponent"
+              />
+              <span>Use logos from Pods ({{ podsLogosCount }} logo{{ podsLogosCount !== 1 ? 's' : '' }} available)</span>
+            </label>
+          </div>
+
+          <!-- Pods Logos Display -->
+          <div v-if="localData.usePodsData && hasPodsLogos" class="pods-logos-display">
+            <div class="field-group">
+              <label>Logos from Pods</label>
+              <div class="pods-logos-grid">
+                <div 
+                  v-for="(logo, index) in podsLogos" 
+                  :key="index"
+                  class="pods-logo-item"
+                >
+                  <img :src="logo.url" :alt="logo.name" />
+                  <span class="logo-label">{{ logo.name }}</span>
+                </div>
               </div>
-              
-              <div class="field-group">
-                <label>Image URL *</label>
-                <input 
-                  v-model="logo.url" 
-                  @input="updateComponent"
-                  type="url"
-                  placeholder="https://example.com/logo.png"
-                />
-              </div>
-              
-              <div class="field-group">
-                <label>Logo Name</label>
-                <input 
-                  v-model="logo.name" 
-                  @input="updateComponent"
-                  type="text"
-                  placeholder="Company name"
-                />
-              </div>
-              
-              <div class="field-group">
-                <label>Link URL (Optional)</label>
-                <input 
-                  v-model="logo.link" 
-                  @input="updateComponent"
-                  type="url"
-                  placeholder="https://company.com"
-                />
-              </div>
+              <p class="field-hint">These logos are loaded from your guest profile. Uncheck above to add custom logos.</p>
             </div>
+          </div>
+
+          <!-- Custom Logos Section -->
+          <div v-if="!localData.usePodsData || !hasPodsLogos">
+            <p class="help-text">Add up to 12 custom logos</p>
             
-            <button 
-              v-if="localData.logos.length < 12"
-              @click="addLogo"
-              class="add-btn"
-            >
-              + Add Logo
-            </button>
+            <div class="logos-list">
+              <div 
+                v-for="(logo, index) in localData.logos" 
+                :key="index"
+                class="logo-item"
+              >
+                <div class="logo-header">
+                  <span class="logo-number">Logo {{ index + 1 }}</span>
+                  <button 
+                    @click="removeLogo(index)"
+                    class="remove-btn"
+                    title="Remove logo"
+                  >×</button>
+                </div>
+                
+                <div class="field-group">
+                  <label>Image URL *</label>
+                  <input 
+                    v-model="logo.url" 
+                    @input="updateComponent"
+                    type="url"
+                    placeholder="https://example.com/logo.png"
+                  />
+                </div>
+                
+                <div class="field-group">
+                  <label>Logo Name</label>
+                  <input 
+                    v-model="logo.name" 
+                    @input="updateComponent"
+                    type="text"
+                    placeholder="Company name"
+                  />
+                </div>
+                
+                <div class="field-group">
+                  <label>Link URL (Optional)</label>
+                  <input 
+                    v-model="logo.link" 
+                    @input="updateComponent"
+                    type="url"
+                    placeholder="https://company.com"
+                  />
+                </div>
+              </div>
+              
+              <button 
+                v-if="localData.logos.length < 12"
+                @click="addLogo"
+                class="add-btn"
+              >
+                + Add Logo
+              </button>
+            </div>
           </div>
         </section>
 
@@ -119,8 +153,9 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
+import { usePodsData } from '../../src/composables/usePodsData';
 import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 
 const props = defineProps({
@@ -134,6 +169,9 @@ const emit = defineEmits(['close']);
 
 const store = useMediaKitStore();
 
+// Load Pods data
+const { podsData } = usePodsData();
+
 // Active tab state
 const activeTab = ref('content');
 
@@ -141,7 +179,99 @@ const localData = ref({
   title: 'Featured In',
   description: '',
   logos: [],
-  columns: 'auto'
+  columns: 'auto',
+  usePodsData: true // Default to using Pods data if available
+});
+
+// Get logos from Pods
+// CRITICAL: Single fields return ONE attachment, repeatable fields return ARRAY
+const podsLogos = computed(() => {
+  const logos = [];
+  
+  // ===== SINGLE FIELDS (return one attachment object/ID) =====
+  
+  // Add personal brand logo (SINGLE field)
+  const personalLogo = podsData.value?.personal_brand_logo;
+  if (personalLogo) {
+    // Single field returns ONE attachment object or ID (not an array)
+    const logoUrl = typeof personalLogo === 'object' 
+      ? (personalLogo.guid || personalLogo.url) 
+      : personalLogo;
+    const logoName = typeof personalLogo === 'object' 
+      ? (personalLogo.post_title || 'Personal Brand')
+      : 'Personal Brand';
+    
+    if (logoUrl) {
+      logos.push({
+        url: logoUrl,
+        name: logoName,
+        type: 'brand',
+        source: 'pods'
+      });
+    }
+  }
+  
+  // Add company logo (SINGLE field)
+  const companyLogo = podsData.value?.company_logo;
+  if (companyLogo) {
+    // Single field returns ONE attachment object or ID (not an array)
+    const logoUrl = typeof companyLogo === 'object' 
+      ? (companyLogo.guid || companyLogo.url) 
+      : companyLogo;
+    const logoName = typeof companyLogo === 'object' 
+      ? (companyLogo.post_title || 'Company')
+      : 'Company';
+    
+    if (logoUrl) {
+      logos.push({
+        url: logoUrl,
+        name: logoName,
+        type: 'company',
+        source: 'pods'
+      });
+    }
+  }
+  
+  // ===== REPEATABLE FIELDS (return array of attachments) =====
+  
+  // Add featured logos (REPEATABLE field - returns ARRAY of attachments)
+  const featuredLogos = podsData.value?.featured_logos;
+  if (featuredLogos && Array.isArray(featuredLogos) && featuredLogos.length > 0) {
+    // Repeatable field returns an ARRAY where each item is an attachment object or ID
+    featuredLogos.forEach((logo, index) => {
+      if (logo) {
+        // Each item in the array is one attachment
+        const logoUrl = typeof logo === 'object' 
+          ? (logo.guid || logo.url) 
+          : logo;
+        const logoName = typeof logo === 'object' 
+          ? (logo.post_title || `Featured Logo ${index + 1}`)
+          : `Featured Logo ${index + 1}`;
+        
+        if (logoUrl) {
+          logos.push({
+            url: logoUrl,
+            name: logoName,
+            type: 'featured',
+            source: 'pods'
+          });
+        }
+      }
+    });
+  }
+  
+  return logos;
+});
+
+const podsLogosCount = computed(() => podsLogos.value.length);
+const hasPodsLogos = computed(() => podsLogosCount.value > 0);
+
+// Determine effective logos (Pods or custom)
+const effectiveLogos = computed(() => {
+  if (localData.value.usePodsData && hasPodsLogos.value) {
+    return podsLogos.value;
+  }
+  return localData.value.logos || [];
 });
 
 // Load component data
@@ -154,12 +284,25 @@ const loadComponentData = () => {
       logos: Array.isArray(component.data.logos) 
         ? [...component.data.logos]
         : [],
-      columns: component.data.columns || 'auto'
+      columns: component.data.columns || 'auto',
+      usePodsData: component.data.usePodsData !== false // Default to true
     };
+  }
+  
+  // If no custom logos and Pods has data, use Pods
+  if ((!localData.value.logos || localData.value.logos.length === 0) && hasPodsLogos.value) {
+    localData.value.usePodsData = true;
   }
 };
 
 watch(() => props.componentId, loadComponentData, { immediate: true });
+
+watch(podsLogos, () => {
+  // If using Pods data and Pods value changes, trigger update
+  if (localData.value.usePodsData) {
+    updateComponent();
+  }
+}, { deep: true });
 
 // Add logo
 const addLogo = () => {
@@ -183,14 +326,15 @@ const updateComponent = () => {
   if (updateTimeout) clearTimeout(updateTimeout);
   
   updateTimeout = setTimeout(() => {
-    store.updateComponent(props.componentId, {
-      data: {
-        title: localData.value.title,
-        description: localData.value.description,
-        logos: localData.value.logos.filter(l => l.url.trim()),
-        columns: localData.value.columns
-      }
-    });
+    const dataToSave = {
+      title: localData.value.title,
+      description: localData.value.description,
+      logos: effectiveLogos.value,
+      columns: localData.value.columns,
+      usePodsData: localData.value.usePodsData
+    };
+    
+    store.updateComponent(props.componentId, { data: dataToSave });
     store.isDirty = true;
   }, 300);
 };
@@ -298,6 +442,108 @@ body.dark-mode .field-group textarea {
 
 .field-group textarea {
   resize: vertical;
+}
+
+/* Pods Data Toggle */
+.pods-data-toggle {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+body.dark-mode .pods-data-toggle {
+  background: #0c4a6e;
+  border-color: #0369a1;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #0369a1;
+  font-weight: 500;
+}
+
+body.dark-mode .toggle-label {
+  color: #7dd3fc;
+}
+
+.toggle-label input[type="checkbox"] {
+  margin-top: 2px;
+  cursor: pointer;
+  width: auto;
+}
+
+.toggle-label span {
+  flex: 1;
+}
+
+/* Pods Logos Display */
+.pods-logos-display {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+body.dark-mode .pods-logos-display {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.pods-logos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
+  padding: 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+}
+
+body.dark-mode .pods-logos-grid {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.pods-logo-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.pods-logo-item img {
+  max-width: 100%;
+  max-height: 60px;
+  object-fit: contain;
+}
+
+.logo-label {
+  font-size: 11px;
+  color: #64748b;
+  text-align: center;
+  word-break: break-word;
+}
+
+body.dark-mode .logo-label {
+  color: #94a3b8;
+}
+
+.field-hint {
+  margin: 6px 0 0 0;
+  font-size: 12px;
+  color: #64748b;
+  font-style: italic;
+}
+
+body.dark-mode .field-hint {
+  color: #94a3b8;
 }
 
 .logos-list {

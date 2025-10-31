@@ -26,7 +26,7 @@ class Questions_Data_Integration {
     protected static $component_type = 'questions';
     
     /**
-     * Pods field mappings for questions (up to 10 questions)
+     * Pods field mappings for questions (all 25 questions available in Pods)
      */
     protected static $field_mappings = array(
         'question_1' => 'question_1',
@@ -38,7 +38,22 @@ class Questions_Data_Integration {
         'question_7' => 'question_7',
         'question_8' => 'question_8',
         'question_9' => 'question_9',
-        'question_10' => 'question_10'
+        'question_10' => 'question_10',
+        'question_11' => 'question_11',
+        'question_12' => 'question_12',
+        'question_13' => 'question_13',
+        'question_14' => 'question_14',
+        'question_15' => 'question_15',
+        'question_16' => 'question_16',
+        'question_17' => 'question_17',
+        'question_18' => 'question_18',
+        'question_19' => 'question_19',
+        'question_20' => 'question_20',
+        'question_21' => 'question_21',
+        'question_22' => 'question_22',
+        'question_23' => 'question_23',
+        'question_24' => 'question_24',
+        'question_25' => 'question_25'
     );
     
     /**
@@ -174,7 +189,7 @@ class Questions_Data_Integration {
         // Save to Pods fields
         $index = 1;
         foreach ($questions as $question) {
-            if ($index > 10) break; // Max 10 questions
+            if ($index > 25) break; // Max 25 questions
             
             $meta_key = "question_{$index}";
             $question_text = '';
@@ -198,7 +213,7 @@ class Questions_Data_Integration {
         }
         
         // Clear remaining slots
-        for ($i = $index; $i <= 10; $i++) {
+        for ($i = $index; $i <= 25; $i++) {
             delete_post_meta($post_id, "question_{$i}");
         }
         

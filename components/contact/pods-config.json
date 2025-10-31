@@ -1,6 +1,6 @@
 {
   "dataSource": "pods",
-  "description": "Contact component requires email, phone, and website information",
+  "description": "Contact component requires email, phone, skype, and address information. Website URLs are handled by Social component.",
   "fields": {
     "email": {
       "type": "email",
@@ -12,20 +12,35 @@
       "required": false,
       "description": "Contact phone number"
     },
-    "website": {
-      "type": "website",
+    "skype": {
+      "type": "text",
       "required": false,
-      "description": "Website URL"
+      "description": "Skype username"
     },
-    "1_website": {
-      "type": "website",
+    "address": {
+      "type": "text",
       "required": false,
-      "description": "Primary website URL"
+      "description": "Street address"
     },
-    "2_website": {
-      "type": "website",
+    "city": {
+      "type": "text",
       "required": false,
-      "description": "Secondary website URL"
+      "description": "City"
+    },
+    "state": {
+      "type": "text",
+      "required": false,
+      "description": "State/Province"
+    },
+    "zip": {
+      "type": "text",
+      "required": false,
+      "description": "Zip/Postal code"
+    },
+    "country": {
+      "type": "text",
+      "required": false,
+      "description": "Country"
     }
   }
 }

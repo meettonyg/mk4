@@ -1,26 +1,11 @@
 {
   "dataSource": "pods",
-  "description": "Biography component requires biography text and basic identity fields",
+  "description": "Biography component displays professional biography text only. Name and title fields are handled by Guest-Intro and Hero components.",
   "fields": {
     "biography": {
       "type": "wysiwyg",
       "required": false,
-      "description": "Main biography text"
-    },
-    "biography_long": {
-      "type": "wysiwyg",
-      "required": false,
-      "description": "Extended biography text"
-    },
-    "first_name": {
-      "type": "text",
-      "required": false,
-      "description": "Guest's first name"
-    },
-    "last_name": {
-      "type": "text",
-      "required": false,
-      "description": "Guest's last name"
+      "description": "Professional biography text"
     }
   }
 }

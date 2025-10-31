@@ -1,0 +1,21 @@
+{
+  "type": "personal-brand-logo",
+  "name": "Personal Brand Logo",
+  "description": "Display your personal brand logo",
+  "icon": "fa-solid fa-star",
+  "category": "branding",
+  "accordionGroup": "media",
+  "version": "1.0.0",
+  "renderers": {
+    "vue": "PersonalBrandLogoRenderer.vue",
+    "editor": "PersonalBrandLogoEditor.vue"
+  },
+  "styles": "styles.css",
+  "schema": "schema.json",
+  "supports": {
+    "serverRender": false,
+    "vueRender": true,
+    "inlineEdit": false,
+    "designPanel": true
+  }
+}

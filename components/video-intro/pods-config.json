@@ -1,11 +1,11 @@
 {
   "dataSource": "pods",
-  "description": "Video intro component requires video URL field",
+  "description": "Video intro component loads from video_intro Pods field (website URL type). Supports YouTube, Vimeo, and direct video URLs.",
   "fields": {
     "video_intro": {
-      "type": "file",
+      "type": "website",
       "required": false,
-      "description": "Video introduction URL or file"
+      "description": "Video introduction URL (YouTube, Vimeo, or direct video link)"
     }
   }
 }

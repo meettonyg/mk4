@@ -1,0 +1,21 @@
+{
+  "type": "profile-photo",
+  "name": "Profile Photo",
+  "description": "Display a single profile photo or headshot",
+  "icon": "fa-solid fa-user-circle",
+  "category": "media",
+  "accordionGroup": "media",
+  "version": "1.0.0",
+  "renderers": {
+    "vue": "ProfilePhotoRenderer.vue",
+    "editor": "ProfilePhotoEditor.vue"
+  },
+  "styles": "styles.css",
+  "schema": "schema.json",
+  "supports": {
+    "serverRender": false,
+    "vueRender": true,
+    "inlineEdit": false,
+    "designPanel": true
+  }
+}

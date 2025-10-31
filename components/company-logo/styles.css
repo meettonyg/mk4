@@ -1,0 +1,32 @@
+/* Company Logo Component Styles */
+
+.company-logo-component {
+  /* Base styles defined in Vue component */
+  /* This file is for any additional PHP template styles if needed */
+}
+
+/* Size variants */
+.company-logo-component[data-size="small"] .company-logo-image {
+  max-width: 150px;
+}
+
+.company-logo-component[data-size="medium"] .company-logo-image {
+  max-width: 250px;
+}
+
+.company-logo-component[data-size="large"] .company-logo-image {
+  max-width: 350px;
+}
+
+/* Alignment variants */
+.company-logo-component[data-alignment="left"] {
+  text-align: left;
+}
+
+.company-logo-component[data-alignment="center"] {
+  text-align: center;
+}
+
+.company-logo-component[data-alignment="right"] {
+  text-align: right;
+}

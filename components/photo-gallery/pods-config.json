@@ -1,16 +1,12 @@
 {
   "dataSource": "pods",
-  "description": "Photo gallery component requires image fields",
+  "description": "Photo gallery component loads from gallery_photos Pods field (REPEATABLE field). Displays multiple photos in a responsive grid. For single profile photo, use the Profile Photo component instead.",
   "fields": {
-    "gallery_images": {
+    "gallery_photos": {
       "type": "file",
       "required": false,
-      "description": "Gallery images"
-    },
-    "profile_image": {
-      "type": "file",
-      "required": false,
-      "description": "Profile image"
+      "repeatable": true,
+      "description": "Collection of gallery photos (REPEATABLE field, max 50)"
     }
   }
 }

@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Profile Photo Component Schema",
+  "description": "Schema for profile photo component data (SINGLE field pattern)",
+  "type": "object",
+  "properties": {
+    "photo": {
+      "type": ["object", "null"],
+      "description": "Photo data object (SINGLE photo or null)",
+      "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Photo URL"
+        },
+        "caption": {
+          "type": "string",
+          "description": "Optional photo caption"
+        },
+        "alt": {
+          "type": "string",
+          "description": "Alt text for accessibility",
+          "default": "Profile Photo"
+        },
+        "id": {
+          "type": ["integer", "null"],
+          "description": "WordPress attachment ID"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["pods", "custom"],
+          "description": "Photo source indicator"
+        }
+      },
+      "required": ["url"]
+    },
+    "usePodsData": {
+      "type": "boolean",
+      "description": "Whether to use Pods data or custom photo",
+      "default": true
+    },
+    "shape": {
+      "type": "string",
+      "enum": ["circle", "square", "rounded"],
+      "description": "Photo shape",
+      "default": "circle"
+    },
+    "size": {
+      "type": "string",
+      "enum": ["small", "medium", "large"],
+      "description": "Photo display size",
+      "default": "medium"
+    }
+  },
+  "required": []
+}
