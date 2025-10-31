@@ -21,38 +21,48 @@ export class ComponentDeprecationManager {
 
   /**
    * Load deprecation configuration from registry
+   * ARCHITECTURE FIX: Prioritizes server-side config over hardcoded defaults
    */
   loadDeprecationConfig() {
-    // This can be loaded from a JSON file or API endpoint
-    const config = window.gmkbData?.deprecationConfig || this.getDefaultConfig();
+    // Priority 1: Load from server-side WordPress data
+    const serverConfig = window.gmkbData?.deprecationConfig;
     
-    Object.entries(config).forEach(([componentType, deprecationInfo]) => {
+    if (serverConfig && typeof serverConfig === 'object') {
+      Object.entries(serverConfig).forEach(([componentType, deprecationInfo]) => {
+        this.deprecatedComponents.set(componentType, deprecationInfo);
+      });
+      
+      if (window.gmkbData?.debugMode) {
+        console.log(`[DeprecationManager] Loaded ${this.deprecatedComponents.size} deprecated components from server config`);
+      }
+      return;
+    }
+    
+    // Priority 2: Fallback to minimal default config if no server config
+    // This should be rare - server should provide the config
+    const defaultConfig = this.getMinimalDefaultConfig();
+    
+    Object.entries(defaultConfig).forEach(([componentType, deprecationInfo]) => {
       this.deprecatedComponents.set(componentType, deprecationInfo);
     });
+    
+    if (window.gmkbData?.debugMode) {
+      console.warn(`[DeprecationManager] Using fallback config - server config not found`);
+    }
   }
 
   /**
-   * Default deprecation configuration
-   * Can be overridden by server-side config
+   * Minimal default deprecation configuration
+   * ARCHITECTURE FIX: Reduced to bare minimum - server should provide full config
+   * 
+   * To add deprecated components:
+   * 1. Add to WordPress filter 'gmkb_deprecation_config'
+   * 2. Or create config/deprecated-components.json in plugin root
    */
-  getDefaultConfig() {
+  getMinimalDefaultConfig() {
     return {
-      'authority-hook': {
-        status: 'removed',
-        version: '4.0.0',
-        reason: 'Replaced by hero and biography components',
-        replacement: null, // No direct replacement
-        migration: 'manual', // or 'auto'
-        fallback: {
-          type: 'hero',
-          dataMapping: {
-            'authority_statement': 'subtitle',
-            'unique_value': 'description'
-          }
-        },
-        notice: 'The Authority Hook component has been removed. Please use Hero or Biography components instead.'
-      }
-      // Add more deprecated components here as needed
+      // Only include components that are truly removed and need handling
+      // Empty by default - add via WordPress filter or JSON config
     };
   }
 

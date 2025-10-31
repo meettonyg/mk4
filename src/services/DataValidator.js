@@ -52,6 +52,7 @@ export class DataValidator {
 
   /**
    * Validate component data structure
+   * ROOT FIX: Use dynamic validation against registered components instead of hardcoded list
    */
   static validateComponent(component) {
     if (!component || typeof component !== 'object') {
@@ -66,17 +67,17 @@ export class DataValidator {
       throw new Error('Invalid component type: unknown_type');
     }
 
-    // Validate required fields based on type
-    const validTypes = [
-      'hero', 'biography', 'topics', 'contact', 'social',
-      'testimonials', 'guest-intro', 'authority-hook',
-      'call-to-action', 'questions', 'photo-gallery',
-      'video-intro', 'podcast-player', 'booking-calendar',
-      'logo-grid', 'stats', 'topics-questions'
-    ];
-
-    if (!validTypes.includes(component.type)) {
-      console.warn(`Unknown component type: ${component.type}`);
+    // ROOT FIX: Validate against dynamically registered components
+    // Check if componentDefinitions are available in gmkbData
+    if (window.gmkbData?.componentDefinitions) {
+      const registeredTypes = window.gmkbData.componentDefinitions.map(c => c.type);
+      
+      if (!registeredTypes.includes(component.type)) {
+        console.warn(`Unknown component type: ${component.type}. Not found in registered components:`, registeredTypes);
+      }
+    } else if (window.gmkbData?.debugMode) {
+      // Only log in debug mode if componentDefinitions aren't available
+      console.log(`Component validation: ${component.type} (componentDefinitions not yet loaded)`);
     }
 
     return true;

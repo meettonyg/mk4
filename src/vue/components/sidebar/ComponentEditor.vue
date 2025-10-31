@@ -40,6 +40,10 @@ const props = defineProps({
 const store = useMediaKitStore()
 const uiStore = useUIStore()
 
+// ROOT FIX: Auto-discover editors using glob pattern (same as renderers)
+// ARCHITECTURE COMPLIANCE: Self-contained components - no hardcoded maps
+const editorModules = import.meta.glob('../../../../components/**/*Editor.vue')
+
 // Get component TYPE only (shallow, won't trigger on data changes)
 const componentType = computed(() => {
   return store.components[props.componentId]?.type
@@ -50,38 +54,23 @@ const component = computed(() => {
   return store.components[props.componentId]
 })
 
-// ROOT FIX: Cache the editor component to prevent remounting
-// Only reload if component TYPE changes, not on every data update
+// ROOT FIX: Dynamic editor discovery - finds editor automatically
 const editorComponent = computed(() => {
   if (!componentType.value) return null
   
   const type = componentType.value
   
-  // Map component types to their editor paths
-  const editorMap = {
-    'hero': () => import(`../../../../components/hero/HeroEditor.vue`),
-    'biography': () => import(`../../../../components/biography/BiographyEditor.vue`),
-    'topics': () => import(`../../../../components/topics/TopicsEditor.vue`),
-    'contact': () => import(`../../../../components/contact/ContactEditor.vue`),
-    'guest-intro': () => import(`../../../../components/guest-intro/GuestIntroEditor.vue`),
-    'stats': () => import(`../../../../components/stats/StatsEditor.vue`),
-    'social': () => import(`../../../../components/social/SocialEditor.vue`),
-    'questions': () => import(`../../../../components/questions/QuestionsEditor.vue`),
-    'testimonials': () => import(`../../../../components/testimonials/TestimonialsEditor.vue`),
-    'call-to-action': () => import(`../../../../components/call-to-action/CallToActionEditor.vue`),
-    'video-intro': () => import(`../../../../components/video-intro/VideoIntroEditor.vue`),
-    'podcast-player': () => import(`../../../../components/podcast-player/PodcastPlayerEditor.vue`),
-    'photo-gallery': () => import(`../../../../components/photo-gallery/PhotoGalleryEditor.vue`),
-    'logo-grid': () => import(`../../../../components/logo-grid/LogoGridEditor.vue`),
-    'booking-calendar': () => import(`../../../../components/booking-calendar/BookingCalendarEditor.vue`),
-    'topics-questions': () => import(`../../../../components/topics-questions/TopicsQuestionsEditor.vue`)
-  }
+  // Find the editor module for this component type
+  const editorPath = Object.keys(editorModules).find(path => {
+    // Match pattern: components/{type}/*Editor.vue
+    const match = path.match(/\/components\/([^\/]+)\/.*Editor\.vue$/)
+    return match && match[1] === type
+  })
   
-  // Return the editor loader if it exists
-  if (editorMap[type]) {
+  if (editorPath && editorModules[editorPath]) {
     console.log(`✅ Loading component-specific editor for: ${type}`);
     return defineAsyncComponent({
-      loader: editorMap[type],
+      loader: editorModules[editorPath],
       loadingComponent: null,
       errorComponent: null,
       delay: 0,

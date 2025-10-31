@@ -85,20 +85,10 @@ class ComponentDiscovery {
 
     /**
      * Component type aliases mapping
-     * Maps requested component types to actual directory names
+     * ARCHITECTURE FIX: Auto-discovered from component.json files
+     * instead of hardcoded array
      */
-    private $component_aliases = array(
-        'bio' => 'biography',
-        'social-links' => 'social',
-        'social-media' => 'social',
-        'cta' => 'call-to-action',
-        'booking' => 'booking-calendar',
-        'gallery' => 'photo-gallery',
-        'player' => 'podcast-player',
-        'intro' => 'guest-intro',
-        'video' => 'video-intro',
-        'logos' => 'logo-grid'
-    );
+    private $component_aliases = array();
 
     /**
      * Constructor
@@ -213,6 +203,16 @@ class ComponentDiscovery {
             // ROOT CAUSE FIX: Ensure title exists (JavaScript fallback)
             if (!isset($componentData['title'])) {
                 $componentData['title'] = $componentData['name'];
+            }
+            
+            // ARCHITECTURE FIX: Load aliases from component.json if present
+            if (isset($componentData['aliases']) && is_array($componentData['aliases'])) {
+                foreach ($componentData['aliases'] as $alias) {
+                    $this->component_aliases[$alias] = $componentName;
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log("ComponentDiscovery: Registered alias '{$alias}' -> '{$componentName}'");
+                    }
+                }
             }
             
             // ROOT CAUSE DEBUG: Log final component data
@@ -399,8 +399,9 @@ class ComponentDiscovery {
     
     /**
      * Get all component aliases
+     * ARCHITECTURE FIX: Returns dynamically discovered aliases
      * 
-     * @return array Component aliases mapping
+     * @return array Component aliases mapping (alias => actual_type)
      */
     public function getAliases() {
         return $this->component_aliases;

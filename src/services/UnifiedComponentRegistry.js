@@ -230,28 +230,54 @@ class UnifiedComponentRegistry {
   
   /**
    * Get default props for a component type
+   * ARCHITECTURE FIX: Auto-discovers defaults from component metadata
+   * instead of using hardcoded map
    */
   getDefaultPropsForType(type) {
-    const defaults = {
-      hero: { title: 'Your Name', subtitle: 'Professional Title' },
-      biography: { biography: 'Your professional biography...' },
-      topics: { topics: [] },
-      contact: { email: '', phone: '', website: '' },
-      social: { links: [] },
-      testimonials: { testimonials: [] },
-      stats: { stats: [] },
-      questions: { questions: [] },
-      'call-to-action': { title: 'Get Started', buttonText: 'Contact Me' },
-      'photo-gallery': { images: [] },
-      'video-intro': { videoUrl: '' },
-      'podcast-player': { episodes: [] },
-      'booking-calendar': { availability: {} },
-      'logo-grid': { logos: [] },
-      'guest-intro': { name: '', title: '', company: '' },
-      'profile-photo': { photo: null, usePodsData: true, shape: 'circle', size: 'medium' }
-    };
+    // Try to find the component in our metadata
+    const entry = this.getAvailableComponentEntries().find(e => e.type === type);
     
-    return defaults[type] || {};
+    if (entry && entry.meta) {
+      // Priority 1: Use defaultProps from component.json
+      if (entry.meta.defaultProps && typeof entry.meta.defaultProps === 'object') {
+        if (window.gmkbData?.debugMode) {
+          console.log(`✅ Using defaultProps from component.json for ${type}`);
+        }
+        return entry.meta.defaultProps;
+      }
+      
+      // Priority 2: Use defaults from schema.json (nested in meta)
+      if (entry.meta.schema && entry.meta.schema.defaults && typeof entry.meta.schema.defaults === 'object') {
+        if (window.gmkbData?.debugMode) {
+          console.log(`✅ Using schema defaults for ${type}`);
+        }
+        return entry.meta.schema.defaults;
+      }
+      
+      // Priority 3: Extract from schema properties if available
+      if (entry.meta.schema && entry.meta.schema.properties && typeof entry.meta.schema.properties === 'object') {
+        const extracted = {};
+        Object.entries(entry.meta.schema.properties).forEach(([key, prop]) => {
+          if (prop.default !== undefined) {
+            extracted[key] = prop.default;
+          }
+        });
+        
+        if (Object.keys(extracted).length > 0) {
+          if (window.gmkbData?.debugMode) {
+            console.log(`✅ Extracted defaults from schema properties for ${type}`);
+          }
+          return extracted;
+        }
+      }
+    }
+    
+    // Fallback: empty object
+    // This is safe - components should define their own defaults
+    if (window.gmkbData?.debugMode) {
+      console.warn(`⚠️ No default props found for ${type}, using empty object`);
+    }
+    return {};
   }
   
   // ========================================
