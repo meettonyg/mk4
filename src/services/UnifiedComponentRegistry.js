@@ -238,7 +238,8 @@ class UnifiedComponentRegistry {
       'podcast-player': { episodes: [] },
       'booking-calendar': { availability: {} },
       'logo-grid': { logos: [] },
-      'guest-intro': { name: '', title: '', company: '' }
+      'guest-intro': { name: '', title: '', company: '' },
+      'profile-photo': { photo: null, usePodsData: true, shape: 'circle', size: 'medium' }
     };
     
     return defaults[type] || {};
