@@ -6,6 +6,14 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig(({ mode }) => ({
+  // ROOT FIX: Use relative base path to support any WordPress installation structure
+  // This allows dynamic imports to resolve correctly regardless of:
+  // - Plugin directory name changes
+  // - Multi-site installations  
+  // - Custom wp-content locations
+  // - Symlinked plugins
+  base: './',
+  
   plugins: [
     vue(),
     // Custom plugin to handle component Vue files
