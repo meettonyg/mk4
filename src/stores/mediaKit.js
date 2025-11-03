@@ -5,6 +5,8 @@ import { useThemeStore } from './theme';
 // ROOT FIX: Import UI store for proper state management coordination
 import { useUIStore } from './ui';
 import { debounce } from '../utils/debounce';
+// ROOT FIX: Import StorageService for centralized localStorage access
+import storageService from '../services/StorageService';
 // P0 FIX #10: Removed EventBus import - using Pinia $subscribe instead
 import systemReadiness from '../services/SystemReadiness.js';
 import { deepClone, generateUniqueId, deepEqual } from '../utils/deepClone.js';
@@ -1750,7 +1752,10 @@ export const useMediaKitStore = defineStore('mediaKit', {
       }
     },
 
-    // Offline handling with local storage backup
+    /**
+     * ROOT FIX: Use StorageService instead of direct localStorage
+     * Offline handling with local storage backup
+     */
     backupToLocalStorage() {
       try {
         const backup = {
@@ -1761,28 +1766,31 @@ export const useMediaKitStore = defineStore('mediaKit', {
           postId: this.postId
         };
         
-        localStorage.setItem(`gmkb_backup_${this.postId}`, JSON.stringify(backup));
-        console.log('📦 Local backup created');
+        const success = storageService.createBackup(this.postId, backup);
+        if (success) {
+          console.log('📦 Local backup created');
+        } else {
+          console.warn('⚠️ Local backup failed (storage unavailable)');
+        }
       } catch (error) {
         console.warn('Local backup failed:', error);
       }
     },
 
-    // Restore from local storage
+    /**
+     * ROOT FIX: Use StorageService instead of direct localStorage
+     * Restore from local storage
+     */
     restoreFromLocalStorage() {
       try {
-        const backup = localStorage.getItem(`gmkb_backup_${this.postId}`);
+        const backup = storageService.getBackup(this.postId, 3600000); // 1 hour max age
+        
         if (backup) {
-          const data = JSON.parse(backup);
-          const age = Date.now() - data.timestamp;
-          
-          // Only restore if backup is less than 1 hour old
-          if (age < 3600000) {
-            this.initialize(data);
-            console.log('♻️ Restored from local backup');
-            return true;
-          }
+          this.initialize(backup);
+          console.log('♻️ Restored from local backup');
+          return true;
         }
+        
         return false;
       } catch (error) {
         console.warn('Local restore failed:', error);
@@ -1790,10 +1798,13 @@ export const useMediaKitStore = defineStore('mediaKit', {
       }
     },
 
-    // Clear local backup after successful save
+    /**
+     * ROOT FIX: Use StorageService instead of direct localStorage
+     * Clear local backup after successful save
+     */
     clearLocalBackup() {
       try {
-        localStorage.removeItem(`gmkb_backup_${this.postId}`);
+        storageService.removeBackup(this.postId);
       } catch (error) {
         console.warn('Clear backup failed:', error);
       }

@@ -19,10 +19,10 @@
     />
     
     <!-- V2 ARCHITECTURE: Direct Component Rendering - NO INTERMEDIATE LAYERS -->
-    <!-- ROOT FIX: Use actualComponent computed instead of component prop directly -->
+    <!-- ROOT FIX: Use UnifiedComponentRegistry.getVueComponent() for dynamic loading -->
     <component
-      v-if="actualComponent && componentMap[actualComponent.type]"
-      :is="componentMap[actualComponent.type]"
+      v-if="actualComponent && vueComponent"
+      :is="vueComponent"
       :key="componentId || actualComponent.id"
       :component-id="componentId || actualComponent.id"
       :data="actualComponent.data || {}"
@@ -38,75 +38,21 @@
     <div v-else class="component-placeholder">
       <span class="placeholder-icon">⚠️</span>
       <span v-if="!actualComponent">Component not found: {{ componentId }}</span>
-      <span v-else>Unknown component type: {{ actualComponent.type }}</span>
+      <span v-else-if="!vueComponent">Component type not registered: {{ actualComponent.type }}</span>
+      <span v-else>Unknown error loading component: {{ actualComponent.type }}</span>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, defineAsyncComponent } from 'vue'
+import { ref, computed } from 'vue'
 import { useMediaKitStore } from '@/stores/mediaKit'
 import ComponentControls from './builder/ComponentControls.vue'
-import DeprecatedComponentPlaceholder from './DeprecatedComponentPlaceholder.vue'
+import UnifiedComponentRegistry from '@/services/UnifiedComponentRegistry'
 
-// Import all component types directly
-// Using @components alias defined in vite.config.js
-const componentMap = {
-  // V2 Components - Following simplified architecture
-  'biography': defineAsyncComponent(() => 
-    import('@components/biography/Biography.vue')
-  ),
-  'hero': defineAsyncComponent(() => 
-    import('@components/hero/Hero.vue')
-  ),
-  'guest-intro': defineAsyncComponent(() => 
-    import('@components/guest-intro/GuestIntro.vue')
-  ),
-  'topics': defineAsyncComponent(() => 
-    import('@components/topics/Topics.vue')
-  ),
-  'stats': defineAsyncComponent(() => 
-    import('@components/stats/Stats.vue')
-  ),
-  'contact': defineAsyncComponent(() => 
-    import('@components/contact/Contact.vue')
-  ),
-  // Batch 1: Simple Components
-  'social': defineAsyncComponent(() => 
-    import('@components/social/Social.vue')
-  ),
-  'call-to-action': defineAsyncComponent(() => 
-    import('@components/call-to-action/CallToAction.vue')
-  ),
-  'logo-grid': defineAsyncComponent(() => 
-    import('@components/logo-grid/LogoGrid.vue')
-  ),
-  // Batch 2: Medium Components
-  'testimonials': defineAsyncComponent(() => 
-    import('@components/testimonials/Testimonials.vue')
-  ),
-  'questions': defineAsyncComponent(() => 
-    import('@components/questions/Questions.vue')
-  ),
-  'video-intro': defineAsyncComponent(() => 
-    import('@components/video-intro/VideoIntro.vue')
-  ),
-  'topics-questions': defineAsyncComponent(() => 
-    import('@components/topics-questions/TopicsQuestions.vue')
-  ),
-  // Batch 3: Complex Components
-  'photo-gallery': defineAsyncComponent(() => 
-    import('@components/photo-gallery/PhotoGallery.vue')
-  ),
-  'podcast-player': defineAsyncComponent(() => 
-    import('@components/podcast-player/PodcastPlayer.vue')
-  ),
-  'booking-calendar': defineAsyncComponent(() => 
-    import('@components/booking-calendar/BookingCalendar.vue')
-  ),
-  // Deprecated component placeholder
-  'deprecated-placeholder': DeprecatedComponentPlaceholder
-}
+// ROOT FIX: Eliminated hardcoded componentMap - using UnifiedComponentRegistry instead
+// This follows the single source of truth principle and ensures all components
+// are loaded consistently via import.meta.glob in UnifiedComponentRegistry
 
 const props = defineProps({
   // Support both ways of passing component data for compatibility
@@ -144,6 +90,30 @@ const emit = defineEmits(['edit', 'duplicate', 'remove'])
 
 const store = useMediaKitStore()
 const isHovered = ref(false)
+
+// ROOT FIX: Get Vue component from UnifiedComponentRegistry
+// This replaces the hardcoded componentMap and ensures consistency
+const vueComponent = computed(() => {
+  try {
+    if (!actualComponent.value?.type) {
+      return null;
+    }
+    
+    // Use UnifiedComponentRegistry to get the Vue component dynamically
+    // This auto-discovers components via import.meta.glob
+    const component = UnifiedComponentRegistry.getVueComponent(actualComponent.value.type);
+    
+    if (!component) {
+      console.warn(`[ComponentWrapper] No Vue component registered for type: ${actualComponent.value.type}`);
+      return null;
+    }
+    
+    return component;
+  } catch (error) {
+    console.error('[ComponentWrapper] Error getting Vue component:', error);
+    return null;
+  }
+});
 
 // Get component data (support both prop methods)
 // ROOT FIX: Added comprehensive null safety to prevent .value errors

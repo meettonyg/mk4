@@ -114,20 +114,40 @@ const setDevice = (device) => {
 
 // Initialize on mount
 onMounted(() => {
-  // ROOT FIX: Wait for DOM to be ready before applying device styles
-  // The preview area might not be mounted yet if Teleport hasn't completed
-  const initializeDevice = () => {
-    const previewArea = document.getElementById('media-kit-preview');
-    if (previewArea) {
-      setDevice('desktop');
-      console.log('✅ Device Preview component mounted and initialized');
-    } else {
-      console.warn('Preview area not ready, retrying in 100ms...');
-      setTimeout(initializeDevice, 100);
-    }
-  };
+  // ROOT FIX: Use MutationObserver instead of polling for DOM readiness
+  // This is event-driven and more efficient than setTimeout polling
+  const previewArea = document.getElementById('media-kit-preview');
   
-  initializeDevice();
+  if (previewArea) {
+    // Element already exists, initialize immediately
+    setDevice('desktop');
+    console.log('✅ Device Preview component mounted and initialized');
+  } else {
+    // Element doesn't exist yet, wait for it using MutationObserver
+    console.log('⏳ Preview area not ready, watching for DOM changes...');
+    
+    const observer = new MutationObserver((mutations, obs) => {
+      const previewArea = document.getElementById('media-kit-preview');
+      if (previewArea) {
+        // Element found! Initialize and stop observing
+        setDevice('desktop');
+        console.log('✅ Device Preview component initialized after DOM mutation');
+        obs.disconnect();
+      }
+    });
+    
+    // Start observing the document body for added nodes
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+    
+    // Safety cleanup: disconnect observer after 5 seconds if element never appears
+    setTimeout(() => {
+      observer.disconnect();
+      console.warn('⚠️ Preview area never appeared, stopping observer');
+    }, 5000);
+  }
 });
 
 // ROOT FIX: Store handler reference for proper cleanup

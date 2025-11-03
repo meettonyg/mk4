@@ -9,6 +9,8 @@
  */
 
 import { defineStore } from 'pinia';
+// ROOT FIX: Import StorageService for centralized localStorage access
+import storageService from '../services/StorageService';
 
 export const useUIStore = defineStore('ui', {
     state: () => ({
@@ -324,12 +326,8 @@ export const useUIStore = defineStore('ui', {
         toggleSidebarCollapse() {
             this.sidebarCollapsed = !this.sidebarCollapsed;
             
-            // Persist preference
-            try {
-                localStorage.setItem('gmkb-sidebar-collapsed', JSON.stringify(this.sidebarCollapsed));
-            } catch (e) {
-                console.warn('Could not save sidebar collapse state:', e);
-            }
+            // ROOT FIX: Use StorageService instead of direct localStorage
+            storageService.set('sidebar-collapsed', this.sidebarCollapsed);
             
             // Dispatch event for other components
             document.dispatchEvent(new CustomEvent('gmkb:sidebar-collapse-changed', {
@@ -351,16 +349,13 @@ export const useUIStore = defineStore('ui', {
             }
         },
         
+        // ROOT FIX: Use StorageService instead of direct localStorage
         // Load sidebar collapse state from localStorage
         loadSidebarCollapseState() {
-            try {
-                const saved = localStorage.getItem('gmkb-sidebar-collapsed');
-                if (saved !== null) {
-                    this.sidebarCollapsed = JSON.parse(saved);
-                    console.log('✅ UI Store: Loaded sidebar collapsed state:', this.sidebarCollapsed);
-                }
-            } catch (e) {
-                console.warn('Could not load sidebar collapse state:', e);
+            const saved = storageService.get('sidebar-collapsed');
+            if (saved !== null) {
+                this.sidebarCollapsed = saved;
+                console.log('✅ UI Store: Loaded sidebar collapsed state:', this.sidebarCollapsed);
             }
         },
         

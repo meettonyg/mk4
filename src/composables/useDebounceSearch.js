@@ -8,6 +8,8 @@
  */
 
 import { ref, computed, watch, onMounted } from 'vue';
+// ROOT FIX: Import StorageService for centralized localStorage access
+import storageService from '../services/StorageService';
 
 /**
  * Use debounced search
@@ -108,12 +110,8 @@ export function useDebounceSearch(searchFunction, options = {}) {
     // Limit size
     searchHistoryItems.value = filtered.slice(0, maxHistoryItems);
     
-    // Save to localStorage
-    try {
-      localStorage.setItem(historyKey, JSON.stringify(searchHistoryItems.value));
-    } catch (err) {
-      console.warn('Failed to save search history:', err);
-    }
+    // ROOT FIX: Use StorageService instead of direct localStorage
+    storageService.set(historyKey, searchHistoryItems.value);
   };
 
   /**
@@ -122,15 +120,11 @@ export function useDebounceSearch(searchFunction, options = {}) {
   const loadHistory = () => {
     if (!enableHistory) return;
     
-    try {
-      const saved = localStorage.getItem(historyKey);
-      if (saved) {
-        searchHistoryItems.value = JSON.parse(saved);
-        console.log('📚 Loaded search history:', searchHistoryItems.value.length, 'items');
-      }
-    } catch (err) {
-      console.warn('Failed to load search history:', err);
-      searchHistoryItems.value = [];
+    // ROOT FIX: Use StorageService instead of direct localStorage
+    const saved = storageService.get(historyKey, []);
+    if (saved && Array.isArray(saved)) {
+      searchHistoryItems.value = saved;
+      console.log('📚 Loaded search history:', searchHistoryItems.value.length, 'items');
     }
   };
 
@@ -140,12 +134,9 @@ export function useDebounceSearch(searchFunction, options = {}) {
   const clearHistory = () => {
     searchHistoryItems.value = [];
     
-    try {
-      localStorage.removeItem(historyKey);
-      console.log('🗑️ Search history cleared');
-    } catch (err) {
-      console.warn('Failed to clear search history:', err);
-    }
+    // ROOT FIX: Use StorageService instead of direct localStorage
+    storageService.remove(historyKey);
+    console.log('🗑️ Search history cleared');
   };
 
   /**

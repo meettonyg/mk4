@@ -222,7 +222,7 @@ const previewFrameStyles = computed(() => {
   return styles;
 });
 
-// ROOT FIX: Event-driven scroll detection
+// ROOT FIX: Event-driven scroll detection using ResizeObserver
 const detectScrollableContent = () => {
   // Check tab content
   if (tabContent.value) {
@@ -240,10 +240,8 @@ const detectScrollableContent = () => {
 // Switch panel and detect scroll
 const switchPanel = (panelId) => {
   themeStore.setActivePanel(panelId);
-  // ROOT FIX: Use nextTick to ensure DOM updates before checking scroll
-  nextTick(() => {
-    setTimeout(detectScrollableContent, 50);
-  });
+  // ROOT FIX: Use nextTick to ensure DOM updates, then detect immediately
+  nextTick(detectScrollableContent);
 };
 
 // Handle close with confirmation if there are unsaved changes
@@ -296,11 +294,34 @@ watch(() => themeStore.tempCustomizations, (newCustomizations) => {
   }
 }, { deep: true });
 
+// ROOT FIX: Setup ResizeObserver for automatic scroll detection
+let resizeObserver = null;
+
+const setupScrollObserver = () => {
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+  }
+  
+  resizeObserver = new ResizeObserver(() => {
+    detectScrollableContent();
+  });
+  
+  // Observe both scrollable elements
+  if (tabContent.value) {
+    resizeObserver.observe(tabContent.value);
+  }
+  
+  if (previewSection.value) {
+    resizeObserver.observe(previewSection.value);
+  }
+};
+
 // ROOT FIX: Watch for customizer open state to detect scroll
 watch(() => themeStore.customizerOpen, (isOpen) => {
   if (isOpen) {
     nextTick(() => {
-      setTimeout(detectScrollableContent, 100);
+      detectScrollableContent();
+      setupScrollObserver();
     });
   }
 });
@@ -312,15 +333,22 @@ onMounted(() => {
   // Load custom themes from database
   themeStore.loadCustomThemes();
   
-  // Initial scroll detection
+  // Initial scroll detection and setup observer
   nextTick(() => {
-    setTimeout(detectScrollableContent, 100);
+    detectScrollableContent();
+    setupScrollObserver();
   });
 });
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown);
   window.removeEventListener('resize', detectScrollableContent);
+  
+  // Cleanup ResizeObserver
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
+  }
 });
 </script>
 

@@ -182,6 +182,8 @@ import { useToast } from '../../composables/useToast'
 import ExportModal from './ExportModal.vue'
 // RESET FUNCTIONALITY: Import global reset modal
 import GlobalResetModal from './ui/GlobalResetModal.vue'
+// ROOT FIX: Import StorageService for centralized localStorage access
+import storageService from '../../services/StorageService'
 
 const store = useMediaKitStore()
 const { showSuccess, showInfo, showError } = useToast()
@@ -365,15 +367,16 @@ function handleKeyboard(e) {
   }
 }
 
-// Watch dark mode and sync with localStorage
+// Watch dark mode and sync with StorageService
 watch(isDarkMode, (newValue) => {
-  localStorage.setItem('gmkb-dark-mode', newValue ? 'true' : 'false')
+  storageService.set('dark-mode', newValue)
 }, { immediate: true })
 
+// ROOT FIX: Use StorageService instead of direct localStorage
 // Initialize dark mode from localStorage
 const initDarkMode = () => {
-  const savedMode = localStorage.getItem('gmkb-dark-mode')
-  if (savedMode === 'true') {
+  const savedMode = storageService.get('dark-mode', false)
+  if (savedMode === true) {
     isDarkMode.value = true
     document.body.classList.add('dark-mode')
   }

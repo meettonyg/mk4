@@ -68,6 +68,8 @@ import { useMediaKitStore } from '../../stores/mediaKit';
 import { useUIStore } from '../../stores/ui';
 import ComponentLibrary from './ComponentLibraryNew.vue';
 import { componentDefinitions } from '../../data/componentDefinitions';
+// ROOT FIX: Import StorageService for centralized localStorage access
+import storageService from '../../services/StorageService';
 
 // Icon components
 const icons = {
@@ -150,12 +152,8 @@ export default {
       // Keep only last 3
       recentTypes.value = recentTypes.value.slice(0, 3);
       
-      // Save to localStorage
-      try {
-        localStorage.setItem('gmkb-recent-components', JSON.stringify(recentTypes.value));
-      } catch (e) {
-        console.warn('Could not save recent components:', e);
-      }
+      // ROOT FIX: Use StorageService instead of direct localStorage
+      storageService.set('recent-components', recentTypes.value);
     };
     
     const openLibrary = () => {
@@ -207,14 +205,11 @@ export default {
       return icons[iconName] || icons.default;
     };
     
+    // ROOT FIX: Use StorageService instead of direct localStorage
     // Load recent from localStorage on mount
-    try {
-      const saved = localStorage.getItem('gmkb-recent-components');
-      if (saved) {
-        recentTypes.value = JSON.parse(saved);
-      }
-    } catch (e) {
-      console.warn('Could not load recent components:', e);
+    const saved = storageService.get('recent-components', []);
+    if (saved && Array.isArray(saved)) {
+      recentTypes.value = saved;
     }
     
     return {

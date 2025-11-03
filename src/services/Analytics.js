@@ -7,6 +7,9 @@
  * @version 2.0.0
  */
 
+// ROOT FIX: Import StorageService for centralized localStorage access
+import storageService from './StorageService.js';
+
 export class Analytics {
   constructor(options = {}) {
     this.enabled = options.enabled ?? true;
@@ -257,11 +260,8 @@ export class Analytics {
    * @returns {string|null} User ID
    */
   getStoredUserId() {
-    try {
-      return localStorage.getItem('gmkb_user_id');
-    } catch {
-      return null;
-    }
+    // ROOT FIX: Use StorageService instead of direct localStorage
+    return storageService.get('user_id', null);
   }
 
   /**
@@ -270,11 +270,8 @@ export class Analytics {
    * @param {string} userId - User ID
    */
   storeUserId(userId) {
-    try {
-      localStorage.setItem('gmkb_user_id', userId);
-    } catch (error) {
-      console.warn('Failed to store user ID:', error);
-    }
+    // ROOT FIX: Use StorageService instead of direct localStorage
+    storageService.set('user_id', userId);
   }
 
   /**

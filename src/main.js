@@ -48,6 +48,8 @@ import { keyboardManager } from './services/KeyboardManager.js';
 import { performanceMonitor } from './services/PerformanceMonitor.js';
 import { analytics } from './services/Analytics.js';
 import componentStyleService from './services/ComponentStyleService.js';
+// ROOT FIX: Import StorageService for centralized localStorage access
+import storageService from './services/StorageService.js';
 
 // ROOT FIX: Initialize core systems and GMKB namespace EARLY
 // This ensures window.GMKB exists even if initialization fails
@@ -298,7 +300,8 @@ async function initializeVue() {
       pods: podsDataIntegration,
       registry: UnifiedComponentRegistry,
       componentStyle: componentStyleService,
-      stylePresets: stylePresetsModule
+      stylePresets: stylePresetsModule,
+      storage: storageService // ROOT FIX: Centralized localStorage access
     };
     
     // Utility functions

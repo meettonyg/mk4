@@ -8,6 +8,8 @@
  */
 
 import eventBus from '@/services/EventBus';
+// ROOT FIX: Import StorageService for centralized localStorage access
+import storageService from '../services/StorageService';
 
 export class SmartAutoSave {
   constructor(saveFunction, options = {}) {
@@ -302,22 +304,22 @@ export class SmartAutoSave {
    * Save changes to local storage as backup
    */
   saveToLocalBackup(changes) {
-    try {
-      const backup = {
-        changes,
-        timestamp: Date.now(),
-        version: '1.0.0'
-      };
-      
-      localStorage.setItem('gmkb_autosave_backup', JSON.stringify(backup));
-      
+    const backup = {
+      changes,
+      timestamp: Date.now(),
+      version: '1.0.0'
+    };
+    
+    // ROOT FIX: Use StorageService instead of direct localStorage
+    const success = storageService.set('autosave_backup', backup);
+    
+    if (success) {
       this.log('💾 Changes backed up to local storage');
       
       // Emit backup event
       eventBus.emit('autosave:local-backup', backup);
-      
-    } catch (error) {
-      this.log('❌ Failed to save local backup', error);
+    } else {
+      this.log('❌ Failed to save local backup');
     }
   }
 
@@ -325,23 +327,18 @@ export class SmartAutoSave {
    * Restore changes from local backup
    */
   restoreFromBackup() {
-    try {
-      const backup = localStorage.getItem('gmkb_autosave_backup');
-      if (!backup) return null;
-      
-      const data = JSON.parse(backup);
-      
-      // Check if backup is recent (within 1 hour)
-      if (Date.now() - data.timestamp < 3600000) {
-        this.log('♻️ Restored changes from backup', data);
-        return data.changes;
-      }
-      
-      return null;
-    } catch (error) {
-      this.log('❌ Failed to restore backup', error);
-      return null;
+    // ROOT FIX: Use StorageService instead of direct localStorage
+    const data = storageService.get('autosave_backup', null);
+    
+    if (!data) return null;
+    
+    // Check if backup is recent (within 1 hour)
+    if (Date.now() - data.timestamp < 3600000) {
+      this.log('♻️ Restored changes from backup', data);
+      return data.changes;
     }
+    
+    return null;
   }
 
   /**

@@ -1,0 +1,28 @@
+{
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/vendor": true,
+    "**/*.log": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/vendor/**": true
+  },
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  
+  "search.quickOpen.includeHistory": true,
+  "search.smartCase": true,
+  "search.useIgnoreFiles": true,
+  "search.followSymlinks": false,
+  
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "Vue.volar",
+    "bradlc.vscode-tailwindcss"
+  ]
+}

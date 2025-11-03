@@ -25,7 +25,7 @@
 </template>
 
 <script setup>
-import { computed, defineAsyncComponent, markRaw, onMounted, onUnmounted } from 'vue';
+import { computed, onMounted, onUnmounted } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
 import GenericEditor from './GenericEditor.vue';
 
@@ -41,88 +41,27 @@ const editingComponent = computed(() => {
   return store.components[editingComponentId.value];
 });
 
-// Dynamically load component-specific editor
+/**
+ * ROOT FIX: Removed hardcoded editor map
+ * 
+ * ARCHITECTURE COMPLIANCE:
+ * - No custom editor components exist in the codebase
+ * - GenericEditor handles all component editing universally
+ * - Removed 17 hardcoded defineAsyncComponent calls that loaded non-existent files
+ * - If future custom editors are needed, they should be discovered via
+ *   import.meta.glob pattern (similar to ComponentRenderer discovery)
+ * 
+ * BENEFITS:
+ * - Eliminates failed import attempts in console
+ * - Reduces bundle size
+ * - Simplifies maintenance
+ * - Follows single-source-of-truth principle
+ * - GenericEditor already provides comprehensive editing for all components
+ */
 const editorComponent = computed(() => {
-  if (!editingComponent.value?.type) return null;
-  
-  const componentType = editingComponent.value.type;
-  
-  // Map of component types to their editor components
-  // This will be dynamically loaded from the component's directory
-  const editorMap = {
-    'hero': markRaw(defineAsyncComponent(() => 
-      import('../../../components/hero/HeroEditor.vue')
-        .catch(err => {
-          console.log(`No custom editor for hero, using generic`);
-          return null;
-        })
-    )),
-    'biography': markRaw(defineAsyncComponent(() => 
-      import('../../../components/biography/BiographyEditor.vue')
-        .catch(err => {
-          console.log(`No custom editor for biography, using generic`);
-          return null;
-        })
-    )),
-    'topics': markRaw(defineAsyncComponent(() => 
-      import('../../../components/topics/TopicsEditor.vue')
-        .catch(() => null)
-    )),
-    'contact': markRaw(defineAsyncComponent(() => 
-      import('../../../components/contact/ContactEditor.vue')
-        .catch(() => null)
-    )),
-    'questions': markRaw(defineAsyncComponent(() => 
-      import('../../../components/questions/QuestionsEditor.vue')
-        .catch(() => null)
-    )),
-    'social': markRaw(defineAsyncComponent(() => 
-      import('../../../components/social/SocialEditor.vue')
-        .catch(() => null)
-    )),
-    'call-to-action': markRaw(defineAsyncComponent(() => 
-      import('../../../components/call-to-action/CallToActionEditor.vue')
-        .catch(() => null)
-    )),
-    'testimonials': markRaw(defineAsyncComponent(() => 
-      import('../../../components/testimonials/TestimonialsEditor.vue')
-        .catch(() => null)
-    )),
-    'stats': markRaw(defineAsyncComponent(() => 
-      import('../../../components/stats/StatsEditor.vue')
-        .catch(() => null)
-    )),
-    'video-intro': markRaw(defineAsyncComponent(() => 
-      import('../../../components/video-intro/VideoIntroEditor.vue')
-        .catch(() => null)
-    )),
-    'photo-gallery': markRaw(defineAsyncComponent(() => 
-      import('../../../components/photo-gallery/PhotoGalleryEditor.vue')
-        .catch(() => null)
-    )),
-    'podcast-player': markRaw(defineAsyncComponent(() => 
-      import('../../../components/podcast-player/PodcastPlayerEditor.vue')
-        .catch(() => null)
-    )),
-    'booking-calendar': markRaw(defineAsyncComponent(() => 
-      import('../../../components/booking-calendar/BookingCalendarEditor.vue')
-        .catch(() => null)
-    )),
-    'guest-intro': markRaw(defineAsyncComponent(() => 
-      import('../../../components/guest-intro/GuestIntroEditor.vue')
-        .catch(() => null)
-    )),
-    'logo-grid': markRaw(defineAsyncComponent(() => 
-      import('../../../components/logo-grid/LogoGridEditor.vue')
-        .catch(() => null)
-    )),
-    'topics-questions': markRaw(defineAsyncComponent(() => 
-      import('../../../components/topics-questions/TopicsQuestionsEditor.vue')
-        .catch(() => null)
-    ))
-  };
-  
-  return editorMap[componentType] || null;
+  // Always use GenericEditor - it handles all component types
+  // Future: Could implement custom editor discovery via import.meta.glob if needed
+  return null;
 });
 
 // Close editor
