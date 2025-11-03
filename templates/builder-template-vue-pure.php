@@ -232,7 +232,20 @@ if (!in_array($post->post_type, $allowed_post_types)) {
     <!-- Template provides HTML structure only - NO data injection -->
 
     <!-- WordPress Footer (loads scripts) -->
-    <?php wp_footer(); ?>
+    <?php 
+    wp_footer(); 
+    
+    // ROOT FIX v3: Output media templates for frontend builder
+    // WordPress media library requires these admin templates to work
+    if (!is_admin()) {
+        // Print media templates (Backbone views for media library modal)
+        wp_print_media_templates();
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB: Media templates printed in footer for frontend builder');
+        }
+    }
+    ?>
 
     <!-- PHASE 6: Fallback Error Handler -->
     <script type="text/javascript">

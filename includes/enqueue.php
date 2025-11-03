@@ -356,15 +356,11 @@ function gmkb_enqueue_all_assets() {
 /**
  * Enqueue WordPress Media Library
  * 
- * ROOT FIX v2: This function is now called by gmkb_enqueue_all_assets() at priority 999
+ * ROOT FIX v3: Force admin dependencies for frontend builder pages
  * 
- * Previously, we tried to enqueue at priority 10 to get scripts in <head>, but this
- * caused timing issues where gmkb_is_builder_page() returned false due to incomplete
- * WordPress initialization. Now we enqueue at priority 999 (same as Vue assets) to
- * ensure reliable URL detection.
- * 
- * WordPress still includes the media library scripts in the page even when enqueued
- * late, so this works correctly.
+ * The media library requires admin scripts (Backbone, Underscore, media templates)
+ * that aren't loaded on frontend pages by default. We must manually load these
+ * dependencies to make wp.media work in the custom frontend builder template.
  */
 function gmkb_enqueue_media_library() {
     // ROOT FIX v2: This function is now called by gmkb_enqueue_all_assets()
@@ -377,6 +373,35 @@ function gmkb_enqueue_media_library() {
         error_log('  - REQUEST_URI: ' . ($_SERVER['REQUEST_URI'] ?? 'NOT SET'));
     }
     
+    // ROOT FIX v3: Force load admin dependencies BEFORE wp_enqueue_media()
+    // The media library requires these to work on frontend pages
+    if (!is_admin()) {
+        // Load Backbone and Underscore (media library dependencies)
+        wp_enqueue_script('jquery');
+        wp_enqueue_script('underscore');
+        wp_enqueue_script('backbone');
+        
+        // Load media editor dependencies
+        wp_enqueue_script('media-models');
+        wp_enqueue_script('wp-plupload');
+        
+        // Load media views and editor
+        wp_enqueue_script('media-views');
+        wp_enqueue_script('media-editor');
+        
+        // Load media grid (for media library modal)
+        wp_enqueue_script('media-grid');
+        wp_enqueue_script('media');
+        
+        // Load required styles
+        wp_enqueue_style('media-views');
+        wp_enqueue_style('buttons');
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB: Manually loaded admin dependencies for frontend builder');
+        }
+    }
+    
     // ROOT FIX v2: Enqueue WordPress media library scripts
     // Required for useMediaUploader composable and all image upload functionality
     // Called at priority 999 to ensure reliable URL detection (same as Vue assets)
@@ -385,6 +410,8 @@ function gmkb_enqueue_media_library() {
     if (defined('WP_DEBUG') && WP_DEBUG) {
         error_log('✅ GMKB: WordPress media library enqueued (called at priority 999)');
         error_log('  - wp_script_is(media-views): ' . (wp_script_is('media-views', 'enqueued') ? 'TRUE' : 'FALSE'));
+        error_log('  - wp_script_is(backbone): ' . (wp_script_is('backbone', 'enqueued') ? 'TRUE' : 'FALSE'));
+        error_log('  - wp_script_is(underscore): ' . (wp_script_is('underscore', 'enqueued') ? 'TRUE' : 'FALSE'));
     }
 }
 
