@@ -25,11 +25,23 @@ import { ref } from 'vue';
 
 /**
  * Check if WordPress media API is available
+ * ROOT FIX: Enhanced error messaging for better debugging
  */
 function isWordPressMediaAvailable() {
-  return typeof window !== 'undefined' && 
+  const available = typeof window !== 'undefined' && 
          window.wp && 
          window.wp.media;
+  
+  // ROOT FIX: Add user-friendly error handling
+  if (!available && typeof console !== 'undefined') {
+    console.error(
+      '❌ WordPress Media Library not available. ' +
+      'This usually means wp_enqueue_media() was not called. ' +
+      'Please contact support if this issue persists.'
+    );
+  }
+  
+  return available;
 }
 
 /**

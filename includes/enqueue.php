@@ -184,7 +184,12 @@ function gmkb_filter_style_tag($tag, $handle, $href, $media) {
 // ===============================================
 // MAIN ENQUEUE HOOKS
 // ===============================================
-// ROOT FIX: Increase priority to 999 to ensure Pods is fully initialized
+// ROOT FIX: WordPress media library must be enqueued at priority 10 (default)
+// Priority 999 is too late - scripts output in <head> before priority 999 runs
+add_action('wp_enqueue_scripts', 'gmkb_enqueue_media_library', 10);
+add_action('admin_enqueue_scripts', 'gmkb_enqueue_media_library', 10);
+
+// ROOT FIX: Main assets at priority 999 to ensure Pods is fully initialized
 // This prevents the race condition where Pods data is empty on page load
 // but available via REST API (which runs later)
 add_action('wp_enqueue_scripts', 'gmkb_enqueue_vue_only_assets', 999);
@@ -300,6 +305,29 @@ function gmkb_disable_auto_sizes_mediakit_only($add_auto_sizes) {
 // ROOT FIX: Data injection now handled via wp_add_inline_script in gmkb_enqueue_vue_only_assets
 // This ensures data is available BEFORE the Vue bundle executes
 
+/**
+ * Enqueue WordPress Media Library (Priority 10)
+ * 
+ * CRITICAL: Must run at default priority (10) so scripts output in <head>
+ * Running at priority 999 is too late - wp_head() has already output by then
+ * 
+ * ROOT FIX: This function is separate from main assets to ensure media library
+ * loads early enough for WordPress to include it in the page head
+ */
+function gmkb_enqueue_media_library() {
+    if (!gmkb_is_builder_page()) {
+        return;
+    }
+    
+    // ROOT FIX: Enqueue WordPress media library scripts
+    // Required for useMediaUploader composable and all image upload functionality
+    // This must be called at priority 10 (default) so scripts output in <head>
+    wp_enqueue_media();
+    
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB: WordPress media library enqueued at priority 10');
+    }
+}
 
 /**
  * Enqueues all necessary assets for the Vue.js media kit builder.
@@ -616,6 +644,11 @@ function gmkb_prepare_data_for_injection() {
         'themes'            => $themes,
         'savedState'        => $saved_state,
         'pods_data'         => $pods_data, // ROOT FIX: Include if available, empty array if not
+        // ROOT FIX: Inject API Configuration for usePodsFieldUpdate composable
+        'apiSettings'       => array(
+            'apiUrl' => esc_url_raw($rest_url . 'gmkb/v2'),
+            'nonce' => wp_create_nonce('wp_rest'),
+        ),
         // CARRD-STYLE: User status for frontend (can view/edit without login, but need login to save)
         'user'              => array(
             'isLoggedIn'    => $is_logged_in,
