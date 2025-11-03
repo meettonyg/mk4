@@ -150,17 +150,9 @@ function gmkb_is_frontend_display() {
 /**
  * ROOT FIX: Clean approach - filter script tags at output time
  * This is more elegant than dequeue and handles stubborn enqueues
- * 
- * ROOT FIX v5: DO NOT block jQuery on builder pages - media library needs it!
  */
 function gmkb_filter_jquery_script_tag($tag, $handle, $src) {
-    // ROOT FIX v5: NEVER block scripts on builder pages
-    // Media library requires jQuery, Backbone, etc.
-    if (gmkb_is_builder_page()) {
-        return $tag; // Don't filter anything on builder pages
-    }
-    
-    // Only filter on frontend media kit DISPLAY pages (not builder)
+    // Only filter on frontend media kit pages
     if (!gmkb_is_frontend_display()) {
         return $tag;
     }
@@ -219,21 +211,12 @@ function gmkb_filter_style_tag($tag, $handle, $href, $media) {
 // ===============================================
 // MAIN ENQUEUE HOOKS
 // ===============================================
-// ROOT FIX v3: Separate media library loading at EARLY priority for frontend
-// Media library must be loaded BEFORE Vue app initialization to avoid race conditions
-// Priority 5 ensures WordPress context is ready but loads before Vue (priority 20)
-add_action('wp_enqueue_scripts', 'gmkb_enqueue_media_library_early', 5);
-add_action('admin_enqueue_scripts', 'gmkb_enqueue_media_library_early', 5);
+// jQuery-Free Implementation: No media library needed
+// Using modern REST API for file uploads instead
 
 // Main Vue assets load at standard priority
 add_action('wp_enqueue_scripts', 'gmkb_enqueue_vue_only_assets', 20);
 add_action('admin_enqueue_scripts', 'gmkb_enqueue_vue_only_assets', 20);
-
-// ROOT FIX v3: Separate early media library loading for frontend builder
-// - Media library loads at priority 5 (before Vue app)
-// - Vue assets load at priority 20 (standard timing)
-// - Prevents race condition where Vue initializes before wp.media is available
-// - Media templates are printed for frontend pages
 
 // ROOT FIX: Enqueue design system CSS on frontend media kit pages
 add_action('wp_enqueue_scripts', 'gmkb_enqueue_frontend_assets', 20);
@@ -314,8 +297,8 @@ function gmkb_enqueue_frontend_assets() {
     }
 }
 
-// ROOT FIX: Block jQuery script tags from outputting on frontend media kit DISPLAY pages only
-// CRITICAL: Do NOT block on builder pages - media library needs jQuery!
+// ROOT FIX: Block jQuery script tags from outputting on frontend media kit pages
+// jQuery-free implementation - no longer needed for builder pages
 add_filter('script_loader_tag', 'gmkb_filter_jquery_script_tag', 10, 3);
 add_filter('style_loader_tag', 'gmkb_filter_style_tag', 10, 4);
 
@@ -342,130 +325,8 @@ function gmkb_disable_auto_sizes_mediakit_only($add_auto_sizes) {
     return $add_auto_sizes;
 }
 
-/**
- * ROOT FIX v4: Print media templates on frontend builder pages
- * 
- * CRITICAL: This is the missing piece identified by Gemini!
- * The media library JavaScript relies on HTML templates that are
- * normally only printed in admin areas via admin_footer hook.
- * We must manually print them on frontend builder pages.
- */
-add_action('wp_footer', 'gmkb_print_media_templates_on_frontend', 1);
-
-function gmkb_print_media_templates_on_frontend() {
-    // Only execute on frontend builder pages (not admin)
-    if (gmkb_is_builder_page() && !is_admin()) {
-        // CRITICAL: Print the Backbone/Underscore templates required by wp.media
-        if (function_exists('wp_print_media_templates')) {
-            wp_print_media_templates();
-            
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ GMKB ROOT FIX: Media templates printed on frontend builder');
-            }
-        }
-        
-        // Also ensure the uploader templates are available
-        if (function_exists('wp_plupload_default_settings')) {
-            echo '<script type="text/javascript">
-';
-            echo 'var _wpPluploadSettings = ' . wp_json_encode(wp_plupload_default_settings()) . ';
-';
-            echo '</script>
-';
-            
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ GMKB ROOT FIX: Plupload settings injected');
-            }
-        }
-    }
-}
-
-/**
- * Enqueue media library scripts EARLY for frontend builder pages
- * 
- * ROOT FIX v4: Loads at priority 5 to ensure wp.media dependencies
- * are available before Vue components initialize.
- */
-function gmkb_enqueue_media_library_early() {
-    // Check if this is a builder page
-    if (!gmkb_is_builder_page()) {
-        return; // Not a builder page, skip
-    }
-    
-    // Enqueue media library with all dependencies
-    gmkb_enqueue_media_library();
-}
-
-/**
- * Enqueue WordPress Media Library
- * 
- * ROOT FIX v5: Complete media library initialization for frontend builder
- * 
- * The media library requires:
- * 1. Admin scripts (jQuery, Backbone, Underscore) - handled here
- * 2. Media scripts and styles - handled by wp_enqueue_media()
- * 3. HTML templates - handled by gmkb_print_media_templates_on_frontend()
- */
-function gmkb_enqueue_media_library() {
-    // ROOT FIX: Always log that function was called for debugging
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('🔍 GMKB: gmkb_enqueue_media_library() called');
-        error_log('  - is_admin(): ' . (is_admin() ? 'TRUE' : 'FALSE'));
-        error_log('  - REQUEST_URI: ' . ($_SERVER['REQUEST_URI'] ?? 'NOT SET'));
-    }
-    
-    // ROOT FIX v5: ALWAYS load all dependencies
-    // Don't conditionally load based on is_admin() - builder pages need everything
-    
-    // Core dependencies - CRITICAL ORDER
-    wp_enqueue_script('jquery');
-    wp_enqueue_script('jquery-ui-core');
-    wp_enqueue_script('jquery-ui-widget');
-    wp_enqueue_script('jquery-ui-mouse');
-    wp_enqueue_script('jquery-ui-draggable');
-    wp_enqueue_script('jquery-ui-sortable');
-    
-    // Backbone/Underscore (required for media templates)
-    wp_enqueue_script('underscore');
-    wp_enqueue_script('backbone');
-    
-    // Media specific scripts
-    wp_enqueue_script('media-models');
-    wp_enqueue_script('media-views');
-    wp_enqueue_script('media-editor');
-    wp_enqueue_script('media-audiovideo');
-    
-    // Plupload for file uploads
-    wp_enqueue_script('wp-plupload');
-    
-    // Media grid interface
-    wp_enqueue_script('media-grid');
-    wp_enqueue_script('media');
-    
-    // Required styles
-    wp_enqueue_style('media-views');
-    wp_enqueue_style('imgareaselect');
-    wp_enqueue_style('buttons');
-    wp_enqueue_style('wp-admin');
-    wp_enqueue_style('wp-auth-check');
-    
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('✅ GMKB: Loaded complete media library dependencies');
-    }
-    
-    // ROOT FIX v5: Enqueue WordPress media library
-    // This loads the media frame and sets up wp.media namespace
-    wp_enqueue_media();
-    
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('✅ GMKB: WordPress media library enqueued');
-        error_log('  - wp_script_is(jquery): ' . (wp_script_is('jquery', 'enqueued') ? 'TRUE' : 'FALSE'));
-        error_log('  - wp_script_is(media-views): ' . (wp_script_is('media-views', 'enqueued') ? 'TRUE' : 'FALSE'));
-        error_log('  - wp_script_is(backbone): ' . (wp_script_is('backbone', 'enqueued') ? 'TRUE' : 'FALSE'));
-        error_log('  - wp_script_is(underscore): ' . (wp_script_is('underscore', 'enqueued') ? 'TRUE' : 'FALSE'));
-        error_log('  - wp_style_is(media-views): ' . (wp_style_is('media-views', 'enqueued') ? 'TRUE' : 'FALSE'));
-    }
-}
+// jQuery-Free Implementation: Media library functions removed
+// Using modern REST API for file uploads - no jQuery/Backbone dependencies needed
 
 /**
  * Enqueues all necessary assets for the Vue.js media kit builder.

@@ -38,28 +38,26 @@
             </div>
           </div>
 
-          <!-- Custom Photo Section -->
+          <!-- jQuery-Free Upload Section -->
           <div v-if="!localData.usePodsData || !hasPodsPhoto">
-            <!-- Upload Button -->
+            <!-- Modern Upload Button -->
             <div class="field-group">
-              <button 
-                @click="handleUploadPhoto"
-                :disabled="isUploading || isSavingToPods"
-                class="upload-btn"
-                type="button"
-              >
-                <span v-if="isUploading">Selecting image...</span>
-                <span v-else-if="isSavingToPods">Saving to profile...</span>
-                <span v-else>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="17 8 12 3 7 8"></polyline>
-                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                  </svg>
-                  Upload Photo
-                </span>
-              </button>
-              <p class="field-hint">Upload or select from media library</p>
+              <MediaUploadButton
+                button-text="Upload Photo"
+                uploading-text="Uploading photo"
+                accept="image/*"
+                :multiple="false"
+                :show-progress="true"
+                @uploaded="handlePhotoUploaded"
+                @error="handleUploadError"
+                @progress="uploadProgress = $event"
+              />
+              <p class="field-hint">Click to select an image from your computer</p>
+              
+              <!-- Show progress if uploading -->
+              <div v-if="isSavingToPods" class="saving-indicator">
+                <span>Saving to profile...</span>
+              </div>
             </div>
 
             <div class="field-group">
@@ -89,6 +87,13 @@
             <div v-if="localData.photo.url" class="custom-photo-preview">
               <label>Preview</label>
               <img :src="localData.photo.url" :alt="localData.photo.alt || 'Profile Photo'" />
+              <button 
+                @click="removePhoto" 
+                class="remove-photo-btn"
+                type="button"
+              >
+                Remove Photo
+              </button>
             </div>
           </div>
         </section>
@@ -131,10 +136,9 @@
 import { ref, watch, computed } from 'vue';
 import { useMediaKitStore } from '@/stores/mediaKit';
 import { usePodsData } from '@composables/usePodsData';
-// jQuery-Free: Using modern REST API uploader instead of WordPress Media Library
-import { useModernMediaUploader } from '@composables/useModernMediaUploader';
 import { usePodsFieldUpdate } from '@composables/usePodsFieldUpdate';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
+import MediaUploadButton from '@/vue/components/MediaUploadButton.vue';
 
 const props = defineProps({ 
   componentId: { 
@@ -147,12 +151,11 @@ const emit = defineEmits(['close']);
 
 const store = useMediaKitStore();
 const { profilePhoto, allData: podsData } = usePodsData();
-// jQuery-Free: Using modern uploader with direct REST API calls
-const { selectAndUploadImage, isUploading } = useModernMediaUploader();
 const { updatePodsField, isUpdating: isSavingToPods } = usePodsFieldUpdate();
 
-// Active tab state
+// State
 const activeTab = ref('content');
+const uploadProgress = ref(0);
 
 const localData = ref({ 
   photo: { 
@@ -165,7 +168,7 @@ const localData = ref({
   size: 'medium'
 });
 
-// Get photo from Pods (SINGLE field - simple!)
+// Get photo from Pods
 const podsPhoto = computed(() => {
   const photo = profilePhoto.value;
   if (!photo) return null;
@@ -185,7 +188,7 @@ const podsPhoto = computed(() => {
 
 const hasPodsPhoto = computed(() => !!podsPhoto.value);
 
-// Determine effective photo (Pods or custom)
+// Determine effective photo
 const effectivePhoto = computed(() => {
   if (localData.value.usePodsData && hasPodsPhoto.value) {
     return podsPhoto.value;
@@ -238,93 +241,77 @@ const updateComponent = () => {
   }, 300);
 };
 
-// Handle photo upload - jQuery-Free Implementation
-const handleUploadPhoto = async () => {
-  try {
-    // Step 1: Open file selector and upload via REST API
-    const attachment = await selectAndUploadImage({
-      accept: 'image/*',
-      multiple: false
-    });
-    
-    if (!attachment) {
-      return; // User cancelled
-    }
-    
-    if (window.gmkbDebug) {
-      console.log('📸 Profile Photo: Image uploaded via REST API', {
-        id: attachment.id,
-        url: attachment.url
-      });
-    }
-    
-    // Step 2: Save attachment ID to Pods field
+// Handle successful photo upload (jQuery-Free)
+const handlePhotoUploaded = async (attachment) => {
+  if (!attachment) return;
+  
+  console.log('✅ Profile Photo: Image uploaded successfully', {
+    id: attachment.id,
+    url: attachment.url
+  });
+  
+  // Update local state
+  localData.value.photo = {
+    url: attachment.url,
+    caption: attachment.caption || '',
+    alt: attachment.alt || attachment.title || 'Profile Photo',
+    id: attachment.id
+  };
+  
+  // Disable Pods data initially
+  localData.value.usePodsData = false;
+  
+  // Try to save to Pods
+  if (attachment.id && store.postId) {
     try {
-      const postId = store.postId;
-      if (!postId) {
-        console.error('❌ Profile Photo: No post ID available');
-        throw new Error('Post ID not available');
-      }
+      await updatePodsField(store.postId, 'profile_photo', attachment.id);
+      console.log('✅ Profile Photo: Saved to Pods field');
       
-      if (window.gmkbDebug) {
-        console.log('💾 Profile Photo: Saving to Pods field', {
-          postId,
-          fieldName: 'profile_photo',
-          attachmentId: attachment.id
-        });
-      }
-      
-      // Save the attachment ID to the profile_photo Pods field
-      await updatePodsField(postId, 'profile_photo', attachment.id);
-      
-      if (window.gmkbDebug) {
-        console.log('✅ Profile Photo: Saved to Pods successfully');
-      }
-      
-      // Step 3: Update local state to show custom photo
-      localData.value.photo = {
-        url: attachment.url,
-        caption: attachment.caption || '',
-        alt: attachment.alt || 'Profile Photo',
-        id: attachment.id,
-        source: 'custom'
-      };
-      
-      // Since we saved to Pods, enable Pods data usage
+      // Enable Pods data since it's now saved there
       localData.value.usePodsData = true;
-      
-      // Step 4: Update component state
-      updateComponent();
-      
-      if (window.gmkbDebug) {
-        console.log('✅ Profile Photo: Upload complete');
-      }
-      
-    } catch (saveError) {
-      console.error('❌ Profile Photo: Failed to save to Pods', saveError);
-      
-      // Still update local state even if Pods save fails
-      localData.value.photo = {
-        url: attachment.url,
-        caption: attachment.caption || '',
-        alt: attachment.alt || 'Profile Photo',
-        id: attachment.id,
-        source: 'custom'
-      };
-      localData.value.usePodsData = false; // Don't use Pods data if save failed
-      updateComponent();
-      
-      // Show user-friendly error
-      alert('Image selected but could not be saved to your profile. Please try again.');
-    }
-    
-  } catch (error) {
-    console.error('❌ Profile Photo: Upload failed', error);
-    // jQuery-Free: Better error handling for REST API errors
-    if (error.message && !error.message.includes('No file selected')) {
-      alert('Failed to upload photo: ' + error.message);
+    } catch (error) {
+      console.error('⚠️ Failed to save to Pods field:', error);
+      // Keep using custom photo if Pods save fails
     }
   }
+  
+  // Update component
+  updateComponent();
+};
+
+// Handle upload error
+const handleUploadError = (error) => {
+  console.error('❌ Profile Photo: Upload failed', error);
+  
+  // User-friendly error messages
+  let message = 'Failed to upload photo. ';
+  
+  if (error.message) {
+    if (error.message.includes('Network')) {
+      message += 'Please check your internet connection.';
+    } else if (error.message.includes('timeout')) {
+      message += 'Upload timed out. Please try a smaller image.';
+    } else if (error.message.includes('401') || error.message.includes('403')) {
+      message += 'You need to be logged in to upload images.';
+    } else {
+      message += error.message;
+    }
+  } else {
+    message += 'Please try again.';
+  }
+  
+  alert(message);
+};
+
+// Remove photo
+const removePhoto = () => {
+  localData.value.photo = { 
+    url: '', 
+    caption: '', 
+    alt: 'Profile Photo' 
+  };
+  localData.value.usePodsData = false;
+  updateComponent();
 };
 
 const handleBack = () => emit('close');
@@ -366,7 +353,7 @@ body.dark-mode .editor-section h4 {
 }
 
 .field-group {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .field-group:last-child {
@@ -528,50 +515,42 @@ body.dark-mode .photo-caption {
   object-fit: cover;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-top: 8px;
+  margin-bottom: 12px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-/* Upload Button */
-.upload-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 12px 16px;
-  background: #3b82f6;
+.remove-photo-btn {
+  padding: 6px 12px;
+  background: #ef4444;
   color: white;
   border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
+  border-radius: 4px;
+  font-size: 12px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.2s;
 }
 
-.upload-btn:hover:not(:disabled) {
-  background: #2563eb;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.25);
+.remove-photo-btn:hover {
+  background: #dc2626;
 }
 
-.upload-btn:active:not(:disabled) {
-  transform: translateY(0);
+/* Saving Indicator */
+.saving-indicator {
+  margin-top: 8px;
+  padding: 8px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #92400e;
+  text-align: center;
 }
 
-.upload-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.upload-btn svg {
-  flex-shrink: 0;
-}
-
-body.dark-mode .upload-btn {
-  background: #2563eb;
-}
-
-body.dark-mode .upload-btn:hover:not(:disabled) {
-  background: #1d4ed8;
+body.dark-mode .saving-indicator {
+  background: #451a03;
+  border-color: #92400e;
+  color: #fcd34d;
 }
 </style>
