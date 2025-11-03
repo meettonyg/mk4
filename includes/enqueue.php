@@ -54,11 +54,14 @@ function gmkb_is_builder_page() {
     // ROOT FIX: STRICT URL-based detection ONLY
     // This prevents loading on ANY other tools pages
     
+    // ROOT FIX: Add comprehensive debugging
+    $debug = defined('WP_DEBUG') && WP_DEBUG;
+    
     // Admin edit screen - check first
     if (is_admin()) {
         $screen = get_current_screen();
         if ($screen && $screen->post_type === 'mkcg' && $screen->base === 'post') {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
+            if ($debug) {
                 error_log('🔍 GMKB: Detected BUILDER page (admin edit screen)');
             }
             return true;
@@ -68,28 +71,52 @@ function gmkb_is_builder_page() {
     
     // Frontend: ONLY check URL pattern - no WordPress functions that could be unreliable
     if (!isset($_SERVER['REQUEST_URI'])) {
+        if ($debug) {
+            error_log('❌ GMKB: REQUEST_URI not set');
+        }
         return false;
     }
     
     $uri = $_SERVER['REQUEST_URI'];
     
-    // STRICT: Must contain /tools/media-kit/ OR be exactly /media-kit/ page
-    // This will NOT match /tools/topics/, /tools/questions/, /tools/offer-generator/
+    if ($debug) {
+        error_log('🔍 GMKB: gmkb_is_builder_page() checking URI: ' . $uri);
+    }
+    
+    // ROOT FIX: STRICT URL detection with explicit patterns
+    // Must match EXACTLY these URL patterns - no other tools pages
+    // 
+    // PATTERN EXPLANATION:
+    // - /tools/media-kit (with or without trailing slash, with or without query params)
+    // - /media-kit (with or without trailing slash, with or without query params)  
+    // - /guestify-media-kit (with or without trailing slash, with or without query params)
+    //
+    // ROOT FIX: Use explicit alternation for slash handling to avoid regex ambiguity
     $is_media_kit_url = (
-        preg_match('#/tools/media-kit/?($|\?|&)#', $uri) !== 0 ||
-        preg_match('#^/media-kit/?($|\?|&)#', $uri) !== 0 ||
-        preg_match('#^/guestify-media-kit/?($|\?|&)#', $uri) !== 0
+        // Pattern 1: /tools/media-kit OR /tools/media-kit/ (anywhere in URL)
+        preg_match('#/tools/media-kit($|/|\?|&)#', $uri) !== 0 ||
+        // Pattern 2: ^/media-kit OR ^/media-kit/ (start of URL)
+        preg_match('#^/media-kit($|/|\?|&)#', $uri) !== 0 ||
+        // Pattern 3: ^/guestify-media-kit OR ^/guestify-media-kit/ (start of URL)
+        preg_match('#^/guestify-media-kit($|/|\?|&)#', $uri) !== 0
     );
     
+    if ($debug) {
+        error_log('  - Pattern 1 (/tools/media-kit): ' . (preg_match('#/tools/media-kit($|/|\?|&)#', $uri) !== 0 ? 'MATCH' : 'NO MATCH'));
+        error_log('  - Pattern 2 (^/media-kit): ' . (preg_match('#^/media-kit($|/|\?|&)#', $uri) !== 0 ? 'MATCH' : 'NO MATCH'));
+        error_log('  - Pattern 3 (^/guestify-media-kit): ' . (preg_match('#^/guestify-media-kit($|/|\?|&)#', $uri) !== 0 ? 'MATCH' : 'NO MATCH'));
+        error_log('  - Final result: ' . ($is_media_kit_url ? 'TRUE (is builder page)' : 'FALSE (not builder page)'));
+    }
+    
     if (!$is_media_kit_url) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
+        if ($debug) {
             error_log('❌ GMKB: NOT a media kit URL, skipping. URI: ' . $uri);
         }
         return false;
     }
     
     // If we get here, the URL matches /tools/media-kit/ pattern
-    if (defined('WP_DEBUG') && WP_DEBUG) {
+    if ($debug) {
         error_log('✅ GMKB: Detected BUILDER page (URL pattern match): ' . $uri);
     }
     
@@ -184,16 +211,17 @@ function gmkb_filter_style_tag($tag, $handle, $href, $media) {
 // ===============================================
 // MAIN ENQUEUE HOOKS
 // ===============================================
-// ROOT FIX: WordPress media library must be enqueued at priority 10 (default)
-// Priority 999 is too late - scripts output in <head> before priority 999 runs
-add_action('wp_enqueue_scripts', 'gmkb_enqueue_media_library', 10);
-add_action('admin_enqueue_scripts', 'gmkb_enqueue_media_library', 10);
+// ROOT FIX v2: Media library AND main assets must be at same priority
+// Early priority (10) doesn't have full WordPress context, causing false negatives
+// Solution: Enqueue media library at same time as main assets (priority 999)
+add_action('wp_enqueue_scripts', 'gmkb_enqueue_all_assets', 999);
+add_action('admin_enqueue_scripts', 'gmkb_enqueue_all_assets', 999);
 
-// ROOT FIX: Main assets at priority 999 to ensure Pods is fully initialized
-// This prevents the race condition where Pods data is empty on page load
-// but available via REST API (which runs later)
-add_action('wp_enqueue_scripts', 'gmkb_enqueue_vue_only_assets', 999);
-add_action('admin_enqueue_scripts', 'gmkb_enqueue_vue_only_assets', 999);
+// ROOT FIX v2: Combined enqueue function at priority 999
+// - Enqueues BOTH media library and main Vue assets at same time
+// - Ensures gmkb_is_builder_page() check happens with full WordPress context
+// - Prevents timing issues where early priority (10) has incomplete initialization
+// - Still allows Pods data to be fully initialized before enqueuing
 
 // ROOT FIX: Enqueue design system CSS on frontend media kit pages
 add_action('wp_enqueue_scripts', 'gmkb_enqueue_frontend_assets', 20);
@@ -302,30 +330,61 @@ function gmkb_disable_auto_sizes_mediakit_only($add_auto_sizes) {
     return $add_auto_sizes;
 }
 
-// ROOT FIX: Data injection now handled via wp_add_inline_script in gmkb_enqueue_vue_only_assets
-// This ensures data is available BEFORE the Vue bundle executes
+// ROOT FIX v2: Combined function to enqueue both media library and main assets
+// This ensures URL detection happens at the same time, avoiding timing issues
 
 /**
- * Enqueue WordPress Media Library (Priority 10)
+ * Enqueue ALL assets (media library + Vue app) at priority 999
  * 
- * CRITICAL: Must run at default priority (10) so scripts output in <head>
- * Running at priority 999 is too late - wp_head() has already output by then
- * 
- * ROOT FIX: This function is separate from main assets to ensure media library
- * loads early enough for WordPress to include it in the page head
+ * ROOT FIX v2: Combines media library and main asset loading into single function
+ * This ensures gmkb_is_builder_page() is called at the same time for both,
+ * avoiding timing issues where WordPress context is not fully available at priority 10
  */
-function gmkb_enqueue_media_library() {
+function gmkb_enqueue_all_assets() {
+    // Check if this is a builder page
     if (!gmkb_is_builder_page()) {
-        return;
+        return; // Not a builder page, skip all enqueuing
     }
     
-    // ROOT FIX: Enqueue WordPress media library scripts
+    // ROOT FIX: Enqueue media library FIRST (before main assets)
+    gmkb_enqueue_media_library();
+    
+    // Then enqueue main Vue assets
+    gmkb_enqueue_vue_only_assets();
+}
+
+/**
+ * Enqueue WordPress Media Library
+ * 
+ * ROOT FIX v2: This function is now called by gmkb_enqueue_all_assets() at priority 999
+ * 
+ * Previously, we tried to enqueue at priority 10 to get scripts in <head>, but this
+ * caused timing issues where gmkb_is_builder_page() returned false due to incomplete
+ * WordPress initialization. Now we enqueue at priority 999 (same as Vue assets) to
+ * ensure reliable URL detection.
+ * 
+ * WordPress still includes the media library scripts in the page even when enqueued
+ * late, so this works correctly.
+ */
+function gmkb_enqueue_media_library() {
+    // ROOT FIX v2: This function is now called by gmkb_enqueue_all_assets()
+    // which already checked gmkb_is_builder_page(), so we don't check again
+    
+    // ROOT FIX: Always log that function was called for debugging
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('🔍 GMKB: gmkb_enqueue_media_library() called');
+        error_log('  - is_admin(): ' . (is_admin() ? 'TRUE' : 'FALSE'));
+        error_log('  - REQUEST_URI: ' . ($_SERVER['REQUEST_URI'] ?? 'NOT SET'));
+    }
+    
+    // ROOT FIX v2: Enqueue WordPress media library scripts
     // Required for useMediaUploader composable and all image upload functionality
-    // This must be called at priority 10 (default) so scripts output in <head>
+    // Called at priority 999 to ensure reliable URL detection (same as Vue assets)
     wp_enqueue_media();
     
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('✅ GMKB: WordPress media library enqueued at priority 10');
+        error_log('✅ GMKB: WordPress media library enqueued (called at priority 999)');
+        error_log('  - wp_script_is(media-views): ' . (wp_script_is('media-views', 'enqueued') ? 'TRUE' : 'FALSE'));
     }
 }
 
