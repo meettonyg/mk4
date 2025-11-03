@@ -25,27 +25,85 @@ import { ref } from 'vue';
 
 /**
  * Check if WordPress media API is available
- * ROOT FIX: Enhanced error messaging for better debugging
+ * ROOT FIX v4: Enhanced error messaging and retry mechanism
  */
 function isWordPressMediaAvailable() {
   const available = typeof window !== 'undefined' && 
          window.wp && 
-         window.wp.media;
+         window.wp.media &&
+         typeof window.wp.media === 'function';
   
-  // ROOT FIX: Add user-friendly error handling
   if (!available && typeof console !== 'undefined') {
-    console.error(
-      '❌ WordPress Media Library not available. ' +
-      'This usually means wp_enqueue_media() was not called. ' +
-      'Please contact support if this issue persists.'
-    );
+    // ROOT FIX v4: More detailed debugging
+    console.warn('⚠️ WordPress Media Library check:', {
+      'window': typeof window !== 'undefined',
+      'wp': typeof window !== 'undefined' && window.wp ? 'exists' : 'missing',
+      'wp.media': typeof window !== 'undefined' && window.wp && window.wp.media ? 'exists' : 'missing',
+      'wp.media type': typeof window !== 'undefined' && window.wp && window.wp.media ? typeof window.wp.media : 'N/A'
+    });
+    
+    // Check for specific missing components
+    if (typeof window !== 'undefined' && window.wp && !window.wp.media) {
+      console.error(
+        '❌ WordPress Media Library not initialized. ' +
+        'The scripts are loaded but wp.media is not available. ' +
+        'This usually means the media templates were not printed. ' +
+        'Checking for missing dependencies...'
+      );
+      
+      // Check for critical dependencies
+      const deps = {
+        'jQuery': typeof window.jQuery !== 'undefined',
+        'Backbone': typeof window.Backbone !== 'undefined',
+        'Underscore': typeof window._ !== 'undefined',
+        '_wpPluploadSettings': typeof window._wpPluploadSettings !== 'undefined'
+      };
+      
+      console.log('Media Library Dependencies:', deps);
+      
+      const missing = Object.entries(deps).filter(([key, value]) => !value).map(([key]) => key);
+      if (missing.length > 0) {
+        console.error('Missing dependencies:', missing.join(', '));
+      }
+    }
   }
   
   return available;
 }
 
 /**
+ * Wait for WordPress media to be available
+ * ROOT FIX v4: Retry mechanism for race conditions
+ */
+function waitForWordPressMedia(maxRetries = 10, retryDelay = 500) {
+  return new Promise((resolve, reject) => {
+    let retries = 0;
+    
+    const checkMedia = () => {
+      if (isWordPressMediaAvailable()) {
+        if (retries > 0) {
+          console.log(`✅ WordPress Media Library ready after ${retries} retries`);
+        }
+        resolve(true);
+      } else if (retries >= maxRetries) {
+        reject(new Error('WordPress Media Library failed to initialize after ' + maxRetries + ' attempts'));
+      } else {
+        retries++;
+        if (retries === 1) {
+          console.log('⏳ Waiting for WordPress Media Library to initialize...');
+        }
+        setTimeout(checkMedia, retryDelay);
+      }
+    };
+    
+    checkMedia();
+  });
+}
+
+/**
  * Open WordPress media library and return selected attachment
+ * 
+ * ROOT FIX v4: Added retry mechanism for race conditions
  * 
  * @param {Object} options - Media library options
  * @param {string} options.title - Modal title
@@ -54,13 +112,16 @@ function isWordPressMediaAvailable() {
  * @param {Object} options.library - Library filter options
  * @returns {Promise<Object|Array>} Selected attachment(s)
  */
-function openWordPressMedia(options = {}) {
-  return new Promise((resolve, reject) => {
-    if (!isWordPressMediaAvailable()) {
-      reject(new Error('WordPress media API is not available'));
-      return;
-    }
+async function openWordPressMedia(options = {}) {
+  // ROOT FIX v4: Wait for media library to be available
+  try {
+    await waitForWordPressMedia();
+  } catch (error) {
+    console.error('Failed to initialize media library:', error);
+    throw new Error('WordPress media API is not available');
+  }
 
+  return new Promise((resolve, reject) => {
     const defaults = {
       title: 'Select or Upload Media',
       buttonText: 'Use this media',
@@ -70,19 +131,31 @@ function openWordPressMedia(options = {}) {
 
     const settings = { ...defaults, ...options };
 
-    // Create media frame
-    const frame = window.wp.media({
-      title: settings.title,
-      button: {
-        text: settings.buttonText
-      },
-      multiple: settings.multiple,
-      library: settings.library
-    });
+    // ROOT FIX v4: Add try-catch for frame creation
+    let frame;
+    try {
+      // Create media frame
+      frame = window.wp.media({
+        title: settings.title,
+        button: {
+          text: settings.buttonText
+        },
+        multiple: settings.multiple,
+        library: settings.library
+      });
+    } catch (error) {
+      console.error('Failed to create media frame:', error);
+      reject(new Error('Failed to create media upload dialog. Please refresh and try again.'));
+      return;
+    }
+
+    // Track if selection was made
+    let selectionMade = false;
 
     // When an image is selected
     frame.on('select', () => {
       try {
+        selectionMade = true;
         const selection = frame.state().get('selection');
         
         if (settings.multiple) {
@@ -104,9 +177,8 @@ function openWordPressMedia(options = {}) {
 
     // Handle close without selection
     frame.on('close', () => {
-      // Check if anything was selected
-      const selection = frame.state().get('selection');
-      if (!selection || selection.length === 0) {
+      // Only reject if no selection was made
+      if (!selectionMade) {
         reject(new Error('No media selected'));
       }
     });
