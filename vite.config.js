@@ -50,10 +50,13 @@ export default defineConfig(({ mode }) => ({
       // External dependencies
       external: ['jquery', 'wp', 'lodash'],
       
-      // Tree shaking
+      // Tree shaking with XSS sanitizer preserved
       treeshake: {
         preset: 'recommended',
-        moduleSideEffects: false
+        moduleSideEffects: [
+          'src/services/XSSSanitizer.js',
+          './src/services/XSSSanitizer.js'
+        ]
       }
     },
     

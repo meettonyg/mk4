@@ -5,9 +5,16 @@
  * Each sanitization method has a single responsibility
  * Data flows to the correct sanitizer based on its type
  * 
+ * IMPORTANT: This module has side effects and must not be tree-shaken
+ * 
  * @package GMKB
  * @version 2.0.0
  */
+
+// Mark as side-effect to prevent tree-shaking
+if (typeof window !== 'undefined') {
+  window.__GMKB_XSS_SANITIZER_LOADED__ = true;
+}
 
 /**
  * Sanitize HTML string to prevent XSS

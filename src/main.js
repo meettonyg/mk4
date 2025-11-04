@@ -21,6 +21,9 @@ import '../design-system/index.css';
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 
+// CRITICAL FIX: Import XSS Sanitizer BEFORE anything else
+import XSSSanitizer from './services/XSSSanitizer.js';
+
 // ROOT FIX: Import optimized systems
 // P0 FIX #12: LazyComponents import - only preload function is used
 import { preloadCriticalComponents } from './services/LazyLoader.js';
@@ -62,15 +65,36 @@ window.GMKB = window.GMKB || {
   architecture: 'pure-vue',
   initialization: 'pending',
   stores: null, // Will be populated during initialization
-  services: {},
+  services: {
+    xss: XSSSanitizer,
+    security: XSSSanitizer // Alias for compatibility
+  },
   utils: { logger },
   error: null
 };
 
-// CRITICAL FIX: Import and initialize XSS Sanitizer early
-import XSSSanitizer from './services/XSSSanitizer.js';
-window.GMKB.services.xss = XSSSanitizer;
-window.GMKB.services.security = XSSSanitizer; // Alias for compatibility
+// CRITICAL FIX: Add debug command immediately
+window.GMKB.debugSanitization = (value, fieldName = '') => {
+  const xss = window.GMKB.services.xss;
+  if (!xss) {
+    console.error('XSS Sanitizer not available');
+    return;
+  }
+  
+  console.log('🔍 Sanitization Debug');
+  console.log('Input:', value);
+  console.log('Field Name:', fieldName || 'not provided');
+  console.log('Detected Type:', xss.detectDataType(value, fieldName));
+  console.log('Sanitized Result:', xss.sanitizeValue(value, fieldName));
+  
+  // Test all methods
+  console.log('\nMethod Results:');
+  console.log('- sanitizeText():', xss.sanitizeText(value));
+  console.log('- sanitizeURL():', xss.sanitizeURL(value));
+  console.log('- sanitizeHTML():', xss.sanitizeHTML(value));
+  
+  return xss.sanitizeValue(value, fieldName);
+};
 
 // ROOT FIX: showToast now imported from ToastService
 
@@ -293,10 +317,11 @@ async function initializeVue() {
     window.stylePresets = stylePresetsModule;
     console.log('✅ Style presets module exposed globally');
     
-    // Services
+    // Services - XSS sanitizer already set during namespace creation
     window.GMKB.services = {
+      ...window.GMKB.services, // Keep XSS sanitizer
       api: apiService,
-      security: securityService,
+      security: window.GMKB.services.xss || XSSSanitizer, // Ensure it's set
       keyboard: keyboardManager,
       performance: performanceMonitor,
       analytics: analytics,
@@ -390,29 +415,6 @@ async function initializeVue() {
     
     
     // Console API now handled by ConsoleAPI service (see ConsoleAPI.install above)
-    
-    // CRITICAL FIX: Add debug command for URL sanitization
-    window.GMKB.debugSanitization = (value, fieldName = '') => {
-      const xss = window.GMKB.services.xss;
-      if (!xss) {
-        console.error('XSS Sanitizer not available');
-        return;
-      }
-      
-      console.log('🔍 Sanitization Debug');
-      console.log('Input:', value);
-      console.log('Field Name:', fieldName || 'not provided');
-      console.log('Detected Type:', xss.detectDataType(value, fieldName));
-      console.log('Sanitized Result:', xss.sanitizeValue(value, fieldName));
-      
-      // Test all methods
-      console.log('\nMethod Results:');
-      console.log('- sanitizeText():', xss.sanitizeText(value));
-      console.log('- sanitizeURL():', xss.sanitizeURL(value));
-      console.log('- sanitizeHTML():', xss.sanitizeHTML(value));
-      
-      return xss.sanitizeValue(value, fieldName);
-    };
     
     console.log('✅ Vue Media Kit Builder initialized successfully');
     
