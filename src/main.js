@@ -67,6 +67,11 @@ window.GMKB = window.GMKB || {
   error: null
 };
 
+// CRITICAL FIX: Import and initialize XSS Sanitizer early
+import XSSSanitizer from './services/XSSSanitizer.js';
+window.GMKB.services.xss = XSSSanitizer;
+window.GMKB.services.security = XSSSanitizer; // Alias for compatibility
+
 // ROOT FIX: showToast now imported from ToastService
 
 /**
@@ -385,6 +390,29 @@ async function initializeVue() {
     
     
     // Console API now handled by ConsoleAPI service (see ConsoleAPI.install above)
+    
+    // CRITICAL FIX: Add debug command for URL sanitization
+    window.GMKB.debugSanitization = (value, fieldName = '') => {
+      const xss = window.GMKB.services.xss;
+      if (!xss) {
+        console.error('XSS Sanitizer not available');
+        return;
+      }
+      
+      console.log('🔍 Sanitization Debug');
+      console.log('Input:', value);
+      console.log('Field Name:', fieldName || 'not provided');
+      console.log('Detected Type:', xss.detectDataType(value, fieldName));
+      console.log('Sanitized Result:', xss.sanitizeValue(value, fieldName));
+      
+      // Test all methods
+      console.log('\nMethod Results:');
+      console.log('- sanitizeText():', xss.sanitizeText(value));
+      console.log('- sanitizeURL():', xss.sanitizeURL(value));
+      console.log('- sanitizeHTML():', xss.sanitizeHTML(value));
+      
+      return xss.sanitizeValue(value, fieldName);
+    };
     
     console.log('✅ Vue Media Kit Builder initialized successfully');
     

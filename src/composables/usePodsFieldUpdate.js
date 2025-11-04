@@ -6,17 +6,22 @@
  * 
  * ARCHITECTURE: 
  * - Event-driven (no polling)
- * - Promise-based async operations
+ * - Promise-based async operations  
  * - Automatic store synchronization
  * - Comprehensive error handling
  * - Debug logging support
  * 
- * @version 1.0.0
+ * ROOT FIX: Ensure system is ready before making API calls
+ * Uses SystemReadiness service to guarantee gmkbData is initialized
+ * No defensive coding - we KNOW the data exists when we use it
+ * 
+ * @version 3.0.0
  * @since Profile Photo Upload Implementation
  */
 
 import { ref } from 'vue';
 import { useMediaKitStore } from '../stores/mediaKit';
+import systemReadiness from '../services/SystemReadiness';
 
 /**
  * Composable for updating Pods fields
@@ -30,6 +35,9 @@ export function usePodsFieldUpdate() {
 
   /**
    * Update a single Pods field
+   * 
+   * ROOT FIX: Ensure system is ready before proceeding
+   * This guarantees window.gmkbData and all its properties are initialized
    * 
    * @param {number} postId - The post ID
    * @param {string} fieldName - The Pods field name
@@ -45,7 +53,11 @@ export function usePodsFieldUpdate() {
     lastError.value = null;
 
     try {
-      if (window.gmkbDebug) {
+      // ROOT FIX: Wait for system to be ready before proceeding
+      // This ensures window.gmkbData and apiSettings are fully initialized
+      await systemReadiness.waitForSystem('core');
+      
+      if (window.gmkbDebug || window.gmkbData?.debugMode) {
         console.log('🔄 usePodsFieldUpdate: Starting field update', {
           postId,
           fieldName,
@@ -59,37 +71,29 @@ export function usePodsFieldUpdate() {
         throw new Error('Post ID and field name are required');
       }
 
-      // Build endpoint URL
-      const endpoint = `${window.gmkbApiSettings.apiUrl}/pods/${postId}/field/${fieldName}`;
+      // ROOT FIX: Now we KNOW apiSettings exists because system is ready
+      // No defensive coding needed - the data is guaranteed to be there
+      const { apiUrl, nonce } = window.gmkbData.apiSettings;
+      const endpoint = `${apiUrl}/pods/${postId}/field/${fieldName}`;
       
-      if (window.gmkbDebug) {
-        console.log('📡 usePodsFieldUpdate: API endpoint', endpoint);
+      if (window.gmkbDebug || window.gmkbData?.debugMode) {
+        console.log('📡 usePodsFieldUpdate: Using endpoint', endpoint);
       }
 
-      // Prepare request
-      const requestOptions = {
+      // Make the REST API call
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-WP-Nonce': window.gmkbApiSettings.nonce
+          'X-WP-Nonce': nonce
         },
+        credentials: 'same-origin',
         body: JSON.stringify({
           value: value
         })
-      };
+      });
 
-      if (window.gmkbDebug) {
-        console.log('📤 usePodsFieldUpdate: Request options', {
-          method: requestOptions.method,
-          headers: requestOptions.headers,
-          bodySize: requestOptions.body.length
-        });
-      }
-
-      // Make API request
-      const response = await fetch(endpoint, requestOptions);
-
-      if (window.gmkbDebug) {
+      if (window.gmkbDebug || window.gmkbData?.debugMode) {
         console.log('📨 usePodsFieldUpdate: Response received', {
           status: response.status,
           statusText: response.statusText,
@@ -102,7 +106,7 @@ export function usePodsFieldUpdate() {
         const errorData = await response.json().catch(() => ({}));
         const errorMessage = errorData.message || `HTTP ${response.status}: ${response.statusText}`;
         
-        if (window.gmkbDebug) {
+        if (window.gmkbDebug || window.gmkbData?.debugMode) {
           console.error('❌ usePodsFieldUpdate: HTTP error', {
             status: response.status,
             message: errorMessage,
@@ -116,7 +120,7 @@ export function usePodsFieldUpdate() {
       // Parse response
       const result = await response.json();
 
-      if (window.gmkbDebug) {
+      if (window.gmkbDebug || window.gmkbData?.debugMode) {
         console.log('✅ usePodsFieldUpdate: Response parsed', {
           success: result.success,
           field: result.field,
@@ -134,7 +138,7 @@ export function usePodsFieldUpdate() {
         // Update the Pods data in the store
         store.podsData[fieldName] = result.value;
         
-        if (window.gmkbDebug) {
+        if (window.gmkbDebug || window.gmkbData?.debugMode) {
           console.log('🏪 usePodsFieldUpdate: Store updated', {
             field: fieldName,
             storeValue: store.podsData[fieldName]
@@ -142,7 +146,7 @@ export function usePodsFieldUpdate() {
         }
       }
 
-      if (window.gmkbDebug) {
+      if (window.gmkbDebug || window.gmkbData?.debugMode) {
         console.log('✅ usePodsFieldUpdate: Field update complete', {
           field: fieldName,
           savedValue: result.value
@@ -154,7 +158,7 @@ export function usePodsFieldUpdate() {
     } catch (error) {
       lastError.value = error.message;
       
-      if (window.gmkbDebug) {
+      if (window.gmkbDebug || window.gmkbData?.debugMode) {
         console.error('❌ usePodsFieldUpdate: Field update failed', {
           error: error.message,
           stack: error.stack

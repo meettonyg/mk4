@@ -1,11 +1,12 @@
 /**
  * P0 FIX #9: XSS Sanitization Service
  * 
- * Sanitizes user input to prevent XSS (Cross-Site Scripting) attacks
- * Critical for components that display user-generated content
+ * ROOT FIX: Proper data type detection and routing
+ * Each sanitization method has a single responsibility
+ * Data flows to the correct sanitizer based on its type
  * 
  * @package GMKB
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 /**
@@ -180,7 +181,8 @@ function removeEventHandlers(element) {
 
 /**
  * Sanitize plain text (escape HTML)
- * Use this for text that should not contain any HTML
+ * This function ONLY handles plain text that should never contain HTML
+ * URLs should NEVER come here - they go to sanitizeURL
  * 
  * @param {string} text - Text to sanitize
  * @returns {string} Escaped text
@@ -190,6 +192,8 @@ export function sanitizeText(text) {
     return '';
   }
 
+  // This function's single responsibility is HTML escaping
+  // It should NOT check for URLs - that's a caller's responsibility
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
@@ -197,6 +201,7 @@ export function sanitizeText(text) {
 
 /**
  * Sanitize URL to prevent XSS
+ * ROOT FIX: Properly validates URLs without breaking them
  * 
  * @param {string} url - URL to sanitize
  * @returns {string} Sanitized URL or empty string if dangerous
@@ -206,9 +211,9 @@ export function sanitizeURL(url) {
     return '';
   }
 
-  const trimmed = url.trim().toLowerCase();
+  const trimmed = url.trim();
 
-  // Block dangerous protocols
+  // Block dangerous protocols (check lowercase but preserve original case)
   const dangerousProtocols = [
     'javascript:',
     'data:',
@@ -217,27 +222,178 @@ export function sanitizeURL(url) {
     'about:'
   ];
 
-  if (dangerousProtocols.some(proto => trimmed.startsWith(proto))) {
+  const lowerCheck = trimmed.toLowerCase();
+  if (dangerousProtocols.some(proto => lowerCheck.startsWith(proto))) {
     console.warn('Blocked dangerous URL:', url);
     return '';
   }
 
-  // Allow only http, https, mailto, and relative URLs
-  if (!trimmed.startsWith('http://') && 
-      !trimmed.startsWith('https://') && 
-      !trimmed.startsWith('mailto:') &&
-      !trimmed.startsWith('/') &&
-      !trimmed.startsWith('#')) {
+  // Allow safe protocols and relative URLs
+  const safePatterns = [
+    /^https?:\/\//i,     // http:// or https://
+    /^mailto:/i,         // mailto:
+    /^tel:/i,            // tel:
+    /^\/[^\/]/,          // Relative URL starting with single /
+    /^#/,                // Hash anchor
+    /^[^:]+$/            // No protocol (relative path)
+  ];
+
+  if (!safePatterns.some(pattern => pattern.test(trimmed))) {
     console.warn('Blocked non-standard URL:', url);
     return '';
   }
 
+  // Return original URL with case preserved
   return url;
 }
 
 /**
+ * ROOT FIX: Detect data type and route to correct sanitizer
+ * This is the key architectural fix - proper type detection
+ * 
+ * @param {*} value - Value to detect type for
+ * @param {string} fieldName - Field name for context
+ * @returns {string} Detected type: 'url', 'html', 'text', or 'unknown'
+ */
+export function detectDataType(value, fieldName = '') {
+  if (!value || typeof value !== 'string') {
+    return 'unknown';
+  }
+  
+  const fieldLower = fieldName.toLowerCase();
+  
+  // CRITICAL FIX: Comprehensive field type mapping (single source of truth)
+  const fieldTypeMap = {
+    // URL fields - EXPANDED LIST
+    url: 'url',
+    href: 'url',
+    src: 'url',
+    link: 'url',
+    image: 'url',
+    photo: 'url',
+    guid: 'url',
+    avatar: 'url',
+    thumbnail: 'url',
+    website: 'url',
+    website_url: 'url',
+    '1_website': 'url',
+    '2_website': 'url',
+    social: 'url',
+    twitter: 'url',
+    facebook: 'url',
+    linkedin: 'url',
+    instagram: 'url',
+    youtube: 'url',
+    '1_twitter': 'url',
+    '1_facebook': 'url',
+    '1_linkedin': 'url',
+    '1_instagram': 'url',
+    guest_youtube: 'url',
+    podcast_url: 'url',
+    download_url: 'url',
+    media_url: 'url',
+    video_url: 'url',
+    audio_url: 'url',
+    headshot: 'url',
+    logo: 'url',
+    company_logo: 'url',
+    personal_brand_logo: 'url',
+    profile_photo: 'url',
+    video_intro: 'url',
+    
+    // HTML fields
+    content: 'html',
+    description: 'html',
+    bio: 'html',
+    biography: 'html',
+    biography_long: 'html',
+    body: 'html',
+    excerpt: 'html',
+    summary: 'html',
+    introduction: 'html',
+    
+    // Text fields
+    title: 'text',
+    name: 'text',
+    label: 'text',
+    email: 'text',
+    phone: 'text',
+    caption: 'text',
+    alt: 'text',
+    first_name: 'text',
+    last_name: 'text',
+    company: 'text',
+    position: 'text',
+    professional_title: 'text',
+    address: 'text',
+    location: 'text',
+    skype: 'text'
+  };
+  
+  // Check explicit field mapping first
+  // CRITICAL: Check exact match first, then partial match
+  if (fieldTypeMap[fieldLower]) {
+    return fieldTypeMap[fieldLower];
+  }
+  
+  // Check partial matches (for compound field names)
+  for (const [key, type] of Object.entries(fieldTypeMap)) {
+    if (fieldLower.includes(key)) {
+      return type;
+    }
+  }
+  
+  // Heuristic detection based on content
+  if (/^(https?:\/\/|\/|#|mailto:|tel:)/i.test(value.trim())) {
+    return 'url';
+  }
+  
+  if (/<[a-z][\s\S]*>/i.test(value)) {
+    return 'html';
+  }
+  
+  // Default to text for safety
+  return 'text';
+}
+
+/**
+ * ROOT FIX: Main sanitization entry point with proper type routing
+ * This ensures data goes through the correct sanitization pipeline
+ * 
+ * @param {*} value - Value to sanitize
+ * @param {string} fieldName - Field name for type detection
+ * @param {string} forceType - Force a specific type (optional)
+ * @returns {*} Sanitized value
+ */
+export function sanitizeValue(value, fieldName = '', forceType = null) {
+  if (value === null || value === undefined) {
+    return value;
+  }
+  
+  if (typeof value !== 'string') {
+    return value; // Non-string values pass through
+  }
+  
+  // Determine the type
+  const type = forceType || detectDataType(value, fieldName);
+  
+  // Route to appropriate sanitizer
+  switch (type) {
+    case 'url':
+      return sanitizeURL(value);
+    case 'html':
+      return sanitizeHTML(value);
+    case 'text':
+      return sanitizeText(value);
+    default:
+      // Unknown type - default to text sanitization for safety
+      return sanitizeText(value);
+  }
+}
+
+/**
  * Sanitize component data before rendering
- * Recursively sanitizes all string values in component data
+ * ROOT FIX: Uses proper type detection for each field
  * 
  * @param {Object} componentData - Component data object
  * @param {Object} options - Sanitization options
@@ -248,39 +404,38 @@ export function sanitizeComponentData(componentData, options = {}) {
     return componentData;
   }
 
-  const {
-    htmlFields = ['content', 'description', 'bio', 'text', 'body'],
-    urlFields = ['url', 'link', 'href', 'src', 'image'],
-    textFields = ['title', 'name', 'label', 'email', 'phone']
-  } = options;
-
   const sanitized = Array.isArray(componentData) ? [] : {};
 
   Object.entries(componentData).forEach(([key, value]) => {
-    const keyLower = key.toLowerCase();
-
-    // Recursively sanitize objects and arrays
-    if (value && typeof value === 'object') {
-      sanitized[key] = sanitizeComponentData(value, options);
-      return;
-    }
-
-    // Skip non-string values
-    if (typeof value !== 'string') {
-      sanitized[key] = value;
-      return;
-    }
-
-    // Sanitize based on field type
-    if (htmlFields.some(field => keyLower.includes(field))) {
-      sanitized[key] = sanitizeHTML(value);
-    } else if (urlFields.some(field => keyLower.includes(field))) {
-      sanitized[key] = sanitizeURL(value);
-    } else if (textFields.some(field => keyLower.includes(field))) {
-      sanitized[key] = sanitizeText(value);
+    // Handle nested objects recursively
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      // Special handling for known object structures
+      if (key === 'photo' || key === 'image') {
+        // Photo/image objects have specific field types
+        sanitized[key] = {
+          ...value,
+          url: sanitizeValue(value.url, 'url'),
+          src: sanitizeValue(value.src, 'src'),
+          guid: sanitizeValue(value.guid, 'guid'),
+          caption: sanitizeValue(value.caption, 'caption'),
+          alt: sanitizeValue(value.alt, 'alt'),
+          title: sanitizeValue(value.title, 'title')
+        };
+      } else {
+        // Recursive sanitization for other objects
+        sanitized[key] = sanitizeComponentData(value, options);
+      }
+    } else if (Array.isArray(value)) {
+      // Handle arrays
+      sanitized[key] = value.map(item => 
+        typeof item === 'object' ? sanitizeComponentData(item, options) : sanitizeValue(item, key)
+      );
+    } else if (typeof value === 'string') {
+      // ROOT FIX: Use proper type detection for string values
+      sanitized[key] = sanitizeValue(value, key);
     } else {
-      // Default: treat as plain text
-      sanitized[key] = sanitizeText(value);
+      // Non-string primitives pass through
+      sanitized[key] = value;
     }
   });
 
@@ -374,5 +529,7 @@ export default {
   sanitizeComponentData,
   sanitizeState,
   containsXSS,
-  stripHTML
+  stripHTML,
+  detectDataType,
+  sanitizeValue
 };

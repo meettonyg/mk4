@@ -2,9 +2,11 @@
   <div class="profile-photo-component" :class="componentClasses">
     <div v-if="photo" class="profile-photo-container">
       <img 
-        :src="photo.url" 
+        :src="sanitizedPhotoUrl" 
         :alt="photo.alt || 'Profile Photo'"
         class="profile-photo-image"
+        :class="imageClasses"
+        :style="imageStyles"
         loading="lazy"
       />
       <p v-if="photo.caption" class="profile-photo-caption">
@@ -59,12 +61,65 @@ const photo = computed(() => {
   return props.data?.photo || null;
 });
 
+// ROOT FIX: Fix URL encoding issues
+// WordPress sometimes returns HTML-encoded URLs, we need to decode them
+const sanitizedPhotoUrl = computed(() => {
+  if (!photo.value?.url) return '';
+  
+  let url = photo.value.url;
+  
+  // ROOT FIX: Decode HTML entities
+  // This fixes issues like &amp; becoming & and &#x2F; becoming /
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = url;
+  url = textarea.value;
+  
+  // ROOT FIX: Ensure URL is properly formatted
+  // Remove any double slashes except after protocol
+  url = url.replace(/([^:]\/)\/+/g, '$1');
+  
+  return url;
+});
+
 const componentClasses = computed(() => ({
   'has-photo': !!photo.value,
   'no-photo': !photo.value,
   'pods-source': props.data?.usePodsData && !!profilePhoto.value,
   'custom-source': !props.data?.usePodsData || !profilePhoto.value
 }));
+
+// ROOT FIX: Apply shape and size settings from component data
+const imageClasses = computed(() => {
+  const classes = [];
+  
+  // Apply shape class
+  const shape = props.data?.shape || 'circle';
+  classes.push(`photo-shape-${shape}`);
+  
+  // Apply size class
+  const size = props.data?.size || 'medium';
+  classes.push(`photo-size-${size}`);
+  
+  return classes.join(' ');
+});
+
+// ROOT FIX: Dynamic image styles based on size setting
+const imageStyles = computed(() => {
+  const styles = {};
+  const size = props.data?.size || 'medium';
+  
+  // Define size mappings
+  const sizeMap = {
+    'small': '150px',
+    'medium': '250px',
+    'large': '350px'
+  };
+  
+  styles.maxWidth = sizeMap[size] || '250px';
+  styles.maxHeight = sizeMap[size] || '250px';
+  
+  return styles;
+});
 </script>
 
 <style scoped>
@@ -81,14 +136,41 @@ const componentClasses = computed(() => ({
 }
 
 .profile-photo-image {
-  max-width: 300px;
   width: 100%;
   height: auto;
-  border-radius: 50%;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   object-fit: cover;
   aspect-ratio: 1 / 1;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* ROOT FIX: Shape variations */
+.profile-photo-image.photo-shape-circle {
+  border-radius: 50%;
+}
+
+.profile-photo-image.photo-shape-square {
+  border-radius: 0;
+}
+
+.profile-photo-image.photo-shape-rounded {
+  border-radius: 16px;
+}
+
+/* ROOT FIX: Size variations (these are overridden by inline styles) */
+.profile-photo-image.photo-size-small {
+  max-width: 150px;
+  max-height: 150px;
+}
+
+.profile-photo-image.photo-size-medium {
+  max-width: 250px;
+  max-height: 250px;
+}
+
+.profile-photo-image.photo-size-large {
+  max-width: 350px;
+  max-height: 350px;
 }
 
 .profile-photo-image:hover {

@@ -724,8 +724,9 @@ export const useMediaKitStore = defineStore('mediaKit', {
     // Component CRUD Operations
     addComponent(componentData) {
       // P0 FIX #8: Sanitize component data to prevent XSS
-      if (window.GMKB?.services?.security) {
-        componentData = window.GMKB.services.security.sanitizeComponentData(componentData);
+      // CRITICAL FIX: Use XSS sanitizer with proper type detection
+      if (window.GMKB?.services?.xss) {
+        componentData = window.GMKB.services.xss.sanitizeComponentData(componentData);
       }
       
       // Issue #14 FIX: Use centralized validation from UnifiedComponentRegistry
@@ -873,8 +874,9 @@ export const useMediaKitStore = defineStore('mediaKit', {
 
     updateComponent(componentId, updates) {
       // P0 FIX #8: Sanitize updates to prevent XSS
-      if (window.GMKB?.services?.security) {
-        updates = window.GMKB.services.security.sanitizeComponentData(updates);
+      // CRITICAL FIX: Use XSS sanitizer with proper type detection
+      if (window.GMKB?.services?.xss) {
+        updates = window.GMKB.services.xss.sanitizeComponentData(updates);
       }
       
       if (this.components[componentId]) {
@@ -1089,8 +1091,16 @@ export const useMediaKitStore = defineStore('mediaKit', {
           this.components = {};
         } else {
           // CRITICAL FIX: Validate and fix component settings on load
+          // ROOT FIX: Sanitize component data when loading to prevent XSS
           const validatedComponents = {};
           Object.entries(savedState.components).forEach(([id, component]) => {
+            // Sanitize component data if XSS sanitizer is available
+            if (window.GMKB?.services?.xss && component.data) {
+              component.data = window.GMKB.services.xss.sanitizeComponentData(component.data);
+            }
+            if (window.GMKB?.services?.xss && component.props) {
+              component.props = window.GMKB.services.xss.sanitizeComponentData(component.props);
+            }
             // Ensure component has valid settings structure
             if (!component.settings || Array.isArray(component.settings) || typeof component.settings !== 'object') {
               console.warn(`⚠️ Component ${id} has invalid settings, applying defaults`);

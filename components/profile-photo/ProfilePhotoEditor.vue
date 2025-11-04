@@ -251,7 +251,7 @@ const handleUploadPhoto = async () => {
       return; // User cancelled
     }
     
-    if (window.gmkbDebug) {
+    if (window.gmkbDebug || window.gmkbData?.debugMode) {
       console.log('📸 Profile Photo: Image uploaded via REST API', {
         id: attachment.id,
         url: attachment.url
@@ -260,13 +260,13 @@ const handleUploadPhoto = async () => {
     
     // Step 2: Save attachment ID to Pods field
     try {
-      const postId = store.postId;
+      const postId = store.postId || window.gmkbData?.postId;
       if (!postId) {
         console.error('❌ Profile Photo: No post ID available');
         throw new Error('Post ID not available');
       }
       
-      if (window.gmkbDebug) {
+      if (window.gmkbDebug || window.gmkbData?.debugMode) {
         console.log('💾 Profile Photo: Saving to Pods field', {
           postId,
           fieldName: 'profile_photo',
@@ -274,11 +274,56 @@ const handleUploadPhoto = async () => {
         });
       }
       
-      // Save the attachment ID to the profile_photo Pods field
-      await updatePodsField(postId, 'profile_photo', attachment.id);
+      // ROOT FIX: Save the attachment ID (not URL) to the profile_photo Pods field
+      // Pods expects the attachment ID for image fields
+      // Try multiple field names as different Pods configurations may use different names
+      const fieldNamesToTry = ['profile_photo', 'profile_image', 'headshot'];
+      let fieldSaved = false;
+      let lastError = null;
       
-      if (window.gmkbDebug) {
+      for (const fieldName of fieldNamesToTry) {
+        try {
+          await updatePodsField(postId, fieldName, attachment.id);
+          fieldSaved = true;
+          if (window.gmkbDebug || window.gmkbData?.debugMode) {
+            console.log(`✅ Profile Photo: Saved to Pods field '${fieldName}' successfully`);
+          }
+          break; // Success, stop trying other field names
+        } catch (fieldError) {
+          lastError = fieldError;
+          if (window.gmkbDebug || window.gmkbData?.debugMode) {
+            console.log(`⚠️ Profile Photo: Field '${fieldName}' failed:`, fieldError.message);
+          }
+          // Continue to try next field name
+        }
+      }
+      
+      if (!fieldSaved) {
+        throw lastError || new Error('Could not save to any known Pods field');
+      }
+      
+      if (window.gmkbDebug || window.gmkbData?.debugMode) {
         console.log('✅ Profile Photo: Saved to Pods successfully');
+      }
+      
+      // ROOT FIX: Update Pods data in store to trigger reactivity
+      // This ensures the preview updates immediately
+      if (store.podsData && fieldSaved) {
+        // Update all potential field names to ensure consistency
+        const photoData = {
+          ID: attachment.id,
+          guid: attachment.url,
+          url: attachment.url,
+          post_excerpt: attachment.caption || '',
+          post_title: attachment.alt || 'Profile Photo'
+        };
+        
+        // Update all potential field names
+        fieldNamesToTry.forEach(field => {
+          if (store.podsData.hasOwnProperty(field) || field === 'profile_photo') {
+            store.podsData[field] = photoData;
+          }
+        });
       }
       
       // Step 3: Update local state to show custom photo
@@ -293,17 +338,27 @@ const handleUploadPhoto = async () => {
       // Since we saved to Pods, enable Pods data usage
       localData.value.usePodsData = true;
       
-      // Step 4: Update component state
-      updateComponent();
+      // Step 4: Update component state immediately
+      // ROOT FIX: Don't use debounce for upload actions - update immediately
+      const dataToSave = {
+        photo: effectivePhoto.value,
+        usePodsData: localData.value.usePodsData,
+        shape: localData.value.shape,
+        size: localData.value.size
+      };
       
-      if (window.gmkbDebug) {
-        console.log('✅ Profile Photo: Upload complete');
+      store.updateComponent(props.componentId, { data: dataToSave });
+      store.isDirty = true;
+      
+      if (window.gmkbDebug || window.gmkbData?.debugMode) {
+        console.log('✅ Profile Photo: Upload complete, component updated');
       }
       
     } catch (saveError) {
       console.error('❌ Profile Photo: Failed to save to Pods', saveError);
       
-      // Still update local state even if Pods save fails
+      // ROOT FIX: Still update local state even if Pods save fails
+      // Use the uploaded image directly without Pods
       localData.value.photo = {
         url: attachment.url,
         caption: attachment.caption || '',
@@ -312,17 +367,39 @@ const handleUploadPhoto = async () => {
         source: 'custom'
       };
       localData.value.usePodsData = false; // Don't use Pods data if save failed
-      updateComponent();
+      
+      // Update component immediately
+      const dataToSave = {
+        photo: localData.value.photo,
+        usePodsData: false,
+        shape: localData.value.shape,
+        size: localData.value.size
+      };
+      
+      store.updateComponent(props.componentId, { data: dataToSave });
+      store.isDirty = true;
       
       // Show user-friendly error
-      alert('Image selected but could not be saved to your profile. Please try again.');
+      const errorMessage = 'Image uploaded but could not be saved to your profile. The image will be used for this media kit only.';
+      // Use ToastService if available
+      if (window.GMKB?.services?.toast) {
+        window.GMKB.services.toast.show(errorMessage, 'warning');
+      } else {
+        alert(errorMessage);
+      }
     }
     
   } catch (error) {
     console.error('❌ Profile Photo: Upload failed', error);
     // jQuery-Free: Better error handling for REST API errors
     if (error.message && !error.message.includes('No file selected')) {
-      alert('Failed to upload photo: ' + error.message);
+      const errorMessage = 'Failed to upload photo: ' + error.message;
+      // Use ToastService if available
+      if (window.GMKB?.services?.toast) {
+        window.GMKB.services.toast.show(errorMessage, 'error');
+      } else {
+        alert(errorMessage);
+      }
     }
   }
 };
