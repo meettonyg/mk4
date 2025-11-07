@@ -49,37 +49,108 @@
         </div>
       </div>
       
-      <div class="field-group">
+      <!-- TEXT ALIGNMENT: Only for text components -->
+      <div v-if="isTextComponent" class="field-group">
         <label>
-          Alignment
-          <Tooltip text="Position the component horizontally: Left, Center, or Right. Only affects components that don't fill the full width." position="right" />
+          Text Alignment
+          <Tooltip text="Align text content within the component: Left, Center, Right, or Justify." position="right" />
+        </label>
+        <div class="alignment-buttons">
+          <button
+            :class="['alignment-btn', { active: componentSettings.advanced.layout.textAlign === 'left' }]"
+            @click="updateLayout('textAlign', 'left')"
+            title="Align Text Left"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="4" y1="6" x2="20" y2="6" stroke-linecap="round"/>
+              <line x1="4" y1="10" x2="16" y2="10" stroke-linecap="round"/>
+              <line x1="4" y1="14" x2="20" y2="14" stroke-linecap="round"/>
+              <line x1="4" y1="18" x2="14" y2="18" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <button
+            :class="['alignment-btn', { active: componentSettings.advanced.layout.textAlign === 'center' }]"
+            @click="updateLayout('textAlign', 'center')"
+            title="Center Text"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="6" y1="6" x2="18" y2="6" stroke-linecap="round"/>
+              <line x1="8" y1="10" x2="16" y2="10" stroke-linecap="round"/>
+              <line x1="6" y1="14" x2="18" y2="14" stroke-linecap="round"/>
+              <line x1="9" y1="18" x2="15" y2="18" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <button
+            :class="['alignment-btn', { active: componentSettings.advanced.layout.textAlign === 'right' }]"
+            @click="updateLayout('textAlign', 'right')"
+            title="Align Text Right"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="4" y1="6" x2="20" y2="6" stroke-linecap="round"/>
+              <line x1="8" y1="10" x2="20" y2="10" stroke-linecap="round"/>
+              <line x1="4" y1="14" x2="20" y2="14" stroke-linecap="round"/>
+              <line x1="10" y1="18" x2="20" y2="18" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <button
+            :class="['alignment-btn', { active: componentSettings.advanced.layout.textAlign === 'justify' }]"
+            @click="updateLayout('textAlign', 'justify')"
+            title="Justify Text"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="4" y1="6" x2="20" y2="6" stroke-linecap="round"/>
+              <line x1="4" y1="10" x2="20" y2="10" stroke-linecap="round"/>
+              <line x1="4" y1="14" x2="20" y2="14" stroke-linecap="round"/>
+              <line x1="4" y1="18" x2="20" y2="18" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- OBJECT POSITIONING: For visual/image components -->
+      <div v-if="isVisualComponent" class="field-group">
+        <label>
+          Object Position
+          <Tooltip text="Position the image/object horizontally: Left, Center, or Right within its container." position="right" />
         </label>
         <div class="alignment-buttons">
           <button
             :class="['alignment-btn', { active: componentSettings.advanced.layout.alignment === 'left' }]"
             @click="updateLayout('alignment', 'left')"
-            title="Align Left"
+            title="Position Left"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M3 6h18M3 12h12M3 18h18" stroke-width="2" stroke-linecap="round"/>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <!-- Left border line -->
+              <line x1="3" y1="4" x2="3" y2="20" stroke-linecap="round"/>
+              <!-- Box positioned left -->
+              <rect x="6" y="8" width="10" height="8" rx="1" fill="currentColor" opacity="0.3"/>
+              <rect x="6" y="8" width="10" height="8" rx="1" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
           <button
             :class="['alignment-btn', { active: componentSettings.advanced.layout.alignment === 'center' }]"
             @click="updateLayout('alignment', 'center')"
-            title="Align Center"
+            title="Position Center"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M3 6h18M7 12h10M3 18h18" stroke-width="2" stroke-linecap="round"/>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <!-- Center line -->
+              <line x1="12" y1="4" x2="12" y2="20" stroke-linecap="round" stroke-dasharray="2,2" opacity="0.5"/>
+              <!-- Box positioned center -->
+              <rect x="7" y="8" width="10" height="8" rx="1" fill="currentColor" opacity="0.3"/>
+              <rect x="7" y="8" width="10" height="8" rx="1" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
           <button
             :class="['alignment-btn', { active: componentSettings.advanced.layout.alignment === 'right' }]"
             @click="updateLayout('alignment', 'right')"
-            title="Align Right"
+            title="Position Right"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M3 6h18M9 12h12M3 18h18" stroke-width="2" stroke-linecap="round"/>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <!-- Right border line -->
+              <line x1="21" y1="4" x2="21" y2="20" stroke-linecap="round"/>
+              <!-- Box positioned right -->
+              <rect x="8" y="8" width="10" height="8" rx="1" fill="currentColor" opacity="0.3"/>
+              <rect x="8" y="8" width="10" height="8" rx="1" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
         </div>
@@ -169,6 +240,46 @@ const entity = computed(() => {
   }
 });
 
+// ROOT FIX: Determine if component has text content (not just visual/image)
+const isTextComponent = computed(() => {
+  if (props.mode === 'section') return false;
+  
+  const component = entity.value;
+  if (!component) return false;
+  
+  const textComponents = [
+    'biography',
+    'topics',
+    'contact',
+    'speaking-topics',
+    'testimonials',
+    'cta',
+    'custom-text',
+    'heading'
+  ];
+  
+  return textComponents.includes(component.type?.toLowerCase());
+});
+
+// ROOT FIX: Determine if component is visual/image-based
+const isVisualComponent = computed(() => {
+  if (props.mode === 'section') return false;
+  
+  const component = entity.value;
+  if (!component) return false;
+  
+  const visualComponents = [
+    'profile-photo',
+    'hero',
+    'logo',
+    'gallery',
+    'image',
+    'video'
+  ];
+  
+  return visualComponents.includes(component.type?.toLowerCase());
+});
+
 // Get component/section settings from store with proper defaults
 const componentSettings = computed(() => {
   const settings = entity.value?.settings;
@@ -186,7 +297,11 @@ const componentSettings = computed(() => {
   return {
     style: settings.style || defaults.style,
     advanced: {
-      layout: settings.advanced?.layout || defaults.advanced.layout,
+      layout: {
+        ...defaults.advanced.layout,
+        ...(settings.advanced?.layout || {}),
+        textAlign: settings.advanced?.layout?.textAlign || 'left' // ROOT FIX: Add text alignment
+      },
       responsive: settings.advanced?.responsive || defaults.advanced.responsive,
       custom: settings.advanced?.custom || defaults.advanced.custom
     }

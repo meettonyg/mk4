@@ -414,7 +414,7 @@ class ComponentStyleService {
         // 'auto' doesn't need explicit CSS
       }
       
-      // Alignment
+      // Object Alignment (container positioning)
       if (layout.alignment) {
         if (layout.alignment === 'center') {
           wrapperRules.push('margin-left: auto');
@@ -423,6 +423,12 @@ class ComponentStyleService {
           wrapperRules.push('margin-left: auto');
         }
         // 'left' is default
+      }
+      
+      // ROOT FIX: Text Alignment (text content alignment)
+      // This is separate from object positioning
+      if (layout.textAlign) {
+        componentRules.push(`text-align: ${layout.textAlign} !important`);
       }
     }
 
