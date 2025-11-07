@@ -21,7 +21,6 @@
 
 import { ref } from 'vue';
 import { useMediaKitStore } from '../stores/mediaKit';
-import systemReadiness from '../services/SystemReadiness';
 
 /**
  * Composable for updating Pods fields
@@ -36,8 +35,8 @@ export function usePodsFieldUpdate() {
   /**
    * Update a single Pods field
    * 
-   * ROOT FIX: Ensure system is ready before proceeding
-   * This guarantees window.gmkbData and all its properties are initialized
+   * ROOT FIX: System is always ready at this point - no need to wait
+   * The composable is only used after full application initialization
    * 
    * @param {number} postId - The post ID
    * @param {string} fieldName - The Pods field name
@@ -53,9 +52,9 @@ export function usePodsFieldUpdate() {
     lastError.value = null;
 
     try {
-      // ROOT FIX: Wait for system to be ready before proceeding
-      // This ensures window.gmkbData and apiSettings are fully initialized
-      await systemReadiness.waitForSystem('core');
+      // ROOT FIX: No system wait needed - we're already initialized
+      // This composable only runs after full app initialization
+      // Removed: await systemReadiness.waitForSystem('core');
       
       if (window.gmkbDebug || window.gmkbData?.debugMode) {
         console.log('🔄 usePodsFieldUpdate: Starting field update', {
@@ -71,9 +70,17 @@ export function usePodsFieldUpdate() {
         throw new Error('Post ID and field name are required');
       }
 
-      // ROOT FIX: Now we KNOW apiSettings exists because system is ready
-      // No defensive coding needed - the data is guaranteed to be there
+      // ROOT FIX: Check that gmkbData exists
+      if (!window.gmkbData || !window.gmkbData.apiSettings) {
+        throw new Error('System not initialized - gmkbData not available');
+      }
+      
       const { apiUrl, nonce } = window.gmkbData.apiSettings;
+      
+      if (!apiUrl || !nonce) {
+        throw new Error('API settings incomplete - missing apiUrl or nonce');
+      }
+      
       const endpoint = `${apiUrl}/pods/${postId}/field/${fieldName}`;
       
       if (window.gmkbDebug || window.gmkbData?.debugMode) {

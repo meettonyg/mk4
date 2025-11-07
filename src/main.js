@@ -59,19 +59,35 @@ import storageService from './services/StorageService.js';
 let apiService;
 let vueApp = null;
 
-// ROOT FIX: Create GMKB namespace immediately to prevent undefined errors
-window.GMKB = window.GMKB || {
-  version: '4.0.0-pure-vue',
-  architecture: 'pure-vue',
-  initialization: 'pending',
-  stores: null, // Will be populated during initialization
-  services: {
-    xss: XSSSanitizer,
-    security: XSSSanitizer // Alias for compatibility
-  },
-  utils: { logger },
-  error: null
-};
+// ARCHITECTURE FIX: Initialization guard to prevent race conditions
+// Phase 1 Compliance: Event-Driven Initialization (no double execution)
+// CRITICAL: Must be on window to prevent duplicate script loads from re-initializing
+window.gmkbIsInitialized = window.gmkbIsInitialized || false;
+console.log('🐛 DEBUG: Guard initialized, value:', window.gmkbIsInitialized);
+
+// ARCHITECTURE FIX: Robust namespace initialization
+// Phase 1 Compliance: No global object sniffing, declarative pattern
+// Ensures .services always exists even if GMKB pre-exists
+window.GMKB = window.GMKB || {};
+console.log('🐛 DEBUG: GMKB exists:', !!window.GMKB, 'services exists:', !!window.GMKB.services);
+
+// Merge defaults ensuring sub-objects are always defined
+Object.assign(window.GMKB, {
+  version: window.GMKB.version || '4.0.0-pure-vue',
+  architecture: window.GMKB.architecture || 'pure-vue',
+  initialization: window.GMKB.initialization || 'pending',
+  stores: window.GMKB.stores || null,
+  services: window.GMKB.services || {}, // CRITICAL: Always ensure services exists
+  utils: window.GMKB.utils || { logger },
+  error: window.GMKB.error || null
+});
+console.log('🐛 DEBUG: After Object.assign, services:', window.GMKB.services, 'type:', typeof window.GMKB.services);
+
+// CRITICAL: Explicitly ensure XSS services exist
+// This prevents "Cannot read properties of undefined" errors
+window.GMKB.services.xss = window.GMKB.services.xss || XSSSanitizer;
+window.GMKB.services.security = window.GMKB.services.security || XSSSanitizer;
+console.log('🐛 DEBUG: After XSS setup, services.xss:', !!window.GMKB.services.xss, 'services.security:', !!window.GMKB.services.security);
 
 // CRITICAL FIX: Add debug command immediately
 window.GMKB.debugSanitization = (value, fieldName = '') => {
@@ -96,6 +112,11 @@ window.GMKB.debugSanitization = (value, fieldName = '') => {
   return xss.sanitizeValue(value, fieldName);
 };
 
+console.log('🐛 DEBUG: === NAMESPACE SETUP COMPLETE ===');
+console.log('🐛 DEBUG: Final window.GMKB:', window.GMKB);
+console.log('🐛 DEBUG: Final window.GMKB.services:', window.GMKB.services);
+console.log('🐛 DEBUG: Has xss?', !!window.GMKB.services?.xss);
+
 // ROOT FIX: showToast now imported from ToastService
 
 /**
@@ -110,6 +131,11 @@ window.GMKB.debugSanitization = (value, fieldName = '') => {
  * 8. Mount Vue app (stores already ready)
  */
 async function initializeVue() {
+  console.log('🐛 DEBUG: === initializeVue() START ===');
+  console.log('🐛 DEBUG: window.GMKB at start:', window.GMKB);
+  console.log('🐛 DEBUG: window.GMKB.services at start:', window.GMKB.services);
+  console.log('🐛 DEBUG: Guard value:', window.gmkbIsInitialized);
+  
   try {
     console.log('3️⃣ Creating Vue application...');
     
@@ -317,9 +343,16 @@ async function initializeVue() {
     window.stylePresets = stylePresetsModule;
     console.log('✅ Style presets module exposed globally');
     
-    // Services - XSS sanitizer already set during namespace creation
-    window.GMKB.services = {
-      ...window.GMKB.services, // Keep XSS sanitizer
+    console.log('🐛 DEBUG: Before service assignment');
+    console.log('🐛 DEBUG: window.GMKB:', window.GMKB);
+    console.log('🐛 DEBUG: window.GMKB.services:', window.GMKB.services);
+    console.log('🐛 DEBUG: typeof window.GMKB.services:', typeof window.GMKB.services);
+    console.log('🐛 DEBUG: window.GMKB.services.xss:', window.GMKB.services?.xss);
+    
+    // ARCHITECTURE FIX: Safe service assignment using Object.assign
+    // Phase 2 Compliance: Simplicity first, no dangerous spread operators
+    // XSS sanitizer already set during namespace creation
+    Object.assign(window.GMKB.services, {
       api: apiService,
       security: window.GMKB.services.xss || XSSSanitizer, // Ensure it's set
       keyboard: keyboardManager,
@@ -332,7 +365,7 @@ async function initializeVue() {
       componentStyle: componentStyleService,
       stylePresets: stylePresetsModule,
       storage: storageService // ROOT FIX: Centralized localStorage access
-    };
+    });
     
     // Utility functions
     window.GMKB.utils = {
@@ -466,6 +499,20 @@ async function initializeVue() {
  * 7. Initialize theme
  */
 async function initialize() {
+  console.log('🐛 DEBUG: initialize() called, guard value:', window.gmkbIsInitialized);
+  console.log('🐛 DEBUG: window.GMKB.services at start of initialize():', window.GMKB.services);
+  
+  // ARCHITECTURE FIX: Initialization guard - prevents race conditions
+  // Phase 1 Compliance: Event-driven, single execution only
+  // CRITICAL: Check GLOBAL flag to prevent duplicate script loads
+  if (window.gmkbIsInitialized) {
+    console.warn('⚠️ GMKB: Prevented duplicate initialization attempt (duplicate script detected)');
+    console.log('🐛 DEBUG: Blocked second initialization, returning early');
+    return;
+  }
+  window.gmkbIsInitialized = true;
+  console.log('🐛 DEBUG: Set guard to true, proceeding with initialization');
+  
   console.log('🚀 Initializing Media Kit Builder v4.0 - Pure Vue...');
   
   try {
@@ -582,7 +629,5 @@ if (document.readyState === 'loading') {
   setTimeout(initialize, 0);
 }
 
-// ROOT FIX: Clean exports - only what's truly needed
-export {
-  showToast  // From ToastService, commonly used
-};
+// ROOT FIX: No exports needed - everything accessible via window.GMKB
+// Removed: export { showToast } - this was causing Vite to replace window.GMKB

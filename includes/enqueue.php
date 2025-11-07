@@ -408,6 +408,7 @@ function gmkb_enqueue_vue_only_assets() {
         $inline_script .= 'console.log("  - Themes:", window.gmkbData.themes ? window.gmkbData.themes.length : 0);';
         $inline_script .= 'console.log("  - Has saved state:", !!window.gmkbData.savedState);';
         $inline_script .= 'console.log("  - Pods data:", Object.keys(window.gmkbData.pods_data || {}).length + " fields");';
+        $inline_script .= 'console.log("  - Deprecation config:", Object.keys(window.gmkbData.deprecationConfig || {}).length + " deprecated components");';
         $inline_script .= 'console.log("  - Full data:", window.gmkbData);';
         $inline_script .= 'if (!window.gmkbData.user.isLoggedIn) { console.log("📝 CARRD MODE: You can edit this media kit, but need to login to save changes"); }';
     }
@@ -625,6 +626,10 @@ function gmkb_prepare_data_for_injection() {
     
     // STEP 10: Build final data array
     // ROOT FIX: Include pods_data if we managed to load it, otherwise Vue will fetch via REST API
+    
+    // ROOT FIX: Load deprecation configuration (empty by default, can be extended via filter)
+    $deprecation_config = apply_filters('gmkb_deprecation_config', array());
+    
     $gmkb_data = array(
         'ajaxUrl'           => admin_url('admin-ajax.php'),
         'nonce'             => $nonce,
@@ -643,6 +648,9 @@ function gmkb_prepare_data_for_injection() {
         'themes'            => $themes,
         'savedState'        => $saved_state,
         'pods_data'         => $pods_data, // ROOT FIX: Include if available, empty array if not
+        // ROOT FIX: Inject deprecation configuration for ComponentDeprecationManager
+        // Empty array by default - add deprecated components via 'gmkb_deprecation_config' filter
+        'deprecationConfig' => $deprecation_config,
         // ROOT FIX: Inject API Configuration for usePodsFieldUpdate composable
         'apiSettings'       => array(
             'apiUrl' => esc_url_raw($rest_url . 'gmkb/v2'),
@@ -668,6 +676,7 @@ function gmkb_prepare_data_for_injection() {
         error_log('  - Themes: ' . $theme_count);
         error_log('  - Has saved state: ' . ($saved_state ? 'YES' : 'NO'));
         error_log('  - Pods data: ' . count($pods_data) . ' fields loaded');
+        error_log('  - Deprecation config: ' . count($deprecation_config) . ' deprecated components');
         error_log('  - Data keys: ' . implode(', ', array_keys($gmkb_data)));
         
         // Critical check: Verify componentRegistry is not empty
