@@ -20,5 +20,14 @@
   },
   "podsFields": [
     "personal_brand_logo"
-  ]
+  ],
+  "defaultProps": {
+    "logo": {
+      "url": "",
+      "alt": "Personal Brand Logo"
+    },
+    "usePodsData": true,
+    "size": "medium",
+    "alignment": "center"
+  }
 }

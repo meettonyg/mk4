@@ -133,7 +133,7 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 const store = useMediaKitStore();
-const { podsData } = usePodsData();
+const { personalBrandLogo, allData: podsData } = usePodsData();
 const { selectLogo, isUploading } = useMediaUploader();
 const { updatePodsField, isUpdating: isSavingToPods } = usePodsFieldUpdate();
 

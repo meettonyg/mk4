@@ -1374,6 +1374,12 @@ export const useMediaKitStore = defineStore('mediaKit', {
           uiStore.closeSidebarEditor();
         }
         
+        // ROOT FIX: If this was the section being edited, close the section editor
+        if (uiStore.editingSectionId === sectionId) {
+          console.log(`🔧 Closing section editor for deleted section: ${sectionId}`);
+          uiStore.closeSidebarEditor();
+        }
+        
         // Clear selection if any selected components are being deleted
         if (uiStore.selectedComponentIds && Array.isArray(uiStore.selectedComponentIds)) {
           const selectedToDelete = uiStore.selectedComponentIds.filter(id => 
@@ -1394,8 +1400,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
         // Remove the section itself
         this.sections.splice(index, 1);
         
-        // ROOT FIX: If this was the last section and we're in section editing mode, close the editor
-        if (this.sections.length === 0 && uiStore.editingSectionId === sectionId) {
+        // ROOT FIX: If this was the last section, close any section-related sidebar
+        if (this.sections.length === 0 && uiStore.sidebarMode === 'section') {
           console.log('🔧 Closing section editor after deleting last section');
           uiStore.closeSidebarEditor();
         }
@@ -2591,6 +2597,11 @@ export const useMediaKitStore = defineStore('mediaKit', {
         sections: this.sections.length
       };
       
+      // ROOT FIX: Clear UI state FIRST (closes sidebar before components disappear)
+      const uiStore = useUIStore();
+      uiStore.resetUIState();
+      console.log('✅ UI state reset (sidebar closed)');
+      
       // Clear all components and sections
       this.components = {};
       this.sections = [];
@@ -2612,12 +2623,6 @@ export const useMediaKitStore = defineStore('mediaKit', {
         spacing: {},
         effects: {}
       };
-      
-      // Clear UI state
-      this.selectedComponentIds = [];
-      this.selectedComponentId = null;
-      this.hoveredComponentId = null;
-      this.editingComponentId = null;
       
       this.isDirty = true;
       this._trackChange();
