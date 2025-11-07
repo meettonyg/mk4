@@ -1,6 +1,6 @@
 <template>
   <div class="profile-photo-component" :class="componentClasses">
-    <div v-if="photo" class="profile-photo-container">
+    <div v-if="photo" class="profile-photo-container" :class="containerClasses">
       <img 
         :src="sanitizedPhotoUrl" 
         :alt="photo.alt || 'Profile Photo'"
@@ -138,6 +138,12 @@ const imageStyles = computed(() => {
   
   return styles;
 });
+
+// ROOT FIX: Get alignment class for container positioning
+const containerClasses = computed(() => {
+  const alignment = props.settings?.advanced?.layout?.alignment || 'center';
+  return `align-${alignment}`;
+});
 </script>
 
 <style scoped>
@@ -149,8 +155,20 @@ const imageStyles = computed(() => {
 .profile-photo-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: var(--spacing-sm, 0.75rem);
+}
+
+/* ROOT FIX: Dynamic alignment based on advanced settings */
+.profile-photo-container.align-left {
+  align-items: flex-start;
+}
+
+.profile-photo-container.align-center {
+  align-items: center;
+}
+
+.profile-photo-container.align-right {
+  align-items: flex-end;
 }
 
 .profile-photo-image {
