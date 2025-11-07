@@ -67,13 +67,16 @@
 </template>
 
 <script>
+import { computed } from 'vue';
+import { usePodsData } from '../../src/composables/usePodsData';
+
 export default {
   name: 'TopicsQuestionsRenderer',
   props: {
-    // Component standard props
+    // STANDARD INTERFACE: All components accept the same props structure
     componentId: {
       type: String,
-      required: false
+      required: true
     },
     data: {
       type: Object,
@@ -87,55 +90,102 @@ export default {
       type: Object,
       default: () => ({})
     },
-    
-    // Topics (topic_1 through topic_5)
-    topic_1: { type: String, default: '' },
-    topic_2: { type: String, default: '' },
-    topic_3: { type: String, default: '' },
-    topic_4: { type: String, default: '' },
-    topic_5: { type: String, default: '' },
-    
-    // Questions (question_1 through question_25)
-    ...Object.fromEntries(
-      Array.from({ length: 25 }, (_, i) => [
-        `question_${i + 1}`,
-        { type: String, default: '' }
-      ])
-    ),
-    
-    // Display options
-    displayMode: {
-      type: String,
-      default: 'combined',
-      validator: value => ['topics', 'questions', 'combined'].includes(value)
-    },
-    showModeSelector: {
+    // Optional editing state
+    isEditing: {
       type: Boolean,
-      default: true
+      default: false
     },
-    topicsDisplay: {
-      type: String,
-      default: 'cards',
-      validator: value => ['cards', 'list'].includes(value)
-    },
-    questionsDisplay: {
-      type: String,
-      default: 'list',
-      validator: value => ['accordion', 'list'].includes(value)
-    },
-    topicsTitle: {
-      type: String,
-      default: 'Topics of Expertise'
-    },
-    questionsTitle: {
-      type: String,
-      default: 'Interview Questions'
+    isSelected: {
+      type: Boolean,
+      default: false
     }
   },
-  data() {
+  setup(props) {
+    // COMPOSITION API: Access Pods data via composable
+    const podsData = usePodsData();
+    
+    // Display configuration from props.data or defaults
+    const displayMode = computed(() => props.data?.displayMode || 'combined');
+    const showModeSelector = computed(() => props.data?.showModeSelector !== false);
+    const topicsDisplay = computed(() => props.data?.topicsDisplay || 'cards');
+    const questionsDisplay = computed(() => props.data?.questionsDisplay || 'list');
+    const topicsTitle = computed(() => props.data?.topicsTitle || 'Topics of Expertise');
+    const questionsTitle = computed(() => props.data?.questionsTitle || 'Interview Questions');
+    
+    // TOPICS: Extract from component data or Pods
+    const filteredTopics = computed(() => {
+      const topics = [];
+      
+      // Priority 1: Check component data first
+      if (props.data?.topics && Array.isArray(props.data.topics)) {
+        return props.data.topics;
+      }
+      
+      // Priority 2: Extract individual topic fields from component data
+      for (let i = 1; i <= 5; i++) {
+        const topicKey = `topic_${i}`;
+        if (props.data?.[topicKey] && props.data[topicKey].trim()) {
+          topics.push(props.data[topicKey]);
+        }
+      }
+      
+      // Priority 3: Fallback to Pods data
+      if (topics.length === 0 && podsData.rawPodsData?.value) {
+        const rawData = podsData.rawPodsData.value;
+        for (let i = 1; i <= 5; i++) {
+          const topicKey = `topic_${i}`;
+          if (rawData[topicKey] && rawData[topicKey].trim()) {
+            topics.push(rawData[topicKey]);
+          }
+        }
+      }
+      
+      return topics;
+    });
+    
+    // QUESTIONS: Extract from component data or Pods
+    const filteredQuestions = computed(() => {
+      const questions = [];
+      
+      // Priority 1: Check component data first
+      if (props.data?.questions && Array.isArray(props.data.questions)) {
+        return props.data.questions;
+      }
+      
+      // Priority 2: Extract individual question fields from component data
+      for (let i = 1; i <= 25; i++) {
+        const questionKey = `question_${i}`;
+        if (props.data?.[questionKey] && props.data[questionKey].trim()) {
+          questions.push(props.data[questionKey]);
+        }
+      }
+      
+      // Priority 3: Fallback to Pods data
+      if (questions.length === 0 && podsData.rawPodsData?.value) {
+        const rawData = podsData.rawPodsData.value;
+        for (let i = 1; i <= 25; i++) {
+          const questionKey = `question_${i}`;
+          if (rawData[questionKey] && rawData[questionKey].trim()) {
+            questions.push(rawData[questionKey]);
+          }
+        }
+      }
+      
+      return questions;
+    });
+    
     return {
-      currentMode: this.displayMode,
-      expandedQuestions: [],
+      // Configuration
+      displayMode,
+      showModeSelector,
+      topicsDisplay,
+      questionsDisplay,
+      topicsTitle,
+      questionsTitle,
+      // Data
+      filteredTopics,
+      filteredQuestions,
+      // UI state
       modes: [
         { value: 'topics', label: 'Topics Only' },
         { value: 'questions', label: 'Questions Only' },
@@ -143,85 +193,13 @@ export default {
       ]
     };
   },
-  computed: {
-    filteredTopics() {
-      const topics = [];
-      
-      // Check data prop first
-      if (this.data) {
-        for (let i = 1; i <= 5; i++) {
-          const topic = this.data[`topic_${i}`] || this[`topic_${i}`];
-          if (topic && topic.trim()) {
-            topics.push(topic);
-          }
-        }
-      } else {
-        // Fallback to direct props
-        for (let i = 1; i <= 5; i++) {
-          const topic = this[`topic_${i}`];
-          if (topic && topic.trim()) {
-            topics.push(topic);
-          }
-        }
-      }
-      
-      return topics;
-    },
-    filteredQuestions() {
-      const questions = [];
-      
-      // Check data prop first
-      if (this.data) {
-        for (let i = 1; i <= 25; i++) {
-          const question = this.data[`question_${i}`] || this[`question_${i}`];
-          if (question && question.trim()) {
-            questions.push(question);
-          }
-        }
-      } else {
-        // Fallback to direct props
-        for (let i = 1; i <= 25; i++) {
-          const question = this[`question_${i}`];
-          if (question && question.trim()) {
-            questions.push(question);
-          }
-        }
-      }
-      
-      return questions;
-    }
-  },
-  mounted() {
-    // Auto-load from Pods data if available
-    if (window.gmkbData?.pods_data) {
-      this.loadFromPodsData();
-    }
+  data() {
+    return {
+      currentMode: this.displayMode,
+      expandedQuestions: []
+    };
   },
   methods: {
-    loadFromPodsData() {
-      const pods = window.gmkbData.pods_data;
-      if (!pods) return;
-      
-      const updates = {};
-      
-      // Load topics
-      for (let i = 1; i <= 5; i++) {
-        if (pods[`topic_${i}`] && !this[`topic_${i}`]) {
-          updates[`topic_${i}`] = pods[`topic_${i}`];
-        }
-      }
-      
-      // Load questions
-      for (let i = 1; i <= 25; i++) {
-        if (pods[`question_${i}`] && !this[`question_${i}`]) {
-          updates[`question_${i}`] = pods[`question_${i}`];
-        }
-      }
-      
-      if (Object.keys(updates).length > 0) {
-        this.$emit('update', updates);
-      }
-    },
     toggleQuestion(index) {
       const pos = this.expandedQuestions.indexOf(index);
       if (pos >= 0) {

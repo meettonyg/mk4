@@ -30,16 +30,77 @@
 </template>
 
 <script>
+import { computed } from 'vue';
+import { usePodsData } from '../../src/composables/usePodsData';
+
 export default {
   name: 'ContactRenderer',
   props: {
-    componentId: String,
-    // ROOT FIX: Standardized prop names (data contract)
-    // Website removed - handled by Social component
-    email: String,
-    phone: String,
-    skype: String,
-    location: String
+    // STANDARD INTERFACE: All components accept the same props structure
+    componentId: {
+      type: String,
+      required: true
+    },
+    data: {
+      type: Object,
+      default: () => ({})
+    },
+    props: {
+      type: Object,
+      default: () => ({})
+    },
+    settings: {
+      type: Object,
+      default: () => ({})
+    },
+    // Optional editing state
+    isEditing: {
+      type: Boolean,
+      default: false
+    },
+    isSelected: {
+      type: Boolean,
+      default: false
+    }
+  },
+  setup(props) {
+    // COMPOSITION API: Access Pods data via composable
+    const podsData = usePodsData();
+    
+    // EMAIL: Priority is component data > Pods email > empty
+    const email = computed(() => {
+      if (props.data?.email) return props.data.email;
+      if (podsData.email?.value) return podsData.email.value;
+      return '';
+    });
+    
+    // PHONE: Priority is component data > Pods phone > empty
+    const phone = computed(() => {
+      if (props.data?.phone) return props.data.phone;
+      if (podsData.rawPodsData?.value?.phone) return podsData.rawPodsData.value.phone;
+      return '';
+    });
+    
+    // SKYPE: Priority is component data > Pods skype > empty
+    const skype = computed(() => {
+      if (props.data?.skype) return props.data.skype;
+      if (podsData.rawPodsData?.value?.skype) return podsData.rawPodsData.value.skype;
+      return '';
+    });
+    
+    // LOCATION: Priority is component data > Pods location > empty
+    const location = computed(() => {
+      if (props.data?.location) return props.data.location;
+      if (podsData.rawPodsData?.value?.location) return podsData.rawPodsData.value.location;
+      return '';
+    });
+    
+    return {
+      email,
+      phone,
+      skype,
+      location
+    };
   }
 }
 </script>
