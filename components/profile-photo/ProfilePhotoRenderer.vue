@@ -25,6 +25,7 @@ import { computed } from 'vue';
 import { usePodsData } from '@composables/usePodsData';
 
 const props = defineProps({
+  // STANDARD INTERFACE: All components accept the same props structure
   componentId: {
     type: String,
     required: true
@@ -32,6 +33,23 @@ const props = defineProps({
   data: {
     type: Object,
     default: () => ({})
+  },
+  props: {
+    type: Object,
+    default: () => ({})
+  },
+  settings: {
+    type: Object,
+    default: () => ({})
+  },
+  // Optional editing state
+  isEditing: {
+    type: Boolean,
+    default: false
+  },
+  isSelected: {
+    type: Boolean,
+    default: false
   }
 });
 

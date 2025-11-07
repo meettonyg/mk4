@@ -71,6 +71,7 @@ import { usePodsData } from '../../src/composables/usePodsData';
 export default {
   name: 'BookingCalendarRenderer',
   props: {
+    // STANDARD INTERFACE: All components accept the same props structure
     componentId: {
       type: String,
       required: true
@@ -78,6 +79,23 @@ export default {
     data: {
       type: Object,
       default: () => ({})
+    },
+    props: {
+      type: Object,
+      default: () => ({})
+    },
+    settings: {
+      type: Object,
+      default: () => ({})
+    },
+    // Optional editing state
+    isEditing: {
+      type: Boolean,
+      default: false
+    },
+    isSelected: {
+      type: Boolean,
+      default: false
     }
   },
   setup(props, { emit }) {
