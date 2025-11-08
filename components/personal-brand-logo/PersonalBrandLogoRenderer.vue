@@ -54,6 +54,13 @@ const { podsData } = usePodsData();
 
 // SINGLE FIELD PATTERN: Simple logo object or null
 const logo = computed(() => {
+  // ROOT FIX: Add null safety checks for podsData
+  // podsData might be undefined during initial render
+  if (!podsData || !podsData.value) {
+    // Fallback to custom logo if Pods data not available
+    return props.data?.logo || null;
+  }
+  
   // Check if using Pods data
   if (props.data?.usePodsData && podsData.value?.personal_brand_logo) {
     const podsLogo = podsData.value.personal_brand_logo;
@@ -96,8 +103,9 @@ const sanitizedLogoUrl = computed(() => {
 const componentClasses = computed(() => ({
   'has-logo': !!logo.value,
   'no-logo': !logo.value,
-  'pods-source': props.data?.usePodsData && !!podsData.value?.personal_brand_logo,
-  'custom-source': !props.data?.usePodsData || !podsData.value?.personal_brand_logo
+  // ROOT FIX: Add null safety for podsData access
+  'pods-source': props.data?.usePodsData && podsData?.value && !!podsData.value?.personal_brand_logo,
+  'custom-source': !props.data?.usePodsData || !podsData?.value || !podsData.value?.personal_brand_logo
 }));
 
 // ROOT FIX: Apply size and alignment settings from component data

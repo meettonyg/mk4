@@ -154,6 +154,11 @@ const localData = ref({
 
 // Get logo from Pods (SINGLE field - simple!)
 const podsLogo = computed(() => {
+  // ROOT FIX: Add null safety check
+  if (!podsData || !podsData.value) {
+    return null;
+  }
+  
   const logo = podsData.value?.personal_brand_logo;
   if (!logo) return null;
   
