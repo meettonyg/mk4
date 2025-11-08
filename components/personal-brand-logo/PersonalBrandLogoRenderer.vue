@@ -11,8 +11,8 @@
       />
     </div>
     <div v-else class="brand-logo-placeholder">
-      <i class="fa-solid fa-star"></i>
-      <p>No personal brand logo available</p>
+      <i class="fa-solid fa-image"></i>
+      <p>No company logo available</p>
     </div>
   </div>
 </template>
@@ -54,19 +54,19 @@ const { podsData } = usePodsData();
 
 // SINGLE FIELD PATTERN: Simple logo object or null
 const logo = computed(() => {
+  let logoData = null;
+  
   // ROOT FIX: Add null safety checks for podsData
   // podsData might be undefined during initial render
   if (!podsData || !podsData.value) {
     // Fallback to custom logo if Pods data not available
-    return props.data?.logo || null;
-  }
-  
-  // Check if using Pods data
-  if (props.data?.usePodsData && podsData.value?.personal_brand_logo) {
+    logoData = props.data?.logo || null;
+  } else if (props.data?.usePodsData && podsData.value?.personal_brand_logo) {
+    // Check if using Pods data
     const podsLogo = podsData.value.personal_brand_logo;
     
     // Handle both simple URL and complex object formats
-    return {
+    logoData = {
       url: typeof podsLogo === 'object' 
         ? (podsLogo.guid || podsLogo.url || podsLogo.ID) 
         : podsLogo,
@@ -74,10 +74,18 @@ const logo = computed(() => {
         ? (podsLogo.post_title || 'Personal Brand Logo') 
         : 'Personal Brand Logo'
     };
+  } else {
+    // Fallback to custom logo
+    logoData = props.data?.logo || null;
   }
   
-  // Fallback to custom logo
-  return props.data?.logo || null;
+  // ROOT FIX: Return null if logo object exists but has no valid URL
+  // This ensures empty URL shows placeholder instead of broken image
+  if (!logoData || !logoData.url || logoData.url.trim() === '') {
+    return null;
+  }
+  
+  return logoData;
 });
 
 // ROOT FIX: Fix URL encoding issues
