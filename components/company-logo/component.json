@@ -21,5 +21,11 @@
   },
   "podsFields": [
     "company_logo"
-  ]
+  ],
+  "defaultProps": {
+    "logo": null,
+    "usePodsData": true,
+    "size": "medium",
+    "alignment": "center"
+  }
 }
