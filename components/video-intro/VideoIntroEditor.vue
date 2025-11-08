@@ -44,7 +44,7 @@
               <input 
                 v-model="localData.video_url" 
                 @input="updateComponent" 
-                type="url" 
+                type="text" 
                 placeholder="https://youtube.com/watch?v=..." 
               />
             </div>
@@ -67,7 +67,7 @@
             <input 
               v-model="localData.thumbnail" 
               @input="updateComponent" 
-              type="url" 
+              type="text" 
               placeholder="https://example.com/thumb.jpg" 
             />
           </div>
@@ -88,6 +88,46 @@ const emit = defineEmits(['close']);
 const store = useMediaKitStore();
 const activeTab = ref('content');
 
+/**
+ * Convert video URL to embed format
+ * Supports YouTube and Vimeo
+ */
+const convertToEmbedUrl = (url) => {
+  if (!url || typeof url !== 'string') {
+    return '';
+  }
+  
+  const cleanUrl = url.trim();
+  
+  // Already an embed URL
+  if (cleanUrl.includes('/embed/')) {
+    return cleanUrl;
+  }
+  
+  // YouTube patterns
+  // youtube.com/watch?v=VIDEO_ID
+  let match = cleanUrl.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
+  if (match) {
+    return `https://www.youtube.com/embed/${match[1]}`;
+  }
+  
+  // youtu.be/VIDEO_ID
+  match = cleanUrl.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+  if (match) {
+    return `https://www.youtube.com/embed/${match[1]}`;
+  }
+  
+  // Vimeo patterns
+  // vimeo.com/VIDEO_ID
+  match = cleanUrl.match(/vimeo\.com\/(\d+)/);
+  if (match) {
+    return `https://player.vimeo.com/video/${match[1]}`;
+  }
+  
+  // Return original URL if no pattern matched (might be a direct video file)
+  return cleanUrl;
+};
+
 // Load Pods data
 const { podsData, loading: podsLoading } = usePodsData();
 
@@ -104,12 +144,15 @@ const podsVideoUrl = computed(() => {
   return podsData.value?.video_intro || '';
 });
 
-// Determine effective video URL (Pods or custom)
+// Determine effective video URL (Pods or custom) and convert to embed format
 const effectiveVideoUrl = computed(() => {
+  let url = '';
   if (localData.value.usePodsData && podsVideoUrl.value) {
-    return podsVideoUrl.value;
+    url = podsVideoUrl.value;
+  } else {
+    url = localData.value.video_url || '';
   }
-  return localData.value.video_url || '';
+  return convertToEmbedUrl(url);
 });
 
 const loadComponentData = () => {

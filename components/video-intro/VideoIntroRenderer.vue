@@ -22,6 +22,46 @@
 import { computed } from 'vue';
 import { usePodsData } from '@/composables/usePodsData';
 
+/**
+ * Convert video URL to embed format
+ * Supports YouTube and Vimeo
+ */
+function convertToEmbedUrl(url) {
+  if (!url || typeof url !== 'string') {
+    return '';
+  }
+  
+  const cleanUrl = url.trim();
+  
+  // Already an embed URL
+  if (cleanUrl.includes('/embed/')) {
+    return cleanUrl;
+  }
+  
+  // YouTube patterns
+  // youtube.com/watch?v=VIDEO_ID
+  let match = cleanUrl.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
+  if (match) {
+    return `https://www.youtube.com/embed/${match[1]}`;
+  }
+  
+  // youtu.be/VIDEO_ID
+  match = cleanUrl.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+  if (match) {
+    return `https://www.youtube.com/embed/${match[1]}`;
+  }
+  
+  // Vimeo patterns
+  // vimeo.com/VIDEO_ID
+  match = cleanUrl.match(/vimeo\.com\/(\d+)/);
+  if (match) {
+    return `https://player.vimeo.com/video/${match[1]}`;
+  }
+  
+  // Return original URL if no pattern matched (might be a direct video file)
+  return cleanUrl;
+}
+
 export default {
   name: 'VideoIntroRenderer',
   props: {
@@ -62,21 +102,23 @@ export default {
     });
     
     // VIDEO URL: Priority is component data > Pods fallback > empty
+    // ALWAYS convert to embed URL format
     const videoUrl = computed(() => {
-      // Priority 1: Component data (user customization)
-      if (props.data?.videoUrl) {
-        return props.data.videoUrl;
-      }
+      let url = '';
       
+      // Priority 1: Component data (user customization)
+      if (props.data?.videoUrl || props.data?.video_url) {
+        url = props.data.videoUrl || props.data.video_url;
+      }
       // Priority 2: Pods data (from database)
-      if (podsData.rawPodsData?.value) {
+      else if (podsData.rawPodsData?.value) {
         const rawData = podsData.rawPodsData.value;
         // Check for video intro URL in Pods
-        return rawData.video_intro_url || rawData.intro_video_url || '';
+        url = rawData.video_intro_url || rawData.intro_video_url || rawData.video_intro || '';
       }
       
-      // Priority 3: Empty
-      return '';
+      // Convert to embed URL before returning
+      return convertToEmbedUrl(url);
     });
     
     // DESCRIPTION: Component data > Pods fallback > empty
