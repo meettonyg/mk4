@@ -12,10 +12,21 @@ export function usePodsData() {
   // This prevents "Cannot read properties of undefined" errors in components
   if (!store.podsData) {
     store.podsData = {};
+    console.warn('⚠️ usePodsData: store.podsData was undefined, initialized to empty object');
   }
 
   // NO onMounted, NO fetch - just computed refs to store data
   // Data was already fetched ONCE in store.initialize()
+
+  // ROOT FIX: Create a safe computed ref for raw podsData access
+  // This handles the case where store.podsData might become undefined later
+  const podsDataRef = computed(() => {
+    if (!store.podsData) {
+      console.warn('⚠️ usePodsData: store.podsData is undefined in computed, returning empty object');
+      return {};
+    }
+    return store.podsData;
+  });
 
   /**
    * ARCHITECTURE FIX: Update individual Pods field
@@ -187,7 +198,8 @@ export function usePodsData() {
     
     // ROOT FIX: Provide raw podsData ref for components that need it
     // This is used by logo-grid and photo-gallery editors
-    podsData: computed(() => store.podsData || {}),
+    // Using the safe computed ref created above
+    podsData: podsDataRef,
     
     // ARCHITECTURE FIX: Method to update Pods fields
     updatePodsField
