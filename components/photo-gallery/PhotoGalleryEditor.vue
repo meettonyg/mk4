@@ -93,13 +93,27 @@
 
             <p class="help-text">Or add photos manually:</p>
             
-            <div class="photos-list">
-              <div 
-                v-for="(photo, index) in localData.photos" 
-                :key="index" 
-                class="photo-item"
-              >
+            <!-- ✅ DRAG-AND-DROP: Draggable wrapper for photos list -->
+            <draggable 
+              v-model="localData.photos" 
+              @end="updateComponent"
+              item-key="url"
+              handle=".drag-handle"
+              class="photos-list"
+              ghost-class="ghost-item"
+              animation="200"
+            >
+              <template #item="{element: photo, index}">
+              <div class="photo-item">
                 <div class="photo-header">
+                  <!-- ✅ DRAG HANDLE -->
+                  <div class="drag-handle" title="Drag to reorder">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="3" y1="12" x2="21" y2="12"></line>
+                      <line x1="3" y1="6" x2="21" y2="6"></line>
+                      <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                  </div>
                   <span class="photo-number">Photo {{ index + 1 }}</span>
                   <button 
                     @click="removePhoto(index)" 
@@ -127,23 +141,72 @@
                     placeholder="Optional caption..."
                   />
                 </div>
+                
+                <div class="field-group">
+                  <label>Alt Text (SEO)
+                    <span class="seo-badge" title="Improves search engine ranking">SEO</span>
+                  </label>
+                  <input 
+                    v-model="photo.alt" 
+                    @input="updateComponent"
+                    type="text"
+                    placeholder="Describe this photo for screen readers and search engines"
+                  />
+                  <p class="field-hint">E.g., "Speaking at Tech Conference 2024". Helps with SEO and accessibility.</p>
+                </div>
+                
+                <!-- Image Preview & Crop Button -->
+                <div v-if="photo.url" class="image-preview-section">
+                  <div class="image-preview-wrapper">
+                    <img :src="photo.url" :alt="photo.alt || 'Preview'" class="image-preview" />
+                    <button 
+                      @click="openCropper(index)"
+                      class="crop-btn"
+                      type="button"
+                      title="Crop image"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6.13 1L6 16a2 2 0 0 0 2 2h15"></path>
+                        <path d="M1 6.13L16 6a2 2 0 0 1 2 2v15"></path>
+                      </svg>
+                      Crop
+                    </button>
+                  </div>
+                </div>
               </div>
-              
-              <button 
-                v-if="localData.photos.length < 12" 
-                @click="addPhoto" 
-                class="add-btn"
-              >
-                + Add Photo
-              </button>
-            </div>
+              </template>
+            </draggable>
+            
+            <button 
+              v-if="localData.photos.length < 12" 
+              @click="addPhoto" 
+              class="add-btn"
+            >
+              + Add Photo
+            </button>
           </div>
         </section>
 
         <section class="editor-section">
           <h4>Display Options</h4>
           
+          <!-- ✅ NEW: Layout Style Selector -->
           <div class="field-group">
+            <label for="layout-style">Layout Style</label>
+            <select 
+              id="layout-style"
+              v-model="localData.layoutStyle" 
+              @change="handleLayoutChange"
+            >
+              <option value="grid">Standard Grid</option>
+              <option value="masonry">Masonry (Pinterest Style)</option>
+              <option value="carousel">Carousel/Slider</option>
+            </select>
+            <p class="field-hint">Choose how your photos are displayed</p>
+          </div>
+
+          <!-- ✅ Grid-specific options (only show for grid/masonry) -->
+          <div v-if="localData.layoutStyle !== 'carousel'" class="field-group">
             <label for="columns">Grid Columns</label>
             <select 
               id="columns"
@@ -155,18 +218,132 @@
               <option value="4">4 Columns</option>
             </select>
           </div>
+
+          <!-- ✅ NEW: Conditional Carousel Settings -->
+          <div v-if="localData.layoutStyle === 'carousel'" class="carousel-settings">
+            <h5 class="subsection-title">Carousel Settings</h5>
+            
+            <div class="field-group">
+              <label class="checkbox-label">
+                <input 
+                  type="checkbox" 
+                  v-model="localData.carouselSettings.autoplay"
+                  @change="updateComponent"
+                />
+                <span>Autoplay</span>
+              </label>
+            </div>
+
+            <div v-if="localData.carouselSettings.autoplay" class="field-group">
+              <label for="autoplay-speed">Autoplay Speed (ms)</label>
+              <input 
+                type="number"
+                id="autoplay-speed"
+                v-model.number="localData.carouselSettings.autoplaySpeed"
+                @change="updateComponent"
+                min="1000"
+                max="10000"
+                step="500"
+              />
+              <p class="field-hint">Time between slides (1000ms = 1 second)</p>
+            </div>
+
+            <div class="field-group">
+              <label for="slides-desktop">Slides to Show (Desktop)</label>
+              <input 
+                type="number"
+                id="slides-desktop"
+                v-model.number="localData.carouselSettings.slidesToShow"
+                @change="updateComponent"
+                min="1"
+                max="6"
+              />
+            </div>
+
+            <div class="field-group">
+              <label for="slides-tablet">Slides to Show (Tablet)</label>
+              <input 
+                type="number"
+                id="slides-tablet"
+                v-model.number="localData.carouselSettings.slidesToShowTablet"
+                @change="updateComponent"
+                min="1"
+                max="4"
+              />
+            </div>
+
+            <div class="field-group">
+              <label for="slides-mobile">Slides to Show (Mobile)</label>
+              <input 
+                type="number"
+                id="slides-mobile"
+                v-model.number="localData.carouselSettings.slidesToShowMobile"
+                @change="updateComponent"
+                min="1"
+                max="2"
+              />
+            </div>
+
+            <div class="field-group">
+              <label class="checkbox-label">
+                <input 
+                  type="checkbox" 
+                  v-model="localData.carouselSettings.arrows"
+                  @change="updateComponent"
+                />
+                <span>Show Navigation Arrows</span>
+              </label>
+            </div>
+
+            <div class="field-group">
+              <label class="checkbox-label">
+                <input 
+                  type="checkbox" 
+                  v-model="localData.carouselSettings.dots"
+                  @change="updateComponent"
+                />
+                <span>Show Pagination Dots</span>
+              </label>
+            </div>
+          </div>
+          
+          <div class="field-group">
+            <label for="caption-style">Caption Style</label>
+            <select 
+              id="caption-style"
+              v-model="localData.captionStyle" 
+              @change="updateComponent"
+            >
+              <option value="overlay">Overlay (Always Visible)</option>
+              <option value="below">Below Image</option>
+              <option value="hover">Show on Hover</option>
+              <option value="none">No Captions</option>
+            </select>
+            <p class="field-hint">Choose how photo captions are displayed</p>
+          </div>
         </section>
       </div>
     </template>
   </ComponentEditorTemplate>
+  
+  <!-- Image Cropper Component -->
+  <ImageCropper 
+    ref="cropperRef"
+    :image-url="currentCropImageUrl"
+    @crop="handleCropComplete"
+    @cancel="currentCropIndex = null"
+  />
 </template>
 
 <script setup>
 import { ref, watch, computed } from 'vue';
-import { useMediaKitStore } from '../../src/stores/mediaKit';
-import { usePodsData } from '../../src/composables/usePodsData';
-import { useMediaUploader } from '../../src/composables/useMediaUploader';
-import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
+import draggable from 'vuedraggable';  // ✅ NEW: Drag-and-drop support
+import { useMediaKitStore } from '@/stores/mediaKit';
+import { usePodsData } from '@/composables/usePodsData';
+import { useModernMediaUploader } from '@/composables/useModernMediaUploader';
+import { ToastService } from '@/services/ToastService';
+import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
+import ImageCropper from '@/vue/components/shared/ImageCropper.vue';  // ✅ NEW: Image cropper
 
 const props = defineProps({ 
   componentId: { 
@@ -181,16 +358,32 @@ const store = useMediaKitStore();
 
 // Load Pods data
 const { podsData } = usePodsData();
-const { selectImages, isUploading } = useMediaUploader();
+const { openMediaLibrary, isUploading } = useModernMediaUploader();
 
 // Active tab state
 const activeTab = ref('content');
+
+// Image cropper state
+const cropperRef = ref(null);
+const currentCropIndex = ref(null);
 
 const localData = ref({ 
   title: 'Photo Gallery', 
   description: '', 
   photos: [], 
   columns: '3',
+  captionStyle: 'overlay', // Default caption style
+  layoutStyle: 'grid', // ✅ NEW: Default layout style
+  carouselSettings: { // ✅ NEW: Carousel settings (only saved when carousel selected)
+    autoplay: true,
+    autoplaySpeed: 3000,
+    slidesToShow: 3,
+    slidesToShowTablet: 2,
+    slidesToShowMobile: 1,
+    infinite: true,
+    arrows: true,
+    dots: true
+  },
   usePodsData: true // Default to using Pods data if available
 });
 
@@ -250,6 +443,18 @@ const loadComponentData = () => {
         ? [...component.data.photos] 
         : [],
       columns: component.data.columns || '3',
+      captionStyle: component.data.captionStyle || 'overlay',
+      layoutStyle: component.data.layoutStyle || 'grid', // ✅ Load layout style
+      carouselSettings: component.data.carouselSettings || { // ✅ Load carousel settings
+        autoplay: true,
+        autoplaySpeed: 3000,
+        slidesToShow: 3,
+        slidesToShowTablet: 2,
+        slidesToShowMobile: 1,
+        infinite: true,
+        arrows: true,
+        dots: true
+      },
       usePodsData: component.data.usePodsData !== false // Default to true
     };
   }
@@ -271,13 +476,39 @@ watch(podsPhotos, () => {
 
 // Add photo
 const addPhoto = () => {
-  localData.value.photos.push({ url: '', caption: '' });
+  localData.value.photos.push({ 
+    url: '', 
+    caption: '',
+    alt: ''  // ✅ NEW: Alt text for SEO
+  });
   updateComponent();
 };
 
 // Remove photo
 const removePhoto = (index) => {
   localData.value.photos.splice(index, 1);
+  updateComponent();
+};
+
+// ✅ NEW: Handle layout change - Initialize or clean up carousel settings
+const handleLayoutChange = () => {
+  // Initialize carousel settings if switching to carousel
+  if (localData.value.layoutStyle === 'carousel' && !localData.value.carouselSettings) {
+    localData.value.carouselSettings = {
+      autoplay: true,
+      autoplaySpeed: 3000,
+      slidesToShow: 3,
+      slidesToShowTablet: 2,
+      slidesToShowMobile: 1,
+      infinite: true,
+      arrows: true,
+      dots: true
+    };
+  }
+  
+  // ✅ NO BLOAT: Clean up carousel settings if switching away
+  // (Settings will not be saved in updateComponent if layoutStyle !== 'carousel')
+  
   updateComponent();
 };
 
@@ -292,8 +523,16 @@ const updateComponent = () => {
       description: localData.value.description,
       photos: effectivePhotos.value,
       columns: localData.value.columns,
+      captionStyle: localData.value.captionStyle,
+      layoutStyle: localData.value.layoutStyle, // ✅ Save layout style
       usePodsData: localData.value.usePodsData
     };
+    
+    // ✅ NO BLOAT: Only save carouselSettings when layoutStyle is 'carousel'
+    if (localData.value.layoutStyle === 'carousel') {
+      dataToSave.carouselSettings = localData.value.carouselSettings;
+    }
+    // If layout is NOT carousel, carouselSettings won't be saved (no bloat)
     
     store.updateComponent(props.componentId, { data: dataToSave });
     store.isDirty = true;
@@ -303,26 +542,165 @@ const updateComponent = () => {
 // Handle photo upload (multiple)
 const handleUploadPhotos = async () => {
   try {
-    const attachments = await selectImages();
-    if (attachments && Array.isArray(attachments)) {
+    // Use REST API uploader with MULTIPLE selection
+    // SECURITY: Filter to show only current user's uploads
+    const attachments = await openMediaLibrary({
+      title: 'Select Photo(s)',
+      button: { text: 'Use Selected Photo(s)' },
+      multiple: true, // Allow multiple selection
+      library: { 
+        type: 'image',
+        author: window.gmkbData?.user?.userId // ✅ Only show MY uploads
+      }
+    });
+    
+    if (attachments && attachments.length > 0) {
       // Add each photo, respecting the 12 photo limit
       attachments.forEach(attachment => {
         if (localData.value.photos.length < 12) {
+          // Sanitize URL (decode HTML entities)
+          const sanitizedUrl = attachment.url
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#039;/g, "'");
+          
           localData.value.photos.push({
-            url: attachment.url,
+            url: sanitizedUrl,
             caption: attachment.caption || attachment.title || '',
+            alt: attachment.alt || attachment.title || '',  // ✅ NEW: Use alt text from WordPress
             id: attachment.id
           });
         }
       });
+      
+      // Save to Pods field
+      await savePhotosToPods();
+      
+      // Update component
       updateComponent();
+      
+      // Show success toast
+      ToastService.success(
+        `${attachments.length} photo${attachments.length > 1 ? 's' : ''} uploaded successfully`,
+        { duration: 3000 }
+      );
     }
   } catch (error) {
     console.error('Failed to upload photos:', error);
+    ToastService.error(
+      'Failed to upload photos. Please try again.',
+      { duration: 5000 }
+    );
+  }
+};
+
+// Save photos to Pods field
+const savePhotosToPods = async () => {
+  const postId = store.postId;
+  if (!postId || !localData.value.photos || localData.value.photos.length === 0) {
+    return;
+  }
+  
+  try {
+    // Extract photo IDs for Pods field (repeatable file field)
+    const photoIds = localData.value.photos
+      .map(photo => photo.id)
+      .filter(id => id); // Remove any null/undefined IDs
+    
+    if (photoIds.length === 0) {
+      return;
+    }
+    
+    // Update Pods field via REST API
+    const response = await fetch(`${window.wpApiSettings.root}wp/v2/media-kit/${postId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-WP-Nonce': window.wpApiSettings.nonce
+      },
+      body: JSON.stringify({
+        meta: {
+          gallery_photos: photoIds
+        }
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to save photos: ${response.statusText}`);
+    }
+    
+    console.log('✅ Photos saved to Pods field successfully');
+  } catch (error) {
+    console.error('Error saving photos to Pods:', error);
+    ToastService.warning(
+      'Photos added to component but not saved to profile',
+      { duration: 5000 }
+    );
   }
 };
 
 const handleBack = () => emit('close');
+
+// Computed property for current crop image URL
+const currentCropImageUrl = computed(() => {
+  if (currentCropIndex.value !== null && localData.value.photos[currentCropIndex.value]) {
+    return localData.value.photos[currentCropIndex.value].url;
+  }
+  return '';
+});
+
+// Open image cropper
+const openCropper = (index) => {
+  currentCropIndex.value = index;
+  setTimeout(() => {
+    cropperRef.value?.open();
+  }, 100);
+};
+
+// Handle crop complete
+const handleCropComplete = async ({ blob, url }) => {
+  if (currentCropIndex.value === null) return;
+  
+  try {
+    // Create a File object from the blob
+    const file = new File([blob], `cropped-photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
+    
+    // Upload the cropped image to WordPress media library
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('title', `Cropped Photo ${currentCropIndex.value + 1}`);
+    
+    const response = await fetch(`${window.wpApiSettings.root}wp/v2/media`, {
+      method: 'POST',
+      headers: {
+        'X-WP-Nonce': window.wpApiSettings.nonce
+      },
+      body: formData
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to upload cropped image');
+    }
+    
+    const attachment = await response.json();
+    
+    // Update photo URL with the new cropped image
+    localData.value.photos[currentCropIndex.value].url = attachment.source_url;
+    localData.value.photos[currentCropIndex.value].id = attachment.id;
+    
+    // Update component
+    updateComponent();
+    
+    ToastService.success('Image cropped successfully', { duration: 3000 });
+  } catch (error) {
+    console.error('Error uploading cropped image:', error);
+    ToastService.error('Failed to save cropped image', { duration: 5000 });
+  } finally {
+    currentCropIndex.value = null;
+  }
+};
 </script>
 
 <style scoped>
@@ -610,6 +988,25 @@ body.dark-mode .add-btn {
   color: #7dd3fc;
 }
 
+/* SEO Badge */
+.seo-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  background: #10b981;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 3px;
+  margin-left: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: help;
+}
+
+body.dark-mode .seo-badge {
+  background: #059669;
+}
+
 /* Upload Button */
 .upload-btn {
   display: flex;
@@ -654,5 +1051,173 @@ body.dark-mode .upload-btn {
 
 body.dark-mode .upload-btn:hover:not(:disabled) {
   background: #1d4ed8;
+}
+
+/* Drag Handle */
+.drag-handle {
+  cursor: grab;
+  padding: 4px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.drag-handle:hover {
+  color: #3b82f6;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+body.dark-mode .drag-handle {
+  color: #64748b;
+}
+
+body.dark-mode .drag-handle:hover {
+  color: #60a5fa;
+}
+
+/* Ghost Item (while dragging) */
+.ghost-item {
+  opacity: 0.5;
+  background: #f0f9ff;
+  border: 2px dashed #3b82f6;
+}
+
+body.dark-mode .ghost-item {
+  background: #0c4a6e;
+  border-color: #60a5fa;
+}
+
+/* Image Preview Section */
+.image-preview-section {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+body.dark-mode .image-preview-section {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.image-preview-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.image-preview {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+}
+
+body.dark-mode .image-preview {
+  border-color: #334155;
+}
+
+.crop-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  color: #0284c7;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.crop-btn:hover {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+  transform: translateY(-1px);
+}
+
+.crop-btn:active {
+  transform: translateY(0);
+}
+
+body.dark-mode .crop-btn {
+  background: #0c4a6e;
+  border-color: #0369a1;
+  color: #7dd3fc;
+}
+
+body.dark-mode .crop-btn:hover {
+  background: #075985;
+  border-color: #0284c7;
+}
+
+/* ✅ NEW: Carousel Settings Styles */
+.carousel-settings {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+}
+
+body.dark-mode .carousel-settings {
+  background: #0c4a6e;
+  border-color: #0369a1;
+}
+
+.subsection-title {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0369a1;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+body.dark-mode .subsection-title {
+  color: #7dd3fc;
+}
+
+/* Checkbox Label Styles (already defined, ensuring consistency) */
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+body.dark-mode .checkbox-label {
+  color: #94a3b8;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: auto;
+  cursor: pointer;
+  margin: 0;
+}
+
+.checkbox-label span {
+  flex: 1;
+}
+
+.checkbox-label:hover span {
+  color: #3b82f6;
+}
+
+body.dark-mode .checkbox-label:hover span {
+  color: #60a5fa;
 }
 </style>

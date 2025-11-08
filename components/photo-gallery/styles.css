@@ -161,6 +161,31 @@
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
 }
 
+/* Lightbox Overlay Indicator */
+.photo-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    backdrop-filter: blur(2px);
+}
+
+.photo-item:hover .photo-overlay {
+    opacity: 1;
+}
+
+.photo-overlay svg {
+    color: white;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
 /* Image style variations */
 .photo-item.image-standard {
     border-radius: 0.5rem;

@@ -30,7 +30,9 @@
     "migration:complete": "npm run build && npm run test:all && npm run perf:all"
   },
   "dependencies": {
+    "@vueuse/core": "^14.0.0",
     "pinia": "^2.1.0",
+    "swiper": "^12.0.3",
     "vue": "^3.4.0",
     "vuedraggable": "^4.1.0"
   },

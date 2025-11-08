@@ -2,8 +2,14 @@
  * Modern Media Uploader - jQuery-Free Alternative
  * Uses native browser file input and WordPress REST API
  * 
- * This composable provides media upload functionality without
- * requiring jQuery, Backbone, or the WordPress Media Library
+ * SECURITY UPDATE: All media selection functions now support user filtering
+ * to ensure users only see their own uploaded media.
+ * 
+ * Available Functions:
+ * - uploadFile(file): Direct file upload via REST API
+ * - selectAndUploadImage(options): File picker + upload (NEW files only)
+ * - selectFromLibrary(options): Fetch user's media via REST API
+ * - openMediaLibrary(options): WordPress media modal with user filtering ⭐ RECOMMENDED
  */
 
 import { ref } from 'vue';
@@ -109,11 +115,23 @@ export function useModernMediaUploader() {
 
   /**
    * Select from existing media (requires custom UI)
+   * SECURITY: Filters by current user if author parameter provided
    * This would open a Vue modal with media library grid
    */
-  async function selectFromLibrary() {
-    // Fetch existing media
-    const response = await fetch('/wp-json/wp/v2/media?per_page=100', {
+  async function selectFromLibrary(options = {}) {
+    // Build query parameters
+    const params = new URLSearchParams({
+      per_page: options.perPage || 100,
+      media_type: options.mediaType || 'image'
+    });
+    
+    // SECURITY: Filter by author (current user) if specified
+    if (options.author) {
+      params.append('author', options.author);
+    }
+    
+    // Fetch existing media with user filter
+    const response = await fetch(`/wp-json/wp/v2/media?${params}`, {
       headers: {
         'X-WP-Nonce': window.gmkbData?.restNonce || ''
       }
@@ -139,12 +157,108 @@ export function useModernMediaUploader() {
     }));
   }
 
+  /**
+   * Open WordPress Media Library modal (wp.media)
+   * This uses the native WordPress media library with proper user filtering
+   * 
+   * @param {Object} options - Media library options
+   * @param {string} options.title - Modal title
+   * @param {Object} options.button - Button configuration
+   * @param {boolean} options.multiple - Allow multiple selection
+   * @param {Object} options.library - Library query parameters
+   * @returns {Promise<Array>} Selected attachments
+   */
+  async function openMediaLibrary(options = {}) {
+    // Check if WordPress media library is available
+    if (!window.wp || !window.wp.media) {
+      throw new Error('WordPress media library not available. Using fallback upload.');
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        // Create media library configuration
+        const libraryConfig = {
+          type: options.library?.type || 'image',
+          ...(options.library || {})
+        };
+
+        // SECURITY: Ensure author filter is applied if provided
+        // This is the CRITICAL security fix - filter media by current user
+        if (options.library?.author) {
+          libraryConfig.author = options.library.author;
+          
+          if (window.gmkbDebug || window.gmkbData?.debugMode) {
+            console.log('🔒 Media Library: Filtering by user ID:', libraryConfig.author);
+          }
+        }
+
+        // Create WordPress media frame
+        const frame = window.wp.media({
+          title: options.title || 'Select Media',
+          button: {
+            text: options.button?.text || 'Select'
+          },
+          multiple: options.multiple || false,
+          library: libraryConfig
+        });
+
+        // Handle selection
+        frame.on('select', () => {
+          const selection = frame.state().get('selection');
+          const attachments = selection.map(attachment => {
+            const data = attachment.toJSON();
+            
+            // Sanitize URL (decode HTML entities)
+            const sanitizedUrl = data.url
+              .replace(/&amp;/g, '&')
+              .replace(/&lt;/g, '<')
+              .replace(/&gt;/g, '>')
+              .replace(/&quot;/g, '"')
+              .replace(/&#039;/g, "'");
+            
+            return {
+              id: data.id,
+              url: sanitizedUrl,
+              alt: data.alt || '',
+              title: data.title || data.filename || '',
+              caption: data.caption || '',
+              filename: data.filename || '',
+              width: data.width || null,
+              height: data.height || null,
+              sizes: data.sizes || {}
+            };
+          });
+
+          resolve(attachments);
+        });
+
+        // Handle close without selection
+        frame.on('close', () => {
+          // If nothing was selected, resolve with empty array
+          // (don't reject, as closing is not an error)
+          const selection = frame.state().get('selection');
+          if (!selection || selection.length === 0) {
+            resolve([]);
+          }
+        });
+
+        // Open the modal
+        frame.open();
+        
+      } catch (error) {
+        console.error('❌ Media Library Error:', error);
+        reject(error);
+      }
+    });
+  }
+
   return {
     isUploading,
     uploadProgress,
     error,
     uploadFile,
     selectAndUploadImage,
-    selectFromLibrary
+    selectFromLibrary,
+    openMediaLibrary  // ✅ NEW: WordPress media library modal with user filtering
   };
 }

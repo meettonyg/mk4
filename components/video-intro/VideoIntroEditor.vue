@@ -79,9 +79,9 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue';
-import { useMediaKitStore } from '../../src/stores/mediaKit';
-import { usePodsData } from '../../src/composables/usePodsData';
-import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
+import { useMediaKitStore } from '@/stores/mediaKit';
+import { usePodsData } from '@/composables/usePodsData';
+import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 
 const props = defineProps({ componentId: { type: String, required: true } });
 const emit = defineEmits(['close']);

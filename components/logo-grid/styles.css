@@ -35,6 +35,40 @@
 .logo-item {
     text-align: center;
     position: relative;
+    cursor: pointer;
+    border-radius: 0.5rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.logo-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Lightbox Overlay Indicator */
+.logo-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    backdrop-filter: blur(2px);
+    border-radius: 0.5rem;
+}
+
+.logo-item:hover .logo-overlay {
+    opacity: 1;
+}
+
+.logo-overlay svg {
+    color: white;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
 .logo-link {
@@ -62,6 +96,38 @@
     margin-top: 0.75rem;
     font-size: 0.875rem;
     color: var(--secondary-text-color, #666);
+    text-align: center;
+    transition: opacity 0.3s ease;
+}
+
+/* Logo Name Style Variations */
+.logo-grid[data-logo-name-style="below"] .logo-name {
+    display: block;
+    position: relative;
+}
+
+.logo-grid[data-logo-name-style="hover"] .logo-name {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.logo-grid[data-logo-name-style="hover"] .logo-item:hover .logo-name {
+    opacity: 1;
+}
+
+.logo-grid[data-logo-name-style="none"] .logo-name {
+    display: none;
 }
 
 .logo-grid-placeholder {
@@ -130,4 +196,44 @@
 
 .delete-logo-btn:hover {
     background-color: var(--danger-hover-color, #e04040);
+}
+
+/* ✅ NEW: External Link Indicator */
+.external-link-indicator {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    background: rgba(59, 130, 246, 0.9);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.3s ease;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.logo-item:hover .external-link-indicator {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.external-link-indicator svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Link styling for logo items */
+.logo-item[href] {
+    text-decoration: none;
+    color: inherit;
+}
+
+.logo-item[href]:hover {
+    text-decoration: none;
 }

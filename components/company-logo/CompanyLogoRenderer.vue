@@ -1,10 +1,12 @@
 <template>
   <div class="company-logo-component" :class="componentClasses">
-    <div v-if="logo" class="company-logo-container">
+    <div v-if="logo" class="company-logo-container" :class="containerClasses">
       <img 
-        :src="logo.url" 
+        :src="sanitizedLogoUrl" 
         :alt="logo.alt || 'Company Logo'"
         class="company-logo-image"
+        :class="imageClasses"
+        :style="imageStyles"
         loading="lazy"
       />
     </div>
@@ -17,7 +19,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { usePodsData } from '../../src/composables/usePodsData';
+import { usePodsData } from '@composables/usePodsData';
 
 const props = defineProps({
   // STANDARD INTERFACE: All components accept the same props structure
@@ -71,12 +73,67 @@ const logo = computed(() => {
   return props.data?.logo || null;
 });
 
+// ROOT FIX: Fix URL encoding issues
+// WordPress sometimes returns HTML-encoded URLs, we need to decode them
+const sanitizedLogoUrl = computed(() => {
+  if (!logo.value?.url) return '';
+  
+  let url = logo.value.url;
+  
+  // ROOT FIX: Decode HTML entities
+  // This fixes issues like &amp; becoming & and &#x2F; becoming /
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = url;
+  url = textarea.value;
+  
+  // ROOT FIX: Ensure URL is properly formatted
+  // Remove any double slashes except after protocol
+  url = url.replace(/([^:]\/)\/+/g, '$1');
+  
+  return url;
+});
+
 const componentClasses = computed(() => ({
   'has-logo': !!logo.value,
   'no-logo': !logo.value,
   'pods-source': props.data?.usePodsData && !!podsData.value?.company_logo,
   'custom-source': !props.data?.usePodsData || !podsData.value?.company_logo
 }));
+
+// ROOT FIX: Apply size and alignment settings from component data
+const imageClasses = computed(() => {
+  const classes = [];
+  
+  // Apply size class
+  const size = props.data?.size || 'medium';
+  classes.push(`logo-size-${size}`);
+  
+  return classes.join(' ');
+});
+
+// ROOT FIX: Dynamic image styles based on size setting
+const imageStyles = computed(() => {
+  const styles = {};
+  const size = props.data?.size || 'medium';
+  
+  // Define size mappings
+  const sizeMap = {
+    'small': '150px',
+    'medium': '250px',
+    'large': '350px'
+  };
+  
+  styles.maxWidth = sizeMap[size] || '250px';
+  styles.maxHeight = sizeMap[size] || '250px';
+  
+  return styles;
+});
+
+// ROOT FIX: Get alignment class for container positioning
+const containerClasses = computed(() => {
+  const alignment = props.data?.alignment || 'center';
+  return `align-${alignment}`;
+});
 </script>
 
 <style scoped>
@@ -88,16 +145,43 @@ const componentClasses = computed(() => ({
 .company-logo-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: var(--spacing-sm, 0.75rem);
 }
 
+/* ROOT FIX: Dynamic alignment based on advanced settings */
+.company-logo-container.align-left {
+  align-items: flex-start;
+}
+
+.company-logo-container.align-center {
+  align-items: center;
+}
+
+.company-logo-container.align-right {
+  align-items: flex-end;
+}
+
 .company-logo-image {
-  max-width: 250px;
   width: 100%;
   height: auto;
   object-fit: contain;
   transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* ROOT FIX: Size variations (these are overridden by inline styles) */
+.company-logo-image.logo-size-small {
+  max-width: 150px;
+  max-height: 150px;
+}
+
+.company-logo-image.logo-size-medium {
+  max-width: 250px;
+  max-height: 250px;
+}
+
+.company-logo-image.logo-size-large {
+  max-width: 350px;
+  max-height: 350px;
 }
 
 .company-logo-image:hover {

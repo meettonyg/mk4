@@ -211,12 +211,16 @@ function gmkb_filter_style_tag($tag, $handle, $href, $media) {
 // ===============================================
 // MAIN ENQUEUE HOOKS
 // ===============================================
-// jQuery-Free Implementation: No media library needed
-// Using modern REST API for file uploads instead
+// UPDATED: WordPress media library NOW needed for openMediaLibrary() function
+// Using wp.media modal with user filtering for better UX
 
 // Main Vue assets load at standard priority
 add_action('wp_enqueue_scripts', 'gmkb_enqueue_vue_only_assets', 20);
 add_action('admin_enqueue_scripts', 'gmkb_enqueue_vue_only_assets', 20);
+
+// Enqueue WordPress media library scripts
+add_action('wp_enqueue_scripts', 'gmkb_enqueue_media_library', 20);
+add_action('admin_enqueue_scripts', 'gmkb_enqueue_media_library', 20);
 
 // ROOT FIX: Enqueue design system CSS on frontend media kit pages
 add_action('wp_enqueue_scripts', 'gmkb_enqueue_frontend_assets', 20);
@@ -327,6 +331,23 @@ function gmkb_disable_auto_sizes_mediakit_only($add_auto_sizes) {
 
 // jQuery-Free Implementation: Media library functions removed
 // Using modern REST API for file uploads - no jQuery/Backbone dependencies needed
+
+/**
+ * Enqueue WordPress Media Library
+ * Required for openMediaLibrary() function in useModernMediaUploader
+ */
+function gmkb_enqueue_media_library() {
+    if (!gmkb_is_builder_page()) {
+        return;
+    }
+    
+    // Enqueue WordPress media library scripts
+    wp_enqueue_media();
+    
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB: WordPress media library enqueued (wp.media available)');
+    }
+}
 
 /**
  * Enqueues all necessary assets for the Vue.js media kit builder.

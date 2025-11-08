@@ -117,11 +117,12 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue';
-import { useMediaKitStore } from '../../src/stores/mediaKit';
-import { usePodsData } from '../../src/composables/usePodsData';
-import { useMediaUploader } from '../../src/composables/useMediaUploader';
-import { usePodsFieldUpdate } from '../../src/composables/usePodsFieldUpdate';
-import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
+import { useMediaKitStore } from '@/stores/mediaKit';
+import { usePodsData } from '@composables/usePodsData';
+// jQuery-Free: Using modern REST API uploader instead of WordPress Media Library
+import { useModernMediaUploader } from '@composables/useModernMediaUploader';
+import { usePodsFieldUpdate } from '@composables/usePodsFieldUpdate';
+import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 
 const props = defineProps({ 
   componentId: { 
@@ -133,8 +134,9 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 const store = useMediaKitStore();
-const { personalBrandLogo, allData: podsData } = usePodsData();
-const { selectLogo, isUploading } = useMediaUploader();
+const { podsData } = usePodsData();
+// jQuery-Free: Using modern uploader with direct REST API calls
+const { selectAndUploadImage, isUploading } = useModernMediaUploader();
 const { updatePodsField, isUpdating: isSavingToPods } = usePodsFieldUpdate();
 
 // Active tab state
@@ -220,17 +222,21 @@ const updateComponent = () => {
   }, 300);
 };
 
-// Handle logo upload
+// Handle logo upload - jQuery-Free Implementation
 const handleUploadLogo = async () => {
   try {
-    // Step 1: Open WordPress media library and select logo
-    const attachment = await selectLogo();
+    // Step 1: Open file selector and upload via REST API
+    const attachment = await selectAndUploadImage({
+      accept: 'image/*',
+      multiple: false
+    });
+    
     if (!attachment) {
       return; // User cancelled
     }
     
-    if (window.gmkbDebug) {
-      console.log('🎨 Personal Brand Logo: Logo selected', {
+    if (window.gmkbDebug || window.gmkbData?.debugMode) {
+      console.log('🎨 Personal Brand Logo: Image uploaded via REST API', {
         id: attachment.id,
         url: attachment.url
       });
@@ -238,13 +244,13 @@ const handleUploadLogo = async () => {
     
     // Step 2: Save attachment ID to Pods field
     try {
-      const postId = store.postId;
+      const postId = store.postId || window.gmkbData?.postId;
       if (!postId) {
         console.error('❌ Personal Brand Logo: No post ID available');
         throw new Error('Post ID not available');
       }
       
-      if (window.gmkbDebug) {
+      if (window.gmkbDebug || window.gmkbData?.debugMode) {
         console.log('💾 Personal Brand Logo: Saving to Pods field', {
           postId,
           fieldName: 'personal_brand_logo',
@@ -252,14 +258,25 @@ const handleUploadLogo = async () => {
         });
       }
       
-      // Save the attachment ID to the personal_brand_logo Pods field
+      // ROOT FIX: Save the attachment ID (not URL) to the personal_brand_logo Pods field
+      // Pods expects the attachment ID for image fields
       await updatePodsField(postId, 'personal_brand_logo', attachment.id);
       
-      if (window.gmkbDebug) {
+      if (window.gmkbDebug || window.gmkbData?.debugMode) {
         console.log('✅ Personal Brand Logo: Saved to Pods successfully');
       }
       
-      // Step 3: Update local state to show custom logo
+      // ROOT FIX: Update Pods data in store to trigger reactivity
+      if (store.podsData) {
+        store.podsData.personal_brand_logo = {
+          ID: attachment.id,
+          guid: attachment.url,
+          url: attachment.url,
+          post_title: attachment.alt || 'Personal Brand Logo'
+        };
+      }
+      
+      // Step 3: Update local state
       localData.value.logo = {
         url: attachment.url,
         alt: attachment.alt || 'Personal Brand Logo',
@@ -270,17 +287,27 @@ const handleUploadLogo = async () => {
       // Since we saved to Pods, enable Pods data usage
       localData.value.usePodsData = true;
       
-      // Step 4: Update component state
-      updateComponent();
+      // Step 4: Update component state immediately
+      // ROOT FIX: Don't use debounce for upload actions - update immediately
+      const dataToSave = {
+        logo: effectiveLogo.value,
+        usePodsData: localData.value.usePodsData,
+        size: localData.value.size,
+        alignment: localData.value.alignment
+      };
       
-      if (window.gmkbDebug) {
-        console.log('✅ Personal Brand Logo: Upload complete');
+      store.updateComponent(props.componentId, { data: dataToSave });
+      store.isDirty = true;
+      
+      if (window.gmkbDebug || window.gmkbData?.debugMode) {
+        console.log('✅ Personal Brand Logo: Upload complete, component updated');
       }
       
     } catch (saveError) {
       console.error('❌ Personal Brand Logo: Failed to save to Pods', saveError);
       
-      // Still update local state even if Pods save fails
+      // ROOT FIX: Still update local state even if Pods save fails
+      // Use the uploaded image directly without Pods
       localData.value.logo = {
         url: attachment.url,
         alt: attachment.alt || 'Personal Brand Logo',
@@ -288,16 +315,39 @@ const handleUploadLogo = async () => {
         source: 'custom'
       };
       localData.value.usePodsData = false; // Don't use Pods data if save failed
-      updateComponent();
+      
+      // Update component immediately
+      const dataToSave = {
+        logo: localData.value.logo,
+        usePodsData: false,
+        size: localData.value.size,
+        alignment: localData.value.alignment
+      };
+      
+      store.updateComponent(props.componentId, { data: dataToSave });
+      store.isDirty = true;
       
       // Show user-friendly error
-      alert('Logo selected but could not be saved to your profile. Please try again.');
+      const errorMessage = 'Image uploaded but could not be saved to your profile. The image will be used for this media kit only.';
+      // Use ToastService if available
+      if (window.GMKB?.services?.toast) {
+        window.GMKB.services.toast.show(errorMessage, 'warning');
+      } else {
+        alert(errorMessage);
+      }
     }
     
   } catch (error) {
     console.error('❌ Personal Brand Logo: Upload failed', error);
-    if (error.message !== 'No media selected') {
-      alert('Failed to upload logo. Please try again.');
+    // jQuery-Free: Better error handling for REST API errors
+    if (error.message && !error.message.includes('No file selected')) {
+      const errorMessage = 'Failed to upload logo: ' + error.message;
+      // Use ToastService if available
+      if (window.GMKB?.services?.toast) {
+        window.GMKB.services.toast.show(errorMessage, 'error');
+      } else {
+        alert(errorMessage);
+      }
     }
   }
 };

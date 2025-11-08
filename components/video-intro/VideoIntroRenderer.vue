@@ -20,7 +20,7 @@
 
 <script>
 import { computed } from 'vue';
-import { usePodsData } from '../../src/composables/usePodsData';
+import { usePodsData } from '@/composables/usePodsData';
 
 export default {
   name: 'VideoIntroRenderer',
