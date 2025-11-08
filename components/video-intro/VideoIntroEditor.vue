@@ -128,8 +128,9 @@ const convertToEmbedUrl = (url) => {
   return cleanUrl;
 };
 
-// Load Pods data
-const { podsData, loading: podsLoading } = usePodsData();
+// Load Pods data - use the videoIntro computed ref directly
+const podsDataComposable = usePodsData();
+const podsVideoIntroUrl = podsDataComposable.videoIntro;
 
 const localData = ref({ 
   title: 'Watch My Introduction', 
@@ -139,9 +140,9 @@ const localData = ref({
   usePodsData: true // Default to using Pods data if available
 });
 
-// Get video URL from Pods
+// Get video URL from Pods - access the computed ref directly
 const podsVideoUrl = computed(() => {
-  return podsData.value?.video_intro || '';
+  return podsVideoIntroUrl.value || '';
 });
 
 // Determine effective video URL (Pods or custom) and convert to embed format

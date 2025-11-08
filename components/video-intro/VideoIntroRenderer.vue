@@ -94,7 +94,8 @@ export default {
   },
   setup(props) {
     // COMPOSITION API: Access Pods data via composable
-    const podsData = usePodsData();
+    const podsDataComposable = usePodsData();
+    const podsVideoIntroUrl = podsDataComposable.videoIntro;
     
     // TITLE: Component data > default
     const title = computed(() => {
@@ -111,31 +112,17 @@ export default {
         url = props.data.videoUrl || props.data.video_url;
       }
       // Priority 2: Pods data (from database)
-      else if (podsData.rawPodsData?.value) {
-        const rawData = podsData.rawPodsData.value;
-        // Check for video intro URL in Pods
-        url = rawData.video_intro_url || rawData.intro_video_url || rawData.video_intro || '';
+      else if (podsVideoIntroUrl.value) {
+        url = podsVideoIntroUrl.value;
       }
       
       // Convert to embed URL before returning
       return convertToEmbedUrl(url);
     });
     
-    // DESCRIPTION: Component data > Pods fallback > empty
+    // DESCRIPTION: Component data only (no Pods fallback for description)
     const description = computed(() => {
-      // Priority 1: Component data
-      if (props.data?.description) {
-        return props.data.description;
-      }
-      
-      // Priority 2: Pods data
-      if (podsData.rawPodsData?.value) {
-        const rawData = podsData.rawPodsData.value;
-        return rawData.video_intro_description || '';
-      }
-      
-      // Priority 3: Empty
-      return '';
+      return props.data?.description || '';
     });
     
     return {

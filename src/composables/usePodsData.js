@@ -8,6 +8,12 @@ import { useMediaKitStore } from '../stores/mediaKit';
 export function usePodsData() {
   const store = useMediaKitStore();
 
+  // ROOT FIX: Ensure podsData is always an object (never undefined)
+  // This prevents "Cannot read properties of undefined" errors in components
+  if (!store.podsData) {
+    store.podsData = {};
+  }
+
   // NO onMounted, NO fetch - just computed refs to store data
   // Data was already fetched ONCE in store.initialize()
 
@@ -178,6 +184,10 @@ export function usePodsData() {
     
     // Get all pods data (for debugging)
     allData: computed(() => store.podsData),
+    
+    // ROOT FIX: Provide raw podsData ref for components that need it
+    // This is used by logo-grid and photo-gallery editors
+    podsData: computed(() => store.podsData || {}),
     
     // ARCHITECTURE FIX: Method to update Pods fields
     updatePodsField
