@@ -104,13 +104,21 @@ export class PerformanceMonitor {
       // Long task observer
       const longTaskObserver = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          if (entry.duration > 50) { // Tasks longer than 50ms
+          // ROOT FIX: Only warn for tasks >250ms (was 50ms)
+          // Startup tasks of 100-200ms are normal and acceptable
+          if (entry.duration > 250) {
             console.warn('⚠️ Long task detected:', {
               name: entry.name,
               duration: entry.duration,
               startTime: entry.startTime
             });
             
+            this.recordMetric('longTask', {
+              name: entry.name,
+              duration: entry.duration
+            });
+          } else if (entry.duration > 50) {
+            // Still track tasks >50ms for metrics, just don't log
             this.recordMetric('longTask', {
               name: entry.name,
               duration: entry.duration
