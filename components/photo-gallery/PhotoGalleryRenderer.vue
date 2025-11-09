@@ -169,7 +169,7 @@ export default {
   },
   setup(props) {
     // COMPOSITION API: Access Pods data via composable
-    const podsData = usePodsData();
+    const { podsData } = usePodsData();
     
     // Lightbox state
     const lightboxRef = ref(null);
@@ -215,42 +215,54 @@ export default {
       };
     });
     
-    // PHOTOS: Priority is component data > Pods fallback > empty array
+    // ROOT FIX: PHOTOS - Priority: component data > Pods data > empty array
     const photos = computed(() => {
-      // Priority 1: Component data (user customization)
-      if (props.data?.photos && Array.isArray(props.data.photos)) {
+      // Priority 1: Use component data if usePodsData is false or component has custom photos
+      if (props.data?.usePodsData === false && props.data?.photos && Array.isArray(props.data.photos)) {
         return props.data.photos;
       }
       
-      // Priority 2: Pods data (from database)
-      // Extract photos from Pods rawPodsData
-      if (podsData.rawPodsData?.value) {
+      // Priority 2: If usePodsData is true, check Pods for photos
+      if (props.data?.usePodsData !== false) {
         const photosArray = [];
-        const rawData = podsData.rawPodsData.value;
         
-        // Extract photos 1-20
-        for (let i = 1; i <= 20; i++) {
-          const photoKey = `gallery_photo_${i}`;
-          const captionKey = `gallery_photo_${i}_caption`;
-          
-          if (rawData[photoKey]) {
-            const photo = rawData[photoKey];
-            // Handle both URL strings and photo objects
-            photosArray.push({
-              url: typeof photo === 'object' 
-                ? (photo.guid || photo.url || photo.ID) 
-                : photo,
-              caption: rawData[captionKey] || ''
-            });
-          }
+        // Gallery photos (repeatable field - returns array)
+        const galleryPhotos = podsData.value?.gallery_photos;
+        if (galleryPhotos && Array.isArray(galleryPhotos) && galleryPhotos.length > 0) {
+          galleryPhotos.forEach((photo, index) => {
+            if (photo) {
+              const photoUrl = typeof photo === 'object' 
+                ? (photo.guid || photo.url) 
+                : photo;
+              const photoCaption = typeof photo === 'object' 
+                ? (photo.post_excerpt || photo.caption || '')
+                : '';
+              
+              if (photoUrl) {
+                photosArray.push({
+                  url: photoUrl,
+                  caption: photoCaption,
+                  alt: photoCaption || `Photo ${index + 1}`,
+                  type: 'gallery',
+                  source: 'pods'
+                });
+              }
+            }
+          });
         }
         
+        // If we found Pods photos, use them
         if (photosArray.length > 0) {
           return photosArray;
         }
       }
       
-      // Priority 3: Empty array (will show no photos)
+      // Priority 3: Fall back to component custom photos if no Pods data
+      if (props.data?.photos && Array.isArray(props.data.photos)) {
+        return props.data.photos;
+      }
+      
+      // Priority 4: Empty array (show no photos)
       return [];
     });
     
