@@ -1181,7 +1181,7 @@ onUnmounted(() => {
 /* Sections Container */
 .gmkb-sections-wrapper {
   flex: 1;
-  overflow-y: auto;
+  overflow: visible; /* ROOT FIX: Allow component controls to render outside bounds */
   padding: 16px;
 }
 

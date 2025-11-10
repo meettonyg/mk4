@@ -197,7 +197,16 @@ const isEditing = computed(() => {
 // Show controls when hovering or selected
 const showControlsComputed = computed(() => {
   try {
-    return props.showControls && (isHovered.value || isSelected.value);
+    const result = props.showControls && (isHovered.value || isSelected.value);
+    console.log('🔍 showControlsComputed:', {
+      componentId: props.componentId || props.component?.id,
+      propsShowControls: props.showControls,
+      isHovered: isHovered.value,
+      isSelected: isSelected.value,
+      actualComponentExists: !!actualComponent.value,
+      result: result
+    });
+    return result;
   } catch (error) {
     console.error('[ComponentWrapper] Error in showControlsComputed:', error);
     return false;
@@ -280,14 +289,32 @@ const componentRootClass = computed(() => {
 
 // Mouse events
 function onMouseEnter() {
+  console.log('🟢 MOUSE ENTER - Component:', props.componentId || props.component?.id)
+  console.log('   showControls prop:', props.showControls)
+  console.log('   actualComponent exists:', !!actualComponent.value)
   isHovered.value = true
+  console.log('   isHovered set to:', isHovered.value)
+  console.log('   showControlsComputed:', showControlsComputed.value)
   const id = props.componentId || props.component?.id
   if (id) {
     store.setHoveredComponent(id)
   }
 }
 
-function onMouseLeave() {
+function onMouseLeave(event) {
+  console.log('🔴 MOUSE LEAVE - Component:', props.componentId || props.component?.id)
+  // ROOT FIX: Don't remove hover if mouse is over the controls
+  // Check if the mouse is moving to the controls element
+  const controls = event.currentTarget.querySelector('.component-controls')
+  console.log('   Controls element exists:', !!controls)
+  console.log('   Related target:', event.relatedTarget)
+  if (controls && event.relatedTarget && controls.contains(event.relatedTarget)) {
+    console.log('   ✅ Keeping hover - mouse over controls')
+    // Mouse moved to controls, keep hover state
+    return
+  }
+  
+  console.log('   ❌ Removing hover')
   isHovered.value = false
   const id = props.componentId || props.component?.id
   if (id && store.hoveredComponentId === id) {

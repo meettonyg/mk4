@@ -66,7 +66,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useMediaKitStore } from '../../../stores/mediaKit';
 import { useUIStore } from '../../../stores/ui';
 
@@ -119,6 +119,16 @@ const componentLabel = computed(() => {
   return labels[props.componentType] || props.componentType;
 });
 
+// DEBUG: Log when ComponentControls mounts
+onMounted(() => {
+  console.log('🎮 COMPONENT CONTROLS MOUNTED!');
+  console.log('   Component ID:', props.componentId);
+  console.log('   Component Type:', props.componentType);
+  console.log('   Index:', props.index);
+  console.log('   Total:', props.totalComponents);
+  console.log('   Label:', componentLabel.value);
+});
+
 // Methods
 const moveUp = () => {
   if (!isFirst.value) {
@@ -156,17 +166,21 @@ const deleteComponent = () => {
 };
 </script>
 
-<style scoped>
-.component-controls {
+<style>
+/* ROOT FIX: Removed 'scoped' because it was preventing position: absolute from applying */
+/* Use specific selectors to maintain encapsulation */
+.component-wrapper .component-controls {
   position: absolute;
   top: -35px;
   left: 0;
   right: 0;
-  z-index: 1000; /* ROOT FIX: Increased from 100 to ensure visibility above all content */
+  z-index: 10000; /* ROOT FIX: Must be above EditorPanel overlay (z-index: 9999) */
   pointer-events: none;
+  opacity: 1 !important; /* ROOT FIX: Force opacity */
+  visibility: visible !important; /* ROOT FIX: Force visibility */
 }
 
-.component-controls__bar {
+.component-wrapper .component-controls__bar {
   background: white;
   border: 1px solid var(--gmkb-color-primary, #4a90e2);
   border-radius: 6px;
@@ -182,20 +196,20 @@ const deleteComponent = () => {
   transform: none !important;
 }
 
-.component-controls__label {
+.component-wrapper .component-controls__label {
   font-size: 12px;
   font-weight: 500;
   color: var(--gmkb-color-primary, #4a90e2);
   padding: 0 8px;
 }
 
-.component-controls__actions {
+.component-wrapper .component-controls__actions {
   display: flex;
   gap: 2px;
   align-items: center;
 }
 
-.control-btn {
+.component-wrapper .component-controls .control-btn {
   width: 28px;
   height: 28px;
   border: none;
@@ -209,21 +223,21 @@ const deleteComponent = () => {
   color: var(--gmkb-color-text, #333);
 }
 
-.control-btn:hover:not(:disabled) {
+.component-wrapper .component-controls .control-btn:hover:not(:disabled) {
   background: var(--gmkb-color-surface, #f5f5f5);
 }
 
-.control-btn:disabled {
+.component-wrapper .component-controls .control-btn:disabled {
   opacity: 0.3;
   cursor: not-allowed;
 }
 
-.control-btn--danger:hover:not(:disabled) {
+.component-wrapper .component-controls .control-btn--danger:hover:not(:disabled) {
   background: #fee;
   color: #dc3545;
 }
 
-.control-separator {
+.component-wrapper .component-controls .control-separator {
   width: 1px;
   height: 20px;
   background: var(--gmkb-color-border, #e0e0e0);
