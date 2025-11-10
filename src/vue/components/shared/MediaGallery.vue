@@ -96,7 +96,7 @@
         <!-- Image Thumbnail -->
         <div class="gmkb-media-gallery__item-image">
           <img
-            :src="media.thumbnail || media.url"
+            :src="media.medium || media.url"
             :alt="media.alt || media.title"
             loading="lazy"
           />

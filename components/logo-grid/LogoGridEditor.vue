@@ -72,23 +72,14 @@
           <!-- Custom Logos Section -->
           <div v-if="!localData.usePodsData || !hasPodsLogos">
             <div class="field-group">
-              <button 
-                v-if="localData.logos.length < 12"
-                @click="handleUploadLogos"
-                :disabled="isUploading"
-                class="upload-btn"
-                type="button"
-              >
-                <span v-if="isUploading">Uploading...</span>
-                <span v-else>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="17 8 12 3 7 8"></polyline>
-                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                  </svg>
-                  Upload Logo(s)
-                </span>
-              </button>
+              <MediaUploader
+                ref="mediaUploaderRef"
+                label="Upload Logo(s)"
+                :multiple="true"
+                :accepted-types="['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']"
+                :max-size="10 * 1024 * 1024"
+                @select="handleMediaSelect"
+              />
               <p class="field-hint">Upload or select logos from media library (up to 12 total)</p>
             </div>
 
@@ -263,10 +254,10 @@ import { ref, watch, computed } from 'vue';
 import draggable from 'vuedraggable';  // ✅ NEW: Drag-and-drop support
 import { useMediaKitStore } from '@/stores/mediaKit';
 import { usePodsData } from '@/composables/usePodsData';
-import { useModernMediaUploader } from '@/composables/useModernMediaUploader';
 import { ToastService } from '@/services/ToastService';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
-import ImageCropper from '@/vue/components/shared/ImageCropper.vue';  // ✅ NEW: Image cropper
+import ImageCropper from '@/vue/components/shared/ImageCropper.vue';
+import MediaUploader from '@/vue/components/shared/MediaUploader.vue';
 
 const props = defineProps({
   componentId: {
@@ -281,10 +272,12 @@ const store = useMediaKitStore();
 
 // Load Pods data
 const { podsData } = usePodsData();
-const { openMediaLibrary, isUploading } = useModernMediaUploader();
 
 // Active tab state
 const activeTab = ref('content');
+
+// Media uploader ref
+const mediaUploaderRef = ref(null);
 
 // Image cropper state
 const cropperRef = ref(null);
@@ -520,25 +513,24 @@ const updateComponent = () => {
 };
 
 // Handle logo upload (single or multiple)
-const handleUploadLogos = async () => {
+const handleUploadLogos = () => {
+  // Open the new MediaUploader component
+  if (mediaUploaderRef.value) {
+    mediaUploaderRef.value.openGallery();
+  }
+};
+
+// Handle media selection from MediaUploader
+const handleMediaSelect = async (selected) => {
   try {
-    // Use REST API uploader with MULTIPLE selection
-    // SECURITY: Filter to show only current user's uploads
-    const attachments = await openMediaLibrary({
-      title: 'Select Logo(s)',
-      button: { text: 'Use Selected Logo(s)' },
-      multiple: true, // Allow multiple selection
-      library: { 
-        type: 'image',
-        author: window.gmkbData?.user?.userId // ✅ Only show MY uploads
-      }
-    });
+    // Handle both single file and array
+    const files = Array.isArray(selected) ? selected : [selected];
     
-    if (attachments && attachments.length > 0) {
+    if (files && files.length > 0) {
       // Add all selected logos
-      attachments.forEach(attachment => {
+      files.forEach(file => {
         // Sanitize URL (decode HTML entities)
-        const sanitizedUrl = attachment.url
+        const sanitizedUrl = file.url
           .replace(/&amp;/g, '&')
           .replace(/&lt;/g, '<')
           .replace(/&gt;/g, '>')
@@ -547,11 +539,11 @@ const handleUploadLogos = async () => {
         
         localData.value.logos.push({
           url: sanitizedUrl,
-          name: attachment.title || attachment.filename || 'Logo',
-          alt: attachment.alt || attachment.title || '',
-          link: ''
+          name: file.title || file.filename || 'Logo',
+          alt: file.alt || file.title || '',
+          link: '',
+          id: file.id // Keep ID temporarily for Pods save
           // linkNewTab: only added when checked
-          // id: temporary, removed before save
         });
       });
       
@@ -563,7 +555,7 @@ const handleUploadLogos = async () => {
       
       // Show success toast
       ToastService.success(
-        `${attachments.length} logo${attachments.length > 1 ? 's' : ''} uploaded successfully`,
+        `${files.length} logo${files.length > 1 ? 's' : ''} uploaded successfully`,
         { duration: 3000 }
       );
     }

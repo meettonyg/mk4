@@ -216,12 +216,8 @@ function gmkb_filter_style_tag($tag, $handle, $href, $media) {
 // ===============================================
 // MAIN ENQUEUE HOOKS
 // ===============================================
-// ROOT FIX: WordPress media library MUST load BEFORE Vue
-// Priority 5 ensures wp.media is available when Vue components initialize
-
-// CRITICAL: Media library loads FIRST (priority 5)
-add_action('wp_enqueue_scripts', 'gmkb_enqueue_media_library', 5);
-add_action('admin_enqueue_scripts', 'gmkb_enqueue_media_library', 5);
+// ROOT FIX: WordPress media library REMOVED - using Pure Vue MediaUploader component
+// The new MediaUploader uses REST API only (no jQuery/wp.media dependency)
 
 // ROOT FIX: EMERGENCY TEST - Force log on EVERY page to verify hooks work
 add_action('wp_enqueue_scripts', 'gmkb_emergency_test', 1);
@@ -231,7 +227,7 @@ function gmkb_emergency_test() {
     error_log('🚨 Current URL: ' . (isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : 'UNKNOWN'));
 }
 
-// THEN Vue assets load (priority 20)
+// Vue assets load (priority 20)
 add_action('wp_enqueue_scripts', 'gmkb_enqueue_vue_only_assets', 20);
 add_action('admin_enqueue_scripts', 'gmkb_enqueue_vue_only_assets', 20);
 
@@ -342,59 +338,10 @@ function gmkb_disable_auto_sizes_mediakit_only($add_auto_sizes) {
     return $add_auto_sizes;
 }
 
-// jQuery-Free Implementation: Media library functions removed
-// Using modern REST API for file uploads - no jQuery/Backbone dependencies needed
-
-/**
- * Enqueue WordPress Media Library
- * Required for openMediaLibrary() function in useModernMediaUploader
- * 
- * ROOT FIX: Must run EARLY (priority 5) before Vue app loads
- * to ensure wp.media is available when Vue components initialize
- */
-function gmkb_enqueue_media_library() {
-    // ROOT FIX: FORCE LOGGING - Always log this to see if function is called
-    error_log('🔍 GMKB: gmkb_enqueue_media_library() function CALLED');
-    
-    $is_builder = gmkb_is_builder_page();
-    error_log('🔍 GMKB: gmkb_is_builder_page() returned: ' . ($is_builder ? 'TRUE' : 'FALSE'));
-    
-    if (!$is_builder) {
-        error_log('❌ GMKB: Exiting gmkb_enqueue_media_library() - not a builder page');
-        return;
-    }
-    
-    error_log('✅ GMKB: Proceeding with media library enqueue');
-    
-    // ROOT FIX: Enqueue WordPress media library scripts
-    // This includes: media-models, media-views, media-editor, media-grid
-    wp_enqueue_media();
-    error_log('✅ GMKB: Called wp_enqueue_media()');
-    
-    // ROOT FIX: EXPLICITLY enqueue media-editor for wp.media.editor support
-    // This is needed for the media modal frame
-    wp_enqueue_script('media-editor');
-    error_log('✅ GMKB: Called wp_enqueue_script("media-editor")');
-    
-    // ROOT FIX: Add inline script to verify wp.media is loaded
-    $inline_script = '
-    console.log("🔍 GMKB: Verification script running...");
-    if (window.wp && window.wp.media) {
-        console.log("✅ GMKB: WordPress media library (wp.media) is available");
-        console.log("  - wp.media object:", window.wp.media);
-    } else {
-        console.error("❌ GMKB: WordPress media library (wp.media) NOT available - media upload will fail");
-        console.error("❌ window.wp:", window.wp);
-        console.error("❌ window.wp.media:", window.wp?.media);
-        console.error("❌ Check that wp_enqueue_media() is being called correctly");
-    }
-    ';
-    
-    wp_add_inline_script('media-editor', $inline_script);
-    error_log('✅ GMKB: Added inline verification script');
-    
-    error_log('✅ GMKB: WordPress media library enqueued (wp.media should be available)');
-}
+// REMOVED: jQuery-based media library functions
+// The MediaUploader Vue component uses REST API only - no jQuery/wp.media needed
+// This eliminates ~200KB of legacy JavaScript (jQuery, Backbone, Underscore, wp.media)
+// Date Removed: November 10, 2025
 
 /**
  * Enqueues all necessary assets for the Vue.js media kit builder.
