@@ -15,6 +15,31 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// ROOT FIX: CRITICAL - Enqueue media library on 'wp' hook (fires before template)
+// This ensures wp.media is available when template loads
+add_action('wp', function() {
+    // Only on media kit builder pages
+    if (isset($_SERVER['REQUEST_URI']) && preg_match('#/tools/media-kit($|/|\?|&)#', $_SERVER['REQUEST_URI'])) {
+        // ROOT FIX: Enqueue all required media scripts with proper dependencies
+        wp_enqueue_media();
+        
+        // These are the core media library scripts that wp_enqueue_media() should load:
+        // But we'll explicitly enqueue them to be sure
+        wp_enqueue_script('media-models');
+        wp_enqueue_script('wp-plupload');
+        wp_enqueue_script('media-views');
+        wp_enqueue_script('media-editor');
+        wp_enqueue_script('media-audiovideo');
+        
+        // Enqueue media styles
+        wp_enqueue_style('media-views');
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB MAIN: Enqueued ALL media scripts on wp hook');
+        }
+    }
+}, 1);
+
 // DEFINE CONSTANTS AT THE TOP LEVEL
 define('GUESTIFY_VERSION', '2.1.0-option-a-pure-vue');
 define('GUESTIFY_PLUGIN_DIR', plugin_dir_path(__FILE__));

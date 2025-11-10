@@ -6,7 +6,8 @@
  * WordPress only provides initial HTML shell
  * 
  * @package GMKB
- * @version 2.0.0
+ * @version 2.0.1
+ * Last modified: 2025-11-09 - Added direct wp_enqueue_media() call
  */
 
 // Security check
@@ -49,6 +50,30 @@ if (!in_array($post->post_type, $allowed_post_types)) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
     <title><?php echo esc_html($post->post_title); ?> - Media Kit Builder</title>
+
+    <?php
+    // ROOT FIX: DIRECTLY enqueue media library BEFORE wp_head()
+    // This ensures wp.media is available when Vue initializes
+    wp_enqueue_media();
+    wp_enqueue_script('media-editor');
+    
+    // Add inline verification script
+    wp_add_inline_script('media-editor', '
+        console.log("🔍 GMKB: Verification script running (template direct load)...");
+        if (window.wp && window.wp.media) {
+            console.log("✅ GMKB: WordPress media library (wp.media) is available");
+            console.log("  - wp.media object:", window.wp.media);
+        } else {
+            console.error("❌ GMKB: WordPress media library (wp.media) NOT available - media upload will fail");
+            console.error("❌ window.wp:", window.wp);
+            console.error("❌ window.wp.media:", window.wp?.media);
+        }
+    ');
+    
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB TEMPLATE: Directly enqueued wp.media before wp_head()');
+    }
+    ?>
 
     <!-- WordPress Head (loads Vue bundle) -->
     <?php wp_head(); ?>
