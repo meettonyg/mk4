@@ -25,11 +25,136 @@
     margin-right: auto;
 }
 
+/* ✅ PHASE 1B: Base logo-grid class (no hardcoded layout) */
 .logo-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    /* Common properties only - no display/grid properties */
     gap: 2rem;
     margin-bottom: 2rem;
+}
+
+/* ✅ PHASE 1B: Layout-specific styles */
+
+/* Grid Layout (default) */
+.logo-grid--grid {
+    display: grid;
+    gap: 2rem;
+}
+
+.logo-grid--grid.logo-grid--columns-auto {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+
+.logo-grid--grid.logo-grid--columns-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.logo-grid--grid.logo-grid--columns-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.logo-grid--grid.logo-grid--columns-6 {
+    grid-template-columns: repeat(6, 1fr);
+}
+
+/* Masonry Layout */
+.logo-grid--masonry {
+    display: grid;
+    gap: 2rem;
+    grid-template-rows: masonry; /* Future CSS property */
+}
+
+.logo-grid--masonry.logo-grid--columns-auto {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+
+.logo-grid--masonry.logo-grid--columns-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.logo-grid--masonry.logo-grid--columns-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.logo-grid--masonry.logo-grid--columns-6 {
+    grid-template-columns: repeat(6, 1fr);
+}
+
+/* Fallback for browsers without masonry support */
+@supports not (grid-template-rows: masonry) {
+    .logo-grid--masonry {
+        columns: var(--masonry-columns, 3);
+        column-gap: 2rem;
+    }
+    
+    .logo-grid--masonry .logo-item {
+        break-inside: avoid;
+        margin-bottom: 2rem;
+    }
+}
+
+/* Carousel Layout */
+.logo-grid--carousel {
+    display: flex;
+    gap: 2rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    padding: 1rem 0;
+}
+
+.logo-grid--carousel .logo-item {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    width: calc((100% - 6rem) / 4); /* 4 logos visible by default */
+}
+
+/* Hide scrollbar but keep functionality */
+.logo-grid--carousel::-webkit-scrollbar {
+    height: 8px;
+}
+
+.logo-grid--carousel::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+.logo-grid--carousel::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+.logo-grid--carousel::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive carousel breakpoints */
+@media (max-width: 1024px) {
+    .logo-grid--carousel .logo-item {
+        width: calc((100% - 4rem) / 3); /* 3 logos on tablet */
+    }
+}
+
+@media (max-width: 768px) {
+    .logo-grid--carousel .logo-item {
+        width: calc((100% - 2rem) / 2); /* 2 logos on mobile */
+    }
+}
+
+/* Responsive grid adjustments */
+@media (max-width: 768px) {
+    .logo-grid--grid.logo-grid--columns-6 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .logo-grid--grid.logo-grid--columns-4 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .logo-grid--masonry.logo-grid--columns-6,
+    .logo-grid--masonry.logo-grid--columns-4 {
+        columns: 2;
+    }
 }
 
 .logo-item {

@@ -3,9 +3,16 @@
   <div class="gmkb-component gmkb-component--logogrid" :data-component-id="componentId">
     <div class="component-root logo-grid-content">
     <h2 v-if="title" class="section-title">{{ title }}</h2>
+    
+    <!-- ✅ PHASE 1B: Dynamic layout class -->
     <div 
       class="logo-grid"
+      :class="[
+        `logo-grid--${layoutStyle}`,
+        layoutStyle !== 'carousel' ? `logo-grid--columns-${columns}` : ''
+      ]"
       :data-logo-name-style="logoNameStyle"
+      :data-layout-style="layoutStyle"
     >
       <!-- ✅ NEW: Wrap in link if logo.link exists -->
       <component 
@@ -115,6 +122,32 @@ export default {
       return props.data?.logoNameStyle || 'below';
     });
     
+    // ✅ PHASE 1B: LAYOUT STYLE: Component data > default
+    const layoutStyle = computed(() => {
+      return props.data?.layoutStyle || 'grid';
+    });
+    
+    // ✅ PHASE 1B: COLUMNS: Component data > default
+    const columns = computed(() => {
+      return props.data?.columns || 'auto';
+    });
+    
+    // ✅ PHASE 1B: CAROUSEL SETTINGS: Component data > defaults
+    const carouselSettings = computed(() => {
+      if (layoutStyle.value !== 'carousel') return null;
+      
+      return props.data?.carouselSettings || {
+        autoplay: true,
+        autoplaySpeed: 3000,
+        slidesToShow: 4,
+        slidesToShowTablet: 3,
+        slidesToShowMobile: 2,
+        infinite: true,
+        arrows: true,
+        dots: true
+      };
+    });
+    
     // ROOT FIX: LOGOS - Priority: component data > Pods data > empty array
     const logos = computed(() => {
       // Priority 1: Use component data if usePodsData is false or component has custom logos
@@ -218,6 +251,9 @@ export default {
       title,
       logos,
       logoNameStyle,
+      layoutStyle,
+      columns,
+      carouselSettings,
       lightboxRef,
       currentLogoIndex,
       openLightbox
