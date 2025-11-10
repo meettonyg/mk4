@@ -476,6 +476,57 @@ function gmkb_enqueue_vue_only_assets() {
         }
     }
     
+    // ✅ ARCHITECTURE-COMPLIANT: Load component CSS from registry
+    // Components declare their styles in component.json
+    // ComponentDiscovery builds registry with asset paths
+    // We read the registry (single source of truth)
+    $gmkb_data = gmkb_prepare_data_for_injection();
+    if (isset($gmkb_data['componentRegistry']) && is_array($gmkb_data['componentRegistry'])) {
+        $loaded_count = 0;
+        $missing_count = 0;
+        
+        foreach ($gmkb_data['componentRegistry'] as $component_type => $component_info) {
+            // Check if component declares a stylesheet
+            if (!empty($component_info['styles'])) {
+                $styles_file = $component_info['styles'];
+                $styles_path = GUESTIFY_PLUGIN_DIR . 'components/' . $component_type . '/' . $styles_file;
+                
+                // Only load if file actually exists (safety check)
+                if (file_exists($styles_path)) {
+                    $styles_version = defined('WP_DEBUG') && WP_DEBUG ? time() : filemtime($styles_path);
+                    $styles_url = GUESTIFY_PLUGIN_URL . 'components/' . $component_type . '/' . $styles_file;
+                    
+                    wp_enqueue_style(
+                        'gmkb-component-' . $component_type,
+                        $styles_url,
+                        array('gmkb-design-system-builder'),
+                        $styles_version
+                    );
+                    
+                    $loaded_count++;
+                    
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('✅ GMKB Builder: Loaded component CSS from registry: ' . $component_type . ' → ' . $styles_file);
+                    }
+                } else {
+                    $missing_count++;
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('⚠️ GMKB Builder: Component declares stylesheet but file missing: ' . $component_type . ' → ' . $styles_path);
+                    }
+                }
+            }
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            $total_components = count($gmkb_data['componentRegistry']);
+            error_log('✅ GMKB Builder: Processed component stylesheets from registry:');
+            error_log('  - Total components: ' . $total_components);
+            error_log('  - Stylesheets loaded: ' . $loaded_count);
+            error_log('  - Declared but missing: ' . $missing_count);
+            error_log('  - No stylesheet declared: ' . ($total_components - $loaded_count - $missing_count));
+        }
+    }
+    
     // --- FONT AWESOME ---
     // ROOT FIX: Load Font Awesome 6.5 for builder icons (reset buttons, component icons, etc.)
     // The standalone builder template needs its own FA instance

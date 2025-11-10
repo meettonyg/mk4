@@ -1185,17 +1185,21 @@ onUnmounted(() => {
   padding: 16px;
 }
 
+/* Sections Container */
 .gmkb-sections-container {
   min-height: 100%;
+  padding-top: 50px; /* ROOT FIX: Add space at top for component controls */
 }
 
 /* Section */
 .gmkb-section {
+  position: relative; /* ROOT FIX: Required for absolutely positioned header */
   margin-bottom: 16px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
   transition: all 0.3s;
+  overflow: visible; /* ROOT FIX: Allow header to render outside bounds */
 }
 
 .gmkb-section--active {
@@ -1292,6 +1296,7 @@ onUnmounted(() => {
 /* Section Content - padding controlled by inline styles from getColumnStyles */
 .gmkb-section__content {
   min-height: 200px;
+  overflow: visible; /* ROOT FIX: Allow component controls to render outside content bounds */
 }
 
 /* ROOT FIX: Proper CSS classes for layouts */
@@ -1339,6 +1344,7 @@ onUnmounted(() => {
 /* Column */
 .gmkb-section__column {
   min-height: 150px;
+  overflow: visible; /* ROOT FIX: Allow component controls to render outside column bounds */
 }
 
 /* Drop Zone - no padding to respect section settings */
@@ -1348,6 +1354,7 @@ onUnmounted(() => {
   border-radius: 6px;
   transition: all 0.3s;
   background: rgba(59, 130, 246, 0.02);
+  overflow: visible; /* ROOT FIX: Allow component controls to render outside bounds */
 }
 
 .component-drop-zone:hover {
@@ -1430,6 +1437,7 @@ onUnmounted(() => {
 /* Draggable styles */
 .component-list {
   min-height: 20px;
+  overflow: visible; /* ROOT FIX: Allow component controls to render outside bounds */
 }
 
 .ghost {

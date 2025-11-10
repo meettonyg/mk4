@@ -162,7 +162,7 @@ const deleteComponent = () => {
   top: -35px;
   left: 0;
   right: 0;
-  z-index: 100;
+  z-index: 1000; /* ROOT FIX: Increased from 100 to ensure visibility above all content */
   pointer-events: none;
 }
 
@@ -176,6 +176,10 @@ const deleteComponent = () => {
   align-items: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   pointer-events: all;
+  /* ROOT FIX: Force visibility with important overrides */
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
 }
 
 .component-controls__label {

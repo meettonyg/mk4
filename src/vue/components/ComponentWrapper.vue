@@ -301,6 +301,7 @@ function onMouseLeave() {
   position: relative;
   transition: all 0.3s ease;
   border-radius: var(--radius-md, 6px);
+  overflow: visible; /* ROOT FIX: Allow absolutely positioned controls to render outside bounds */
   /* Margin applied via inline styles from ComponentStyleService */
   /* No default margins - all spacing controlled by component settings */
 }

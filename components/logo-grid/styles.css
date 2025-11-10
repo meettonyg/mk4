@@ -163,6 +163,7 @@
     cursor: pointer;
     border-radius: 0.5rem;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    pointer-events: auto; /* ROOT FIX: Ensure mouse events bubble to parent */
 }
 
 .logo-item:hover {
