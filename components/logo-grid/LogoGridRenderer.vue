@@ -4,8 +4,57 @@
     <div class="component-root logo-grid-content">
     <h2 v-if="title" class="section-title">{{ title }}</h2>
     
-    <!-- ✅ PHASE 1B: Dynamic layout class -->
+    <!-- ✅ CAROUSEL LAYOUT: Use CarouselGrid component -->
+    <CarouselGrid 
+      v-if="layoutStyle === 'carousel' && carouselSettings"
+      :items="logos"
+      :settings="carouselSettings"
+      :space-between="32"
+    >
+      <template #item="{ item: logo, index }">
+        <component 
+          :is="logo.link ? 'a' : 'div'"
+          class="logo-item"
+          :href="logo.link || undefined"
+          :target="logo.link && logo.linkNewTab ? '_blank' : undefined"
+          :rel="logo.link && logo.linkNewTab ? 'noopener noreferrer' : undefined"
+          @click="logo.link ? null : openLightbox(index)"
+          :role="logo.link ? undefined : 'button'"
+          :tabindex="logo.link ? undefined : 0"
+          @keydown.enter="logo.link ? null : openLightbox(index)"
+          @keydown.space.prevent="logo.link ? null : openLightbox(index)"
+        >
+          <img 
+            :src="logo.url" 
+            :alt="logo.alt || logo.name || `Logo ${index + 1}`" 
+            :title="logo.name || undefined"
+          />
+          <!-- Logo Name -->
+          <div v-if="logo.name" class="logo-name">{{ logo.name }}</div>
+          <!-- Lightbox indicator overlay (only show if no link) -->
+          <div v-if="!logo.link" class="logo-overlay">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <polyline points="9 21 3 21 3 15"></polyline>
+              <line x1="21" y1="3" x2="14" y2="10"></line>
+              <line x1="3" y1="21" x2="10" y2="14"></line>
+            </svg>
+          </div>
+          <!-- ✅ NEW: External link indicator -->
+          <div v-if="logo.link && logo.linkNewTab" class="external-link-indicator" title="Opens in new tab">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+          </div>
+        </component>
+      </template>
+    </CarouselGrid>
+    
+    <!-- ✅ GRID/MASONRY LAYOUTS: Use CSS grid -->
     <div 
+      v-else
       class="logo-grid"
       :class="[
         `logo-grid--${layoutStyle}`,
@@ -70,6 +119,7 @@
 import { ref, computed } from 'vue';
 import { usePodsData } from '@/composables/usePodsData';
 import Lightbox from '@/vue/components/shared/Lightbox.vue';
+import CarouselGrid from '@/vue/components/shared/CarouselGrid.vue';
 
 export default {
   name: 'LogoGridRenderer',
@@ -102,7 +152,8 @@ export default {
     }
   },
   components: {
-    Lightbox
+    Lightbox,
+    CarouselGrid
   },
   setup(props) {
     // COMPOSITION API: Access Pods data via composable
