@@ -486,12 +486,34 @@ function gmkb_enqueue_vue_only_assets() {
     $used_components = array();
     if ($saved_state && isset($saved_state['sections']) && is_array($saved_state['sections'])) {
         foreach ($saved_state['sections'] as $section) {
+            // Handle full-width sections (components array)
             if (isset($section['components']) && is_array($section['components'])) {
-                foreach ($section['components'] as $component) {
-                    if (isset($component['type'])) {
-                        $component_type = $component['type'];
+                foreach ($section['components'] as $component_ref) {
+                    // ROOT FIX: Components in sections are IDs, not full objects
+                    $component_id = is_string($component_ref) ? $component_ref : $component_ref['component_id'];
+                    
+                    // Look up actual component in saved_state['components']
+                    if (isset($saved_state['components'][$component_id]) && isset($saved_state['components'][$component_id]['type'])) {
+                        $component_type = $saved_state['components'][$component_id]['type'];
                         if (!in_array($component_type, $used_components)) {
                             $used_components[] = $component_type;
+                        }
+                    }
+                }
+            }
+            
+            // ROOT FIX: Also handle multi-column sections (columns object)
+            if (isset($section['columns']) && is_array($section['columns'])) {
+                foreach ($section['columns'] as $column => $component_ids) {
+                    if (is_array($component_ids)) {
+                        foreach ($component_ids as $component_id) {
+                            // Look up actual component
+                            if (isset($saved_state['components'][$component_id]) && isset($saved_state['components'][$component_id]['type'])) {
+                                $component_type = $saved_state['components'][$component_id]['type'];
+                                if (!in_array($component_type, $used_components)) {
+                                    $used_components[] = $component_type;
+                                }
+                            }
                         }
                     }
                 }
