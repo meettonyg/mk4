@@ -343,6 +343,19 @@ async function initializeVue() {
     window.stylePresets = stylePresetsModule;
     console.log('✅ Style presets module exposed globally');
     
+    // ROOT FIX: Enable dynamic CSS loading for components added after page load
+    // This solves the issue where wp_enqueue_style() only runs during initial PHP render
+    console.log('🎨 Enabling dynamic component CSS loading...');
+    const { useDynamicComponentStyles } = await import('./composables/useDynamicComponentStyles.js');
+    const dynamicStyles = useDynamicComponentStyles();
+    
+    // Enable auto-loading: watches store.components and loads CSS when new components added
+    dynamicStyles.enableAutoLoad();
+    
+    // Make available globally for debugging
+    window.GMKB.dynamicStyles = dynamicStyles;
+    console.log('✅ Dynamic CSS loading enabled - components will load their CSS when added');
+    
     console.log('🐛 DEBUG: Before service assignment');
     console.log('🐛 DEBUG: window.GMKB:', window.GMKB);
     console.log('🐛 DEBUG: window.GMKB.services:', window.GMKB.services);

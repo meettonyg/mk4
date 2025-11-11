@@ -476,14 +476,40 @@ function gmkb_enqueue_vue_only_assets() {
         }
     }
     
-    // ✅ ARCHITECTURE-COMPLIANT: Load component CSS from registry
-    // Components declare their styles in component.json
-    // ComponentDiscovery builds registry with asset paths
-    // We read the registry (single source of truth)
+    // ✅ ROOT FIX: CONDITIONAL DYNAMIC CSS LOADING FOR BUILDER
+    // Only load CSS for components actually added to the preview
+    // Reduces initial page load from 16+ CSS files to only what's needed
+    $post_id = gmkb_get_post_id();
+    $saved_state = gmkb_get_saved_state($post_id);
+    
+    // Extract component types from saved state
+    $used_components = array();
+    if ($saved_state && isset($saved_state['sections']) && is_array($saved_state['sections'])) {
+        foreach ($saved_state['sections'] as $section) {
+            if (isset($section['components']) && is_array($section['components'])) {
+                foreach ($section['components'] as $component) {
+                    if (isset($component['type'])) {
+                        $component_type = $component['type'];
+                        if (!in_array($component_type, $used_components)) {
+                            $used_components[] = $component_type;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Load component CSS from registry (single source of truth)
     $gmkb_data = gmkb_prepare_data_for_injection();
     if (isset($gmkb_data['componentRegistry']) && is_array($gmkb_data['componentRegistry'])) {
         $loaded_count = 0;
+        $skipped_count = 0;
         $missing_count = 0;
+        
+        // If no components found in state, load common core components only
+        // This ensures basic functionality without loading everything
+        $load_all = empty($used_components);
+        $core_components = array('hero', 'biography', 'contact'); // Always available
         
         foreach ($gmkb_data['componentRegistry'] as $component_type => $component_info) {
             // Check if component declares a stylesheet
@@ -491,27 +517,41 @@ function gmkb_enqueue_vue_only_assets() {
                 $styles_file = $component_info['styles'];
                 $styles_path = GUESTIFY_PLUGIN_DIR . 'components/' . $component_type . '/' . $styles_file;
                 
-                // Only load if file actually exists (safety check)
-                if (file_exists($styles_path)) {
-                    $styles_version = defined('WP_DEBUG') && WP_DEBUG ? time() : filemtime($styles_path);
-                    $styles_url = GUESTIFY_PLUGIN_URL . 'components/' . $component_type . '/' . $styles_file;
-                    
-                    wp_enqueue_style(
-                        'gmkb-component-' . $component_type,
-                        $styles_url,
-                        array('gmkb-design-system-builder'),
-                        $styles_version
-                    );
-                    
-                    $loaded_count++;
-                    
-                    if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log('✅ GMKB Builder: Loaded component CSS from registry: ' . $component_type . ' → ' . $styles_file);
+                // ROOT FIX: CONDITIONAL LOADING LOGIC
+                // Load if:
+                // 1. Component is actually used in the preview, OR
+                // 2. No state exists yet and this is a core component
+                $should_load = $load_all ? in_array($component_type, $core_components) : in_array($component_type, $used_components);
+                
+                if ($should_load) {
+                    // Only load if file actually exists (safety check)
+                    if (file_exists($styles_path)) {
+                        $styles_version = defined('WP_DEBUG') && WP_DEBUG ? time() : filemtime($styles_path);
+                        $styles_url = GUESTIFY_PLUGIN_URL . 'components/' . $component_type . '/' . $styles_file;
+                        
+                        wp_enqueue_style(
+                            'gmkb-component-' . $component_type,
+                            $styles_url,
+                            array('gmkb-design-system-builder'),
+                            $styles_version
+                        );
+                        
+                        $loaded_count++;
+                        
+                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                            error_log('✅ GMKB Builder Dynamic CSS: Loaded component CSS: ' . $component_type);
+                        }
+                    } else {
+                        $missing_count++;
+                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                            error_log('⚠️ GMKB Builder Dynamic CSS: Component declares stylesheet but file missing: ' . $component_type . ' → ' . $styles_path);
+                        }
                     }
                 } else {
-                    $missing_count++;
+                    // Component CSS not needed - skip it
+                    $skipped_count++;
                     if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log('⚠️ GMKB Builder: Component declares stylesheet but file missing: ' . $component_type . ' → ' . $styles_path);
+                        error_log('⏭️  GMKB Builder Dynamic CSS: Skipped unused component CSS: ' . $component_type);
                     }
                 }
             }
@@ -519,11 +559,17 @@ function gmkb_enqueue_vue_only_assets() {
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
             $total_components = count($gmkb_data['componentRegistry']);
-            error_log('✅ GMKB Builder: Processed component stylesheets from registry:');
-            error_log('  - Total components: ' . $total_components);
-            error_log('  - Stylesheets loaded: ' . $loaded_count);
-            error_log('  - Declared but missing: ' . $missing_count);
-            error_log('  - No stylesheet declared: ' . ($total_components - $loaded_count - $missing_count));
+            error_log('✅ GMKB Builder Dynamic CSS Summary:');
+            error_log('  - Total components in registry: ' . $total_components);
+            error_log('  - Components with CSS in preview: ' . count($used_components));
+            error_log('  - CSS files loaded: ' . $loaded_count);
+            error_log('  - CSS files skipped (unused): ' . $skipped_count);
+            error_log('  - Declared but file missing: ' . $missing_count);
+            if (!empty($used_components)) {
+                error_log('  - Components requiring CSS: ' . implode(', ', $used_components));
+            } else {
+                error_log('  - No saved state: Loaded core components only (' . implode(', ', $core_components) . ')');
+            }
         }
     }
     
