@@ -77,15 +77,23 @@ class GMKB_Admin {
             $this->component_discovery = $plugin->get_component_discovery();
         }
 
-        // Handle form submissions
+        // Handle form submissions - SECURITY FIX: Verify nonce before processing
         if (isset($_POST['clear_cache'])) {
-            $this->component_discovery->clearCache();
-            echo '<div class="notice notice-success"><p>Component cache cleared successfully!</p></div>';
+            if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'gmkb_cache_action')) {
+                echo '<div class="notice notice-error"><p>Security verification failed. Please try again.</p></div>';
+            } else {
+                $this->component_discovery->clearCache();
+                echo '<div class="notice notice-success"><p>Component cache cleared successfully!</p></div>';
+            }
         }
-        
+
         if (isset($_POST['refresh_components'])) {
-            $this->component_discovery->forceRefresh();
-            echo '<div class="notice notice-success"><p>Components refreshed successfully!</p></div>';
+            if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'gmkb_cache_action')) {
+                echo '<div class="notice notice-error"><p>Security verification failed. Please try again.</p></div>';
+            } else {
+                $this->component_discovery->forceRefresh();
+                echo '<div class="notice notice-success"><p>Components refreshed successfully!</p></div>';
+            }
         }
         
         // Get debug info

@@ -26,26 +26,45 @@
  */
 export function debounce(func, wait, immediate = false) {
   let timeout;
-  
-  return function executedFunction(...args) {
+
+  const debounced = function executedFunction(...args) {
     const context = this;
-    
+
     const later = () => {
       timeout = null;
       if (!immediate) {
         func.apply(context, args);
       }
     };
-    
+
     const callNow = immediate && !timeout;
-    
+
     clearTimeout(timeout);
     timeout = setTimeout(later, wait);
-    
+
     if (callNow) {
       func.apply(context, args);
     }
   };
+
+  // FIX: Add cancel method for cleanup in Vue components
+  debounced.cancel = function() {
+    if (timeout) {
+      clearTimeout(timeout);
+      timeout = null;
+    }
+  };
+
+  // FIX: Add flush method to immediately execute pending call
+  debounced.flush = function() {
+    if (timeout) {
+      clearTimeout(timeout);
+      timeout = null;
+      func.apply(this, []);
+    }
+  };
+
+  return debounced;
 }
 
 /**

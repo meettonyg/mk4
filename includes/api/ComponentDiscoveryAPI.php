@@ -21,18 +21,19 @@ class ComponentDiscoveryAPI {
     
     /**
      * Register REST API routes
+     * SECURITY FIX: Require authentication for component discovery
      */
     public function register_routes() {
         register_rest_route('gmkb/v1', '/components/discover', array(
             'methods' => 'GET',
             'callback' => array($this, 'discover_components'),
-            'permission_callback' => '__return_true' // Public endpoint
+            'permission_callback' => array($this, 'check_permissions')
         ));
-        
+
         register_rest_route('gmkb/v1', '/components/(?P<type>[a-z0-9-]+)/manifest', array(
             'methods' => 'GET',
             'callback' => array($this, 'get_component_manifest'),
-            'permission_callback' => '__return_true',
+            'permission_callback' => array($this, 'check_permissions'),
             'args' => array(
                 'type' => array(
                     'validate_callback' => function($param) {
@@ -41,6 +42,13 @@ class ComponentDiscoveryAPI {
                 )
             )
         ));
+    }
+
+    /**
+     * SECURITY FIX: Permission check - require logged-in user
+     */
+    public function check_permissions() {
+        return is_user_logged_in();
     }
     
     /**
@@ -111,20 +119,20 @@ class ComponentDiscoveryAPI {
                 // Add additional metadata
                 $manifest['directory'] = $type;
                 $manifest['files'] = $this->scan_component_files($type);
-                $manifest['path'] = plugins_url('components/' . $type, GUESTIFY_PLUGIN_FILE);
-                
+                // SECURITY FIX: Don't expose full server paths in API responses
+
                 return rest_ensure_response($manifest);
             }
         }
-        
+
         // Return basic info even without manifest
         if (is_dir($this->components_dir . $type)) {
             return rest_ensure_response(array(
                 'type' => $type,
                 'name' => ucfirst(str_replace('-', ' ', $type)),
                 'directory' => $type,
-                'files' => $this->scan_component_files($type),
-                'path' => plugins_url('components/' . $type, GUESTIFY_PLUGIN_FILE)
+                'files' => $this->scan_component_files($type)
+                // SECURITY FIX: Removed path exposure
             ));
         }
         

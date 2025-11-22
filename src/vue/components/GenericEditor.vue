@@ -60,7 +60,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onUnmounted } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
 
 const props = defineProps({
@@ -72,6 +72,9 @@ const props = defineProps({
 
 const store = useMediaKitStore();
 const editableData = ref({});
+
+// FIX: Track timeout for cleanup
+let updateTimeout = null;
 
 // Get component from store
 const component = computed(() => store.components[props.componentId]);
@@ -108,19 +111,31 @@ const formatLabel = (key) => {
 };
 
 // Update component with debouncing
-let updateTimeout = null;
 const updateComponent = () => {
   if (updateTimeout) {
     clearTimeout(updateTimeout);
   }
-  
+
   updateTimeout = setTimeout(() => {
     store.updateComponent(props.componentId, {
       data: { ...editableData.value }
     });
-    store.hasUnsavedChanges = true;
+    // FIX: Use isDirty instead of hasUnsavedChanges (which is a getter)
+    if (typeof store.markDirty === 'function') {
+      store.markDirty();
+    } else {
+      store.isDirty = true;
+    }
   }, 300);
 };
+
+// FIX: Cleanup timeout on component unmount to prevent memory leaks
+onUnmounted(() => {
+  if (updateTimeout) {
+    clearTimeout(updateTimeout);
+    updateTimeout = null;
+  }
+});
 
 // Update JSON field
 const updateJsonField = (key, value) => {

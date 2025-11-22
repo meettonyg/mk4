@@ -252,23 +252,23 @@ class GMKB_Admin_Diagnostic {
                 <tbody>
                     <tr>
                         <td><strong>Components</strong></td>
-                        <td><?php echo $validation_results['components']['total']; ?></td>
-                        <td style="color: green;"><?php echo $validation_results['components']['valid']; ?></td>
-                        <td style="color: red;"><?php echo $validation_results['components']['missing']; ?></td>
+                        <td><?php echo esc_html($validation_results['components']['total']); ?></td>
+                        <td style="color: green;"><?php echo esc_html($validation_results['components']['valid']); ?></td>
+                        <td style="color: red;"><?php echo esc_html($validation_results['components']['missing']); ?></td>
                         <td><?php echo $this->get_status_icon($validation_results['components']); ?></td>
                     </tr>
                     <tr>
                         <td><strong>Sections</strong></td>
-                        <td><?php echo $validation_results['sections']['total']; ?></td>
-                        <td style="color: green;"><?php echo $validation_results['sections']['valid']; ?></td>
-                        <td style="color: red;"><?php echo $validation_results['sections']['missing']; ?></td>
+                        <td><?php echo esc_html($validation_results['sections']['total']); ?></td>
+                        <td style="color: green;"><?php echo esc_html($validation_results['sections']['valid']); ?></td>
+                        <td style="color: red;"><?php echo esc_html($validation_results['sections']['missing']); ?></td>
                         <td><?php echo $this->get_status_icon($validation_results['sections']); ?></td>
                     </tr>
                     <tr>
                         <td><strong>Component Settings</strong></td>
-                        <td><?php echo $validation_results['settings']['total']; ?></td>
-                        <td style="color: green;"><?php echo $validation_results['settings']['valid']; ?></td>
-                        <td style="color: red;"><?php echo $validation_results['settings']['missing']; ?></td>
+                        <td><?php echo esc_html($validation_results['settings']['total']); ?></td>
+                        <td style="color: green;"><?php echo esc_html($validation_results['settings']['valid']); ?></td>
+                        <td style="color: red;"><?php echo esc_html($validation_results['settings']['missing']); ?></td>
                         <td><?php echo $this->get_status_icon($validation_results['settings']); ?></td>
                     </tr>
                     <tr>
