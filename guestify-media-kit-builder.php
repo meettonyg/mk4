@@ -112,6 +112,11 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/field-migration-map.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/field-migration-map.php';
 }
 
+// Formidable Field ID to Post Meta mapping (for Vue Profile Editor)
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/formidable-field-map.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/formidable-field-map.php';
+}
+
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/permissions.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/permissions.php';
 }
@@ -140,6 +145,11 @@ if (is_admin()) {
 // ROOT FIX: Removed MediaKitAPI (v1) - redundant code, frontend only uses v2
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-rest-api-v2.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-rest-api-v2.php';
+}
+
+// Profile API - Direct post meta editing for Vue Profile Editor
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-profile-api.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-profile-api.php';
 }
 
 // PHASE 3: Component Discovery API for scalable component architecture
@@ -192,6 +202,11 @@ if (is_dir($components_dir)) {
 // ROOT FIX: Include frontend template router for conditional media kit display
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/frontend-template-router.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/frontend-template-router.php';
+}
+
+// Profile Editor Shortcode - Vue-based profile editing
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/profile-shortcode.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/profile-shortcode.php';
 }
 
 // ROOT FIX: Include debug REST endpoint for troubleshooting
