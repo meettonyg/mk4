@@ -90,6 +90,27 @@ class GMKB_Profile_API {
             'callback' => [__CLASS__, 'get_schema'],
             'permission_callback' => '__return_true',
         ]);
+
+        // List all profiles for current user
+        register_rest_route(self::NAMESPACE, '/profiles', [
+            'methods' => WP_REST_Server::READABLE,
+            'callback' => [__CLASS__, 'list_profiles'],
+            'permission_callback' => [__CLASS__, 'check_list_permission'],
+        ]);
+
+        // Create new profile
+        register_rest_route(self::NAMESPACE, '/profiles', [
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => [__CLASS__, 'create_profile'],
+            'permission_callback' => [__CLASS__, 'check_list_permission'],
+        ]);
+
+        // Delete profile
+        register_rest_route(self::NAMESPACE, '/profile/(?P<id>\d+)', [
+            'methods' => WP_REST_Server::DELETABLE,
+            'callback' => [__CLASS__, 'delete_profile'],
+            'permission_callback' => [__CLASS__, 'check_edit_permission'],
+        ]);
     }
 
     /**
@@ -492,6 +513,197 @@ class GMKB_Profile_API {
         }
 
         return $images;
+    }
+
+    /**
+     * Check if user can list profiles
+     */
+    public static function check_list_permission($request) {
+        if (!is_user_logged_in()) {
+            return new WP_Error('unauthorized', 'Authentication required', ['status' => 401]);
+        }
+        return true;
+    }
+
+    /**
+     * List all profiles for current user
+     */
+    public static function list_profiles($request) {
+        $user_id = get_current_user_id();
+        $is_admin = current_user_can('edit_others_posts');
+
+        // Build query args
+        $args = [
+            'post_type' => 'guests',
+            'posts_per_page' => -1,
+            'post_status' => ['publish', 'draft', 'pending'],
+            'orderby' => 'modified',
+            'order' => 'DESC',
+        ];
+
+        // Non-admins only see their own profiles
+        if (!$is_admin) {
+            $args['meta_query'] = [
+                'relation' => 'OR',
+                [
+                    'key' => 'owner_user_id',
+                    'value' => $user_id,
+                    'compare' => '=',
+                ],
+            ];
+            // Also include posts they authored
+            $args['author'] = $user_id;
+        }
+
+        $query = new WP_Query($args);
+        $profiles = [];
+
+        foreach ($query->posts as $post) {
+            $profiles[] = self::format_profile_card($post);
+        }
+
+        return rest_ensure_response([
+            'success' => true,
+            'profiles' => $profiles,
+            'total' => count($profiles),
+        ]);
+    }
+
+    /**
+     * Format profile data for card display
+     */
+    private static function format_profile_card($post) {
+        $post_id = $post->ID;
+
+        // Get key fields for display
+        $first_name = get_post_meta($post_id, 'first_name', true);
+        $last_name = get_post_meta($post_id, 'last_name', true);
+        $headshot = get_post_meta($post_id, 'headshot_primary', true);
+        $tagline = get_post_meta($post_id, 'tagline', true);
+
+        // Build display name
+        $display_name = trim("{$first_name} {$last_name}");
+        if (empty($display_name)) {
+            $display_name = $post->post_title;
+        }
+
+        // Calculate profile completeness
+        $completeness = self::calculate_completeness($post_id);
+
+        // Get headshot URL
+        $headshot_url = null;
+        if ($headshot) {
+            $headshot_url = wp_get_attachment_image_url($headshot, 'thumbnail');
+        }
+
+        return [
+            'id' => $post_id,
+            'title' => $display_name,
+            'slug' => $post->post_name,
+            'tagline' => $tagline,
+            'headshot' => $headshot_url,
+            'status' => $post->post_status,
+            'completeness' => $completeness,
+            'created' => $post->post_date,
+            'modified' => $post->post_modified,
+            'editUrl' => "/app/profiles/guest/profile/?entry={$post->post_name}",
+            'viewUrl' => get_permalink($post_id),
+        ];
+    }
+
+    /**
+     * Calculate profile completeness percentage
+     */
+    private static function calculate_completeness($post_id) {
+        // Key fields that contribute to completeness
+        $required_fields = [
+            'first_name',
+            'last_name',
+            'biography',
+            'tagline',
+            'headshot_primary',
+            'topic_1',
+            'question_1',
+            'social_linkedin',
+            'website_primary',
+            'why_book_you',
+        ];
+
+        $filled = 0;
+        foreach ($required_fields as $field) {
+            $value = get_post_meta($post_id, $field, true);
+            if (!empty($value)) {
+                $filled++;
+            }
+        }
+
+        return round(($filled / count($required_fields)) * 100);
+    }
+
+    /**
+     * Create a new profile
+     */
+    public static function create_profile($request) {
+        $user_id = get_current_user_id();
+        $body = $request->get_json_params();
+
+        $first_name = isset($body['first_name']) ? sanitize_text_field($body['first_name']) : '';
+        $last_name = isset($body['last_name']) ? sanitize_text_field($body['last_name']) : '';
+
+        // Generate title
+        $title = trim("{$first_name} {$last_name}");
+        if (empty($title)) {
+            $title = 'New Profile';
+        }
+
+        // Create the post
+        $post_id = wp_insert_post([
+            'post_type' => 'guests',
+            'post_title' => $title,
+            'post_status' => 'draft',
+            'post_author' => $user_id,
+        ]);
+
+        if (is_wp_error($post_id)) {
+            return $post_id;
+        }
+
+        // Set owner
+        update_post_meta($post_id, 'owner_user_id', $user_id);
+
+        // Set initial fields
+        if ($first_name) {
+            update_post_meta($post_id, 'first_name', $first_name);
+        }
+        if ($last_name) {
+            update_post_meta($post_id, 'last_name', $last_name);
+        }
+
+        $post = get_post($post_id);
+
+        return rest_ensure_response([
+            'success' => true,
+            'profile' => self::format_profile_card($post),
+            'message' => 'Profile created successfully',
+        ]);
+    }
+
+    /**
+     * Delete a profile
+     */
+    public static function delete_profile($request) {
+        $post_id = (int) $request->get_param('id');
+
+        $result = wp_trash_post($post_id);
+
+        if (!$result) {
+            return new WP_Error('delete_failed', 'Failed to delete profile', ['status' => 500]);
+        }
+
+        return rest_ensure_response([
+            'success' => true,
+            'message' => 'Profile moved to trash',
+        ]);
     }
 }
 

@@ -209,6 +209,11 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/profile-shortcode.php
     require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/profile-shortcode.php';
 }
 
+// Profile List Shortcode - Vue-based profile listing
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/profile-list-shortcode.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/profile-list-shortcode.php';
+}
+
 // ROOT FIX: Include debug REST endpoint for troubleshooting
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/debug-rest-endpoint.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/debug-rest-endpoint.php';
