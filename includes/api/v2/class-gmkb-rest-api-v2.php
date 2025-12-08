@@ -547,6 +547,7 @@ class GMKB_REST_API_V2 {
      * 
      * OPTIMIZATION: Single query instead of N queries
      * ROOT FIX: Enhanced error handling and debugging
+     * PHASE 8 FIX: Falls back to native WordPress meta when Pods unavailable
      * 
      * @param int $post_id The post ID
      * @param string $post_type The post type
@@ -555,19 +556,12 @@ class GMKB_REST_API_V2 {
     private function fetch_all_pods_data($post_id, $post_type) {
         $data = array();
         
-        // ROOT FIX: Comprehensive checks before attempting Pods access
-        if (!function_exists('pods')) {
+        // PHASE 8 FIX: If Pods is not available, use native WordPress fallback
+        if (!function_exists('pods') || !class_exists('Pods')) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('❌ GMKB API v2: Pods plugin not active or pods() function not available');
+                error_log('ℹ️ GMKB API v2: Pods not available, using native WordPress meta fallback');
             }
-            return $data;
-        }
-        
-        if (!class_exists('Pods')) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('❌ GMKB API v2: Pods class not loaded - plugin may not be fully initialized');
-            }
-            return $data;
+            return $this->fetch_native_meta_data($post_id);
         }
         
         if (!in_array($post_type, array('mkcg', 'guests'))) {
@@ -661,6 +655,111 @@ class GMKB_REST_API_V2 {
     }
 
     // REMOVED: fetch_theme_data() - Theme is now part of unified state, not fetched separately
+
+    /**
+     * PHASE 8: Fetch profile data using native WordPress meta functions
+     * 
+     * This is the fallback when Pods plugin is not active.
+     * Uses get_post_meta() to read the same data that Pods stored.
+     * 
+     * @param int $post_id The post ID
+     * @return array Profile data
+     */
+    private function fetch_native_meta_data($post_id) {
+        $data = array();
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('🔍 GMKB API v2: Fetching native meta data for post #' . $post_id);
+        }
+        
+        // Use GMKB_Field_Migration helper if available for legacy field support
+        $use_migration_helper = class_exists('GMKB_Field_Migration');
+        
+        // Define all fields to fetch (same as Pods fields)
+        $fields = array(
+            // Personal info
+            'first_name', 'last_name', 'biography', 'biography_long', 'introduction',
+            // Contact info
+            'email', 'phone', 'skype', 'address', 'city', 'state', 'zip', 'country', 'timezone',
+            // Social media (legacy names)
+            '1_twitter', '1_facebook', '1_instagram', '1_linkedin', '1_tiktok', '1_pinterest',
+            'guest_youtube', '1_website', '2_website',
+            // Social media (new names)
+            'social_twitter', 'social_facebook', 'social_instagram', 'social_linkedin',
+            'social_tiktok', 'social_pinterest', 'social_youtube', 'website_primary', 'website_secondary',
+            // Media
+            'headshot', 'guest_headshot', 'profile_photo', 'personal_brand_logo', 'company_logo',
+            'gallery_photos', 'featured_logos', 'video_intro', 'calendar_url',
+        );
+        
+        // Add topics 1-5
+        for ($i = 1; $i <= 5; $i++) {
+            $fields[] = "topic_$i";
+        }
+        
+        // Add questions 1-25
+        for ($i = 1; $i <= 25; $i++) {
+            $fields[] = "question_$i";
+        }
+        
+        // Fetch each field
+        foreach ($fields as $field) {
+            $value = get_post_meta($post_id, $field, true);
+            
+            // Handle media fields - expand to full object if it's an attachment ID
+            if (!empty($value) && in_array($field, array('headshot', 'guest_headshot', 'profile_photo', 'personal_brand_logo', 'company_logo'))) {
+                $attachment_id = is_array($value) && isset($value['ID']) ? $value['ID'] : absint($value);
+                if ($attachment_id) {
+                    $attachment = get_post($attachment_id);
+                    if ($attachment && $attachment->post_type === 'attachment') {
+                        $value = array(
+                            'ID' => $attachment_id,
+                            'guid' => wp_get_attachment_url($attachment_id),
+                            'post_title' => $attachment->post_title,
+                            'post_mime_type' => $attachment->post_mime_type,
+                        );
+                    }
+                }
+            }
+            
+            // Handle gallery fields - expand array of IDs to full objects
+            if (!empty($value) && in_array($field, array('gallery_photos', 'featured_logos'))) {
+                $value = maybe_unserialize($value);
+                if (is_array($value)) {
+                    $expanded = array();
+                    foreach ($value as $item) {
+                        $attachment_id = is_array($item) && isset($item['ID']) ? $item['ID'] : absint($item);
+                        if ($attachment_id) {
+                            $attachment = get_post($attachment_id);
+                            if ($attachment && $attachment->post_type === 'attachment') {
+                                $expanded[] = array(
+                                    'ID' => $attachment_id,
+                                    'guid' => wp_get_attachment_url($attachment_id),
+                                    'post_title' => $attachment->post_title,
+                                    'post_mime_type' => $attachment->post_mime_type,
+                                );
+                            }
+                        }
+                    }
+                    $value = $expanded;
+                }
+            }
+            
+            // Only store non-empty values
+            if (!empty($value) || $value === '0' || $value === 0) {
+                $data[$field] = $value;
+            }
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB API v2: Fetched ' . count($data) . ' native meta fields');
+            if (count($data) > 0) {
+                error_log('  Sample fields: ' . implode(', ', array_slice(array_keys($data), 0, 5)));
+            }
+        }
+        
+        return $data;
+    }
 
     /**
      * Validate state data structure
