@@ -1,12 +1,12 @@
 <?php
 /**
  * Photo Gallery Component - Data Integration
- * 
- * SELF-CONTAINED: Handles REPEATABLE field pattern only
+ *
+ * PHASE 8: Uses native WordPress post_meta ONLY - NO Pods dependency
  * SIMPLE: One field, array data type, one purpose
- * 
+ *
  * @package Guestify/Components/PhotoGallery
- * @version 2.0.0-repeatable-only
+ * @version 3.0.0-native
  */
 
 // Prevent direct access
@@ -28,7 +28,7 @@ class Photo_Gallery_Data_Integration {
     protected static $component_type = 'photo-gallery';
     
     /**
-     * Pods field mapping - REPEATABLE field only
+     * Field mapping (native WordPress meta) - REPEATABLE field only
      */
     protected static $field_name = 'gallery_photos';
     
@@ -49,10 +49,10 @@ class Photo_Gallery_Data_Integration {
     }
     
     /**
-     * Load photo gallery data from Pods field
-     * 
+     * Load photo gallery data from native meta
+     *
      * REPEATABLE FIELD PATTERN: Returns array of photos
-     * 
+     *
      * @param int $post_id Post ID
      * @return array Photo gallery data with metadata
      */
@@ -60,7 +60,7 @@ class Photo_Gallery_Data_Integration {
         $result = array(
             'photos' => array(),
             'count' => 0,
-            'source' => 'pods_fields',
+            'source' => 'native_meta',
             'component_type' => self::$component_type,
             'success' => false,
             'message' => '',
@@ -88,7 +88,7 @@ class Photo_Gallery_Data_Integration {
                             'caption' => $attachment ? $attachment->post_excerpt : '',
                             'alt' => $attachment ? $attachment->post_title : '',
                             'id' => $photo_data,
-                            'source' => 'pods'
+                            'source' => 'native_meta'
                         );
                         $result['count']++;
                         $result['success'] = true;
@@ -106,7 +106,7 @@ class Photo_Gallery_Data_Integration {
                                 'caption' => $photo_data['caption'] ?? ($attachment ? $attachment->post_excerpt : ''),
                                 'alt' => $photo_data['alt'] ?? ($attachment ? $attachment->post_title : ''),
                                 'id' => $photo_id,
-                                'source' => 'pods'
+                                'source' => 'native_meta'
                             );
                             $result['count']++;
                             $result['success'] = true;
@@ -168,7 +168,7 @@ class Photo_Gallery_Data_Integration {
 }
 
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ REPEATABLE FIELD PATTERN: Photo Gallery Data Integration loaded');
+    error_log('✅ PHASE 8: Photo Gallery Data Integration loaded (native meta)');
 }
 
 /**

@@ -2,11 +2,11 @@
 /**
  * Logo Grid Component - Data Integration
  * 
- * SELF-CONTAINED: Handles REPEATABLE field pattern only
- * SIMPLE: One field, array data type, one purpose
+ * PHASE 8: Uses native WordPress post_meta ONLY - NO Pods dependency
+ * REPEATABLE field pattern: One field, array data type, one purpose
  * 
  * @package Guestify/Components/LogoGrid
- * @version 2.0.0-repeatable-only
+ * @version 3.0.0-native
  */
 
 // Prevent direct access
@@ -28,7 +28,7 @@ class Logo_Grid_Data_Integration {
     protected static $component_type = 'logo-grid';
     
     /**
-     * Pods field mapping - REPEATABLE field only
+     * Field mapping - REPEATABLE field only (native WordPress meta)
      */
     protected static $field_name = 'featured_logos';
     
@@ -60,7 +60,7 @@ class Logo_Grid_Data_Integration {
         $result = array(
             'logos' => array(),
             'count' => 0,
-            'source' => 'pods_fields',
+            'source' => 'native_meta',
             'component_type' => self::$component_type,
             'success' => false,
             'message' => '',
@@ -87,7 +87,7 @@ class Logo_Grid_Data_Integration {
                             'name' => get_the_title($logo_data),
                             'alt' => get_post_meta($logo_data, '_wp_attachment_image_alt', true) ?: get_the_title($logo_data),
                             'id' => $logo_data,
-                            'source' => 'pods'
+                            'source' => 'native_meta'
                         );
                         $result['count']++;
                         $result['success'] = true;
@@ -166,7 +166,7 @@ class Logo_Grid_Data_Integration {
 }
 
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ REPEATABLE FIELD PATTERN: Logo Grid Data Integration loaded');
+    error_log('✅ PHASE 8: Logo Grid Data Integration loaded (native meta)');
 }
 
 /**

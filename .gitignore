@@ -68,3 +68,4 @@ gmkb-diagnostics.js
 console-pods-debug.js
 quick-pods-debug.js
 HOVER_TEST.js
+*.md

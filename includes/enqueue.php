@@ -733,28 +733,21 @@ function gmkb_prepare_data_for_injection() {
         }
     }
     
-    // STEP 9: Pods data - ATTEMPT TO LOAD IF PODS IS READY
-    // ROOT FIX: Try to load Pods data if available, but don't fail if not ready
-    // The Vue app can still fetch it via REST API v2 if this fails
+    // STEP 9: Pods data - PHASE 8 FIX: Always call gmkb_get_pods_data()
+    // It will use native WordPress meta fallback if Pods is not available
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('🔍 GMKB DATA PREP - STEP 9: Attempting to load Pods data...');
+        error_log('🔍 GMKB DATA PREP - STEP 9: Loading profile data...');
     }
     
-    // Only try if Pods is available
-    if (function_exists('pods') && class_exists('Pods')) {
-        $pods_data = gmkb_get_pods_data($post_id);
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            $field_count = count($pods_data);
-            if ($field_count > 0) {
-                error_log('✅ GMKB DATA PREP - STEP 9: Loaded ' . $field_count . ' Pods fields');
-            } else {
-                error_log('⚠️ GMKB DATA PREP - STEP 9: No Pods data available (will fetch via REST API)');
-            }
-        }
-    } else {
-        $pods_data = array();
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('⚠️ GMKB DATA PREP - STEP 9: Pods not ready yet (will fetch via REST API)');
+    // PHASE 8 FIX: Always call this - it handles native fallback internally
+    $pods_data = gmkb_get_pods_data($post_id);
+    
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        $field_count = count($pods_data);
+        if ($field_count > 0) {
+            error_log('✅ GMKB DATA PREP - STEP 9: Loaded ' . $field_count . ' profile fields');
+        } else {
+            error_log('⚠️ GMKB DATA PREP - STEP 9: No profile data available');
         }
     }
     
