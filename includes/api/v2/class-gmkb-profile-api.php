@@ -530,36 +530,57 @@ class GMKB_Profile_API {
      */
     public static function list_profiles($request) {
         $user_id = get_current_user_id();
-        $is_admin = current_user_can('edit_others_posts');
 
-        // Build query args
+        // Query profiles owned by the current user (via owner_user_id meta)
         $args = [
             'post_type' => 'guests',
             'posts_per_page' => -1,
             'post_status' => ['publish', 'draft', 'pending'],
             'orderby' => 'modified',
             'order' => 'DESC',
-        ];
-
-        // Non-admins only see their own profiles
-        if (!$is_admin) {
-            $args['meta_query'] = [
-                'relation' => 'OR',
+            'meta_query' => [
                 [
                     'key' => 'owner_user_id',
                     'value' => $user_id,
                     'compare' => '=',
                 ],
-            ];
-            // Also include posts they authored
-            $args['author'] = $user_id;
-        }
+            ],
+        ];
 
         $query = new WP_Query($args);
         $profiles = [];
 
         foreach ($query->posts as $post) {
             $profiles[] = self::format_profile_card($post);
+        }
+
+        // Also query by author (for profiles without owner_user_id set)
+        $author_args = [
+            'post_type' => 'guests',
+            'posts_per_page' => -1,
+            'post_status' => ['publish', 'draft', 'pending'],
+            'author' => $user_id,
+            'meta_query' => [
+                'relation' => 'OR',
+                [
+                    'key' => 'owner_user_id',
+                    'compare' => 'NOT EXISTS',
+                ],
+                [
+                    'key' => 'owner_user_id',
+                    'value' => '',
+                    'compare' => '=',
+                ],
+            ],
+        ];
+
+        $author_query = new WP_Query($author_args);
+        foreach ($author_query->posts as $post) {
+            // Avoid duplicates
+            $existing_ids = array_column($profiles, 'id');
+            if (!in_array($post->ID, $existing_ids)) {
+                $profiles[] = self::format_profile_card($post);
+            }
         }
 
         return rest_ensure_response([
