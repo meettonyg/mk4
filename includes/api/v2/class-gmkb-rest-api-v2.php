@@ -46,6 +46,37 @@ class GMKB_REST_API_V2 {
         
         // ROOT FIX: Delay Pods field initialization until REST API init to ensure Pods is ready
         add_action('rest_api_init', array($this, 'initialize_pods_fields'), 998);
+        
+        // PHASE 8: Add cache clear admin action
+        add_action('admin_init', array($this, 'handle_cache_clear'));
+    }
+    
+    /**
+     * PHASE 8: Handle cache clear request via admin URL parameter
+     * Usage: /wp-admin/?gmkb_clear_cache=all or ?gmkb_clear_cache=32372
+     */
+    public function handle_cache_clear() {
+        if (!isset($_GET['gmkb_clear_cache']) || !current_user_can('manage_options')) {
+            return;
+        }
+        
+        $param = sanitize_text_field($_GET['gmkb_clear_cache']);
+        global $wpdb;
+        
+        if ($param === 'all') {
+            // Clear ALL media kit caches
+            $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_gmkb_mediakit_%'");
+            $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_gmkb_mediakit_%'");
+            
+            wp_die('✅ Cleared ALL GMKB media kit caches. <a href="' . admin_url() . '">Back to admin</a>');
+        } else {
+            // Clear specific post cache
+            $post_id = absint($param);
+            if ($post_id > 0) {
+                delete_transient('gmkb_mediakit_' . $post_id);
+                wp_die('✅ Cleared cache for media kit #' . $post_id . '. <a href="' . admin_url() . '">Back to admin</a>');
+            }
+        }
     }
     
     /**
