@@ -715,40 +715,47 @@ class GMKB_REST_API_V2 {
      * @return bool|WP_Error Whether the user can read
      */
     public function check_read_permissions($request) {
-        // Always allow read access for now - security can be tightened later
-        // This prevents the 403 errors during development
-        return true;
-        
-        /* FUTURE: Re-enable stricter permissions after migration complete
         $post_id = (int) $request['id'];
-        
+
+        // PHASE 8: Use new GMKB_Permissions class if available
+        if (class_exists('GMKB_Permissions')) {
+            return GMKB_Permissions::can_view($post_id);
+        }
+
+        // FALLBACK: Legacy permission check
         // If user is logged in, allow access
         if (is_user_logged_in()) {
             return true;
         }
-        
+
         // For non-logged-in users, check if post is public
         $post = get_post($post_id);
         if ($post && $post->post_status === 'publish') {
             return true;
         }
-        
+
         return new WP_Error(
             'rest_forbidden',
             'You must be logged in to access this media kit',
             array('status' => 403)
         );
-        */
     }
 
     /**
      * Check write permissions
-     * 
+     *
      * @param WP_REST_Request $request The request
      * @return bool Whether the user can write
      */
     public function check_write_permissions($request) {
         $post_id = (int) $request['id'];
+
+        // PHASE 8: Use new GMKB_Permissions class if available
+        if (class_exists('GMKB_Permissions')) {
+            return GMKB_Permissions::can_edit($post_id);
+        }
+
+        // FALLBACK: Legacy capability check
         return current_user_can('edit_post', $post_id);
     }
 

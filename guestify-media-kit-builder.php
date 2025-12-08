@@ -102,6 +102,40 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/version-control/VersionManager.php
     require_once GUESTIFY_PLUGIN_DIR . 'system/version-control/VersionManager.php';
 }
 
+// PHASE 8: Native Code-First Data Layer (Headless Architecture Migration)
+// Replaces Pods dependency with native WordPress CPT and meta field registration
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/core-schema.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/core-schema.php';
+}
+
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/field-migration-map.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/field-migration-map.php';
+}
+
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/permissions.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/permissions.php';
+}
+
+// PHASE 8.4: GraphQL Integration (Optional - requires WPGraphQL plugin)
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/graphql-types.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/graphql-types.php';
+}
+
+// Native data layer test scripts (admin only)
+if (is_admin()) {
+    // Check both possible locations for test files
+    $native_test_paths = [
+        'tests/native-data-test.php',
+        'tests/native-migration/native-data-test.php',
+    ];
+    foreach ($native_test_paths as $path) {
+        if (file_exists(GUESTIFY_PLUGIN_DIR . $path)) {
+            require_once GUESTIFY_PLUGIN_DIR . $path;
+            break;
+        }
+    }
+}
+
 // PHASE 2 IMPLEMENTATION: Pure Vue REST API v2 - Unified Endpoint
 // ROOT FIX: Removed MediaKitAPI (v1) - redundant code, frontend only uses v2
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-rest-api-v2.php')) {

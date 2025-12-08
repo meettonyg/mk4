@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs ls:*)",
+      "Bash(tree:*)",
+      "Bash(cat:*)",
+      "Bash(if [ -d \"node_modules\" ])",
+      "Bash(else echo \"No node_modules\")",
+      "Bash(fi)",
+      "Bash(git worktree:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
