@@ -3,8 +3,8 @@
  * GMKB Permission Helpers
  *
  * Implements owner-based permission model for headless architecture.
- * Separates user authentication from media kit ownership.
  *
+ * Phase 3 of Native Data Layer Migration
  * @package GMKB
  * @since 3.0.0
  */
@@ -16,22 +16,7 @@ if (!defined('ABSPATH')) {
 class GMKB_Permissions {
 
     /**
-     * Initialize permission hooks
-     */
-    public static function init() {
-        // Map meta capabilities
-        add_filter('map_meta_cap', [__CLASS__, 'map_meta_cap'], 10, 4);
-
-        // REST API permission callbacks
-        add_filter('rest_pre_dispatch', [__CLASS__, 'rest_pre_dispatch'], 10, 3);
-    }
-
-    /**
      * Check if user can view a media kit
-     *
-     * @param int $post_id Post ID
-     * @param int|null $user_id User ID (defaults to current user)
-     * @return bool
      */
     public static function can_view($post_id, $user_id = null) {
         $post = get_post($post_id);
@@ -45,26 +30,12 @@ class GMKB_Permissions {
             return true;
         }
 
-        // Otherwise, must be owner or have capability
-        if (self::is_owner($post_id, $user_id)) {
-            return true;
-        }
-
-        // Admins can view anything
-        $user_id = $user_id ?? get_current_user_id();
-        if ($user_id && user_can($user_id, 'edit_others_posts')) {
-            return true;
-        }
-
-        return false;
+        // Otherwise, must be owner
+        return self::is_owner($post_id, $user_id);
     }
 
     /**
      * Check if user can edit a media kit
-     *
-     * @param int $post_id Post ID
-     * @param int|null $user_id User ID (defaults to current user)
-     * @return bool
      */
     public static function can_edit($post_id, $user_id = null) {
         if ($user_id === null) {
@@ -80,65 +51,11 @@ class GMKB_Permissions {
             return true;
         }
 
-        // Editors can edit any media kit
-        if (user_can($user_id, 'edit_others_posts')) {
-            return true;
-        }
-
-        // Otherwise must be owner
         return self::is_owner($post_id, $user_id);
-    }
-
-    /**
-     * Check if user can delete a media kit
-     *
-     * @param int $post_id Post ID
-     * @param int|null $user_id User ID (defaults to current user)
-     * @return bool
-     */
-    public static function can_delete($post_id, $user_id = null) {
-        if ($user_id === null) {
-            $user_id = get_current_user_id();
-        }
-
-        if (!$user_id) {
-            return false;
-        }
-
-        // Admins can delete anything
-        if (user_can($user_id, 'manage_options')) {
-            return true;
-        }
-
-        // Only owner can delete their media kit
-        return self::is_owner($post_id, $user_id);
-    }
-
-    /**
-     * Check if user can create a media kit
-     *
-     * @param int|null $user_id User ID (defaults to current user)
-     * @return bool
-     */
-    public static function can_create($user_id = null) {
-        if ($user_id === null) {
-            $user_id = get_current_user_id();
-        }
-
-        if (!$user_id) {
-            return false;
-        }
-
-        // Must have at least publish_posts capability
-        return user_can($user_id, 'publish_posts');
     }
 
     /**
      * Check if user owns a media kit
-     *
-     * @param int $post_id Post ID
-     * @param int|null $user_id User ID (defaults to current user)
-     * @return bool
      */
     public static function is_owner($post_id, $user_id = null) {
         if ($user_id === null) {
@@ -149,10 +66,10 @@ class GMKB_Permissions {
             return false;
         }
 
-        // Check owner_user_id meta field first (Phase 3 standard)
+        // Check owner_user_id meta field
         $owner_id = get_post_meta($post_id, 'owner_user_id', true);
 
-        // Fallback to post author during migration period
+        // Fallback to post author during migration
         if (empty($owner_id)) {
             $post = get_post($post_id);
             $owner_id = $post ? $post->post_author : 0;
@@ -162,290 +79,200 @@ class GMKB_Permissions {
     }
 
     /**
-     * Get the owner user ID for a media kit
-     *
-     * @param int $post_id Post ID
-     * @return int|false Owner user ID or false if not found
-     */
-    public static function get_owner($post_id) {
-        $owner_id = get_post_meta($post_id, 'owner_user_id', true);
-
-        if (!$owner_id) {
-            $post = get_post($post_id);
-            $owner_id = $post ? $post->post_author : 0;
-        }
-
-        return $owner_id ? absint($owner_id) : false;
-    }
-
-    /**
-     * Set the owner for a media kit
-     *
-     * @param int $post_id Post ID
-     * @param int $user_id User ID
-     * @return bool Success
-     */
-    public static function set_owner($post_id, $user_id) {
-        return update_post_meta($post_id, 'owner_user_id', absint($user_id)) !== false;
-    }
-
-    /**
      * Get all media kits owned by a user
-     *
-     * @param int|null $user_id User ID (defaults to current user)
-     * @param array $args Additional query args
-     * @return WP_Post[] Array of post objects
      */
-    public static function get_user_media_kits($user_id = null, $args = []) {
+    public static function get_user_media_kits($user_id = null) {
         if ($user_id === null) {
             $user_id = get_current_user_id();
         }
 
-        if (!$user_id) {
-            return [];
-        }
-
-        $default_args = [
+        return get_posts([
             'post_type' => 'guests',
             'posts_per_page' => -1,
-            'post_status' => ['publish', 'draft', 'private', 'pending'],
+            'post_status' => ['publish', 'draft', 'private'],
             'meta_query' => [
                 'relation' => 'OR',
                 [
                     'key' => 'owner_user_id',
                     'value' => $user_id,
                     'compare' => '=',
-                    'type' => 'NUMERIC',
                 ],
             ],
             'author' => $user_id, // Fallback for posts without owner_user_id
-        ];
-
-        $query_args = wp_parse_args($args, $default_args);
-
-        return get_posts($query_args);
+        ]);
     }
 
     /**
-     * Count media kits owned by a user
-     *
-     * @param int|null $user_id User ID (defaults to current user)
-     * @return int Count
-     */
-    public static function count_user_media_kits($user_id = null) {
-        if ($user_id === null) {
-            $user_id = get_current_user_id();
-        }
-
-        if (!$user_id) {
-            return 0;
-        }
-
-        return count(self::get_user_media_kits($user_id));
-    }
-
-    /**
-     * REST API permission callback
-     *
-     * @param WP_REST_Request $request
-     * @return bool|WP_Error
+     * REST API permission callback for GET requests
      */
     public static function rest_permission_callback($request) {
         $post_id = $request->get_param('id');
         $method = $request->get_method();
 
-        // Handle creation (no post_id yet)
-        if ($method === 'POST' && !$post_id) {
-            if (!self::can_create()) {
-                return new WP_Error(
-                    'rest_forbidden',
-                    __('You do not have permission to create media kits.', 'gmkb'),
-                    ['status' => 403]
-                );
-            }
-            return true;
-        }
-
-        // View permissions
         if ($method === 'GET') {
-            if (!self::can_view($post_id)) {
-                return new WP_Error(
-                    'rest_forbidden',
-                    __('You do not have permission to view this media kit.', 'gmkb'),
-                    ['status' => 403]
-                );
-            }
-            return true;
+            return self::can_view($post_id);
         }
 
-        // Edit permissions (PUT, PATCH, POST with ID)
-        if (in_array($method, ['PUT', 'PATCH']) || ($method === 'POST' && $post_id)) {
-            if (!self::can_edit($post_id)) {
-                return new WP_Error(
-                    'rest_forbidden',
-                    __('You do not have permission to edit this media kit.', 'gmkb'),
-                    ['status' => 403]
-                );
-            }
-            return true;
+        return self::can_edit($post_id);
+    }
+
+    /**
+     * REST API permission callback for edit requests
+     */
+    public static function rest_edit_permission_callback($request) {
+        $post_id = $request->get_param('id');
+        return self::can_edit($post_id);
+    }
+
+    /**
+     * REST API permission callback for create requests
+     */
+    public static function rest_create_permission_callback($request) {
+        return is_user_logged_in();
+    }
+
+    /**
+     * Check if current user can create a new media kit
+     */
+    public static function can_create($user_id = null) {
+        if ($user_id === null) {
+            $user_id = get_current_user_id();
         }
 
-        // Delete permissions
-        if ($method === 'DELETE') {
-            if (!self::can_delete($post_id)) {
-                return new WP_Error(
-                    'rest_forbidden',
-                    __('You do not have permission to delete this media kit.', 'gmkb'),
-                    ['status' => 403]
-                );
-            }
-            return true;
+        if (!$user_id) {
+            return false;
         }
 
+        // Any logged-in user can create media kits by default
         return true;
     }
 
     /**
-     * Map meta capabilities for the guests post type
-     *
-     * @param array $caps Required capabilities
-     * @param string $cap Capability being checked
-     * @param int $user_id User ID
-     * @param array $args Additional arguments
-     * @return array Modified capabilities
+     * Check if current user can delete a media kit
      */
-    public static function map_meta_cap($caps, $cap, $user_id, $args) {
-        // Only modify capabilities for guests post type
-        if (!in_array($cap, ['edit_post', 'delete_post', 'read_post'])) {
-            return $caps;
+    public static function can_delete($post_id, $user_id = null) {
+        if ($user_id === null) {
+            $user_id = get_current_user_id();
         }
 
-        if (empty($args[0])) {
-            return $caps;
+        if (!$user_id) {
+            return false;
         }
 
-        $post = get_post($args[0]);
-        if (!$post || $post->post_type !== 'guests') {
-            return $caps;
+        // Only admins and owners can delete
+        if (user_can($user_id, 'manage_options')) {
+            return true;
         }
 
-        switch ($cap) {
-            case 'edit_post':
-                if (self::can_edit($post->ID, $user_id)) {
-                    return ['exist']; // Grant capability
-                }
-                break;
-
-            case 'delete_post':
-                if (self::can_delete($post->ID, $user_id)) {
-                    return ['exist'];
-                }
-                break;
-
-            case 'read_post':
-                if (self::can_view($post->ID, $user_id)) {
-                    return ['exist'];
-                }
-                break;
-        }
-
-        return $caps;
+        return self::is_owner($post_id, $user_id);
     }
 
     /**
-     * REST API pre-dispatch filter for additional security
-     *
-     * @param mixed $result Response to replace dispatch result
-     * @param WP_REST_Server $server Server instance
-     * @param WP_REST_Request $request Request
-     * @return mixed
+     * Set the owner of a media kit
      */
-    public static function rest_pre_dispatch($result, $server, $request) {
-        $route = $request->get_route();
+    public static function set_owner($post_id, $user_id) {
+        return update_post_meta($post_id, 'owner_user_id', absint($user_id));
+    }
 
-        // Only intercept our API routes
-        if (strpos($route, '/gmkb/') === false && strpos($route, '/media-kits') === false) {
-            return $result;
+    /**
+     * Get the owner ID of a media kit
+     */
+    public static function get_owner($post_id) {
+        $owner_id = get_post_meta($post_id, 'owner_user_id', true);
+
+        // Fallback to post author
+        if (empty($owner_id)) {
+            $post = get_post($post_id);
+            $owner_id = $post ? $post->post_author : 0;
         }
 
-        // Log access attempts for security auditing (if enabled)
-        if (defined('GMKB_LOG_API_ACCESS') && GMKB_LOG_API_ACCESS) {
-            self::log_access_attempt($request);
+        return absint($owner_id);
+    }
+
+    /**
+     * Transfer ownership of a media kit
+     */
+    public static function transfer_ownership($post_id, $new_owner_id, $current_user_id = null) {
+        // Must be current owner or admin to transfer
+        if (!self::can_edit($post_id, $current_user_id)) {
+            return new WP_Error('unauthorized', 'You do not have permission to transfer this media kit.');
+        }
+
+        // Verify new owner exists
+        $new_owner = get_user_by('id', $new_owner_id);
+        if (!$new_owner) {
+            return new WP_Error('invalid_user', 'The specified user does not exist.');
+        }
+
+        $result = self::set_owner($post_id, $new_owner_id);
+
+        if ($result) {
+            do_action('gmkb_ownership_transferred', $post_id, $new_owner_id, self::get_owner($post_id));
         }
 
         return $result;
     }
-
-    /**
-     * Log API access attempt
-     *
-     * @param WP_REST_Request $request
-     */
-    private static function log_access_attempt($request) {
-        $log = [
-            'timestamp' => current_time('mysql'),
-            'user_id' => get_current_user_id(),
-            'route' => $request->get_route(),
-            'method' => $request->get_method(),
-            'params' => $request->get_params(),
-            'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
-        ];
-
-        error_log('GMKB API Access: ' . json_encode($log));
-    }
-
-    /**
-     * Backfill owner_user_id from post_author for existing posts
-     *
-     * @param int $batch_size Posts per batch
-     * @return array Results
-     */
-    public static function backfill_owner_ids($batch_size = 100) {
-        $posts = get_posts([
-            'post_type' => ['guests', 'mkcg'],
-            'posts_per_page' => $batch_size,
-            'post_status' => 'any',
-            'meta_query' => [
-                [
-                    'key' => 'owner_user_id',
-                    'compare' => 'NOT EXISTS',
-                ],
-            ],
-        ]);
-
-        $updated = 0;
-        foreach ($posts as $post) {
-            if ($post->post_author) {
-                update_post_meta($post->ID, 'owner_user_id', $post->post_author);
-                $updated++;
-            }
-        }
-
-        return [
-            'updated' => $updated,
-            'remaining' => self::count_missing_owners(),
-        ];
-    }
-
-    /**
-     * Count posts missing owner_user_id
-     *
-     * @return int Count
-     */
-    public static function count_missing_owners() {
-        global $wpdb;
-
-        return (int) $wpdb->get_var("
-            SELECT COUNT(*)
-            FROM {$wpdb->posts} p
-            LEFT JOIN {$wpdb->postmeta} pm
-                ON p.ID = pm.post_id
-                AND pm.meta_key = 'owner_user_id'
-            WHERE p.post_type IN ('guests', 'mkcg')
-            AND pm.meta_id IS NULL
-        ");
-    }
 }
 
-// Initialize permissions
-add_action('init', ['GMKB_Permissions', 'init']);
+// Backfill owner_user_id function (run once via admin or WP-CLI)
+function gmkb_backfill_owner_user_id() {
+    $posts = get_posts([
+        'post_type' => ['guests', 'mkcg'],
+        'posts_per_page' => -1,
+        'meta_query' => [
+            [
+                'key' => 'owner_user_id',
+                'compare' => 'NOT EXISTS',
+            ],
+        ],
+    ]);
+
+    $count = 0;
+    foreach ($posts as $post) {
+        update_post_meta($post->ID, 'owner_user_id', $post->post_author);
+        $count++;
+    }
+
+    return $count;
+}
+
+// Register admin backfill endpoint
+add_action('admin_init', function() {
+    if (!isset($_GET['gmkb_backfill_owners'])) {
+        return;
+    }
+
+    if (!current_user_can('manage_options')) {
+        wp_die('Unauthorized');
+    }
+
+    $count = gmkb_backfill_owner_user_id();
+
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => true,
+        'message' => "Backfilled owner_user_id for {$count} posts.",
+        'count' => $count,
+    ], JSON_PRETTY_PRINT);
+    exit;
+});
+
+// WP-CLI support for backfill
+if (defined('WP_CLI') && WP_CLI) {
+    WP_CLI::add_command('gmkb backfill-owners', function() {
+        $count = gmkb_backfill_owner_user_id();
+        WP_CLI::success("Backfilled owner_user_id for {$count} posts.");
+    });
+}
+
+// Hook into post creation to set owner automatically
+add_action('save_post_guests', function($post_id, $post, $update) {
+    if ($update) {
+        return; // Only on new posts
+    }
+
+    $owner_id = get_post_meta($post_id, 'owner_user_id', true);
+    if (empty($owner_id)) {
+        GMKB_Permissions::set_owner($post_id, $post->post_author);
+    }
+}, 10, 3);
