@@ -1,5 +1,70 @@
-# Dependencies node_modules/ # Build output dist/ build/ .output/ # Environment files .env .env.local .env.*.local # IDE .vscode/ .idea/ *.sublime-* # OS .DS_Store Thumbs.db # Logs *.log npm-debug.log* logs/ # Testing coverage/ .nyc_output/ # Cache .cache/ .parcel-cache/ .eslintcache
-/node_modules
-*.md
-vite.config.js
-/_archive
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+.output/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Cache
+.cache/
+.parcel-cache/
+.eslintcache
+
+# Archive folders - exclude from version control
+_archive/
+_fixes/
+
+# Implementation docs - exclude from version control
+.implementation-docs/
+
+# Claude configuration
+.claude/
+
+# Diagnostics
+diagnostics/
+
+# Test files at root
+test-*.js
+test-*.php
+DIAGNOSTIC-*.php
+DIAGNOSTIC-*.html
+*.bak
+
+# Temporary PowerShell/Batch scripts
+*.ps1
+*.bat
+*.sh
+!BUILD.bat
+!RUN-BUILD.bat
+
+# Debug scripts at root
+DEBUG_*.ps1
+EMERGENCY_*.js
+gmkb-diagnostics.js
+console-pods-debug.js
+quick-pods-debug.js
+HOVER_TEST.js
