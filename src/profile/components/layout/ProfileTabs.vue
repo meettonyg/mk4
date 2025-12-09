@@ -13,18 +13,24 @@
             </button>
         </div>
 
-        <!-- Tab Content -->
-        <div class="tab-content">
-            <div v-show="activeTab === 'overview'" class="tab-panel">
+        <!-- Tab Content - uses original class names for theme compatibility -->
+        <div v-show="activeTab === 'overview'" class="tab-content overview">
+            <div class="tab-content-inner">
                 <slot name="overview" />
             </div>
-            <div v-show="activeTab === 'value'" class="tab-panel">
+        </div>
+        <div v-show="activeTab === 'value'" class="tab-content topics">
+            <div class="tab-content-inner">
                 <slot name="value" />
             </div>
-            <div v-show="activeTab === 'messaging'" class="tab-panel">
+        </div>
+        <div v-show="activeTab === 'messaging'" class="tab-content messaging">
+            <div class="tab-content-inner">
                 <slot name="messaging" />
             </div>
-            <div v-show="activeTab === 'branding'" class="tab-panel">
+        </div>
+        <div v-show="activeTab === 'branding'" class="tab-content branding">
+            <div class="tab-content-inner">
                 <slot name="branding" />
             </div>
         </div>
@@ -52,10 +58,7 @@ defineEmits(['change']);
 <style scoped>
 .tabs {
     background-color: #fff;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e2e8f0;
     border-radius: 0 0 8px 8px;
-    border-top: none;
 }
 
 .tabs-header {
@@ -96,24 +99,14 @@ defineEmits(['change']);
     background-color: rgba(20, 184, 166, 0.05);
 }
 
+/* Tab content uses theme CSS classes - only add fallbacks */
 .tab-content {
     background: #fff;
-}
-
-.tab-panel {
     padding: 24px;
-    animation: fadeIn 0.3s ease;
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(5px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+.tab-content-inner {
+    /* Container for tab slot content */
 }
 
 @media (max-width: 640px) {
@@ -122,7 +115,7 @@ defineEmits(['change']);
         font-size: 13px;
     }
 
-    .tab-panel {
+    .tab-content {
         padding: 16px;
     }
 }
