@@ -6,7 +6,8 @@
                 <h3 class="topic-title">
                     Topic {{ topic.id }}: {{ topic.title || 'Untitled Topic' }}
                 </h3>
-                <span class="topic-questions-count">
+                <!-- Question count hidden to match original design -->
+                <span class="topic-questions-count" style="display: none;">
                     {{ questionCount }} questions
                 </span>
             </div>

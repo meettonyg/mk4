@@ -256,15 +256,56 @@
                 </p>
             </template>
         </EditablePanel>
+
+        <!-- Media Kit Layout Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Media Kit Layout</h2>
+            </div>
+            <div class="panel-content">
+                <p class="layout-info">
+                    <span class="info-icon">ℹ</span>
+                    <a :href="layoutSelectorUrl" target="_blank">
+                        Personalize your one sheet with your own unique layout.
+                    </a>
+                </p>
+                <p v-if="currentLayout" class="layout-current">
+                    Layout: <strong>{{ currentLayout }}</strong>
+                </p>
+                <p class="layout-action">
+                    <a :href="layoutSelectorUrl" target="_blank" class="button secondary-button">
+                        Change Layout
+                    </a>
+                </p>
+            </div>
+        </div>
     </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
+import { ref, reactive, computed } from 'vue';
 import { useProfileStore } from '../../stores/profile.js';
 import EditablePanel from '../layout/EditablePanel.vue';
 
 const store = useProfileStore();
+
+// Layout selector URL with post ID
+const layoutSelectorUrl = computed(() => {
+    const postId = store.postId;
+    if (postId) {
+        return `/app/templates/designs/?pos=${postId}`;
+    }
+    return '/app/templates/designs/';
+});
+
+// Current layout name from taxonomies
+const currentLayout = computed(() => {
+    const layouts = store.taxonomies?.layout || [];
+    if (layouts.length > 0) {
+        return layouts[0].name;
+    }
+    return null;
+});
 
 // Edit state
 const editingSection = ref(null);
@@ -581,5 +622,80 @@ const saveSection = async (sectionId) => {
     outline: none;
     border-color: #14b8a6;
     box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+}
+
+/* Panel styles (for Media Kit Layout) */
+.panel {
+    background-color: white;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+.panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.panel-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    color: #0f172a;
+}
+
+.panel-content {
+    padding: 20px;
+}
+
+/* Layout section styles */
+.layout-info {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: #64748b;
+}
+
+.layout-info a {
+    color: #0284c7;
+    text-decoration: none;
+}
+
+.layout-info a:hover {
+    text-decoration: underline;
+}
+
+.layout-current {
+    margin: 0 0 16px 0;
+    font-size: 14px;
+    color: #334155;
+}
+
+.layout-action {
+    margin: 0;
+}
+
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    border: none;
+}
+
+.secondary-button {
+    background-color: white;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+
+.secondary-button:hover {
+    background-color: #f8fafc;
 }
 </style>

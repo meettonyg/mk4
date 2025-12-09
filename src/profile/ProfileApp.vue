@@ -30,6 +30,7 @@
             <ProfileHeader
                 :post-data="store.postData"
                 :full-name="store.fullName"
+                :completeness="store.completeness"
                 @edit="handleEditProfile"
             />
 

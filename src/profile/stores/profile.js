@@ -155,6 +155,35 @@ export const useProfileStore = defineStore('profile', {
                 link: state.fields.offer_2_link || '',
             },
         ],
+
+        /**
+         * Calculate profile completeness percentage
+         */
+        completeness: (state) => {
+            // Key fields that contribute to completeness (matches API calculation)
+            const requiredFields = [
+                'first_name',
+                'last_name',
+                'biography',
+                'tagline',
+                'headshot_primary',
+                'topic_1',
+                'question_1',
+                'social_linkedin',
+                'website_primary',
+                'why_book_you',
+            ];
+
+            let filled = 0;
+            for (const field of requiredFields) {
+                const value = state.fields[field];
+                if (value && (typeof value !== 'object' || value.url)) {
+                    filled++;
+                }
+            }
+
+            return Math.round((filled / requiredFields.length) * 100);
+        },
     },
 
     actions: {
