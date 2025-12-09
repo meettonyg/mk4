@@ -2,9 +2,13 @@
 node_modules/
 
 # Build output
-dist/
 build/
 .output/
+
+# Dist - track profile apps but ignore other build artifacts
+dist/*
+!dist/profile/
+!dist/profile-list/
 
 # Environment files
 .env

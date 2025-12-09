@@ -66,16 +66,21 @@ class GMKB_Permissions {
             return false;
         }
 
-        // Check owner_user_id meta field
+        // Check owner_user_id meta field first
         $owner_id = get_post_meta($post_id, 'owner_user_id', true);
-
-        // Fallback to post author during migration
-        if (empty($owner_id)) {
-            $post = get_post($post_id);
-            $owner_id = $post ? $post->post_author : 0;
+        if (!empty($owner_id)) {
+            return absint($owner_id) === absint($user_id);
         }
 
-        return absint($owner_id) === absint($user_id);
+        // Check legacy user_id field (from Formidable)
+        $legacy_user_id = get_post_meta($post_id, 'user_id', true);
+        if (!empty($legacy_user_id)) {
+            return absint($legacy_user_id) === absint($user_id);
+        }
+
+        // Fallback to post author only when no explicit owner is set
+        $post = get_post($post_id);
+        return $post && absint($post->post_author) === absint($user_id);
     }
 
     /**
@@ -86,10 +91,14 @@ class GMKB_Permissions {
             $user_id = get_current_user_id();
         }
 
-        return get_posts([
+        $posts = [];
+        $found_ids = [];
+
+        // Query 1: Get profiles by owner_user_id or legacy user_id
+        $owner_query = new WP_Query([
             'post_type' => 'guests',
             'posts_per_page' => -1,
-            'post_status' => ['publish', 'draft', 'private'],
+            'post_status' => ['publish', 'draft', 'private', 'pending'],
             'meta_query' => [
                 'relation' => 'OR',
                 [
@@ -97,9 +106,60 @@ class GMKB_Permissions {
                     'value' => $user_id,
                     'compare' => '=',
                 ],
+                [
+                    'key' => 'user_id',
+                    'value' => $user_id,
+                    'compare' => '=',
+                ],
             ],
-            'author' => $user_id, // Fallback for posts without owner_user_id
         ]);
+
+        foreach ($owner_query->posts as $post) {
+            $posts[] = $post;
+            $found_ids[] = $post->ID;
+        }
+
+        // Query 2: Get profiles by post author (fallback for posts without owner fields)
+        $author_query = new WP_Query([
+            'post_type' => 'guests',
+            'posts_per_page' => -1,
+            'post_status' => ['publish', 'draft', 'private', 'pending'],
+            'author' => $user_id,
+            'post__not_in' => $found_ids ?: [0],
+            'meta_query' => [
+                'relation' => 'AND',
+                [
+                    'relation' => 'OR',
+                    [
+                        'key' => 'owner_user_id',
+                        'compare' => 'NOT EXISTS',
+                    ],
+                    [
+                        'key' => 'owner_user_id',
+                        'value' => '',
+                        'compare' => '=',
+                    ],
+                ],
+                [
+                    'relation' => 'OR',
+                    [
+                        'key' => 'user_id',
+                        'compare' => 'NOT EXISTS',
+                    ],
+                    [
+                        'key' => 'user_id',
+                        'value' => '',
+                        'compare' => '=',
+                    ],
+                ],
+            ],
+        ]);
+
+        foreach ($author_query->posts as $post) {
+            $posts[] = $post;
+        }
+
+        return $posts;
     }
 
     /**
@@ -178,15 +238,21 @@ class GMKB_Permissions {
      * Get the owner ID of a media kit
      */
     public static function get_owner($post_id) {
+        // Check owner_user_id first
         $owner_id = get_post_meta($post_id, 'owner_user_id', true);
-
-        // Fallback to post author
-        if (empty($owner_id)) {
-            $post = get_post($post_id);
-            $owner_id = $post ? $post->post_author : 0;
+        if (!empty($owner_id)) {
+            return absint($owner_id);
         }
 
-        return absint($owner_id);
+        // Fallback to legacy user_id field (from Formidable)
+        $legacy_user_id = get_post_meta($post_id, 'user_id', true);
+        if (!empty($legacy_user_id)) {
+            return absint($legacy_user_id);
+        }
+
+        // Final fallback to post author
+        $post = get_post($post_id);
+        return $post ? absint($post->post_author) : 0;
     }
 
     /**
@@ -229,7 +295,10 @@ function gmkb_backfill_owner_user_id() {
 
     $count = 0;
     foreach ($posts as $post) {
-        update_post_meta($post->ID, 'owner_user_id', $post->post_author);
+        // Prefer legacy user_id field if set, otherwise use post_author
+        $legacy_user_id = get_post_meta($post->ID, 'user_id', true);
+        $owner_id = !empty($legacy_user_id) ? absint($legacy_user_id) : $post->post_author;
+        update_post_meta($post->ID, 'owner_user_id', $owner_id);
         $count++;
     }
 
