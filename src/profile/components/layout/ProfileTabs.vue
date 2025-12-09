@@ -12,21 +12,29 @@
             </label>
         </div>
 
-        <!-- Tab Content Panels - Vue controls visibility -->
-        <div class="tab-content" :class="{ active: activeTab === 'overview' }" v-show="activeTab === 'overview'">
-            <slot name="overview"></slot>
+        <!-- Tab Content Panels - Explicit slots for reliable rendering -->
+        <div class="tab-content overview" :class="{ active: activeTab === 'overview' }">
+            <slot name="overview">
+                <p class="empty-slot">Overview content not provided</p>
+            </slot>
         </div>
 
-        <div class="tab-content" :class="{ active: activeTab === 'value' }" v-show="activeTab === 'value'">
-            <slot name="value"></slot>
+        <div class="tab-content value" :class="{ active: activeTab === 'value' }">
+            <slot name="value">
+                <p class="empty-slot">Value content not provided</p>
+            </slot>
         </div>
 
-        <div class="tab-content" :class="{ active: activeTab === 'messaging' }" v-show="activeTab === 'messaging'">
-            <slot name="messaging"></slot>
+        <div class="tab-content messaging" :class="{ active: activeTab === 'messaging' }">
+            <slot name="messaging">
+                <p class="empty-slot">Messaging content not provided</p>
+            </slot>
         </div>
 
-        <div class="tab-content" :class="{ active: activeTab === 'branding' }" v-show="activeTab === 'branding'">
-            <slot name="branding"></slot>
+        <div class="tab-content branding" :class="{ active: activeTab === 'branding' }">
+            <slot name="branding">
+                <p class="empty-slot">Branding content not provided</p>
+            </slot>
         </div>
     </div>
 </template>
@@ -50,11 +58,20 @@ defineEmits(['change']);
 </script>
 
 <style scoped>
-/* Tabs Container */
+/* ==============================
+   Tabs Container
+   (matching interview-detail.css pattern)
+============================== */
 .tabs {
-    background-color: #fff;
+    margin: 0;
+    padding: 0;
     border-radius: 0 0 8px 8px;
     overflow: hidden;
+    background-color: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    border-top: none;
+    position: relative;
 }
 
 /* Tab Header Navigation */
@@ -99,23 +116,41 @@ defineEmits(['change']);
     background-color: rgba(20, 184, 166, 0.05);
 }
 
-/* Tab Content Panels */
+/* ==============================
+   Tab Content Panels
+============================== */
+
+/* Hide all tab content by default */
 .tab-content {
+    display: none;
     background: #fff;
     padding: 24px;
-    animation: fadeIn 0.2s ease-in-out;
+}
+
+/* Show tab content when active class is present */
+.tab-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
 }
 
 /* Fade-in animation for tab content */
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(-4px);
+        transform: translateY(5px);
     }
     to {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* Empty slot fallback (for debugging) */
+.empty-slot {
+    color: #94a3b8;
+    font-style: italic;
+    text-align: center;
+    padding: 40px 20px;
 }
 
 /* Responsive */
