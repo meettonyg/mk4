@@ -1,46 +1,10 @@
 <template>
     <div class="tabs">
-        <!-- Hidden radio buttons for theme CSS compatibility -->
-        <input
-            type="radio"
-            name="tabs"
-            id="tab-overview"
-            data-tab="overview"
-            class="tab-radio"
-            :checked="activeTab === 'overview'"
-        >
-        <input
-            type="radio"
-            name="tabs"
-            id="tab-topics"
-            data-tab="value"
-            class="tab-radio"
-            :checked="activeTab === 'value'"
-        >
-        <input
-            type="radio"
-            name="tabs"
-            id="tab-messaging"
-            data-tab="messaging"
-            class="tab-radio"
-            :checked="activeTab === 'messaging'"
-        >
-        <input
-            type="radio"
-            name="tabs"
-            id="tab-branding"
-            data-tab="branding"
-            class="tab-radio"
-            :checked="activeTab === 'branding'"
-        >
-
-        <!-- Tab Headers -->
+        <!-- Tab Navigation -->
         <div class="tabs-header">
             <label
                 v-for="tab in tabs"
                 :key="tab.id"
-                :for="getRadioId(tab.id)"
-                class="tab-button"
                 :class="{ active: activeTab === tab.id }"
                 @click="$emit('change', tab.id)"
             >
@@ -48,26 +12,21 @@
             </label>
         </div>
 
-        <!-- Tab Content - Vue controls visibility with v-show -->
-        <div v-show="activeTab === 'overview'" class="tab-content overview">
-            <div class="tab-content-inner">
-                <slot name="overview" />
-            </div>
+        <!-- Tab Content Panels - Vue controls visibility -->
+        <div class="tab-content" :class="{ active: activeTab === 'overview' }" v-show="activeTab === 'overview'">
+            <slot name="overview"></slot>
         </div>
-        <div v-show="activeTab === 'value'" class="tab-content topics">
-            <div class="tab-content-inner">
-                <slot name="value" />
-            </div>
+
+        <div class="tab-content" :class="{ active: activeTab === 'value' }" v-show="activeTab === 'value'">
+            <slot name="value"></slot>
         </div>
-        <div v-show="activeTab === 'messaging'" class="tab-content messaging">
-            <div class="tab-content-inner">
-                <slot name="messaging" />
-            </div>
+
+        <div class="tab-content" :class="{ active: activeTab === 'messaging' }" v-show="activeTab === 'messaging'">
+            <slot name="messaging"></slot>
         </div>
-        <div v-show="activeTab === 'branding'" class="tab-content branding">
-            <div class="tab-content-inner">
-                <slot name="branding" />
-            </div>
+
+        <div class="tab-content" :class="{ active: activeTab === 'branding' }" v-show="activeTab === 'branding'">
+            <slot name="branding"></slot>
         </div>
     </div>
 </template>
@@ -80,16 +39,6 @@ const tabs = [
     { id: 'branding', label: 'Branding' },
 ];
 
-// Map tab IDs to radio input IDs (matching original HTML)
-const radioIdMap = {
-    overview: 'tab-overview',
-    value: 'tab-topics',
-    messaging: 'tab-messaging',
-    branding: 'tab-branding',
-};
-
-const getRadioId = (tabId) => radioIdMap[tabId] || `tab-${tabId}`;
-
 defineProps({
     activeTab: {
         type: String,
@@ -101,18 +50,14 @@ defineEmits(['change']);
 </script>
 
 <style scoped>
-/* Hide radio inputs visually but keep for theme CSS compatibility */
-.tab-radio {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-}
-
+/* Tabs Container */
 .tabs {
     background-color: #fff;
     border-radius: 0 0 8px 8px;
+    overflow: hidden;
 }
 
+/* Tab Header Navigation */
 .tabs-header {
     display: flex;
     overflow-x: auto;
@@ -126,7 +71,8 @@ defineEmits(['change']);
     display: none;
 }
 
-.tab-button {
+/* Tab Labels */
+.tabs-header label {
     padding: 16px 24px;
     cursor: pointer;
     font-weight: 500;
@@ -137,32 +83,44 @@ defineEmits(['change']);
     border-bottom: 3px solid transparent;
     transition: all 0.2s ease;
     white-space: nowrap;
+    user-select: none;
 }
 
-.tab-button:hover {
-    color: #0284c7;
-    background-color: rgba(2, 132, 199, 0.05);
+.tabs-header label:hover {
+    color: #0ea5e9;
+    background-color: rgba(14, 165, 233, 0.05);
 }
 
-.tab-button.active {
+/* Active Tab Label */
+.tabs-header label.active {
     color: #14b8a6;
     font-weight: 600;
     border-bottom-color: #14b8a6;
     background-color: rgba(20, 184, 166, 0.05);
 }
 
-/* Tab content styling - visibility controlled by v-show */
+/* Tab Content Panels */
 .tab-content {
     background: #fff;
     padding: 24px;
+    animation: fadeIn 0.2s ease-in-out;
 }
 
-.tab-content-inner {
-    /* Container for tab slot content */
+/* Fade-in animation for tab content */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
+/* Responsive */
 @media (max-width: 640px) {
-    .tab-button {
+    .tabs-header label {
         padding: 12px 16px;
         font-size: 13px;
     }
