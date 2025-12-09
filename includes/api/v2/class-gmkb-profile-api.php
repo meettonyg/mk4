@@ -2,8 +2,9 @@
 /**
  * REST API endpoints for Guest Profile data
  *
- * Provides endpoints to read and write profile fields directly to post meta,
- * bypassing Formidable Forms for the Vue profile editor.
+ * Provides endpoints to read and write profile fields directly to post meta.
+ * Uses GMKB_Profile_Schema for field definitions and validation.
+ * Uses GMKB_Profile_Repository for data access (enabling future backend swaps).
  *
  * @package GMKB
  */
@@ -18,6 +19,25 @@ class GMKB_Profile_API {
      * API namespace
      */
     const NAMESPACE = 'gmkb/v2';
+
+    /**
+     * Repository instance
+     *
+     * @var GMKB_Profile_Repository
+     */
+    private static $repository = null;
+
+    /**
+     * Get repository instance
+     *
+     * @return GMKB_Profile_Repository
+     */
+    private static function get_repository(): GMKB_Profile_Repository {
+        if (self::$repository === null) {
+            self::$repository = new GMKB_Profile_Repository();
+        }
+        return self::$repository;
+    }
 
     /**
      * Initialize the API
@@ -91,6 +111,13 @@ class GMKB_Profile_API {
             'permission_callback' => '__return_true',
         ]);
 
+        // Get JSON Schema (for frontend validation / migration)
+        register_rest_route(self::NAMESPACE, '/profile/json-schema', [
+            'methods' => WP_REST_Server::READABLE,
+            'callback' => [__CLASS__, 'get_json_schema'],
+            'permission_callback' => '__return_true',
+        ]);
+
         // List all profiles for current user
         register_rest_route(self::NAMESPACE, '/profiles', [
             'methods' => WP_REST_Server::READABLE,
@@ -111,20 +138,30 @@ class GMKB_Profile_API {
             'callback' => [__CLASS__, 'delete_profile'],
             'permission_callback' => [__CLASS__, 'check_edit_permission'],
         ]);
+
+        // Export profile (portable JSON)
+        register_rest_route(self::NAMESPACE, '/profile/(?P<id>\d+)/export', [
+            'methods' => WP_REST_Server::READABLE,
+            'callback' => [__CLASS__, 'export_profile'],
+            'permission_callback' => [__CLASS__, 'check_read_permission'],
+        ]);
     }
+
+    // =========================================================================
+    // Permission Callbacks
+    // =========================================================================
 
     /**
      * Check if user can read the profile
      */
     public static function check_read_permission($request) {
-        $post_id = $request->get_param('id');
+        $post_id = (int) $request->get_param('id');
         $post = get_post($post_id);
 
         if (!$post || $post->post_type !== 'guests') {
             return new WP_Error('not_found', 'Profile not found', ['status' => 404]);
         }
 
-        // Check if user is logged in
         if (!is_user_logged_in()) {
             return new WP_Error('unauthorized', 'Authentication required', ['status' => 401]);
         }
@@ -136,8 +173,9 @@ class GMKB_Profile_API {
             return true;
         }
 
-        // Check ownership using helper method
-        if (self::is_profile_owner($post_id, $user_id, $post)) {
+        // Check ownership via repository
+        $repo = self::get_repository();
+        if ($repo->is_owner($post_id, $user_id)) {
             return true;
         }
 
@@ -148,7 +186,7 @@ class GMKB_Profile_API {
      * Check if user can edit the profile
      */
     public static function check_edit_permission($request) {
-        $post_id = $request->get_param('id');
+        $post_id = (int) $request->get_param('id');
         $post = get_post($post_id);
 
         if (!$post || $post->post_type !== 'guests') {
@@ -166,8 +204,9 @@ class GMKB_Profile_API {
             return true;
         }
 
-        // Check ownership using helper method
-        if (self::is_profile_owner($post_id, $user_id, $post)) {
+        // Check ownership via repository
+        $repo = self::get_repository();
+        if ($repo->is_owner($post_id, $user_id)) {
             return true;
         }
 
@@ -175,92 +214,31 @@ class GMKB_Profile_API {
     }
 
     /**
-     * Check if user is the owner of a profile
-     * Prioritizes explicit owner fields over post_author
-     *
-     * @param int $post_id Profile post ID
-     * @param int $user_id User ID to check
-     * @param WP_Post|null $post Post object (optional, will be fetched if not provided)
-     * @return bool
+     * Check if user can list profiles
      */
-    private static function is_profile_owner($post_id, $user_id, $post = null) {
-        // Check owner_user_id first (highest priority)
-        $owner_id = get_post_meta($post_id, 'owner_user_id', true);
-        if (!empty($owner_id)) {
-            return (int) $owner_id === $user_id;
+    public static function check_list_permission($request) {
+        if (!is_user_logged_in()) {
+            return new WP_Error('unauthorized', 'Authentication required', ['status' => 401]);
         }
-
-        // Check legacy user_id field (from Formidable)
-        $legacy_user_id = get_post_meta($post_id, 'user_id', true);
-        if (!empty($legacy_user_id)) {
-            return (int) $legacy_user_id === $user_id;
-        }
-
-        // Fallback to post author only when no explicit owner is set
-        if (!$post) {
-            $post = get_post($post_id);
-        }
-        return $post && (int) $post->post_author === $user_id;
+        return true;
     }
+
+    // =========================================================================
+    // API Endpoints
+    // =========================================================================
 
     /**
      * Get full profile data
      */
     public static function get_profile($request) {
         $post_id = (int) $request->get_param('id');
-        $post = get_post($post_id);
 
-        if (!$post) {
+        $repo = self::get_repository();
+        $profile_data = $repo->get($post_id);
+
+        if ($profile_data === null) {
             return new WP_Error('not_found', 'Profile not found', ['status' => 404]);
         }
-
-        // Load the field map
-        if (!class_exists('GMKB_Formidable_Field_Map')) {
-            require_once GMKB_PLUGIN_DIR . 'system/formidable-field-map.php';
-        }
-
-        $grouped_fields = GMKB_Formidable_Field_Map::get_grouped_fields();
-        $all_fields = [];
-
-        // Flatten the grouped fields
-        foreach ($grouped_fields as $group => $fields) {
-            foreach ($fields as $field) {
-                $all_fields[] = $field;
-            }
-        }
-
-        // Get all field values
-        $profile_data = [];
-        foreach ($all_fields as $field) {
-            $value = get_post_meta($post_id, $field, true);
-
-            // Expand image fields to include URLs
-            if (in_array($field, ['headshot_primary', 'headshot_vertical', 'headshot_horizontal'])) {
-                $profile_data[$field] = self::expand_image_field($value);
-            } elseif (in_array($field, ['logos', 'carousel_images'])) {
-                $profile_data[$field] = self::expand_gallery_field($value);
-            } else {
-                $profile_data[$field] = $value;
-            }
-        }
-
-        // Add post data
-        $profile_data['_post'] = [
-            'id' => $post_id,
-            'title' => $post->post_title,
-            'slug' => $post->post_name,
-            'status' => $post->post_status,
-            'created' => $post->post_date,
-            'modified' => $post->post_modified,
-            'author' => (int) $post->post_author,
-            'permalink' => get_permalink($post_id),
-        ];
-
-        // Add taxonomy data
-        $profile_data['_taxonomies'] = [
-            'topic_category' => wp_get_post_terms($post_id, 'topic_category', ['fields' => 'all']),
-            'layout' => wp_get_post_terms($post_id, 'layout', ['fields' => 'all']),
-        ];
 
         return rest_ensure_response([
             'success' => true,
@@ -279,41 +257,10 @@ class GMKB_Profile_API {
             return new WP_Error('invalid_data', 'No fields provided', ['status' => 400]);
         }
 
-        // Load the field map
-        if (!class_exists('GMKB_Formidable_Field_Map')) {
-            require_once GMKB_PLUGIN_DIR . 'system/formidable-field-map.php';
-        }
+        $repo = self::get_repository();
+        $result = $repo->update($post_id, $fields);
 
-        $updated = [];
-        $errors = [];
-
-        foreach ($fields as $field => $value) {
-            // Skip internal fields
-            if (strpos($field, '_') === 0) {
-                continue;
-            }
-
-            $result = self::save_field($post_id, $field, $value);
-
-            if (is_wp_error($result)) {
-                $errors[$field] = $result->get_error_message();
-            } else {
-                $updated[$field] = $value;
-            }
-        }
-
-        // Update post modified time
-        wp_update_post([
-            'ID' => $post_id,
-            'post_modified' => current_time('mysql'),
-            'post_modified_gmt' => current_time('mysql', true),
-        ]);
-
-        return rest_ensure_response([
-            'success' => empty($errors),
-            'updated' => $updated,
-            'errors' => $errors,
-        ]);
+        return rest_ensure_response($result);
     }
 
     /**
@@ -330,12 +277,8 @@ class GMKB_Profile_API {
 
         $value = $body['value'];
 
-        // Load the field map
-        if (!class_exists('GMKB_Formidable_Field_Map')) {
-            require_once GMKB_PLUGIN_DIR . 'system/formidable-field-map.php';
-        }
-
-        $result = self::save_field($post_id, $field, $value);
+        $repo = self::get_repository();
+        $result = $repo->update_field($post_id, $field, $value);
 
         if (is_wp_error($result)) {
             return $result;
@@ -359,52 +302,17 @@ class GMKB_Profile_API {
             return new WP_Error('invalid_data', 'Fields object is required', ['status' => 400]);
         }
 
-        // Load the field map
-        if (!class_exists('GMKB_Formidable_Field_Map')) {
-            require_once GMKB_PLUGIN_DIR . 'system/formidable-field-map.php';
-        }
+        $repo = self::get_repository();
+        $result = $repo->update($post_id, $fields);
 
-        $updated = [];
-        $errors = [];
-
-        foreach ($fields as $field => $value) {
-            $result = self::save_field($post_id, $field, $value);
-
-            if (is_wp_error($result)) {
-                $errors[$field] = $result->get_error_message();
-            } else {
-                $updated[$field] = $value;
-            }
-        }
-
-        return rest_ensure_response([
-            'success' => empty($errors),
-            'updated' => $updated,
-            'errors' => $errors,
-        ]);
+        return rest_ensure_response($result);
     }
 
     /**
-     * Get profile field schema
+     * Get profile field schema (grouped format for frontend)
      */
     public static function get_schema($request) {
-        if (!class_exists('GMKB_Formidable_Field_Map')) {
-            require_once GMKB_PLUGIN_DIR . 'system/formidable-field-map.php';
-        }
-
-        $grouped_fields = GMKB_Formidable_Field_Map::get_grouped_fields();
-        $schema = [];
-
-        foreach ($grouped_fields as $group => $fields) {
-            $schema[$group] = [];
-            foreach ($fields as $field) {
-                $schema[$group][$field] = [
-                    'key' => $field,
-                    'label' => GMKB_Formidable_Field_Map::get_field_label($field),
-                    'type' => GMKB_Formidable_Field_Map::get_sanitization_type($field),
-                ];
-            }
-        }
+        $schema = GMKB_Profile_Schema::to_frontend_schema();
 
         return rest_ensure_response([
             'success' => true,
@@ -413,133 +321,12 @@ class GMKB_Profile_API {
     }
 
     /**
-     * Save a single field with proper sanitization
+     * Get JSON Schema (standard format for validation/migration)
      */
-    private static function save_field($post_id, $field, $value) {
-        $type = GMKB_Formidable_Field_Map::get_sanitization_type($field);
+    public static function get_json_schema($request) {
+        $schema = GMKB_Profile_Schema::to_json_schema();
 
-        // Sanitize based on field type
-        switch ($type) {
-            case 'html':
-                $value = wp_kses_post($value);
-                break;
-
-            case 'url':
-                $value = esc_url_raw($value);
-                break;
-
-            case 'email':
-                $value = sanitize_email($value);
-                break;
-
-            case 'int':
-                $value = absint($value);
-                break;
-
-            case 'color':
-                // Validate hex color
-                if (!empty($value) && !preg_match('/^#[a-fA-F0-9]{6}$/', $value)) {
-                    return new WP_Error('invalid_color', "Invalid color format for {$field}");
-                }
-                $value = sanitize_hex_color($value);
-                break;
-
-            case 'array':
-                if (!is_array($value)) {
-                    $value = [];
-                }
-                // Sanitize each item in the array
-                $value = array_map(function($item) {
-                    if (is_numeric($item)) {
-                        return absint($item);
-                    }
-                    return sanitize_text_field($item);
-                }, $value);
-                break;
-
-            default:
-                $value = sanitize_text_field($value);
-        }
-
-        // Handle special post title field
-        if ($field === 'full_name') {
-            wp_update_post([
-                'ID' => $post_id,
-                'post_title' => $value,
-            ]);
-        }
-
-        // Save to post meta
-        $result = update_post_meta($post_id, $field, $value);
-
-        if ($result === false) {
-            return new WP_Error('save_failed', "Failed to save {$field}");
-        }
-
-        return true;
-    }
-
-    /**
-     * Expand image field to include URLs and sizes
-     */
-    private static function expand_image_field($attachment_id) {
-        if (empty($attachment_id)) {
-            return null;
-        }
-
-        $attachment_id = (int) $attachment_id;
-
-        if (!wp_attachment_is_image($attachment_id)) {
-            return null;
-        }
-
-        return [
-            'id' => $attachment_id,
-            'url' => wp_get_attachment_url($attachment_id),
-            'alt' => get_post_meta($attachment_id, '_wp_attachment_image_alt', true),
-            'sizes' => [
-                'thumbnail' => wp_get_attachment_image_url($attachment_id, 'thumbnail'),
-                'medium' => wp_get_attachment_image_url($attachment_id, 'medium'),
-                'large' => wp_get_attachment_image_url($attachment_id, 'large'),
-                'full' => wp_get_attachment_image_url($attachment_id, 'full'),
-            ],
-        ];
-    }
-
-    /**
-     * Expand gallery field to include URLs for each image
-     */
-    private static function expand_gallery_field($value) {
-        if (empty($value)) {
-            return [];
-        }
-
-        // Handle comma-separated string
-        if (is_string($value)) {
-            $ids = array_map('trim', explode(',', $value));
-        } else {
-            $ids = (array) $value;
-        }
-
-        $images = [];
-        foreach ($ids as $id) {
-            $expanded = self::expand_image_field($id);
-            if ($expanded) {
-                $images[] = $expanded;
-            }
-        }
-
-        return $images;
-    }
-
-    /**
-     * Check if user can list profiles
-     */
-    public static function check_list_permission($request) {
-        if (!is_user_logged_in()) {
-            return new WP_Error('unauthorized', 'Authentication required', ['status' => 401]);
-        }
-        return true;
+        return rest_ensure_response($schema);
     }
 
     /**
@@ -547,90 +334,9 @@ class GMKB_Profile_API {
      */
     public static function list_profiles($request) {
         $user_id = get_current_user_id();
-        $profiles = [];
-        $found_ids = [];
 
-        error_log("GMKB Profile API: list_profiles called for user_id: {$user_id}");
-
-        // Query 1: Profiles owned by current user (via owner_user_id or legacy user_id meta)
-        $owner_args = [
-            'post_type' => 'guests',
-            'posts_per_page' => -1,
-            'post_status' => ['publish', 'draft', 'pending'],
-            'orderby' => 'modified',
-            'order' => 'DESC',
-            'meta_query' => [
-                'relation' => 'OR',
-                [
-                    'key' => 'owner_user_id',
-                    'value' => $user_id,
-                    'compare' => '=',
-                ],
-                [
-                    'key' => 'user_id',
-                    'value' => $user_id,
-                    'compare' => '=',
-                ],
-            ],
-        ];
-
-        $owner_query = new WP_Query($owner_args);
-        error_log("GMKB Profile API: Query 1 (owner meta) found: " . count($owner_query->posts) . " profiles");
-        foreach ($owner_query->posts as $post) {
-            $profiles[] = self::format_profile_card($post);
-            $found_ids[] = $post->ID;
-            error_log("GMKB Profile API: Found profile ID: {$post->ID}, title: {$post->post_title}");
-        }
-
-        // Query 2: Profiles authored by current user without explicit owner set
-        $author_args = [
-            'post_type' => 'guests',
-            'posts_per_page' => -1,
-            'post_status' => ['publish', 'draft', 'pending'],
-            'author' => $user_id,
-            'post__not_in' => $found_ids ?: [0], // Exclude already found profiles
-            'meta_query' => [
-                'relation' => 'AND',
-                [
-                    'relation' => 'OR',
-                    [
-                        'key' => 'owner_user_id',
-                        'compare' => 'NOT EXISTS',
-                    ],
-                    [
-                        'key' => 'owner_user_id',
-                        'value' => '',
-                        'compare' => '=',
-                    ],
-                ],
-                [
-                    'relation' => 'OR',
-                    [
-                        'key' => 'user_id',
-                        'compare' => 'NOT EXISTS',
-                    ],
-                    [
-                        'key' => 'user_id',
-                        'value' => '',
-                        'compare' => '=',
-                    ],
-                ],
-            ],
-        ];
-
-        $author_query = new WP_Query($author_args);
-        error_log("GMKB Profile API: Query 2 (author fallback) found: " . count($author_query->posts) . " profiles");
-        foreach ($author_query->posts as $post) {
-            $profiles[] = self::format_profile_card($post);
-            error_log("GMKB Profile API: Found (author) profile ID: {$post->ID}, title: {$post->post_title}");
-        }
-
-        error_log("GMKB Profile API: Total profiles returning: " . count($profiles));
-
-        // Sort all profiles by modified date (descending)
-        usort($profiles, function($a, $b) {
-            return strtotime($b['modified']) - strtotime($a['modified']);
-        });
+        $repo = self::get_repository();
+        $profiles = $repo->list_for_user($user_id);
 
         return rest_ensure_response([
             'success' => true,
@@ -640,120 +346,30 @@ class GMKB_Profile_API {
     }
 
     /**
-     * Format profile data for card display
-     */
-    private static function format_profile_card($post) {
-        $post_id = $post->ID;
-
-        // Get key fields for display
-        $first_name = get_post_meta($post_id, 'first_name', true);
-        $last_name = get_post_meta($post_id, 'last_name', true);
-        $headshot = get_post_meta($post_id, 'headshot_primary', true);
-        $tagline = get_post_meta($post_id, 'tagline', true);
-
-        // Build display name
-        $display_name = trim("{$first_name} {$last_name}");
-        if (empty($display_name)) {
-            $display_name = $post->post_title;
-        }
-
-        // Calculate profile completeness
-        $completeness = self::calculate_completeness($post_id);
-
-        // Get headshot URL
-        $headshot_url = null;
-        if ($headshot) {
-            $headshot_url = wp_get_attachment_image_url($headshot, 'thumbnail');
-        }
-
-        return [
-            'id' => $post_id,
-            'title' => $display_name,
-            'slug' => $post->post_name,
-            'tagline' => $tagline,
-            'headshot' => $headshot_url,
-            'status' => $post->post_status,
-            'completeness' => $completeness,
-            'created' => $post->post_date,
-            'modified' => $post->post_modified,
-            'editUrl' => "/app/profiles/guest/profile/?entry={$post->post_name}",
-            'viewUrl' => get_permalink($post_id),
-        ];
-    }
-
-    /**
-     * Calculate profile completeness percentage
-     */
-    private static function calculate_completeness($post_id) {
-        // Key fields that contribute to completeness
-        $required_fields = [
-            'first_name',
-            'last_name',
-            'biography',
-            'tagline',
-            'headshot_primary',
-            'topic_1',
-            'question_1',
-            'social_linkedin',
-            'website_primary',
-            'why_book_you',
-        ];
-
-        $filled = 0;
-        foreach ($required_fields as $field) {
-            $value = get_post_meta($post_id, $field, true);
-            if (!empty($value)) {
-                $filled++;
-            }
-        }
-
-        return round(($filled / count($required_fields)) * 100);
-    }
-
-    /**
      * Create a new profile
      */
     public static function create_profile($request) {
-        $user_id = get_current_user_id();
         $body = $request->get_json_params();
 
-        $first_name = isset($body['first_name']) ? sanitize_text_field($body['first_name']) : '';
-        $last_name = isset($body['last_name']) ? sanitize_text_field($body['last_name']) : '';
-
-        // Generate title
-        $title = trim("{$first_name} {$last_name}");
-        if (empty($title)) {
-            $title = 'New Profile';
-        }
-
-        // Create the post
-        $post_id = wp_insert_post([
-            'post_type' => 'guests',
-            'post_title' => $title,
-            'post_status' => 'draft',
-            'post_author' => $user_id,
-        ]);
+        $repo = self::get_repository();
+        $post_id = $repo->create($body);
 
         if (is_wp_error($post_id)) {
             return $post_id;
-        }
-
-        // Set owner
-        update_post_meta($post_id, 'owner_user_id', $user_id);
-
-        // Set initial fields
-        if ($first_name) {
-            update_post_meta($post_id, 'first_name', $first_name);
-        }
-        if ($last_name) {
-            update_post_meta($post_id, 'last_name', $last_name);
         }
 
         $post = get_post($post_id);
 
         return rest_ensure_response([
             'success' => true,
-            'profile' => self::format_profile_card($post),
+            'profile' => [
+                'id' => $post_id,
+                'title' => $post->post_title,
+                'slug' => $post->post_name,
+                'status' => $post->post_status,
+                'editUrl' => "/app/profiles/guest/profile/?entry={$post->post_name}",
+                'viewUrl' => get_permalink($post_id),
+            ],
             'message' => 'Profile created successfully',
         ]);
     }
@@ -764,7 +380,8 @@ class GMKB_Profile_API {
     public static function delete_profile($request) {
         $post_id = (int) $request->get_param('id');
 
-        $result = wp_trash_post($post_id);
+        $repo = self::get_repository();
+        $result = $repo->delete($post_id);
 
         if (!$result) {
             return new WP_Error('delete_failed', 'Failed to delete profile', ['status' => 500]);
@@ -773,6 +390,25 @@ class GMKB_Profile_API {
         return rest_ensure_response([
             'success' => true,
             'message' => 'Profile moved to trash',
+        ]);
+    }
+
+    /**
+     * Export profile as portable JSON
+     */
+    public static function export_profile($request) {
+        $post_id = (int) $request->get_param('id');
+
+        $repo = self::get_repository();
+        $export = $repo->export($post_id);
+
+        if ($export === null) {
+            return new WP_Error('not_found', 'Profile not found', ['status' => 404]);
+        }
+
+        return rest_ensure_response([
+            'success' => true,
+            'data' => $export,
         ]);
     }
 }

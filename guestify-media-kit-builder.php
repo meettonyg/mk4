@@ -112,7 +112,19 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/field-migration-map.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/field-migration-map.php';
 }
 
-// Formidable Field ID to Post Meta mapping (for Vue Profile Editor)
+// Profile Schema - Single Source of Truth for field definitions
+// Replaces the legacy Formidable field mapping
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-profile-schema.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-profile-schema.php';
+}
+
+// Profile Repository - Data Access Layer for profile CRUD operations
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-profile-repository.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-profile-repository.php';
+}
+
+// Legacy: Formidable Field ID to Post Meta mapping
+// TODO: Remove after migration verification complete
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/formidable-field-map.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/formidable-field-map.php';
 }

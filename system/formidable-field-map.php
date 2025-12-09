@@ -266,7 +266,7 @@ class GMKB_Formidable_Field_Map {
             'identity' => [
                 'first_name', 'last_name', 'full_name', 'prefix', 'suffix',
                 'phonetic', 'guest_title', 'company', 'tagline', 'slug',
-                'core_audience', 'audience_expertise_highlighted',
+                'core_audience', 'audience_expertise_highlighted', 'expertise_tags',
             ],
             'contact_private' => [
                 'email', 'phone', 'skype',
