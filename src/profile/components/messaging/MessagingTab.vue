@@ -23,7 +23,7 @@
                                     stories and results that you share.
                                 </p>
                                 <p>
-                                    <a href="/app/biography-generator/" target="_blank">
+                                    <a :href="biographyGeneratorUrl" target="_blank">
                                         🤖 Create your Podcast Biography with AI
                                     </a>
                                 </p>
@@ -186,11 +186,20 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
+import { ref, reactive, computed } from 'vue';
 import { useProfileStore } from '../../stores/profile.js';
 import EditablePanel from '../layout/EditablePanel.vue';
 
 const store = useProfileStore();
+
+// Generate dynamic URLs with entry parameter
+const biographyGeneratorUrl = computed(() => {
+    const entry = store.postData?.slug || '';
+    if (entry) {
+        return `/app/biography-generator/?frm_action=edit&entry=${entry}`;
+    }
+    return '/app/biography-generator/';
+});
 
 // Edit state
 const editingSection = ref(null);
