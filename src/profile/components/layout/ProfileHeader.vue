@@ -81,6 +81,17 @@
                 </span>
             </div>
         </div>
+
+        <!-- Profile Completeness Progress Bar -->
+        <div v-if="completeness !== null" class="progress-bar-container">
+            <div class="progress-bar">
+                <div class="progress-fill" :style="{ width: completeness + '%' }"></div>
+            </div>
+            <div class="progress-labels">
+                <span class="progress-label">Profile Completeness</span>
+                <span class="progress-value">{{ completeness }}%</span>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -102,6 +113,10 @@ const props = defineProps({
     },
     responseRate: {
         type: [Number, String],
+        default: null,
+    },
+    completeness: {
+        type: Number,
         default: null,
     },
 });
@@ -258,6 +273,45 @@ const mediaKitUrl = computed(() => {
     font-weight: 500;
     color: #0f172a;
     margin-left: 4px;
+}
+
+/* Progress Bar */
+.progress-bar-container {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: #14b8a6;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.progress-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+}
+
+.progress-label {
+    font-size: 14px;
+    color: #64748b;
+}
+
+.progress-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #14b8a6;
 }
 
 @media (max-width: 640px) {

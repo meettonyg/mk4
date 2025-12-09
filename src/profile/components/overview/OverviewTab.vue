@@ -218,6 +218,14 @@
                                 No links added yet
                             </li>
                         </ul>
+
+                        <div class="cta-container">
+                            <h3 class="cta-title">Ready to reach out to podcasts?</h3>
+                            <p class="cta-description">Start pitching your expertise to podcast hosts</p>
+                            <a href="/app/interview/board/" target="_blank" class="button primary-button">
+                                View Podcasts to Pitch
+                            </a>
+                        </div>
                     </template>
 
                     <template #edit>
@@ -648,5 +656,49 @@ const saveSection = async (sectionId) => {
 .textarea {
     min-height: 100px;
     resize: vertical;
+}
+
+/* CTA Container */
+.cta-container {
+    margin-top: 20px;
+    padding: 20px;
+    text-align: center;
+    background-color: #f8fafc;
+    border-radius: 8px;
+}
+
+.cta-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+    color: #0f172a;
+}
+
+.cta-description {
+    font-size: 14px;
+    color: #64748b;
+    margin: 0 0 16px 0;
+}
+
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    border: none;
+}
+
+.primary-button {
+    background-color: #14b8a6;
+    color: white;
+}
+
+.primary-button:hover {
+    background-color: #0d9488;
 }
 </style>
