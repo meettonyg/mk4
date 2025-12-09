@@ -1,37 +1,47 @@
 <template>
-    <div class="tabs">
+    <div class="profile-tabs-component">
+        <!-- Hidden Radio Inputs for CSS-only tab switching -->
+        <input
+            v-for="tab in tabs"
+            :key="'radio-' + tab.id"
+            type="radio"
+            :id="'tab-' + tab.id"
+            name="profile-tabs"
+            :checked="activeTab === tab.id"
+            @change="$emit('change', tab.id)"
+        >
+
         <!-- Tab Navigation -->
         <div class="tabs-header">
             <label
                 v-for="tab in tabs"
-                :key="tab.id"
-                :class="{ active: activeTab === tab.id }"
-                @click="$emit('change', tab.id)"
+                :key="'label-' + tab.id"
+                :for="'tab-' + tab.id"
             >
                 {{ tab.label }}
             </label>
         </div>
 
-        <!-- Tab Content Panels - Explicit slots for reliable rendering -->
-        <div class="tab-content overview" :class="{ active: activeTab === 'overview' }">
+        <!-- Tab Content Panels -->
+        <div class="tab-content overview">
             <slot name="overview">
                 <p class="empty-slot">Overview content not provided</p>
             </slot>
         </div>
 
-        <div class="tab-content value" :class="{ active: activeTab === 'value' }">
+        <div class="tab-content value">
             <slot name="value">
                 <p class="empty-slot">Value content not provided</p>
             </slot>
         </div>
 
-        <div class="tab-content messaging" :class="{ active: activeTab === 'messaging' }">
+        <div class="tab-content messaging">
             <slot name="messaging">
                 <p class="empty-slot">Messaging content not provided</p>
             </slot>
         </div>
 
-        <div class="tab-content branding" :class="{ active: activeTab === 'branding' }">
+        <div class="tab-content branding">
             <slot name="branding">
                 <p class="empty-slot">Branding content not provided</p>
             </slot>
@@ -57,12 +67,15 @@ defineProps({
 defineEmits(['change']);
 </script>
 
-<style scoped>
+<style>
 /* ==============================
-   Tabs Container
+   ProfileTabs - CSS-only tab system
    (matching interview-detail.css pattern)
+
+   NOTE: This is unscoped CSS because Vue's scoped CSS
+   breaks ID-based sibling selectors (#id:checked ~ .class)
 ============================== */
-.tabs {
+.profile-tabs-component {
     margin: 0;
     padding: 0;
     border-radius: 0 0 8px 8px;
@@ -74,8 +87,13 @@ defineEmits(['change']);
     position: relative;
 }
 
+/* Hide radio inputs (CSS-only tab mechanism) */
+.profile-tabs-component input[type="radio"] {
+    display: none;
+}
+
 /* Tab Header Navigation */
-.tabs-header {
+.profile-tabs-component .tabs-header {
     display: flex;
     overflow-x: auto;
     scrollbar-width: none;
@@ -84,12 +102,12 @@ defineEmits(['change']);
     border-bottom: 1px solid #e2e8f0;
 }
 
-.tabs-header::-webkit-scrollbar {
+.profile-tabs-component .tabs-header::-webkit-scrollbar {
     display: none;
 }
 
 /* Tab Labels */
-.tabs-header label {
+.profile-tabs-component .tabs-header label {
     padding: 16px 24px;
     cursor: pointer;
     font-weight: 500;
@@ -103,17 +121,9 @@ defineEmits(['change']);
     user-select: none;
 }
 
-.tabs-header label:hover {
+.profile-tabs-component .tabs-header label:hover {
     color: #0ea5e9;
     background-color: rgba(14, 165, 233, 0.05);
-}
-
-/* Active Tab Label */
-.tabs-header label.active {
-    color: #14b8a6;
-    font-weight: 600;
-    border-bottom-color: #14b8a6;
-    background-color: rgba(20, 184, 166, 0.05);
 }
 
 /* ==============================
@@ -121,20 +131,34 @@ defineEmits(['change']);
 ============================== */
 
 /* Hide all tab content by default */
-.tab-content {
+.profile-tabs-component .tab-content {
     display: none;
     background: #fff;
     padding: 24px;
 }
 
-/* Show tab content when active class is present */
-.tab-content.active {
+/* Show the selected tab content using CSS sibling selector */
+.profile-tabs-component #tab-overview:checked ~ .tab-content.overview,
+.profile-tabs-component #tab-value:checked ~ .tab-content.value,
+.profile-tabs-component #tab-messaging:checked ~ .tab-content.messaging,
+.profile-tabs-component #tab-branding:checked ~ .tab-content.branding {
     display: block;
-    animation: fadeIn 0.3s ease;
+    animation: profileTabsFadeIn 0.3s ease;
+}
+
+/* Active tab label styles using CSS sibling selector */
+.profile-tabs-component #tab-overview:checked ~ .tabs-header label[for="tab-overview"],
+.profile-tabs-component #tab-value:checked ~ .tabs-header label[for="tab-value"],
+.profile-tabs-component #tab-messaging:checked ~ .tabs-header label[for="tab-messaging"],
+.profile-tabs-component #tab-branding:checked ~ .tabs-header label[for="tab-branding"] {
+    color: #14b8a6;
+    font-weight: 600;
+    border-bottom-color: #14b8a6;
+    background-color: rgba(20, 184, 166, 0.05);
 }
 
 /* Fade-in animation for tab content */
-@keyframes fadeIn {
+@keyframes profileTabsFadeIn {
     from {
         opacity: 0;
         transform: translateY(5px);
@@ -146,7 +170,7 @@ defineEmits(['change']);
 }
 
 /* Empty slot fallback (for debugging) */
-.empty-slot {
+.profile-tabs-component .empty-slot {
     color: #94a3b8;
     font-style: italic;
     text-align: center;
@@ -155,12 +179,12 @@ defineEmits(['change']);
 
 /* Responsive */
 @media (max-width: 640px) {
-    .tabs-header label {
+    .profile-tabs-component .tabs-header label {
         padding: 12px 16px;
         font-size: 13px;
     }
 
-    .tab-content {
+    .profile-tabs-component .tab-content {
         padding: 16px;
     }
 }
