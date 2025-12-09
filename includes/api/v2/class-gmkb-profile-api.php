@@ -136,14 +136,8 @@ class GMKB_Profile_API {
             return true;
         }
 
-        // Users can read their own profiles
-        $owner_id = get_post_meta($post_id, 'owner_user_id', true);
-        if ($owner_id && (int) $owner_id === $user_id) {
-            return true;
-        }
-
-        // Check if user is the post author
-        if ((int) $post->post_author === $user_id) {
+        // Check ownership using helper method
+        if (self::is_profile_owner($post_id, $user_id, $post)) {
             return true;
         }
 
@@ -172,18 +166,41 @@ class GMKB_Profile_API {
             return true;
         }
 
-        // Users can edit their own profiles
-        $owner_id = get_post_meta($post_id, 'owner_user_id', true);
-        if ($owner_id && (int) $owner_id === $user_id) {
-            return true;
-        }
-
-        // Check if user is the post author
-        if ((int) $post->post_author === $user_id) {
+        // Check ownership using helper method
+        if (self::is_profile_owner($post_id, $user_id, $post)) {
             return true;
         }
 
         return new WP_Error('forbidden', 'You do not have permission to edit this profile', ['status' => 403]);
+    }
+
+    /**
+     * Check if user is the owner of a profile
+     * Prioritizes explicit owner fields over post_author
+     *
+     * @param int $post_id Profile post ID
+     * @param int $user_id User ID to check
+     * @param WP_Post|null $post Post object (optional, will be fetched if not provided)
+     * @return bool
+     */
+    private static function is_profile_owner($post_id, $user_id, $post = null) {
+        // Check owner_user_id first (highest priority)
+        $owner_id = get_post_meta($post_id, 'owner_user_id', true);
+        if (!empty($owner_id)) {
+            return (int) $owner_id === $user_id;
+        }
+
+        // Check legacy user_id field (from Formidable)
+        $legacy_user_id = get_post_meta($post_id, 'user_id', true);
+        if (!empty($legacy_user_id)) {
+            return (int) $legacy_user_id === $user_id;
+        }
+
+        // Fallback to post author only when no explicit owner is set
+        if (!$post) {
+            $post = get_post($post_id);
+        }
+        return $post && (int) $post->post_author === $user_id;
     }
 
     /**
@@ -530,58 +547,90 @@ class GMKB_Profile_API {
      */
     public static function list_profiles($request) {
         $user_id = get_current_user_id();
+        $profiles = [];
+        $found_ids = [];
 
-        // Query profiles owned by the current user (via owner_user_id meta)
-        $args = [
+        error_log("GMKB Profile API: list_profiles called for user_id: {$user_id}");
+
+        // Query 1: Profiles owned by current user (via owner_user_id or legacy user_id meta)
+        $owner_args = [
             'post_type' => 'guests',
             'posts_per_page' => -1,
             'post_status' => ['publish', 'draft', 'pending'],
             'orderby' => 'modified',
             'order' => 'DESC',
             'meta_query' => [
+                'relation' => 'OR',
                 [
                     'key' => 'owner_user_id',
+                    'value' => $user_id,
+                    'compare' => '=',
+                ],
+                [
+                    'key' => 'user_id',
                     'value' => $user_id,
                     'compare' => '=',
                 ],
             ],
         ];
 
-        $query = new WP_Query($args);
-        $profiles = [];
-
-        foreach ($query->posts as $post) {
+        $owner_query = new WP_Query($owner_args);
+        error_log("GMKB Profile API: Query 1 (owner meta) found: " . count($owner_query->posts) . " profiles");
+        foreach ($owner_query->posts as $post) {
             $profiles[] = self::format_profile_card($post);
+            $found_ids[] = $post->ID;
+            error_log("GMKB Profile API: Found profile ID: {$post->ID}, title: {$post->post_title}");
         }
 
-        // Also query by author (for profiles without owner_user_id set)
+        // Query 2: Profiles authored by current user without explicit owner set
         $author_args = [
             'post_type' => 'guests',
             'posts_per_page' => -1,
             'post_status' => ['publish', 'draft', 'pending'],
             'author' => $user_id,
+            'post__not_in' => $found_ids ?: [0], // Exclude already found profiles
             'meta_query' => [
-                'relation' => 'OR',
+                'relation' => 'AND',
                 [
-                    'key' => 'owner_user_id',
-                    'compare' => 'NOT EXISTS',
+                    'relation' => 'OR',
+                    [
+                        'key' => 'owner_user_id',
+                        'compare' => 'NOT EXISTS',
+                    ],
+                    [
+                        'key' => 'owner_user_id',
+                        'value' => '',
+                        'compare' => '=',
+                    ],
                 ],
                 [
-                    'key' => 'owner_user_id',
-                    'value' => '',
-                    'compare' => '=',
+                    'relation' => 'OR',
+                    [
+                        'key' => 'user_id',
+                        'compare' => 'NOT EXISTS',
+                    ],
+                    [
+                        'key' => 'user_id',
+                        'value' => '',
+                        'compare' => '=',
+                    ],
                 ],
             ],
         ];
 
         $author_query = new WP_Query($author_args);
+        error_log("GMKB Profile API: Query 2 (author fallback) found: " . count($author_query->posts) . " profiles");
         foreach ($author_query->posts as $post) {
-            // Avoid duplicates
-            $existing_ids = array_column($profiles, 'id');
-            if (!in_array($post->ID, $existing_ids)) {
-                $profiles[] = self::format_profile_card($post);
-            }
+            $profiles[] = self::format_profile_card($post);
+            error_log("GMKB Profile API: Found (author) profile ID: {$post->ID}, title: {$post->post_title}");
         }
+
+        error_log("GMKB Profile API: Total profiles returning: " . count($profiles));
+
+        // Sort all profiles by modified date (descending)
+        usort($profiles, function($a, $b) {
+            return strtotime($b['modified']) - strtotime($a['modified']);
+        });
 
         return rest_ensure_response([
             'success' => true,
