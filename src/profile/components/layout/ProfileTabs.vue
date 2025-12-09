@@ -56,7 +56,6 @@ defineEmits(['change']);
     border: 1px solid #e2e8f0;
     border-radius: 0 0 8px 8px;
     border-top: none;
-    overflow: hidden;
 }
 
 .tabs-header {
