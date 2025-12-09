@@ -66,25 +66,21 @@ class GMKB_Permissions {
             return false;
         }
 
-        // Check owner_user_id meta field
+        // Check owner_user_id meta field first
         $owner_id = get_post_meta($post_id, 'owner_user_id', true);
-        if ($owner_id && absint($owner_id) === absint($user_id)) {
-            return true;
+        if (!empty($owner_id)) {
+            return absint($owner_id) === absint($user_id);
         }
 
         // Check legacy user_id field (from Formidable)
         $legacy_user_id = get_post_meta($post_id, 'user_id', true);
-        if ($legacy_user_id && absint($legacy_user_id) === absint($user_id)) {
-            return true;
+        if (!empty($legacy_user_id)) {
+            return absint($legacy_user_id) === absint($user_id);
         }
 
-        // Fallback to post author during migration
+        // Fallback to post author only when no explicit owner is set
         $post = get_post($post_id);
-        if ($post && absint($post->post_author) === absint($user_id)) {
-            return true;
-        }
-
-        return false;
+        return $post && absint($post->post_author) === absint($user_id);
     }
 
     /**
@@ -130,6 +126,33 @@ class GMKB_Permissions {
             'post_status' => ['publish', 'draft', 'private', 'pending'],
             'author' => $user_id,
             'post__not_in' => $found_ids ?: [0],
+            'meta_query' => [
+                'relation' => 'AND',
+                [
+                    'relation' => 'OR',
+                    [
+                        'key' => 'owner_user_id',
+                        'compare' => 'NOT EXISTS',
+                    ],
+                    [
+                        'key' => 'owner_user_id',
+                        'value' => '',
+                        'compare' => '=',
+                    ],
+                ],
+                [
+                    'relation' => 'OR',
+                    [
+                        'key' => 'user_id',
+                        'compare' => 'NOT EXISTS',
+                    ],
+                    [
+                        'key' => 'user_id',
+                        'value' => '',
+                        'compare' => '=',
+                    ],
+                ],
+            ],
         ]);
 
         foreach ($author_query->posts as $post) {

@@ -136,20 +136,8 @@ class GMKB_Profile_API {
             return true;
         }
 
-        // Users can read their own profiles (check owner_user_id and legacy user_id)
-        $owner_id = get_post_meta($post_id, 'owner_user_id', true);
-        if ($owner_id && (int) $owner_id === $user_id) {
-            return true;
-        }
-
-        // Check legacy user_id field (from Formidable)
-        $legacy_user_id = get_post_meta($post_id, 'user_id', true);
-        if ($legacy_user_id && (int) $legacy_user_id === $user_id) {
-            return true;
-        }
-
-        // Check if user is the post author
-        if ((int) $post->post_author === $user_id) {
+        // Check ownership using helper method
+        if (self::is_profile_owner($post_id, $user_id, $post)) {
             return true;
         }
 
@@ -178,24 +166,41 @@ class GMKB_Profile_API {
             return true;
         }
 
-        // Users can edit their own profiles (check owner_user_id and legacy user_id)
-        $owner_id = get_post_meta($post_id, 'owner_user_id', true);
-        if ($owner_id && (int) $owner_id === $user_id) {
-            return true;
-        }
-
-        // Check legacy user_id field (from Formidable)
-        $legacy_user_id = get_post_meta($post_id, 'user_id', true);
-        if ($legacy_user_id && (int) $legacy_user_id === $user_id) {
-            return true;
-        }
-
-        // Check if user is the post author
-        if ((int) $post->post_author === $user_id) {
+        // Check ownership using helper method
+        if (self::is_profile_owner($post_id, $user_id, $post)) {
             return true;
         }
 
         return new WP_Error('forbidden', 'You do not have permission to edit this profile', ['status' => 403]);
+    }
+
+    /**
+     * Check if user is the owner of a profile
+     * Prioritizes explicit owner fields over post_author
+     *
+     * @param int $post_id Profile post ID
+     * @param int $user_id User ID to check
+     * @param WP_Post|null $post Post object (optional, will be fetched if not provided)
+     * @return bool
+     */
+    private static function is_profile_owner($post_id, $user_id, $post = null) {
+        // Check owner_user_id first (highest priority)
+        $owner_id = get_post_meta($post_id, 'owner_user_id', true);
+        if (!empty($owner_id)) {
+            return (int) $owner_id === $user_id;
+        }
+
+        // Check legacy user_id field (from Formidable)
+        $legacy_user_id = get_post_meta($post_id, 'user_id', true);
+        if (!empty($legacy_user_id)) {
+            return (int) $legacy_user_id === $user_id;
+        }
+
+        // Fallback to post author only when no explicit owner is set
+        if (!$post) {
+            $post = get_post($post_id);
+        }
+        return $post && (int) $post->post_author === $user_id;
     }
 
     /**

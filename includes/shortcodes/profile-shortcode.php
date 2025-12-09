@@ -41,10 +41,16 @@ function gmkb_profile_shortcode_handler($atts) {
         // Check for entry query var (from Formidable)
         $entry_key = isset($_GET['entry']) ? sanitize_text_field($_GET['entry']) : null;
         if ($entry_key) {
-            // Look up post by entry key (slug) - include draft/pending for editing
-            $post = get_page_by_path($entry_key, OBJECT, 'guests', ['publish', 'draft', 'pending']);
-            if ($post) {
-                $post_id = $post->ID;
+            // Look up post by slug - include draft/pending for editing
+            // Note: get_page_by_path doesn't support post_status, so we use get_posts
+            $posts = get_posts([
+                'name' => $entry_key,
+                'post_type' => 'guests',
+                'post_status' => ['publish', 'draft', 'pending'],
+                'posts_per_page' => 1,
+            ]);
+            if (!empty($posts)) {
+                $post_id = $posts[0]->ID;
             }
         }
 
