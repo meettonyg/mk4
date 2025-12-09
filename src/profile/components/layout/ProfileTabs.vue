@@ -8,7 +8,6 @@
             data-tab="overview"
             class="tab-radio"
             :checked="activeTab === 'overview'"
-            @change="$emit('change', 'overview')"
         >
         <input
             type="radio"
@@ -17,7 +16,6 @@
             data-tab="value"
             class="tab-radio"
             :checked="activeTab === 'value'"
-            @change="$emit('change', 'value')"
         >
         <input
             type="radio"
@@ -26,7 +24,6 @@
             data-tab="messaging"
             class="tab-radio"
             :checked="activeTab === 'messaging'"
-            @change="$emit('change', 'messaging')"
         >
         <input
             type="radio"
@@ -35,7 +32,6 @@
             data-tab="branding"
             class="tab-radio"
             :checked="activeTab === 'branding'"
-            @change="$emit('change', 'branding')"
         >
 
         <!-- Tab Headers -->
@@ -52,23 +48,23 @@
             </label>
         </div>
 
-        <!-- Tab Content - uses original class names for theme compatibility -->
-        <div class="tab-content overview">
+        <!-- Tab Content - Vue controls visibility with v-show -->
+        <div v-show="activeTab === 'overview'" class="tab-content overview">
             <div class="tab-content-inner">
                 <slot name="overview" />
             </div>
         </div>
-        <div class="tab-content topics">
+        <div v-show="activeTab === 'value'" class="tab-content topics">
             <div class="tab-content-inner">
                 <slot name="value" />
             </div>
         </div>
-        <div class="tab-content messaging">
+        <div v-show="activeTab === 'messaging'" class="tab-content messaging">
             <div class="tab-content-inner">
                 <slot name="messaging" />
             </div>
         </div>
-        <div class="tab-content branding">
+        <div v-show="activeTab === 'branding'" class="tab-content branding">
             <div class="tab-content-inner">
                 <slot name="branding" />
             </div>
@@ -105,7 +101,7 @@ defineEmits(['change']);
 </script>
 
 <style scoped>
-/* Hide radio inputs visually but keep for CSS sibling selectors */
+/* Hide radio inputs visually but keep for theme CSS compatibility */
 .tab-radio {
     position: absolute;
     opacity: 0;
@@ -155,9 +151,8 @@ defineEmits(['change']);
     background-color: rgba(20, 184, 166, 0.05);
 }
 
-/* Tab content - hidden by default, shown by CSS sibling selectors */
+/* Tab content styling - visibility controlled by v-show */
 .tab-content {
-    display: none;
     background: #fff;
     padding: 24px;
 }
@@ -175,16 +170,5 @@ defineEmits(['change']);
     .tab-content {
         padding: 16px;
     }
-}
-</style>
-
-<!-- Unscoped styles for CSS sibling selectors (scoped doesn't work with ~) -->
-<style>
-/* Tab visibility via CSS sibling selectors - matches theme CSS pattern */
-.tabs #tab-overview:checked ~ .tab-content.overview,
-.tabs #tab-topics:checked ~ .tab-content.topics,
-.tabs #tab-messaging:checked ~ .tab-content.messaging,
-.tabs #tab-branding:checked ~ .tab-content.branding {
-    display: block;
 }
 </style>
