@@ -6,10 +6,6 @@
                 <h3 class="topic-title">
                     Topic {{ topic.id }}: {{ topic.title || 'Untitled Topic' }}
                 </h3>
-                <!-- Question count hidden to match original design -->
-                <span class="topic-questions-count" style="display: none;">
-                    {{ questionCount }} questions
-                </span>
             </div>
             <div class="topic-actions">
                 <button

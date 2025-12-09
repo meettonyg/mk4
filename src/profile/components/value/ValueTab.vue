@@ -170,13 +170,16 @@ import TopicAccordion from './TopicAccordion.vue';
 
 const store = useProfileStore();
 
+// URL constants
+const OFFER_GENERATOR_BASE_URL = '/app/offer-generator/';
+
 // Generate offer generator URL with entry parameter
 const offerGeneratorUrl = computed(() => {
-    const entry = store.postData?.slug || '';
+    const entry = store.postData?.slug;
     if (entry) {
-        return `/app/offer-generator/?frm_action=edit&entry=${entry}`;
+        return `${OFFER_GENERATOR_BASE_URL}?frm_action=edit&entry=${entry}`;
     }
-    return '/app/offer-generator/';
+    return OFFER_GENERATOR_BASE_URL;
 });
 
 // Edit state

@@ -192,13 +192,16 @@ import EditablePanel from '../layout/EditablePanel.vue';
 
 const store = useProfileStore();
 
+// URL constants
+const BIOGRAPHY_GENERATOR_BASE_URL = '/app/biography-generator/';
+
 // Generate dynamic URLs with entry parameter
 const biographyGeneratorUrl = computed(() => {
-    const entry = store.postData?.slug || '';
+    const entry = store.postData?.slug;
     if (entry) {
-        return `/app/biography-generator/?frm_action=edit&entry=${entry}`;
+        return `${BIOGRAPHY_GENERATOR_BASE_URL}?frm_action=edit&entry=${entry}`;
     }
-    return '/app/biography-generator/';
+    return BIOGRAPHY_GENERATOR_BASE_URL;
 });
 
 // Edit state

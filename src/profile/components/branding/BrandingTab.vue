@@ -300,11 +300,7 @@ const layoutSelectorUrl = computed(() => {
 
 // Current layout name from taxonomies
 const currentLayout = computed(() => {
-    const layouts = store.taxonomies?.layout || [];
-    if (layouts.length > 0) {
-        return layouts[0].name;
-    }
-    return null;
+    return store.taxonomies?.layout?.[0]?.name || null;
 });
 
 // Edit state

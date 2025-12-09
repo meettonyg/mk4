@@ -6,6 +6,20 @@
 
 import { defineStore } from 'pinia';
 
+// Key fields that contribute to profile completeness (matches API calculation)
+const REQUIRED_FIELDS = [
+    'first_name',
+    'last_name',
+    'biography',
+    'tagline',
+    'headshot_primary',
+    'topic_1',
+    'question_1',
+    'social_linkedin',
+    'website_primary',
+    'why_book_you',
+];
+
 export const useProfileStore = defineStore('profile', {
     state: () => ({
         // Configuration
@@ -160,29 +174,15 @@ export const useProfileStore = defineStore('profile', {
          * Calculate profile completeness percentage
          */
         completeness: (state) => {
-            // Key fields that contribute to completeness (matches API calculation)
-            const requiredFields = [
-                'first_name',
-                'last_name',
-                'biography',
-                'tagline',
-                'headshot_primary',
-                'topic_1',
-                'question_1',
-                'social_linkedin',
-                'website_primary',
-                'why_book_you',
-            ];
-
             let filled = 0;
-            for (const field of requiredFields) {
+            for (const field of REQUIRED_FIELDS) {
                 const value = state.fields[field];
                 if (value && (typeof value !== 'object' || value.url)) {
                     filled++;
                 }
             }
 
-            return Math.round((filled / requiredFields.length) * 100);
+            return Math.round((filled / REQUIRED_FIELDS.length) * 100);
         },
     },
 
