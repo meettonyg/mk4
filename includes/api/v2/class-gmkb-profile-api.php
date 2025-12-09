@@ -545,6 +545,8 @@ class GMKB_Profile_API {
         $profiles = [];
         $found_ids = [];
 
+        error_log("GMKB Profile API: list_profiles called for user_id: {$user_id}");
+
         // Query 1: Profiles owned by current user (via owner_user_id or legacy user_id meta)
         $owner_args = [
             'post_type' => 'guests',
@@ -568,9 +570,11 @@ class GMKB_Profile_API {
         ];
 
         $owner_query = new WP_Query($owner_args);
+        error_log("GMKB Profile API: Query 1 (owner meta) found: " . count($owner_query->posts) . " profiles");
         foreach ($owner_query->posts as $post) {
             $profiles[] = self::format_profile_card($post);
             $found_ids[] = $post->ID;
+            error_log("GMKB Profile API: Found profile ID: {$post->ID}, title: {$post->post_title}");
         }
 
         // Query 2: Profiles authored by current user without explicit owner set
@@ -610,9 +614,13 @@ class GMKB_Profile_API {
         ];
 
         $author_query = new WP_Query($author_args);
+        error_log("GMKB Profile API: Query 2 (author fallback) found: " . count($author_query->posts) . " profiles");
         foreach ($author_query->posts as $post) {
             $profiles[] = self::format_profile_card($post);
+            error_log("GMKB Profile API: Found (author) profile ID: {$post->ID}, title: {$post->post_title}");
         }
+
+        error_log("GMKB Profile API: Total profiles returning: " . count($profiles));
 
         // Sort all profiles by modified date (descending)
         usort($profiles, function($a, $b) {
