@@ -136,9 +136,15 @@ class GMKB_Profile_API {
             return true;
         }
 
-        // Users can read their own profiles
+        // Users can read their own profiles (check owner_user_id and legacy user_id)
         $owner_id = get_post_meta($post_id, 'owner_user_id', true);
         if ($owner_id && (int) $owner_id === $user_id) {
+            return true;
+        }
+
+        // Check legacy user_id field (from Formidable)
+        $legacy_user_id = get_post_meta($post_id, 'user_id', true);
+        if ($legacy_user_id && (int) $legacy_user_id === $user_id) {
             return true;
         }
 
@@ -172,9 +178,15 @@ class GMKB_Profile_API {
             return true;
         }
 
-        // Users can edit their own profiles
+        // Users can edit their own profiles (check owner_user_id and legacy user_id)
         $owner_id = get_post_meta($post_id, 'owner_user_id', true);
         if ($owner_id && (int) $owner_id === $user_id) {
+            return true;
+        }
+
+        // Check legacy user_id field (from Formidable)
+        $legacy_user_id = get_post_meta($post_id, 'user_id', true);
+        if ($legacy_user_id && (int) $legacy_user_id === $user_id) {
             return true;
         }
 
@@ -530,58 +542,82 @@ class GMKB_Profile_API {
      */
     public static function list_profiles($request) {
         $user_id = get_current_user_id();
+        $profiles = [];
+        $found_ids = [];
 
-        // Query profiles owned by the current user (via owner_user_id meta)
-        $args = [
+        // Query 1: Profiles owned by current user (via owner_user_id or legacy user_id meta)
+        $owner_args = [
             'post_type' => 'guests',
             'posts_per_page' => -1,
             'post_status' => ['publish', 'draft', 'pending'],
             'orderby' => 'modified',
             'order' => 'DESC',
             'meta_query' => [
+                'relation' => 'OR',
                 [
                     'key' => 'owner_user_id',
+                    'value' => $user_id,
+                    'compare' => '=',
+                ],
+                [
+                    'key' => 'user_id',
                     'value' => $user_id,
                     'compare' => '=',
                 ],
             ],
         ];
 
-        $query = new WP_Query($args);
-        $profiles = [];
-
-        foreach ($query->posts as $post) {
+        $owner_query = new WP_Query($owner_args);
+        foreach ($owner_query->posts as $post) {
             $profiles[] = self::format_profile_card($post);
+            $found_ids[] = $post->ID;
         }
 
-        // Also query by author (for profiles without owner_user_id set)
+        // Query 2: Profiles authored by current user without explicit owner set
         $author_args = [
             'post_type' => 'guests',
             'posts_per_page' => -1,
             'post_status' => ['publish', 'draft', 'pending'],
             'author' => $user_id,
+            'post__not_in' => $found_ids ?: [0], // Exclude already found profiles
             'meta_query' => [
-                'relation' => 'OR',
+                'relation' => 'AND',
                 [
-                    'key' => 'owner_user_id',
-                    'compare' => 'NOT EXISTS',
+                    'relation' => 'OR',
+                    [
+                        'key' => 'owner_user_id',
+                        'compare' => 'NOT EXISTS',
+                    ],
+                    [
+                        'key' => 'owner_user_id',
+                        'value' => '',
+                        'compare' => '=',
+                    ],
                 ],
                 [
-                    'key' => 'owner_user_id',
-                    'value' => '',
-                    'compare' => '=',
+                    'relation' => 'OR',
+                    [
+                        'key' => 'user_id',
+                        'compare' => 'NOT EXISTS',
+                    ],
+                    [
+                        'key' => 'user_id',
+                        'value' => '',
+                        'compare' => '=',
+                    ],
                 ],
             ],
         ];
 
         $author_query = new WP_Query($author_args);
         foreach ($author_query->posts as $post) {
-            // Avoid duplicates
-            $existing_ids = array_column($profiles, 'id');
-            if (!in_array($post->ID, $existing_ids)) {
-                $profiles[] = self::format_profile_card($post);
-            }
+            $profiles[] = self::format_profile_card($post);
         }
+
+        // Sort all profiles by modified date (descending)
+        usort($profiles, function($a, $b) {
+            return strtotime($b['modified']) - strtotime($a['modified']);
+        });
 
         return rest_ensure_response([
             'success' => true,
