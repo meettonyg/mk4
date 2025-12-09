@@ -5,9 +5,9 @@
  */
 
 /* Reset and base */
-.profile-app * {
-    margin: 0;
-    padding: 0;
+.profile-app *,
+.profile-app *::before,
+.profile-app *::after {
     box-sizing: border-box;
 }
 
