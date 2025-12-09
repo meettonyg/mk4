@@ -298,11 +298,14 @@ export const useProfileStore = defineStore('profile', {
                 );
 
                 if (response.success) {
-                    Object.keys(response.updated || {}).forEach((key) => {
-                        this.originalFields[key] = this.fields[key];
+                    // Update originalFields for ALL fields we attempted to save
+                    // This ensures dirty state is cleared even if API returns empty updated object
+                    fieldNames.forEach((key) => {
+                        this.originalFields[key] = JSON.parse(JSON.stringify(this.fields[key]));
                     });
                     this.checkDirtyState();
                     this.lastSaved = new Date();
+                    console.log('✅ Profile saved');
                     return true;
                 }
 
