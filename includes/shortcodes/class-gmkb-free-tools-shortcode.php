@@ -14,10 +14,11 @@
  * - tagline: AI Tagline Generator
  * - guest-intro: AI Guest Intro Generator
  * - offers: AI Offers Generator
+ * - authority-hook: AI Authority Hook Builder
  *
  * @package GMKB
  * @subpackage Shortcodes
- * @version 1.0.0
+ * @version 1.0.1
  * @since 2.2.0
  */
 
@@ -49,7 +50,8 @@ class GMKB_Free_Tools_Shortcode {
         'questions',
         'tagline',
         'guest-intro',
-        'offers'
+        'offers',
+        'authority-hook'
     );
 
     /**
@@ -121,6 +123,7 @@ class GMKB_Free_Tools_Shortcode {
         // Build data attributes for Vue initialization
         $data_attrs = array(
             'data-gmkb-tool' => esc_attr($atts['type']),
+            'data-nonce' => wp_create_nonce('gmkb_public_ai'), // Required for API authorization
             'data-gmkb-title' => esc_attr($atts['title']),
             'data-gmkb-description' => esc_attr($atts['description']),
             'data-gmkb-theme' => esc_attr($atts['theme']),
@@ -327,7 +330,8 @@ class GMKB_Free_Tools_Shortcode {
         "questions": "Questions Generator",
         "tagline": "Tagline Generator",
         "guest-intro": "Guest Intro Generator",
-        "offers": "Offers Generator"
+        "offers": "Offers Generator",
+        "authority-hook": "Authority Hook Builder"
     };
 
     // Initialize placeholders when DOM is ready
@@ -399,6 +403,12 @@ class GMKB_Free_Tools_Shortcode {
                 'description' => 'Create service packages and offers.',
                 'icon' => 'package',
                 'fields' => array('authorityHook', 'services')
+            ),
+            'authority-hook' => array(
+                'title' => 'AI Authority Hook Builder',
+                'description' => 'Create your unique authority positioning statement.',
+                'icon' => 'zap',
+                'fields' => array('name', 'expertise', 'audience', 'outcome')
             )
         );
 
