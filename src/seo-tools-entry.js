@@ -5,7 +5,7 @@
  * This entry creates a self-contained Vue application for public-facing AI generators.
  *
  * Features:
- * - Auto-mounts to elements with [data-gmkb-seo-tool] attribute
+ * - Auto-mounts to elements with [data-gmkb-tool] attribute
  * - Self-contained Pinia store (no external Vue app dependency)
  * - CSS isolation via scoped wrapper class
  * - IP-based rate limiting (no WordPress auth required)
@@ -13,7 +13,7 @@
  * Usage in WordPress:
  * ```php
  * // Shortcode handler outputs:
- * <div data-gmkb-seo-tool="biography" data-nonce="<?php echo $nonce; ?>"></div>
+ * <div data-gmkb-tool="biography" data-nonce="<?php echo $nonce; ?>"></div>
  * ```
  *
  * @package GMKB
@@ -36,9 +36,10 @@ import QuestionsGenerator from './vue/components/ai/QuestionsGenerator.vue';
 import TaglineGenerator from './vue/components/ai/TaglineGenerator.vue';
 import GuestIntroGenerator from './vue/components/ai/GuestIntroGenerator.vue';
 import AuthorityHookBuilder from './vue/components/ai/AuthorityHookBuilder.vue';
+import OffersGenerator from './vue/components/ai/OffersGenerator.vue';
 
 /**
- * Component registry for data-gmkb-seo-tool attribute values
+ * Component registry for data-gmkb-tool attribute values
  */
 const TOOL_COMPONENTS = {
     'biography': BiographyGenerator,
@@ -47,6 +48,7 @@ const TOOL_COMPONENTS = {
     'tagline': TaglineGenerator,
     'guest-intro': GuestIntroGenerator,
     'authority-hook': AuthorityHookBuilder,
+    'offers': OffersGenerator,
 };
 
 /**
@@ -57,11 +59,11 @@ const mountedApps = new Map();
 /**
  * Initialize a single SEO tool instance
  *
- * @param {HTMLElement} container - The container element with data-gmkb-seo-tool
+ * @param {HTMLElement} container - The container element with data-gmkb-tool
  * @returns {Object|null} Vue app instance or null if initialization failed
  */
 function initializeTool(container) {
-    const toolType = container.dataset.gmkbSeoTool;
+    const toolType = container.dataset.gmkbTool;
     const nonce = container.dataset.nonce || '';
 
     // Validate tool type
@@ -129,7 +131,7 @@ function initializeTool(container) {
  * @returns {number} Number of tools initialized
  */
 function initializeAll() {
-    const containers = document.querySelectorAll('[data-gmkb-seo-tool]');
+    const containers = document.querySelectorAll('[data-gmkb-tool]');
     let count = 0;
 
     containers.forEach((container) => {
@@ -186,17 +188,17 @@ if (document.readyState === 'loading') {
 }
 
 // Support dynamic content (e.g., AJAX-loaded elements)
-// Observe for new elements with data-gmkb-seo-tool
+// Observe for new elements with data-gmkb-tool
 const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
         mutation.addedNodes.forEach((node) => {
             if (node.nodeType === Node.ELEMENT_NODE) {
                 // Check if the added node is a tool container
-                if (node.hasAttribute && node.hasAttribute('data-gmkb-seo-tool')) {
+                if (node.hasAttribute && node.hasAttribute('data-gmkb-tool')) {
                     initializeTool(node);
                 }
                 // Check children of added node
-                const children = node.querySelectorAll ? node.querySelectorAll('[data-gmkb-seo-tool]') : [];
+                const children = node.querySelectorAll ? node.querySelectorAll('[data-gmkb-tool]') : [];
                 children.forEach(initializeTool);
             }
         });
