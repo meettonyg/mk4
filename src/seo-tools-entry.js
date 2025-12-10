@@ -30,6 +30,7 @@ import './styles/ai-standalone.css';
 import './styles/ai-shared.css';
 
 // Import generator components (standalone mode only)
+// Original tools
 import BiographyGenerator from './vue/components/ai/BiographyGenerator.vue';
 import TopicsGenerator from './vue/components/ai/TopicsGenerator.vue';
 import QuestionsGenerator from './vue/components/ai/QuestionsGenerator.vue';
@@ -38,10 +39,37 @@ import GuestIntroGenerator from './vue/components/ai/GuestIntroGenerator.vue';
 import AuthorityHookBuilder from './vue/components/ai/AuthorityHookBuilder.vue';
 import OffersGenerator from './vue/components/ai/OffersGenerator.vue';
 
+// Value Builder tools
+import ElevatorPitchGenerator from './vue/components/ai/ElevatorPitchGenerator.vue';
+import SoundBiteGenerator from './vue/components/ai/SoundBiteGenerator.vue';
+import PersonaGenerator from './vue/components/ai/PersonaGenerator.vue';
+import ImpactIntroBuilder from './vue/components/ai/ImpactIntroBuilder.vue';
+
+// Strategy tools
+import BrandStoryGenerator from './vue/components/ai/BrandStoryGenerator.vue';
+import SignatureStoryGenerator from './vue/components/ai/SignatureStoryGenerator.vue';
+import CredibilityStoryGenerator from './vue/components/ai/CredibilityStoryGenerator.vue';
+import FrameworkGenerator from './vue/components/ai/FrameworkGenerator.vue';
+import InterviewPrepGenerator from './vue/components/ai/InterviewPrepGenerator.vue';
+
+// Content tools
+import BlogGenerator from './vue/components/ai/BlogGenerator.vue';
+import ContentRepurposerGenerator from './vue/components/ai/ContentRepurposerGenerator.vue';
+import PressReleaseGenerator from './vue/components/ai/PressReleaseGenerator.vue';
+
+// Social/Email tools
+import SocialPostGenerator from './vue/components/ai/SocialPostGenerator.vue';
+import EmailWriterGenerator from './vue/components/ai/EmailWriterGenerator.vue';
+import NewsletterGenerator from './vue/components/ai/NewsletterGenerator.vue';
+import YoutubeDescriptionGenerator from './vue/components/ai/YoutubeDescriptionGenerator.vue';
+import PodcastNotesGenerator from './vue/components/ai/PodcastNotesGenerator.vue';
+import SeoOptimizerGenerator from './vue/components/ai/SeoOptimizerGenerator.vue';
+
 /**
  * Component registry for data-gmkb-tool attribute values
  */
 const TOOL_COMPONENTS = {
+    // Original tools
     'biography': BiographyGenerator,
     'topics': TopicsGenerator,
     'questions': QuestionsGenerator,
@@ -49,6 +77,32 @@ const TOOL_COMPONENTS = {
     'guest-intro': GuestIntroGenerator,
     'authority-hook': AuthorityHookBuilder,
     'offers': OffersGenerator,
+
+    // Value Builder tools
+    'elevator-pitch': ElevatorPitchGenerator,
+    'sound-bite': SoundBiteGenerator,
+    'persona': PersonaGenerator,
+    'impact-intro': ImpactIntroBuilder,
+
+    // Strategy tools
+    'brand-story': BrandStoryGenerator,
+    'signature-story': SignatureStoryGenerator,
+    'credibility-story': CredibilityStoryGenerator,
+    'framework': FrameworkGenerator,
+    'interview-prep': InterviewPrepGenerator,
+
+    // Content tools
+    'blog': BlogGenerator,
+    'content-repurpose': ContentRepurposerGenerator,
+    'press-release': PressReleaseGenerator,
+
+    // Social/Email tools
+    'social-post': SocialPostGenerator,
+    'email': EmailWriterGenerator,
+    'newsletter': NewsletterGenerator,
+    'youtube-description': YoutubeDescriptionGenerator,
+    'podcast-notes': PodcastNotesGenerator,
+    'seo-optimizer': SeoOptimizerGenerator,
 };
 
 /**

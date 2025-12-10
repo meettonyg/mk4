@@ -7,14 +7,42 @@
  *
  * Generic Usage: [gmkb_free_tool type="biography" title="Free Bio Generator"]
  *
- * Individual Shortcodes (convenience):
+ * Individual Shortcodes (25 tools):
+ *
+ * MESSAGE BUILDER:
  * - [gmkb_biography] - AI Biography Generator
  * - [gmkb_topics] - AI Topics Generator
  * - [gmkb_questions] - AI Questions Generator
  * - [gmkb_tagline] - AI Tagline Generator
  * - [gmkb_guest_intro] - AI Guest Intro Generator
  * - [gmkb_offers] - AI Offers Generator
- * - [gmkb_authority_hook] - AI Authority Hook Builder
+ *
+ * VALUE BUILDER:
+ * - [gmkb_elevator_pitch] - Elevator Pitch Generator
+ * - [gmkb_sound_bite] - Sound Bite Generator
+ * - [gmkb_authority_hook] - Authority Hook Builder
+ * - [gmkb_impact_intro] - Impact Intro Builder
+ * - [gmkb_persona] - Ideal Client Persona Generator
+ *
+ * STRATEGY:
+ * - [gmkb_brand_story] - Brand Story Generator
+ * - [gmkb_signature_story] - Signature Story Generator
+ * - [gmkb_credibility_story] - Credibility Story Generator
+ * - [gmkb_framework] - Framework Builder
+ * - [gmkb_interview_prep] - Interview Prep Generator
+ *
+ * CONTENT:
+ * - [gmkb_blog] - Blog Post Generator
+ * - [gmkb_content_repurpose] - Content Repurposer
+ * - [gmkb_press_release] - Press Release Generator
+ *
+ * SOCIAL/EMAIL:
+ * - [gmkb_social_post] - Social Post Generator
+ * - [gmkb_email] - Email Writer
+ * - [gmkb_newsletter] - Newsletter Writer
+ * - [gmkb_youtube_description] - YouTube Description Generator
+ * - [gmkb_podcast_notes] - Podcast Show Notes Generator
+ * - [gmkb_seo_optimizer] - SEO Content Optimizer
  *
  * All shortcodes accept these attributes:
  * - title: Custom widget title
@@ -27,7 +55,7 @@
  *
  * @package GMKB
  * @subpackage Shortcodes
- * @version 1.1.0
+ * @version 2.0.0
  * @since 2.2.0
  */
 
@@ -54,13 +82,36 @@ class GMKB_Free_Tools_Shortcode {
      * @var array
      */
     private $valid_types = array(
+        // Message Builder
         'biography',
         'topics',
         'questions',
         'tagline',
         'guest-intro',
         'offers',
-        'authority-hook'
+        // Value Builder
+        'elevator-pitch',
+        'sound-bite',
+        'authority-hook',
+        'impact-intro',
+        'persona',
+        // Strategy
+        'brand-story',
+        'signature-story',
+        'credibility-story',
+        'framework',
+        'interview-prep',
+        // Content
+        'blog',
+        'content-repurpose',
+        'press-release',
+        // Social/Email
+        'social-post',
+        'email',
+        'newsletter',
+        'youtube-description',
+        'podcast-notes',
+        'seo-optimizer'
     );
 
     /**
@@ -83,16 +134,43 @@ class GMKB_Free_Tools_Shortcode {
         add_shortcode('gmkb_free_tool', array($this, 'render'));
 
         // Register individual shortcodes for each tool type
+        // Message Builder
         add_shortcode('gmkb_biography', array($this, 'render_biography'));
         add_shortcode('gmkb_topics', array($this, 'render_topics'));
         add_shortcode('gmkb_questions', array($this, 'render_questions'));
         add_shortcode('gmkb_tagline', array($this, 'render_tagline'));
         add_shortcode('gmkb_guest_intro', array($this, 'render_guest_intro'));
         add_shortcode('gmkb_offers', array($this, 'render_offers'));
+
+        // Value Builder
+        add_shortcode('gmkb_elevator_pitch', array($this, 'render_elevator_pitch'));
+        add_shortcode('gmkb_sound_bite', array($this, 'render_sound_bite'));
         add_shortcode('gmkb_authority_hook', array($this, 'render_authority_hook'));
+        add_shortcode('gmkb_impact_intro', array($this, 'render_impact_intro'));
+        add_shortcode('gmkb_persona', array($this, 'render_persona'));
+
+        // Strategy
+        add_shortcode('gmkb_brand_story', array($this, 'render_brand_story'));
+        add_shortcode('gmkb_signature_story', array($this, 'render_signature_story'));
+        add_shortcode('gmkb_credibility_story', array($this, 'render_credibility_story'));
+        add_shortcode('gmkb_framework', array($this, 'render_framework'));
+        add_shortcode('gmkb_interview_prep', array($this, 'render_interview_prep'));
+
+        // Content
+        add_shortcode('gmkb_blog', array($this, 'render_blog'));
+        add_shortcode('gmkb_content_repurpose', array($this, 'render_content_repurpose'));
+        add_shortcode('gmkb_press_release', array($this, 'render_press_release'));
+
+        // Social/Email
+        add_shortcode('gmkb_social_post', array($this, 'render_social_post'));
+        add_shortcode('gmkb_email', array($this, 'render_email'));
+        add_shortcode('gmkb_newsletter', array($this, 'render_newsletter'));
+        add_shortcode('gmkb_youtube_description', array($this, 'render_youtube_description'));
+        add_shortcode('gmkb_podcast_notes', array($this, 'render_podcast_notes'));
+        add_shortcode('gmkb_seo_optimizer', array($this, 'render_seo_optimizer'));
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB Free Tools Shortcode: Registered all shortcodes');
+            error_log('GMKB Free Tools Shortcode: Registered 25 shortcodes');
         }
     }
 
@@ -170,6 +248,212 @@ class GMKB_Free_Tools_Shortcode {
     public function render_authority_hook($atts) {
         $atts = is_array($atts) ? $atts : array();
         $atts['type'] = 'authority-hook';
+        return $this->render($atts);
+    }
+
+    // ========== VALUE BUILDER ==========
+
+    /**
+     * Render elevator pitch shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_elevator_pitch($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'elevator-pitch';
+        return $this->render($atts);
+    }
+
+    /**
+     * Render sound bite shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_sound_bite($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'sound-bite';
+        return $this->render($atts);
+    }
+
+    /**
+     * Render impact intro shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_impact_intro($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'impact-intro';
+        return $this->render($atts);
+    }
+
+    /**
+     * Render persona shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_persona($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'persona';
+        return $this->render($atts);
+    }
+
+    // ========== STRATEGY ==========
+
+    /**
+     * Render brand story shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_brand_story($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'brand-story';
+        return $this->render($atts);
+    }
+
+    /**
+     * Render signature story shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_signature_story($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'signature-story';
+        return $this->render($atts);
+    }
+
+    /**
+     * Render credibility story shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_credibility_story($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'credibility-story';
+        return $this->render($atts);
+    }
+
+    /**
+     * Render framework shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_framework($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'framework';
+        return $this->render($atts);
+    }
+
+    /**
+     * Render interview prep shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_interview_prep($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'interview-prep';
+        return $this->render($atts);
+    }
+
+    // ========== CONTENT ==========
+
+    /**
+     * Render blog shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_blog($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'blog';
+        return $this->render($atts);
+    }
+
+    /**
+     * Render content repurpose shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_content_repurpose($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'content-repurpose';
+        return $this->render($atts);
+    }
+
+    /**
+     * Render press release shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_press_release($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'press-release';
+        return $this->render($atts);
+    }
+
+    // ========== SOCIAL/EMAIL ==========
+
+    /**
+     * Render social post shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_social_post($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'social-post';
+        return $this->render($atts);
+    }
+
+    /**
+     * Render email shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_email($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'email';
+        return $this->render($atts);
+    }
+
+    /**
+     * Render newsletter shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_newsletter($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'newsletter';
+        return $this->render($atts);
+    }
+
+    /**
+     * Render youtube description shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_youtube_description($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'youtube-description';
+        return $this->render($atts);
+    }
+
+    /**
+     * Render podcast notes shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_podcast_notes($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'podcast-notes';
+        return $this->render($atts);
+    }
+
+    /**
+     * Render seo optimizer shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_seo_optimizer($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'seo-optimizer';
         return $this->render($atts);
     }
 
@@ -421,13 +705,36 @@ class GMKB_Free_Tools_Shortcode {
 
     // Tool display names
     var toolNames = {
+        // Message Builder
         "biography": "Biography Generator",
         "topics": "Topics Generator",
         "questions": "Questions Generator",
         "tagline": "Tagline Generator",
         "guest-intro": "Guest Intro Generator",
         "offers": "Offers Generator",
-        "authority-hook": "Authority Hook Builder"
+        // Value Builder
+        "elevator-pitch": "Elevator Pitch Generator",
+        "sound-bite": "Sound Bite Generator",
+        "authority-hook": "Authority Hook Builder",
+        "impact-intro": "Impact Intro Builder",
+        "persona": "Persona Generator",
+        // Strategy
+        "brand-story": "Brand Story Generator",
+        "signature-story": "Signature Story Generator",
+        "credibility-story": "Credibility Story Generator",
+        "framework": "Framework Builder",
+        "interview-prep": "Interview Prep Generator",
+        // Content
+        "blog": "Blog Post Generator",
+        "content-repurpose": "Content Repurposer",
+        "press-release": "Press Release Generator",
+        // Social/Email
+        "social-post": "Social Post Generator",
+        "email": "Email Writer",
+        "newsletter": "Newsletter Writer",
+        "youtube-description": "YouTube Description Generator",
+        "podcast-notes": "Podcast Notes Generator",
+        "seo-optimizer": "SEO Optimizer"
     };
 
     // Initialize placeholders when DOM is ready
