@@ -1,0 +1,523 @@
+/**
+ * AI Generator Shared Styles
+ * Styles used by both integrated (builder) and standalone (free tools) modes
+ *
+ * Part of the Unified AI Generator Architecture ("Modular Widgets")
+ *
+ * @package GMKB
+ * @subpackage Styles
+ * @version 1.0.0
+ * @since 2.2.0
+ */
+
+/* ========================================
+   CSS CUSTOM PROPERTIES (Design Tokens)
+   ======================================== */
+
+:root {
+  /* Primary Colors */
+  --gmkb-ai-primary: #6366f1;
+  --gmkb-ai-primary-hover: #4f46e5;
+  --gmkb-ai-primary-light: rgba(99, 102, 241, 0.1);
+  --gmkb-ai-primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+
+  /* Neutral Colors */
+  --gmkb-ai-text: #1f2937;
+  --gmkb-ai-text-secondary: #64748b;
+  --gmkb-ai-text-muted: #9ca3af;
+  --gmkb-ai-border: #e2e8f0;
+  --gmkb-ai-border-hover: #d1d5db;
+  --gmkb-ai-bg: #ffffff;
+  --gmkb-ai-bg-secondary: #f8fafc;
+  --gmkb-ai-bg-tertiary: #f3f4f6;
+
+  /* Status Colors */
+  --gmkb-ai-success: #10b981;
+  --gmkb-ai-success-light: #ecfdf5;
+  --gmkb-ai-warning: #f59e0b;
+  --gmkb-ai-warning-light: #fffbeb;
+  --gmkb-ai-error: #ef4444;
+  --gmkb-ai-error-light: #fef2f2;
+
+  /* Spacing */
+  --gmkb-ai-spacing-xs: 4px;
+  --gmkb-ai-spacing-sm: 8px;
+  --gmkb-ai-spacing-md: 16px;
+  --gmkb-ai-spacing-lg: 24px;
+  --gmkb-ai-spacing-xl: 32px;
+
+  /* Border Radius */
+  --gmkb-ai-radius-sm: 4px;
+  --gmkb-ai-radius-md: 8px;
+  --gmkb-ai-radius-lg: 12px;
+  --gmkb-ai-radius-full: 9999px;
+
+  /* Shadows */
+  --gmkb-ai-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --gmkb-ai-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --gmkb-ai-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+  /* Typography */
+  --gmkb-ai-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --gmkb-ai-font-size-xs: 12px;
+  --gmkb-ai-font-size-sm: 13px;
+  --gmkb-ai-font-size-base: 15px;
+  --gmkb-ai-font-size-lg: 18px;
+  --gmkb-ai-font-size-xl: 20px;
+
+  /* Transitions */
+  --gmkb-ai-transition-fast: 0.15s ease;
+  --gmkb-ai-transition-normal: 0.2s ease;
+  --gmkb-ai-transition-slow: 0.3s ease;
+}
+
+/* ========================================
+   DARK MODE OVERRIDES (for Builder)
+   ======================================== */
+
+body.dark-mode {
+  --gmkb-ai-text: #f1f5f9;
+  --gmkb-ai-text-secondary: #94a3b8;
+  --gmkb-ai-text-muted: #64748b;
+  --gmkb-ai-border: #334155;
+  --gmkb-ai-border-hover: #475569;
+  --gmkb-ai-bg: #1e293b;
+  --gmkb-ai-bg-secondary: #0f172a;
+  --gmkb-ai-bg-tertiary: #334155;
+}
+
+/* ========================================
+   INTEGRATED MODE STYLES (Builder context)
+   ======================================== */
+
+/**
+ * In integrated mode, these classes work within the builder's
+ * existing design system. The .gmkb-ai- prefix ensures no conflicts.
+ */
+
+/* AI Panel in Sidebar */
+.gmkb-ai-panel {
+  padding: var(--gmkb-ai-spacing-md);
+}
+
+.gmkb-ai-panel__section {
+  margin-bottom: var(--gmkb-ai-spacing-lg);
+}
+
+.gmkb-ai-panel__section:last-child {
+  margin-bottom: 0;
+}
+
+.gmkb-ai-panel__section-title {
+  margin: 0 0 var(--gmkb-ai-spacing-sm) 0;
+  font-size: var(--gmkb-ai-font-size-sm);
+  font-weight: 600;
+  color: var(--gmkb-ai-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* AI Modal */
+.gmkb-ai-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gmkb-ai-spacing-lg);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--gmkb-ai-transition-normal), visibility var(--gmkb-ai-transition-normal);
+}
+
+.gmkb-ai-modal--open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.gmkb-ai-modal__container {
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  background: var(--gmkb-ai-bg);
+  border-radius: var(--gmkb-ai-radius-lg);
+  box-shadow: var(--gmkb-ai-shadow-lg);
+  overflow: hidden;
+  transform: scale(0.95);
+  transition: transform var(--gmkb-ai-transition-normal);
+}
+
+.gmkb-ai-modal--open .gmkb-ai-modal__container {
+  transform: scale(1);
+}
+
+.gmkb-ai-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--gmkb-ai-spacing-md) var(--gmkb-ai-spacing-lg);
+  border-bottom: 1px solid var(--gmkb-ai-border);
+}
+
+.gmkb-ai-modal__title {
+  margin: 0;
+  font-size: var(--gmkb-ai-font-size-lg);
+  font-weight: 600;
+  color: var(--gmkb-ai-text);
+}
+
+.gmkb-ai-modal__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--gmkb-ai-text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: var(--gmkb-ai-radius-md);
+  cursor: pointer;
+  transition: all var(--gmkb-ai-transition-fast);
+}
+
+.gmkb-ai-modal__close:hover {
+  color: var(--gmkb-ai-text);
+  background: var(--gmkb-ai-bg-tertiary);
+}
+
+.gmkb-ai-modal__body {
+  padding: var(--gmkb-ai-spacing-lg);
+  overflow-y: auto;
+  max-height: calc(90vh - 140px);
+}
+
+.gmkb-ai-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--gmkb-ai-spacing-sm);
+  padding: var(--gmkb-ai-spacing-md) var(--gmkb-ai-spacing-lg);
+  border-top: 1px solid var(--gmkb-ai-border);
+  background: var(--gmkb-ai-bg-secondary);
+}
+
+/* Inline AI Button (appears in editors) */
+.gmkb-ai-inline-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: var(--gmkb-ai-font-size-sm);
+  font-weight: 500;
+  color: var(--gmkb-ai-primary);
+  background: var(--gmkb-ai-primary-light);
+  border: 1px solid transparent;
+  border-radius: var(--gmkb-ai-radius-md);
+  cursor: pointer;
+  transition: all var(--gmkb-ai-transition-fast);
+}
+
+.gmkb-ai-inline-button:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: var(--gmkb-ai-primary);
+}
+
+.gmkb-ai-inline-button__icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* Sparkle/Magic icon animation */
+@keyframes gmkb-sparkle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.gmkb-ai-inline-button--generating .gmkb-ai-inline-button__icon {
+  animation: gmkb-sparkle 1s ease-in-out infinite;
+}
+
+/* ========================================
+   SHARED WIDGET STYLES (Both Modes)
+   ======================================== */
+
+/* These use .gmkb-ai- prefix and work in both contexts */
+
+/* Widget Layout */
+.gmkb-ai-widget {
+  font-family: var(--gmkb-ai-font-family);
+  color: var(--gmkb-ai-text);
+}
+
+/* Form Grid */
+.gmkb-ai-form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--gmkb-ai-spacing-md);
+}
+
+/* Field Group with Icon */
+.gmkb-ai-field-icon {
+  position: relative;
+}
+
+.gmkb-ai-field-icon__icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: var(--gmkb-ai-text-muted);
+  pointer-events: none;
+}
+
+.gmkb-ai-field-icon .gmkb-ai-input {
+  padding-left: 40px;
+}
+
+/* Character/Word Counter */
+.gmkb-ai-counter {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--gmkb-ai-spacing-xs);
+  font-size: var(--gmkb-ai-font-size-xs);
+  color: var(--gmkb-ai-text-muted);
+}
+
+.gmkb-ai-counter--warning {
+  color: var(--gmkb-ai-warning);
+}
+
+.gmkb-ai-counter--error {
+  color: var(--gmkb-ai-error);
+}
+
+/* Divider */
+.gmkb-ai-divider {
+  height: 1px;
+  background: var(--gmkb-ai-border);
+  margin: var(--gmkb-ai-spacing-md) 0;
+}
+
+/* Empty State */
+.gmkb-ai-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gmkb-ai-spacing-xl);
+  text-align: center;
+}
+
+.gmkb-ai-empty__icon {
+  width: 48px;
+  height: 48px;
+  color: var(--gmkb-ai-text-muted);
+  margin-bottom: var(--gmkb-ai-spacing-md);
+}
+
+.gmkb-ai-empty__title {
+  margin: 0 0 var(--gmkb-ai-spacing-xs) 0;
+  font-size: var(--gmkb-ai-font-size-base);
+  font-weight: 600;
+  color: var(--gmkb-ai-text);
+}
+
+.gmkb-ai-empty__text {
+  margin: 0;
+  font-size: var(--gmkb-ai-font-size-sm);
+  color: var(--gmkb-ai-text-secondary);
+}
+
+/* Skeleton Loading */
+.gmkb-ai-skeleton {
+  background: linear-gradient(90deg, var(--gmkb-ai-bg-tertiary) 25%, var(--gmkb-ai-bg-secondary) 50%, var(--gmkb-ai-bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: gmkb-skeleton-shimmer 1.5s infinite;
+  border-radius: var(--gmkb-ai-radius-sm);
+}
+
+.gmkb-ai-skeleton--text {
+  height: 16px;
+  margin-bottom: 8px;
+}
+
+.gmkb-ai-skeleton--text:last-child {
+  width: 60%;
+}
+
+.gmkb-ai-skeleton--button {
+  height: 44px;
+  width: 120px;
+}
+
+@keyframes gmkb-skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Progress Indicator */
+.gmkb-ai-progress {
+  width: 100%;
+  height: 4px;
+  background: var(--gmkb-ai-bg-tertiary);
+  border-radius: var(--gmkb-ai-radius-full);
+  overflow: hidden;
+}
+
+.gmkb-ai-progress__bar {
+  height: 100%;
+  background: var(--gmkb-ai-primary-gradient);
+  border-radius: var(--gmkb-ai-radius-full);
+  transition: width var(--gmkb-ai-transition-normal);
+}
+
+.gmkb-ai-progress--indeterminate .gmkb-ai-progress__bar {
+  width: 30%;
+  animation: gmkb-progress-indeterminate 1.5s ease-in-out infinite;
+}
+
+@keyframes gmkb-progress-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+/* Tooltip */
+.gmkb-ai-tooltip {
+  position: relative;
+}
+
+.gmkb-ai-tooltip__content {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  padding: 6px 10px;
+  font-size: var(--gmkb-ai-font-size-xs);
+  color: #ffffff;
+  background: #1e293b;
+  border-radius: var(--gmkb-ai-radius-sm);
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--gmkb-ai-transition-fast);
+  z-index: 10;
+}
+
+.gmkb-ai-tooltip__content::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #1e293b;
+}
+
+.gmkb-ai-tooltip:hover .gmkb-ai-tooltip__content {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Badge */
+.gmkb-ai-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: var(--gmkb-ai-font-size-xs);
+  font-weight: 600;
+  border-radius: var(--gmkb-ai-radius-full);
+}
+
+.gmkb-ai-badge--primary {
+  color: var(--gmkb-ai-primary);
+  background: var(--gmkb-ai-primary-light);
+}
+
+.gmkb-ai-badge--success {
+  color: var(--gmkb-ai-success);
+  background: var(--gmkb-ai-success-light);
+}
+
+.gmkb-ai-badge--warning {
+  color: var(--gmkb-ai-warning);
+  background: var(--gmkb-ai-warning-light);
+}
+
+.gmkb-ai-badge--error {
+  color: var(--gmkb-ai-error);
+  background: var(--gmkb-ai-error-light);
+}
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+
+.gmkb-ai-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.gmkb-ai-text-center {
+  text-align: center;
+}
+
+.gmkb-ai-text-right {
+  text-align: right;
+}
+
+.gmkb-ai-flex {
+  display: flex;
+}
+
+.gmkb-ai-flex-col {
+  flex-direction: column;
+}
+
+.gmkb-ai-items-center {
+  align-items: center;
+}
+
+.gmkb-ai-justify-between {
+  justify-content: space-between;
+}
+
+.gmkb-ai-gap-sm {
+  gap: var(--gmkb-ai-spacing-sm);
+}
+
+.gmkb-ai-gap-md {
+  gap: var(--gmkb-ai-spacing-md);
+}
+
+.gmkb-ai-mt-md {
+  margin-top: var(--gmkb-ai-spacing-md);
+}
+
+.gmkb-ai-mb-md {
+  margin-bottom: var(--gmkb-ai-spacing-md);
+}

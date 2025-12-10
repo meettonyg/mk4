@@ -164,6 +164,13 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-profile-api.ph
     require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-profile-api.php';
 }
 
+// AI INTEGRATION: AI Content Generation REST API Controller
+// Part of the Unified AI Generator Architecture ("Modular Widgets")
+// Supports both integrated (builder) and standalone (free tools) modes
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-ai-controller.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-ai-controller.php';
+}
+
 // PHASE 3: Component Discovery API for scalable component architecture
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/ComponentDiscoveryAPI.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/api/ComponentDiscoveryAPI.php';
@@ -226,6 +233,12 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/profile-list-shortcod
     require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/profile-list-shortcode.php';
 }
 
+// AI INTEGRATION: Free Tools Shortcode for public AI generators (standalone mode)
+// Usage: [gmkb_free_tool type="biography" title="Free Bio Generator"]
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-free-tools-shortcode.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-free-tools-shortcode.php';
+}
+
 // ROOT FIX: Include debug REST endpoint for troubleshooting
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/debug-rest-endpoint.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/debug-rest-endpoint.php';
@@ -283,6 +296,16 @@ if (class_exists('GMKB_REST_API_V2')) {
     $gmkb_rest_api_v2 = new GMKB_REST_API_V2();
     if (defined('WP_DEBUG') && WP_DEBUG) {
         error_log('✅ GMKB: REST API v2 initialized with ComponentDiscovery ready');
+    }
+}
+
+// AI INTEGRATION: Initialize AI Controller
+// Provides /gmkb/v2/ai/generate endpoint for content generation
+global $gmkb_ai_controller;
+if (class_exists('GMKB_AI_Controller')) {
+    $gmkb_ai_controller = new GMKB_AI_Controller();
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB: AI Controller initialized');
     }
 }
 

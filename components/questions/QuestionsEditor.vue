@@ -37,8 +37,20 @@
         </section>
 
         <section class="editor-section">
-          <h4>Questions & Answers</h4>
-          
+          <div class="section-header">
+            <h4>Questions & Answers</h4>
+            <button
+              type="button"
+              class="ai-generate-btn"
+              @click="showAiModal = true"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+              </svg>
+              Generate with AI
+            </button>
+          </div>
+
           <div class="questions-list">
             <div 
               v-for="(qa, index) in localData.questions" 
@@ -86,12 +98,22 @@
       </div>
     </template>
   </ComponentEditorTemplate>
+
+  <!-- AI Generation Modal -->
+  <AiModal v-model="showAiModal" title="Generate Questions with AI">
+    <QuestionsGenerator
+      mode="integrated"
+      :component-id="componentId"
+      @applied="handleAiApplied"
+    />
+  </AiModal>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
 import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
+import { AiModal, QuestionsGenerator } from '../../src/vue/components/ai';
 
 const props = defineProps({
   componentId: {
@@ -103,6 +125,7 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 const store = useMediaKitStore();
 const activeTab = ref('content');
+const showAiModal = ref(false);
 
 const localData = ref({
   title: 'Frequently Asked Questions',
@@ -149,6 +172,19 @@ const updateComponent = () => {
 };
 
 const handleBack = () => emit('close');
+
+// Handle AI content applied
+const handleAiApplied = (data) => {
+  if (data.questions && Array.isArray(data.questions)) {
+    // Convert AI questions format to component format
+    localData.value.questions = data.questions.map(q => ({
+      question: typeof q === 'string' ? q : q.question || q,
+      answer: typeof q === 'object' ? q.answer || '' : ''
+    }));
+    updateComponent();
+  }
+  showAiModal.value = false;
+};
 </script>
 
 <style scoped>
@@ -178,4 +214,11 @@ body.dark-mode .remove-btn { background: #450a0a; border-color: #7f1d1d; color: 
 .add-btn { padding: 12px; background: #f0f9ff; border: 1px solid #bae6fd; color: #0284c7; border-radius: 6px; cursor: pointer; transition: all 0.2s; font-weight: 500; width: 100%; }
 .add-btn:hover { background: #e0f2fe; }
 body.dark-mode .add-btn { background: #0c4a6e; border-color: #0369a1; color: #7dd3fc; }
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.section-header h4 { margin: 0; }
+.ai-generate-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 12px; font-weight: 500; color: #6366f1; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+.ai-generate-btn:hover { background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.3); }
+.ai-generate-btn svg { flex-shrink: 0; }
+body.dark-mode .ai-generate-btn { color: #818cf8; background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.25); }
+body.dark-mode .ai-generate-btn:hover { background: rgba(99, 102, 241, 0.2); border-color: rgba(99, 102, 241, 0.35); }
 </style>

@@ -1,0 +1,762 @@
+/**
+ * AI Generator Standalone Styles
+ * Scoped styles for public free tools (CSS isolation from themes)
+ *
+ * Part of the Unified AI Generator Architecture ("Modular Widgets")
+ *
+ * @package GMKB
+ * @subpackage Styles
+ * @version 1.0.0
+ * @since 2.2.0
+ */
+
+/* ========================================
+   CSS RESET & ISOLATION WRAPPER
+   ======================================== */
+
+/**
+ * Reset wrapper - prevents theme CSS bleed
+ * All standalone tools are wrapped in this class
+ */
+.gmkb-standalone-scope {
+  all: initial;
+  display: block;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #1a1a2e;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.gmkb-standalone-scope *,
+.gmkb-standalone-scope *::before,
+.gmkb-standalone-scope *::after {
+  box-sizing: inherit;
+}
+
+/* ========================================
+   AI WIDGET CONTAINER
+   ======================================== */
+
+.gmkb-standalone-scope .gmkb-ai-widget {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.gmkb-standalone-scope .gmkb-ai-widget--loading {
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+/* ========================================
+   WIDGET HEADER
+   ======================================== */
+
+.gmkb-standalone-scope .gmkb-ai-widget__header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.gmkb-standalone-scope .gmkb-ai-widget__title {
+  margin: 0 0 4px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.3;
+}
+
+.gmkb-standalone-scope .gmkb-ai-widget__description {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+/* ========================================
+   WIDGET BODY (INPUT AREA)
+   ======================================== */
+
+.gmkb-standalone-scope .gmkb-ai-widget__body {
+  padding: 24px;
+}
+
+/* ========================================
+   FORM ELEMENTS
+   ======================================== */
+
+.gmkb-standalone-scope .gmkb-ai-form-group {
+  margin-bottom: 20px;
+}
+
+.gmkb-standalone-scope .gmkb-ai-form-group:last-child {
+  margin-bottom: 0;
+}
+
+.gmkb-standalone-scope .gmkb-ai-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.gmkb-standalone-scope .gmkb-ai-label--required::after {
+  content: ' *';
+  color: #ef4444;
+}
+
+.gmkb-standalone-scope .gmkb-ai-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* Input Fields */
+.gmkb-standalone-scope .gmkb-ai-input {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 15px;
+  font-family: inherit;
+  line-height: 1.5;
+  color: #1f2937;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.gmkb-standalone-scope .gmkb-ai-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.gmkb-standalone-scope .gmkb-ai-input::placeholder {
+  color: #9ca3af;
+}
+
+.gmkb-standalone-scope .gmkb-ai-input--error {
+  border-color: #ef4444;
+}
+
+.gmkb-standalone-scope .gmkb-ai-input--error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+/* Textarea */
+.gmkb-standalone-scope .gmkb-ai-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* Select Dropdown */
+.gmkb-standalone-scope .gmkb-ai-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+  background-size: 16px 16px;
+  padding-right: 40px;
+}
+
+/* ========================================
+   TOGGLE BUTTONS (Length, POV, etc.)
+   ======================================== */
+
+.gmkb-standalone-scope .gmkb-ai-toggle-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.gmkb-standalone-scope .gmkb-ai-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  color: #4b5563;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gmkb-standalone-scope .gmkb-ai-toggle:hover {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+}
+
+.gmkb-standalone-scope .gmkb-ai-toggle--active {
+  color: #ffffff;
+  background: #6366f1;
+  border-color: #6366f1;
+}
+
+.gmkb-standalone-scope .gmkb-ai-toggle--active:hover {
+  background: #4f46e5;
+  border-color: #4f46e5;
+}
+
+/* ========================================
+   BUTTONS
+   ======================================== */
+
+.gmkb-standalone-scope .gmkb-ai-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  line-height: 1;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gmkb-standalone-scope .gmkb-ai-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Primary Button (Generate) */
+.gmkb-standalone-scope .gmkb-ai-button--primary {
+  color: #ffffff;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
+}
+
+.gmkb-standalone-scope .gmkb-ai-button--primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.4);
+  transform: translateY(-1px);
+}
+
+.gmkb-standalone-scope .gmkb-ai-button--primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Secondary Button */
+.gmkb-standalone-scope .gmkb-ai-button--secondary {
+  color: #4b5563;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+}
+
+.gmkb-standalone-scope .gmkb-ai-button--secondary:hover:not(:disabled) {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+}
+
+/* Ghost Button */
+.gmkb-standalone-scope .gmkb-ai-button--ghost {
+  color: #6366f1;
+  background: transparent;
+}
+
+.gmkb-standalone-scope .gmkb-ai-button--ghost:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.1);
+}
+
+/* Full Width Button */
+.gmkb-standalone-scope .gmkb-ai-button--full {
+  width: 100%;
+}
+
+/* ========================================
+   LOADING SPINNER
+   ======================================== */
+
+.gmkb-standalone-scope .gmkb-ai-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: gmkb-spin 0.75s linear infinite;
+}
+
+@keyframes gmkb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ========================================
+   RESULTS AREA
+   ======================================== */
+
+.gmkb-standalone-scope .gmkb-ai-widget__results {
+  padding: 24px;
+  border-top: 1px solid #e2e8f0;
+  background: #fafbfc;
+}
+
+.gmkb-standalone-scope .gmkb-ai-results__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.gmkb-standalone-scope .gmkb-ai-results__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.gmkb-standalone-scope .gmkb-ai-results__content {
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #1f2937;
+  white-space: pre-wrap;
+}
+
+/* Results as list */
+.gmkb-standalone-scope .gmkb-ai-results__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gmkb-standalone-scope .gmkb-ai-results__list-item {
+  padding: 12px 16px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #1f2937;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gmkb-standalone-scope .gmkb-ai-results__list-item:hover {
+  border-color: #6366f1;
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.1);
+}
+
+.gmkb-standalone-scope .gmkb-ai-results__list-item--selected {
+  border-color: #6366f1;
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.gmkb-standalone-scope .gmkb-ai-results__list-item:last-child {
+  margin-bottom: 0;
+}
+
+/* ========================================
+   WIDGET FOOTER
+   ======================================== */
+
+.gmkb-standalone-scope .gmkb-ai-widget__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.gmkb-standalone-scope .gmkb-ai-widget__footer-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* ========================================
+   USAGE METER
+   ======================================== */
+
+.gmkb-standalone-scope .gmkb-ai-usage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.gmkb-standalone-scope .gmkb-ai-usage__icon {
+  width: 16px;
+  height: 16px;
+  color: #94a3b8;
+}
+
+.gmkb-standalone-scope .gmkb-ai-usage__text {
+  white-space: nowrap;
+}
+
+.gmkb-standalone-scope .gmkb-ai-usage--warning {
+  color: #f59e0b;
+}
+
+.gmkb-standalone-scope .gmkb-ai-usage--exhausted {
+  color: #ef4444;
+}
+
+/* ========================================
+   LEAD GEN CTA
+   ======================================== */
+
+.gmkb-standalone-scope .gmkb-ai-cta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.gmkb-standalone-scope .gmkb-ai-cta__icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  color: #d97706;
+}
+
+.gmkb-standalone-scope .gmkb-ai-cta__content {
+  flex: 1;
+}
+
+.gmkb-standalone-scope .gmkb-ai-cta__title {
+  margin: 0 0 2px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.gmkb-standalone-scope .gmkb-ai-cta__text {
+  margin: 0;
+  font-size: 13px;
+  color: #a16207;
+}
+
+.gmkb-standalone-scope .gmkb-ai-cta__link {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #92400e;
+  background: #ffffff;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.gmkb-standalone-scope .gmkb-ai-cta__link:hover {
+  background: #fef3c7;
+}
+
+/* ========================================
+   ERROR MESSAGE
+   ======================================== */
+
+.gmkb-standalone-scope .gmkb-ai-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.gmkb-standalone-scope .gmkb-ai-error__icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  color: #ef4444;
+}
+
+.gmkb-standalone-scope .gmkb-ai-error__content {
+  flex: 1;
+}
+
+.gmkb-standalone-scope .gmkb-ai-error__message {
+  margin: 0;
+  font-size: 14px;
+  color: #991b1b;
+  line-height: 1.5;
+}
+
+.gmkb-standalone-scope .gmkb-ai-error__retry {
+  margin-top: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #991b1b;
+  background: #ffffff;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gmkb-standalone-scope .gmkb-ai-error__retry:hover {
+  background: #fef2f2;
+  border-color: #ef4444;
+}
+
+/* ========================================
+   AUTHORITY HOOK BUILDER
+   ======================================== */
+
+.gmkb-standalone-scope .gmkb-ai-hook-fields {
+  display: grid;
+  gap: 16px;
+}
+
+.gmkb-standalone-scope .gmkb-ai-hook-field {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.gmkb-standalone-scope .gmkb-ai-hook-field__label {
+  padding-top: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6366f1;
+}
+
+.gmkb-standalone-scope .gmkb-ai-hook-preview {
+  padding: 16px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #7dd3fc;
+  border-radius: 8px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #0c4a6e;
+  font-style: italic;
+}
+
+/* ========================================
+   IMPACT INTRO BUILDER (Tags/Chips)
+   ======================================== */
+
+.gmkb-standalone-scope .gmkb-ai-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.gmkb-standalone-scope .gmkb-ai-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 14px;
+  color: #4338ca;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 20px;
+}
+
+.gmkb-standalone-scope .gmkb-ai-tag__remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+  color: #6366f1;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gmkb-standalone-scope .gmkb-ai-tag__remove:hover {
+  color: #ffffff;
+  background: #6366f1;
+}
+
+.gmkb-standalone-scope .gmkb-ai-tag-input {
+  display: flex;
+  gap: 8px;
+}
+
+.gmkb-standalone-scope .gmkb-ai-tag-input .gmkb-ai-input {
+  flex: 1;
+}
+
+/* ========================================
+   ACCORDION (for Questions categories)
+   ======================================== */
+
+.gmkb-standalone-scope .gmkb-ai-accordion {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.gmkb-standalone-scope .gmkb-ai-accordion__item {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.gmkb-standalone-scope .gmkb-ai-accordion__item:last-child {
+  border-bottom: none;
+}
+
+.gmkb-standalone-scope .gmkb-ai-accordion__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #374151;
+  background: #f9fafb;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.gmkb-standalone-scope .gmkb-ai-accordion__header:hover {
+  background: #f3f4f6;
+}
+
+.gmkb-standalone-scope .gmkb-ai-accordion__icon {
+  width: 16px;
+  height: 16px;
+  color: #9ca3af;
+  transition: transform 0.2s ease;
+}
+
+.gmkb-standalone-scope .gmkb-ai-accordion__item--open .gmkb-ai-accordion__icon {
+  transform: rotate(180deg);
+}
+
+.gmkb-standalone-scope .gmkb-ai-accordion__content {
+  padding: 16px;
+  background: #ffffff;
+}
+
+/* ========================================
+   COPY SUCCESS TOAST
+   ======================================== */
+
+.gmkb-standalone-scope .gmkb-ai-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #ffffff;
+  background: #10b981;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 9999;
+}
+
+.gmkb-standalone-scope .gmkb-ai-toast--visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.gmkb-standalone-scope .gmkb-ai-toast__icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* ========================================
+   RESPONSIVE ADJUSTMENTS
+   ======================================== */
+
+@media (max-width: 640px) {
+  .gmkb-standalone-scope .gmkb-ai-widget {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .gmkb-standalone-scope .gmkb-ai-widget__header,
+  .gmkb-standalone-scope .gmkb-ai-widget__body,
+  .gmkb-standalone-scope .gmkb-ai-widget__results,
+  .gmkb-standalone-scope .gmkb-ai-widget__footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .gmkb-standalone-scope .gmkb-ai-widget__footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .gmkb-standalone-scope .gmkb-ai-widget__footer-actions {
+    justify-content: stretch;
+  }
+
+  .gmkb-standalone-scope .gmkb-ai-widget__footer-actions .gmkb-ai-button {
+    flex: 1;
+  }
+
+  .gmkb-standalone-scope .gmkb-ai-hook-field {
+    grid-template-columns: 1fr;
+  }
+
+  .gmkb-standalone-scope .gmkb-ai-hook-field__label {
+    padding-top: 0;
+  }
+
+  .gmkb-standalone-scope .gmkb-ai-toggle-group {
+    flex-direction: column;
+  }
+
+  .gmkb-standalone-scope .gmkb-ai-toggle {
+    width: 100%;
+  }
+
+  .gmkb-standalone-scope .gmkb-ai-cta {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .gmkb-standalone-scope .gmkb-ai-cta__link {
+    width: 100%;
+    text-align: center;
+  }
+}
