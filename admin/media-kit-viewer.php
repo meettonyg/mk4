@@ -177,11 +177,11 @@ class GMKB_Admin_Media_Kit_Viewer {
             <table class="widefat striped" style="background: white;">
                 <tr>
                     <th style="width: 40%;">Components:</th>
-                    <td><strong><?php echo $components_count; ?></strong> components</td>
+                    <td><strong><?php echo esc_html($components_count); ?></strong> components</td>
                 </tr>
                 <tr>
                     <th>Sections:</th>
-                    <td><strong><?php echo $sections_count; ?></strong> sections</td>
+                    <td><strong><?php echo esc_html($sections_count); ?></strong> sections</td>
                 </tr>
                 <tr>
                     <th>Data Size:</th>

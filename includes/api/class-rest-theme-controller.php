@@ -32,10 +32,11 @@ class GMKB_REST_Theme_Controller {
      */
     public function register_routes() {
         // Get all themes (built-in and custom)
+        // SECURITY FIX: Require authentication to view theme list
         register_rest_route(self::NAMESPACE, '/themes', array(
             'methods' => WP_REST_Server::READABLE,
             'callback' => array($this, 'get_themes'),
-            'permission_callback' => '__return_true'
+            'permission_callback' => array($this, 'read_permission_check')
         ));
         
         // Get custom themes - GEMINI FIX: Require auth for all theme operations
@@ -53,11 +54,12 @@ class GMKB_REST_Theme_Controller {
         ));
         
         // Single custom theme operations
+        // SECURITY FIX: Require authentication for all custom theme operations
         register_rest_route(self::NAMESPACE, '/themes/custom/(?P<id>[a-z0-9_-]+)', array(
             array(
                 'methods' => WP_REST_Server::READABLE,
                 'callback' => array($this, 'get_custom_theme'),
-                'permission_callback' => '__return_true',
+                'permission_callback' => array($this, 'read_permission_check'),
                 'args' => array(
                     'id' => array(
                         'required' => true,
@@ -93,11 +95,12 @@ class GMKB_REST_Theme_Controller {
         ));
         
         // Theme selection endpoints
+        // SECURITY FIX: Require authentication to view active theme
         register_rest_route(self::NAMESPACE, '/themes/active', array(
             array(
                 'methods' => WP_REST_Server::READABLE,
                 'callback' => array($this, 'get_active_theme'),
-                'permission_callback' => '__return_true'
+                'permission_callback' => array($this, 'read_permission_check')
             ),
             array(
                 'methods' => WP_REST_Server::CREATABLE,
@@ -107,6 +110,14 @@ class GMKB_REST_Theme_Controller {
         ));
     }
     
+    /**
+     * Permission check for read operations
+     * SECURITY FIX: Require user to be logged in for theme access
+     */
+    public function read_permission_check() {
+        return is_user_logged_in();
+    }
+
     /**
      * Permission check for write operations
      */
@@ -374,14 +385,24 @@ class GMKB_REST_Theme_Controller {
      * Set the active theme
      */
     public function set_active_theme($request) {
-        $theme_id = $request->get_param('theme_id');
-        $post_id = $request->get_param('post_id');
-        
+        $theme_id = sanitize_text_field($request->get_param('theme_id'));
+        $post_id = absint($request->get_param('post_id'));
+
         if (empty($theme_id)) {
             return new WP_Error('invalid_theme', 'Theme ID is required', array('status' => 400));
         }
-        
+
+        // SECURITY FIX: Validate theme_id length
+        if (strlen($theme_id) > 100) {
+            return new WP_Error('invalid_theme', 'Theme ID too long', array('status' => 400));
+        }
+
         if ($post_id) {
+            // SECURITY FIX: Verify user can edit this specific post
+            if (!current_user_can('edit_post', $post_id)) {
+                return new WP_Error('forbidden', 'You do not have permission to edit this post', array('status' => 403));
+            }
+
             // Save post-specific theme
             update_post_meta($post_id, 'gmkb_selected_theme', $theme_id);
             

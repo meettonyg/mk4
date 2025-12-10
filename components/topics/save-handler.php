@@ -21,18 +21,24 @@ class GMKB_Topics_Save_Handler {
     }
     
     private function __construct() {
+        // SECURITY FIX: Remove nopriv action - only authenticated users can save topics
         add_action('wp_ajax_gmkb_save_topics_to_pods', array($this, 'save_topics_to_pods'));
-        add_action('wp_ajax_nopriv_gmkb_save_topics_to_pods', array($this, 'save_topics_to_pods'));
     }
-    
+
     public function save_topics_to_pods() {
         // Verify nonce
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'gmkb_nonce')) {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field($_POST['nonce']), 'gmkb_nonce')) {
             wp_send_json_error('Invalid security token');
             return;
         }
-        
-        $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
+
+        $post_id = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
+
+        // SECURITY FIX: Check user can edit this specific post
+        if (!current_user_can('edit_post', $post_id)) {
+            wp_send_json_error('You do not have permission to edit this post');
+            return;
+        }
         $topics_json = isset($_POST['topics']) ? stripslashes($_POST['topics']) : '[]';
         
         if (!$post_id) {

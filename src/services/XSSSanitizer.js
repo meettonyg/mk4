@@ -514,7 +514,8 @@ export function containsXSS(str) {
 /**
  * Strip all HTML tags from string
  * Most aggressive sanitization - use when HTML is never needed
- * 
+ * SECURITY FIX: Use DOMParser instead of innerHTML to prevent script execution
+ *
  * @param {string} html - HTML string
  * @returns {string} Plain text
  */
@@ -523,9 +524,15 @@ export function stripHTML(html) {
     return '';
   }
 
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  return div.textContent || div.innerText || '';
+  try {
+    // SECURITY FIX: Use DOMParser which doesn't execute scripts
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    return doc.body.textContent || doc.body.innerText || '';
+  } catch (e) {
+    // Fallback: use regex-based stripping if DOMParser fails
+    return html.replace(/<[^>]*>/g, '');
+  }
 }
 
 // Export all functions

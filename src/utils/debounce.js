@@ -25,27 +25,49 @@
  * });
  */
 export function debounce(func, wait, immediate = false) {
-  let timeout;
-  
-  return function executedFunction(...args) {
-    const context = this;
-    
-    const later = () => {
-      timeout = null;
-      if (!immediate) {
-        func.apply(context, args);
-      }
-    };
-    
+  let timeout, context, args;
+
+  const later = () => {
+    timeout = null;
+    if (!immediate) {
+      func.apply(context, args);
+    }
+  };
+
+  const debounced = function executedFunction(...latestArgs) {
+    context = this;
+    args = latestArgs;
     const callNow = immediate && !timeout;
-    
+
     clearTimeout(timeout);
     timeout = setTimeout(later, wait);
-    
+
     if (callNow) {
       func.apply(context, args);
     }
   };
+
+  // FIX: Add cancel method for cleanup in Vue components
+  debounced.cancel = function() {
+    if (timeout) {
+      clearTimeout(timeout);
+      timeout = null;
+    }
+  };
+
+  // FIX: Add flush method to immediately execute pending call with last arguments
+  debounced.flush = function() {
+    if (timeout) {
+      clearTimeout(timeout);
+      timeout = null;
+      // Call with the last set of arguments and context
+      if (args !== undefined) {
+        func.apply(context, args);
+      }
+    }
+  };
+
+  return debounced;
 }
 
 /**

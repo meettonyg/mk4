@@ -66,16 +66,11 @@ class GMKB_Ajax {
      * Returns component definitions for the builder
      */
     public function ajax_get_components() {
-        // Verify nonce
-        $nonce_provided = isset($_POST['nonce']) ? $_POST['nonce'] : (isset($_GET['nonce']) ? $_GET['nonce'] : '');
-        
-        if ($nonce_provided && !wp_verify_nonce($nonce_provided, 'gmkb_nonce')) {
+        // SECURITY FIX: Always verify nonce - no debug mode bypass
+        $nonce_provided = isset($_POST['nonce']) ? sanitize_text_field($_POST['nonce']) : (isset($_GET['nonce']) ? sanitize_text_field($_GET['nonce']) : '');
+
+        if (!$nonce_provided || !wp_verify_nonce($nonce_provided, 'gmkb_nonce')) {
             wp_send_json_error('Security verification failed');
-            return;
-        }
-        
-        if (!$nonce_provided && (!defined('WP_DEBUG') || !WP_DEBUG)) {
-            wp_send_json_error('Nonce required');
             return;
         }
         
@@ -199,17 +194,18 @@ class GMKB_Ajax {
             return;
         }
         
-        if (isset($_POST['nonce']) && !wp_verify_nonce($_POST['nonce'], 'gmkb_nonce')) {
+        // SECURITY FIX: Always require nonce verification
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field($_POST['nonce']), 'gmkb_nonce')) {
             wp_send_json_error('Security verification failed');
             return;
         }
-        
+
         // Get component discovery instance
         if (!$this->component_discovery) {
             $plugin = GMKB_Plugin::get_instance();
             $this->component_discovery = $plugin->get_component_discovery();
         }
-        
+
         try {
             $this->component_discovery->clearCache();
             
@@ -231,17 +227,18 @@ class GMKB_Ajax {
             return;
         }
         
-        if (isset($_POST['nonce']) && !wp_verify_nonce($_POST['nonce'], 'gmkb_nonce')) {
+        // SECURITY FIX: Always require nonce verification
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field($_POST['nonce']), 'gmkb_nonce')) {
             wp_send_json_error('Security verification failed');
             return;
         }
-        
+
         // Get component discovery instance
         if (!$this->component_discovery) {
             $plugin = GMKB_Plugin::get_instance();
             $this->component_discovery = $plugin->get_component_discovery();
         }
-        
+
         try {
             $categories = $this->component_discovery->forceRefresh();
             $components = $this->component_discovery->getComponents();

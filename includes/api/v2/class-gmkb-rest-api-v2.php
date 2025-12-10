@@ -80,38 +80,22 @@ class GMKB_REST_API_V2 {
     }
     
     /**
-     * Bypass WordPress cookie authentication for logged-in users
-     * ROOT FIX: WordPress REST API cookie auth is too strict, causing 403 errors
-     * 
-     * This fixes the "nonce_expired" 403 errors during active editing sessions
+     * Handle REST API authentication
+     * SECURITY FIX: Removed bypass - proper nonce validation is required
+     *
+     * Frontend must send proper nonces via X-WP-Nonce header
      */
     public function bypass_cookie_auth_for_logged_in_users($result) {
-        // If there's already an error, check if we should override it
-        if (is_wp_error($result)) {
-            $error_code = $result->get_error_code();
-            
-            // ROOT FIX: Bypass nonce errors for logged-in users with edit capabilities
-            if (($error_code === 'rest_cookie_invalid_nonce' || 
-                 $error_code === 'rest_forbidden' ||
-                 $error_code === 'rest_cookie_nonce_expired') && 
-                is_user_logged_in()) {
-                
-                // Additional check: user must have edit capabilities
-                if (current_user_can('edit_posts')) {
-                    if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log('✅ GMKB REST API: Bypassing ' . $error_code . ' for logged-in editor');
-                    }
-                    return true; // Allow the request
-                }
-            }
+        // SECURITY FIX: Do not bypass authentication errors
+        // The frontend should properly refresh nonces when they expire
+        // This maintains CSRF protection
+
+        // Only allow if no existing error
+        if ($result === null || $result === true) {
             return $result;
         }
-        
-        // If user is logged in with edit capabilities, allow request
-        if (is_user_logged_in() && current_user_can('edit_posts')) {
-            return true;
-        }
-        
+
+        // Return the original error - do not bypass
         return $result;
     }
 
@@ -838,9 +822,9 @@ class GMKB_REST_API_V2 {
     }
 
     /**
-     * Check read permissions - more lenient for logged-in users
-     * ROOT FIX: Simplified permission check to prevent race conditions
-     * 
+     * Check read permissions
+     * SECURITY FIX: Proper permission checking based on post status and user capabilities
+     *
      * @param WP_REST_Request $request The request
      * @return bool|WP_Error Whether the user can read
      */
@@ -852,21 +836,45 @@ class GMKB_REST_API_V2 {
             return GMKB_Permissions::can_view($post_id);
         }
 
-        // FALLBACK: Legacy permission check
-        // If user is logged in, allow access
-        if (is_user_logged_in()) {
+        // FALLBACK: Detailed security permission check (SECURITY FIX)
+        $post = get_post($post_id);
+
+        // Check if post exists
+        if (!$post) {
+            return new WP_Error(
+                'rest_post_not_found',
+                'Media kit not found',
+                array('status' => 404)
+            );
+        }
+
+        // Allow access to published posts for anyone (public media kits)
+        if ($post->post_status === 'publish') {
             return true;
         }
 
-        // For non-logged-in users, check if post is public
-        $post = get_post($post_id);
-        if ($post && $post->post_status === 'publish') {
+        // For non-published posts, require user to be logged in
+        if (!is_user_logged_in()) {
+            return new WP_Error(
+                'rest_forbidden',
+                'You must be logged in to access this media kit',
+                array('status' => 403)
+            );
+        }
+
+        // User must be able to edit the post to view non-published content
+        if (current_user_can('edit_post', $post_id)) {
+            return true;
+        }
+
+        // Check if user is the post author
+        if ((int) $post->post_author === get_current_user_id()) {
             return true;
         }
 
         return new WP_Error(
             'rest_forbidden',
-            'You must be logged in to access this media kit',
+            'You do not have permission to access this media kit',
             array('status' => 403)
         );
     }

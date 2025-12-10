@@ -87,17 +87,30 @@ class GMKB_ImportManager {
             return;
         }
         
-        // Get parameters
-        $import_data = isset($_POST['import_data']) ? $_POST['import_data'] : '';
-        $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
+        // Get parameters - SECURITY FIX: Sanitize import data
+        $import_data = isset($_POST['import_data']) ? wp_unslash($_POST['import_data']) : '';
+        $post_id = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
         $import_mode = isset($_POST['import_mode']) ? sanitize_text_field($_POST['import_mode']) : 'replace';
+
+        // SECURITY FIX: Validate import data size (max 10MB)
+        if (strlen($import_data) > 10485760) {
+            wp_send_json_error('Import data too large (max 10MB)');
+            return;
+        }
+
+        // SECURITY FIX: Check user can edit target post if specified
+        if ($post_id && !current_user_can('edit_post', $post_id)) {
+            wp_send_json_error('You do not have permission to edit this post');
+            return;
+        }
         
         // Handle file upload if provided
         if (isset($_FILES['import_file'])) {
             $file = $_FILES['import_file'];
             
-            // Validate file type
-            if ($file['type'] !== 'application/json' && !str_ends_with($file['name'], '.json')) {
+            // Validate file type - PHP 7.4 compatible check
+            $file_ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            if ($file['type'] !== 'application/json' && $file_ext !== 'json') {
                 wp_send_json_error('Invalid file type. Please upload a JSON file.');
                 return;
             }
@@ -109,14 +122,14 @@ class GMKB_ImportManager {
                 return;
             }
         }
-        
-        // Decode JSON
-        $data = json_decode(stripslashes($import_data), true);
+
+        // Decode JSON - SECURITY FIX: Use the already sanitized data
+        $data = json_decode($import_data, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
             wp_send_json_error('Invalid JSON data: ' . json_last_error_msg());
             return;
         }
-        
+
         // Validate import data
         $validation = $this->validate_import_data($data);
         if (!$validation['valid']) {
@@ -425,11 +438,17 @@ class GMKB_ImportManager {
             return;
         }
         
-        // Get import data
-        $import_data = isset($_POST['import_data']) ? $_POST['import_data'] : '';
-        
+        // Get import data - SECURITY FIX: Sanitize input
+        $import_data = isset($_POST['import_data']) ? wp_unslash($_POST['import_data']) : '';
+
+        // SECURITY FIX: Validate import data size
+        if (strlen($import_data) > 10485760) {
+            wp_send_json_error('Import data too large (max 10MB)');
+            return;
+        }
+
         // Decode JSON
-        $data = json_decode(stripslashes($import_data), true);
+        $data = json_decode($import_data, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
             wp_send_json_error('Invalid JSON data: ' . json_last_error_msg());
             return;
