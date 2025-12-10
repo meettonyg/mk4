@@ -133,327 +133,41 @@ class GMKB_Free_Tools_Shortcode {
         // Register the generic shortcode
         add_shortcode('gmkb_free_tool', array($this, 'render'));
 
-        // Register individual shortcodes for each tool type
-        // Message Builder
-        add_shortcode('gmkb_biography', array($this, 'render_biography'));
-        add_shortcode('gmkb_topics', array($this, 'render_topics'));
-        add_shortcode('gmkb_questions', array($this, 'render_questions'));
-        add_shortcode('gmkb_tagline', array($this, 'render_tagline'));
-        add_shortcode('gmkb_guest_intro', array($this, 'render_guest_intro'));
-        add_shortcode('gmkb_offers', array($this, 'render_offers'));
-
-        // Value Builder
-        add_shortcode('gmkb_elevator_pitch', array($this, 'render_elevator_pitch'));
-        add_shortcode('gmkb_sound_bite', array($this, 'render_sound_bite'));
-        add_shortcode('gmkb_authority_hook', array($this, 'render_authority_hook'));
-        add_shortcode('gmkb_impact_intro', array($this, 'render_impact_intro'));
-        add_shortcode('gmkb_persona', array($this, 'render_persona'));
-
-        // Strategy
-        add_shortcode('gmkb_brand_story', array($this, 'render_brand_story'));
-        add_shortcode('gmkb_signature_story', array($this, 'render_signature_story'));
-        add_shortcode('gmkb_credibility_story', array($this, 'render_credibility_story'));
-        add_shortcode('gmkb_framework', array($this, 'render_framework'));
-        add_shortcode('gmkb_interview_prep', array($this, 'render_interview_prep'));
-
-        // Content
-        add_shortcode('gmkb_blog', array($this, 'render_blog'));
-        add_shortcode('gmkb_content_repurpose', array($this, 'render_content_repurpose'));
-        add_shortcode('gmkb_press_release', array($this, 'render_press_release'));
-
-        // Social/Email
-        add_shortcode('gmkb_social_post', array($this, 'render_social_post'));
-        add_shortcode('gmkb_email', array($this, 'render_email'));
-        add_shortcode('gmkb_newsletter', array($this, 'render_newsletter'));
-        add_shortcode('gmkb_youtube_description', array($this, 'render_youtube_description'));
-        add_shortcode('gmkb_podcast_notes', array($this, 'render_podcast_notes'));
-        add_shortcode('gmkb_seo_optimizer', array($this, 'render_seo_optimizer'));
+        // Register individual shortcodes dynamically for each tool type
+        foreach ($this->valid_types as $type) {
+            $shortcode_tag = 'gmkb_' . str_replace('-', '_', $type);
+            add_shortcode($shortcode_tag, array($this, 'render_from_tag'));
+        }
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB Free Tools Shortcode: Registered 25 shortcodes');
+            error_log('GMKB Free Tools Shortcode: Registered ' . (count($this->valid_types) + 1) . ' shortcodes');
         }
     }
 
     /**
-     * Render biography shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
+     * Generic renderer for individual tool shortcodes.
+     * Derives tool type from the shortcode tag.
+     *
+     * @param array  $atts    Shortcode attributes.
+     * @param string $content Shortcode content.
+     * @param string $tag     The shortcode tag.
+     * @return string HTML output.
      */
-    public function render_biography($atts) {
+    public function render_from_tag($atts, $content = null, $tag = '') {
+        // Convert shortcode tag to tool type (gmkb_brand_story -> brand-story)
+        $type = str_replace('gmkb_', '', $tag);
+        $type = str_replace('_', '-', $type);
+
+        // Validate type (safeguard)
+        if (!in_array($type, $this->valid_types)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB Free Tools: Invalid dynamic shortcode tag "' . $tag . '"');
+            }
+            return '<!-- GMKB: Invalid tool type -->';
+        }
+
         $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'biography';
-        return $this->render($atts);
-    }
-
-    /**
-     * Render topics shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_topics($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'topics';
-        return $this->render($atts);
-    }
-
-    /**
-     * Render questions shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_questions($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'questions';
-        return $this->render($atts);
-    }
-
-    /**
-     * Render tagline shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_tagline($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'tagline';
-        return $this->render($atts);
-    }
-
-    /**
-     * Render guest intro shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_guest_intro($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'guest-intro';
-        return $this->render($atts);
-    }
-
-    /**
-     * Render offers shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_offers($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'offers';
-        return $this->render($atts);
-    }
-
-    /**
-     * Render authority hook shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_authority_hook($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'authority-hook';
-        return $this->render($atts);
-    }
-
-    // ========== VALUE BUILDER ==========
-
-    /**
-     * Render elevator pitch shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_elevator_pitch($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'elevator-pitch';
-        return $this->render($atts);
-    }
-
-    /**
-     * Render sound bite shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_sound_bite($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'sound-bite';
-        return $this->render($atts);
-    }
-
-    /**
-     * Render impact intro shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_impact_intro($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'impact-intro';
-        return $this->render($atts);
-    }
-
-    /**
-     * Render persona shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_persona($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'persona';
-        return $this->render($atts);
-    }
-
-    // ========== STRATEGY ==========
-
-    /**
-     * Render brand story shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_brand_story($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'brand-story';
-        return $this->render($atts);
-    }
-
-    /**
-     * Render signature story shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_signature_story($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'signature-story';
-        return $this->render($atts);
-    }
-
-    /**
-     * Render credibility story shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_credibility_story($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'credibility-story';
-        return $this->render($atts);
-    }
-
-    /**
-     * Render framework shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_framework($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'framework';
-        return $this->render($atts);
-    }
-
-    /**
-     * Render interview prep shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_interview_prep($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'interview-prep';
-        return $this->render($atts);
-    }
-
-    // ========== CONTENT ==========
-
-    /**
-     * Render blog shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_blog($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'blog';
-        return $this->render($atts);
-    }
-
-    /**
-     * Render content repurpose shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_content_repurpose($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'content-repurpose';
-        return $this->render($atts);
-    }
-
-    /**
-     * Render press release shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_press_release($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'press-release';
-        return $this->render($atts);
-    }
-
-    // ========== SOCIAL/EMAIL ==========
-
-    /**
-     * Render social post shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_social_post($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'social-post';
-        return $this->render($atts);
-    }
-
-    /**
-     * Render email shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_email($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'email';
-        return $this->render($atts);
-    }
-
-    /**
-     * Render newsletter shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_newsletter($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'newsletter';
-        return $this->render($atts);
-    }
-
-    /**
-     * Render youtube description shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_youtube_description($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'youtube-description';
-        return $this->render($atts);
-    }
-
-    /**
-     * Render podcast notes shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_podcast_notes($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'podcast-notes';
-        return $this->render($atts);
-    }
-
-    /**
-     * Render seo optimizer shortcode
-     * @param array $atts Shortcode attributes
-     * @return string HTML output
-     */
-    public function render_seo_optimizer($atts) {
-        $atts = is_array($atts) ? $atts : array();
-        $atts['type'] = 'seo-optimizer';
+        $atts['type'] = $type;
         return $this->render($atts);
     }
 
@@ -501,9 +215,9 @@ class GMKB_Free_Tools_Shortcode {
         }
 
         // Build data attributes for Vue initialization
+        // Note: Nonce is passed globally via wp_localize_script (gmkbPublicData.publicNonce)
         $data_attrs = array(
             'data-gmkb-tool' => esc_attr($atts['type']),
-            'data-nonce' => wp_create_nonce('gmkb_public_ai'), // Required for API authorization
             'data-gmkb-title' => esc_attr($atts['title']),
             'data-gmkb-description' => esc_attr($atts['description']),
             'data-gmkb-theme' => esc_attr($atts['theme']),

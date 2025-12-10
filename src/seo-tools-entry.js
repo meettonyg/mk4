@@ -118,7 +118,6 @@ const mountedApps = new Map();
  */
 function initializeTool(container) {
     const toolType = container.dataset.gmkbTool;
-    const nonce = container.dataset.nonce || '';
 
     // Validate tool type
     const Component = TOOL_COMPONENTS[toolType];
@@ -133,8 +132,9 @@ function initializeTool(container) {
         return mountedApps.get(container);
     }
 
-    // Store nonce globally for API calls
-    if (nonce && !window.gmkbSeoTools) {
+    // Store nonce globally for API calls (from wp_localize_script)
+    if (!window.gmkbSeoTools) {
+        const nonce = window.gmkbPublicNonce || (window.gmkbPublicData && window.gmkbPublicData.publicNonce) || '';
         window.gmkbSeoTools = { nonce };
     }
 
