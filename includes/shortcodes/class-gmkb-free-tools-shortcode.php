@@ -5,19 +5,57 @@
  * Part of the Unified AI Generator Architecture ("Modular Widgets")
  * Provides shortcode for embedding AI tools on public pages (standalone mode).
  *
- * Usage: [gmkb_free_tool type="biography" title="Free Bio Generator"]
+ * Generic Usage: [gmkb_free_tool type="biography" title="Free Bio Generator"]
  *
- * Available types:
- * - biography: AI Biography Generator
- * - topics: AI Topics Generator
- * - questions: AI Questions Generator
- * - tagline: AI Tagline Generator
- * - guest-intro: AI Guest Intro Generator
- * - offers: AI Offers Generator
+ * Individual Shortcodes (25 tools):
+ *
+ * MESSAGE BUILDER:
+ * - [gmkb_biography] - AI Biography Generator
+ * - [gmkb_topics] - AI Topics Generator
+ * - [gmkb_questions] - AI Questions Generator
+ * - [gmkb_tagline] - AI Tagline Generator
+ * - [gmkb_guest_intro] - AI Guest Intro Generator
+ * - [gmkb_offers] - AI Offers Generator
+ *
+ * VALUE BUILDER:
+ * - [gmkb_elevator_pitch] - Elevator Pitch Generator
+ * - [gmkb_sound_bite] - Sound Bite Generator
+ * - [gmkb_authority_hook] - Authority Hook Builder
+ * - [gmkb_impact_intro] - Impact Intro Builder
+ * - [gmkb_persona] - Ideal Client Persona Generator
+ *
+ * STRATEGY:
+ * - [gmkb_brand_story] - Brand Story Generator
+ * - [gmkb_signature_story] - Signature Story Generator
+ * - [gmkb_credibility_story] - Credibility Story Generator
+ * - [gmkb_framework] - Framework Builder
+ * - [gmkb_interview_prep] - Interview Prep Generator
+ *
+ * CONTENT:
+ * - [gmkb_blog] - Blog Post Generator
+ * - [gmkb_content_repurpose] - Content Repurposer
+ * - [gmkb_press_release] - Press Release Generator
+ *
+ * SOCIAL/EMAIL:
+ * - [gmkb_social_post] - Social Post Generator
+ * - [gmkb_email] - Email Writer
+ * - [gmkb_newsletter] - Newsletter Writer
+ * - [gmkb_youtube_description] - YouTube Description Generator
+ * - [gmkb_podcast_notes] - Podcast Show Notes Generator
+ * - [gmkb_seo_optimizer] - SEO Content Optimizer
+ *
+ * All shortcodes accept these attributes:
+ * - title: Custom widget title
+ * - description: Custom widget description
+ * - class: Additional CSS classes
+ * - theme: 'light' or 'dark' (default: light)
+ * - cta_text: Call-to-action button text
+ * - cta_url: Call-to-action URL
+ * - show_usage: Show usage counter (true/false)
  *
  * @package GMKB
  * @subpackage Shortcodes
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2.2.0
  */
 
@@ -44,12 +82,36 @@ class GMKB_Free_Tools_Shortcode {
      * @var array
      */
     private $valid_types = array(
+        // Message Builder
         'biography',
         'topics',
         'questions',
         'tagline',
         'guest-intro',
-        'offers'
+        'offers',
+        // Value Builder
+        'elevator-pitch',
+        'sound-bite',
+        'authority-hook',
+        'impact-intro',
+        'persona',
+        // Strategy
+        'brand-story',
+        'signature-story',
+        'credibility-story',
+        'framework',
+        'interview-prep',
+        // Content
+        'blog',
+        'content-repurpose',
+        'press-release',
+        // Social/Email
+        'social-post',
+        'email',
+        'newsletter',
+        'youtube-description',
+        'podcast-notes',
+        'seo-optimizer'
     );
 
     /**
@@ -68,11 +130,45 @@ class GMKB_Free_Tools_Shortcode {
      * Constructor
      */
     private function __construct() {
+        // Register the generic shortcode
         add_shortcode('gmkb_free_tool', array($this, 'render'));
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB Free Tools Shortcode: Registered [gmkb_free_tool]');
+        // Register individual shortcodes dynamically for each tool type
+        foreach ($this->valid_types as $type) {
+            $shortcode_tag = 'gmkb_' . str_replace('-', '_', $type);
+            add_shortcode($shortcode_tag, array($this, 'render_from_tag'));
         }
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB Free Tools Shortcode: Registered ' . (count($this->valid_types) + 1) . ' shortcodes');
+        }
+    }
+
+    /**
+     * Generic renderer for individual tool shortcodes.
+     * Derives tool type from the shortcode tag.
+     *
+     * @param array  $atts    Shortcode attributes.
+     * @param string $content Shortcode content.
+     * @param string $tag     The shortcode tag.
+     * @return string HTML output.
+     */
+    public function render_from_tag($atts, $content = null, $tag = '') {
+        // Convert shortcode tag to tool type (gmkb_brand_story -> brand-story)
+        $type = str_replace('gmkb_', '', $tag);
+        $type = str_replace('_', '-', $type);
+
+        // Validate type (safeguard)
+        if (!in_array($type, $this->valid_types)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB Free Tools: Invalid dynamic shortcode tag "' . $tag . '"');
+            }
+            return '<!-- GMKB: Invalid tool type -->';
+        }
+
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = $type;
+        return $this->render($atts);
     }
 
     /**
@@ -119,6 +215,7 @@ class GMKB_Free_Tools_Shortcode {
         }
 
         // Build data attributes for Vue initialization
+        // Note: Nonce is passed globally via wp_localize_script (gmkbPublicData.publicNonce)
         $data_attrs = array(
             'data-gmkb-tool' => esc_attr($atts['type']),
             'data-gmkb-title' => esc_attr($atts['title']),
@@ -322,12 +419,36 @@ class GMKB_Free_Tools_Shortcode {
 
     // Tool display names
     var toolNames = {
+        // Message Builder
         "biography": "Biography Generator",
         "topics": "Topics Generator",
         "questions": "Questions Generator",
         "tagline": "Tagline Generator",
         "guest-intro": "Guest Intro Generator",
-        "offers": "Offers Generator"
+        "offers": "Offers Generator",
+        // Value Builder
+        "elevator-pitch": "Elevator Pitch Generator",
+        "sound-bite": "Sound Bite Generator",
+        "authority-hook": "Authority Hook Builder",
+        "impact-intro": "Impact Intro Builder",
+        "persona": "Persona Generator",
+        // Strategy
+        "brand-story": "Brand Story Generator",
+        "signature-story": "Signature Story Generator",
+        "credibility-story": "Credibility Story Generator",
+        "framework": "Framework Builder",
+        "interview-prep": "Interview Prep Generator",
+        // Content
+        "blog": "Blog Post Generator",
+        "content-repurpose": "Content Repurposer",
+        "press-release": "Press Release Generator",
+        // Social/Email
+        "social-post": "Social Post Generator",
+        "email": "Email Writer",
+        "newsletter": "Newsletter Writer",
+        "youtube-description": "YouTube Description Generator",
+        "podcast-notes": "Podcast Notes Generator",
+        "seo-optimizer": "SEO Optimizer"
     };
 
     // Initialize placeholders when DOM is ready
@@ -399,6 +520,12 @@ class GMKB_Free_Tools_Shortcode {
                 'description' => 'Create service packages and offers.',
                 'icon' => 'package',
                 'fields' => array('authorityHook', 'services')
+            ),
+            'authority-hook' => array(
+                'title' => 'AI Authority Hook Builder',
+                'description' => 'Create your unique authority positioning statement.',
+                'icon' => 'zap',
+                'fields' => array('name', 'expertise', 'audience', 'outcome')
             )
         );
 

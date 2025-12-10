@@ -28,7 +28,7 @@ export default defineConfig(({ mode }) => ({
         lib: {
             entry: path.resolve(__dirname, 'src/seo-tools-entry.js'),
             name: 'GMKBSeoTools',
-            fileName: 'gmkb-seo-tools',
+            fileName: 'seo-tools',
             formats: ['iife'],
         },
         outDir: 'dist/seo-tools',
@@ -42,8 +42,8 @@ export default defineConfig(({ mode }) => ({
 
         rollupOptions: {
             output: {
-                assetFileNames: 'gmkb-seo-tools.[ext]',
-                entryFileNames: 'gmkb-seo-tools.iife.js',
+                assetFileNames: 'seo-tools.[ext]',
+                entryFileNames: 'seo-tools.iife.js',
                 // Compact output for smaller bundle
                 compact: true,
             },

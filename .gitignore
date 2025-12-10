@@ -5,10 +5,11 @@ node_modules/
 build/
 .output/
 
-# Dist - track profile apps but ignore other build artifacts
+# Dist - track profile apps and seo-tools but ignore other build artifacts
 dist/*
 !dist/profile/
 !dist/profile-list/
+!dist/seo-tools/
 
 # Environment files
 .env
