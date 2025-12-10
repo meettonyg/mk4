@@ -108,8 +108,9 @@ class GMKB_ImportManager {
         if (isset($_FILES['import_file'])) {
             $file = $_FILES['import_file'];
             
-            // Validate file type
-            if ($file['type'] !== 'application/json' && !str_ends_with($file['name'], '.json')) {
+            // Validate file type - PHP 7.4 compatible check
+            $file_ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            if ($file['type'] !== 'application/json' && $file_ext !== 'json') {
                 wp_send_json_error('Invalid file type. Please upload a JSON file.');
                 return;
             }

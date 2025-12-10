@@ -25,18 +25,18 @@
  * });
  */
 export function debounce(func, wait, immediate = false) {
-  let timeout;
+  let timeout, context, args;
 
-  const debounced = function executedFunction(...args) {
-    const context = this;
+  const later = () => {
+    timeout = null;
+    if (!immediate) {
+      func.apply(context, args);
+    }
+  };
 
-    const later = () => {
-      timeout = null;
-      if (!immediate) {
-        func.apply(context, args);
-      }
-    };
-
+  const debounced = function executedFunction(...latestArgs) {
+    context = this;
+    args = latestArgs;
     const callNow = immediate && !timeout;
 
     clearTimeout(timeout);
@@ -55,12 +55,15 @@ export function debounce(func, wait, immediate = false) {
     }
   };
 
-  // FIX: Add flush method to immediately execute pending call
+  // FIX: Add flush method to immediately execute pending call with last arguments
   debounced.flush = function() {
     if (timeout) {
       clearTimeout(timeout);
       timeout = null;
-      func.apply(this, []);
+      // Call with the last set of arguments and context
+      if (args !== undefined) {
+        func.apply(context, args);
+      }
     }
   };
 
