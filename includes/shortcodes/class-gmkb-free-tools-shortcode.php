@@ -5,20 +5,29 @@
  * Part of the Unified AI Generator Architecture ("Modular Widgets")
  * Provides shortcode for embedding AI tools on public pages (standalone mode).
  *
- * Usage: [gmkb_free_tool type="biography" title="Free Bio Generator"]
+ * Generic Usage: [gmkb_free_tool type="biography" title="Free Bio Generator"]
  *
- * Available types:
- * - biography: AI Biography Generator
- * - topics: AI Topics Generator
- * - questions: AI Questions Generator
- * - tagline: AI Tagline Generator
- * - guest-intro: AI Guest Intro Generator
- * - offers: AI Offers Generator
- * - authority-hook: AI Authority Hook Builder
+ * Individual Shortcodes (convenience):
+ * - [gmkb_biography] - AI Biography Generator
+ * - [gmkb_topics] - AI Topics Generator
+ * - [gmkb_questions] - AI Questions Generator
+ * - [gmkb_tagline] - AI Tagline Generator
+ * - [gmkb_guest_intro] - AI Guest Intro Generator
+ * - [gmkb_offers] - AI Offers Generator
+ * - [gmkb_authority_hook] - AI Authority Hook Builder
+ *
+ * All shortcodes accept these attributes:
+ * - title: Custom widget title
+ * - description: Custom widget description
+ * - class: Additional CSS classes
+ * - theme: 'light' or 'dark' (default: light)
+ * - cta_text: Call-to-action button text
+ * - cta_url: Call-to-action URL
+ * - show_usage: Show usage counter (true/false)
  *
  * @package GMKB
  * @subpackage Shortcodes
- * @version 1.0.1
+ * @version 1.1.0
  * @since 2.2.0
  */
 
@@ -70,11 +79,98 @@ class GMKB_Free_Tools_Shortcode {
      * Constructor
      */
     private function __construct() {
+        // Register the generic shortcode
         add_shortcode('gmkb_free_tool', array($this, 'render'));
 
+        // Register individual shortcodes for each tool type
+        add_shortcode('gmkb_biography', array($this, 'render_biography'));
+        add_shortcode('gmkb_topics', array($this, 'render_topics'));
+        add_shortcode('gmkb_questions', array($this, 'render_questions'));
+        add_shortcode('gmkb_tagline', array($this, 'render_tagline'));
+        add_shortcode('gmkb_guest_intro', array($this, 'render_guest_intro'));
+        add_shortcode('gmkb_offers', array($this, 'render_offers'));
+        add_shortcode('gmkb_authority_hook', array($this, 'render_authority_hook'));
+
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB Free Tools Shortcode: Registered [gmkb_free_tool]');
+            error_log('GMKB Free Tools Shortcode: Registered all shortcodes');
         }
+    }
+
+    /**
+     * Render biography shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_biography($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'biography';
+        return $this->render($atts);
+    }
+
+    /**
+     * Render topics shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_topics($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'topics';
+        return $this->render($atts);
+    }
+
+    /**
+     * Render questions shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_questions($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'questions';
+        return $this->render($atts);
+    }
+
+    /**
+     * Render tagline shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_tagline($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'tagline';
+        return $this->render($atts);
+    }
+
+    /**
+     * Render guest intro shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_guest_intro($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'guest-intro';
+        return $this->render($atts);
+    }
+
+    /**
+     * Render offers shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_offers($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'offers';
+        return $this->render($atts);
+    }
+
+    /**
+     * Render authority hook shortcode
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_authority_hook($atts) {
+        $atts = is_array($atts) ? $atts : array();
+        $atts['type'] = 'authority-hook';
+        return $this->render($atts);
     }
 
     /**
