@@ -12,13 +12,25 @@
       <div class="content-fields">
         <!-- SIMPLIFIED: Biography text only -->
         <section class="editor-section">
-          <h4>Biography Text</h4>
-          
+          <div class="section-header">
+            <h4>Biography Text</h4>
+            <button
+              type="button"
+              class="ai-generate-btn"
+              @click="showAiModal = true"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+              </svg>
+              Generate with AI
+            </button>
+          </div>
+
           <div class="field-group">
             <label for="bio-text">Biography</label>
-            <textarea 
+            <textarea
               id="bio-text"
-              v-model="localData.biography" 
+              v-model="localData.biography"
               @input="updateComponent"
               rows="12"
               placeholder="Enter biography text..."
@@ -29,12 +41,22 @@
       </div>
     </template>
   </ComponentEditorTemplate>
+
+  <!-- AI Generation Modal -->
+  <AiModal v-model="showAiModal" title="Generate Biography with AI">
+    <BiographyGenerator
+      mode="integrated"
+      :component-id="componentId"
+      @applied="handleAiApplied"
+    />
+  </AiModal>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue';
 import { useMediaKitStore } from '@stores/mediaKit';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
+import { AiModal, BiographyGenerator } from '@/vue/components/ai';
 
 const props = defineProps({
   componentId: {
@@ -49,6 +71,9 @@ const store = useMediaKitStore();
 
 // Active tab state
 const activeTab = ref('content');
+
+// AI Modal state
+const showAiModal = ref(false);
 
 // SIMPLIFIED: Local data state - biography text only
 const localData = ref({
@@ -96,6 +121,15 @@ const updateComponent = () => {
 // Handle close button
 const handleClose = () => {
   emit('close');
+};
+
+// Handle AI content applied
+const handleAiApplied = (data) => {
+  if (data.content) {
+    localData.value.biography = data.content;
+    updateComponent();
+  }
+  showAiModal.value = false;
 };
 </script>
 
@@ -199,5 +233,50 @@ body.dark-mode .field-hint {
   color: #64748b;
 }
 
+/* Section Header with AI Button */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
 
+.section-header h4 {
+  margin: 0;
+}
+
+.ai-generate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6366f1;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ai-generate-btn:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.ai-generate-btn svg {
+  flex-shrink: 0;
+}
+
+body.dark-mode .ai-generate-btn {
+  color: #818cf8;
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.25);
+}
+
+body.dark-mode .ai-generate-btn:hover {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.35);
+}
 </style>

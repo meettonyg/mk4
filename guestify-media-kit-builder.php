@@ -102,10 +102,73 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/version-control/VersionManager.php
     require_once GUESTIFY_PLUGIN_DIR . 'system/version-control/VersionManager.php';
 }
 
+// PHASE 8: Native Code-First Data Layer (Headless Architecture Migration)
+// Replaces Pods dependency with native WordPress CPT and meta field registration
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/core-schema.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/core-schema.php';
+}
+
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/field-migration-map.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/field-migration-map.php';
+}
+
+// Profile Schema - Single Source of Truth for field definitions
+// Replaces the legacy Formidable field mapping
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-profile-schema.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-profile-schema.php';
+}
+
+// Profile Repository - Data Access Layer for profile CRUD operations
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-profile-repository.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-profile-repository.php';
+}
+
+// Legacy: Formidable Field ID to Post Meta mapping
+// TODO: Remove after migration verification complete
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/formidable-field-map.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/formidable-field-map.php';
+}
+
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/permissions.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/permissions.php';
+}
+
+// PHASE 8.4: GraphQL Integration (Optional - requires WPGraphQL plugin)
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/graphql-types.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/graphql-types.php';
+}
+
+// Native data layer test scripts (admin only)
+if (is_admin()) {
+    // Check both possible locations for test files
+    $native_test_paths = [
+        'tests/native-data-test.php',
+        'tests/native-migration/native-data-test.php',
+    ];
+    foreach ($native_test_paths as $path) {
+        if (file_exists(GUESTIFY_PLUGIN_DIR . $path)) {
+            require_once GUESTIFY_PLUGIN_DIR . $path;
+            break;
+        }
+    }
+}
+
 // PHASE 2 IMPLEMENTATION: Pure Vue REST API v2 - Unified Endpoint
 // ROOT FIX: Removed MediaKitAPI (v1) - redundant code, frontend only uses v2
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-rest-api-v2.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-rest-api-v2.php';
+}
+
+// Profile API - Direct post meta editing for Vue Profile Editor
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-profile-api.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-profile-api.php';
+}
+
+// AI INTEGRATION: AI Content Generation REST API Controller
+// Part of the Unified AI Generator Architecture ("Modular Widgets")
+// Supports both integrated (builder) and standalone (free tools) modes
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-ai-controller.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-ai-controller.php';
 }
 
 // PHASE 3: Component Discovery API for scalable component architecture
@@ -158,6 +221,22 @@ if (is_dir($components_dir)) {
 // ROOT FIX: Include frontend template router for conditional media kit display
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/frontend-template-router.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/frontend-template-router.php';
+}
+
+// Profile Editor Shortcode - Vue-based profile editing
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/profile-shortcode.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/profile-shortcode.php';
+}
+
+// Profile List Shortcode - Vue-based profile listing
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/profile-list-shortcode.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/profile-list-shortcode.php';
+}
+
+// AI INTEGRATION: Free Tools Shortcode for public AI generators (standalone mode)
+// Usage: [gmkb_free_tool type="biography" title="Free Bio Generator"]
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-free-tools-shortcode.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-free-tools-shortcode.php';
 }
 
 // ROOT FIX: Include debug REST endpoint for troubleshooting
@@ -217,6 +296,16 @@ if (class_exists('GMKB_REST_API_V2')) {
     $gmkb_rest_api_v2 = new GMKB_REST_API_V2();
     if (defined('WP_DEBUG') && WP_DEBUG) {
         error_log('✅ GMKB: REST API v2 initialized with ComponentDiscovery ready');
+    }
+}
+
+// AI INTEGRATION: Initialize AI Controller
+// Provides /gmkb/v2/ai/generate endpoint for content generation
+global $gmkb_ai_controller;
+if (class_exists('GMKB_AI_Controller')) {
+    $gmkb_ai_controller = new GMKB_AI_Controller();
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB: AI Controller initialized');
     }
 }
 

@@ -1,12 +1,12 @@
 <?php
 /**
  * Video Intro Component - Data Integration
- * 
- * COMPLIANT: Generic data-integration.php pattern for Video Intro component
+ *
+ * PHASE 8: Uses native WordPress post_meta ONLY - NO Pods dependency
  * Handles all data operations for Video Intro component
- * 
+ *
  * @package Guestify/Components/VideoIntro
- * @version 1.0.0-compliant
+ * @version 3.0.0-native
  */
 
 // Prevent direct access
@@ -26,8 +26,7 @@ class Video_Intro_Data_Integration {
     protected static $component_type = 'video-intro';
     
     /**
-     * Pods field mappings for video intro
-     * Maps to video_intro field in guest post type
+     * Field mapping (native WordPress meta)
      */
     protected static $field_mappings = array(
         'video_intro' => 'video_intro'
@@ -50,8 +49,8 @@ class Video_Intro_Data_Integration {
     }
     
     /**
-     * Load video intro data from Pods fields
-     * 
+     * Load video intro data from native meta
+     *
      * @param int $post_id Post ID
      * @return array Video intro data with metadata
      */
@@ -59,7 +58,7 @@ class Video_Intro_Data_Integration {
         $result = array(
             'video_intro' => array(),
             'count' => 0,
-            'source' => 'pods_fields',
+            'source' => 'native_meta',
             'component_type' => self::$component_type,
             'success' => false,
             'message' => '',
@@ -94,7 +93,7 @@ class Video_Intro_Data_Integration {
         }
         
         if ($result['success']) {
-            $result['message'] = "Loaded video intro from Pods";
+            $result['message'] = "Loaded video intro from native meta";
         } else {
             $result['message'] = "No video intro found for post {$post_id}";
         }
@@ -221,13 +220,13 @@ class Video_Intro_Data_Integration {
         update_post_meta($post_id, 'video_intro_last_saved', current_time('mysql'));
         
         $result['success'] = true;
-        $result['message'] = "Successfully saved video intro to Pods";
-        
+        $result['message'] = "Successfully saved video intro to native meta";
+
         self::debug_log($result['message']);
-        
+
         return $result;
     }
-    
+
     /**
      * Check if video intro data exists for post
      * 
@@ -245,7 +244,7 @@ class Video_Intro_Data_Integration {
 }
 
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ COMPLIANT: Video Intro Data Integration loaded');
+    error_log('✅ PHASE 8: Video Intro Data Integration loaded (native meta)');
 }
 
 /**

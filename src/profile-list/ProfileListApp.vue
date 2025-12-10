@@ -1,0 +1,226 @@
+<template>
+    <div class="profile-list-app">
+        <!-- Page Header -->
+        <div class="guestify-page-header">
+            <h1 class="guestify-page-title">Your Guest Profiles</h1>
+            <p class="guestify-page-subtitle">
+                Create and manage different expertise profiles for your podcast guest appearances
+            </p>
+        </div>
+
+        <!-- Loading State -->
+        <div v-if="store.isLoading" class="loading-container">
+            <div class="loading-spinner"></div>
+            <p>Loading profiles...</p>
+        </div>
+
+        <!-- Error State -->
+        <div v-else-if="store.lastError" class="error-banner">
+            <p>{{ store.lastError }}</p>
+            <button @click="store.loadProfiles()" class="retry-button">
+                Retry
+            </button>
+        </div>
+
+        <!-- Profile Grid -->
+        <div v-else class="guestify-card-grid">
+            <!-- Profile Cards -->
+            <ProfileCard
+                v-for="profile in store.sortedProfiles"
+                :key="profile.id"
+                :profile="profile"
+                @delete="handleDelete"
+            />
+
+            <!-- Add New Profile Card -->
+            <div class="guestify-profile-card guestify-add-card" @click="store.openCreateModal()">
+                <svg xmlns="http://www.w3.org/2000/svg" class="guestify-add-icon" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="16"></line>
+                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                </svg>
+                <p class="guestify-add-title">Create New Profile</p>
+                <p class="guestify-add-subtitle">Add another expertise area</p>
+            </div>
+        </div>
+
+        <!-- Create Profile Modal -->
+        <CreateProfileModal
+            v-if="store.showCreateModal"
+            @close="store.closeCreateModal()"
+            @create="handleCreate"
+        />
+    </div>
+</template>
+
+<script setup>
+import { onMounted } from 'vue';
+import { useProfileListStore } from './stores/profileList.js';
+import ProfileCard from './components/ProfileCard.vue';
+import CreateProfileModal from './components/CreateProfileModal.vue';
+
+// Store
+const store = useProfileListStore();
+
+// Load profiles on mount
+onMounted(() => {
+    store.loadProfiles();
+});
+
+// Handle delete
+const handleDelete = async (profileId) => {
+    if (confirm('Are you sure you want to delete this profile? This action cannot be undone.')) {
+        await store.deleteProfile(profileId);
+    }
+};
+
+// Handle create
+const handleCreate = async () => {
+    await store.createProfile();
+};
+</script>
+
+<style scoped>
+.profile-list-app {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.guestify-page-header {
+    margin-bottom: 30px;
+}
+
+.guestify-page-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: #4A5568;
+    margin: 0 0 8px 0;
+}
+
+.guestify-page-subtitle {
+    font-size: 16px;
+    color: #516f90;
+    margin: 0;
+}
+
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: #516f90;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e2e8f0;
+    border-top-color: #ED8936;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.error-banner {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.error-banner p {
+    color: #dc2626;
+    margin: 0;
+}
+
+.retry-button {
+    background: #dc2626;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.retry-button:hover {
+    background: #b91c1c;
+}
+
+.guestify-card-grid {
+    display: flex;
+    flex-wrap: wrap;
+    margin: -10px;
+}
+
+.guestify-add-card {
+    flex: 1 0 calc(33.333% - 20px);
+    max-width: calc(33.333% - 20px);
+    margin: 10px;
+    min-width: 280px;
+    min-height: 200px;
+    background-color: #ffffff;
+    border: 1px dashed #cbd6e2;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.guestify-add-card:hover {
+    border-color: #ED8936;
+    background-color: #fffbf5;
+}
+
+.guestify-add-icon {
+    width: 32px;
+    height: 32px;
+    color: #ED8936;
+    margin-bottom: 12px;
+}
+
+.guestify-add-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #4A5568;
+    margin: 0 0 4px 0;
+}
+
+.guestify-add-subtitle {
+    font-size: 12px;
+    color: #516f90;
+    margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .guestify-add-card {
+        flex: 1 0 calc(50% - 20px);
+        max-width: calc(50% - 20px);
+    }
+}
+
+@media (max-width: 768px) {
+    .guestify-add-card {
+        flex: 1 0 calc(100% - 20px);
+        max-width: calc(100% - 20px);
+    }
+}
+</style>

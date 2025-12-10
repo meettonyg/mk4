@@ -1,12 +1,12 @@
 <?php
 /**
  * Company Logo Component - Data Integration
- * 
- * SELF-CONTAINED: Handles SINGLE field pattern only
+ *
+ * PHASE 8: Uses native WordPress post_meta ONLY - NO Pods dependency
  * SIMPLE: One field, single data type, one purpose
- * 
+ *
  * @package Guestify/Components/CompanyLogo
- * @version 1.0.0-single-field
+ * @version 3.0.0-native
  */
 
 // Prevent direct access
@@ -29,7 +29,7 @@ class Company_Logo_Data_Integration {
     protected static $component_type = 'company-logo';
     
     /**
-     * Pods field mapping - SINGLE field only
+     * Field mapping (native WordPress meta) - SINGLE field only
      */
     protected static $field_name = 'company_logo';
     
@@ -50,10 +50,10 @@ class Company_Logo_Data_Integration {
     }
     
     /**
-     * Load company logo data from Pods field
-     * 
+     * Load company logo data from native meta
+     *
      * SINGLE FIELD PATTERN: Returns single logo object or null
-     * 
+     *
      * @param int $post_id Post ID
      * @return array Logo data with metadata
      */
@@ -61,7 +61,7 @@ class Company_Logo_Data_Integration {
         $result = array(
             'logo' => null,
             'has_logo' => false,
-            'source' => 'pods_fields',
+            'source' => 'native_meta',
             'component_type' => self::$component_type,
             'success' => false,
             'message' => '',
@@ -88,7 +88,7 @@ class Company_Logo_Data_Integration {
                         'alt' => $attachment ? $attachment->post_title : 'Company Logo',
                         'id' => $logo_id,
                         'type' => 'company',
-                        'source' => 'pods'
+                        'source' => 'native_meta'
                     );
                     $result['has_logo'] = true;
                     $result['success'] = true;
@@ -105,7 +105,7 @@ class Company_Logo_Data_Integration {
                             'alt' => $logo_id['alt'] ?? 'Company Logo',
                             'id' => $id,
                             'type' => 'company',
-                            'source' => 'pods'
+                            'source' => 'native_meta'
                         );
                         $result['has_logo'] = true;
                         $result['success'] = true;
@@ -164,7 +164,7 @@ class Company_Logo_Data_Integration {
 }
 
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ SINGLE FIELD PATTERN: Company Logo Data Integration loaded');
+    error_log('✅ PHASE 8: Company Logo Data Integration loaded (native meta)');
 }
 
 /**

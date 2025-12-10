@@ -2,11 +2,10 @@
 /**
  * Contact Component - Data Integration
  * 
- * COMPLIANT: Generic data-integration.php pattern for Contact component
- * Handles all data operations for Contact Info component
+ * PHASE 8: Uses native WordPress post_meta ONLY - NO Pods dependency
  * 
  * @package Guestify/Components/Contact
- * @version 1.0.0-compliant
+ * @version 3.0.0-native
  */
 
 // Prevent direct access
@@ -26,8 +25,7 @@ class Contact_Data_Integration {
     protected static $component_type = 'contact';
     
     /**
-     * Contact field mappings
-     * Maps to Pods fields in guest post type
+     * Contact field mappings (uses native WordPress post_meta)
      * Website removed - handled by Social component
      */
     protected static $field_mappings = array(
@@ -67,7 +65,7 @@ class Contact_Data_Integration {
         $result = array(
             'contact' => array(),
             'count' => 0,
-            'source' => 'pods_fields',
+            'source' => 'native_meta',
             'component_type' => self::$component_type,
             'success' => false,
             'message' => '',
@@ -116,7 +114,7 @@ class Contact_Data_Integration {
         }
         
         if ($result['success']) {
-            $result['message'] = "Loaded {$result['count']} contact fields from Pods";
+            $result['message'] = "Loaded {$result['count']} contact fields from native meta";
         } else {
             $result['message'] = "No contact info found for post {$post_id}";
         }
@@ -208,7 +206,7 @@ class Contact_Data_Integration {
         update_post_meta($post_id, 'contact_last_saved', current_time('mysql'));
         
         $result['success'] = true;
-        $result['message'] = "Successfully saved {$result['count']} contact fields to Pods";
+        $result['message'] = "Successfully saved {$result['count']} contact fields to native meta";
         
         self::debug_log($result['message']);
         
@@ -236,7 +234,7 @@ class Contact_Data_Integration {
 }
 
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ COMPLIANT: Contact Data Integration loaded');
+    error_log('✅ PHASE 8: Contact Data Integration loaded (native meta)');
 }
 
 /**

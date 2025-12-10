@@ -2,11 +2,10 @@
 /**
  * Social Component - Data Integration
  * 
- * COMPLIANT: Generic data-integration.php pattern for Social component
- * Handles all data operations for Social Links component
+ * PHASE 8: Uses native WordPress post_meta ONLY - NO Pods dependency
  * 
  * @package Guestify/Components/Social
- * @version 1.0.0-compliant
+ * @version 3.0.0-native
  */
 
 // Prevent direct access
@@ -27,12 +26,27 @@ class Social_Data_Integration {
     
     /**
      * Social platform field mappings
-     * ROOT FIX: Use actual Pods field names (with 1_ prefix and guest_ prefix)
-     * Maps to Pods fields in guest post type
-     * 
-     * ARCHITECTURE FIX: Email and phone belong to Contact component, not Social
+     * PHASE 2: Clean field names (migrated from legacy Pods names)
+     *
+     * Note: Email and phone belong to Contact component, not Social
      */
     protected static $field_mappings = array(
+        'twitter' => 'social_twitter',
+        'facebook' => 'social_facebook',
+        'instagram' => 'social_instagram',
+        'linkedin' => 'social_linkedin',
+        'tiktok' => 'social_tiktok',
+        'pinterest' => 'social_pinterest',
+        'youtube' => 'social_youtube',
+        'website' => 'website_primary',
+        'website2' => 'website_secondary'
+    );
+
+    /**
+     * Legacy field names for backward compatibility
+     * Used during migration period to read from old fields
+     */
+    protected static $legacy_mappings = array(
         'twitter' => '1_twitter',
         'facebook' => '1_facebook',
         'instagram' => '1_instagram',
@@ -77,8 +91,10 @@ class Social_Data_Integration {
     }
     
     /**
-     * Load social links data from Pods fields
-     * 
+     * Load social links data from native WordPress meta
+     *
+     * PHASE 2: Checks clean field names first, falls back to legacy names
+     *
      * @param int $post_id Post ID
      * @return array Social data with metadata
      */
@@ -86,25 +102,36 @@ class Social_Data_Integration {
         $result = array(
             'links' => array(),
             'count' => 0,
-            'source' => 'pods_fields',
+            'source' => 'native_meta',
             'component_type' => self::$component_type,
             'success' => false,
             'message' => '',
             'timestamp' => current_time('mysql')
         );
-        
+
         if (!self::validate_post_id($post_id)) {
             $result['message'] = 'Invalid post ID';
             return $result;
         }
-        
-        // Load from Pods fields
+
+        // Load from native meta fields (clean names first, fallback to legacy)
         foreach (self::$field_mappings as $platform => $meta_key) {
+            // Try clean field name first
             $value = get_post_meta($post_id, $meta_key, true);
-            
+
+            // Fallback to legacy field name if clean name is empty
+            if (empty($value) && isset(self::$legacy_mappings[$platform])) {
+                $legacy_key = self::$legacy_mappings[$platform];
+                $value = get_post_meta($post_id, $legacy_key, true);
+
+                if (!empty($value)) {
+                    self::debug_log("Found {$platform} in legacy field: {$legacy_key}");
+                }
+            }
+
             if (!empty($value) && is_string($value)) {
                 $cleaned_value = sanitize_text_field(trim($value));
-                
+
                 if (strlen($cleaned_value) > 0) {
                     // Build link data with metadata
                     $link_data = array(
@@ -113,26 +140,24 @@ class Social_Data_Integration {
                         'label' => self::$platform_config[$platform]['label'] ?? ucfirst($platform),
                         'icon' => self::$platform_config[$platform]['icon'] ?? 'fa-link'
                     );
-                    
-                    // ROOT FIX: No special email/phone handling - those belong to Contact component
-                    
+
                     $result['links'][] = $link_data;
                     $result['count']++;
                     $result['success'] = true;
-                    
+
                     self::debug_log("Found {$platform}: {$cleaned_value}");
                 }
             }
         }
-        
+
         if ($result['success']) {
-            $result['message'] = "Loaded {$result['count']} social links from Pods";
+            $result['message'] = "Loaded {$result['count']} social links from native meta";
         } else {
             $result['message'] = "No social links found for post {$post_id}";
         }
-        
+
         self::debug_log($result['message']);
-        
+
         return $result;
     }
     
@@ -170,8 +195,10 @@ class Social_Data_Integration {
     }
     
     /**
-     * Save social links data to Pods fields
-     * 
+     * Save social links data to native WordPress meta
+     *
+     * PHASE 2: Saves to clean field names, cleans up legacy fields
+     *
      * @param int $post_id Post ID
      * @param array $links_data Social links data to save
      * @return array Save result with metadata
@@ -184,23 +211,23 @@ class Social_Data_Integration {
             'component_type' => self::$component_type,
             'timestamp' => current_time('mysql')
         );
-        
+
         if (!self::validate_post_id($post_id)) {
             $result['message'] = 'Invalid post ID';
             return $result;
         }
-        
+
         if (!is_array($links_data)) {
             $result['message'] = 'Invalid links data format';
             return $result;
         }
-        
+
         $links = isset($links_data['links']) ? $links_data['links'] : $links_data;
-        
-        // Save each platform
+
+        // Save each platform using clean field names
         foreach (self::$field_mappings as $platform => $meta_key) {
             $value = '';
-            
+
             // Find link for this platform
             foreach ($links as $link) {
                 if (isset($link['platform']) && $link['platform'] === $platform) {
@@ -208,31 +235,39 @@ class Social_Data_Integration {
                     break;
                 }
             }
-            
-            // Clean and save
+
+            // Clean and save to new clean field name
             $cleaned_value = sanitize_text_field(trim($value));
-            
+
             if (!empty($cleaned_value)) {
                 update_post_meta($post_id, $meta_key, $cleaned_value);
                 $result['count']++;
             } else {
                 delete_post_meta($post_id, $meta_key);
             }
+
+            // Clean up legacy field if it exists
+            if (isset(self::$legacy_mappings[$platform])) {
+                $legacy_key = self::$legacy_mappings[$platform];
+                delete_post_meta($post_id, $legacy_key);
+            }
         }
-        
+
         update_post_meta($post_id, 'social_links_last_saved', current_time('mysql'));
-        
+
         $result['success'] = true;
-        $result['message'] = "Successfully saved {$result['count']} social links to Pods";
-        
+        $result['message'] = "Successfully saved {$result['count']} social links to native meta";
+
         self::debug_log($result['message']);
-        
+
         return $result;
     }
     
     /**
      * Check if social links exist for post
-     * 
+     *
+     * PHASE 2: Checks both clean and legacy field names
+     *
      * @param int $post_id Post ID
      * @return bool True if any social links exist
      */
@@ -240,20 +275,30 @@ class Social_Data_Integration {
         if (!self::validate_post_id($post_id)) {
             return false;
         }
-        
+
         foreach (self::$field_mappings as $platform => $meta_key) {
+            // Check clean field name
             $value = get_post_meta($post_id, $meta_key, true);
             if (!empty($value) && strlen(trim($value)) > 0) {
                 return true;
             }
+
+            // Check legacy field name
+            if (isset(self::$legacy_mappings[$platform])) {
+                $legacy_key = self::$legacy_mappings[$platform];
+                $value = get_post_meta($post_id, $legacy_key, true);
+                if (!empty($value) && strlen(trim($value)) > 0) {
+                    return true;
+                }
+            }
         }
-        
+
         return false;
     }
 }
 
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ COMPLIANT: Social Data Integration loaded');
+    error_log('✅ PHASE 8: Social Data Integration loaded (native meta)');
 }
 
 /**

@@ -22,8 +22,20 @@
       <!-- ROOT FIX: Only introduction field editor -->
       <div v-show="activeTab === 'content'" class="tab-panel">
         <section class="editor-section">
-          <h4>Introduction Text</h4>
-          
+          <div class="section-header">
+            <h4>Introduction Text</h4>
+            <button
+              type="button"
+              class="ai-generate-btn"
+              @click="showAiModal = true"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+              </svg>
+              Generate with AI
+            </button>
+          </div>
+
           <div class="field-group">
             <label for="intro-text">Introduction</label>
             <textarea 
@@ -59,6 +71,15 @@
         />
       </div>
     </div>
+
+    <!-- AI Generation Modal -->
+    <AiModal v-model="showAiModal" title="Generate Guest Introduction with AI">
+      <GuestIntroGenerator
+        mode="integrated"
+        :component-id="componentId"
+        @applied="handleAiApplied"
+      />
+    </AiModal>
   </div>
 </template>
 
@@ -68,6 +89,7 @@ import { useMediaKitStore } from '../../src/stores/mediaKit';
 import { usePodsData } from '../../src/composables/usePodsData';
 import BaseStylePanel from '../../src/vue/components/sidebar/editors/BaseStylePanel.vue';
 import BaseAdvancedPanel from '../../src/vue/components/sidebar/editors/BaseAdvancedPanel.vue';
+import { AiModal, GuestIntroGenerator } from '../../src/vue/components/ai';
 
 const props = defineProps({
   componentId: {
@@ -81,6 +103,7 @@ const podsData = usePodsData();
 
 // Tab state
 const activeTab = ref('content');
+const showAiModal = ref(false);
 const tabs = [
   { id: 'content', label: 'Content' },
   { id: 'style', label: 'Style' },
@@ -141,6 +164,15 @@ const updatePodsField = async () => {
 
 const closeEditor = () => {
   store.closeEditPanel();
+};
+
+// Handle AI content applied
+const handleAiApplied = (data) => {
+  if (data.introduction) {
+    localData.value.introduction = data.introduction;
+    updatePodsField();
+  }
+  showAiModal.value = false;
 };
 </script>
 
@@ -340,5 +372,41 @@ const closeEditor = () => {
 
 .editor-content::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* Section Header with AI Button */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.section-header h4 {
+  margin: 0;
+}
+
+.ai-generate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6366f1;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ai-generate-btn:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.ai-generate-btn svg {
+  flex-shrink: 0;
 }
 </style>

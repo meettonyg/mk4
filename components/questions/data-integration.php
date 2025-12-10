@@ -2,11 +2,10 @@
 /**
  * Questions Component - Data Integration
  * 
- * COMPLIANT: Generic data-integration.php pattern for Questions component
- * Handles all data operations for Questions component
+ * PHASE 8: Uses native WordPress post_meta ONLY - NO Pods dependency
  * 
  * @package Guestify/Components/Questions
- * @version 1.0.0-compliant
+ * @version 3.0.0-native
  */
 
 // Prevent direct access
@@ -26,7 +25,7 @@ class Questions_Data_Integration {
     protected static $component_type = 'questions';
     
     /**
-     * Pods field mappings for questions (all 25 questions available in Pods)
+     * Field mappings for questions (uses native WordPress post_meta)
      */
     protected static $field_mappings = array(
         'question_1' => 'question_1',
@@ -82,7 +81,7 @@ class Questions_Data_Integration {
         $result = array(
             'questions' => array(),
             'count' => 0,
-            'source' => 'pods_fields',
+            'source' => 'native_meta',
             'component_type' => self::$component_type,
             'success' => false,
             'message' => '',
@@ -123,7 +122,7 @@ class Questions_Data_Integration {
             elseif ($count >= 3) $result['quality'] = 'fair';
             else $result['quality'] = 'poor';
             
-            $result['message'] = "Loaded {$result['count']} questions from Pods";
+            $result['message'] = "Loaded {$result['count']} questions from native meta";
         } else {
             $result['message'] = "No questions found for post {$post_id}";
         }
@@ -220,7 +219,7 @@ class Questions_Data_Integration {
         update_post_meta($post_id, 'questions_last_saved', current_time('mysql'));
         
         $result['success'] = true;
-        $result['message'] = "Successfully saved {$result['count']} questions to Pods";
+        $result['message'] = "Successfully saved {$result['count']} questions to native meta";
         
         self::debug_log($result['message']);
         
@@ -250,7 +249,7 @@ class Questions_Data_Integration {
 }
 
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ COMPLIANT: Questions Data Integration loaded');
+    error_log('✅ PHASE 8: Questions Data Integration loaded (native meta)');
 }
 
 /**

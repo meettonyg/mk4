@@ -2,11 +2,11 @@
 /**
  * Profile Photo Component - Data Integration
  * 
- * SELF-CONTAINED: Handles SINGLE field pattern only
- * SIMPLE: One field, single data type, one purpose
+ * PHASE 8: Uses native WordPress post_meta ONLY - NO Pods dependency
+ * SINGLE field pattern: One field, single data type, one purpose
  * 
  * @package Guestify/Components/ProfilePhoto
- * @version 1.0.0-single-field
+ * @version 3.0.0-native
  */
 
 // Prevent direct access
@@ -28,7 +28,7 @@ class Profile_Photo_Data_Integration {
     protected static $component_type = 'profile-photo';
     
     /**
-     * Pods field mapping - SINGLE field only
+     * Field mapping - SINGLE field only (native WordPress meta)
      */
     protected static $field_name = 'profile_photo';
     
@@ -60,7 +60,7 @@ class Profile_Photo_Data_Integration {
         $result = array(
             'photo' => null,
             'has_photo' => false,
-            'source' => 'pods_fields',
+            'source' => 'native_meta',
             'component_type' => self::$component_type,
             'success' => false,
             'message' => '',
@@ -87,7 +87,7 @@ class Profile_Photo_Data_Integration {
                         'caption' => $attachment ? $attachment->post_excerpt : '',
                         'alt' => $attachment ? $attachment->post_title : 'Profile Photo',
                         'id' => $photo_id,
-                        'source' => 'pods'
+                        'source' => 'native_meta'
                     );
                     $result['has_photo'] = true;
                     $result['success'] = true;
@@ -104,7 +104,7 @@ class Profile_Photo_Data_Integration {
                             'caption' => $photo_id['caption'] ?? '',
                             'alt' => $photo_id['alt'] ?? 'Profile Photo',
                             'id' => $id,
-                            'source' => 'pods'
+                            'source' => 'native_meta'
                         );
                         $result['has_photo'] = true;
                         $result['success'] = true;
@@ -163,7 +163,7 @@ class Profile_Photo_Data_Integration {
 }
 
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ SINGLE FIELD PATTERN: Profile Photo Data Integration loaded');
+    error_log('✅ PHASE 8: Profile Photo Data Integration loaded (native meta)');
 }
 
 /**

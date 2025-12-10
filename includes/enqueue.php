@@ -733,28 +733,21 @@ function gmkb_prepare_data_for_injection() {
         }
     }
     
-    // STEP 9: Pods data - ATTEMPT TO LOAD IF PODS IS READY
-    // ROOT FIX: Try to load Pods data if available, but don't fail if not ready
-    // The Vue app can still fetch it via REST API v2 if this fails
+    // STEP 9: Pods data - PHASE 8 FIX: Always call gmkb_get_pods_data()
+    // It will use native WordPress meta fallback if Pods is not available
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('🔍 GMKB DATA PREP - STEP 9: Attempting to load Pods data...');
+        error_log('🔍 GMKB DATA PREP - STEP 9: Loading profile data...');
     }
     
-    // Only try if Pods is available
-    if (function_exists('pods') && class_exists('Pods')) {
-        $pods_data = gmkb_get_pods_data($post_id);
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            $field_count = count($pods_data);
-            if ($field_count > 0) {
-                error_log('✅ GMKB DATA PREP - STEP 9: Loaded ' . $field_count . ' Pods fields');
-            } else {
-                error_log('⚠️ GMKB DATA PREP - STEP 9: No Pods data available (will fetch via REST API)');
-            }
-        }
-    } else {
-        $pods_data = array();
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('⚠️ GMKB DATA PREP - STEP 9: Pods not ready yet (will fetch via REST API)');
+    // PHASE 8 FIX: Always call this - it handles native fallback internally
+    $pods_data = gmkb_get_pods_data($post_id);
+    
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        $field_count = count($pods_data);
+        if ($field_count > 0) {
+            error_log('✅ GMKB DATA PREP - STEP 9: Loaded ' . $field_count . ' profile fields');
+        } else {
+            error_log('⚠️ GMKB DATA PREP - STEP 9: No profile data available');
         }
     }
     
@@ -1082,20 +1075,12 @@ function gmkb_sanitize_component_props($props) {
 function gmkb_get_pods_data($post_id) {
     $pods_data = array();
     
-    // ROOT FIX: Use EXACT same approach as REST API v2 for consistency
-    // Check if Pods is loaded and initialized
-    if (!function_exists('pods')) {
+    // PHASE 8 FIX: If Pods is not available, use native WordPress meta fallback
+    if (!function_exists('pods') || !class_exists('Pods')) {
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('❌ gmkb_get_pods_data: Pods plugin not active or pods() function not available');
+            error_log('ℹ️ gmkb_get_pods_data: Pods not available, using native WordPress meta fallback');
         }
-        return $pods_data;
-    }
-    
-    if (!class_exists('Pods')) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('❌ gmkb_get_pods_data: Pods class not loaded - plugin may not be fully initialized');
-        }
-        return $pods_data;
+        return gmkb_get_native_meta_data($post_id);
     }
     
     try {
@@ -1294,6 +1279,108 @@ function gmkb_display_build_error_notice() {
         </div>
     </div>
     <?php
+}
+
+/**
+ * PHASE 8: Fetch profile data using native WordPress meta functions
+ * 
+ * This is the fallback when Pods plugin is not active.
+ * Uses get_post_meta() to read the same data that Pods stored.
+ * 
+ * @param int $post_id The post ID
+ * @return array Profile data
+ */
+function gmkb_get_native_meta_data($post_id) {
+    $data = array();
+    
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('🔍 gmkb_get_native_meta_data: Fetching native meta data for post #' . $post_id);
+    }
+    
+    // Define all fields to fetch (same as Pods fields)
+    $fields = array(
+        // Personal info
+        'first_name', 'last_name', 'biography', 'biography_long', 'introduction',
+        // Contact info
+        'email', 'phone', 'skype', 'address', 'city', 'state', 'zip', 'country', 'timezone',
+        // Social media (legacy names)
+        '1_twitter', '1_facebook', '1_instagram', '1_linkedin', '1_tiktok', '1_pinterest',
+        'guest_youtube', '1_website', '2_website',
+        // Social media (new names)
+        'social_twitter', 'social_facebook', 'social_instagram', 'social_linkedin',
+        'social_tiktok', 'social_pinterest', 'social_youtube', 'website_primary', 'website_secondary',
+        // Media
+        'headshot', 'guest_headshot', 'profile_photo', 'personal_brand_logo', 'company_logo',
+        'gallery_photos', 'featured_logos', 'video_intro', 'calendar_url',
+    );
+    
+    // Add topics 1-5
+    for ($i = 1; $i <= 5; $i++) {
+        $fields[] = "topic_$i";
+    }
+    
+    // Add questions 1-25
+    for ($i = 1; $i <= 25; $i++) {
+        $fields[] = "question_$i";
+    }
+    
+    // Fetch each field
+    foreach ($fields as $field) {
+        $value = get_post_meta($post_id, $field, true);
+        
+        // Handle media fields - expand to full object if it's an attachment ID
+        if (!empty($value) && in_array($field, array('headshot', 'guest_headshot', 'profile_photo', 'personal_brand_logo', 'company_logo'))) {
+            $attachment_id = is_array($value) && isset($value['ID']) ? $value['ID'] : absint($value);
+            if ($attachment_id) {
+                $attachment = get_post($attachment_id);
+                if ($attachment && $attachment->post_type === 'attachment') {
+                    $value = array(
+                        'ID' => $attachment_id,
+                        'guid' => wp_get_attachment_url($attachment_id),
+                        'post_title' => $attachment->post_title,
+                        'post_mime_type' => $attachment->post_mime_type,
+                    );
+                }
+            }
+        }
+        
+        // Handle gallery fields - expand array of IDs to full objects
+        if (!empty($value) && in_array($field, array('gallery_photos', 'featured_logos'))) {
+            $value = maybe_unserialize($value);
+            if (is_array($value)) {
+                $expanded = array();
+                foreach ($value as $item) {
+                    $attachment_id = is_array($item) && isset($item['ID']) ? $item['ID'] : absint($item);
+                    if ($attachment_id) {
+                        $attachment = get_post($attachment_id);
+                        if ($attachment && $attachment->post_type === 'attachment') {
+                            $expanded[] = array(
+                                'ID' => $attachment_id,
+                                'guid' => wp_get_attachment_url($attachment_id),
+                                'post_title' => $attachment->post_title,
+                                'post_mime_type' => $attachment->post_mime_type,
+                            );
+                        }
+                    }
+                }
+                $value = $expanded;
+            }
+        }
+        
+        // Only store non-empty values
+        if (!empty($value) || $value === '0' || $value === 0) {
+            $data[$field] = $value;
+        }
+    }
+    
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ gmkb_get_native_meta_data: Fetched ' . count($data) . ' native meta fields');
+        if (count($data) > 0) {
+            error_log('  Sample fields: ' . implode(', ', array_slice(array_keys($data), 0, 5)));
+        }
+    }
+    
+    return $data;
 }
 
 // ROOT FIX: Debug console logging extracted to separate file

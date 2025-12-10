@@ -1,0 +1,276 @@
+/**
+ * Profile Editor Styles
+ *
+ * Standalone styles for the Vue Profile Editor
+ */
+
+/* Reset and base */
+.profile-app *,
+.profile-app *::before,
+.profile-app *::after {
+    box-sizing: border-box;
+}
+
+.profile-app {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1e293b;
+    line-height: 1.5;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+/* Typography */
+.profile-app h1,
+.profile-app h2,
+.profile-app h3,
+.profile-app h4 {
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.profile-app h1 {
+    font-size: 24px;
+}
+
+.profile-app h2 {
+    font-size: 18px;
+}
+
+.profile-app h3 {
+    font-size: 16px;
+}
+
+.profile-app h4 {
+    font-size: 14px;
+}
+
+.profile-app p {
+    font-size: 14px;
+    color: #334155;
+}
+
+.profile-app a {
+    color: #0284c7;
+    text-decoration: none;
+}
+
+.profile-app a:hover {
+    text-decoration: underline;
+}
+
+/* Buttons */
+.profile-app .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    border: none;
+    font-family: inherit;
+}
+
+.profile-app .button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.profile-app .primary-button {
+    background-color: #14b8a6;
+    color: white;
+}
+
+.profile-app .primary-button:hover:not(:disabled) {
+    background-color: #0d9488;
+    text-decoration: none;
+}
+
+.profile-app .secondary-button {
+    background-color: white;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+
+.profile-app .secondary-button:hover:not(:disabled) {
+    background-color: #f8fafc;
+    text-decoration: none;
+}
+
+.profile-app .button-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+}
+
+/* Form Elements */
+.profile-app .form-group {
+    margin-bottom: 16px;
+}
+
+.profile-app .form-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: #334155;
+}
+
+.profile-app .form-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.profile-app .form-input:focus {
+    outline: none;
+    border-color: #14b8a6;
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+}
+
+.profile-app .form-input::placeholder {
+    color: #94a3b8;
+}
+
+.profile-app textarea.form-input {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.profile-app select.form-input {
+    background-color: white;
+    cursor: pointer;
+}
+
+/* Panels */
+.profile-app .panel {
+    background-color: white;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+.profile-app .panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.profile-app .panel-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.profile-app .panel-content {
+    padding: 20px;
+}
+
+/* Grid Layout */
+.profile-app .grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+}
+
+@media (min-width: 768px) {
+    .profile-app .grid {
+        grid-template-columns: 2fr 1fr;
+    }
+}
+
+/* Tags */
+.profile-app .tag {
+    display: inline-block;
+    background-color: #f1f5f9;
+    color: #64748b;
+    font-size: 14px;
+    padding: 6px 12px;
+    border-radius: 6px;
+}
+
+/* Lists */
+.profile-app .links-list,
+.profile-app .interviews-list,
+.profile-app .offers-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Status Colors */
+.profile-app .status-saving {
+    color: #3b82f6;
+}
+
+.profile-app .status-unsaved {
+    color: #f59e0b;
+}
+
+.profile-app .status-saved {
+    color: #10b981;
+}
+
+.profile-app .status-error {
+    color: #ef4444;
+}
+
+/* Animations */
+@keyframes profile-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes profile-fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.profile-app .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: profile-spin 0.8s linear infinite;
+}
+
+.profile-app .fade-in {
+    animation: profile-fadeIn 0.3s ease;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .profile-app {
+        padding: 16px;
+    }
+
+    .profile-app .panel-content {
+        padding: 16px;
+    }
+
+    .profile-app .button {
+        padding: 10px 14px;
+        width: 100%;
+    }
+}
