@@ -72,7 +72,7 @@ function gmkb_is_builder_page() {
     // Frontend: ONLY check URL pattern - no WordPress functions that could be unreliable
     if (!isset($_SERVER['REQUEST_URI'])) {
         if ($debug) {
-            error_log('❌ GMKB: REQUEST_URI not set');
+            error_log('GMKB: REQUEST_URI not set');
         }
         return false;
     }
@@ -110,14 +110,14 @@ function gmkb_is_builder_page() {
     
     if (!$is_media_kit_url) {
         if ($debug) {
-            error_log('❌ GMKB: NOT a media kit URL, skipping. URI: ' . $uri);
+            error_log('GMKB: NOT a media kit URL, skipping. URI: ' . $uri);
         }
         return false;
     }
     
     // If we get here, the URL matches /tools/media-kit/ pattern
     if ($debug) {
-        error_log('✅ GMKB: Detected BUILDER page (URL pattern match): ' . $uri);
+        error_log('GMKB: Detected BUILDER page (URL pattern match): ' . $uri);
     }
     
     return true;
@@ -172,7 +172,7 @@ function gmkb_filter_jquery_script_tag($tag, $handle, $src) {
     
     if (in_array($handle, $blocked_scripts)) {
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB: Blocked script: ' . $handle);
+            error_log('GMKB: Blocked script: ' . $handle);
         }
         return ''; // Don't output the tag
     }
@@ -205,7 +205,7 @@ function gmkb_filter_style_tag($tag, $handle, $href, $media) {
         stripos($handle, 'theme') !== false || 
         stripos($handle, 'guestify') !== false) {
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB: Blocked style: ' . $handle);
+            error_log('GMKB: Blocked style: ' . $handle);
         }
         return ''; // Don't output the tag
     }
@@ -254,7 +254,7 @@ function gmkb_enqueue_frontend_assets() {
         );
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB: Design system CSS enqueued for frontend');
+            error_log('GMKB: Design system CSS enqueued for frontend');
         }
     }
     
@@ -264,9 +264,9 @@ function gmkb_enqueue_frontend_assets() {
     
     if (defined('WP_DEBUG') && WP_DEBUG) {
         if (!empty($used_components)) {
-            error_log('✅ GMKB Dynamic CSS: Found ' . count($used_components) . ' components on this page: ' . implode(', ', $used_components));
+            error_log('GMKB Dynamic CSS: Found ' . count($used_components) . ' components on this page: ' . implode(', ', $used_components));
         } else {
-            error_log('⚠️ GMKB Dynamic CSS: No components detected, falling back to loading all CSS');
+            error_log('GMKB Dynamic CSS: No components detected, falling back to loading all CSS');
         }
     }
     
@@ -298,7 +298,7 @@ function gmkb_enqueue_frontend_assets() {
                     );
                     
                     if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log('✅ GMKB Dynamic CSS: Component CSS loaded: ' . $component_name);
+                        error_log('GMKB Dynamic CSS: Component CSS loaded: ' . $component_name);
                     }
                 } else {
                     if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -324,7 +324,7 @@ function gmkb_remove_wp_auto_sizes_action() {
         remove_action('wp_head', 'wp_print_auto_sizes_contain_intrinsic_size_style');
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB: Removed wp_print_auto_sizes_contain_intrinsic_size_style action');
+            error_log('GMKB: Removed wp_print_auto_sizes_contain_intrinsic_size_style action');
         }
     }
 }
@@ -389,16 +389,16 @@ function gmkb_enqueue_vue_only_assets() {
     // CRITICAL DEBUGGING: Check if data preparation failed
     if (empty($gmkb_data)) {
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('❌ GMKB CRITICAL: gmkb_prepare_data_for_injection() returned EMPTY data!');
+            error_log('GMKB CRITICAL: gmkb_prepare_data_for_injection() returned EMPTY data!');
         }
         // Add error to page for visibility
-        $inline_script = 'console.error("❌ GMKB CRITICAL: Data preparation failed - gmkbData is empty");';
-        $inline_script .= 'console.error("❌ Check WordPress debug.log for detailed error information");';
+        $inline_script = 'console.error("GMKB CRITICAL: Data preparation failed - gmkbData is empty");';
+        $inline_script .= 'console.error("Check WordPress debug.log for detailed error information");';
         $inline_script .= 'window.gmkbData = null;';
     } else {
         if (defined('WP_DEBUG') && WP_DEBUG) {
             $component_count = isset($gmkb_data['componentRegistry']) ? count($gmkb_data['componentRegistry']) : 0;
-            error_log('✅ GMKB: Data prepared successfully - ' . $component_count . ' components');
+            error_log('GMKB: Data prepared successfully - ' . $component_count . ' components');
         }
         
         // ROOT FIX: Use wp_json_encode with JSON_UNESCAPED_UNICODE flag to prevent HTML encoding
@@ -414,7 +414,7 @@ function gmkb_enqueue_vue_only_assets() {
         );
         
         // Add detailed console logging
-        $inline_script .= 'console.log("✅ GMKB: gmkbData injected successfully via wp_add_inline_script");';
+        $inline_script .= 'console.log("GMKB: gmkbData injected successfully via wp_add_inline_script");';
         $inline_script .= 'console.log("📊 GMKB DATA SUMMARY:");';
         $inline_script .= 'console.log("  - Post ID:", window.gmkbData.postId);';
         $inline_script .= 'console.log("  - User Status:", window.gmkbData.user.isLoggedIn ? "Logged in (ID: " + window.gmkbData.user.userId + ")" : "Guest (view/edit only)");';
@@ -425,7 +425,7 @@ function gmkb_enqueue_vue_only_assets() {
         $inline_script .= 'console.log("  - Pods data:", Object.keys(window.gmkbData.pods_data || {}).length + " fields");';
         $inline_script .= 'console.log("  - Deprecation config:", Object.keys(window.gmkbData.deprecationConfig || {}).length + " deprecated components");';
         $inline_script .= 'console.log("  - Full data:", window.gmkbData);';
-        $inline_script .= 'if (!window.gmkbData.user.isLoggedIn) { console.log("📝 CARRD MODE: You can edit this media kit, but need to login to save changes"); }';
+        $inline_script .= 'if (!window.gmkbData.user.isLoggedIn) { console.log("CARRD MODE: You can edit this media kit, but need to login to save changes"); }';
     }
     
     wp_add_inline_script('gmkb-vue-app', $inline_script, 'before');
@@ -451,7 +451,7 @@ function gmkb_enqueue_vue_only_assets() {
             wp_enqueue_style('gmkb-vue-style', $style_url, array(), $style_version);
             
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ GMKB: CSS loaded: ' . $filename);
+                error_log('GMKB: CSS loaded: ' . $filename);
             }
             break; // Only load one CSS file
         }
@@ -472,11 +472,11 @@ function gmkb_enqueue_vue_only_assets() {
         );
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB: Design system CSS loaded in builder for accurate preview');
+            error_log('GMKB: Design system CSS loaded in builder for accurate preview');
         }
     }
     
-    // ✅ ROOT FIX: CONDITIONAL DYNAMIC CSS LOADING FOR BUILDER
+    // ROOT FIX: CONDITIONAL DYNAMIC CSS LOADING FOR BUILDER
     // Only load CSS for components actually added to the preview
     // Reduces initial page load from 16+ CSS files to only what's needed
     $post_id = gmkb_get_post_id();
@@ -561,12 +561,12 @@ function gmkb_enqueue_vue_only_assets() {
                         $loaded_count++;
                         
                         if (defined('WP_DEBUG') && WP_DEBUG) {
-                            error_log('✅ GMKB Builder Dynamic CSS: Loaded component CSS: ' . $component_type);
+                            error_log('GMKB Builder Dynamic CSS: Loaded component CSS: ' . $component_type);
                         }
                     } else {
                         $missing_count++;
                         if (defined('WP_DEBUG') && WP_DEBUG) {
-                            error_log('⚠️ GMKB Builder Dynamic CSS: Component declares stylesheet but file missing: ' . $component_type . ' → ' . $styles_path);
+                            error_log('GMKB Builder Dynamic CSS: Component declares stylesheet but file missing: ' . $component_type . ' → ' . $styles_path);
                         }
                     }
                 } else {
@@ -581,7 +581,7 @@ function gmkb_enqueue_vue_only_assets() {
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
             $total_components = count($gmkb_data['componentRegistry']);
-            error_log('✅ GMKB Builder Dynamic CSS Summary:');
+            error_log('GMKB Builder Dynamic CSS Summary:');
             error_log('  - Total components in registry: ' . $total_components);
             error_log('  - Components with CSS in preview: ' . count($used_components));
             error_log('  - CSS files loaded: ' . $loaded_count);
@@ -606,7 +606,7 @@ function gmkb_enqueue_vue_only_assets() {
     );
     
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('✅ GMKB: Font Awesome 6.5.1 loaded');
+        error_log('GMKB: Font Awesome 6.5.1 loaded');
     }
 }
 
@@ -627,13 +627,13 @@ function gmkb_prepare_data_for_injection() {
     // STEP 2: Validate post exists
     if (!$post_id || !get_post($post_id)) {
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('❌ GMKB DATA PREP - STEP 2 FAILED: Invalid post_id');
+            error_log('GMKB DATA PREP - STEP 2 FAILED: Invalid post_id');
         }
         return array(); // Return empty array if post is invalid
     }
     
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('✅ GMKB DATA PREP - STEP 2: Post exists');
+        error_log('GMKB DATA PREP - STEP 2: Post exists');
     }
     
     // STEP 3: Check user login status (informational only - not blocking)
@@ -642,7 +642,7 @@ function gmkb_prepare_data_for_injection() {
     
     if (defined('WP_DEBUG') && WP_DEBUG) {
         if ($is_logged_in) {
-            error_log('✅ GMKB DATA PREP - STEP 3: User logged in (ID: ' . $user_id . ') - can save changes');
+            error_log('GMKB DATA PREP - STEP 3: User logged in (ID: ' . $user_id . ') - can save changes');
         } else {
             error_log('🔵 GMKB DATA PREP - STEP 3: User NOT logged in (view/edit only, cannot save)');
         }
@@ -677,9 +677,9 @@ function gmkb_prepare_data_for_injection() {
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
             if ($can_edit) {
-                error_log('✅ GMKB DATA PREP - STEP 4: User has permission to save (cap: ' . $edit_cap . ')');
+                error_log('GMKB DATA PREP - STEP 4: User has permission to save (cap: ' . $edit_cap . ')');
             } else {
-                error_log('⚠️ GMKB DATA PREP - STEP 4: User logged in but lacks save permission');
+                error_log('GMKB DATA PREP - STEP 4: User logged in but lacks save permission');
             }
         }
     }
@@ -691,7 +691,7 @@ function gmkb_prepare_data_for_injection() {
     require_once GUESTIFY_PLUGIN_DIR . 'system/ThemeDiscovery.php';
     
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('✅ GMKB DATA PREP - STEP 5: Required classes loaded');
+        error_log('GMKB DATA PREP - STEP 5: Required classes loaded');
     }
 
     // Ensure restUrl has trailing slash
@@ -707,7 +707,7 @@ function gmkb_prepare_data_for_injection() {
     $component_registry = gmkb_get_component_registry_data();
     $component_count = is_array($component_registry) ? count($component_registry) : 0;
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('✅ GMKB DATA PREP - STEP 6: Component registry loaded (' . $component_count . ' components)');
+        error_log('GMKB DATA PREP - STEP 6: Component registry loaded (' . $component_count . ' components)');
     }
     
     // STEP 7: Gather theme data
@@ -717,7 +717,7 @@ function gmkb_prepare_data_for_injection() {
     $themes = gmkb_get_theme_data();
     $theme_count = is_array($themes) ? count($themes) : 0;
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('✅ GMKB DATA PREP - STEP 7: Themes loaded (' . $theme_count . ' themes)');
+        error_log('GMKB DATA PREP - STEP 7: Themes loaded (' . $theme_count . ' themes)');
     }
     
     // STEP 8: Get saved state
@@ -727,7 +727,7 @@ function gmkb_prepare_data_for_injection() {
     $saved_state = gmkb_get_saved_state($post_id);
     if (defined('WP_DEBUG') && WP_DEBUG) {
         if ($saved_state) {
-            error_log('✅ GMKB DATA PREP - STEP 8: Saved state loaded');
+            error_log('GMKB DATA PREP - STEP 8: Saved state loaded');
         } else {
             error_log('🔵 GMKB DATA PREP - STEP 8: No saved state (new media kit)');
         }
@@ -745,9 +745,9 @@ function gmkb_prepare_data_for_injection() {
     if (defined('WP_DEBUG') && WP_DEBUG) {
         $field_count = count($pods_data);
         if ($field_count > 0) {
-            error_log('✅ GMKB DATA PREP - STEP 9: Loaded ' . $field_count . ' profile fields');
+            error_log('GMKB DATA PREP - STEP 9: Loaded ' . $field_count . ' profile fields');
         } else {
-            error_log('⚠️ GMKB DATA PREP - STEP 9: No profile data available');
+            error_log('GMKB DATA PREP - STEP 9: No profile data available');
         }
     }
     
@@ -794,7 +794,7 @@ function gmkb_prepare_data_for_injection() {
 
     // STEP 11: Final validation and debugging
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('✅ GMKB DATA PREP - STEP 10: Final data array built');
+        error_log('GMKB DATA PREP - STEP 10: Final data array built');
         error_log('📊 GMKB DATA PREP - FINAL SUMMARY:');
         error_log('  - Post ID: ' . $post_id);
         error_log('  - User Status: ' . ($is_logged_in ? 'Logged in (ID: ' . $user_id . ')' : 'Guest (view/edit only)'));
@@ -808,7 +808,7 @@ function gmkb_prepare_data_for_injection() {
         
         // Critical check: Verify componentRegistry is not empty
         if (empty($gmkb_data['componentRegistry'])) {
-            error_log('❌ GMKB DATA PREP - WARNING: componentRegistry is EMPTY!');
+            error_log('GMKB DATA PREP - WARNING: componentRegistry is EMPTY!');
         }
     }
     
@@ -835,7 +835,7 @@ function gmkb_get_component_registry_data() {
     
     if (class_exists('ComponentDiscovery')) {
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB: ComponentDiscovery class exists');
+            error_log('GMKB: ComponentDiscovery class exists');
         }
         
         $discovery = new ComponentDiscovery(GUESTIFY_PLUGIN_DIR . 'components/');
@@ -893,16 +893,16 @@ function gmkb_get_component_registry_data() {
                 }
             }
             if (!empty($components_without_icons)) {
-                error_log('⚠️ GMKB: Components missing icon field: ' . implode(', ', $components_without_icons));
+                error_log('GMKB: Components missing icon field: ' . implode(', ', $components_without_icons));
             } else {
-                error_log('✅ GMKB: All components have icon field defined');
+                error_log('GMKB: All components have icon field defined');
             }
         }
         
         return $components;
     } else {
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('❌ GMKB: ComponentDiscovery class NOT found!');
+            error_log('GMKB: ComponentDiscovery class NOT found!');
         }
     }
     
@@ -939,7 +939,7 @@ function gmkb_get_theme_data() {
                 }
             } catch (Exception $e) {
                 if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('⚠️ GMKB: ThemeDiscovery failed: ' . $e->getMessage());
+                    error_log('GMKB: ThemeDiscovery failed: ' . $e->getMessage());
                 }
             }
         }
@@ -1078,7 +1078,7 @@ function gmkb_get_pods_data($post_id) {
     // PHASE 8 FIX: If Pods is not available, use native WordPress meta fallback
     if (!function_exists('pods') || !class_exists('Pods')) {
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('ℹ️ gmkb_get_pods_data: Pods not available, using native WordPress meta fallback');
+            error_log('gmkb_get_pods_data: Pods not available, using native WordPress meta fallback');
         }
         return gmkb_get_native_meta_data($post_id);
     }
@@ -1088,7 +1088,7 @@ function gmkb_get_pods_data($post_id) {
         $post = get_post($post_id);
         if (!$post) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('❌ gmkb_get_pods_data: Post #' . $post_id . ' not found');
+                error_log('gmkb_get_pods_data: Post #' . $post_id . ' not found');
             }
             return $pods_data;
         }
@@ -1097,7 +1097,7 @@ function gmkb_get_pods_data($post_id) {
         
         if (!in_array($post_type, array('mkcg', 'guests'))) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('⚠️ gmkb_get_pods_data: Skipping Pods data - invalid post_type: ' . $post_type);
+                error_log('gmkb_get_pods_data: Skipping Pods data - invalid post_type: ' . $post_type);
             }
             return $pods_data;
         }
@@ -1113,13 +1113,13 @@ function gmkb_get_pods_data($post_id) {
             if (empty($components)) {
                 // Force a scan if no components found
                 if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('⚠️ gmkb_get_pods_data: No components found, forcing scan...');
+                    error_log('gmkb_get_pods_data: No components found, forcing scan...');
                 }
                 try {
                     $gmkb_component_discovery->scan(false);
                 } catch (Exception $e) {
                     if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log('❌ gmkb_get_pods_data: Component scan failed: ' . $e->getMessage());
+                        error_log('gmkb_get_pods_data: Component scan failed: ' . $e->getMessage());
                     }
                 }
             }
@@ -1129,7 +1129,7 @@ function gmkb_get_pods_data($post_id) {
                 $fields = $gmkb_component_discovery->getRequiredPodsFields();
                 
                 if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('✅ gmkb_get_pods_data: Using ' . count($fields) . ' Pods fields from component discovery');
+                    error_log('gmkb_get_pods_data: Using ' . count($fields) . ' Pods fields from component discovery');
                 }
             }
         }
@@ -1137,7 +1137,7 @@ function gmkb_get_pods_data($post_id) {
         // FALLBACK: Manual field list if component discovery not available
         if (empty($fields)) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('⚠️ gmkb_get_pods_data: No Pods fields from component discovery, using fallback field list');
+                error_log('gmkb_get_pods_data: No Pods fields from component discovery, using fallback field list');
             }
             
             $fields = array(
@@ -1196,7 +1196,7 @@ function gmkb_get_pods_data($post_id) {
         // ROOT FIX: More thorough existence check (matches REST API v2)
         if (!$pod || !is_object($pod) || !method_exists($pod, 'exists')) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('❌ gmkb_get_pods_data: Pods object invalid');
+                error_log('gmkb_get_pods_data: Pods object invalid');
                 error_log('  - Pod object: ' . (is_object($pod) ? 'YES' : 'NO'));
                 error_log('  - Has exists method: ' . (is_object($pod) && method_exists($pod, 'exists') ? 'YES' : 'NO'));
             }
@@ -1208,7 +1208,7 @@ function gmkb_get_pods_data($post_id) {
         // The Pod object is valid if we got here, so just try to fetch fields
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ gmkb_get_pods_data: Pods ready, fetching ' . count($fields) . ' fields');
+            error_log('gmkb_get_pods_data: Pods ready, fetching ' . count($fields) . ' fields');
         }
         
         // ROOT FIX: Fetch all fields in one query (matches REST API v2)
@@ -1238,7 +1238,7 @@ function gmkb_get_pods_data($post_id) {
             } catch (Exception $e) {
                 // ROOT FIX: Individual field errors shouldn't stop the whole process
                 if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('⚠️ gmkb_get_pods_data: Error fetching field "' . $field . '": ' . $e->getMessage());
+                    error_log('gmkb_get_pods_data: Error fetching field "' . $field . '": ' . $e->getMessage());
                 }
                 continue;
             }
@@ -1248,20 +1248,20 @@ function gmkb_get_pods_data($post_id) {
         if (defined('WP_DEBUG') && WP_DEBUG) {
             $elapsed = round((microtime(true) - $start_time) * 1000, 2);
             $non_empty = count($pods_data);
-            error_log('✅ gmkb_get_pods_data: Fetched ' . $non_empty . '/' . count($fields) . ' non-empty Pods fields in ' . $elapsed . 'ms');
+            error_log('gmkb_get_pods_data: Fetched ' . $non_empty . '/' . count($fields) . ' non-empty Pods fields in ' . $elapsed . 'ms');
             
             // Sample some data for verification
             if ($non_empty > 0) {
                 $sample_fields = array_slice(array_keys($pods_data), 0, 5);
                 error_log('  Sample fields: ' . implode(', ', $sample_fields));
             } else {
-                error_log('⚠️ WARNING: All Pods fields are empty! This guest may have no data.');
+                error_log('WARNING: All Pods fields are empty! This guest may have no data.');
             }
         }
         
     } catch (Exception $e) {
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('❌ gmkb_get_pods_data: Exception: ' . $e->getMessage());
+            error_log('gmkb_get_pods_data: Exception: ' . $e->getMessage());
             error_log('  Stack trace: ' . $e->getTraceAsString());
         }
     }
@@ -1374,7 +1374,7 @@ function gmkb_get_native_meta_data($post_id) {
     }
     
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('✅ gmkb_get_native_meta_data: Fetched ' . count($data) . ' native meta fields');
+        error_log('gmkb_get_native_meta_data: Fetched ' . count($data) . ' native meta fields');
         if (count($data) > 0) {
             error_log('  Sample fields: ' . implode(', ', array_slice(array_keys($data), 0, 5)));
         }
@@ -1399,7 +1399,7 @@ function gmkb_load_debug_console() {
         // File doesn't exist - skip debug console logging
         // This is not a critical error, so we just skip it silently
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('⚠️ GMKB: Debug console file not found (non-critical): ' . $debug_console_file);
+            error_log('GMKB: Debug console file not found (non-critical): ' . $debug_console_file);
         }
     }
 }

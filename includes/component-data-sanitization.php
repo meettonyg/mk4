@@ -26,8 +26,8 @@ add_filter('gmkb_before_save_media_kit_state', 'gmkb_sanitize_components_before_
 
 // ROOT FIX: Log that the filter is registered
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ GMKB SANITIZATION: Filter gmkb_before_save_media_kit_state registered with priority 5');
-    error_log('✅ GMKB SANITIZATION: Target function: gmkb_sanitize_components_before_save');
+    error_log('GMKB SANITIZATION: Filter gmkb_before_save_media_kit_state registered with priority 5');
+    error_log('GMKB SANITIZATION: Target function: gmkb_sanitize_components_before_save');
 }
 
 /**
@@ -98,7 +98,7 @@ function gmkb_sanitize_components_before_save($state, $post_id) {
     $size_saved = $size_before - $size_after;
     
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log("✅ GMKB: Cleaned {$total_cleaned} components");
+        error_log("GMKB: Cleaned {$total_cleaned} components");
         error_log("📊 GMKB: Saved " . size_format($size_saved) . " by removing Pods bloat");
         error_log("📊 GMKB: Size: " . size_format($size_before) . " → " . size_format($size_after));
     }

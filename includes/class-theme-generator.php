@@ -107,7 +107,7 @@ class GMKB_Theme_Generator {
             $css = $this->generate_theme_css($theme);
             
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ GMKB: Theme CSS generated (' . strlen($css) . ' bytes) for theme: ' . $theme_id);
+                error_log('GMKB: Theme CSS generated (' . strlen($css) . ' bytes) for theme: ' . $theme_id);
                 if ($post_id) {
                     error_log('  - Post ID: ' . $post_id);
                     error_log('  - Has customizations: ' . (!empty($theme['_customizations_applied']) ? 'YES' : 'NO'));
@@ -119,14 +119,14 @@ class GMKB_Theme_Generator {
             if (wp_style_is('gmkb-vue-style', 'enqueued') || wp_style_is('gmkb-vue-style', 'registered')) {
                 wp_add_inline_style('gmkb-vue-style', $css);
                 if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('✅ GMKB: Theme CSS attached to gmkb-vue-style');
+                    error_log('GMKB: Theme CSS attached to gmkb-vue-style');
                 }
             }
             // Approach 2: Try to attach to design system
             elseif (wp_style_is('gmkb-design-system', 'enqueued') || wp_style_is('gmkb-design-system', 'registered')) {
                 wp_add_inline_style('gmkb-design-system', $css);
                 if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('✅ GMKB: Theme CSS attached to gmkb-design-system');
+                    error_log('GMKB: Theme CSS attached to gmkb-design-system');
                 }
             }
             // Approach 3: Direct output in head (fallback)
@@ -138,7 +138,7 @@ class GMKB_Theme_Generator {
                     echo "\n<style id=\"gmkb-theme-variables\">\n" . $css . "\n</style>\n";
                 }, 100);
                 if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('✅ GMKB: Theme CSS will be output directly in head');
+                    error_log('GMKB: Theme CSS will be output directly in head');
                 }
             }
         }
@@ -176,7 +176,7 @@ class GMKB_Theme_Generator {
         $css = $this->generate_css_variables_only($theme);
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB: Direct CSS output (' . strlen($css) . ' bytes) for theme: ' . $theme_id);
+            error_log('GMKB: Direct CSS output (' . strlen($css) . ' bytes) for theme: ' . $theme_id);
             if ($post_id) {
                 error_log('  - Post ID: ' . $post_id);
                 error_log('  - Has customizations: ' . (!empty($theme['_customizations_applied']) ? 'YES' : 'NO'));

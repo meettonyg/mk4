@@ -85,7 +85,7 @@ class ImageOptimizationService {
         $optimized = $this->optimize_image($file_path);
         
         if ($optimized) {
-            error_log('✅ GMKB: Optimized image: ' . basename($file_path));
+            error_log('GMKB: Optimized image: ' . basename($file_path));
         }
         
         return $upload;
@@ -306,7 +306,7 @@ class ImageOptimizationService {
         imagedestroy($image);
         
         if ($success) {
-            error_log('✅ GMKB: Generated WebP: ' . basename($webp_path));
+            error_log('GMKB: Generated WebP: ' . basename($webp_path));
         }
         
         return $success;

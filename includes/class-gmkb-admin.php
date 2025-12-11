@@ -106,7 +106,7 @@ class GMKB_Admin {
                 <table class="form-table">
                     <tr>
                         <th>Cache Exists:</th>
-                        <td><?php echo $cache_status['cache_exists'] ? '✅ Yes' : '❌ No'; ?></td>
+                        <td><?php echo $cache_status['cache_exists'] ? 'Yes' : 'No'; ?></td>
                     </tr>
                     <?php if ($cache_status['cache_exists']): ?>
                     <tr>

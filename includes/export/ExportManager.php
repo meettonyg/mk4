@@ -62,7 +62,7 @@ class GMKB_ExportManager {
         add_action('wp_ajax_gmkb_export_bulk', array($this, 'ajax_export_bulk'));
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB ExportManager: AJAX handlers registered');
+            error_log('GMKB ExportManager: AJAX handlers registered');
         }
     }
     
@@ -114,7 +114,7 @@ class GMKB_ExportManager {
             
         } catch (Exception $e) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('❌ GMKB Export Error: ' . $e->getMessage());
+                error_log('GMKB Export Error: ' . $e->getMessage());
             }
             wp_send_json_error('Export failed: ' . $e->getMessage());
         }

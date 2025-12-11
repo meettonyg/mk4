@@ -476,7 +476,7 @@ class GMKB_Frontend_Display {
         // DEBUG: Summary of rendering
         ?>
         <script>
-        console.group('✅ GMKB Frontend - Rendering Complete');
+        console.group('GMKB Frontend - Rendering Complete');
         console.log('Post ID:', <?php echo json_encode($post_id); ?>);
         console.log('Theme:', <?php echo json_encode($theme_id); ?>);
         console.log('Sections:', <?php echo count($sections); ?>);
@@ -1162,7 +1162,7 @@ class GMKB_Frontend_Display {
                 $error_msg = 'GMKB Frontend Error: Failed to load component template - ' . $e->getMessage();
                 error_log($error_msg);
                 ?>
-                <script>console.error('❌ GMKB Component Error:', <?php echo json_encode(array(
+                <script>console.error('GMKB Component Error:', <?php echo json_encode(array(
                     'component_id' => $component_id,
                     'component_type' => $component_type,
                     'error' => $e->getMessage(),
@@ -1203,16 +1203,16 @@ class GMKB_Frontend_Display {
         if (file_exists($frontend_template)) {
             $template_file = $frontend_template;
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ GMKB: Using frontend template');
+                error_log('GMKB: Using frontend template');
             }
         } elseif (file_exists($template)) {
             $template_file = $template;
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ GMKB: Using standard template');
+                error_log('GMKB: Using standard template');
             }
         } else {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('❌ GMKB: NO TEMPLATE FOUND - showing fallback');
+                error_log('GMKB: NO TEMPLATE FOUND - showing fallback');
             }
             echo $this->render_component_fallback($component_type, $props);
             return;
@@ -1241,15 +1241,15 @@ class GMKB_Frontend_Display {
         // ROOT FIX: Include template with error handling
         try {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ GMKB: Including template file: ' . $template_file);
+                error_log('GMKB: Including template file: ' . $template_file);
             }
             include $template_file;
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ GMKB: Template included successfully');
+                error_log('GMKB: Template included successfully');
             }
         } catch (Exception $e) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('❌ GMKB Template Error: ' . $e->getMessage());
+                error_log('GMKB Template Error: ' . $e->getMessage());
             }
             echo $this->render_component_fallback($component_type, $props);
         }

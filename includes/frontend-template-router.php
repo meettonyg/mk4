@@ -5,11 +5,11 @@
  * ROOT IMPLEMENTATION: Conditional template loading based on media kit data
  * 
  * CHECKLIST COMPLIANCE:
- * ✅ No Polling: Direct template filter, no waiting loops
- * ✅ Event-Driven: Hooks into WordPress template hierarchy
- * ✅ Root Cause Fix: Solves display problem at template selection level
- * ✅ Simplicity First: Minimal code, leverages WordPress core
- * ✅ WordPress Integration: Uses proper template_include filter
+ * No Polling: Direct template filter, no waiting loops
+ * Event-Driven: Hooks into WordPress template hierarchy
+ * Root Cause Fix: Solves display problem at template selection level
+ * Simplicity First: Minimal code, leverages WordPress core
+ * WordPress Integration: Uses proper template_include filter
  */
 
 if (!defined('ABSPATH')) {
@@ -102,7 +102,7 @@ class GMKB_Frontend_Template_Router {
                             $GLOBALS['gmkb_media_kit_post_id'] = $post_id;
                             
                             if (defined('WP_DEBUG') && WP_DEBUG) {
-                                error_log('✅ GMKB: Loading media kit via query parameter - Post ID: ' . $post_id);
+                                error_log('GMKB: Loading media kit via query parameter - Post ID: ' . $post_id);
                             }
                             
                             return $media_kit_template;
@@ -138,7 +138,7 @@ class GMKB_Frontend_Template_Router {
                 return $vue_pure_template;
             }
         } else if (defined('WP_DEBUG') && WP_DEBUG && (isset($_GET['mkcg_id']) || isset($_GET['post_id']))) {
-            error_log('❌ GMKB: Not loading builder template - URL is not /tools/media-kit/. URI: ' . ($_SERVER['REQUEST_URI'] ?? 'unknown'));
+            error_log('GMKB: Not loading builder template - URL is not /tools/media-kit/. URI: ' . ($_SERVER['REQUEST_URI'] ?? 'unknown'));
         }
         // ROOT FIX: Debug current template being used
         if (defined('WP_DEBUG') && WP_DEBUG) {

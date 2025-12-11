@@ -35,10 +35,10 @@ function gmkb_debug_console_diagnostics() {
         console.log('%c🔍 GMKB Debug Mode Active', 'background: #ff6b6b; color: white; padding: 4px 8px; font-weight: bold;');
         
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('✅ GMKB: DOM ready, running diagnostics...');
+            console.log('GMKB: DOM ready, running diagnostics...');
             
             if (window.gmkbData && window.gmkbData.ajaxUrl) {
-                console.log('✅ GMKB: Backend data (gmkbData) is available.');
+                console.log('GMKB: Backend data (gmkbData) is available.');
                 
                 // Log gmkbData keys for debugging
                 console.log('🔍 GMKB DEBUG: gmkbData keys:', Object.keys(window.gmkbData));
@@ -48,7 +48,7 @@ function gmkb_debug_console_diagnostics() {
                     const components = window.gmkbData.componentRegistry;
                     const componentCount = Object.keys(components).length;
                     
-                    console.log('✅ GMKB: Component Registry exists (' + componentCount + ' components)');
+                    console.log('GMKB: Component Registry exists (' + componentCount + ' components)');
                     console.log('🔍 GMKB DEBUG: Component types:', Object.keys(components));
                     
                     // Icon field validation
@@ -66,9 +66,9 @@ function gmkb_debug_console_diagnostics() {
                     console.log('🎨 GMKB: Icon mapping:', iconMap);
                     
                     if (componentsWithoutIcons.length > 0) {
-                        console.warn('⚠️ GMKB: Components using fallback cube icon:', componentsWithoutIcons);
+                        console.warn('GMKB: Components using fallback cube icon:', componentsWithoutIcons);
                     } else {
-                        console.log('✅ GMKB: All components have custom icons defined');
+                        console.log('GMKB: All components have custom icons defined');
                     }
                     
                     // Show first component as sample
@@ -77,20 +77,20 @@ function gmkb_debug_console_diagnostics() {
                         console.log('📦 GMKB DEBUG: Sample component data:', firstComponent);
                     }
                 } else {
-                    console.error('❌ GMKB: componentRegistry is UNDEFINED or NULL!');
+                    console.error('GMKB: componentRegistry is UNDEFINED or NULL!');
                     console.log('🔍 GMKB DEBUG: Full gmkbData:', window.gmkbData);
                 }
                 
                 // Check Theme Data
                 if (window.gmkbData.themes) {
-                    console.log('✅ GMKB: Themes available (' + window.gmkbData.themes.length + ')');
+                    console.log('GMKB: Themes available (' + window.gmkbData.themes.length + ')');
                 } else {
-                    console.warn('⚠️ GMKB: No themes data found');
+                    console.warn('GMKB: No themes data found');
                 }
                 
                 // Check Saved State
                 if (window.gmkbData.savedState) {
-                    console.log('✅ GMKB: Saved state loaded');
+                    console.log('GMKB: Saved state loaded');
                     if (window.gmkbData.savedState.components) {
                         console.log('  - Components in state:', Object.keys(window.gmkbData.savedState.components).length);
                     }
@@ -98,47 +98,47 @@ function gmkb_debug_console_diagnostics() {
                         console.log('  - Sections in state:', Object.keys(window.gmkbData.savedState.sections).length);
                     }
                 } else {
-                    console.log('ℹ️ GMKB: No saved state (new media kit)');
+                    console.log('GMKB: No saved state (new media kit)');
                 }
                 
                 // Check Pods Data
                 if (window.gmkbData.pods_data) {
                     const fieldCount = Object.keys(window.gmkbData.pods_data).length;
-                    console.log('✅ GMKB: Pods data loaded (' + fieldCount + ' fields)');
+                    console.log('GMKB: Pods data loaded (' + fieldCount + ' fields)');
                     if (fieldCount > 0) {
                         console.log('  - Available fields:', Object.keys(window.gmkbData.pods_data).slice(0, 5).join(', '));
                     }
                 } else {
-                    console.log('ℹ️ GMKB: No Pods data available');
+                    console.log('GMKB: No Pods data available');
                 }
                 
             } else {
-                console.error('❌ GMKB CRITICAL: Backend data (gmkbData) is MISSING.');
+                console.error('GMKB CRITICAL: Backend data (gmkbData) is MISSING.');
                 console.log('🔍 GMKB DEBUG: Check PHP enqueue.php for data injection issues');
             }
             
             // Check GMKB namespace after initialization
             setTimeout(function() {
                 if (window.GMKB) {
-                    console.log('✅ GMKB: Namespace initialized');
+                    console.log('GMKB: Namespace initialized');
                     console.log('  - Version:', window.GMKB.version);
                     console.log('  - Architecture:', window.GMKB.architecture);
                     console.log('  - Initialization:', window.GMKB.initialization);
                     
                     if (window.GMKB.stores) {
-                        console.log('✅ GMKB: Stores available:', Object.keys(window.GMKB.stores));
+                        console.log('GMKB: Stores available:', Object.keys(window.GMKB.stores));
                     }
                     
                     if (window.GMKB.services) {
-                        console.log('✅ GMKB: Services available:', Object.keys(window.GMKB.services));
+                        console.log('GMKB: Services available:', Object.keys(window.GMKB.services));
                     }
                 } else {
-                    console.warn('⚠️ GMKB: Namespace not initialized yet');
+                    console.warn('GMKB: Namespace not initialized yet');
                 }
             }, 2000);
         });
         
-        console.log('%cℹ️ Debug console logging is active. To disable, define GMKB_DISABLE_CONSOLE_DEBUG in wp-config.php', 'color: #888;');
+        console.log('%cDebug console logging is active. To disable, define GMKB_DISABLE_CONSOLE_DEBUG in wp-config.php', 'color: #888;');
     })();
     </script>
     <?php

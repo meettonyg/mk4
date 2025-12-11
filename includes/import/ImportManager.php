@@ -67,7 +67,7 @@ class GMKB_ImportManager {
         add_action('wp_ajax_gmkb_validate_import', array($this, 'ajax_validate_import'));
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB ImportManager: AJAX handlers registered');
+            error_log('GMKB ImportManager: AJAX handlers registered');
         }
     }
     
@@ -154,7 +154,7 @@ class GMKB_ImportManager {
             
         } catch (Exception $e) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('❌ GMKB Import Error: ' . $e->getMessage());
+                error_log('GMKB Import Error: ' . $e->getMessage());
             }
             wp_send_json_error('Import failed: ' . $e->getMessage());
         }

@@ -48,7 +48,7 @@ class GMKB_Plugin {
         $this->init_hooks();
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB: Pure Vue initialization complete');
+            error_log('GMKB: Pure Vue initialization complete');
         }
     }
 
@@ -64,7 +64,7 @@ class GMKB_Plugin {
         $gmkb_component_discovery = $this->component_discovery;
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB: ComponentDiscovery initialized');
+            error_log('GMKB: ComponentDiscovery initialized');
         }
         
         // ROOT FIX: Force immediate scan to ensure components are available for REST API
@@ -85,7 +85,7 @@ class GMKB_Plugin {
             }
         } catch (Exception $e) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('❌ GMKB: Component scan failed: ' . $e->getMessage());
+                error_log('GMKB: Component scan failed: ' . $e->getMessage());
             }
         }
     }
@@ -150,12 +150,12 @@ class GMKB_Plugin {
         
         if (file_exists($template)) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ GMKB: Loading Pure Vue template via shortcode');
+                error_log('GMKB: Loading Pure Vue template via shortcode');
             }
             include $template;
         } else {
             echo '<div style="padding: 20px; text-align: center; background: #fee; border: 2px solid #f88; border-radius: 8px; margin: 20px;">
-                <h2>⚠️ Template Not Found</h2>
+                <h2>Template Not Found</h2>
                 <p>Pure Vue template file not found: ' . esc_html($template) . '</p>
                 <p>Please ensure the builder-template-vue-pure.php file exists in the templates directory.</p>
             </div>';

@@ -80,7 +80,7 @@ class GMKB_Routing {
         // PHP template takeover completely removed in favor of Vue SPA
         // This maintains the hook for other plugins but doesn't render anything
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ P0 FIX #9: Template takeover disabled - Pure Vue only');
+            error_log('P0 FIX #9: Template takeover disabled - Pure Vue only');
         }
         return;
         // P0 FIX #9: All template logic removed - Vue handles everything
