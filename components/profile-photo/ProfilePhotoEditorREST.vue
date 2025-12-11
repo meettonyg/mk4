@@ -28,10 +28,6 @@
               />
               <p class="field-hint">Click to select an image from your computer</p>
               
-              <!-- Show progress if uploading -->
-              <div v-if="isSavingToPods" class="saving-indicator">
-                <span>Saving to profile...</span>
-              </div>
             </div>
 
             <div class="field-group">
@@ -109,7 +105,6 @@
 <script setup>
 import { ref, watch, computed } from 'vue';
 import { useMediaKitStore } from '@/stores/mediaKit';
-import { usePodsFieldUpdate } from '@composables/usePodsFieldUpdate';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 import MediaUploadButton from '@/vue/components/MediaUploadButton.vue';
 
@@ -123,7 +118,6 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 const store = useMediaKitStore();
-const { updatePodsField, isUpdating: isSavingToPods } = usePodsFieldUpdate();
 
 // State
 const activeTab = ref('content');
@@ -174,14 +168,14 @@ const updateComponent = () => {
 };
 
 // Handle successful photo upload (jQuery-Free)
-const handlePhotoUploaded = async (attachment) => {
+const handlePhotoUploaded = (attachment) => {
   if (!attachment) return;
-  
+
   console.log('Profile Photo: Image uploaded successfully', {
     id: attachment.id,
     url: attachment.url
   });
-  
+
   // Update local state
   localData.value.photo = {
     url: attachment.url,
@@ -189,17 +183,6 @@ const handlePhotoUploaded = async (attachment) => {
     alt: attachment.alt || attachment.title || 'Profile Photo',
     id: attachment.id
   };
-
-  // Try to save to Pods
-  if (attachment.id && store.postId) {
-    try {
-      await updatePodsField(store.postId, 'profile_photo', attachment.id);
-      console.log('Profile Photo: Saved to Pods field');
-    } catch (error) {
-      console.error('Failed to save to Pods field:', error);
-      // Keep using custom photo if Pods save fails
-    }
-  }
 
   // Update component
   updateComponent();

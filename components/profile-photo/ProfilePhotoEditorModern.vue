@@ -91,7 +91,6 @@
 <script setup>
 import { ref, watch, computed } from 'vue';
 import { useMediaKitStore } from '@/stores/mediaKit';
-import { usePodsFieldUpdate } from '@composables/usePodsFieldUpdate';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 import ModernMediaLibrary from '@/vue/components/ModernMediaLibrary.vue';
 
@@ -105,7 +104,6 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 const store = useMediaKitStore();
-const { updatePodsField, isUpdating: isSavingToPods } = usePodsFieldUpdate();
 
 // Active tab state
 const activeTab = ref('content');
@@ -155,11 +153,11 @@ const updateComponent = () => {
 };
 
 // Handle photo selection from modern uploader
-const handlePhotoSelected = async (attachment) => {
+const handlePhotoSelected = (attachment) => {
   if (!attachment) return;
-  
-  console.log('📸 Profile Photo: Image selected', attachment);
-  
+
+  console.log('Profile Photo: Image selected', attachment);
+
   // Update local state with selected photo
   localData.value.photo = {
     url: attachment.url,
@@ -167,20 +165,6 @@ const handlePhotoSelected = async (attachment) => {
     alt: attachment.alt || 'Profile Photo',
     id: attachment.id
   };
-  
-  // Save to Pods if we have an ID
-  if (attachment.id) {
-    try {
-      const postId = store.postId;
-      if (postId) {
-        await updatePodsField(postId, 'profile_photo', attachment.id);
-        console.log('Profile Photo: Saved to Pods');
-      }
-    } catch (error) {
-      console.error('Failed to save to Pods:', error);
-      // Keep using custom photo if Pods save fails
-    }
-  }
 
   // Update component
   updateComponent();
