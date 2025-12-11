@@ -47,7 +47,6 @@
 <script setup>
 import { computed, onMounted } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
-import { usePodsData } from '../../src/composables/usePodsData';
 
 const props = defineProps({
   componentId: {
@@ -76,39 +75,22 @@ const props = defineProps({
   }
 });
 
-// Store and composables
+// Store
 const store = useMediaKitStore();
-const { rawPodsData, fullName } = usePodsData();
 
-// Extract data from both data and props for compatibility
-const title = computed(() => {
-  if (props.data?.title || props.props?.title) {
-    return props.data?.title || props.props?.title;
-  }
-  if (fullName.value) return `Meet ${fullName.value}`;
-  return 'Watch My Introduction';
-});
+// Data from component JSON state (single source of truth)
+const title = computed(() => props.data?.title || props.props?.title || 'Watch My Introduction');
 
 const description = computed(() => props.data?.description || props.props?.description || '');
 
 const videoUrl = computed(() => {
-  // Check component data first
-  const url = props.data?.video_url || props.data?.url || 
-               props.props?.video_url || props.props?.url;
-  if (url) return url;
-  
-  // Check Pods data for video fields
-  return rawPodsData.value?.intro_video_url || 
-         rawPodsData.value?.video_url || 
-         rawPodsData.value?.youtube_url || '';
+  return props.data?.video_url || props.data?.url ||
+         props.props?.video_url || props.props?.url || '';
 });
 
 const thumbnailUrl = computed(() => {
-  const thumb = props.data?.thumbnail || props.data?.poster || 
-                props.props?.thumbnail || props.props?.poster;
-  if (thumb) return thumb;
-  
-  return rawPodsData.value?.video_thumbnail || '';
+  return props.data?.thumbnail || props.data?.poster ||
+         props.props?.thumbnail || props.props?.poster || '';
 });
 
 const isYouTube = computed(() => {
@@ -121,7 +103,7 @@ const isVimeo = computed(() => {
 
 const youtubeEmbedUrl = computed(() => {
   if (!isYouTube.value) return '';
-  
+
   let videoId = '';
   if (videoUrl.value.includes('youtube.com/watch?v=')) {
     videoId = videoUrl.value.split('watch?v=')[1].split('&')[0];
@@ -130,13 +112,13 @@ const youtubeEmbedUrl = computed(() => {
   } else if (videoUrl.value.includes('youtube.com/embed/')) {
     videoId = videoUrl.value.split('youtube.com/embed/')[1].split('?')[0];
   }
-  
+
   return videoId ? `https://www.youtube.com/embed/${videoId}` : '';
 });
 
 const vimeoEmbedUrl = computed(() => {
   if (!isVimeo.value) return '';
-  
+
   const matches = videoUrl.value.match(/vimeo\.com\/(\d+)/);
   const videoId = matches ? matches[1] : '';
   return videoId ? `https://player.vimeo.com/video/${videoId}` : '';
@@ -149,7 +131,7 @@ onMounted(() => {
       detail: {
         type: 'video-intro',
         id: props.componentId,
-        podsDataUsed: !props.data.video_url && !!rawPodsData.value?.intro_video_url
+        podsDataUsed: false
       }
     }));
   }

@@ -19,7 +19,6 @@
 
 <script setup>
 import { computed } from 'vue';
-import { usePodsData } from '@composables/usePodsData';
 
 const props = defineProps({
   // STANDARD INTERFACE: All components accept the same props structure
@@ -50,33 +49,8 @@ const props = defineProps({
   }
 });
 
-const { podsData } = usePodsData();
-
-// SINGLE FIELD PATTERN: Simple logo object or null
+// Read logo directly from component data
 const logo = computed(() => {
-  // ROOT FIX: Add null safety checks for podsData
-  // podsData might be undefined during initial render
-  if (!podsData || !podsData.value) {
-    // Fallback to custom logo if Pods data not available
-    return props.data?.logo || null;
-  }
-  
-  // Check if using Pods data
-  if (props.data?.usePodsData && podsData.value?.company_logo) {
-    const podsLogo = podsData.value.company_logo;
-    
-    // Handle both simple URL and complex object formats
-    return {
-      url: typeof podsLogo === 'object' 
-        ? (podsLogo.guid || podsLogo.url || podsLogo.ID) 
-        : podsLogo,
-      alt: typeof podsLogo === 'object' 
-        ? (podsLogo.post_title || 'Company Logo') 
-        : 'Company Logo'
-    };
-  }
-  
-  // Fallback to custom logo
   return props.data?.logo || null;
 });
 
@@ -103,9 +77,7 @@ const sanitizedLogoUrl = computed(() => {
 const componentClasses = computed(() => ({
   'has-logo': !!logo.value,
   'no-logo': !logo.value,
-  // ROOT FIX: Add null safety for podsData access
-  'pods-source': props.data?.usePodsData && podsData?.value && !!podsData.value?.company_logo,
-  'custom-source': !props.data?.usePodsData || !podsData?.value || !podsData.value?.company_logo
+  'custom-source': true
 }));
 
 // ROOT FIX: Apply size and alignment settings from component data

@@ -71,9 +71,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { useMediaKitStore } from '../../src/stores/mediaKit';
-import { usePodsData } from '../../src/composables/usePodsData';
+import { ref, computed } from 'vue';
 
 const props = defineProps({
   componentId: {
@@ -102,10 +100,6 @@ const props = defineProps({
   }
 });
 
-// Store and composables
-const store = useMediaKitStore();
-const { topics: podsTopics, questions: podsQuestions } = usePodsData();
-
 // Local state
 const currentMode = ref(props.data?.displayMode || props.props?.displayMode || 'combined');
 const expandedQuestions = ref([]);
@@ -116,7 +110,7 @@ const modes = [
   { value: 'combined', label: 'Topics & Questions' }
 ];
 
-// Extract data from both data and props for compatibility
+// Data from component JSON state (single source of truth)
 const showModeSelector = computed(() => {
   const val = props.data?.showModeSelector ?? props.props?.showModeSelector;
   return val !== false;
@@ -127,41 +121,27 @@ const questionsDisplay = computed(() => props.data?.questionsDisplay || props.pr
 const topicsTitle = computed(() => props.data?.topicsTitle || props.props?.topicsTitle || 'Topics of Expertise');
 const questionsTitle = computed(() => props.data?.questionsTitle || props.props?.questionsTitle || 'Interview Questions');
 
+// Topics from component data
 const filteredTopics = computed(() => {
   const topics = [];
-  
-  // Check for topics in data/props
   for (let i = 1; i <= 10; i++) {
     const topic = props.data?.[`topic_${i}`] || props.props?.[`topic_${i}`];
     if (topic && topic.trim()) {
       topics.push(topic);
     }
   }
-  
-  // Fallback to Pods topics
-  if (topics.length === 0 && podsTopics.value && podsTopics.value.length > 0) {
-    return podsTopics.value.map(t => t.text || t.name || t).slice(0, 10);
-  }
-  
   return topics;
 });
 
+// Questions from component data
 const filteredQuestions = computed(() => {
   const questions = [];
-  
-  // Check for questions in data/props
   for (let i = 1; i <= 25; i++) {
     const question = props.data?.[`question_${i}`] || props.props?.[`question_${i}`];
     if (question && question.trim()) {
       questions.push(question);
     }
   }
-  
-  // Fallback to Pods questions
-  if (questions.length === 0 && podsQuestions.value && podsQuestions.value.length > 0) {
-    return podsQuestions.value.map(q => q.text || q.question || q).slice(0, 25);
-  }
-  
   return questions;
 });
 
@@ -173,20 +153,6 @@ const toggleQuestion = (index) => {
     expandedQuestions.value.push(index);
   }
 };
-
-// Lifecycle
-onMounted(() => {
-  if (store.components[props.componentId]) {
-    document.dispatchEvent(new CustomEvent('gmkb:vue-component-mounted', {
-      detail: {
-        type: 'topics-questions',
-        id: props.componentId,
-        podsDataUsed: (filteredTopics.value.length > 0 && podsTopics.value?.length > 0) ||
-                     (filteredQuestions.value.length > 0 && podsQuestions.value?.length > 0)
-      }
-    }));
-  }
-});
 </script>
 
 <style scoped>

@@ -15,7 +15,6 @@
 
 <script>
 import { computed } from 'vue';
-import { usePodsData } from '../../src/composables/usePodsData';
 
 export default {
   name: 'TopicsRenderer',
@@ -48,50 +47,30 @@ export default {
     }
   },
   setup(props) {
-    // COMPOSITION API: Access Pods data via composable
-    const podsData = usePodsData();
-    
-    // TITLE: Component data > default
-    const title = computed(() => {
-      return props.data?.title || 'Speaking Topics';
-    });
-    
-    // DESCRIPTION: Component data only
-    const description = computed(() => {
-      return props.data?.description || '';
-    });
-    
-    // TOPICS: Priority is component data > Pods fallback > empty array
+    // Data from component JSON state (single source of truth)
+    const title = computed(() => props.data?.title || props.props?.title || 'Speaking Topics');
+
+    const description = computed(() => props.data?.description || props.props?.description || '');
+
+    // Topics from component data
     const topics = computed(() => {
-      // Priority 1: Component data (user customization)
       if (props.data?.topics && Array.isArray(props.data.topics)) {
         return props.data.topics;
       }
-      
-      // Priority 2: Pods data (from database)
-      // Pods stores topics as topic_1, topic_2, etc.
-      if (podsData.rawPodsData?.value) {
-        const podTopics = [];
-        const rawData = podsData.rawPodsData.value;
-        
-        // Extract topics 1-5
-        for (let i = 1; i <= 5; i++) {
-          const topicKey = `topic_${i}`;
-          if (rawData[topicKey] && rawData[topicKey].trim()) {
-            // Topics can be strings or objects with name/text/description
-            podTopics.push(rawData[topicKey]);
-          }
-        }
-        
-        if (podTopics.length > 0) {
-          return podTopics;
+
+      // Build from individual topic fields
+      const topicsList = [];
+      for (let i = 1; i <= 10; i++) {
+        const topicKey = `topic_${i}`;
+        const topicValue = props.data?.[topicKey] || props.props?.[topicKey];
+        if (topicValue) {
+          topicsList.push(topicValue);
         }
       }
-      
-      // Priority 3: Empty array (will show no topics)
-      return [];
+
+      return topicsList;
     });
-    
+
     return {
       title,
       description,

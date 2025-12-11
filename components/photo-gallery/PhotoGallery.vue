@@ -49,7 +49,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
-import { usePodsData } from '../../src/composables/usePodsData';
 
 const props = defineProps({
   componentId: {
@@ -78,12 +77,8 @@ const props = defineProps({
   }
 });
 
-// Store and composables
+// Store
 const store = useMediaKitStore();
-const { media, allData: rawPodsData } = usePodsData();
-
-// Extract headshot from media
-const headshotUrl = computed(() => media.value?.headshot || '');
 
 // Local state
 const lightboxOpen = ref(false);
@@ -99,7 +94,7 @@ const photos = computed(() => {
   if (Array.isArray(props.data?.photos) && props.data.photos.length > 0) {
     return props.data.photos;
   }
-  
+
   // Build from individual photo fields
   const photosList = [];
   for (let i = 1; i <= 12; i++) {
@@ -112,30 +107,7 @@ const photos = computed(() => {
       });
     }
   }
-  
-  // Use Pods gallery images if available
-  if (photosList.length === 0) {
-    for (let i = 1; i <= 12; i++) {
-      const galleryImage = rawPodsData.value?.[`gallery_image_${i}`];
-      if (galleryImage) {
-        photosList.push({
-          url: galleryImage,
-          thumbnail: galleryImage,
-          caption: rawPodsData.value?.[`gallery_caption_${i}`] || ''
-        });
-      }
-    }
-    
-    // Add headshot if no other photos
-    if (photosList.length === 0 && headshotUrl.value) {
-      photosList.push({
-        url: headshotUrl.value,
-        thumbnail: headshotUrl.value,
-        caption: 'Profile Photo'
-      });
-    }
-  }
-  
+
   return photosList;
 });
 
@@ -170,11 +142,7 @@ onMounted(() => {
     document.dispatchEvent(new CustomEvent('gmkb:vue-component-mounted', {
       detail: {
         type: 'photo-gallery',
-        id: props.componentId,
-        podsDataUsed: photos.value.some(photo => 
-          photo.url === headshotUrl.value || 
-          (rawPodsData.value && Object.values(rawPodsData.value).includes(photo.url))
-        )
+        id: props.componentId
       }
     }));
   }

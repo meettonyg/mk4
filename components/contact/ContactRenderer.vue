@@ -31,7 +31,6 @@
 
 <script>
 import { computed } from 'vue';
-import { usePodsData } from '../../src/composables/usePodsData';
 
 export default {
   name: 'ContactRenderer',
@@ -64,37 +63,12 @@ export default {
     }
   },
   setup(props) {
-    // COMPOSITION API: Access Pods data via composable
-    const podsData = usePodsData();
-    
-    // EMAIL: Priority is component data > Pods email > empty
-    const email = computed(() => {
-      if (props.data?.email) return props.data.email;
-      if (podsData.email?.value) return podsData.email.value;
-      return '';
-    });
-    
-    // PHONE: Priority is component data > Pods phone > empty
-    const phone = computed(() => {
-      if (props.data?.phone) return props.data.phone;
-      if (podsData.rawPodsData?.value?.phone) return podsData.rawPodsData.value.phone;
-      return '';
-    });
-    
-    // SKYPE: Priority is component data > Pods skype > empty
-    const skype = computed(() => {
-      if (props.data?.skype) return props.data.skype;
-      if (podsData.rawPodsData?.value?.skype) return podsData.rawPodsData.value.skype;
-      return '';
-    });
-    
-    // LOCATION: Priority is component data > Pods location > empty
-    const location = computed(() => {
-      if (props.data?.location) return props.data.location;
-      if (podsData.rawPodsData?.value?.location) return podsData.rawPodsData.value.location;
-      return '';
-    });
-    
+    // Data from component JSON state (single source of truth)
+    const email = computed(() => props.data?.email || props.props?.email || '');
+    const phone = computed(() => props.data?.phone || props.props?.phone || '');
+    const skype = computed(() => props.data?.skype || props.props?.skype || '');
+    const location = computed(() => props.data?.location || props.props?.location || '');
+
     return {
       email,
       phone,

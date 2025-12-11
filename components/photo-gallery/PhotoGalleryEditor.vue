@@ -38,38 +38,8 @@
         <section class="editor-section">
           <h4>Photo Source</h4>
           
-          <!-- Pods Data Toggle -->
-          <div v-if="hasPodsPhotos" class="pods-data-toggle">
-            <label class="toggle-label">
-              <input 
-                type="checkbox" 
-                v-model="localData.usePodsData" 
-                @change="updateComponent"
-              />
-              <span>Use photos from Pods ({{ podsPhotosCount }} photo{{ podsPhotosCount !== 1 ? 's' : '' }} available)</span>
-            </label>
-          </div>
-
-          <!-- Pods Photos Display -->
-          <div v-if="localData.usePodsData && hasPodsPhotos" class="pods-photos-display">
-            <div class="field-group">
-              <label>Photos from Pods</label>
-              <div class="pods-photos-grid">
-                <div 
-                  v-for="(photo, index) in podsPhotos" 
-                  :key="index"
-                  class="pods-photo-item"
-                >
-                  <img :src="photo.url" :alt="photo.caption || 'Photo'" />
-                  <span class="photo-label">{{ photo.caption || (photo.type === 'profile' ? 'Profile' : `Photo ${index}`) }}</span>
-                </div>
-              </div>
-              <p class="field-hint">These photos are loaded from your guest profile. Uncheck above to add custom photos.</p>
-            </div>
-          </div>
-
           <!-- Custom Photos Section -->
-          <div v-if="!localData.usePodsData || !hasPodsPhotos">
+          <div>
             <div class="field-group">
               <button 
                 v-if="localData.photos.length < 12"
@@ -339,7 +309,6 @@
 import { ref, watch, computed } from 'vue';
 import draggable from 'vuedraggable';  // ✅ NEW: Drag-and-drop support
 import { useMediaKitStore } from '@/stores/mediaKit';
-import { usePodsData } from '@/composables/usePodsData';
 import { useModernMediaUploader } from '@/composables/useModernMediaUploader';
 import { ToastService } from '@/services/ToastService';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
@@ -355,9 +324,6 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 const store = useMediaKitStore();
-
-// Load Pods data
-const { podsData } = usePodsData();
 const { openMediaLibrary, isUploading } = useModernMediaUploader();
 
 // Active tab state
@@ -384,52 +350,7 @@ const localData = ref({
     arrows: true,
     dots: true
   },
-  usePodsData: true // Default to using Pods data if available
-});
-
-// Get photos from Pods - REPEATABLE FIELD ONLY
-// REFACTORED: Profile photo moved to separate Profile Photo component
-const podsPhotos = computed(() => {
-  const photos = [];
-  
-  // ===== REPEATABLE FIELD: gallery_photos (photo collection) =====
-  const galleryPhotos = podsData.value?.gallery_photos;
-  if (galleryPhotos && Array.isArray(galleryPhotos) && galleryPhotos.length > 0) {
-    // Repeatable field returns an ARRAY where each item is an attachment object or ID
-    galleryPhotos.forEach((photo, index) => {
-      if (photo) {
-        // Each item in the array is one attachment
-        const photoUrl = typeof photo === 'object' 
-          ? (photo.guid || photo.url) 
-          : photo;
-        const photoCaption = typeof photo === 'object' 
-          ? (photo.post_excerpt || photo.caption || '')
-          : '';
-        
-        if (photoUrl) {
-          photos.push({
-            url: photoUrl,
-            caption: photoCaption,
-            type: 'gallery',
-            source: 'pods'
-          });
-        }
-      }
-    });
-  }
-  
-  return photos;
-});
-
-const podsPhotosCount = computed(() => podsPhotos.value.length);
-const hasPodsPhotos = computed(() => podsPhotosCount.value > 0);
-
-// Determine effective photos (Pods or custom)
-const effectivePhotos = computed(() => {
-  if (localData.value.usePodsData && hasPodsPhotos.value) {
-    return podsPhotos.value;
-  }
-  return localData.value.photos || [];
+  usePodsData: false
 });
 
 // Load component data
@@ -455,24 +376,12 @@ const loadComponentData = () => {
         arrows: true,
         dots: true
       },
-      usePodsData: component.data.usePodsData !== false // Default to true
+      usePodsData: false
     };
-  }
-  
-  // If no custom photos and Pods has data, use Pods
-  if ((!localData.value.photos || localData.value.photos.length === 0) && hasPodsPhotos.value) {
-    localData.value.usePodsData = true;
   }
 };
 
 watch(() => props.componentId, loadComponentData, { immediate: true });
-
-watch(podsPhotos, () => {
-  // If using Pods data and Pods value changes, trigger update
-  if (localData.value.usePodsData) {
-    updateComponent();
-  }
-}, { deep: true });
 
 // Add photo
 const addPhoto = () => {
@@ -521,11 +430,10 @@ const updateComponent = () => {
     const dataToSave = {
       title: localData.value.title,
       description: localData.value.description,
-      photos: effectivePhotos.value,
+      photos: localData.value.photos,
       columns: localData.value.columns,
       captionStyle: localData.value.captionStyle,
-      layoutStyle: localData.value.layoutStyle, // ✅ Save layout style
-      usePodsData: localData.value.usePodsData
+      layoutStyle: localData.value.layoutStyle // ✅ Save layout style
     };
     
     // ✅ NO BLOAT: Only save carouselSettings when layoutStyle is 'carousel'

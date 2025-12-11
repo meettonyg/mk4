@@ -19,7 +19,6 @@
 
 <script>
 import { computed } from 'vue';
-import { usePodsData } from '../../src/composables/usePodsData';
 
 export default {
   name: 'SocialRenderer',
@@ -52,52 +51,11 @@ export default {
     }
   },
   setup(props) {
-    // COMPOSITION API: Access Pods data via composable
-    const podsData = usePodsData();
-    
-    // SOCIAL LINKS: Priority is component data > Pods fallback > empty array
+    // Data from component JSON state (single source of truth)
     const links = computed(() => {
-      // Priority 1: Component data (user customization)
-      if (props.data?.links && Array.isArray(props.data.links)) {
-        return props.data.links;
-      }
-      
-      // Priority 2: Pods data (from database)
-      // Extract social links from Pods rawPodsData
-      if (podsData.rawPodsData?.value) {
-        const socialLinks = [];
-        const rawData = podsData.rawPodsData.value;
-        
-        // Map of social platforms to their Pods field names
-        const socialPlatforms = [
-          { platform: 'facebook', field: 'facebook_url' },
-          { platform: 'twitter', field: 'twitter_url' },
-          { platform: 'linkedin', field: 'linkedin_url' },
-          { platform: 'instagram', field: 'instagram_url' },
-          { platform: 'youtube', field: 'youtube_url' },
-          { platform: 'pinterest', field: 'pinterest_url' },
-          { platform: 'tiktok', field: 'tiktok_url' }
-        ];
-        
-        // Extract each social link from Pods
-        socialPlatforms.forEach(({ platform, field }) => {
-          if (rawData[field] && rawData[field].trim()) {
-            socialLinks.push({
-              platform: platform,
-              url: rawData[field]
-            });
-          }
-        });
-        
-        if (socialLinks.length > 0) {
-          return socialLinks;
-        }
-      }
-      
-      // Priority 3: Empty array (will show no links)
-      return [];
+      return props.data?.links || props.props?.links || [];
     });
-    
+
     // Social icon mapper function
     const getSocialIcon = (platform) => {
       const icons = {
@@ -112,7 +70,7 @@ export default {
       const lowerPlatform = platform.toLowerCase();
       return icons[lowerPlatform] || 'fas fa-link';
     };
-    
+
     return {
       links,
       getSocialIcon

@@ -19,9 +19,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue';
-import { useMediaKitStore } from '../../src/stores/mediaKit';
-import { usePodsData } from '../../src/composables/usePodsData';
+import { computed } from 'vue';
 
 const props = defineProps({
   componentId: {
@@ -50,14 +48,7 @@ const props = defineProps({
   }
 });
 
-// Store and composables
-const store = useMediaKitStore();
-const { media } = usePodsData();
-
-// Extract company logo from media
-const companyLogo = computed(() => media.value?.logo || '');
-
-// Extract data from both data and props for compatibility
+// Data from component JSON state (single source of truth)
 const title = computed(() => props.data?.title || props.props?.title || 'Featured In');
 const description = computed(() => props.data?.description || props.props?.description || '');
 const columns = computed(() => props.data?.columns || props.props?.columns || 'auto');
@@ -67,7 +58,7 @@ const displayLogos = computed(() => {
   if (Array.isArray(props.data?.logos) && props.data.logos.length > 0) {
     return props.data.logos;
   }
-  
+
   // Build from individual logo fields
   const logosList = [];
   for (let i = 1; i <= 12; i++) {
@@ -80,30 +71,8 @@ const displayLogos = computed(() => {
       });
     }
   }
-  
-  // Add company logo from Pods if available and no other logos
-  if (logosList.length === 0 && companyLogo.value) {
-    logosList.push({
-      url: companyLogo.value,
-      name: 'Company Logo',
-      link: ''
-    });
-  }
-  
-  return logosList;
-});
 
-// Lifecycle
-onMounted(() => {
-  if (store.components[props.componentId]) {
-    document.dispatchEvent(new CustomEvent('gmkb:vue-component-mounted', {
-      detail: {
-        type: 'logo-grid',
-        id: props.componentId,
-        podsDataUsed: displayLogos.value.some(logo => logo.url === companyLogo.value)
-      }
-    }));
-  }
+  return logosList;
 });
 </script>
 

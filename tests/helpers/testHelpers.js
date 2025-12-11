@@ -1,35 +1,9 @@
 /**
  * Test Helpers for Component Testing
  * Provides mocks and utilities for testing Vue components
- * 
- * P1 FIX: Fixes 86 failing tests by providing proper mocks
- * @version 1.0.0
+ *
+ * @version 2.0.0
  */
-
-import { ref } from 'vue';
-
-/**
- * Create mock Pods composable that returns safe refs
- * Prevents "Cannot read properties of undefined (reading 'value')" errors
- */
-export function createMockPodsComposable() {
-  return {
-    usePodsData: () => ({
-      rawPodsData: ref({}),
-      podsName: ref(''),
-      podsBio: ref(''),
-      podsEmail: ref(''),
-      podsPhone: ref(''),
-      podsWebsite: ref(''),
-      podsFacebook: ref(''),
-      podsTwitter: ref(''),
-      podsLinkedin: ref(''),
-      podsInstagram: ref(''),
-      podsYoutube: ref(''),
-      companyLogo: ref('')
-    })
-  };
-}
 
 /**
  * Create mock props with safe defaults
@@ -63,20 +37,6 @@ export function createSafeProps(data = null) {
  */
 export function createTestEnvironment() {
   return {
-    props: createSafeProps(),
-    podsData: {
-      rawPodsData: ref({}),
-      podsName: ref(''),
-      podsBio: ref(''),
-      podsEmail: ref(''),
-      podsPhone: ref(''),
-      podsWebsite: ref(''),
-      podsFacebook: ref(''),
-      podsTwitter: ref(''),
-      podsLinkedin: ref(''),
-      podsInstagram: ref(''),
-      podsYoutube: ref(''),
-      companyLogo: ref('')
-    }
+    props: createSafeProps()
   };
 }

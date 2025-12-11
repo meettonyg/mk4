@@ -309,9 +309,16 @@ class GMKB_REST_API_V2 {
         }
 
         try {
-            // OPTIMIZATION: Fetch ALL data in one go - theme is in state
+            // OPTIMIZATION: Fetch state data only - Pods enrichment has been deprecated
             $state_data = get_post_meta($post_id, 'gmkb_media_kit_state', true);
-            $pods_data = $this->fetch_all_pods_data($post_id, $post->post_type);
+
+            // DEPRECATED: Pods data fetching disabled (2025-12-11)
+            // The "Write Arc" (component-field-sync.php) was broken due to action hook typo,
+            // meaning Pods fields were NEVER being updated when users saved in the Builder.
+            // The "Read Arc" (Vue enrichment) was causing stale data to overwrite valid JSON state.
+            // JSON state (gmkb_media_kit_state) is now the single source of truth.
+            // $pods_data = $this->fetch_all_pods_data($post_id, $post->post_type);
+            $pods_data = array(); // Empty - no longer needed
             
             // Ensure state data is properly structured
             if (!is_array($state_data)) {
@@ -354,14 +361,13 @@ class GMKB_REST_API_V2 {
             );
 
             // PHASE 1 ARCHITECTURAL FIX: Server-side enrichment REMOVED
-            // Vue components are self-contained and load their own data via usePodsData() composable
-            // This eliminates:
-            // - Centralized enrichment dependency
-            // - Dual data loading (server + client)
-            // - props/data duplication
-            // - Race conditions in data loading
-            // 
-            // Pods data is still sent in response['podsData'] for Vue store initialization
+            // PHASE 2 FIX (2025-12-11): Pods data fetching DEPRECATED
+            //
+            // The circular sync between JSON state and Pods fields has been eliminated:
+            // - JSON state (gmkb_media_kit_state) is now the SINGLE source of truth
+            // - podsData in response is empty (kept for backward compatibility)
+            // - Vue enrichment disabled in mediaKit.js store
+            // - component-field-sync.php has been deleted (was dead code due to typo)
             
             // Apply enrichment filters (for extensibility)
             $response = apply_filters('gmkb_api_mediakit_response', $response, $post_id);
@@ -558,19 +564,30 @@ class GMKB_REST_API_V2 {
     }
 
     /**
-     * Fetch ALL Pods data in one query
-     * 
-     * OPTIMIZATION: Single query instead of N queries
-     * ROOT FIX: Enhanced error handling and debugging
-     * PHASE 8 FIX: Falls back to native WordPress meta when Pods unavailable
-     * 
+     * DEPRECATED: Fetch ALL Pods data in one query
+     *
+     * @deprecated Since 2.2.0 - Pods enrichment has been removed. JSON state is single source of truth.
+     *
+     * This method is no longer called. It's kept for reference but will be removed in a future version.
+     * The circular sync between JSON state and Pods fields caused data loss:
+     * - The "Write Arc" (component-field-sync.php) was broken (action hook typo)
+     * - The "Read Arc" (Vue enrichment) overwrote valid JSON with stale Pods data
+     *
      * @param int $post_id The post ID
      * @param string $post_type The post type
-     * @return array Pods data
+     * @return array Empty array (method deprecated)
      */
     private function fetch_all_pods_data($post_id, $post_type) {
+        // DEPRECATED: Return empty array - this method is no longer used
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('⚠️ GMKB API v2: fetch_all_pods_data() called but is DEPRECATED');
+        }
+        return array();
+
+        // --- ORIGINAL CODE BELOW (kept for reference) ---
+        /*
         $data = array();
-        
+
         // PHASE 8 FIX: If Pods is not available, use native WordPress fallback
         if (!function_exists('pods') || !class_exists('Pods')) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -667,12 +684,15 @@ class GMKB_REST_API_V2 {
         }
 
         return $data;
+        */
     }
 
     // REMOVED: fetch_theme_data() - Theme is now part of unified state, not fetched separately
 
     /**
-     * PHASE 8: Fetch profile data using native WordPress meta functions
+     * DEPRECATED: Fetch profile data using native WordPress meta functions
+     *
+     * @deprecated Since 2.2.0 - Pods enrichment has been removed. JSON state is single source of truth.
      * 
      * This is the fallback when Pods plugin is not active.
      * Uses get_post_meta() to read the same data that Pods stored.

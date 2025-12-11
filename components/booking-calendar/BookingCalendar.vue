@@ -89,7 +89,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
-import { usePodsData } from '../../src/composables/usePodsData';
 
 const props = defineProps({
   componentId: {
@@ -120,9 +119,8 @@ const props = defineProps({
 
 const emit = defineEmits(['booking-submit']);
 
-// Store and composables
+// Store
 const store = useMediaKitStore();
-const { email: podsEmail, fullName, allData: rawPodsData } = usePodsData();
 
 // Local state
 const bookingForm = ref({
@@ -133,29 +131,16 @@ const bookingForm = ref({
   message: ''
 });
 
-// Extract data from both data and props for compatibility
-const title = computed(() => {
-  if (props.data?.title || props.props?.title) {
-    return props.data?.title || props.props?.title;
-  }
-  if (fullName.value) return `Book Time with ${fullName.value}`;
-  return 'Book a Meeting';
-});
+// Data from component JSON state (single source of truth)
+const title = computed(() => props.data?.title || props.props?.title || 'Book a Meeting');
 
 const description = computed(() => props.data?.description || props.props?.description || '');
 
 const calendarService = computed(() => props.data?.calendar_service || props.props?.calendar_service || '');
 
 const calendarUrl = computed(() => {
-  // Check component data first
-  const url = props.data?.calendar_url || props.data?.calendly_url ||
-              props.props?.calendar_url || props.props?.calendly_url;
-  if (url) return url;
-  
-  // Check Pods data for booking URLs
-  return rawPodsData.value?.calendly_url || 
-         rawPodsData.value?.booking_url || 
-         rawPodsData.value?.calendar_link || '';
+  return props.data?.calendar_url || props.data?.calendly_url ||
+         props.props?.calendar_url || props.props?.calendly_url || '';
 });
 
 const availableTimes = computed(() => {
@@ -163,20 +148,9 @@ const availableTimes = computed(() => {
   if (Array.isArray(times)) {
     return times;
   }
-  
-  // Check Pods data for availability
-  if (rawPodsData.value?.available_times) {
-    const podsTimes = rawPodsData.value.available_times;
-    if (typeof podsTimes === 'string') {
-      return podsTimes.split(',').map(t => t.trim());
-    }
-    if (Array.isArray(podsTimes)) {
-      return podsTimes;
-    }
-  }
-  
+
   return [
-    '9:00 AM', '10:00 AM', '11:00 AM', 
+    '9:00 AM', '10:00 AM', '11:00 AM',
     '2:00 PM', '3:00 PM', '4:00 PM'
   ];
 });
@@ -184,18 +158,18 @@ const availableTimes = computed(() => {
 const handleBookingSubmit = () => {
   const submissionData = {
     ...bookingForm.value,
-    recipientEmail: podsEmail.value || '',
+    recipientEmail: props.data?.recipient_email || props.props?.recipient_email || '',
     componentId: props.componentId
   };
-  
+
   // Emit event
   emit('booking-submit', submissionData);
-  
+
   // Dispatch global event
   document.dispatchEvent(new CustomEvent('gmkb:booking-submit', {
     detail: submissionData
   }));
-  
+
   // Reset form
   bookingForm.value = {
     date: '',
@@ -204,7 +178,7 @@ const handleBookingSubmit = () => {
     email: '',
     message: ''
   };
-  
+
   // Show notification
   if (store.showNotification) {
     store.showNotification('Booking request sent!', 'success');
@@ -218,12 +192,11 @@ onMounted(() => {
       detail: {
         type: 'booking-calendar',
         id: props.componentId,
-        podsDataUsed: !props.data.calendar_url && 
-          !!(rawPodsData.value?.calendly_url || rawPodsData.value?.booking_url)
+        podsDataUsed: false
       }
     }));
   }
-  
+
   // Load Calendly script if needed
   if (calendarService.value === 'calendly' && !window.Calendly) {
     const script = document.createElement('script');

@@ -51,7 +51,6 @@
 <script setup>
 import { computed, onMounted } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
-import { usePodsData } from '../../src/composables/usePodsData';
 
 const props = defineProps({
   componentId: {
@@ -80,28 +79,20 @@ const props = defineProps({
   }
 });
 
-// Store and composables
+// Store
 const store = useMediaKitStore();
-const { rawPodsData, stats } = usePodsData();
 
-// Extract data from both data and props for compatibility
+// Data from component JSON state (single source of truth)
 const title = computed(() => props.data?.title || props.props?.title || 'Podcast Episodes');
-const description = computed(() => {
-  if (props.data?.description || props.props?.description) {
-    return props.data?.description || props.props?.description;
-  }
-  if (stats.value?.episodes) {
-    return `Featured episodes from my ${stats.value.episodes}+ podcast episodes`;
-  }
-  return '';
-});
+
+const description = computed(() => props.data?.description || props.props?.description || '');
 
 const episodes = computed(() => {
   // Handle array format
   if (Array.isArray(props.data?.episodes) && props.data.episodes.length > 0) {
     return props.data.episodes;
   }
-  
+
   // Build from individual episode fields
   const episodesList = [];
   for (let i = 1; i <= 5; i++) {
@@ -117,24 +108,7 @@ const episodes = computed(() => {
       });
     }
   }
-  
-  // Check for podcast episodes in Pods data
-  if (episodesList.length === 0) {
-    for (let i = 1; i <= 5; i++) {
-      const episodeTitle = rawPodsData.value?.[`podcast_episode_${i}_title`];
-      if (episodeTitle) {
-        episodesList.push({
-          title: episodeTitle,
-          description: rawPodsData.value?.[`podcast_episode_${i}_description`] || '',
-          audio_url: rawPodsData.value?.[`podcast_episode_${i}_audio`] || '',
-          spotify_url: rawPodsData.value?.[`podcast_spotify_url`] || '',
-          apple_url: rawPodsData.value?.[`podcast_apple_url`] || '',
-          duration: rawPodsData.value?.[`podcast_episode_${i}_duration`] || ''
-        });
-      }
-    }
-  }
-  
+
   return episodesList;
 });
 
@@ -145,9 +119,7 @@ onMounted(() => {
       detail: {
         type: 'podcast-player',
         id: props.componentId,
-        podsDataUsed: episodes.value.some(episode => 
-          rawPodsData.value && Object.values(rawPodsData.value).includes(episode.title)
-        )
+        podsDataUsed: false
       }
     }));
   }

@@ -32,9 +32,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue';
-import { useMediaKitStore } from '../../src/stores/mediaKit';
-import { usePodsData } from '../../src/composables/usePodsData';
+import { computed } from 'vue';
 
 const props = defineProps({
   componentId: {
@@ -63,30 +61,26 @@ const props = defineProps({
   }
 });
 
-// Store and composables
-const store = useMediaKitStore();
-const { stats: podsStats } = usePodsData();
-
-// Extract data from both data and props for compatibility
+// Data from component JSON state (single source of truth)
 const title = computed(() => props.data?.title || props.props?.title || 'By The Numbers');
 const description = computed(() => props.data?.description || props.props?.description || '');
 const columns = computed(() => props.data?.columns || props.props?.columns || 4);
 const style = computed(() => props.data?.style || props.props?.style || 'default');
 const showIcons = computed(() => props.data?.showIcons !== false && props.props?.showIcons !== false);
 
-// Display stats with Pods fallback
+// Display stats from component data
 const displayStats = computed(() => {
   // Handle array format
   if (Array.isArray(props.data?.stats) && props.data.stats.length > 0) {
     return props.data.stats;
   }
-  
+
   // Build from individual stat fields
   const statsList = [];
   for (let i = 1; i <= 6; i++) {
     const value = props.data?.[`stat_${i}_value`] || props.props?.[`stat_${i}_value`];
     const label = props.data?.[`stat_${i}_label`] || props.props?.[`stat_${i}_label`];
-    
+
     if (value && label) {
       statsList.push({
         value: value,
@@ -98,60 +92,8 @@ const displayStats = computed(() => {
       });
     }
   }
-  
-  // Use Pods stats as fallback if no component data
-  if (statsList.length === 0 && podsStats.value) {
-    if (podsStats.value.downloads) {
-      statsList.push({
-        value: podsStats.value.downloads,
-        label: 'Downloads',
-        description: 'Total podcast downloads',
-        icon: '📥'
-      });
-    }
-    if (podsStats.value.episodes) {
-      statsList.push({
-        value: podsStats.value.episodes,
-        label: 'Episodes',
-        description: 'Podcast episodes recorded',
-        icon: '🎙️'
-      });
-    }
-    if (podsStats.value.followers) {
-      statsList.push({
-        value: podsStats.value.followers,
-        label: 'Followers',
-        description: 'Social media followers',
-        icon: '👥'
-      });
-    }
-    if (podsStats.value.subscribers) {
-      statsList.push({
-        value: podsStats.value.subscribers,
-        label: 'Subscribers',
-        description: 'Email list subscribers',
-        icon: '📧'
-      });
-    }
-  }
-  
-  return statsList;
-});
 
-// Lifecycle
-onMounted(() => {
-  if (store.components[props.componentId]) {
-    // Dispatch mount event
-    document.dispatchEvent(new CustomEvent('gmkb:vue-component-mounted', {
-      detail: {
-        type: 'stats',
-        id: props.componentId,
-        podsDataUsed: displayStats.value.some(stat => 
-          podsStats.value && Object.values(podsStats.value).includes(stat.value)
-        )
-      }
-    }));
-  }
+  return statsList;
 });
 </script>
 

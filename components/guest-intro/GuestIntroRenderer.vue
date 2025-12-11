@@ -13,9 +13,8 @@
 <script>
 import { computed, onMounted } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
-import { usePodsData } from '../../src/composables/usePodsData';
 
-// ROOT FIX: Pods data is PRIMARY source for introduction
+// Data from component JSON state (single source of truth)
 export default {
   name: 'GuestIntroRenderer',
   props: {
@@ -48,29 +47,16 @@ export default {
   },
   setup(props) {
     const store = useMediaKitStore();
-    const podsData = usePodsData();
-    
-    // Computed property - ONLY from Pods (text content never in component JSON)
-    const displayIntroduction = computed(() => {
-      // Debug logging
-      if (window.gmkbDebug) {
-        console.log('[GuestIntroRenderer] Pods data (ONLY source):', {
-          podsIntroduction: podsData.introduction?.value,
-          isLoaded: podsData.isLoaded?.value
-        });
-      }
-      
-      // ONLY SOURCE: Pods introduction field
-      // Text content is NEVER stored in component JSON
-      return podsData.introduction?.value || '';
-    });
-    
+
+    // Data from component JSON state (single source of truth)
+    const displayIntroduction = computed(() => props.data?.introduction || props.props?.introduction || '');
+
     // Lifecycle
     onMounted(() => {
       // Event-driven approach - dispatch mount event
       if (store.components[props.componentId]) {
         console.log('GuestIntro component mounted:', props.componentId);
-        
+
         document.dispatchEvent(new CustomEvent('gmkb:vue-component-mounted', {
           detail: {
             type: 'guest-intro',
@@ -80,7 +66,7 @@ export default {
         }));
       }
     });
-    
+
     return {
       displayIntroduction
     };

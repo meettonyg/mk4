@@ -22,7 +22,6 @@
 
 <script>
 import { computed } from 'vue';
-import { usePodsData } from '../../src/composables/usePodsData';
 
 export default {
   name: 'CallToActionRenderer',
@@ -55,69 +54,41 @@ export default {
     }
   },
   setup(props) {
-    // COMPOSITION API: Access Pods data via composable
-    const podsData = usePodsData();
-    
-    // TITLE: Component data > default
-    const title = computed(() => {
-      return props.data?.title || 'Ready to Take Action?';
-    });
-    
-    // DESCRIPTION: Component data > Pods fallback > empty
-    const description = computed(() => {
-      // Priority 1: Component data
-      if (props.data?.description) {
-        return props.data.description;
-      }
-      
-      // Priority 2: Pods data
-      if (podsData.rawPodsData?.value) {
-        const rawData = podsData.rawPodsData.value;
-        return rawData.cta_description || '';
-      }
-      
-      // Priority 3: Empty
-      return '';
-    });
-    
-    // BUTTONS: Priority is component data > Pods fallback > empty array
+    // Data from component JSON state (single source of truth)
+    const title = computed(() => props.data?.title || props.props?.title || 'Ready to Take Action?');
+
+    const description = computed(() => props.data?.description || props.props?.description || '');
+
+    // Buttons from component data
     const buttons = computed(() => {
-      // Priority 1: Component data (user customization)
       if (props.data?.buttons && Array.isArray(props.data.buttons)) {
         return props.data.buttons;
       }
-      
-      // Priority 2: Pods data (from database)
-      if (podsData.rawPodsData?.value) {
-        const buttonsArray = [];
-        const rawData = podsData.rawPodsData.value;
-        
-        // Extract CTA buttons 1-5
-        for (let i = 1; i <= 5; i++) {
-          const textKey = `cta_button_${i}_text`;
-          const urlKey = `cta_button_${i}_url`;
-          const styleKey = `cta_button_${i}_style`;
-          const targetKey = `cta_button_${i}_target`;
-          
-          if (rawData[textKey] && rawData[urlKey]) {
-            buttonsArray.push({
-              text: rawData[textKey],
-              url: rawData[urlKey],
-              style: rawData[styleKey] || 'primary',
-              target: rawData[targetKey] || '_self'
-            });
-          }
-        }
-        
-        if (buttonsArray.length > 0) {
-          return buttonsArray;
+
+      // Build from individual button fields
+      const buttonsList = [];
+      for (let i = 1; i <= 5; i++) {
+        const textKey = `cta_button_${i}_text`;
+        const urlKey = `cta_button_${i}_url`;
+        const styleKey = `cta_button_${i}_style`;
+        const targetKey = `cta_button_${i}_target`;
+
+        const buttonText = props.data?.[textKey] || props.props?.[textKey];
+        const buttonUrl = props.data?.[urlKey] || props.props?.[urlKey];
+
+        if (buttonText && buttonUrl) {
+          buttonsList.push({
+            text: buttonText,
+            url: buttonUrl,
+            style: props.data?.[styleKey] || props.props?.[styleKey] || 'primary',
+            target: props.data?.[targetKey] || props.props?.[targetKey] || '_self'
+          });
         }
       }
-      
-      // Priority 3: Empty array (will show no buttons)
-      return [];
+
+      return buttonsList;
     });
-    
+
     return {
       title,
       description,

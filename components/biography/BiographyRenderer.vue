@@ -13,7 +13,6 @@
 
 <script>
 import { computed } from 'vue';
-import { usePodsData } from '../../src/composables/usePodsData';
 
 export default {
   name: 'BiographyRenderer',
@@ -46,36 +45,21 @@ export default {
     }
   },
   setup(props) {
-    // COMPOSITION API: Access Pods data via composable
-    const podsData = usePodsData();
-    
-    // BIOGRAPHY DATA: Priority is component data > Pods fallback > empty
-    // SIMPLIFIED: Biography component handles ONLY biography text
-    // Name, title, company are handled by Guest-Intro and Hero components
+    // Data from component JSON state (single source of truth)
     const biography = computed(() => {
-      // Priority 1: Component data (user customization)
-      if (props.data?.biography) {
-        return props.data.biography;
-      }
-      
-      // Priority 2: Pods data (from database)
-      if (podsData.biography?.value) {
-        return podsData.biography.value;
-      }
-      
-      // Priority 3: Empty (will show placeholder)
-      return '';
+      return props.data?.biography || props.props?.biography ||
+             props.data?.bio || props.props?.bio || '';
     });
-    
+
     // FORMATTED BIO: Convert plain text to HTML paragraphs if needed
     const formattedBio = computed(() => {
       if (!biography.value) return '';
-      
+
       // If already has HTML tags, return as-is
       if (biography.value.includes('<p>')) {
         return biography.value;
       }
-      
+
       // Convert newlines to paragraphs
       return biography.value
         .split('\n\n')
@@ -83,7 +67,7 @@ export default {
         .map(p => `<p>${p}</p>`)
         .join('');
     });
-    
+
     return {
       biography,
       formattedBio

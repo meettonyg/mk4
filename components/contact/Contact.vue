@@ -53,7 +53,6 @@
 
 <script setup>
 import { computed } from 'vue';
-import { usePodsData } from '../../src/composables/usePodsData';
 
 const props = defineProps({
   componentId: {
@@ -82,84 +81,22 @@ const props = defineProps({
   }
 });
 
-// PHASE 1 ARCHITECTURAL FIX: Self-contained data loading
-// Component loads own data via usePodsData() composable
-const { 
-  email: podsEmail, 
-  phone: podsPhone, 
-  website: podsWebsite,
-  address: podsAddress,
-  linkedin: podsLinkedin,
-  twitter: podsTwitter,
-  instagram: podsInstagram,
-  facebook: podsFacebook
-} = usePodsData();
-
-// Extract data from both data and props for compatibility with Pods fallback
+// Data from component JSON state (single source of truth)
 const title = computed(() => props.data?.title || props.props?.title || 'Get in Touch');
 const description = computed(() => props.data?.description || props.props?.description || '');
 
-// Contact fields with Pods fallback
-const email = computed(() => {
-  // 1. Try component saved data first
-  const savedEmail = props.data?.email || props.props?.email;
-  if (savedEmail) return savedEmail;
-  
-  // 2. FALLBACK: Use Pods data from store
-  if (podsEmail.value) return podsEmail.value;
-  
-  // 3. Empty state
-  return '';
-});
+// Contact fields - read from component data only
+const email = computed(() => props.data?.email || props.props?.email || '');
+const phone = computed(() => props.data?.phone || props.props?.phone || '');
+const website = computed(() => props.data?.website || props.props?.website || '');
+const address = computed(() => props.data?.address || props.props?.address || '');
 
-const phone = computed(() => {
-  const savedPhone = props.data?.phone || props.props?.phone;
-  if (savedPhone) return savedPhone;
-  if (podsPhone.value) return podsPhone.value;
-  return '';
-});
+// Social media fields - read from component data only
+const linkedin = computed(() => props.data?.linkedin || props.props?.linkedin || '');
+const twitter = computed(() => props.data?.twitter || props.props?.twitter || '');
+const instagram = computed(() => props.data?.instagram || props.props?.instagram || '');
+const facebook = computed(() => props.data?.facebook || props.props?.facebook || '');
 
-const website = computed(() => {
-  const savedWebsite = props.data?.website || props.props?.website;
-  if (savedWebsite) return savedWebsite;
-  if (podsWebsite.value) return podsWebsite.value;
-  return '';
-});
-
-const address = computed(() => {
-  const savedAddress = props.data?.address || props.props?.address;
-  if (savedAddress) return savedAddress;
-  if (podsAddress.value) return podsAddress.value;
-  return '';
-});
-// Social media fields with Pods fallback
-const linkedin = computed(() => {
-  const savedLinkedin = props.data?.linkedin || props.props?.linkedin;
-  if (savedLinkedin) return savedLinkedin;
-  if (podsLinkedin.value) return podsLinkedin.value;
-  return '';
-});
-
-const twitter = computed(() => {
-  const savedTwitter = props.data?.twitter || props.props?.twitter;
-  if (savedTwitter) return savedTwitter;
-  if (podsTwitter.value) return podsTwitter.value;
-  return '';
-});
-
-const instagram = computed(() => {
-  const savedInstagram = props.data?.instagram || props.props?.instagram;
-  if (savedInstagram) return savedInstagram;
-  if (podsInstagram.value) return podsInstagram.value;
-  return '';
-});
-
-const facebook = computed(() => {
-  const savedFacebook = props.data?.facebook || props.props?.facebook;
-  if (savedFacebook) return savedFacebook;
-  if (podsFacebook.value) return podsFacebook.value;
-  return '';
-});
 const layout = computed(() => props.data?.layout || props.props?.layout || 'centered');
 
 // Check if any social links exist

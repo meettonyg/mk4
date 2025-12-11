@@ -117,7 +117,6 @@
 
 <script>
 import { ref, computed } from 'vue';
-import { usePodsData } from '@/composables/usePodsData';
 import Lightbox from '@/vue/components/shared/Lightbox.vue';
 import CarouselGrid from '@/vue/components/shared/CarouselGrid.vue';
 
@@ -156,9 +155,6 @@ export default {
     CarouselGrid
   },
   setup(props) {
-    // COMPOSITION API: Access Pods data via composable
-    const { podsData } = usePodsData();
-    
     // Lightbox state
     const lightboxRef = ref(null);
     const currentLogoIndex = ref(0);
@@ -199,96 +195,13 @@ export default {
       };
     });
     
-    // ROOT FIX: LOGOS - Priority: component data > Pods data > empty array
+    // LOGOS: Read directly from component data
     const logos = computed(() => {
-      // Priority 1: Use component data if usePodsData is false or component has custom logos
-      if (props.data?.usePodsData === false && props.data?.logos && Array.isArray(props.data.logos)) {
-        return props.data.logos;
-      }
-      
-      // Priority 2: If usePodsData is true, check Pods for logos
-      if (props.data?.usePodsData !== false) {
-        const logosArray = [];
-        
-        // Personal brand logo (single field)
-        const personalLogo = podsData.value?.personal_brand_logo;
-        if (personalLogo) {
-          const logoUrl = typeof personalLogo === 'object' 
-            ? (personalLogo.guid || personalLogo.url) 
-            : personalLogo;
-          const logoName = typeof personalLogo === 'object' 
-            ? (personalLogo.post_title || 'Personal Brand')
-            : 'Personal Brand';
-          
-          if (logoUrl) {
-            logosArray.push({
-              url: logoUrl,
-              name: logoName,
-              alt: logoName,
-              type: 'brand',
-              source: 'pods'
-            });
-          }
-        }
-        
-        // Company logo (single field)
-        const companyLogo = podsData.value?.company_logo;
-        if (companyLogo) {
-          const logoUrl = typeof companyLogo === 'object' 
-            ? (companyLogo.guid || companyLogo.url) 
-            : companyLogo;
-          const logoName = typeof companyLogo === 'object' 
-            ? (companyLogo.post_title || 'Company')
-            : 'Company';
-          
-          if (logoUrl) {
-            logosArray.push({
-              url: logoUrl,
-              name: logoName,
-              alt: logoName,
-              type: 'company',
-              source: 'pods'
-            });
-          }
-        }
-        
-        // Featured logos (repeatable field - returns array)
-        const featuredLogos = podsData.value?.featured_logos;
-        if (featuredLogos && Array.isArray(featuredLogos) && featuredLogos.length > 0) {
-          featuredLogos.forEach((logo, index) => {
-            if (logo) {
-              const logoUrl = typeof logo === 'object' 
-                ? (logo.guid || logo.url) 
-                : logo;
-              const logoName = typeof logo === 'object' 
-                ? (logo.post_title || `Featured Logo ${index + 1}`)
-                : `Featured Logo ${index + 1}`;
-              
-              if (logoUrl) {
-                logosArray.push({
-                  url: logoUrl,
-                  name: logoName,
-                  alt: logoName,
-                  type: 'featured',
-                  source: 'pods'
-                });
-              }
-            }
-          });
-        }
-        
-        // If we found Pods logos, use them
-        if (logosArray.length > 0) {
-          return logosArray;
-        }
-      }
-      
-      // Priority 3: Fall back to component custom logos if no Pods data
+      // Return logos array from component data or empty array
       if (props.data?.logos && Array.isArray(props.data.logos)) {
         return props.data.logos;
       }
-      
-      // Priority 4: Empty array (show no logos)
+
       return [];
     });
     

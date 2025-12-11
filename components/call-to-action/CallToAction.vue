@@ -24,9 +24,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue';
-import { useMediaKitStore } from '../../src/stores/mediaKit';
-import { usePodsData } from '../../src/composables/usePodsData';
+import { computed } from 'vue';
 
 const props = defineProps({
   componentId: {
@@ -57,14 +55,7 @@ const props = defineProps({
 
 const emit = defineEmits(['cta-click']);
 
-// Store and composables
-const store = useMediaKitStore();
-const { email, phone, socialLinks } = usePodsData();
-
-// Extract website from socialLinks
-const website = computed(() => socialLinks.value?.website || '');
-
-// Extract data from both data and props for compatibility
+// Data from component JSON state (single source of truth)
 const title = computed(() => props.data?.title || props.props?.title || 'Ready to Take Action?');
 const description = computed(() => props.data?.description || props.props?.description || '');
 
@@ -72,13 +63,13 @@ const displayButtons = computed(() => {
   if (Array.isArray(props.data?.buttons) && props.data.buttons.length > 0) {
     return props.data.buttons;
   }
-  
+
   // Build from individual button fields
   const buttonsList = [];
-  
+
   const buttonText = props.data?.button_text || props.props?.button_text;
   const buttonUrl = props.data?.button_url || props.props?.button_url;
-  
+
   if (buttonText && buttonUrl) {
     buttonsList.push({
       text: buttonText,
@@ -87,10 +78,10 @@ const displayButtons = computed(() => {
       target: props.data?.button_target || props.props?.button_target || '_self'
     });
   }
-  
+
   const secondaryText = props.data?.secondary_button_text || props.props?.secondary_button_text;
   const secondaryUrl = props.data?.secondary_button_url || props.props?.secondary_button_url;
-  
+
   if (secondaryText && secondaryUrl) {
     buttonsList.push({
       text: secondaryText,
@@ -99,28 +90,7 @@ const displayButtons = computed(() => {
       target: props.data?.secondary_button_target || props.props?.secondary_button_target || '_self'
     });
   }
-  
-  // Use Pods data for contact buttons if no buttons configured
-  if (buttonsList.length === 0) {
-    if (email.value) {
-      buttonsList.push({
-        text: 'Contact Me',
-        url: `mailto:${email.value}`,
-        style: 'primary',
-        target: '_self'
-      });
-    }
-    
-    if (website.value) {
-      buttonsList.push({
-        text: 'Visit Website',
-        url: website.value,
-        style: 'secondary',
-        target: '_blank'
-      });
-    }
-  }
-  
+
   return buttonsList;
 });
 
@@ -157,20 +127,6 @@ const handleButtonClick = (button, event) => {
   }));
 };
 
-// Lifecycle
-onMounted(() => {
-  if (store.components[props.componentId]) {
-    document.dispatchEvent(new CustomEvent('gmkb:vue-component-mounted', {
-      detail: {
-        type: 'call-to-action',
-        id: props.componentId,
-        podsDataUsed: displayButtons.value.some(button => 
-          button.url.includes(email.value) || button.url === website.value
-        )
-      }
-    }));
-  }
-});
 </script>
 
 <style scoped>
