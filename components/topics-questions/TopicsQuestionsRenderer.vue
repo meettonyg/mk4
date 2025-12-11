@@ -68,7 +68,6 @@
 
 <script>
 import { computed } from 'vue';
-import { usePodsData } from '../../src/composables/usePodsData';
 
 export default {
   name: 'TopicsQuestionsRenderer',
@@ -101,9 +100,6 @@ export default {
     }
   },
   setup(props) {
-    // COMPOSITION API: Access Pods data via composable
-    const podsData = usePodsData();
-    
     // Display configuration from props.data or defaults
     const displayMode = computed(() => props.data?.displayMode || 'combined');
     const showModeSelector = computed(() => props.data?.showModeSelector !== false);
@@ -112,15 +108,15 @@ export default {
     const topicsTitle = computed(() => props.data?.topicsTitle || 'Topics of Expertise');
     const questionsTitle = computed(() => props.data?.questionsTitle || 'Interview Questions');
     
-    // TOPICS: Extract from component data or Pods
+    // TOPICS: Extract from component data
     const filteredTopics = computed(() => {
       const topics = [];
-      
-      // Priority 1: Check component data first
+
+      // Priority 1: Check component data array first
       if (props.data?.topics && Array.isArray(props.data.topics)) {
         return props.data.topics;
       }
-      
+
       // Priority 2: Extract individual topic fields from component data
       for (let i = 1; i <= 5; i++) {
         const topicKey = `topic_${i}`;
@@ -128,30 +124,19 @@ export default {
           topics.push(props.data[topicKey]);
         }
       }
-      
-      // Priority 3: Fallback to Pods data
-      if (topics.length === 0 && podsData.rawPodsData?.value) {
-        const rawData = podsData.rawPodsData.value;
-        for (let i = 1; i <= 5; i++) {
-          const topicKey = `topic_${i}`;
-          if (rawData[topicKey] && rawData[topicKey].trim()) {
-            topics.push(rawData[topicKey]);
-          }
-        }
-      }
-      
+
       return topics;
     });
     
-    // QUESTIONS: Extract from component data or Pods
+    // QUESTIONS: Extract from component data
     const filteredQuestions = computed(() => {
       const questions = [];
-      
-      // Priority 1: Check component data first
+
+      // Priority 1: Check component data array first
       if (props.data?.questions && Array.isArray(props.data.questions)) {
         return props.data.questions;
       }
-      
+
       // Priority 2: Extract individual question fields from component data
       for (let i = 1; i <= 25; i++) {
         const questionKey = `question_${i}`;
@@ -159,18 +144,7 @@ export default {
           questions.push(props.data[questionKey]);
         }
       }
-      
-      // Priority 3: Fallback to Pods data
-      if (questions.length === 0 && podsData.rawPodsData?.value) {
-        const rawData = podsData.rawPodsData.value;
-        for (let i = 1; i <= 25; i++) {
-          const questionKey = `question_${i}`;
-          if (rawData[questionKey] && rawData[questionKey].trim()) {
-            questions.push(rawData[questionKey]);
-          }
-        }
-      }
-      
+
       return questions;
     });
     

@@ -22,7 +22,6 @@
 
 <script setup>
 import { computed } from 'vue';
-import { usePodsData } from '@composables/usePodsData';
 
 const props = defineProps({
   // STANDARD INTERFACE: All components accept the same props structure
@@ -53,29 +52,8 @@ const props = defineProps({
   }
 });
 
-const { profilePhoto, allData: podsData } = usePodsData();
-
-// SINGLE FIELD PATTERN: Simple photo object or null
+// Read photo directly from component data
 const photo = computed(() => {
-  // Check if using Pods data
-  if (props.data?.usePodsData && profilePhoto.value) {
-    const podsPhoto = profilePhoto.value;
-    
-    // Handle both simple URL and complex object formats
-    return {
-      url: typeof podsPhoto === 'object' 
-        ? (podsPhoto.guid || podsPhoto.url || podsPhoto.ID) 
-        : podsPhoto,
-      caption: typeof podsPhoto === 'object' 
-        ? (podsPhoto.post_excerpt || podsPhoto.caption || '') 
-        : '',
-      alt: typeof podsPhoto === 'object' 
-        ? (podsPhoto.post_title || 'Profile Photo') 
-        : 'Profile Photo'
-    };
-  }
-  
-  // Fallback to custom photo
   return props.data?.photo || null;
 });
 
@@ -102,8 +80,7 @@ const sanitizedPhotoUrl = computed(() => {
 const componentClasses = computed(() => ({
   'has-photo': !!photo.value,
   'no-photo': !photo.value,
-  'pods-source': props.data?.usePodsData && !!profilePhoto.value,
-  'custom-source': !props.data?.usePodsData || !profilePhoto.value
+  'custom-source': true
 }));
 
 // ROOT FIX: Apply shape and size settings from component data

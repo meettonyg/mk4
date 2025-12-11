@@ -38,18 +38,15 @@
         
         <section class="editor-section">
           <h4>Social Networks</h4>
-          <p class="editor-note">
-            📝 These URLs are saved globally and will update across all your media kits.
-          </p>
           
           <div class="social-network" v-for="(network, key) in socialNetworks" :key="key">
             <div class="network-header">
               <span class="network-icon">{{ network.icon }}</span>
               <span class="network-name">{{ network.name }}</span>
             </div>
-            <input 
-              v-model="socialUrls[key]" 
-              @input="updatePodsField(key)"
+            <input
+              v-model="socialUrls[key]"
+              @input="updateSocialUrl(key)"
               :placeholder="network.placeholder"
               type="url"
             />
@@ -78,7 +75,6 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
-import { usePodsData } from '../../src/composables/usePodsData';
 import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 
 const props = defineProps({
@@ -91,7 +87,6 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 const store = useMediaKitStore();
-const { socialLinks: podsSocialLinks, updatePodsField: updatePodsFieldComposable } = usePodsData();
 
 // Active tab state
 const activeTab = ref('content');
@@ -106,7 +101,7 @@ const socialNetworks = {
   pinterest: { name: 'Pinterest', icon: '📌', placeholder: 'https://pinterest.com/username' }
 };
 
-// ARCHITECTURE FIX: Separate content (Pods) from display settings (component JSON)
+// Data from component JSON state (single source of truth)
 const socialUrls = ref({
   facebook: '',
   twitter: '',
@@ -126,68 +121,65 @@ const displaySettings = ref({
 // Load component data
 const loadComponentData = () => {
   const component = store.components[props.componentId];
-  
-  // Load display settings from component JSON
+
   if (component && component.data) {
     displaySettings.value = {
       title: component.data.title || 'Connect With Me',
       description: component.data.description || '',
       showLabels: component.data.showLabels !== undefined ? component.data.showLabels : false
     };
-  }
-  
-  // Load URLs from Pods (single source of truth)
-  if (podsSocialLinks.value) {
+
+    // Load social URLs from component data
     socialUrls.value = {
-      facebook: podsSocialLinks.value.facebook || '',
-      twitter: podsSocialLinks.value.twitter || '',
-      linkedin: podsSocialLinks.value.linkedin || '',
-      instagram: podsSocialLinks.value.instagram || '',
-      youtube: podsSocialLinks.value.youtube || '',
-      tiktok: podsSocialLinks.value.tiktok || '',
-      pinterest: podsSocialLinks.value.pinterest || ''
+      facebook: component.data.facebook || '',
+      twitter: component.data.twitter || '',
+      linkedin: component.data.linkedin || '',
+      instagram: component.data.instagram || '',
+      youtube: component.data.youtube || '',
+      tiktok: component.data.tiktok || '',
+      pinterest: component.data.pinterest || ''
     };
   }
 };
 
 watch(() => props.componentId, loadComponentData, { immediate: true });
-watch(() => podsSocialLinks.value, loadComponentData);
 
 onMounted(() => {
   loadComponentData();
 });
 
-// Update Pods field (content)
-let podsUpdateTimeout = null;
-const updatePodsField = (fieldKey) => {
-  if (podsUpdateTimeout) clearTimeout(podsUpdateTimeout);
-  
-  podsUpdateTimeout = setTimeout(() => {
-    // ARCHITECTURE FIX: Map UI keys to actual Pods field names
-    const fieldMap = {
-      'facebook': '1_facebook',
-      'twitter': '1_twitter',
-      'instagram': '1_instagram',
-      'linkedin': '1_linkedin',
-      'youtube': 'guest_youtube',
-      'tiktok': '1_tiktok',
-      'pinterest': '1_pinterest'
-    };
-    
-    const podsFieldName = fieldMap[fieldKey] || fieldKey;
-    updatePodsFieldComposable(podsFieldName, socialUrls.value[fieldKey]);
-    console.log(`Updated Pods field: ${podsFieldName} = ${socialUrls.value[fieldKey]}`);
-  }, 500);
+// Update social URL in component data
+let urlUpdateTimeout = null;
+const updateSocialUrl = (fieldKey) => {
+  if (urlUpdateTimeout) clearTimeout(urlUpdateTimeout);
+
+  urlUpdateTimeout = setTimeout(() => {
+    const component = store.components[props.componentId];
+    store.updateComponent(props.componentId, {
+      data: {
+        ...component.data,
+        ...displaySettings.value,
+        ...socialUrls.value
+      }
+    });
+    store.isDirty = true;
+    console.log(`Updated social URL: ${fieldKey} = ${socialUrls.value[fieldKey]}`);
+  }, 300);
 };
 
-// Update display settings (styling/layout)
+// Update display settings
 let displayUpdateTimeout = null;
 const updateDisplaySettings = () => {
   if (displayUpdateTimeout) clearTimeout(displayUpdateTimeout);
-  
+
   displayUpdateTimeout = setTimeout(() => {
+    const component = store.components[props.componentId];
     store.updateComponent(props.componentId, {
-      data: { ...displaySettings.value }
+      data: {
+        ...component.data,
+        ...displaySettings.value,
+        ...socialUrls.value
+      }
     });
     store.isDirty = true;
     console.log('Updated display settings:', displaySettings.value);

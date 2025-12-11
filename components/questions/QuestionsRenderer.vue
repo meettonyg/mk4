@@ -15,7 +15,6 @@
 
 <script>
 import { computed } from 'vue';
-import { usePodsData } from '../../src/composables/usePodsData';
 
 export default {
   name: 'QuestionsRenderer',
@@ -48,47 +47,31 @@ export default {
     }
   },
   setup(props) {
-    // COMPOSITION API: Access Pods data via composable
-    const podsData = usePodsData();
-    
-    // TITLE: Component data > default
-    const title = computed(() => {
-      return props.data?.title || 'Frequently Asked Questions';
-    });
-    
-    // QUESTIONS: Priority is component data > Pods fallback > empty array
+    // Data from component JSON state (single source of truth)
+    const title = computed(() => props.data?.title || props.props?.title || 'Frequently Asked Questions');
+
+    // Questions from component data
     const questions = computed(() => {
-      // Priority 1: Component data (user customization)
       if (props.data?.questions && Array.isArray(props.data.questions)) {
         return props.data.questions;
       }
-      
-      // Priority 2: Pods data (from database)
-      // Pods stores questions as question_1, question_2, etc.
-      if (podsData.rawPodsData?.value) {
-        const podQuestions = [];
-        const rawData = podsData.rawPodsData.value;
-        
-        // Extract questions 1-25
-        for (let i = 1; i <= 25; i++) {
-          const questionKey = `question_${i}`;
-          if (rawData[questionKey]) {
-            podQuestions.push({
-              question: rawData[questionKey],
-              answer: rawData[`question_${i}_answer`] || ''
-            });
-          }
-        }
-        
-        if (podQuestions.length > 0) {
-          return podQuestions;
+
+      // Build from individual question fields
+      const questionsList = [];
+      for (let i = 1; i <= 25; i++) {
+        const questionKey = `question_${i}`;
+        const questionValue = props.data?.[questionKey] || props.props?.[questionKey];
+        if (questionValue) {
+          questionsList.push({
+            question: questionValue,
+            answer: props.data?.[`question_${i}_answer`] || props.props?.[`question_${i}_answer`] || ''
+          });
         }
       }
-      
-      // Priority 3: Empty array (will show no questions)
-      return [];
+
+      return questionsList;
     });
-    
+
     return {
       title,
       questions

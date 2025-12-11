@@ -60,9 +60,9 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/Base_Component_Data_Service.php'))
     require_once GUESTIFY_PLUGIN_DIR . 'system/Base_Component_Data_Service.php';
 }
 
-// PHASE 1 ARCHITECTURAL FIX: Centralized Pods enrichment REMOVED
-// Components now self-contained - load data via usePodsData() composable
-// Archived: _archive/PHASE1-ENRICHMENT-REMOVAL-2025-10-27/component-pods-enrichment.php
+// ARCHITECTURE: Components read data from props.data (JSON state)
+// Pods circular sync removed - JSON state is single source of truth
+// See: _archive/PODS-SYNC-REMOVAL-2025-12-11/ for removed Pods integration code
 
 // ROOT FIX: Include component data sanitization (prevent database bloat)
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/component-data-sanitization.php')) {

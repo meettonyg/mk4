@@ -39,38 +39,8 @@
         <section class="editor-section">
           <h4>Logo Source</h4>
           
-          <!-- Pods Data Toggle -->
-          <div v-if="hasPodsLogos" class="pods-data-toggle">
-            <label class="toggle-label">
-              <input 
-                type="checkbox" 
-                v-model="localData.usePodsData" 
-                @change="updateComponent"
-              />
-              <span>Use logos from Pods ({{ podsLogosCount }} logo{{ podsLogosCount !== 1 ? 's' : '' }} available)</span>
-            </label>
-          </div>
-
-          <!-- Pods Logos Display -->
-          <div v-if="localData.usePodsData && hasPodsLogos" class="pods-logos-display">
-            <div class="field-group">
-              <label>Logos from Pods</label>
-              <div class="pods-logos-grid">
-                <div 
-                  v-for="(logo, index) in podsLogos" 
-                  :key="index"
-                  class="pods-logo-item"
-                >
-                  <img :src="logo.url" :alt="logo.name" />
-                  <span class="logo-label">{{ logo.name }}</span>
-                </div>
-              </div>
-              <p class="field-hint">These logos are loaded from your guest profile. Uncheck above to add custom logos.</p>
-            </div>
-          </div>
-
           <!-- Custom Logos Section -->
-          <div v-if="!localData.usePodsData || !hasPodsLogos">
+          <div>
             <div class="field-group">
               <MediaUploader
                 ref="mediaUploaderRef"
@@ -396,7 +366,6 @@
 import { ref, watch, computed } from 'vue';
 import draggable from 'vuedraggable';  // ✅ NEW: Drag-and-drop support
 import { useMediaKitStore } from '@/stores/mediaKit';
-import { usePodsData } from '@/composables/usePodsData';
 import { ToastService } from '@/services/ToastService';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 import ImageCropper from '@/vue/components/shared/ImageCropper.vue';
@@ -412,9 +381,6 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 const store = useMediaKitStore();
-
-// Load Pods data
-const { podsData } = usePodsData();
 
 // Active tab state
 const activeTab = ref('content');
@@ -446,102 +412,11 @@ const localData = ref({
     arrows: true,
     dots: true
   },
-  usePodsData: true // Default to using Pods data if available
+  usePodsData: false
 });
 
 // ✅ BLOAT-FREE: Validation errors as local component state (NOT saved to database)
 const validationErrors = ref(new Map()); // Map<logoIndex, errorMessage>
-
-// Get logos from Pods
-// CRITICAL: Single fields return ONE attachment, repeatable fields return ARRAY
-const podsLogos = computed(() => {
-  const logos = [];
-  
-  // ===== SINGLE FIELDS (return one attachment object/ID) =====
-  
-  // Add personal brand logo (SINGLE field)
-  const personalLogo = podsData.value?.personal_brand_logo;
-  if (personalLogo) {
-    // Single field returns ONE attachment object or ID (not an array)
-    const logoUrl = typeof personalLogo === 'object' 
-      ? (personalLogo.guid || personalLogo.url) 
-      : personalLogo;
-    const logoName = typeof personalLogo === 'object' 
-      ? (personalLogo.post_title || 'Personal Brand')
-      : 'Personal Brand';
-    
-    if (logoUrl) {
-      logos.push({
-        url: logoUrl,
-        name: logoName,
-        type: 'brand',
-        source: 'pods'
-      });
-    }
-  }
-  
-  // Add company logo (SINGLE field)
-  const companyLogo = podsData.value?.company_logo;
-  if (companyLogo) {
-    // Single field returns ONE attachment object or ID (not an array)
-    const logoUrl = typeof companyLogo === 'object' 
-      ? (companyLogo.guid || companyLogo.url) 
-      : companyLogo;
-    const logoName = typeof companyLogo === 'object' 
-      ? (companyLogo.post_title || 'Company')
-      : 'Company';
-    
-    if (logoUrl) {
-      logos.push({
-        url: logoUrl,
-        name: logoName,
-        type: 'company',
-        source: 'pods'
-      });
-    }
-  }
-  
-  // ===== REPEATABLE FIELDS (return array of attachments) =====
-  
-  // Add featured logos (REPEATABLE field - returns ARRAY of attachments)
-  const featuredLogos = podsData.value?.featured_logos;
-  if (featuredLogos && Array.isArray(featuredLogos) && featuredLogos.length > 0) {
-    // Repeatable field returns an ARRAY where each item is an attachment object or ID
-    featuredLogos.forEach((logo, index) => {
-      if (logo) {
-        // Each item in the array is one attachment
-        const logoUrl = typeof logo === 'object' 
-          ? (logo.guid || logo.url) 
-          : logo;
-        const logoName = typeof logo === 'object' 
-          ? (logo.post_title || `Featured Logo ${index + 1}`)
-          : `Featured Logo ${index + 1}`;
-        
-        if (logoUrl) {
-          logos.push({
-            url: logoUrl,
-            name: logoName,
-            type: 'featured',
-            source: 'pods'
-          });
-        }
-      }
-    });
-  }
-  
-  return logos;
-});
-
-const podsLogosCount = computed(() => podsLogos.value.length);
-const hasPodsLogos = computed(() => podsLogosCount.value > 0);
-
-// Determine effective logos (Pods or custom)
-const effectiveLogos = computed(() => {
-  if (localData.value.usePodsData && hasPodsLogos.value) {
-    return podsLogos.value;
-  }
-  return localData.value.logos || [];
-});
 
 // Load component data
 const loadComponentData = () => {
@@ -566,24 +441,12 @@ const loadComponentData = () => {
         arrows: true,
         dots: true
       },
-      usePodsData: component.data.usePodsData !== false // Default to true
+      usePodsData: false
     };
-  }
-  
-  // If no custom logos and Pods has data, use Pods
-  if ((!localData.value.logos || localData.value.logos.length === 0) && hasPodsLogos.value) {
-    localData.value.usePodsData = true;
   }
 };
 
 watch(() => props.componentId, loadComponentData, { immediate: true });
-
-watch(podsLogos, () => {
-  // If using Pods data and Pods value changes, trigger update
-  if (localData.value.usePodsData) {
-    updateComponent();
-  }
-}, { deep: true });
 
 // ✅ PHASE 1A: Toggle expansion state for a logo item
 const isExpanded = (index) => {
@@ -716,7 +579,7 @@ const updateComponent = () => {
   
   updateTimeout = setTimeout(() => {
     // Clean logos data - only save meaningful fields
-    const cleanLogos = (localData.value.usePodsData && hasPodsLogos.value ? effectiveLogos.value : localData.value.logos).map(logo => {
+    const cleanLogos = localData.value.logos.map(logo => {
       const clean = {
         url: logo.url,
         name: logo.name,
@@ -739,8 +602,7 @@ const updateComponent = () => {
       logos: cleanLogos,
       columns: localData.value.columns,
       logoNameStyle: localData.value.logoNameStyle,
-      layoutStyle: localData.value.layoutStyle, // ✅ PHASE 1B: Save layout style
-      usePodsData: localData.value.usePodsData
+      layoutStyle: localData.value.layoutStyle // ✅ PHASE 1B: Save layout style
     };
     
     // ✅ PHASE 1B: NO BLOAT: Only save carouselSettings when layoutStyle is 'carousel'

@@ -19,7 +19,6 @@
 
 <script>
 import { computed } from 'vue';
-import { usePodsData } from '../../src/composables/usePodsData';
 
 export default {
   name: 'StatsRenderer',
@@ -52,57 +51,18 @@ export default {
     }
   },
   setup(props) {
-    // COMPOSITION API: Access Pods data via composable
-    const podsData = usePodsData();
-    
-    // TITLE: Component data > default
-    const title = computed(() => {
-      return props.data?.title || 'By The Numbers';
-    });
-    
-    // STATS: Priority is component data > Pods fallback > empty array
+    // Data from component JSON state (single source of truth)
+    const title = computed(() => props.data?.title || props.props?.title || 'By The Numbers');
+
+    // Stats from component data
     const stats = computed(() => {
-      // Priority 1: Component data (user customization)
       if (props.data?.stats && Array.isArray(props.data.stats)) {
         return props.data.stats;
       }
-      
-      // Priority 2: Pods data (from database)
-      // Extract stats from Pods stats object
-      if (podsData.stats?.value) {
-        const statsData = podsData.stats.value;
-        const statsArray = [];
-        
-        // Common stat fields to extract
-        const statFields = [
-          { key: 'years_experience', label: 'Years Experience' },
-          { key: 'presentations', label: 'Presentations' },
-          { key: 'audiences', label: 'Audience Members' },
-          { key: 'events', label: 'Events' },
-          { key: 'countries', label: 'Countries' },
-          { key: 'episodes', label: 'Podcast Episodes' },
-          { key: 'downloads', label: 'Downloads' }
-        ];
-        
-        // Extract each stat from Pods
-        statFields.forEach(({ key, label }) => {
-          if (statsData[key]) {
-            statsArray.push({
-              value: statsData[key],
-              label: label
-            });
-          }
-        });
-        
-        if (statsArray.length > 0) {
-          return statsArray;
-        }
-      }
-      
-      // Priority 3: Empty array (will show no stats)
+
       return [];
     });
-    
+
     return {
       title,
       stats

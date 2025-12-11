@@ -127,7 +127,6 @@
 
 <script>
 import { ref, computed } from 'vue';
-import { usePodsData } from '@/composables/usePodsData';
 import Lightbox from '@/vue/components/shared/Lightbox.vue';
 import MasonryGrid from '@/vue/components/shared/MasonryGrid.vue'; // ✅ NEW
 import CarouselGrid from '@/vue/components/shared/CarouselGrid.vue'; // ✅ NEW
@@ -168,9 +167,6 @@ export default {
     CarouselGrid // ✅ NEW
   },
   setup(props) {
-    // COMPOSITION API: Access Pods data via composable
-    const { podsData } = usePodsData();
-    
     // Lightbox state
     const lightboxRef = ref(null);
     const currentPhotoIndex = ref(0);
@@ -215,54 +211,13 @@ export default {
       };
     });
     
-    // ROOT FIX: PHOTOS - Priority: component data > Pods data > empty array
+    // PHOTOS: Read directly from component data
     const photos = computed(() => {
-      // Priority 1: Use component data if usePodsData is false or component has custom photos
-      if (props.data?.usePodsData === false && props.data?.photos && Array.isArray(props.data.photos)) {
-        return props.data.photos;
-      }
-      
-      // Priority 2: If usePodsData is true, check Pods for photos
-      if (props.data?.usePodsData !== false) {
-        const photosArray = [];
-        
-        // Gallery photos (repeatable field - returns array)
-        const galleryPhotos = podsData.value?.gallery_photos;
-        if (galleryPhotos && Array.isArray(galleryPhotos) && galleryPhotos.length > 0) {
-          galleryPhotos.forEach((photo, index) => {
-            if (photo) {
-              const photoUrl = typeof photo === 'object' 
-                ? (photo.guid || photo.url) 
-                : photo;
-              const photoCaption = typeof photo === 'object' 
-                ? (photo.post_excerpt || photo.caption || '')
-                : '';
-              
-              if (photoUrl) {
-                photosArray.push({
-                  url: photoUrl,
-                  caption: photoCaption,
-                  alt: photoCaption || `Photo ${index + 1}`,
-                  type: 'gallery',
-                  source: 'pods'
-                });
-              }
-            }
-          });
-        }
-        
-        // If we found Pods photos, use them
-        if (photosArray.length > 0) {
-          return photosArray;
-        }
-      }
-      
-      // Priority 3: Fall back to component custom photos if no Pods data
+      // Return photos array from component data or empty array
       if (props.data?.photos && Array.isArray(props.data.photos)) {
         return props.data.photos;
       }
-      
-      // Priority 4: Empty array (show no photos)
+
       return [];
     });
     

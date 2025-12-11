@@ -12,34 +12,8 @@
         <section class="editor-section">
           <h4>Photo Source</h4>
           
-          <!-- Pods Data Toggle -->
-          <div v-if="hasPodsPhoto" class="pods-data-toggle">
-            <label class="toggle-label">
-              <input 
-                type="checkbox" 
-                v-model="localData.usePodsData" 
-                @change="updateComponent"
-              />
-              <span>Use profile photo from Pods</span>
-            </label>
-          </div>
-
-          <!-- Pods Photo Display -->
-          <div v-if="localData.usePodsData && podsPhoto" class="pods-photo-display">
-            <div class="field-group">
-              <label>Photo from Pods</label>
-              <div class="pods-photo-preview">
-                <img :src="podsPhoto.url" :alt="podsPhoto.alt || 'Profile Photo'" />
-                <div class="photo-info">
-                  <p class="photo-caption" v-if="podsPhoto.caption">{{ podsPhoto.caption }}</p>
-                  <p class="field-hint">Loaded from your guest profile</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <!-- Modern Photo Upload (jQuery-Free) -->
-          <div v-if="!localData.usePodsData || !hasPodsPhoto">
+          <div>
             <!-- Use Modern Media Library Component -->
             <ModernMediaLibrary
               button-text="Upload Photo"
@@ -117,7 +91,6 @@
 <script setup>
 import { ref, watch, computed } from 'vue';
 import { useMediaKitStore } from '@/stores/mediaKit';
-import { usePodsData } from '@composables/usePodsData';
 import { usePodsFieldUpdate } from '@composables/usePodsFieldUpdate';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 import ModernMediaLibrary from '@/vue/components/ModernMediaLibrary.vue';
@@ -132,7 +105,6 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 const store = useMediaKitStore();
-const { profilePhoto, allData: podsData } = usePodsData();
 const { updatePodsField, isUpdating: isSavingToPods } = usePodsFieldUpdate();
 
 // Active tab state
@@ -144,37 +116,9 @@ const localData = ref({
     caption: '', 
     alt: 'Profile Photo' 
   },
-  usePodsData: true,
+  usePodsData: false,
   shape: 'circle',
   size: 'medium'
-});
-
-// Get photo from Pods
-const podsPhoto = computed(() => {
-  const photo = profilePhoto.value;
-  if (!photo) return null;
-  
-  return {
-    url: typeof photo === 'object' 
-      ? (photo.guid || photo.url || photo.ID) 
-      : photo,
-    caption: typeof photo === 'object' 
-      ? (photo.post_excerpt || photo.caption || '') 
-      : '',
-    alt: typeof photo === 'object' 
-      ? (photo.post_title || 'Profile Photo') 
-      : 'Profile Photo'
-  };
-});
-
-const hasPodsPhoto = computed(() => !!podsPhoto.value);
-
-// Determine effective photo
-const effectivePhoto = computed(() => {
-  if (localData.value.usePodsData && hasPodsPhoto.value) {
-    return podsPhoto.value;
-  }
-  return localData.value.photo;
 });
 
 // Load component data
@@ -183,26 +127,14 @@ const loadComponentData = () => {
   if (component?.data) {
     localData.value = {
       photo: component.data.photo || { url: '', caption: '', alt: 'Profile Photo' },
-      usePodsData: component.data.usePodsData !== false,
+      usePodsData: false,
       shape: component.data.shape || 'circle',
       size: component.data.size || 'medium'
     };
   }
-  
-  // If no custom photo and Pods has data, use Pods
-  if ((!localData.value.photo.url || localData.value.photo.url === '') && hasPodsPhoto.value) {
-    localData.value.usePodsData = true;
-  }
 };
 
 watch(() => props.componentId, loadComponentData, { immediate: true });
-
-watch(podsPhoto, () => {
-  // If using Pods data and Pods value changes, trigger update
-  if (localData.value.usePodsData) {
-    updateComponent();
-  }
-}, { deep: true });
 
 // Update component with debouncing
 let updateTimeout = null;
@@ -211,8 +143,8 @@ const updateComponent = () => {
   
   updateTimeout = setTimeout(() => {
     const dataToSave = {
-      photo: effectivePhoto.value,
-      usePodsData: localData.value.usePodsData,
+      photo: localData.value.photo,
+      usePodsData: false,
       shape: localData.value.shape,
       size: localData.value.size
     };
@@ -236,9 +168,6 @@ const handlePhotoSelected = async (attachment) => {
     id: attachment.id
   };
   
-  // Disable Pods data since we have a custom photo
-  localData.value.usePodsData = false;
-  
   // Save to Pods if we have an ID
   if (attachment.id) {
     try {
@@ -246,15 +175,13 @@ const handlePhotoSelected = async (attachment) => {
       if (postId) {
         await updatePodsField(postId, 'profile_photo', attachment.id);
         console.log('✅ Profile Photo: Saved to Pods');
-        // Re-enable Pods data since it's now saved there
-        localData.value.usePodsData = true;
       }
     } catch (error) {
       console.error('Failed to save to Pods:', error);
       // Keep using custom photo if Pods save fails
     }
   }
-  
+
   // Update component
   updateComponent();
 };

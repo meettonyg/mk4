@@ -86,7 +86,6 @@
 <script setup>
 import { ref, watch, computed } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
-import { usePodsData } from '../../src/composables/usePodsData';
 import BaseStylePanel from '../../src/vue/components/sidebar/editors/BaseStylePanel.vue';
 import BaseAdvancedPanel from '../../src/vue/components/sidebar/editors/BaseAdvancedPanel.vue';
 import { AiModal, GuestIntroGenerator } from '../../src/vue/components/ai';
@@ -99,7 +98,6 @@ const props = defineProps({
 });
 
 const store = useMediaKitStore();
-const podsData = usePodsData();
 
 // Tab state
 const activeTab = ref('content');
@@ -110,54 +108,45 @@ const tabs = [
   { id: 'advanced', label: 'Advanced' }
 ];
 
-// ARCHITECTURE FIX: Initialize with Pods data (single source of truth)
+// Data from component JSON state (single source of truth)
 const localData = ref({
   introduction: ''
 });
 
-// Load component data - text from Pods ONLY
+// Load component data
 const loadComponentData = () => {
-  // ALWAYS load text from Pods (single source of truth)
-  console.log('[GuestIntroEditor] Loading Pods data:', {
-    introduction: podsData.introduction?.value,
-    isLoaded: podsData.isLoaded?.value,
-    allData: podsData.allData?.value
-  });
-  
+  const component = store.components[props.componentId];
+
   localData.value = {
-    introduction: podsData.introduction?.value || ''
+    introduction: component?.data?.introduction || component?.props?.introduction || ''
   };
 };
 
-// Check if we're displaying Pods data (always true for text content)
+// Check if we have introduction data
 const isUsingPodsData = computed(() => {
-  return !!podsData.introduction?.value;
+  return !!localData.value.introduction;
 });
 
 watch(() => props.componentId, loadComponentData, { immediate: true });
 
-// Watch for Pods data changes to update local data
-watch(() => podsData.introduction?.value, (newValue) => {
-  console.log('[GuestIntroEditor] Pods introduction changed:', newValue);
-  localData.value.introduction = newValue || '';
-});
-
-// ARCHITECTURE FIX: Update Pods field using the same method as Social component
+// Update component data
 let updateTimeout = null;
 const updatePodsField = async () => {
   if (updateTimeout) clearTimeout(updateTimeout);
-  
+
   updateTimeout = setTimeout(async () => {
     try {
-      console.log('[GuestIntroEditor] Updating Pods field: introduction =', localData.value.introduction);
-      
-      // Use the composable's updatePodsField method
-      await podsData.updatePodsField('introduction', localData.value.introduction);
-      
-      console.log('✅ Saved introduction to Pods field');
+      console.log('[GuestIntroEditor] Updating component data: introduction =', localData.value.introduction);
+
+      // Update component data in store
+      store.updateComponentData(props.componentId, {
+        introduction: localData.value.introduction
+      });
+
+      console.log('✅ Saved introduction to component data');
       store.isDirty = true;
     } catch (error) {
-      console.error('❌ Error saving to Pods:', error);
+      console.error('❌ Error saving component data:', error);
     }
   }, 500); // Debounce for better UX
 };

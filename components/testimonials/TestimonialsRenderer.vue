@@ -23,7 +23,6 @@
 
 <script>
 import { computed } from 'vue';
-import { usePodsData } from '../../src/composables/usePodsData';
 
 export default {
   name: 'TestimonialsRenderer',
@@ -56,51 +55,35 @@ export default {
     }
   },
   setup(props) {
-    // COMPOSITION API: Access Pods data via composable
-    const podsData = usePodsData();
-    
-    // TITLE: Component data > default
-    const title = computed(() => {
-      return props.data?.title || 'What People Say';
-    });
-    
-    // TESTIMONIALS: Priority is component data > Pods fallback > empty array
+    // Data from component JSON state (single source of truth)
+    const title = computed(() => props.data?.title || props.props?.title || 'What People Say');
+
+    // Testimonials from component data
     const testimonials = computed(() => {
-      // Priority 1: Component data (user customization)
       if (props.data?.testimonials && Array.isArray(props.data.testimonials)) {
         return props.data.testimonials;
       }
-      
-      // Priority 2: Pods data (from database)
-      // Extract testimonials from Pods rawPodsData
-      if (podsData.rawPodsData?.value) {
-        const testimonialsArray = [];
-        const rawData = podsData.rawPodsData.value;
-        
-        // Extract testimonials 1-10
-        for (let i = 1; i <= 10; i++) {
-          const textKey = `testimonial_${i}_text`;
-          const authorKey = `testimonial_${i}_author`;
-          const titleKey = `testimonial_${i}_title`;
-          
-          if (rawData[textKey] && rawData[textKey].trim()) {
-            testimonialsArray.push({
-              text: rawData[textKey],
-              author: rawData[authorKey] || 'Anonymous',
-              title: rawData[titleKey] || ''
-            });
-          }
-        }
-        
-        if (testimonialsArray.length > 0) {
-          return testimonialsArray;
+
+      // Build from individual testimonial fields
+      const testimonialsList = [];
+      for (let i = 1; i <= 10; i++) {
+        const textKey = `testimonial_${i}_text`;
+        const authorKey = `testimonial_${i}_author`;
+        const titleKey = `testimonial_${i}_title`;
+
+        const testimonialText = props.data?.[textKey] || props.props?.[textKey];
+        if (testimonialText) {
+          testimonialsList.push({
+            text: testimonialText,
+            author: props.data?.[authorKey] || props.props?.[authorKey] || 'Anonymous',
+            title: props.data?.[titleKey] || props.props?.[titleKey] || ''
+          });
         }
       }
-      
-      // Priority 3: Empty array (will show no testimonials)
-      return [];
+
+      return testimonialsList;
     });
-    
+
     return {
       title,
       testimonials

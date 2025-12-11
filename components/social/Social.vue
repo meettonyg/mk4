@@ -25,9 +25,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue';
-import { useMediaKitStore } from '../../src/stores/mediaKit';
-import { usePodsData } from '../../src/composables/usePodsData';
+import { computed } from 'vue';
 
 const props = defineProps({
   componentId: {
@@ -56,11 +54,7 @@ const props = defineProps({
   }
 });
 
-// Store and composables
-const store = useMediaKitStore();
-const { socialLinks: podsSocialLinks } = usePodsData();
-
-// ARCHITECTURE FIX: Display settings from component JSON only
+// Data from component JSON state (single source of truth)
 const title = computed(() => props.data?.title || props.props?.title || 'Connect With Me');
 const description = computed(() => props.data?.description || props.props?.description || '');
 const showLabels = computed(() => {
@@ -68,25 +62,21 @@ const showLabels = computed(() => {
   return val !== false;
 });
 
-// ARCHITECTURE FIX: Content (URLs) from Pods only - single source of truth
+// Social links from component data
 const socialLinks = computed(() => {
   const links = [];
-  
-  // Read from Pods data ONLY - this is the single source of truth
-  if (!podsSocialLinks.value) {
-    return links;
-  }
-  
+  const data = props.data || props.props || {};
+
   const socialData = {
-    facebook: podsSocialLinks.value.facebook,
-    twitter: podsSocialLinks.value.twitter,
-    linkedin: podsSocialLinks.value.linkedin,
-    instagram: podsSocialLinks.value.instagram,
-    youtube: podsSocialLinks.value.youtube,
-    tiktok: podsSocialLinks.value.tiktok,
-    pinterest: podsSocialLinks.value.pinterest
+    facebook: data.facebook,
+    twitter: data.twitter,
+    linkedin: data.linkedin,
+    instagram: data.instagram,
+    youtube: data.youtube,
+    tiktok: data.tiktok,
+    pinterest: data.pinterest
   };
-  
+
   Object.entries(socialData).forEach(([platform, url]) => {
     if (url) {
       // Ensure URL has protocol
@@ -106,14 +96,14 @@ const socialLinks = computed(() => {
           finalUrl = `https://${url}`;
         }
       }
-      
+
       links.push({
         platform: platform.charAt(0).toUpperCase() + platform.slice(1),
         url: finalUrl
       });
     }
   });
-  
+
   return links;
 });
 
@@ -130,20 +120,6 @@ const getSocialIcon = (platform) => {
   };
   return icons[platform] || 'fas fa-link';
 };
-
-// Lifecycle
-onMounted(() => {
-  if (store.components[props.componentId]) {
-    document.dispatchEvent(new CustomEvent('gmkb:vue-component-mounted', {
-      detail: {
-        type: 'social',
-        id: props.componentId,
-        podsDataUsed: socialLinks.value.length > 0,
-        dataSource: 'pods_only'
-      }
-    }));
-  }
-});
 </script>
 
 <style scoped>

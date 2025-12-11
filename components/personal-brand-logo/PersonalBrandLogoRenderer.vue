@@ -19,7 +19,6 @@
 
 <script setup>
 import { computed } from 'vue';
-import { usePodsData } from '@composables/usePodsData';
 
 const props = defineProps({
   // STANDARD INTERFACE: All components accept the same props structure
@@ -50,41 +49,16 @@ const props = defineProps({
   }
 });
 
-const { podsData } = usePodsData();
-
-// SINGLE FIELD PATTERN: Simple logo object or null
+// Read logo directly from component data
 const logo = computed(() => {
-  let logoData = null;
-  
-  // ROOT FIX: Add null safety checks for podsData
-  // podsData might be undefined during initial render
-  if (!podsData || !podsData.value) {
-    // Fallback to custom logo if Pods data not available
-    logoData = props.data?.logo || null;
-  } else if (props.data?.usePodsData && podsData.value?.personal_brand_logo) {
-    // Check if using Pods data
-    const podsLogo = podsData.value.personal_brand_logo;
-    
-    // Handle both simple URL and complex object formats
-    logoData = {
-      url: typeof podsLogo === 'object' 
-        ? (podsLogo.guid || podsLogo.url || podsLogo.ID) 
-        : podsLogo,
-      alt: typeof podsLogo === 'object' 
-        ? (podsLogo.post_title || 'Personal Brand Logo') 
-        : 'Personal Brand Logo'
-    };
-  } else {
-    // Fallback to custom logo
-    logoData = props.data?.logo || null;
-  }
-  
-  // ROOT FIX: Return null if logo object exists but has no valid URL
+  const logoData = props.data?.logo || null;
+
+  // Return null if logo object exists but has no valid URL
   // This ensures empty URL shows placeholder instead of broken image
   if (!logoData || !logoData.url || logoData.url.trim() === '') {
     return null;
   }
-  
+
   return logoData;
 });
 
@@ -111,9 +85,7 @@ const sanitizedLogoUrl = computed(() => {
 const componentClasses = computed(() => ({
   'has-logo': !!logo.value,
   'no-logo': !logo.value,
-  // ROOT FIX: Add null safety for podsData access
-  'pods-source': props.data?.usePodsData && podsData?.value && !!podsData.value?.personal_brand_logo,
-  'custom-source': !props.data?.usePodsData || !podsData?.value || !podsData.value?.personal_brand_logo
+  'custom-source': true
 }));
 
 // ROOT FIX: Apply size and alignment settings from component data

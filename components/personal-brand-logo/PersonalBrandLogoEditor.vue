@@ -12,33 +12,8 @@
         <section class="editor-section">
           <h4>Logo Source</h4>
           
-          <!-- Pods Data Toggle -->
-          <div v-if="hasPodsLogo" class="pods-data-toggle">
-            <label class="toggle-label">
-              <input 
-                type="checkbox" 
-                v-model="localData.usePodsData" 
-                @change="updateComponent"
-              />
-              <span>Use personal brand logo from Pods</span>
-            </label>
-          </div>
-
-          <!-- Pods Logo Display -->
-          <div v-if="localData.usePodsData && podsLogo" class="pods-logo-display">
-            <div class="field-group">
-              <label>Logo from Pods</label>
-              <div class="pods-logo-preview">
-                <img :src="podsLogo.url" :alt="podsLogo.alt || 'Personal Brand Logo'" />
-                <div class="logo-info">
-                  <p class="field-hint">Loaded from your guest profile</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <!-- Custom Logo Section -->
-          <div v-if="!localData.usePodsData || !hasPodsLogo">
+          <div>
             <!-- Upload Button -->
             <div class="field-group">
               <button 
@@ -118,7 +93,6 @@
 <script setup>
 import { ref, watch, computed } from 'vue';
 import { useMediaKitStore } from '@/stores/mediaKit';
-import { usePodsData } from '@composables/usePodsData';
 // jQuery-Free: Using modern REST API uploader instead of WordPress Media Library
 import { useModernMediaUploader } from '@composables/useModernMediaUploader';
 import { usePodsFieldUpdate } from '@composables/usePodsFieldUpdate';
@@ -134,7 +108,6 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 const store = useMediaKitStore();
-const { podsData } = usePodsData();
 // jQuery-Free: Using modern uploader with direct REST API calls
 const { selectAndUploadImage, isUploading } = useModernMediaUploader();
 const { updatePodsField, isUpdating: isSavingToPods } = usePodsFieldUpdate();
@@ -147,39 +120,9 @@ const localData = ref({
     url: '', 
     alt: 'Personal Brand Logo' 
   },
-  usePodsData: true,
+  usePodsData: false,
   size: 'medium',
   alignment: 'center'
-});
-
-// Get logo from Pods (SINGLE field - simple!)
-const podsLogo = computed(() => {
-  // ROOT FIX: Add null safety check
-  if (!podsData || !podsData.value) {
-    return null;
-  }
-  
-  const logo = podsData.value?.personal_brand_logo;
-  if (!logo) return null;
-  
-  return {
-    url: typeof logo === 'object' 
-      ? (logo.guid || logo.url || logo.ID) 
-      : logo,
-    alt: typeof logo === 'object' 
-      ? (logo.post_title || 'Personal Brand Logo') 
-      : 'Personal Brand Logo'
-  };
-});
-
-const hasPodsLogo = computed(() => !!podsLogo.value);
-
-// Determine effective logo (Pods or custom)
-const effectiveLogo = computed(() => {
-  if (localData.value.usePodsData && hasPodsLogo.value) {
-    return podsLogo.value;
-  }
-  return localData.value.logo;
 });
 
 // Load component data
@@ -188,26 +131,14 @@ const loadComponentData = () => {
   if (component?.data) {
     localData.value = {
       logo: component.data.logo || { url: '', alt: 'Personal Brand Logo' },
-      usePodsData: component.data.usePodsData !== false,
+      usePodsData: false,
       size: component.data.size || 'medium',
       alignment: component.data.alignment || 'center'
     };
   }
-  
-  // If no custom logo and Pods has data, use Pods
-  if ((!localData.value.logo.url || localData.value.logo.url === '') && hasPodsLogo.value) {
-    localData.value.usePodsData = true;
-  }
 };
 
 watch(() => props.componentId, loadComponentData, { immediate: true });
-
-watch(podsLogo, () => {
-  // If using Pods data and Pods value changes, trigger update
-  if (localData.value.usePodsData) {
-    updateComponent();
-  }
-}, { deep: true });
 
 // Update component with debouncing
 let updateTimeout = null;
@@ -216,8 +147,8 @@ const updateComponent = () => {
   
   updateTimeout = setTimeout(() => {
     const dataToSave = {
-      logo: effectiveLogo.value,
-      usePodsData: localData.value.usePodsData,
+      logo: localData.value.logo,
+      usePodsData: false,
       size: localData.value.size,
       alignment: localData.value.alignment
     };
@@ -271,16 +202,6 @@ const handleUploadLogo = async () => {
         console.log('✅ Personal Brand Logo: Saved to Pods successfully');
       }
       
-      // ROOT FIX: Update Pods data in store to trigger reactivity
-      if (store.podsData) {
-        store.podsData.personal_brand_logo = {
-          ID: attachment.id,
-          guid: attachment.url,
-          url: attachment.url,
-          post_title: attachment.alt || 'Personal Brand Logo'
-        };
-      }
-      
       // Step 3: Update local state
       localData.value.logo = {
         url: attachment.url,
@@ -288,15 +209,12 @@ const handleUploadLogo = async () => {
         id: attachment.id,
         source: 'custom'
       };
-      
-      // Since we saved to Pods, enable Pods data usage
-      localData.value.usePodsData = true;
-      
+
       // Step 4: Update component state immediately
       // ROOT FIX: Don't use debounce for upload actions - update immediately
       const dataToSave = {
-        logo: effectiveLogo.value,
-        usePodsData: localData.value.usePodsData,
+        logo: localData.value.logo,
+        usePodsData: false,
         size: localData.value.size,
         alignment: localData.value.alignment
       };

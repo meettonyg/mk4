@@ -37,7 +37,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
-import { usePodsData } from '../../src/composables/usePodsData';
 
 const props = defineProps({
   componentId: {
@@ -66,14 +65,13 @@ const props = defineProps({
   }
 });
 
-// Store and composables
+// Store
 const store = useMediaKitStore();
-const { questions: podsQuestions } = usePodsData();
 
 // Local state
 const openQuestions = ref([]);
 
-// Extract data from both data and props for compatibility
+// Data from component JSON state (single source of truth)
 const title = computed(() => props.data?.title || props.props?.title || 'Frequently Asked Questions');
 const description = computed(() => props.data?.description || props.props?.description || '');
 
@@ -92,15 +90,15 @@ const displayQuestions = computed(() => {
       })).filter(q => q.question && q.answer);
     }
   }
-  
+
   // Build from individual question fields (legacy format)
   const questionsList = [];
   for (let i = 1; i <= 10; i++) {
-    const question = props.data?.[`question_${i}`] || props.props?.[`question_${i}`] || 
+    const question = props.data?.[`question_${i}`] || props.props?.[`question_${i}`] ||
                      props.data?.[`question${i}`] || props.props?.[`question${i}`];
-    const answer = props.data?.[`answer_${i}`] || props.props?.[`answer_${i}`] || 
+    const answer = props.data?.[`answer_${i}`] || props.props?.[`answer_${i}`] ||
                    props.data?.[`answer${i}`] || props.props?.[`answer${i}`];
-    
+
     if (question) {
       questionsList.push({
         question: String(question),
@@ -108,15 +106,7 @@ const displayQuestions = computed(() => {
       });
     }
   }
-  
-  // Use Pods questions as fallback if no component data
-  if (questionsList.length === 0 && podsQuestions.value && podsQuestions.value.length > 0) {
-    return podsQuestions.value.map(q => ({
-      question: q.text || q.question,
-      answer: q.answer || ''
-    }));
-  }
-  
+
   return questionsList;
 });
 
@@ -136,10 +126,7 @@ onMounted(() => {
       detail: {
         type: 'questions',
         id: props.componentId,
-        podsDataUsed: podsQuestions.value && podsQuestions.value.length > 0 && 
-          displayQuestions.value.some(q => 
-            podsQuestions.value.some(podQ => (podQ.text || podQ.question) === q.question)
-          )
+        hasData: displayQuestions.value.length > 0
       }
     }));
   }

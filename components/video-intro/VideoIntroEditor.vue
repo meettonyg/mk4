@@ -23,52 +23,25 @@
 
         <section class="editor-section">
           <h4>Video Source</h4>
-          
-          <!-- Pods Data Toggle -->
-          <div v-if="podsVideoUrl" class="pods-data-toggle">
-            <label class="toggle-label">
-              <input 
-                type="checkbox" 
-                v-model="localData.usePodsData" 
-                @change="updateComponent"
-              />
-              <span>Use video from Pods ({{ podsVideoUrl.substring(0, 50) }}...)</span>
-            </label>
-          </div>
 
-          <!-- Video URL Input -->
-          <div v-if="!localData.usePodsData || !podsVideoUrl">
-            <p class="help-text">Supports YouTube, Vimeo, or direct video URLs</p>
-            <div class="field-group">
-              <label>Video URL *</label>
-              <input 
-                v-model="localData.video_url" 
-                @input="updateComponent" 
-                type="text" 
-                placeholder="https://youtube.com/watch?v=..." 
-              />
-            </div>
-          </div>
-
-          <!-- Show Pods URL -->
-          <div v-else class="pods-video-display">
-            <div class="field-group">
-              <label>Video URL (from Pods)</label>
-              <div class="pods-value">
-                <i class="fas fa-link"></i>
-                <span>{{ podsVideoUrl }}</span>
-              </div>
-              <p class="field-hint">This video is loaded from your guest profile. Uncheck above to use a custom URL.</p>
-            </div>
+          <p class="help-text">Supports YouTube, Vimeo, or direct video URLs</p>
+          <div class="field-group">
+            <label>Video URL *</label>
+            <input
+              v-model="localData.video_url"
+              @input="updateComponent"
+              type="text"
+              placeholder="https://youtube.com/watch?v=..."
+            />
           </div>
 
           <div class="field-group">
             <label>Thumbnail URL (Optional)</label>
-            <input 
-              v-model="localData.thumbnail" 
-              @input="updateComponent" 
-              type="text" 
-              placeholder="https://example.com/thumb.jpg" 
+            <input
+              v-model="localData.thumbnail"
+              @input="updateComponent"
+              type="text"
+              placeholder="https://example.com/thumb.jpg"
             />
           </div>
         </section>
@@ -80,7 +53,6 @@
 <script setup>
 import { ref, watch, computed } from 'vue';
 import { useMediaKitStore } from '@/stores/mediaKit';
-import { usePodsData } from '@/composables/usePodsData';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 
 const props = defineProps({ componentId: { type: String, required: true } });
@@ -96,64 +68,49 @@ const convertToEmbedUrl = (url) => {
   if (!url || typeof url !== 'string') {
     return '';
   }
-  
+
   const cleanUrl = url.trim();
-  
+
   // Already an embed URL
   if (cleanUrl.includes('/embed/')) {
     return cleanUrl;
   }
-  
+
   // YouTube patterns
   // youtube.com/watch?v=VIDEO_ID
   let match = cleanUrl.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
   if (match) {
     return `https://www.youtube.com/embed/${match[1]}`;
   }
-  
+
   // youtu.be/VIDEO_ID
   match = cleanUrl.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
   if (match) {
     return `https://www.youtube.com/embed/${match[1]}`;
   }
-  
+
   // Vimeo patterns
   // vimeo.com/VIDEO_ID
   match = cleanUrl.match(/vimeo\.com\/(\d+)/);
   if (match) {
     return `https://player.vimeo.com/video/${match[1]}`;
   }
-  
+
   // Return original URL if no pattern matched (might be a direct video file)
   return cleanUrl;
 };
 
-// Load Pods data - use the videoIntro computed ref directly
-const podsDataComposable = usePodsData();
-const podsVideoIntroUrl = podsDataComposable.videoIntro;
-
-const localData = ref({ 
-  title: 'Watch My Introduction', 
-  description: '', 
-  video_url: '', 
-  thumbnail: '',
-  usePodsData: true // Default to using Pods data if available
+// Data from component JSON state (single source of truth)
+const localData = ref({
+  title: 'Watch My Introduction',
+  description: '',
+  video_url: '',
+  thumbnail: ''
 });
 
-// Get video URL from Pods - access the computed ref directly
-const podsVideoUrl = computed(() => {
-  return podsVideoIntroUrl.value || '';
-});
-
-// Determine effective video URL (Pods or custom) and convert to embed format
+// Determine effective video URL and convert to embed format
 const effectiveVideoUrl = computed(() => {
-  let url = '';
-  if (localData.value.usePodsData && podsVideoUrl.value) {
-    url = podsVideoUrl.value;
-  } else {
-    url = localData.value.video_url || '';
-  }
-  return convertToEmbedUrl(url);
+  return convertToEmbedUrl(localData.value.video_url || '');
 });
 
 const loadComponentData = () => {
@@ -163,25 +120,12 @@ const loadComponentData = () => {
       title: component.data.title || 'Watch My Introduction',
       description: component.data.description || '',
       video_url: component.data.video_url || component.data.url || '',
-      thumbnail: component.data.thumbnail || component.data.poster || '',
-      usePodsData: component.data.usePodsData !== false // Default to true
+      thumbnail: component.data.thumbnail || component.data.poster || ''
     };
-  }
-  
-  // If no custom video URL and Pods has data, use Pods
-  if (!localData.value.video_url && podsVideoUrl.value) {
-    localData.value.usePodsData = true;
   }
 };
 
 watch(() => props.componentId, loadComponentData, { immediate: true });
-
-watch(podsVideoUrl, () => {
-  // If using Pods data and Pods value changes, trigger update
-  if (localData.value.usePodsData) {
-    updateComponent();
-  }
-});
 
 let updateTimeout = null;
 const updateComponent = () => {

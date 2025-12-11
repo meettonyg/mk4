@@ -47,7 +47,6 @@
 <script>
 import { computed, onMounted } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
-import { usePodsData } from '../../src/composables/usePodsData';
 
 export default {
   name: 'PodcastPlayerRenderer',
@@ -80,88 +79,59 @@ export default {
     }
   },
   setup(props) {
-    // Store and composables
+    // Store
     const store = useMediaKitStore();
-    const { rawPodsData, stats } = usePodsData();
-    
-    // Computed properties
+
+    // Data from component JSON state (single source of truth)
     const title = computed(() => {
-      return props.data?.title || 'Podcast Episodes';
+      return props.data?.title || props.props?.title || 'Podcast Episodes';
     });
-    
+
     const description = computed(() => {
-      if (props.data?.description) return props.data.description;
-      // ROOT FIX: Use Pods data as fallback
-      if (stats.value?.episodes) {
-        return `Featured episodes from my ${stats.value.episodes}+ podcast episodes`;
-      }
-      return '';
+      return props.data?.description || props.props?.description || '';
     });
-    
+
     const episodes = computed(() => {
       // Handle array format
       if (Array.isArray(props.data?.episodes)) {
         return props.data.episodes;
       }
-      
+
       // Build from individual episode fields
       const episodesList = [];
       for (let i = 1; i <= 5; i++) {
-        if (props.data?.[`episode_${i}_title`]) {
+        const episodeTitle = props.data?.[`episode_${i}_title`] || props.props?.[`episode_${i}_title`];
+        if (episodeTitle) {
           episodesList.push({
-            title: props.data[`episode_${i}_title`],
-            description: props.data[`episode_${i}_description`] || '',
-            audio_url: props.data[`episode_${i}_audio_url`] || '',
-            spotify_url: props.data[`episode_${i}_spotify_url`] || '',
-            apple_url: props.data[`episode_${i}_apple_url`] || '',
-            duration: props.data[`episode_${i}_duration`] || ''
+            title: episodeTitle,
+            description: props.data?.[`episode_${i}_description`] || props.props?.[`episode_${i}_description`] || '',
+            audio_url: props.data?.[`episode_${i}_audio_url`] || props.props?.[`episode_${i}_audio_url`] || '',
+            spotify_url: props.data?.[`episode_${i}_spotify_url`] || props.props?.[`episode_${i}_spotify_url`] || '',
+            apple_url: props.data?.[`episode_${i}_apple_url`] || props.props?.[`episode_${i}_apple_url`] || '',
+            duration: props.data?.[`episode_${i}_duration`] || props.props?.[`episode_${i}_duration`] || ''
           });
         }
       }
-      
-      // ROOT FIX: Check for podcast episodes in Pods data
-      if (episodesList.length === 0) {
-        for (let i = 1; i <= 5; i++) {
-          const episodeTitle = rawPodsData.value?.[`podcast_episode_${i}_title`];
-          if (episodeTitle) {
-            episodesList.push({
-              title: episodeTitle,
-              description: rawPodsData.value?.[`podcast_episode_${i}_description`] || '',
-              audio_url: rawPodsData.value?.[`podcast_episode_${i}_audio`] || '',
-              spotify_url: rawPodsData.value?.[`podcast_spotify_url`] || '',
-              apple_url: rawPodsData.value?.[`podcast_apple_url`] || '',
-              duration: rawPodsData.value?.[`podcast_episode_${i}_duration`] || ''
-            });
-          }
-        }
-      }
-      
-      // Return empty array instead of default episodes
+
       return episodesList;
     });
-    
+
     // Lifecycle
     onMounted(() => {
-      // ROOT FIX: No polling or global checking - use event-driven approach
       if (store.components[props.componentId]) {
         console.log('PodcastPlayer component mounted:', props.componentId);
-        
-        // Check if using Pods data
-        const usingPodsData = episodes.value.some(episode => 
-          rawPodsData.value && Object.values(rawPodsData.value).includes(episode.title)
-        );
-        
+
         // Dispatch mount event
         document.dispatchEvent(new CustomEvent('gmkb:vue-component-mounted', {
           detail: {
             type: 'podcast-player',
             id: props.componentId,
-            podsDataUsed: usingPodsData
+            podsDataUsed: false
           }
         }));
       }
     });
-    
+
     return {
       title,
       description,

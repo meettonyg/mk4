@@ -58,7 +58,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
-import { usePodsData } from '../../src/composables/usePodsData';
 
 const props = defineProps({
   componentId: {
@@ -87,15 +86,14 @@ const props = defineProps({
   }
 });
 
-// Store and composables
+// Store
 const store = useMediaKitStore();
-const { rawPodsData } = usePodsData();
 
 // Local state
 const currentIndex = ref(0);
 let interval = null;
 
-// Extract data from both data and props for compatibility
+// Data from component JSON state (single source of truth)
 const title = computed(() => props.data?.title || props.props?.title || 'What People Say');
 const description = computed(() => props.data?.description || props.props?.description || '');
 
@@ -104,24 +102,24 @@ const displayTestimonials = computed(() => {
   if (Array.isArray(props.data?.testimonials) && props.data.testimonials.length > 0) {
     return props.data.testimonials;
   }
-  
-  // Check for Pods testimonials
-  const podsTestimonials = [];
-  for (let i = 1; i <= 5; i++) {
-    const testimonialText = rawPodsData.value?.[`testimonial_${i}_text`];
-    const testimonialAuthor = rawPodsData.value?.[`testimonial_${i}_author`];
-    
+
+  // Build from individual testimonial fields
+  const testimonialsList = [];
+  for (let i = 1; i <= 10; i++) {
+    const testimonialText = props.data?.[`testimonial_${i}_text`] || props.props?.[`testimonial_${i}_text`];
+    const testimonialAuthor = props.data?.[`testimonial_${i}_author`] || props.props?.[`testimonial_${i}_author`];
+
     if (testimonialText) {
-      podsTestimonials.push({
+      testimonialsList.push({
         text: testimonialText,
         author: testimonialAuthor || `Client ${i}`,
-        title: rawPodsData.value?.[`testimonial_${i}_title`] || '',
-        image: rawPodsData.value?.[`testimonial_${i}_image`] || ''
+        title: props.data?.[`testimonial_${i}_title`] || props.props?.[`testimonial_${i}_title`] || '',
+        image: props.data?.[`testimonial_${i}_image`] || props.props?.[`testimonial_${i}_image`] || ''
       });
     }
   }
-  
-  return podsTestimonials.length > 0 ? podsTestimonials : [];
+
+  return testimonialsList;
 });
 
 const currentTestimonial = computed(() => {
@@ -133,10 +131,10 @@ const currentTestimonial = computed(() => {
       image: ''
     };
   }
-  
+
   const safeIndex = Math.max(0, Math.min(currentIndex.value, displayTestimonials.value.length - 1));
   const testimonial = displayTestimonials.value[safeIndex];
-  
+
   return {
     text: testimonial?.text || '',
     author: testimonial?.author || 'Client',
@@ -153,8 +151,8 @@ const nextSlide = () => {
 
 const previousSlide = () => {
   if (displayTestimonials.value.length > 1) {
-    currentIndex.value = currentIndex.value === 0 
-      ? displayTestimonials.value.length - 1 
+    currentIndex.value = currentIndex.value === 0
+      ? displayTestimonials.value.length - 1
       : currentIndex.value - 1;
   }
 };
@@ -166,13 +164,11 @@ onMounted(() => {
       detail: {
         type: 'testimonials',
         id: props.componentId,
-        podsDataUsed: displayTestimonials.value.some(testimonial => 
-          rawPodsData.value && Object.values(rawPodsData.value).includes(testimonial.text)
-        )
+        hasData: displayTestimonials.value.length > 0
       }
     }));
   }
-  
+
   // Auto-advance carousel if enabled
   const autoplay = props.data?.autoplay ?? props.props?.autoplay;
   if (autoplay !== false && displayTestimonials.value.length > 1) {

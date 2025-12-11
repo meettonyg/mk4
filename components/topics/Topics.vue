@@ -28,7 +28,6 @@
 <script setup>
 import { computed, onMounted } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
-import { usePodsData } from '../../src/composables/usePodsData';
 
 const props = defineProps({
   componentId: {
@@ -57,17 +56,16 @@ const props = defineProps({
   }
 });
 
-// Store and composables
+// Store
 const store = useMediaKitStore();
-const { topics: podsTopics } = usePodsData();
 
-// Extract data from both data and props for compatibility
+// Data from component JSON state (single source of truth)
 const title = computed(() => props.data?.title || props.props?.title || 'Speaking Topics');
 const description = computed(() => props.data?.description || props.props?.description || '');
 const columns = computed(() => props.data?.columns || props.props?.columns || 3);
 const showIcons = computed(() => props.data?.showIcons !== false && props.props?.showIcons !== false);
 
-// Display topics with Pods fallback
+// Display topics from component data
 const displayTopics = computed(() => {
   // Handle array format
   if (Array.isArray(props.data?.topics) && props.data.topics.length > 0) {
@@ -78,7 +76,7 @@ const displayTopics = computed(() => {
       return topic;
     });
   }
-  
+
   // Handle individual topic fields from component data
   const topicsList = [];
   for (let i = 1; i <= 10; i++) {
@@ -95,16 +93,7 @@ const displayTopics = computed(() => {
       }
     }
   }
-  
-  // Use Pods topics as fallback if no component data
-  if (topicsList.length === 0 && podsTopics.value && podsTopics.value.length > 0) {
-    return podsTopics.value.map((topic, index) => ({
-      name: topic.text || topic.name || topic,
-      description: '',
-      icon: getTopicIcon(index)
-    }));
-  }
-  
+
   return topicsList;
 });
 
@@ -133,11 +122,7 @@ onMounted(() => {
       detail: {
         type: 'topics',
         id: props.componentId,
-        podsDataUsed: displayTopics.value.some(topic => 
-          podsTopics.value?.some(podTopic => 
-            (podTopic.text || podTopic.name) === topic.name
-          )
-        )
+        hasData: displayTopics.value.length > 0
       }
     }));
   }

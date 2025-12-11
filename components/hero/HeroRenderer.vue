@@ -17,7 +17,6 @@
 
 <script>
 import { computed } from 'vue';
-import { usePodsData } from '../../src/composables/usePodsData';
 
 export default {
   name: 'HeroRenderer',
@@ -50,48 +49,19 @@ export default {
     }
   },
   setup(props, { emit }) {
-    // COMPOSITION API: Access Pods data via composable
-    const podsData = usePodsData();
-    
-    // NAME: Priority is component data > Pods fullName > empty
-    const name = computed(() => {
-      if (props.data?.name) return props.data.name;
-      if (podsData.fullName?.value) return podsData.fullName.value;
-      return '';
-    });
-    
-    // TITLE: Priority is component data > Pods title > empty
-    const title = computed(() => {
-      if (props.data?.title) return props.data.title;
-      // Could add Pods professional_title here if field exists
-      return '';
-    });
-    
-    // BIO: Priority is component data > Pods biography > empty
-    const bio = computed(() => {
-      if (props.data?.bio) return props.data.bio;
-      if (podsData.biography?.value) return podsData.biography.value;
-      return '';
-    });
-    
-    // IMAGE: Priority is component data > Pods profile_image > empty
-    const imageUrl = computed(() => {
-      if (props.data?.imageUrl) return props.data.imageUrl;
-      if (podsData.profilePhoto?.value) {
-        const photo = podsData.profilePhoto.value;
-        return typeof photo === 'object' 
-          ? (photo.guid || photo.url || photo.ID)
-          : photo;
-      }
-      return '';
-    });
-    
-    // CTA TEXT: Component data only
-    const ctaText = computed(() => props.data?.ctaText || '');
-    
-    // CTA URL: Component data only
-    const ctaUrl = computed(() => props.data?.ctaUrl || '');
-    
+    // Data from component JSON state (single source of truth)
+    const name = computed(() => props.data?.name || props.props?.name || '');
+
+    const title = computed(() => props.data?.title || props.props?.title || '');
+
+    const bio = computed(() => props.data?.bio || props.props?.bio || '');
+
+    const imageUrl = computed(() => props.data?.imageUrl || props.props?.imageUrl || '');
+
+    const ctaText = computed(() => props.data?.ctaText || props.props?.ctaText || '');
+
+    const ctaUrl = computed(() => props.data?.ctaUrl || props.props?.ctaUrl || '');
+
     // CTA Click handler
     const handleCtaClick = () => {
       if (ctaUrl.value && ctaUrl.value !== '#') {
@@ -99,7 +69,7 @@ export default {
       }
       emit('cta-click');
     };
-    
+
     return {
       name,
       title,
