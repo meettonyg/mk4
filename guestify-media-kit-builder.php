@@ -69,10 +69,13 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/component-data-sanitization.php'
     require_once GUESTIFY_PLUGIN_DIR . 'includes/component-data-sanitization.php';
 }
 
-// ROOT FIX: Include bi-directional field sync system
-if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/component-field-sync.php')) {
-    require_once GUESTIFY_PLUGIN_DIR . 'includes/component-field-sync.php';
-}
+// DEPRECATED: Bi-directional field sync system REMOVED (2025-12-11)
+// The "Write Arc" (component-field-sync.php) was broken due to an action hook typo:
+// - API fired: 'gmkb_after_save_mediakit' (no underscore)
+// - Sync listened for: 'gmkb_after_save_media_kit' (with underscore)
+// This meant the sync NEVER executed. Since it's dead code, it has been deleted.
+// The JSON state (gmkb_media_kit_state) is now the single source of truth.
+// Archived: _archive/PODS-SYNC-REMOVAL-2025-12-11/component-field-sync.php
 
 // PHASE 4: Theme Generator for dynamic CSS generation
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/class-theme-generator.php')) {

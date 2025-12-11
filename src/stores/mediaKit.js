@@ -353,39 +353,17 @@ export const useMediaKitStore = defineStore('mediaKit', {
             }
           }
           
-          // CHATGPT CRITICAL FIX: Enrich components in savedState branch too!
-          // Previously this only happened in the API branch, leaving savedState components unenriched
-          if (window.podsDataIntegration || window.gmkbPodsIntegration) {
-            const podsIntegration = window.podsDataIntegration || window.gmkbPodsIntegration;
-            
-            // CRITICAL FIX: Refresh Pods data source before enriching
-            if (this.podsData && Object.keys(this.podsData).length > 0) {
-              podsIntegration.podsData = this.podsData;
-              console.log('✅ Updated PodsDataIntegration with store Pods data:', Object.keys(this.podsData).length, 'fields');
-            }
-            
-            // P1 FIX: Add error handling for enrichment
-            try {
-              Object.keys(this.components).forEach(componentId => {
-                const component = this.components[componentId];
-                // ROOT FIX: Validate component structure before enrichment
-                if (component && component.type && typeof component === 'object') {
-                  try {
-                    podsIntegration.enrichComponentData(component);
-                  } catch (enrichError) {
-                    console.warn(`⚠️ Failed to enrich component ${componentId}:`, enrichError);
-                    // Continue with other components
-                  }
-                } else {
-                  console.warn(`⚠️ Skipping invalid component ${componentId}:`, component);
-                }
-              });
-              console.log('✅ Enriched all loaded components with Pods data (savedState branch)');
-            } catch (error) {
-              console.error('❌ Pods enrichment failed:', error);
-              // Non-fatal - continue without enrichment
-            }
-          }
+          // DEPRECATED: Pods enrichment disabled to fix data loss bug
+          // The "Write Arc" (component-field-sync.php) was broken due to action hook typo,
+          // meaning Pods fields were NEVER being updated when users saved in the Builder.
+          // However, the "Read Arc" (this enrichment) WAS active, causing stale Pods data
+          // to overwrite valid JSON state on every load - resulting in DATA LOSS.
+          //
+          // The JSON state (gmkb_media_kit_state) is now the single source of truth.
+          // See: https://github.com/meettonyg/mk4/issues/XX (Tech Debt: Remove Pods Circular Sync)
+          //
+          // if (window.podsDataIntegration || window.gmkbPodsIntegration) { ... }
+          console.log('ℹ️ Pods enrichment DISABLED - JSON state is now single source of truth');
           
           // PHASE 4: Handle deprecated components
           console.log('🔄 Checking for deprecated components...');
@@ -437,39 +415,12 @@ export const useMediaKitStore = defineStore('mediaKit', {
             'this.theme type': typeof this.theme
           });
           
-          // ROOT FIX: Enrich ALL loaded components with Pods data
-          if (window.podsDataIntegration || window.gmkbPodsIntegration) {
-            const podsIntegration = window.podsDataIntegration || window.gmkbPodsIntegration;
-            
-            // CRITICAL FIX: Refresh Pods data source before enriching
-            // The integration may have initialized before store had Pods data
-            if (this.podsData && Object.keys(this.podsData).length > 0) {
-              podsIntegration.podsData = this.podsData;
-              console.log('✅ Updated PodsDataIntegration with store Pods data:', Object.keys(this.podsData).length, 'fields');
-            }
-            
-            // P1 FIX: Add error handling for enrichment
-            try {
-              Object.keys(this.components).forEach(componentId => {
-                const component = this.components[componentId];
-                // ROOT FIX: Validate component structure before enrichment
-                if (component && component.type && typeof component === 'object') {
-                  try {
-                    podsIntegration.enrichComponentData(component);
-                  } catch (enrichError) {
-                    console.warn(`⚠️ Failed to enrich component ${componentId}:`, enrichError);
-                    // Continue with other components
-                  }
-                } else {
-                  console.warn(`⚠️ Skipping invalid component ${componentId}:`, component);
-                }
-              });
-              console.log('✅ Enriched all loaded components with Pods data');
-            } catch (error) {
-              console.error('❌ Pods enrichment failed:', error);
-              // Non-fatal - continue without enrichment
-            }
-          }
+          // DEPRECATED: Pods enrichment disabled to fix data loss bug
+          // See comment above in savedState branch for full explanation.
+          // JSON state (gmkb_media_kit_state) is now the single source of truth.
+          //
+          // if (window.podsDataIntegration || window.gmkbPodsIntegration) { ... }
+          console.log('ℹ️ Pods enrichment DISABLED (API branch) - JSON state is single source of truth');
         }
         
         // P0 FIX #7: Normalize all component IDs after loading

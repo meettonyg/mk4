@@ -404,52 +404,30 @@ export class PodsDataIntegration {
   }
 
   /**
-   * Enrich component with Pods data
-   * Respects self-contained architecture by using component's own config
-   * ROOT FIX: Added comprehensive null/undefined checking to prevent errors
+   * DEPRECATED: Enrich component with Pods data
+   *
+   * This method has been disabled to fix a critical data loss bug.
+   *
+   * BACKGROUND:
+   * The "Write Arc" (component-field-sync.php) was broken due to an action hook typo:
+   * - API fires: 'gmkb_after_save_mediakit' (no underscore)
+   * - Sync listened for: 'gmkb_after_save_media_kit' (with underscore)
+   *
+   * This meant Pods/meta fields were NEVER being updated when users saved.
+   * However, this "Read Arc" (enrichment) WAS active, causing stale Pods data
+   * to overwrite valid JSON state on every load - DATA LOSS.
+   *
+   * SOLUTION: The JSON state (gmkb_media_kit_state) is now the single source of truth.
+   * This method now returns the component unchanged as a safety net.
+   *
+   * @deprecated Since 2.2.0 - JSON state is now single source of truth
+   * @param {Object} component - The component to enrich (returned unchanged)
+   * @returns {Object} The component, unchanged
    */
   enrichComponentData(component) {
-    // CRITICAL FIX: Validate component exists and has required properties
-    if (!component) {
-      console.warn('[PodsDataIntegration] Cannot enrich null/undefined component');
-      return component;
-    }
-    
-    if (!component.type) {
-      console.warn('[PodsDataIntegration] Component missing type:', component);
-      return component;
-    }
-    
-    // CRITICAL FIX: Get config with null safety
-    const config = this.getComponentPodsConfig(component.type);
-    
-    if (!config || config.dataSource !== 'pods') {
-      return component;
-    }
-
-    // CRITICAL FIX: Protect transformPodsData with try-catch
-    let transformedData;
-    try {
-      transformedData = this.transformPodsData(config, this.podsData);
-    } catch (error) {
-      console.warn(`[PodsDataIntegration] Error transforming data for ${component.type}:`, error);
-      return component; // Return unchanged component on error
-    }
-    
-    // CRITICAL FIX: Initialize component.data if it doesn't exist
-    if (!component.data || typeof component.data !== 'object') {
-      component.data = {};
-    }
-    
-    // Merge the transformed Pods data with component data
-    component.data = {
-      ...component.data,
-      ...transformedData,
-      _dataSource: 'pods'
-    };
-
-    console.log(`[PodsDataIntegration] Enriched ${component.type} with Pods data:`, transformedData);
-    
+    // DEPRECATED: Return component unchanged
+    // This is a no-op safety net in case any code still calls this method
+    console.warn('[PodsDataIntegration] DEPRECATED: enrichComponentData() is disabled. JSON state is now single source of truth.');
     return component;
   }
 

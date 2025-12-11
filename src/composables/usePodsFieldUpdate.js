@@ -1,22 +1,28 @@
 /**
- * usePodsFieldUpdate Composable
- * 
- * Provides functionality to update individual Pods fields via REST API.
- * Used by components that need to save data directly to Pods custom fields.
- * 
- * ARCHITECTURE: 
- * - Event-driven (no polling)
- * - Promise-based async operations  
- * - Automatic store synchronization
- * - Comprehensive error handling
- * - Debug logging support
- * 
- * ROOT FIX: Ensure system is ready before making API calls
- * Uses SystemReadiness service to guarantee gmkbData is initialized
- * No defensive coding - we KNOW the data exists when we use it
- * 
- * @version 3.0.0
- * @since Profile Photo Upload Implementation
+ * DEPRECATED: usePodsFieldUpdate Composable
+ *
+ * @deprecated Since 2.2.0 - Pods field updates are deprecated for Media Kit Builder.
+ *
+ * WARNING: This composable still WORKS but should NOT be used in new code.
+ * The Media Kit Builder now uses JSON state as the single source of truth.
+ *
+ * WHEN TO USE THIS:
+ * - Profile Editor (editing profile fields directly via Profile API)
+ * - Admin screens that need to update native WordPress meta fields
+ *
+ * WHEN NOT TO USE THIS:
+ * - Media Kit Builder components (use component.data from JSON state instead)
+ * - AI tools saving to builder (save to JSON state)
+ *
+ * BACKGROUND:
+ * The circular sync between JSON state and Pods fields caused data loss:
+ * - The "Write Arc" (component-field-sync.php) was broken due to action hook typo
+ * - The "Read Arc" (Vue enrichment) overwrote valid JSON with stale Pods data
+ *
+ * @see src/stores/mediaKit.js - Component data from JSON state
+ * @see includes/api/v2/class-gmkb-profile-api.php - Profile field CRUD (use this instead)
+ *
+ * @version 3.0.0 (deprecated)
  */
 
 import { ref } from 'vue';

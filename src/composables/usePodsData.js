@@ -1,18 +1,46 @@
 /**
- * PHASE 3: Optimized Pods data composable
- * No API calls - just computed refs to store data
+ * DEPRECATED: Pods data composable
+ *
+ * @deprecated Since 2.2.0 - JSON state (gmkb_media_kit_state) is now single source of truth.
+ *
+ * WARNING: This composable now returns EMPTY data because Pods data is no longer fetched.
+ *
+ * MIGRATION PATH:
+ * Components should read from their own component.data (JSON state) instead of this composable.
+ * The component.data is populated from the saved JSON state, not from Pods fields.
+ *
+ * BACKGROUND:
+ * The circular sync between JSON state and Pods fields caused data loss:
+ * - The "Write Arc" (component-field-sync.php) was broken due to action hook typo
+ * - The "Read Arc" (Vue enrichment) overwrote valid JSON with stale Pods data
+ *
+ * For Profile Editor integration (editing profile fields directly), use the Profile API instead.
+ *
+ * @see src/stores/mediaKit.js - Component data from JSON state
+ * @see includes/api/v2/class-gmkb-profile-api.php - Profile field CRUD
  */
 import { computed } from 'vue';
 import { useMediaKitStore } from '../stores/mediaKit';
 
+// Log deprecation warning once per session
+let hasLoggedDeprecation = false;
+
 export function usePodsData() {
+  // DEPRECATION WARNING - log once per session
+  if (!hasLoggedDeprecation) {
+    console.warn(
+      '⚠️ DEPRECATED: usePodsData() is deprecated. ' +
+      'Pods data is no longer fetched. Components should read from component.data (JSON state) instead. ' +
+      'See composable JSDoc for migration path.'
+    );
+    hasLoggedDeprecation = true;
+  }
+
   const store = useMediaKitStore();
 
-  // ROOT FIX: Ensure podsData is always an object (never undefined)
-  // This prevents "Cannot read properties of undefined" errors in components
+  // Ensure podsData is always an object (now always empty since Pods fetch is disabled)
   if (!store.podsData) {
     store.podsData = {};
-    console.warn('⚠️ usePodsData: store.podsData was undefined, initialized to empty object');
   }
 
   // NO onMounted, NO fetch - just computed refs to store data
