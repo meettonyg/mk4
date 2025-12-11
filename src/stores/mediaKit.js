@@ -360,7 +360,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
           // to overwrite valid JSON state on every load - resulting in DATA LOSS.
           //
           // The JSON state (gmkb_media_kit_state) is now the single source of truth.
-          // See: https://github.com/meettonyg/mk4/issues/XX (Tech Debt: Remove Pods Circular Sync)
+          // Tech debt removed: See _archive/PODS-SYNC-REMOVAL-2025-12-11/
           //
           // if (window.podsDataIntegration || window.gmkbPodsIntegration) { ... }
           console.log('ℹ️ Pods enrichment DISABLED - JSON state is now single source of truth');
