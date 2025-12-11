@@ -1,0 +1,364 @@
+/**
+ * AISaveBridge Service
+ *
+ * Maps AI tool outputs to profile fields and handles saving.
+ * Provides a unified interface for AI tools to save generated content
+ * to either profile fields (via Profile API) or component data (via Media Kit store).
+ *
+ * @since 2.2.0
+ */
+
+import profileContextService from './ProfileContextService.js';
+
+/**
+ * Field mappings for different AI tool types
+ * Maps AI output keys to WordPress meta field names
+ */
+const FIELD_MAPPINGS = {
+  topics: {
+    // AI outputs an array of topics
+    // Maps to topic_1 through topic_5
+    mapToFields: (topics) => {
+      const fields = {};
+      const topicArray = Array.isArray(topics) ? topics : [topics];
+
+      topicArray.slice(0, 5).forEach((topic, index) => {
+        const fieldName = `topic_${index + 1}`;
+        // Handle both string and object formats
+        fields[fieldName] = typeof topic === 'object'
+          ? (topic.title || topic.text || topic.value || '')
+          : topic;
+      });
+
+      // Clear remaining topic fields if fewer than 5 provided
+      for (let i = topicArray.length; i < 5; i++) {
+        fields[`topic_${i + 1}`] = '';
+      }
+
+      return fields;
+    }
+  },
+
+  questions: {
+    // AI outputs an array of questions
+    // Maps to question_1 through question_25
+    mapToFields: (questions) => {
+      const fields = {};
+      const questionsArray = Array.isArray(questions) ? questions : [questions];
+
+      questionsArray.slice(0, 25).forEach((question, index) => {
+        const fieldName = `question_${index + 1}`;
+        fields[fieldName] = typeof question === 'object'
+          ? (question.question || question.text || question.value || '')
+          : question;
+      });
+
+      // Clear remaining question fields
+      for (let i = questionsArray.length; i < 25; i++) {
+        fields[`question_${i + 1}`] = '';
+      }
+
+      return fields;
+    }
+  },
+
+  biography: {
+    // AI outputs biography object with short, medium, long versions
+    mapToFields: (bioData) => {
+      const fields = {};
+
+      if (typeof bioData === 'string') {
+        fields.biography = bioData;
+      } else if (typeof bioData === 'object') {
+        if (bioData.short) fields.biography_short = bioData.short;
+        if (bioData.medium) fields.biography = bioData.medium;
+        if (bioData.long) fields.biography_long = bioData.long;
+        // Also support flat structure
+        if (bioData.biography) fields.biography = bioData.biography;
+        if (bioData.content) fields.biography = bioData.content;
+      }
+
+      return fields;
+    }
+  },
+
+  tagline: {
+    mapToFields: (tagline) => ({
+      tagline: typeof tagline === 'object' ? tagline.text || tagline.value : tagline
+    })
+  },
+
+  elevator_pitch: {
+    mapToFields: (pitch) => ({
+      elevator_pitch: typeof pitch === 'object' ? pitch.text || pitch.value : pitch
+    })
+  },
+
+  guest_intro: {
+    mapToFields: (intro) => ({
+      introduction: typeof intro === 'object' ? intro.text || intro.value : intro
+    })
+  },
+
+  authority_hook: {
+    // Authority hook has multiple sub-fields
+    mapToFields: (hookData) => {
+      const fields = {};
+
+      if (typeof hookData === 'object') {
+        if (hookData.who) fields.hook_who = hookData.who;
+        if (hookData.what) fields.hook_what = hookData.what;
+        if (hookData.when) fields.hook_when = hookData.when;
+        if (hookData.how) fields.hook_how = hookData.how;
+        if (hookData.statement) fields.authority_statement = hookData.statement;
+        if (hookData.summary) fields.authority_hook_summary = hookData.summary;
+      }
+
+      return fields;
+    }
+  },
+
+  offers: {
+    // AI outputs array of offers
+    mapToFields: (offers) => {
+      const fields = {};
+      const offersArray = Array.isArray(offers) ? offers : [offers];
+
+      offersArray.slice(0, 5).forEach((offer, index) => {
+        const num = index + 1;
+        if (typeof offer === 'object') {
+          fields[`offer_${num}`] = offer.title || offer.name || '';
+          fields[`offer_${num}_description`] = offer.description || '';
+          fields[`offer_${num}_link`] = offer.link || offer.url || '';
+        } else {
+          fields[`offer_${num}`] = offer;
+        }
+      });
+
+      return fields;
+    }
+  }
+};
+
+class AISaveBridge {
+  constructor() {
+    this._lastSaveResult = null;
+  }
+
+  /**
+   * Save AI-generated content to a profile
+   *
+   * @param {number} profileId - The profile/post ID to save to
+   * @param {string} type - The AI tool type (topics, biography, questions, etc.)
+   * @param {*} data - The AI-generated data to save
+   * @returns {Promise<{success: boolean, saved: Object, errors: Array}>}
+   */
+  async saveToProfile(profileId, type, data) {
+    if (!profileId) {
+      throw new Error('Profile ID is required');
+    }
+
+    const mapping = FIELD_MAPPINGS[type];
+    if (!mapping) {
+      throw new Error(`Unknown AI tool type: ${type}. Available types: ${Object.keys(FIELD_MAPPINGS).join(', ')}`);
+    }
+
+    // Map AI output to profile fields
+    const fields = mapping.mapToFields(data);
+
+    console.log(`[AISaveBridge] Saving ${type} to profile #${profileId}:`, fields);
+
+    try {
+      const response = await fetch(`/wp-json/gmkb/v2/profile/${profileId}/fields`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': window.gmkbData?.nonce || window.wpApiSettings?.nonce || ''
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({ fields })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      this._lastSaveResult = {
+        success: true,
+        profileId,
+        type,
+        saved: fields,
+        timestamp: Date.now()
+      };
+
+      // Dispatch success event
+      document.dispatchEvent(new CustomEvent('gmkb:ai-content-saved', {
+        detail: { profileId, type, fields }
+      }));
+
+      console.log(`[AISaveBridge] ✅ Successfully saved ${type} to profile #${profileId}`);
+
+      return {
+        success: true,
+        saved: fields,
+        errors: []
+      };
+
+    } catch (error) {
+      console.error(`[AISaveBridge] ❌ Failed to save ${type}:`, error);
+
+      this._lastSaveResult = {
+        success: false,
+        profileId,
+        type,
+        error: error.message,
+        timestamp: Date.now()
+      };
+
+      return {
+        success: false,
+        saved: {},
+        errors: [error.message]
+      };
+    }
+  }
+
+  /**
+   * Save AI-generated content to a component in the Media Kit Builder
+   * This updates the JSON state, not profile fields
+   *
+   * @param {Object} store - The mediaKit Pinia store
+   * @param {string} componentId - The component ID to update
+   * @param {string} type - The AI tool type
+   * @param {*} data - The AI-generated data
+   * @returns {{success: boolean, updated: Object}}
+   */
+  saveToComponent(store, componentId, type, data) {
+    if (!store || !componentId) {
+      throw new Error('Store and componentId are required');
+    }
+
+    const component = store.components[componentId];
+    if (!component) {
+      throw new Error(`Component not found: ${componentId}`);
+    }
+
+    // Map AI output to component data format
+    const mapping = FIELD_MAPPINGS[type];
+    let componentData = {};
+
+    if (mapping) {
+      // Use field mapping but convert to component data format
+      const fields = mapping.mapToFields(data);
+
+      // Convert field names to component data keys
+      switch (type) {
+        case 'topics':
+          componentData.topics = Object.entries(fields)
+            .filter(([key]) => key.startsWith('topic_') && fields[key])
+            .map(([key, value]) => ({ title: value }));
+          break;
+
+        case 'questions':
+          componentData.questions = Object.entries(fields)
+            .filter(([key]) => key.startsWith('question_') && fields[key])
+            .map(([key, value]) => ({ question: value }));
+          break;
+
+        case 'biography':
+          componentData = {
+            biography: fields.biography || fields.biography_long || '',
+            bio: fields.biography || '',
+            shortBio: fields.biography_short || ''
+          };
+          break;
+
+        default:
+          // For other types, use fields directly
+          componentData = fields;
+      }
+    } else {
+      // No mapping, use data directly
+      componentData = typeof data === 'object' ? data : { content: data };
+    }
+
+    // Update component in store
+    store.updateComponent(componentId, {
+      data: {
+        ...component.data,
+        ...componentData
+      }
+    });
+
+    store.isDirty = true;
+
+    console.log(`[AISaveBridge] ✅ Updated component ${componentId} with ${type} data`);
+
+    return {
+      success: true,
+      updated: componentData
+    };
+  }
+
+  /**
+   * Smart save - automatically determines where to save based on context
+   *
+   * @param {string} type - AI tool type
+   * @param {*} data - AI-generated data
+   * @param {Object} options - Options
+   * @param {Object} options.store - Media Kit store (for builder context)
+   * @param {string} options.componentId - Component ID (for builder context)
+   * @param {number} options.profileId - Profile ID (overrides context detection)
+   * @returns {Promise<{success: boolean, target: string, result: Object}>}
+   */
+  async smartSave(type, data, options = {}) {
+    const context = profileContextService.getContext();
+    const profileId = options.profileId || profileContextService.getCurrentProfileId();
+
+    // In Media Kit Builder with component context - save to component
+    if (context === 'media-kit' && options.store && options.componentId) {
+      const result = this.saveToComponent(options.store, options.componentId, type, data);
+      return {
+        success: result.success,
+        target: 'component',
+        result
+      };
+    }
+
+    // In Profile Editor or standalone - save to profile
+    if (profileId) {
+      const result = await this.saveToProfile(profileId, type, data);
+      return {
+        success: result.success,
+        target: 'profile',
+        result
+      };
+    }
+
+    // No context - require profile selection
+    throw new Error('No profile selected. Please select a profile before saving.');
+  }
+
+  /**
+   * Get available field mappings (for documentation/debugging)
+   */
+  getAvailableTypes() {
+    return Object.keys(FIELD_MAPPINGS);
+  }
+
+  /**
+   * Get the last save result
+   */
+  getLastSaveResult() {
+    return this._lastSaveResult;
+  }
+}
+
+// Singleton instance
+const aiSaveBridge = new AISaveBridge();
+
+export default aiSaveBridge;
+export { AISaveBridge, FIELD_MAPPINGS };

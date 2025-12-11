@@ -335,12 +335,23 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useAIBiography } from '../../../../composables/useAIBiography';
 import { useAuthorityHook } from '../../../../composables/useAuthorityHook';
 import { useImpactIntro } from '../../../../composables/useImpactIntro';
+import { useProfileContext } from '../../../../composables/useProfileContext';
 import AuthorityHookBuilder from '../../ai/AuthorityHookBuilder.vue';
 import ImpactIntroBuilder from '../../ai/ImpactIntroBuilder.vue';
+
+const props = defineProps({
+  /**
+   * Pre-selected profile ID (optional)
+   */
+  profileId: {
+    type: Number,
+    default: null
+  }
+});
 
 const emit = defineEmits(['generated', 'saved']);
 
@@ -364,12 +375,22 @@ const {
 const { authorityHookSummary, syncFromStore: syncAuthorityHook } = useAuthorityHook();
 const { impactSummary: impactIntroSummary, syncFromStore: syncImpactIntro } = useImpactIntro();
 
+// Profile context integration
+const {
+  profileId: contextProfileId,
+  isSaving,
+  saveError,
+  saveToProfile
+} = useProfileContext();
+
 // Local state
 const authorityHookExpanded = ref(false);
 const impactIntroExpanded = ref(false);
 const selectedLength = ref('medium');
 const showCopyToast = ref(false);
 const copyButtonText = ref('Copy');
+const selectedProfileId = ref(props.profileId || null);
+const saveSuccess = ref(false);
 
 // Form data
 const formData = reactive({
@@ -523,19 +544,79 @@ const handleRegenerate = () => {
   handleGenerate();
 };
 
-const handleSaveAll = () => {
-  emit('saved', {
-    short: shortBio.value,
-    medium: mediumBio.value,
-    long: longBio.value
-  });
-  // TODO: Save to WordPress
+/**
+ * Handle save all biographies to profile
+ */
+const handleSaveAll = async () => {
+  const targetProfileId = selectedProfileId.value || contextProfileId.value;
+
+  if (!targetProfileId) {
+    console.warn('[BiographyGenerator] No profile selected for saving');
+    emit('saved', {
+      short: shortBio.value,
+      medium: mediumBio.value,
+      long: longBio.value
+    });
+    return;
+  }
+
+  saveSuccess.value = false;
+
+  try {
+    // Save all biography variants to profile
+    const bioData = {
+      short: shortBio.value,
+      medium: mediumBio.value,
+      long: longBio.value
+    };
+
+    const result = await saveToProfile('biography', bioData, {
+      profileId: targetProfileId
+    });
+
+    if (result.success) {
+      saveSuccess.value = true;
+
+      // Auto-hide success message
+      setTimeout(() => {
+        saveSuccess.value = false;
+      }, 3000);
+
+      emit('saved', {
+        profileId: targetProfileId,
+        short: shortBio.value,
+        medium: mediumBio.value,
+        long: longBio.value,
+        fields: result.saved
+      });
+    }
+  } catch (err) {
+    console.error('[BiographyGenerator] Failed to save to profile:', err);
+    // Still emit for parent components
+    emit('saved', {
+      short: shortBio.value,
+      medium: mediumBio.value,
+      long: longBio.value
+    });
+  }
 };
 
 // Lifecycle
 onMounted(() => {
   syncAuthorityHook();
   syncImpactIntro();
+
+  // Use context profile ID if available
+  if (!selectedProfileId.value && contextProfileId.value) {
+    selectedProfileId.value = contextProfileId.value;
+  }
+});
+
+// Watch for context profile changes
+watch(contextProfileId, (newVal) => {
+  if (newVal && !selectedProfileId.value) {
+    selectedProfileId.value = newVal;
+  }
 });
 </script>
 
