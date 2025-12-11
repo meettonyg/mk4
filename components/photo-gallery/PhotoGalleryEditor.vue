@@ -63,7 +63,7 @@
 
             <p class="help-text">Or add photos manually:</p>
             
-            <!-- ✅ DRAG-AND-DROP: Draggable wrapper for photos list -->
+            <!-- DRAG-AND-DROP: Draggable wrapper for photos list -->
             <draggable 
               v-model="localData.photos" 
               @end="updateComponent"
@@ -76,7 +76,7 @@
               <template #item="{element: photo, index}">
               <div class="photo-item">
                 <div class="photo-header">
-                  <!-- ✅ DRAG HANDLE -->
+                  <!-- DRAG HANDLE -->
                   <div class="drag-handle" title="Drag to reorder">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -160,7 +160,7 @@
         <section class="editor-section">
           <h4>Display Options</h4>
           
-          <!-- ✅ NEW: Layout Style Selector -->
+          <!-- NEW: Layout Style Selector -->
           <div class="field-group">
             <label for="layout-style">Layout Style</label>
             <select 
@@ -175,7 +175,7 @@
             <p class="field-hint">Choose how your photos are displayed</p>
           </div>
 
-          <!-- ✅ Grid-specific options (only show for grid/masonry) -->
+          <!-- Grid-specific options (only show for grid/masonry) -->
           <div v-if="localData.layoutStyle !== 'carousel'" class="field-group">
             <label for="columns">Grid Columns</label>
             <select 
@@ -189,7 +189,7 @@
             </select>
           </div>
 
-          <!-- ✅ NEW: Conditional Carousel Settings -->
+          <!-- NEW: Conditional Carousel Settings -->
           <div v-if="localData.layoutStyle === 'carousel'" class="carousel-settings">
             <h5 class="subsection-title">Carousel Settings</h5>
             
@@ -307,12 +307,12 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue';
-import draggable from 'vuedraggable';  // ✅ NEW: Drag-and-drop support
+import draggable from 'vuedraggable';  // NEW: Drag-and-drop support
 import { useMediaKitStore } from '@/stores/mediaKit';
 import { useModernMediaUploader } from '@/composables/useModernMediaUploader';
 import { ToastService } from '@/services/ToastService';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
-import ImageCropper from '@/vue/components/shared/ImageCropper.vue';  // ✅ NEW: Image cropper
+import ImageCropper from '@/vue/components/shared/ImageCropper.vue';  // NEW: Image cropper
 
 const props = defineProps({ 
   componentId: { 
@@ -339,8 +339,8 @@ const localData = ref({
   photos: [], 
   columns: '3',
   captionStyle: 'overlay', // Default caption style
-  layoutStyle: 'grid', // ✅ NEW: Default layout style
-  carouselSettings: { // ✅ NEW: Carousel settings (only saved when carousel selected)
+  layoutStyle: 'grid', // NEW: Default layout style
+  carouselSettings: { // NEW: Carousel settings (only saved when carousel selected)
     autoplay: true,
     autoplaySpeed: 3000,
     slidesToShow: 3,
@@ -365,8 +365,8 @@ const loadComponentData = () => {
         : [],
       columns: component.data.columns || '3',
       captionStyle: component.data.captionStyle || 'overlay',
-      layoutStyle: component.data.layoutStyle || 'grid', // ✅ Load layout style
-      carouselSettings: component.data.carouselSettings || { // ✅ Load carousel settings
+      layoutStyle: component.data.layoutStyle || 'grid', // Load layout style
+      carouselSettings: component.data.carouselSettings || { // Load carousel settings
         autoplay: true,
         autoplaySpeed: 3000,
         slidesToShow: 3,
@@ -388,7 +388,7 @@ const addPhoto = () => {
   localData.value.photos.push({ 
     url: '', 
     caption: '',
-    alt: ''  // ✅ NEW: Alt text for SEO
+    alt: ''  // NEW: Alt text for SEO
   });
   updateComponent();
 };
@@ -399,7 +399,7 @@ const removePhoto = (index) => {
   updateComponent();
 };
 
-// ✅ NEW: Handle layout change - Initialize or clean up carousel settings
+// NEW: Handle layout change - Initialize or clean up carousel settings
 const handleLayoutChange = () => {
   // Initialize carousel settings if switching to carousel
   if (localData.value.layoutStyle === 'carousel' && !localData.value.carouselSettings) {
@@ -415,7 +415,7 @@ const handleLayoutChange = () => {
     };
   }
   
-  // ✅ NO BLOAT: Clean up carousel settings if switching away
+  // NO BLOAT: Clean up carousel settings if switching away
   // (Settings will not be saved in updateComponent if layoutStyle !== 'carousel')
   
   updateComponent();
@@ -433,10 +433,10 @@ const updateComponent = () => {
       photos: localData.value.photos,
       columns: localData.value.columns,
       captionStyle: localData.value.captionStyle,
-      layoutStyle: localData.value.layoutStyle // ✅ Save layout style
+      layoutStyle: localData.value.layoutStyle // Save layout style
     };
     
-    // ✅ NO BLOAT: Only save carouselSettings when layoutStyle is 'carousel'
+    // NO BLOAT: Only save carouselSettings when layoutStyle is 'carousel'
     if (localData.value.layoutStyle === 'carousel') {
       dataToSave.carouselSettings = localData.value.carouselSettings;
     }
@@ -458,7 +458,7 @@ const handleUploadPhotos = async () => {
       multiple: true, // Allow multiple selection
       library: { 
         type: 'image',
-        author: window.gmkbData?.user?.userId // ✅ Only show MY uploads
+        author: window.gmkbData?.user?.userId // Only show MY uploads
       }
     });
     
@@ -477,7 +477,7 @@ const handleUploadPhotos = async () => {
           localData.value.photos.push({
             url: sanitizedUrl,
             caption: attachment.caption || attachment.title || '',
-            alt: attachment.alt || attachment.title || '',  // ✅ NEW: Use alt text from WordPress
+            alt: attachment.alt || attachment.title || '',  // NEW: Use alt text from WordPress
             id: attachment.id
           });
         }
@@ -539,7 +539,7 @@ const savePhotosToPods = async () => {
       throw new Error(`Failed to save photos: ${response.statusText}`);
     }
     
-    console.log('✅ Photos saved to Pods field successfully');
+    console.log('Photos saved to Pods field successfully');
   } catch (error) {
     console.error('Error saving photos to Pods:', error);
     ToastService.warning(
@@ -1069,7 +1069,7 @@ body.dark-mode .crop-btn:hover {
   border-color: #0284c7;
 }
 
-/* ✅ NEW: Carousel Settings Styles */
+/* NEW: Carousel Settings Styles */
 .carousel-settings {
   margin-top: 16px;
   padding: 16px;

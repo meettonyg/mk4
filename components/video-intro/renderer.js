@@ -77,7 +77,7 @@
         } catch (error) {
             console.error(`Error rendering ${COMPONENT_TYPE}:`, error);
             return `<div class="gmkb-component gmkb-component--error">
-                <h3>⚠️ Error Rendering Video Intro</h3>
+                <h3>Error Rendering Video Intro</h3>
                 <p>${escapeHtml(error.message)}</p>
             </div>`;
         }
@@ -105,7 +105,7 @@
                 type: COMPONENT_TYPE
             });
             if (window.gmkbData?.debugMode) {
-                console.log(`✅ Video Intro component registered`);
+                console.log(`Video Intro component registered`);
             }
         }
     }

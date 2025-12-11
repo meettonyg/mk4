@@ -69,7 +69,7 @@ export class RetryService {
                 }
                 
                 // Log retry attempt
-                console.log(`⚠️ Retry ${attempt + 1}/${config.maxRetries} after ${delay}ms`, {
+                console.log(`Retry ${attempt + 1}/${config.maxRetries} after ${delay}ms`, {
                     error: error.message || error,
                     nextDelay
                 });
@@ -154,7 +154,7 @@ export class RetryService {
         // Check for any failures
         const failures = results.filter(r => r.status === 'rejected');
         if (failures.length > 0) {
-            console.error(`⚠️ Batch retry: ${failures.length}/${operations.length} operations failed`);
+            console.error(`Batch retry: ${failures.length}/${operations.length} operations failed`);
         }
         
         return results;

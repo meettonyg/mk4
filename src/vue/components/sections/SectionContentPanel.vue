@@ -179,13 +179,13 @@ function updateLayout(layout) {
     layout,
     type: layout
   })
-  console.log('✅ SectionContentPanel: Layout updated to:', layout)
+  console.log('SectionContentPanel: Layout updated to:', layout)
 }
 
 function updateSetting(key, value) {
   settings[key] = value
   store.updateSectionSettings(props.sectionId, { [key]: value })
-  console.log('✅ SectionContentPanel: Setting updated:', key, '=', value)
+  console.log('SectionContentPanel: Setting updated:', key, '=', value)
 }
 </script>
 

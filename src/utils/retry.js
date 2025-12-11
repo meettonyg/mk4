@@ -41,7 +41,7 @@ export async function retryOperation(operation, options = {}) {
         }
 
         console.log(
-          `⚠️ Attempt ${attempt + 1} failed, retrying in ${waitTime}ms...`,
+          `Attempt ${attempt + 1} failed, retrying in ${waitTime}ms...`,
           error.message
         );
 
@@ -93,7 +93,7 @@ export async function retryWithPredicate(operation, shouldRetry, options = {}) {
         }
 
         console.log(
-          `⚠️ Retriable error, attempt ${attempt + 1}/${maxRetries} in ${waitTime}ms...`,
+          `Retriable error, attempt ${attempt + 1}/${maxRetries} in ${waitTime}ms...`,
           error.message
         );
 

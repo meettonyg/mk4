@@ -97,7 +97,7 @@ window.GMKB.debugSanitization = (value, fieldName = '') => {
     return;
   }
   
-  console.log('🔍 Sanitization Debug');
+  console.log('Sanitization Debug');
   console.log('Input:', value);
   console.log('Field Name:', fieldName || 'not provided');
   console.log('Detected Type:', xss.detectDataType(value, fieldName));
@@ -144,7 +144,7 @@ async function initializeVue() {
     const isPureVueMode = window.gmkbData?.architecture === 'pure-vue';
     
     if (isPureVueMode && mountPoint) {
-      logger.info('✅ Using Pure Vue mode - mounting to #app');
+      logger.info('Using Pure Vue mode - mounting to #app');
       // Clear loading spinner
       mountPoint.innerHTML = '';
     } else {
@@ -159,7 +159,7 @@ async function initializeVue() {
       mountPoint.id = 'vue-media-kit-app';
       mountPoint.className = 'vue-media-kit-app';
       previewContainer.appendChild(mountPoint);
-      logger.info('✅ Using Legacy mode - created mount point in #media-kit-preview');
+      logger.info('Using Legacy mode - created mount point in #media-kit-preview');
     }
     
     // ROOT FIX: Legacy systems no longer loaded - pure Vue architecture
@@ -168,7 +168,7 @@ async function initializeVue() {
 
     // Create Pinia store
     const pinia = createPinia();
-    console.log('✅ Pinia store created');
+    console.log('Pinia store created');
     
     // ROOT FIX: Initialize UI store FIRST (accessible via GMKB.stores.ui)
     // This must succeed for edit controls to work
@@ -178,7 +178,7 @@ async function initializeVue() {
     // ROOT FIX: Make UI store immediately available
     window.GMKB.stores = window.GMKB.stores || {};
     window.GMKB.stores.ui = uiStore;
-    console.log('✅ UI store created and registered globally');
+    console.log('UI store created and registered globally');
     
     // ROOT FIX: Initialize stores BEFORE mounting Vue to prevent race condition
     // STEP 4: Initialize stores (BEFORE Vue mount)
@@ -193,33 +193,33 @@ async function initializeVue() {
     window.GMKB.stores.mediaKit = mediaKitStore;
     window.GMKB.stores.theme = themeStore;
     window.GMKB.stores.pinia = pinia;
-    console.log('✅ Stores created and registered globally');
+    console.log('Stores created and registered globally');
     
     // Make stores available ONLY through GMKB namespace
     // Removed individual window.gmkbStore, window.mediaKitStore assignments
     
     // ROOT FIX: Initialize the debounced autoSave with proper context
     mediaKitStore.initAutoSave();
-    logger.info('✅ AutoSave initialized with proper context');
+    logger.info('AutoSave initialized with proper context');
     
     // STEP 5: Load data (BEFORE Vue mount)
     console.log('5️⃣ Loading media kit data...');
     try {
       if (window.gmkbData?.savedState) {
         await mediaKitStore.initialize(window.gmkbData.savedState);
-        console.log('✅ Data loaded from savedState');
+        console.log('Data loaded from savedState');
       } else {
         // Load from API with built-in retry
         await mediaKitStore.initialize();
-        console.log('✅ Data loaded from API');
+        console.log('Data loaded from API');
       }
     } catch (error) {
-      console.error('❌ Failed to load data:', error);
+      console.error('Failed to load data:', error);
       
       // Try to restore from localStorage as fallback
       const restored = mediaKitStore.restoreFromLocalStorage();
       if (restored) {
-        console.log('♻️ Restored from local backup');
+        console.log('Restored from local backup');
         showToast('Restored from local backup', 'warning');
       } else {
         throw error; // Re-throw if no backup available
@@ -234,20 +234,20 @@ async function initializeVue() {
     const savedTheme = mediaKitStore.theme || 'professional_clean';
     const savedCustomizations = mediaKitStore.themeCustomizations || {};
     
-    console.log('🎨 Initializing theme store with saved theme:', savedTheme);
+    console.log('Initializing theme store with saved theme:', savedTheme);
     await themeStore.initialize(savedTheme, savedCustomizations);
-    console.log('✅ Theme initialized:', themeStore.activeThemeId);
+    console.log('Theme initialized:', themeStore.activeThemeId);
     
     // CRITICAL: If the theme changed during initialization (e.g., theme not found),
     // update the media kit store to match
     if (themeStore.activeThemeId !== savedTheme) {
-      console.warn('⚠️ Theme mismatch detected, updating media kit store');
+      console.warn('Theme mismatch detected, updating media kit store');
       mediaKitStore.theme = themeStore.activeThemeId;
     }
     
     // Load custom themes after (non-blocking)
     themeStore.loadCustomThemes().catch((error) => {
-      console.log('ℹ️ Custom themes not available, using built-in themes only');
+      console.log('Custom themes not available, using built-in themes only');
       if (window.gmkbData?.debugMode) {
         console.warn('Custom themes load error:', error);
       }
@@ -258,7 +258,7 @@ async function initializeVue() {
     const { default: MediaKitApp } = await import('./vue/components/MediaKitApp.vue');
     const { default: ComponentLibrary } = await import('./vue/components/ComponentLibraryNew.vue');
     const { default: LoadingScreen } = await import('./vue/components/LoadingScreen.vue');
-    console.log('✅ Vue components loaded');
+    console.log('Vue components loaded');
     
     // Create and mount Vue app
     console.log('8️⃣ Mounting Vue application...');
@@ -266,7 +266,7 @@ async function initializeVue() {
     
     // CRITICAL: Add global error handler to prevent app crashes and identify problematic components
     app.config.errorHandler = (err, instance, info) => {
-      console.error('❌ Vue Error:', err);
+      console.error('Vue Error:', err);
       console.error('Component:', instance?.$options?.name || instance?.$?.type?.name || 'Unknown');
       console.error('Component Props:', instance?.$props);
       console.error('Error Info:', info);
@@ -275,11 +275,11 @@ async function initializeVue() {
       // Extract component details
       const componentId = instance?.$props?.componentId || instance?.$attrs?.['data-component-id'];
       if (componentId) {
-        console.error('🔍 Failed Component ID:', componentId);
+        console.error('Failed Component ID:', componentId);
         const componentData = window.gmkbData?.savedState?.components?.[componentId];
         if (componentData) {
-          console.error('🔍 Component Data:', componentData);
-          console.error('🔍 Component Type:', componentData.type);
+          console.error('Component Data:', componentData);
+          console.error('Component Type:', componentData.type);
         }
       }
       
@@ -320,7 +320,7 @@ async function initializeVue() {
     // No need to pre-register empty LazyComponents object
     
     const instance = app.mount(mountPoint);
-    console.log('✅ Vue mounted successfully');
+    console.log('Vue mounted successfully');
     
     // ROOT FIX: Preload critical components after mount
     preloadCriticalComponents();
@@ -341,11 +341,11 @@ async function initializeVue() {
     // THEME INTEGRATION: Import and expose stylePresets
     const stylePresetsModule = await import('./utils/stylePresets.js');
     window.stylePresets = stylePresetsModule;
-    console.log('✅ Style presets module exposed globally');
+    console.log('Style presets module exposed globally');
     
     // ROOT FIX: Enable dynamic CSS loading for components added after page load
     // This solves the issue where wp_enqueue_style() only runs during initial PHP render
-    console.log('🎨 Enabling dynamic component CSS loading...');
+    console.log('Enabling dynamic component CSS loading...');
     const { useDynamicComponentStyles } = await import('./composables/useDynamicComponentStyles.js');
     const dynamicStyles = useDynamicComponentStyles();
     
@@ -354,7 +354,7 @@ async function initializeVue() {
     
     // Make available globally for debugging
     window.GMKB.dynamicStyles = dynamicStyles;
-    console.log('✅ Dynamic CSS loading enabled - components will load their CSS when added');
+    console.log('Dynamic CSS loading enabled - components will load their CSS when added');
     
     console.log('🐛 DEBUG: Before service assignment');
     console.log('🐛 DEBUG: window.GMKB:', window.GMKB);
@@ -389,8 +389,8 @@ async function initializeVue() {
     // ROOT FIX: Single namespace pattern - no legacy aliases
     // Everything accessed through GMKB.stores.* and GMKB.services.*
     if (window.gmkbData?.debugMode) {
-      console.log('✅ Single GMKB namespace created');
-      console.log('📦 Available: GMKB.stores, GMKB.services, GMKB.utils');
+      console.log('Single GMKB namespace created');
+      console.log('Available: GMKB.stores, GMKB.services, GMKB.utils');
     }
     
     // ROOT FIX: Use ConsoleAPI service instead of inline code
@@ -403,11 +403,11 @@ async function initializeVue() {
     // PHASE 17-24: Initialize new critical services (accessible via GMKB.services)
     console.log('🔐 Initializing security services...');
     
-    console.log('⌨️ Keyboard manager already initialized');
+    console.log('Keyboard manager already initialized');
     
-    console.log('📊 Initializing performance monitor...');
+    console.log('Initializing performance monitor...');
     
-    console.log('📈 Initializing analytics...');
+    console.log('Initializing analytics...');
     
     // Identify user if available
     if (window.gmkbData?.userId) {
@@ -425,12 +425,12 @@ async function initializeVue() {
       sectionCount: mediaKitStore.sectionCount
     });
     
-    console.log('✅ All critical services initialized');
+    console.log('All critical services initialized');
     
     // Initialize component style service with all components
-    console.log('🎨 Initializing component styles...');
+    console.log('Initializing component styles...');
     componentStyleService.initializeAll(mediaKitStore.components);
-    console.log('✅ Component styles initialized');
+    console.log('Component styles initialized');
     
     // ROOT FIX: Set up reactivity watcher for style updates
     // CRITICAL FIX: Watch $state.components instead of components getter
@@ -445,7 +445,7 @@ async function initializeVue() {
     watch(
       () => mediaKitStore.$state.components,
       () => {
-        console.log('🔥 WATCHER FIRED! Updating all component styles');
+        console.log('WATCHER FIRED! Updating all component styles');
         
         // Force update ALL component styles
         Object.entries(mediaKitStore.components).forEach(([id, comp]) => {
@@ -457,16 +457,16 @@ async function initializeVue() {
       { deep: true, immediate: false } // immediate: false to avoid double-render on init
     );
     
-    console.log('✅ Component style watcher active (watching $state.components)');
+    console.log('Component style watcher active (watching $state.components)');
     
     
     // Console API now handled by ConsoleAPI service (see ConsoleAPI.install above)
     
-    console.log('✅ Vue Media Kit Builder initialized successfully');
+    console.log('Vue Media Kit Builder initialized successfully');
     
     // Debug info
     setTimeout(() => {
-      console.log('📊 Pods Data Check:');
+      console.log('Pods Data Check:');
       const podsData = window.gmkbData?.pods_data || window.gmkbData?.podsData || {};
       const fieldCount = Object.keys(podsData).length;
       console.log(`  Fields loaded: ${fieldCount}`);
@@ -476,16 +476,16 @@ async function initializeVue() {
     }, 1000);
     
     // ROOT FIX: Console help now handled by ConsoleAPI.help()
-    console.log('🎯 Media Kit Builder v4.0 initialized. Type GMKB.help() for commands.');
+    console.log('Media Kit Builder v4.0 initialized. Type GMKB.help() for commands.');
     console.log('🔐 Security: XSS protection active');
-    console.log('⌨️ Keyboard shortcuts available - press ? for help');
-    console.log('📊 Performance monitoring active');
-    console.log('📈 Analytics tracking enabled');
+    console.log('Keyboard shortcuts available - press ? for help');
+    console.log('Performance monitoring active');
+    console.log('Analytics tracking enabled');
     
     return app;
     
   } catch (error) {
-    console.error('❌ Failed to initialize Vue:', error);
+    console.error('Failed to initialize Vue:', error);
     
     // ROOT FIX: Store error in GMKB namespace for debugging
     if (window.GMKB) {
@@ -519,20 +519,20 @@ async function initialize() {
   // Phase 1 Compliance: Event-driven, single execution only
   // CRITICAL: Check GLOBAL flag to prevent duplicate script loads
   if (window.gmkbIsInitialized) {
-    console.warn('⚠️ GMKB: Prevented duplicate initialization attempt (duplicate script detected)');
+    console.warn('GMKB: Prevented duplicate initialization attempt (duplicate script detected)');
     console.log('🐛 DEBUG: Blocked second initialization, returning early');
     return;
   }
   window.gmkbIsInitialized = true;
   console.log('🐛 DEBUG: Set guard to true, proceeding with initialization');
   
-  console.log('🚀 Initializing Media Kit Builder v4.0 - Pure Vue...');
+  console.log('Initializing Media Kit Builder v4.0 - Pure Vue...');
   
   try {
     // STEP 1: Validate environment using DataValidator
     console.log('1️⃣ Validating environment...');
     DataValidator.validateGmkbData();
-    console.log('✅ Environment valid');
+    console.log('Environment valid');
     
     // STEP 2: Initialize services (utilities only, no DOM manipulation)
     console.log('2️⃣ Initializing services...');
@@ -541,7 +541,7 @@ async function initialize() {
     const restNonce = window.gmkbData?.restNonce || '';
     const postId = window.gmkbData?.postId;
     
-    console.log('🔧 Initializing APIService with:', {
+    console.log('Initializing APIService with:', {
       restUrl,
       restNonce: restNonce ? 'present' : 'missing',
       postId
@@ -549,21 +549,21 @@ async function initialize() {
     
     apiService = new APIService(restUrl, restNonce, postId);
     // Accessible via GMKB.services.api
-    console.log('✅ API Service ready');
+    console.log('API Service ready');
     
     // Initialize component registry
     UnifiedComponentRegistry.initialize();
-    console.log('✅ Component registry initialized');
+    console.log('Component registry initialized');
     
     // Initialize Pods integration (accessible via GMKB.services.pods)
     // Accessible via window for legacy compatibility
     window.podsDataIntegration = podsDataIntegration;
     window.gmkbPodsIntegration = podsDataIntegration;
-    logger.info('✅ Pods data integration initialized');
+    logger.info('Pods data integration initialized');
     
     // ROOT FIX: NO MORE initDragDrop() - Vue handles ALL drag/drop!
     // ROOT FIX: NO MORE ImportExportManager - Vue composable handles it!
-    logger.info('✅ Using 100% Vue architecture - no legacy managers');
+    logger.info('Using 100% Vue architecture - no legacy managers');
     
     // STEP 3-8: Initialize Vue application
     console.log('3️⃣ Creating Vue application...');
@@ -577,8 +577,8 @@ async function initialize() {
     DOMHandlers.initialize();
     
     // SUCCESS!
-    console.log('✅ Media Kit Builder initialized successfully!');
-    console.log('📊 State:', {
+    console.log('Media Kit Builder initialized successfully!');
+    console.log('State:', {
       components: window.gmkbStore?.componentCount || 0,
       sections: window.gmkbStore?.sectionCount || 0,
       theme: window.gmkbStore?.theme || 'not set'
@@ -596,7 +596,7 @@ async function initialize() {
     }));
     
   } catch (error) {
-    console.error('❌ Initialization failed:', error);
+    console.error('Initialization failed:', error);
     
     // ROOT FIX: Update GMKB with error info
     if (window.GMKB) {
@@ -609,7 +609,7 @@ async function initialize() {
     if (app) {
       app.innerHTML = `
         <div class="gmkb-error">
-          <h1 class="gmkb-error__title">⚠️ Initialization Failed</h1>
+          <h1 class="gmkb-error__title">Initialization Failed</h1>
           <p class="gmkb-error__message">
             ${error.message}
           </p>

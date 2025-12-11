@@ -188,7 +188,7 @@ export default {
       // Add visual feedback
       event.target.classList.add('dragging');
       
-      console.log('🎯 Started dragging component from sidebar:', component.type);
+      console.log('Started dragging component from sidebar:', component.type);
     };
     
     const onDragEnd = (event) => {
@@ -198,7 +198,7 @@ export default {
       // Remove visual feedback
       event.target.classList.remove('dragging');
       
-      console.log('✅ Drag ended');
+      console.log('Drag ended');
     };
     
     const getIcon = (iconName) => {

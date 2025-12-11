@@ -240,7 +240,7 @@ const toggleDarkMode = () => {
     detail: { isDark: isDarkMode.value }
   }))
   
-  console.log('✅ Dark mode:', isDarkMode.value ? 'enabled' : 'disabled')
+  console.log('Dark mode:', isDarkMode.value ? 'enabled' : 'disabled')
 }
 
 const setDeviceMode = (device) => {
@@ -280,9 +280,9 @@ const setDeviceMode = (device) => {
       previewArea.style.transition = 'all 0.3s ease'
     }
     
-    console.log('✅ Device mode applied:', device)
+    console.log('Device mode applied:', device)
   } else {
-    console.warn('⚠️ Preview area not found for device mode')
+    console.warn('Preview area not found for device mode')
   }
   
   // Dispatch event for other components
@@ -294,16 +294,16 @@ const setDeviceMode = (device) => {
 function handleUndo() {
   if (store.canUndo) {
     store.undo()
-    showInfo('↩️ Undone')
-    console.log('↩️ Undo action')
+    showInfo('Undone')
+    console.log('Undo action')
   }
 }
 
 function handleRedo() {
   if (store.canRedo) {
     store.redo()
-    showInfo('↪️ Redone')
-    console.log('↪️ Redo action')
+    showInfo('Redone')
+    console.log('Redo action')
   }
 }
 
@@ -313,14 +313,14 @@ function handleTheme() {
     detail: { trigger: 'toolbar' }
   });
   document.dispatchEvent(event);
-  console.log('🎨 Theme switcher event dispatched');
+  console.log('Theme switcher event dispatched');
 }
 
 function handleExport() {
   if (exportModal.value) {
     exportModal.value.open()
   }
-  console.log('✅ Opened export modal')
+  console.log('Opened export modal')
 }
 
 function handleShare() {
@@ -338,10 +338,10 @@ function copyShareLink() {
 async function handleSave() {
   try {
     await store.save()
-    showSuccess('✅ Media kit saved successfully!')
-    console.log('✅ Manual save triggered')
+    showSuccess('Media kit saved successfully!')
+    console.log('Manual save triggered')
   } catch (error) {
-    console.error('❌ Save failed:', error)
+    console.error('Save failed:', error)
     showError('Failed to save: ' + error.message)
   }
 }
@@ -385,7 +385,7 @@ const initDarkMode = () => {
 onMounted(() => {
   initDarkMode()
   document.addEventListener('keydown', handleKeyboard)
-  console.log('✅ Perfected toolbar mounted with BEM conventions')
+  console.log('Perfected toolbar mounted with BEM conventions')
 })
 
 onUnmounted(() => {

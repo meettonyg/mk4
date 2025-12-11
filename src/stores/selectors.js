@@ -223,7 +223,7 @@ export function useStoreSelectors(store) {
 export function clearSelectorCache() {
     memoCache.clear();
     memoTimestamps.clear();
-    console.log('✅ Selector cache cleared');
+    console.log('Selector cache cleared');
 }
 
 /**

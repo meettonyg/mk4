@@ -222,7 +222,7 @@ const eventBus = new EventBus();
 if (typeof window !== 'undefined' && (process.env.NODE_ENV === 'development' || window.gmkbData?.debugMode)) {
   window.__eventBus = eventBus;
   window.__eventBusDebug = () => eventBus.getDebugInfo();
-  console.log('[EventBus] ✅ Event bus initialized and available at window.__eventBus');
+  console.log('[EventBus] Event bus initialized and available at window.__eventBus');
 }
 
 export default eventBus;

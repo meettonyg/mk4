@@ -1,6 +1,6 @@
     // PHASE 2 ITEM #2: Manual refresh capability
     const refreshComponents = async () => {
-      console.log('🔄 ComponentLibrary: Manual refresh requested');
+      console.log('ComponentLibrary: Manual refresh requested');
       await loadComponentsFromAPI();
     };<template>
   <Teleport to="body">
@@ -379,7 +379,7 @@ export default {
       // Add visual feedback
       event.target.classList.add('dragging');
       
-      console.log('🎯 Started dragging component:', component.type);
+      console.log('Started dragging component:', component.type);
     };
     
     const onDragEnd = (event) => {
@@ -389,7 +389,7 @@ export default {
       // Remove visual feedback
       event.target.classList.remove('dragging');
       
-      console.log('✅ Drag ended');
+      console.log('Drag ended');
     };
     
     // Event handlers
@@ -419,7 +419,7 @@ export default {
       apiCallCount.value++;
       
       try {
-        console.log('🔄 ComponentLibrary: Loading components from REST API...');
+        console.log('ComponentLibrary: Loading components from REST API...');
         const componentData = await apiService.loadComponents();
         
         if (Array.isArray(componentData)) {
@@ -435,13 +435,13 @@ export default {
           });
           categories.value = catMap;
           
-          console.log(`✅ ComponentLibrary: Loaded ${components.value.length} components from API`);
-          console.log(`📊 ComponentLibrary: API call #${apiCallCount.value}, last refresh: ${new Date(lastRefreshTime.value).toLocaleTimeString()}`);
+          console.log(`ComponentLibrary: Loaded ${components.value.length} components from API`);
+          console.log(`ComponentLibrary: API call #${apiCallCount.value}, last refresh: ${new Date(lastRefreshTime.value).toLocaleTimeString()}`);
         }
       } catch (error) {
-        console.error('❌ ComponentLibrary: Failed to load components:', error);
+        console.error('ComponentLibrary: Failed to load components:', error);
         // Fallback to UnifiedComponentRegistry
-        console.log('⚠️ ComponentLibrary: Falling back to UnifiedComponentRegistry');
+        console.log('ComponentLibrary: Falling back to UnifiedComponentRegistry');
         components.value = UnifiedComponentRegistry.getAll();
         categories.value = UnifiedComponentRegistry.getCategories().reduce((acc, cat) => {
           acc[cat.slug] = cat.name;
@@ -467,7 +467,7 @@ export default {
         
         // Auto-refresh if data is stale and not currently loading
         if (timeSinceRefresh > refreshInterval && !isLoadingComponents.value) {
-          console.log('🔄 ComponentLibrary: Auto-refreshing stale data...');
+          console.log('ComponentLibrary: Auto-refreshing stale data...');
           loadComponentsFromAPI();
         }
       });
@@ -475,13 +475,13 @@ export default {
     
     // PHASE 2 ITEM #2: Manual refresh capability
     const refreshComponents = async () => {
-      console.log('🔄 ComponentLibrary: Manual refresh requested');
+      console.log('ComponentLibrary: Manual refresh requested');
       await loadComponentsFromAPI();
     };
     
     // Handle component discovery events (legacy compatibility)
     const handleComponentsDiscovered = () => {
-      console.log('🔄 ComponentLibrary: Component discovery event received, reloading from API...');
+      console.log('ComponentLibrary: Component discovery event received, reloading from API...');
       loadComponentsFromAPI();
     };
     
@@ -506,8 +506,8 @@ export default {
       // PHASE 2 ITEM #2: Setup auto-refresh watcher
       setupAutoRefresh();
       
-      console.log('✅ Vue Component Library ready with', components.value.length, 'components');
-      console.log('🔄 Auto-refresh enabled (checks every 60s when open)');
+      console.log('Vue Component Library ready with', components.value.length, 'components');
+      console.log('Auto-refresh enabled (checks every 60s when open)');
     });
     
     onUnmounted(() => {
@@ -522,7 +522,7 @@ export default {
       // PHASE 2 ITEM #2: Stop auto-refresh watcher
       if (stopAutoRefresh) {
         stopAutoRefresh();
-        console.log('🛑 Auto-refresh disabled (component unmounted)');
+        console.log('Auto-refresh disabled (component unmounted)');
       }
     });
     

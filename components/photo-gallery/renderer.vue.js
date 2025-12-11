@@ -4,7 +4,7 @@ import PhotoGallery from './PhotoGallery.vue';
 
 export default {
     render(data = {}, container) {
-        console.log('🖼️ Rendering Photo Gallery component with data:', data);
+        console.log('Rendering Photo Gallery component with data:', data);
         
         // Ensure container exists
         if (!container) {
@@ -81,8 +81,8 @@ export default {
             componentId: data.id || data.componentId || `photo-gallery_${Date.now()}`
         };
         
-        console.log('🖼️ Photo Gallery: Found', podsImages.length, 'images from Pods data');
-        console.log('🖼️ Photo Gallery: Merged data being passed to Vue component:', mergedData);
+        console.log('Photo Gallery: Found', podsImages.length, 'images from Pods data');
+        console.log('Photo Gallery: Merged data being passed to Vue component:', mergedData);
         
         const app = createApp(PhotoGallery, mergedData);
         

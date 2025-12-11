@@ -136,10 +136,10 @@ class ToastServiceClass {
     
     // Add icon based on type
     const icons = {
-      success: '✅',
-      error: '❌',
-      warning: '⚠️',
-      info: 'ℹ️'
+      success: '+',
+      error: '-',
+      warning: '!',
+      info: 'i'
     };
     
     const closeBtn = closeable 
@@ -387,7 +387,7 @@ if (typeof window !== 'undefined') {
     };
   }
   
-  console.log('[ToastService] ✅ Unified notification system ready');
+  console.log('[ToastService] Unified notification system ready');
 }
 
 // Export for module usage

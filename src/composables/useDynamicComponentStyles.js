@@ -32,7 +32,7 @@ export function useDynamicComponentStyles() {
   const loadComponentStyles = async (componentType) => {
     // Check if already loaded
     if (loadedStyles.value.has(componentType)) {
-      console.log(`⏭️  CSS already loaded for component: ${componentType}`);
+      console.log(` CSS already loaded for component: ${componentType}`);
       return true;
     }
     
@@ -41,13 +41,13 @@ export function useDynamicComponentStyles() {
       const componentInfo = window.gmkbData?.componentRegistry?.[componentType];
       
       if (!componentInfo) {
-        console.warn(`⚠️ Component not found in registry: ${componentType}`);
+        console.warn(`Component not found in registry: ${componentType}`);
         return false;
       }
       
       // Check if component declares a stylesheet
       if (!componentInfo.styles) {
-        console.log(`ℹ️ Component ${componentType} has no stylesheet declared`);
+        console.log(`Component ${componentType} has no stylesheet declared`);
         return true; // Not an error - some components don't need CSS
       }
       
@@ -57,7 +57,7 @@ export function useDynamicComponentStyles() {
       // Check if CSS link already exists in DOM
       const existingLink = document.querySelector(`link[href*="${componentType}"]`);
       if (existingLink) {
-        console.log(`✅ CSS link already exists in DOM: ${componentType}`);
+        console.log(`CSS link already exists in DOM: ${componentType}`);
         loadedStyles.value.add(componentType);
         return true;
       }
@@ -77,7 +77,7 @@ export function useDynamicComponentStyles() {
         // Success handler
         link.onload = () => {
           loadedStyles.value.add(componentType);
-          console.log(`✅ Dynamic CSS loaded: ${componentType} → ${componentInfo.styles}`);
+          console.log(`Dynamic CSS loaded: ${componentType}  -> ${componentInfo.styles}`);
           
           // Dispatch event for other systems that may need to know
           document.dispatchEvent(new CustomEvent('gmkb:component-css-loaded', {
@@ -89,7 +89,7 @@ export function useDynamicComponentStyles() {
         
         // Error handler
         link.onerror = (error) => {
-          console.error(`❌ Failed to load CSS for ${componentType}:`, error);
+          console.error(`Failed to load CSS for ${componentType}:`, error);
           reject(new Error(`CSS load failed: ${cssUrl}`));
         };
         
@@ -98,7 +98,7 @@ export function useDynamicComponentStyles() {
       });
       
     } catch (error) {
-      console.error(`❌ Error loading styles for ${componentType}:`, error);
+      console.error(`Error loading styles for ${componentType}:`, error);
       return false;
     }
   };
@@ -117,7 +117,7 @@ export function useDynamicComponentStyles() {
       skipped: 0
     };
     
-    console.log(`📦 Loading CSS for ${componentTypes.length} components...`);
+    console.log(`Loading CSS for ${componentTypes.length} components...`);
     
     // Load all CSS files in parallel
     const promises = componentTypes.map(async (type) => {
@@ -135,7 +135,7 @@ export function useDynamicComponentStyles() {
     
     await Promise.allSettled(promises);
     
-    console.log(`✅ Dynamic CSS loading complete:`, results);
+    console.log(`Dynamic CSS loading complete:`, results);
     
     return results;
   };
@@ -196,7 +196,7 @@ export function useDynamicComponentStyles() {
           const uniqueTypes = [...new Set(newTypes)];
           
           if (uniqueTypes.length > 0) {
-            console.log(`🔄 Auto-loading CSS for ${uniqueTypes.length} new component(s):`, uniqueTypes);
+            console.log(`Auto-loading CSS for ${uniqueTypes.length} new component(s):`, uniqueTypes);
             await loadMultipleComponentStyles(uniqueTypes);
           }
           
@@ -207,7 +207,7 @@ export function useDynamicComponentStyles() {
       { deep: true }
     );
     
-    console.log('✅ Dynamic CSS auto-loading enabled');
+    console.log('Dynamic CSS auto-loading enabled');
   };
   
   /**

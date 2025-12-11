@@ -43,7 +43,7 @@ export function preloadCriticalComponents() {
             });
         });
         
-        console.log('✅ Critical system components preloaded');
+        console.log('Critical system components preloaded');
     });
 }
 

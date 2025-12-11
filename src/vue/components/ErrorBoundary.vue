@@ -64,7 +64,7 @@ export default {
     // Capture errors from child components
     onErrorCaptured((err, instance, info) => {
       // Log detailed error information
-      console.error('🚨 ErrorBoundary caught error:', {
+      console.error('ErrorBoundary caught error:', {
         error: err,
         message: err?.message,
         stack: err?.stack,
@@ -76,10 +76,10 @@ export default {
       
       // Log component details
       if (instance?.$props) {
-        console.error('🔍 Component props:', instance.$props);
+        console.error('Component props:', instance.$props);
       }
       if (instance?.$attrs) {
-        console.error('🔍 Component attrs:', instance.$attrs);
+        console.error('Component attrs:', instance.$attrs);
       }
       
       // Show error UI

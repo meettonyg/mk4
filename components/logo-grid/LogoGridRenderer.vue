@@ -4,7 +4,7 @@
     <div class="component-root logo-grid-content">
     <h2 v-if="title" class="section-title">{{ title }}</h2>
     
-    <!-- ✅ CAROUSEL LAYOUT: Use CarouselGrid component -->
+    <!-- CAROUSEL LAYOUT: Use CarouselGrid component -->
     <CarouselGrid 
       v-if="layoutStyle === 'carousel' && carouselSettings"
       :items="logos"
@@ -40,7 +40,7 @@
               <line x1="3" y1="21" x2="10" y2="14"></line>
             </svg>
           </div>
-          <!-- ✅ NEW: External link indicator -->
+          <!-- NEW: External link indicator -->
           <div v-if="logo.link && logo.linkNewTab" class="external-link-indicator" title="Opens in new tab">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
@@ -52,7 +52,7 @@
       </template>
     </CarouselGrid>
     
-    <!-- ✅ GRID/MASONRY LAYOUTS: Use CSS grid -->
+    <!-- GRID/MASONRY LAYOUTS: Use CSS grid -->
     <div 
       v-else
       class="logo-grid"
@@ -63,7 +63,7 @@
       :data-logo-name-style="logoNameStyle"
       :data-layout-style="layoutStyle"
     >
-      <!-- ✅ NEW: Wrap in link if logo.link exists -->
+      <!-- NEW: Wrap in link if logo.link exists -->
       <component 
         :is="logo.link ? 'a' : 'div'"
         v-for="(logo, index) in logos" 
@@ -94,7 +94,7 @@
             <line x1="3" y1="21" x2="10" y2="14"></line>
           </svg>
         </div>
-        <!-- ✅ NEW: External link indicator -->
+        <!-- NEW: External link indicator -->
         <div v-if="logo.link && logo.linkNewTab" class="external-link-indicator" title="Opens in new tab">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
@@ -169,17 +169,17 @@ export default {
       return props.data?.logoNameStyle || 'below';
     });
     
-    // ✅ PHASE 1B: LAYOUT STYLE: Component data > default
+    // PHASE 1B: LAYOUT STYLE: Component data > default
     const layoutStyle = computed(() => {
       return props.data?.layoutStyle || 'grid';
     });
     
-    // ✅ PHASE 1B: COLUMNS: Component data > default
+    // PHASE 1B: COLUMNS: Component data > default
     const columns = computed(() => {
       return props.data?.columns || 'auto';
     });
     
-    // ✅ PHASE 1B: CAROUSEL SETTINGS: Component data > defaults
+    // PHASE 1B: CAROUSEL SETTINGS: Component data > defaults
     const carouselSettings = computed(() => {
       if (layoutStyle.value !== 'carousel') return null;
       

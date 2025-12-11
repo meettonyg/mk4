@@ -55,7 +55,7 @@
 
             <p class="help-text">Or add logos manually:</p>
             
-            <!-- ✅ DRAG-AND-DROP: Draggable wrapper for logos list -->
+            <!-- DRAG-AND-DROP: Draggable wrapper for logos list -->
             <draggable 
               v-model="localData.logos" 
               @end="updateComponent"
@@ -66,11 +66,11 @@
               animation="200"
             >
               <template #item="{element: logo, index}">
-              <!-- ✅ PHASE 1A: Collapsible logo item -->
+              <!-- PHASE 1A: Collapsible logo item -->
               <div class="logo-item" :class="{ 'is-collapsed': !isExpanded(index) }">
-                <!-- ✅ PHASE 1A: Always-visible header -->
+                <!-- PHASE 1A: Always-visible header -->
                 <div class="logo-header" @click="toggleExpand(index)">
-                  <!-- ✅ DRAG HANDLE -->
+                  <!-- DRAG HANDLE -->
                   <div class="drag-handle" title="Drag to reorder" @click.stop>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -79,7 +79,7 @@
                     </svg>
                   </div>
                   
-                  <!-- ✅ PHASE 1A: Thumbnail preview -->
+                  <!-- PHASE 1A: Thumbnail preview -->
                   <img 
                     v-if="logo.url" 
                     :src="logo.url" 
@@ -87,13 +87,13 @@
                     class="logo-thumbnail"
                   />
                   
-                  <!-- ✅ PHASE 1A: Logo title/number -->
+                  <!-- PHASE 1A: Logo title/number -->
                   <div class="logo-title-wrapper">
                     <span class="logo-number">Logo {{ index + 1 }}</span>
                     <span v-if="logo.name" class="logo-name-preview">{{ logo.name }}</span>
                   </div>
                   
-                  <!-- ✅ PHASE 1A: Quick actions -->
+                  <!-- PHASE 1A: Quick actions -->
                   <div class="header-actions" @click.stop>
                     <button 
                       @click="duplicateLogo(index)"
@@ -112,13 +112,13 @@
                     >×</button>
                   </div>
                   
-                  <!-- ✅ PHASE 1A: Expand/collapse indicator -->
+                  <!-- PHASE 1A: Expand/collapse indicator -->
                   <div class="expand-toggle">
                     {{ isExpanded(index) ? '▲' : '▼' }}
                   </div>
                 </div>
                 
-                <!-- ✅ PHASE 1A: Collapsible content -->
+                <!-- PHASE 1A: Collapsible content -->
                 <div v-show="isExpanded(index)" class="logo-content">
                 
                 <div class="field-group">
@@ -217,7 +217,7 @@
         <section class="editor-section">
           <h4>Display Options</h4>
           
-          <!-- ✅ PHASE 1B: Layout Style Selector -->
+          <!-- PHASE 1B: Layout Style Selector -->
           <div class="field-group">
             <label for="layout-style">Layout Style</label>
             <select 
@@ -232,7 +232,7 @@
             <p class="field-hint">Choose how your logos are displayed</p>
           </div>
 
-          <!-- ✅ PHASE 1B: Grid-specific options (only show for grid/masonry) -->
+          <!-- PHASE 1B: Grid-specific options (only show for grid/masonry) -->
           <div v-if="localData.layoutStyle !== 'carousel'" class="field-group">
             <label for="columns">Grid Columns</label>
             <select 
@@ -247,7 +247,7 @@
             </select>
           </div>
 
-          <!-- ✅ PHASE 1B: Conditional Carousel Settings -->
+          <!-- PHASE 1B: Conditional Carousel Settings -->
           <div v-if="localData.layoutStyle === 'carousel'" class="carousel-settings">
             <h5 class="subsection-title">Carousel Settings</h5>
             
@@ -364,7 +364,7 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue';
-import draggable from 'vuedraggable';  // ✅ NEW: Drag-and-drop support
+import draggable from 'vuedraggable';  // NEW: Drag-and-drop support
 import { useMediaKitStore } from '@/stores/mediaKit';
 import { ToastService } from '@/services/ToastService';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
@@ -385,7 +385,7 @@ const store = useMediaKitStore();
 // Active tab state
 const activeTab = ref('content');
 
-// ✅ PHASE 1A: Expanded items state - Track which logo items are expanded
+// PHASE 1A: Expanded items state - Track which logo items are expanded
 const expandedItems = ref(new Set([0])); // First item expanded by default
 
 // Media uploader ref
@@ -401,8 +401,8 @@ const localData = ref({
   logos: [],
   columns: 'auto',
   logoNameStyle: 'below', // Default logo name style
-  layoutStyle: 'grid', // ✅ PHASE 1B: Default layout style
-  carouselSettings: { // ✅ PHASE 1B: Carousel settings (only saved when carousel selected)
+  layoutStyle: 'grid', // PHASE 1B: Default layout style
+  carouselSettings: { // PHASE 1B: Carousel settings (only saved when carousel selected)
     autoplay: true,
     autoplaySpeed: 3000,
     slidesToShow: 4,
@@ -415,7 +415,7 @@ const localData = ref({
   usePodsData: false
 });
 
-// ✅ BLOAT-FREE: Validation errors as local component state (NOT saved to database)
+// BLOAT-FREE: Validation errors as local component state (NOT saved to database)
 const validationErrors = ref(new Map()); // Map<logoIndex, errorMessage>
 
 // Load component data
@@ -430,8 +430,8 @@ const loadComponentData = () => {
         : [],
       columns: component.data.columns || 'auto',
       logoNameStyle: component.data.logoNameStyle || 'below',
-      layoutStyle: component.data.layoutStyle || 'grid', // ✅ PHASE 1B: Load layout style
-      carouselSettings: component.data.carouselSettings || { // ✅ PHASE 1B: Load carousel settings
+      layoutStyle: component.data.layoutStyle || 'grid', // PHASE 1B: Load layout style
+      carouselSettings: component.data.carouselSettings || { // PHASE 1B: Load carousel settings
         autoplay: true,
         autoplaySpeed: 3000,
         slidesToShow: 4,
@@ -448,7 +448,7 @@ const loadComponentData = () => {
 
 watch(() => props.componentId, loadComponentData, { immediate: true });
 
-// ✅ PHASE 1A: Toggle expansion state for a logo item
+// PHASE 1A: Toggle expansion state for a logo item
 const isExpanded = (index) => {
   return expandedItems.value.has(index);
 };
@@ -471,12 +471,12 @@ const addLogo = () => {
     link: ''
     // linkNewTab: only added when user checks the box
   });
-  // ✅ PHASE 1A: Auto-expand newly added logo
+  // PHASE 1A: Auto-expand newly added logo
   expandedItems.value.add(newIndex);
   updateComponent();
 };
 
-// ✅ PHASE 1A: Duplicate logo
+// PHASE 1A: Duplicate logo
 const duplicateLogo = (index) => {
   const duplicate = { ...localData.value.logos[index] };
   // Remove internal properties that shouldn't be duplicated
@@ -484,7 +484,7 @@ const duplicateLogo = (index) => {
   
   localData.value.logos.splice(index + 1, 0, duplicate);
   
-  // ✅ PHASE 1A: Auto-expand duplicated logo and collapse original
+  // PHASE 1A: Auto-expand duplicated logo and collapse original
   expandedItems.value.delete(index);
   expandedItems.value.add(index + 1);
   
@@ -494,12 +494,12 @@ const duplicateLogo = (index) => {
 // Remove logo
 const removeLogo = (index) => {
   localData.value.logos.splice(index, 1);
-  validationErrors.value.delete(index);  // ✅ Clean up validation state
+  validationErrors.value.delete(index);  // Clean up validation state
   
-  // ✅ PHASE 1A: Clean up expansion state
+  // PHASE 1A: Clean up expansion state
   expandedItems.value.delete(index);
   
-  // ✅ PHASE 1A: Reindex expanded items after deletion
+  // PHASE 1A: Reindex expanded items after deletion
   const newExpanded = new Set();
   expandedItems.value.forEach((expandedIndex) => {
     if (expandedIndex > index) {
@@ -524,7 +524,7 @@ const removeLogo = (index) => {
   updateComponent();
 };
 
-// ✅ PHASE 1B: Handle layout change - Initialize or clean up carousel settings
+// PHASE 1B: Handle layout change - Initialize or clean up carousel settings
 const handleLayoutChange = () => {
   // Initialize carousel settings if switching to carousel
   if (localData.value.layoutStyle === 'carousel' && !localData.value.carouselSettings) {
@@ -540,13 +540,13 @@ const handleLayoutChange = () => {
     };
   }
   
-  // ✅ NO BLOAT: Clean up carousel settings if switching away
+  // NO BLOAT: Clean up carousel settings if switching away
   // (Settings will not be saved in updateComponent if layoutStyle !== 'carousel')
   
   updateComponent();
 };
 
-// ✅ BLOAT-FREE: Validate link URL (errors stored separately, not in logo data)
+// BLOAT-FREE: Validate link URL (errors stored separately, not in logo data)
 const validateLink = (logo, index) => {
   if (!logo.link || logo.link.trim() === '') {
     validationErrors.value.delete(index);
@@ -602,10 +602,10 @@ const updateComponent = () => {
       logos: cleanLogos,
       columns: localData.value.columns,
       logoNameStyle: localData.value.logoNameStyle,
-      layoutStyle: localData.value.layoutStyle // ✅ PHASE 1B: Save layout style
+      layoutStyle: localData.value.layoutStyle // PHASE 1B: Save layout style
     };
     
-    // ✅ PHASE 1B: NO BLOAT: Only save carouselSettings when layoutStyle is 'carousel'
+    // PHASE 1B: NO BLOAT: Only save carouselSettings when layoutStyle is 'carousel'
     if (localData.value.layoutStyle === 'carousel') {
       dataToSave.carouselSettings = localData.value.carouselSettings;
     }
@@ -707,7 +707,7 @@ const saveLogosToPods = async () => {
       throw new Error(`Failed to save logos: ${response.statusText}`);
     }
     
-    console.log('✅ Logos saved to Pods field successfully');
+    console.log('Logos saved to Pods field successfully');
   } catch (error) {
     console.error('Error saving logos to Pods:', error);
     ToastService.warning(
@@ -989,7 +989,7 @@ body.dark-mode .field-hint {
   gap: 12px;
 }
 
-/* ✅ PHASE 1A: Logo item with collapsible state */
+/* PHASE 1A: Logo item with collapsible state */
 .logo-item {
   background: white;
   border-radius: 8px;
@@ -1012,7 +1012,7 @@ body.dark-mode .logo-item:hover {
   border-color: #475569;
 }
 
-/* ✅ PHASE 1A: Collapsed state styling */
+/* PHASE 1A: Collapsed state styling */
 .logo-item.is-collapsed {
   background: #f8fafc;
 }
@@ -1021,7 +1021,7 @@ body.dark-mode .logo-item.is-collapsed {
   background: #0f172a;
 }
 
-/* ✅ PHASE 1A: Header - always visible, clickable */
+/* PHASE 1A: Header - always visible, clickable */
 .logo-header {
   display: flex;
   align-items: center;
@@ -1040,7 +1040,7 @@ body.dark-mode .logo-header:hover {
   background: #1e293b;
 }
 
-/* ✅ PHASE 1A: Drag handle */
+/* PHASE 1A: Drag handle */
 .drag-handle {
   display: flex;
   align-items: center;
@@ -1070,7 +1070,7 @@ body.dark-mode .drag-handle:hover {
   color: #94a3b8;
 }
 
-/* ✅ PHASE 1A: Thumbnail preview in header */
+/* PHASE 1A: Thumbnail preview in header */
 .logo-thumbnail {
   width: 40px;
   height: 40px;
@@ -1086,7 +1086,7 @@ body.dark-mode .logo-thumbnail {
   background: #0f172a;
 }
 
-/* ✅ PHASE 1A: Logo title wrapper */
+/* PHASE 1A: Logo title wrapper */
 .logo-title-wrapper {
   flex: 1;
   display: flex;
@@ -1106,7 +1106,7 @@ body.dark-mode .logo-number {
   color: #60a5fa;
 }
 
-/* ✅ PHASE 1A: Logo name preview */
+/* PHASE 1A: Logo name preview */
 .logo-name-preview {
   font-size: 12px;
   color: #64748b;
@@ -1119,7 +1119,7 @@ body.dark-mode .logo-name-preview {
   color: #94a3b8;
 }
 
-/* ✅ PHASE 1A: Header actions */
+/* PHASE 1A: Header actions */
 .header-actions {
   display: flex;
   align-items: center;
@@ -1139,7 +1139,7 @@ body.dark-mode .logo-name-preview {
   border: 1px solid transparent;
 }
 
-/* ✅ PHASE 1A: Duplicate button */
+/* PHASE 1A: Duplicate button */
 .duplicate-btn {
   background: #f0f9ff;
   border-color: #bae6fd;
@@ -1163,7 +1163,7 @@ body.dark-mode .duplicate-btn:hover {
   border-color: #0284c7;
 }
 
-/* ✅ PHASE 1A: Remove button */
+/* PHASE 1A: Remove button */
 .remove-btn {
   background: #fef2f2;
   border-color: #fecaca;
@@ -1187,7 +1187,7 @@ body.dark-mode .remove-btn:hover {
   border-color: #991b1b;
 }
 
-/* ✅ PHASE 1A: Expand/collapse toggle */
+/* PHASE 1A: Expand/collapse toggle */
 .expand-toggle {
   font-size: 12px;
   color: #94a3b8;
@@ -1196,7 +1196,7 @@ body.dark-mode .remove-btn:hover {
   transition: transform 0.2s;
 }
 
-/* ✅ PHASE 1A: Logo content - collapsible section */
+/* PHASE 1A: Logo content - collapsible section */
 .logo-content {
   padding: 0 16px 16px 16px;
   animation: slideDown 0.2s ease;
@@ -1371,7 +1371,7 @@ body.dark-mode .crop-btn:hover {
   border-color: #0284c7;
 }
 
-/* ✅ NEW: Link Validation Styles */
+/* NEW: Link Validation Styles */
 .input-error {
   border-color: #ef4444 !important;
 }
@@ -1410,7 +1410,7 @@ body.dark-mode .success-hint {
   color: #6ee7b7;
 }
 
-/* ✅ NEW: Checkbox Label */
+/* NEW: Checkbox Label */
 .checkbox-label {
   display: flex;
   align-items: center;
@@ -1443,7 +1443,7 @@ body.dark-mode .checkbox-label:hover span {
   color: #60a5fa;
 }
 
-/* ✅ PHASE 1B: Carousel Settings Styles */
+/* PHASE 1B: Carousel Settings Styles */
 .carousel-settings {
   margin-top: 16px;
   padding: 16px;

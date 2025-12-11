@@ -92,8 +92,8 @@ const setDevice = (device) => {
   // No need for inline styles - our CSS in sections.css handles this automatically
   
   // Just log for debugging
-  console.log(`📱 Device class applied: device-${device}`);
-  console.log('📋 CSS will handle layout via .device-mobile, .device-tablet classes');
+  console.log(`Device class applied: device-${device}`);
+  console.log('CSS will handle layout via .device-mobile, .device-tablet classes');
   
   // Force a repaint to ensure CSS classes take effect
   void previewArea.offsetHeight;
@@ -109,7 +109,7 @@ const setDevice = (device) => {
     detail: { device, width: deviceData.width, maxWidth: deviceData.maxWidth }
   }));
   
-  console.log(`📱 Device preview changed to: ${device} (${deviceData.width})`);
+  console.log(`Device preview changed to: ${device} (${deviceData.width})`);
 };
 
 // Initialize on mount
@@ -121,17 +121,17 @@ onMounted(() => {
   if (previewArea) {
     // Element already exists, initialize immediately
     setDevice('desktop');
-    console.log('✅ Device Preview component mounted and initialized');
+    console.log('Device Preview component mounted and initialized');
   } else {
     // Element doesn't exist yet, wait for it using MutationObserver
-    console.log('⏳ Preview area not ready, watching for DOM changes...');
+    console.log('Preview area not ready, watching for DOM changes...');
     
     const observer = new MutationObserver((mutations, obs) => {
       const previewArea = document.getElementById('media-kit-preview');
       if (previewArea) {
         // Element found! Initialize and stop observing
         setDevice('desktop');
-        console.log('✅ Device Preview component initialized after DOM mutation');
+        console.log('Device Preview component initialized after DOM mutation');
         obs.disconnect();
       }
     });
@@ -145,7 +145,7 @@ onMounted(() => {
     // Safety cleanup: disconnect observer after 5 seconds if element never appears
     setTimeout(() => {
       observer.disconnect();
-      console.warn('⚠️ Preview area never appeared, stopping observer');
+      console.warn('Preview area never appeared, stopping observer');
     }, 5000);
   }
 });
@@ -172,14 +172,14 @@ keyboardHandler = (e) => {
 // ROOT FIX: Add keyboard handler in onMounted
 onMounted(() => {
   document.addEventListener('keydown', keyboardHandler);
-  console.log('✅ Device preview keyboard shortcuts enabled');
+  console.log('Device preview keyboard shortcuts enabled');
 });
 
 // ROOT FIX: Proper cleanup in onUnmounted
 onUnmounted(() => {
   if (keyboardHandler) {
     document.removeEventListener('keydown', keyboardHandler);
-    console.log('✅ Device preview keyboard shortcuts cleaned up');
+    console.log('Device preview keyboard shortcuts cleaned up');
   }
 });
 </script>

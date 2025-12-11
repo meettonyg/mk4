@@ -85,7 +85,7 @@
           style="display: none"
         >
         <button class="btn btn-secondary" @click="$refs.fileInput.click()">
-          📁 Choose File
+          Choose File
         </button>
         <span v-if="importFileName" class="file-name">{{ importFileName }}</span>
       </div>

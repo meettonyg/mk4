@@ -93,9 +93,9 @@ const activeTab = ref('content');
 
 const socialNetworks = {
   facebook: { name: 'Facebook', icon: '👤', placeholder: 'https://facebook.com/username' },
-  twitter: { name: 'Twitter/X', icon: '🐦', placeholder: 'https://twitter.com/username' },
-  linkedin: { name: 'LinkedIn', icon: '💼', placeholder: 'https://linkedin.com/in/username' },
-  instagram: { name: 'Instagram', icon: '📷', placeholder: 'https://instagram.com/instagram' },
+  twitter: { name: 'Twitter/X', icon: '[Twitter]', placeholder: 'https://twitter.com/username' },
+  linkedin: { name: 'LinkedIn', icon: '[Work]', placeholder: 'https://linkedin.com/in/username' },
+  instagram: { name: 'Instagram', icon: '[Photo]', placeholder: 'https://instagram.com/instagram' },
   youtube: { name: 'YouTube', icon: '📺', placeholder: 'https://youtube.com/@channel' },
   tiktok: { name: 'TikTok', icon: '🎵', placeholder: 'https://tiktok.com/@username' },
   pinterest: { name: 'Pinterest', icon: '📌', placeholder: 'https://pinterest.com/username' }

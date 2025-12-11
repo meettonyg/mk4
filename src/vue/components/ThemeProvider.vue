@@ -250,14 +250,14 @@ onMounted(() => {
   
   // Listen for external theme change requests
   document.addEventListener('gmkb:change-theme', changeThemeHandler);
-  console.log('✅ ThemeProvider: Event listener registered');
+  console.log('ThemeProvider: Event listener registered');
 });
 
 // ROOT FIX: Proper cleanup in onUnmounted
 onUnmounted(() => {
   if (changeThemeHandler) {
     document.removeEventListener('gmkb:change-theme', changeThemeHandler);
-    console.log('✅ ThemeProvider: Event listener cleaned up');
+    console.log('ThemeProvider: Event listener cleaned up');
   }
 });
 </script>

@@ -6,13 +6,13 @@
 
 class ComponentStyleService {
   constructor() {
-    // Map of componentId → <style> element
+    // Map of componentId  -> <style> element
     this.styleElements = new Map();
     
-    // Map of componentId → current settings hash (for change detection)
+    // Map of componentId  -> current settings hash (for change detection)
     this.settingsCache = new Map();
     
-    console.log('✅ ComponentStyleService initialized');
+    console.log('ComponentStyleService initialized');
   }
 
   /**
@@ -22,31 +22,31 @@ class ComponentStyleService {
    */
   applySectionStyling(sectionId, settings) {
     if (!sectionId || typeof sectionId !== 'string') {
-      console.warn('⚠️ Invalid sectionId for applySectionStyling:', sectionId);
+      console.warn('Invalid sectionId for applySectionStyling:', sectionId);
       return;
     }
 
     if (!settings || typeof settings !== 'object') {
-      console.warn('⚠️ Invalid settings for applySectionStyling:', settings);
+      console.warn('Invalid settings for applySectionStyling:', settings);
       return;
     }
 
     try {
-      console.log(`🎨 applySectionStyling CALLED for ${sectionId}`);
+      console.log(`applySectionStyling CALLED for ${sectionId}`);
       console.log('  Settings:', settings);
 
       // Generate CSS variables for section
       const css = this.generateSectionCSS(sectionId, settings);
 
-      console.log(`🎨 Generated section CSS for ${sectionId}:`);
+      console.log(`Generated section CSS for ${sectionId}:`);
       console.log(css || '(empty CSS)');
 
       // Inject or update styles
       this.injectStyles(`section-${sectionId}`, css);
 
-      console.log(`✅ Applied section styles to ${sectionId}`);
+      console.log(`Applied section styles to ${sectionId}`);
     } catch (error) {
-      console.error(`❌ Failed to apply section styles to ${sectionId}:`, error);
+      console.error(`Failed to apply section styles to ${sectionId}:`, error);
       console.error('  Error stack:', error.stack);
     }
   }
@@ -128,7 +128,7 @@ class ComponentStyleService {
       this.settingsCache.delete(styleKey);
       
       if (window.gmkbData?.debugMode) {
-        console.log(`🗑️ Cleared section styles for ${sectionId}`);
+        console.log(`Cleared section styles for ${sectionId}`);
       }
     }
   }
@@ -203,13 +203,13 @@ class ComponentStyleService {
    */
   applyStyling(componentId, settings) {
     if (!componentId || !settings) {
-      console.warn('⚠️ Invalid parameters for applyStyling:', { componentId, settings });
+      console.warn('Invalid parameters for applyStyling:', { componentId, settings });
       return;
     }
 
     try {
       // CRITICAL DEBUG: Log what we're working with
-      console.log(`🔍 applyStyling CALLED for ${componentId}`);
+      console.log(`applyStyling CALLED for ${componentId}`);
       console.log('  Settings:', settings);
       console.log('  Has style?', !!settings.style);
       console.log('  Has advanced?', !!settings.advanced);
@@ -218,7 +218,7 @@ class ComponentStyleService {
       const css = this.generateCSS(componentId, settings);
       
       // CRITICAL DEBUG: Log generated CSS
-      console.log(`🎨 Generated CSS for ${componentId}:`);
+      console.log(`Generated CSS for ${componentId}:`);
       console.log(css || '(empty CSS)');
       
       // Inject or update styles
@@ -226,7 +226,7 @@ class ComponentStyleService {
       
       // CRITICAL DEBUG: Verify injection
       const styleEl = this.styleElements.get(componentId);
-      console.log(`✅ Style element exists?`, !!styleEl);
+      console.log(`Style element exists?`, !!styleEl);
       if (styleEl) {
         console.log('  Style element ID:', styleEl.id);
         console.log('  Style element parent:', styleEl.parentNode?.nodeName);
@@ -238,10 +238,10 @@ class ComponentStyleService {
       this.settingsCache.set(componentId, settingsHash);
       
       if (window.gmkbData?.debugMode) {
-        console.log(`🎨 Applied styles to component ${componentId}`);
+        console.log(`Applied styles to component ${componentId}`);
       }
     } catch (error) {
-      console.error(`❌ Failed to apply styles to ${componentId}:`, error);
+      console.error(`Failed to apply styles to ${componentId}:`, error);
       console.error('  Error stack:', error.stack);
     }
   }
@@ -256,7 +256,7 @@ class ComponentStyleService {
     // CRITICAL FIX: Handle invalid settings (like empty arrays)
     if (!settings || Array.isArray(settings) || typeof settings !== 'object') {
       if (window.gmkbData?.debugMode) {
-        console.warn(`⚠️ Invalid settings for ${componentId}, skipping styles`);
+        console.warn(`Invalid settings for ${componentId}, skipping styles`);
       }
       return '';
     }
@@ -264,7 +264,7 @@ class ComponentStyleService {
     const { style, advanced } = settings;
     if (!style || !advanced) {
       if (window.gmkbData?.debugMode) {
-        console.warn(`⚠️ Missing style or advanced settings for ${componentId}`);
+        console.warn(`Missing style or advanced settings for ${componentId}`);
       }
       return '';
     }
@@ -499,7 +499,7 @@ class ComponentStyleService {
       this.settingsCache.delete(componentId);
       
       if (window.gmkbData?.debugMode) {
-        console.log(`🗑️ Cleared styles for component ${componentId}`);
+        console.log(`Cleared styles for component ${componentId}`);
       }
     }
   }
@@ -511,7 +511,7 @@ class ComponentStyleService {
    */
   watchComponent(componentId, store) {
     if (!store) {
-      console.warn('⚠️ Store not provided for watchComponent');
+      console.warn('Store not provided for watchComponent');
       return;
     }
 
@@ -530,7 +530,7 @@ class ComponentStyleService {
    */
   initializeAll(components) {
     if (!components || typeof components !== 'object') {
-      console.warn('⚠️ Invalid components object');
+      console.warn('Invalid components object');
       return;
     }
 
@@ -542,7 +542,7 @@ class ComponentStyleService {
       }
     });
 
-    console.log(`✅ Initialized ${count} component styles`);
+    console.log(`Initialized ${count} component styles`);
   }
 
   /**
@@ -556,7 +556,7 @@ class ComponentStyleService {
     this.styleElements.clear();
     this.settingsCache.clear();
     
-    console.log('🗑️ Cleared all component styles');
+    console.log('Cleared all component styles');
   }
 
   /**
@@ -568,25 +568,25 @@ class ComponentStyleService {
     // ROOT FIX: Access store via GMKB namespace (support both old and new structure)
     const store = window.GMKB?.stores?.mediaKit || window.GMKB?.store;
     if (!store) {
-      console.error('❌ Store not available. Make sure you\'re in the builder.');
-      console.log('💡 TIP: Store should be at window.GMKB.stores.mediaKit or window.GMKB.store');
-      console.log('💡 Current GMKB:', window.GMKB);
+      console.error('Store not available. Make sure you\'re in the builder.');
+      console.log('TIP: Store should be at window.GMKB.stores.mediaKit or window.GMKB.store');
+      console.log('Current GMKB:', window.GMKB);
       return;
     }
 
     const component = store.components[componentId];
     if (!component) {
-      console.error(`❌ Component ${componentId} not found in store`);
+      console.error(`Component ${componentId} not found in store`);
       console.log('Available components:', Object.keys(store.components));
       return;
     }
 
-    console.group(`🔍 Settings Debug for ${componentId}`);
+    console.group(`Settings Debug for ${componentId}`);
     console.log('Full Component:', component);
     console.log('Settings Object:', component.settings);
     
     if (component.settings && component.settings.style) {
-      console.group('📐 Style Settings');
+      console.group('Style Settings');
       console.log('Spacing:', component.settings.style.spacing);
       console.log('Background:', component.settings.style.background);
       console.log('Typography:', component.settings.style.typography);
@@ -596,7 +596,7 @@ class ComponentStyleService {
     }
     
     if (component.settings && component.settings.advanced) {
-      console.group('⚙️ Advanced Settings');
+      console.group('Advanced Settings');
       console.log('Layout:', component.settings.advanced.layout);
       console.log('Responsive:', component.settings.advanced.responsive);
       console.log('Custom:', component.settings.advanced.custom);
@@ -604,7 +604,7 @@ class ComponentStyleService {
     }
     
     // Output as copyable JSON
-    console.group('📋 Copyable JSON');
+    console.group('Copyable JSON');
     console.log(JSON.stringify(component.settings, null, 2));
     console.groupEnd();
     
@@ -623,13 +623,13 @@ class ComponentStyleService {
     const componentRoot = document.querySelector(`[data-component-id="${componentId}"] .component-root`);
     
     if (!wrapper) {
-      console.error(`❌ Component wrapper [data-component-id="${componentId}"] not found in DOM`);
+      console.error(`Component wrapper [data-component-id="${componentId}"] not found in DOM`);
       return;
     }
 
-    console.group(`🖼️ Rendered Styles for ${componentId}`);
+    console.group(`Rendered Styles for ${componentId}`);
     
-    console.group('📦 Wrapper Element');
+    console.group('Wrapper Element');
     console.log('Element:', wrapper);
     const wrapperStyles = window.getComputedStyle(wrapper);
     const marginData = {
@@ -644,7 +644,7 @@ class ComponentStyleService {
     console.groupEnd();
     
     if (componentRoot) {
-      console.group('🎯 Component Root Element');
+      console.group('Component Root Element');
       console.log('Element:', componentRoot);
       const rootStyles = window.getComputedStyle(componentRoot);
       
@@ -691,7 +691,7 @@ class ComponentStyleService {
       console.log('Effects:', effectsData);
       
       // Output as copyable JSON
-      console.group('📋 Copyable JSON');
+      console.group('Copyable JSON');
       console.log(JSON.stringify({
         margin: marginData,
         padding: paddingData,
@@ -704,19 +704,19 @@ class ComponentStyleService {
       
       console.groupEnd();
     } else {
-      console.warn('⚠️ No .component-root element found. Component may not be using V2 architecture.');
+      console.warn('No .component-root element found. Component may not be using V2 architecture.');
     }
     
     // Show injected style tag
     const styleTag = document.getElementById(`component-styles-${componentId}`);
     if (styleTag) {
-      console.group('📝 Injected CSS');
+      console.group('Injected CSS');
       console.log('Style Tag:', styleTag);
       console.log('CSS Content:');
       console.log(styleTag.textContent);
       console.groupEnd();
     } else {
-      console.warn('⚠️ No injected style tag found for this component');
+      console.warn('No injected style tag found for this component');
     }
     
     console.groupEnd();
@@ -735,15 +735,15 @@ class ComponentStyleService {
    */
   debugCompare(componentId) {
     console.log(`\n${'='.repeat(80)}`);
-    console.log(`🔬 COMPREHENSIVE DEBUG: ${componentId}`);
+    console.log(`COMPREHENSIVE DEBUG: ${componentId}`);
     console.log(`${'='.repeat(80)}\n`);
     
     const settings = this.debugSettings(componentId);
     const rendered = this.debugRendered(componentId);
     
     console.log('\n' + '='.repeat(80));
-    console.log('✅ Debug complete. Check the groups above for details.');
-    console.log('\n📝 INSTRUCTIONS:');
+    console.log('Debug complete. Check the groups above for details.');
+    console.log('\nINSTRUCTIONS:');
     console.log('1. Expand the "Settings Debug" group above to see settings from the store');
     console.log('2. Expand the "Rendered Styles" group above to see computed DOM styles');
     console.log('3. Compare the "Copyable JSON" sections to identify mismatches');
@@ -759,14 +759,14 @@ class ComponentStyleService {
    * Usage: window.GMKB.services.componentStyle.debugList()
    */
   debugList() {
-    console.group('📋 All Components with Styles');
+    console.group('All Components with Styles');
     
     // ROOT FIX: Access store via GMKB namespace (support both old and new structure)
     const store = window.GMKB?.stores?.mediaKit || window.GMKB?.store;
     if (!store) {
-      console.error('❌ Store not available');
-      console.log('💡 TIP: Store should be at window.GMKB.stores.mediaKit or window.GMKB.store');
-      console.log('💡 Current GMKB:', window.GMKB);
+      console.error('Store not available');
+      console.log('TIP: Store should be at window.GMKB.stores.mediaKit or window.GMKB.store');
+      console.log('Current GMKB:', window.GMKB);
       console.groupEnd();
       return;
     }
@@ -811,9 +811,9 @@ if (typeof window !== 'undefined') {
     // ROOT FIX: Access store via GMKB namespace (support both old and new structure)
     const store = window.GMKB?.stores?.mediaKit || window.GMKB?.store;
     if (!store) {
-      console.error('❌ Store not available');
-      console.log('💡 TIP: Store should be at window.GMKB.stores.mediaKit or window.GMKB.store');
-      console.log('💡 Current window.GMKB:', window.GMKB);
+      console.error('Store not available');
+      console.log('TIP: Store should be at window.GMKB.stores.mediaKit or window.GMKB.store');
+      console.log('Current window.GMKB:', window.GMKB);
       return;
     }
     
@@ -823,18 +823,18 @@ if (typeof window !== 'undefined') {
     );
     
     if (!bioComp) {
-      console.error('❌ No Biography component found');
+      console.error('No Biography component found');
       console.log('Available components:', Object.keys(store.components));
       return;
     }
     
     const bioId = bioComp[0];
-    console.log(`✅ Found Biography component: ${bioId}`);
+    console.log(`Found Biography component: ${bioId}`);
     console.log('\nUsing this ID to run debug commands:\n');
     return componentStyleService.debugCompare(bioId);
   };
   
-  console.log('\n🔧 Component Style Debug Commands Available:');
+  console.log('\nComponent Style Debug Commands Available:');
   console.log('  debugComponentList()                  - List all components');
   console.log('  debugComponentSettings("component-id") - Show settings from store');
   console.log('  debugComponentRendered("component-id") - Show computed DOM styles');

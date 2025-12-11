@@ -20,7 +20,7 @@ export class KeyboardManager {
   }
 
   init() {
-    console.log('⌨️ Initializing KeyboardManager...');
+    console.log('Initializing KeyboardManager...');
     
     // Register default shortcuts
     this.registerDefaults();
@@ -33,7 +33,7 @@ export class KeyboardManager {
     document.addEventListener('gmkb:modal:opened', () => { this.modalOpen = true; });
     document.addEventListener('gmkb:modal:closed', () => { this.modalOpen = false; });
     
-    console.log('✅ KeyboardManager initialized');
+    console.log('KeyboardManager initialized');
   }
 
   /**
@@ -137,7 +137,7 @@ export class KeyboardManager {
       document.dispatchEvent(new CustomEvent('gmkb:keyboard:toggle-preview'));
     }, 'Toggle preview');
 
-    console.log(`✅ Registered ${this.shortcuts.size} default shortcuts`);
+    console.log(`Registered ${this.shortcuts.size} default shortcuts`);
   }
 
   /**
@@ -369,7 +369,7 @@ export class KeyboardManager {
    */
   setEnabled(enabled) {
     this.enabled = enabled;
-    console.log(enabled ? '✅ Keyboard manager enabled' : '⏸️ Keyboard manager disabled');
+    console.log(enabled ? 'Keyboard manager enabled' : 'Keyboard manager disabled');
   }
 
   /**
@@ -382,11 +382,11 @@ export class KeyboardManager {
     const isMac = this.isMac();
     
     return keys
-      .replace('mod', isMac ? '⌘' : 'Ctrl')
-      .replace('ctrl', isMac ? '⌃' : 'Ctrl')
-      .replace('meta', '⌘')
-      .replace('alt', isMac ? '⌥' : 'Alt')
-      .replace('shift', isMac ? '⇧' : 'Shift')
+      .replace('mod', isMac ? 'Cmd' : 'Ctrl')
+      .replace('ctrl', isMac ? 'Ctrl' : 'Ctrl')
+      .replace('meta', 'Cmd')
+      .replace('alt', isMac ? 'Option' : 'Alt')
+      .replace('shift', isMac ? 'Shift' : 'Shift')
       .split('+')
       .map(key => key.charAt(0).toUpperCase() + key.slice(1))
       .join(isMac ? '' : '+');

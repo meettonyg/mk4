@@ -14,7 +14,7 @@
  * - This file may be removed in a future version
  */
 
-console.warn('⚠️ ComponentDiscoveryService.js is deprecated. Use APIService.loadComponents() instead.');
+console.warn('ComponentDiscoveryService.js is deprecated. Use APIService.loadComponents() instead.');
 
 import { defineAsyncComponent, markRaw } from 'vue';
 
@@ -26,7 +26,7 @@ class ComponentDiscoveryService {
   constructor() {
     // PHASE 2: Deprecation warning
     if (window.gmkbData?.debugMode) {
-      console.log('%c⚠️ DEPRECATED: ComponentDiscoveryService', 'color: orange; font-weight: bold');
+      console.log('%cDEPRECATED: ComponentDiscoveryService', 'color: orange; font-weight: bold');
       console.log('This service is being phased out in favor of REST API component loading.');
       console.log('Use: APIService.loadComponents() or fetch from /gmkb/v2/components');
     }
@@ -60,7 +60,7 @@ class ComponentDiscoveryService {
     this.componentManifests.set(type, manifest);
     this.discoveredComponents.add(type);
     
-    console.log(`📦 Registered component: ${type}`, manifest);
+    console.log(`Registered component: ${type}`, manifest);
     
     // Dispatch event for other systems
     document.dispatchEvent(new CustomEvent('gmkb:component-registered', {
@@ -100,7 +100,7 @@ class ComponentDiscoveryService {
       }
     }
 
-    console.warn(`⚠️ Component "${type}" not found in any location`);
+    console.warn(`Component "${type}" not found in any location`);
     return null;
   }
 
@@ -278,7 +278,7 @@ class ComponentDiscoveryService {
    */
   clearCache() {
     this.componentCache.clear();
-    console.log('🗑️ Component cache cleared');
+    console.log('Component cache cleared');
   }
 }
 

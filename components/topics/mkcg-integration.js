@@ -52,7 +52,7 @@ class TopicsMKCGIntegration {
         this.initValidationSystem();
         
         // GEMINI'S APPROACH: No auto-initialization, just state setup
-        console.log('🔧 MKCG Integration constructor - ready for manual init() call');
+        console.log('MKCG Integration constructor - ready for manual init() call');
     }
     
     /**
@@ -130,7 +130,7 @@ class TopicsMKCGIntegration {
             backupInterval: 30000 // 30 seconds
         };
         
-        console.log('✅ PHASE 6: Enhanced validation system initialized with Gemini\'s recommendations');
+        console.log('PHASE 6: Enhanced validation system initialized with Gemini\'s recommendations');
     }
     
     /**
@@ -141,26 +141,26 @@ class TopicsMKCGIntegration {
      */
     async init() {
         try {
-            console.log('🔧 MKCG Integration init() called by panel script');
+            console.log('MKCG Integration init() called by panel script');
             
             // Step 1: Detect post ID
             this.postId = this.detectPostId();
             if (!this.postId) {
-                console.log('📝 No post ID - MKCG integration disabled');
+                console.log('No post ID - MKCG integration disabled');
                 return false;
             }
             
             // Step 2: Detect and validate MKCG data
             const hasData = await this.detectMKCGData();
             if (!hasData) {
-                console.log('📝 No MKCG data available');
+                console.log('No MKCG data available');
                 return false;
             }
             
             // Step 3: Validate data for Topics
             const isValid = this.validateDataAvailability();
             if (!isValid) {
-                console.log('📝 MKCG data not valid for Topics');
+                console.log('MKCG data not valid for Topics');
                 return false;
             }
             
@@ -173,7 +173,7 @@ class TopicsMKCGIntegration {
             this.isInitialized = true;
             const initTime = performance.now() - this.initStartTime;
             
-            console.log('✅ MKCG Integration complete', {
+            console.log('MKCG Integration complete', {
                 postId: this.postId,
                 topicsAvailable: Object.keys(this.mkcgData.topics.topics).length,
                 initTime: `${initTime.toFixed(2)}ms`
@@ -182,7 +182,7 @@ class TopicsMKCGIntegration {
             return true;
             
         } catch (error) {
-            console.error('❌ MKCG Integration failed:', error);
+            console.error('MKCG Integration failed:', error);
             return false;
         }
     }
@@ -200,7 +200,7 @@ class TopicsMKCGIntegration {
             if (window.guestifyData?.postId) {
                 const postId = parseInt(window.guestifyData.postId);
                 if (postId > 0) {
-                    console.log(`🔍 Post ID detected from guestifyData: ${postId}`);
+                    console.log(`Post ID detected from guestifyData: ${postId}`);
                     return postId;
                 }
             }
@@ -214,7 +214,7 @@ class TopicsMKCGIntegration {
                 if (value && !isNaN(parseInt(value))) {
                     const postId = parseInt(value);
                     if (postId > 0) {
-                        console.log(`🔍 Post ID detected from URL parameter '${param}': ${postId}`);
+                        console.log(`Post ID detected from URL parameter '${param}': ${postId}`);
                         return postId;
                     }
                 }
@@ -224,12 +224,12 @@ class TopicsMKCGIntegration {
             if (this.element?.dataset?.postId) {
                 const postId = parseInt(this.element.dataset.postId);
                 if (postId > 0) {
-                    console.log(`🔍 Post ID detected from component data: ${postId}`);
+                    console.log(`Post ID detected from component data: ${postId}`);
                     return postId;
                 }
             }
             
-            console.warn('⚠️ No valid post ID found using any detection strategy');
+            console.warn('No valid post ID found using any detection strategy');
             return null;
             
         } catch (error) {
@@ -247,7 +247,7 @@ class TopicsMKCGIntegration {
         try {
             // Check for global MKCG data
             if (!window.guestifyData?.mkcgData) {
-                console.log('📝 No global MKCG data available');
+                console.log('No global MKCG data available');
                 return false;
             }
             
@@ -255,11 +255,11 @@ class TopicsMKCGIntegration {
             
             // Validate data structure
             if (!this.mkcgData.topics?.topics) {
-                console.log('📝 No topics data in MKCG dataset');
+                console.log('No topics data in MKCG dataset');
                 return false;
             }
             
-            console.log('✅ MKCG data detected and loaded', {
+            console.log('MKCG data detected and loaded', {
                 hasTopics: !!this.mkcgData.topics,
                 topicCount: Object.keys(this.mkcgData.topics.topics).length,
                 dataSource: this.mkcgData.meta_info?.data_source || 'unknown'
@@ -290,11 +290,11 @@ class TopicsMKCGIntegration {
             );
             
             if (availableTopics.length === 0) {
-                console.log('📝 No usable topic data found in MKCG dataset');
+                console.log('No usable topic data found in MKCG dataset');
                 return false;
             }
             
-            console.log(`✅ Validated ${availableTopics.length} usable topics in MKCG data`);
+            console.log(`Validated ${availableTopics.length} usable topics in MKCG data`);
             return true;
             
         } catch (error) {
@@ -330,7 +330,7 @@ class TopicsMKCGIntegration {
                 }
             }
             
-            console.log(`🗂️ Mapped ${Object.keys(mappedData).length} topics from MKCG data`);
+            console.log(`Mapped ${Object.keys(mappedData).length} topics from MKCG data`);
             return mappedData;
             
         } catch (error) {
@@ -376,7 +376,7 @@ class TopicsMKCGIntegration {
      */
     enhancePanelWithMKCGControls() {
         try {
-            console.log('🎨 Enhancing Topics panel with MKCG controls...');
+            console.log('Enhancing Topics panel with MKCG controls...');
             
             // Find the panel container
             const panel = this.panelContainer || document.querySelector('.element-editor');
@@ -398,7 +398,7 @@ class TopicsMKCGIntegration {
             // Show the section
             mkcgSection.style.display = 'block';
             
-            console.log('✅ MKCG controls added to Topics panel');
+            console.log('MKCG controls added to Topics panel');
             
         } catch (error) {
             this.handleError(`Panel enhancement failed: ${error.message}`, 'panel-enhancement', error);
@@ -559,14 +559,14 @@ class TopicsMKCGIntegration {
             
             const extractedTopics = this.extractTopicsFromMKCG();
             if (extractedTopics.length === 0) {
-                console.log('📝 No topics to inject into panel');
+                console.log('No topics to inject into panel');
                 return;
             }
             
             // Find the topics list container
             const topicsList = document.getElementById('design-topics-list');
             if (!topicsList) {
-                console.warn('⚠️ Topics list container not found in panel');
+                console.warn('Topics list container not found in panel');
                 return;
             }
             
@@ -580,7 +580,7 @@ class TopicsMKCGIntegration {
             // Update the component preview
             this.updateTopicsInComponent();
             
-            console.log(`✅ Injected ${extractedTopics.length} topics into panel`);
+            console.log(`Injected ${extractedTopics.length} topics into panel`);
             
         } catch (error) {
             this.handleError(`Data injection failed: ${error.message}`, 'data-injection', error);
@@ -597,7 +597,7 @@ class TopicsMKCGIntegration {
      */
     prepareSaveBackSystem() {
         try {
-            console.log('⚙️ Preparing save-back system foundation...');
+            console.log('Preparing save-back system foundation...');
             
             // Initialize save queue for batch operations
             this.saveQueue = [];
@@ -618,13 +618,13 @@ class TopicsMKCGIntegration {
             
             // Validate AJAX configuration
             if (!this.saveBackConfig.ajaxUrl || !this.saveBackConfig.nonce) {
-                console.warn('⚠️ AJAX configuration incomplete - save-back will be limited');
+                console.warn('AJAX configuration incomplete - save-back will be limited');
             }
             
             // Setup auto-save timer (disabled for Phase 1, ready for Phase 3)
             this.autoSaveTimer = null;
             
-            console.log('✅ Save-back system foundation prepared for Phase 3');
+            console.log('Save-back system foundation prepared for Phase 3');
             
         } catch (error) {
             this.handleError(`Save-back preparation failed: ${error.message}`, 'save-back-prep', error);
@@ -662,7 +662,7 @@ class TopicsMKCGIntegration {
      */
     setupEventListeners() {
         try {
-            console.log('🎯 PHASE 5: Setting up enhanced event listeners for bulk operations...');
+            console.log('PHASE 5: Setting up enhanced event listeners for bulk operations...');
             
             // Basic Operations
             this.setupBasicOperationListeners();
@@ -673,7 +673,7 @@ class TopicsMKCGIntegration {
             // PHASE 5: Progress and feedback handlers
             this.setupProgressHandlers();
             
-            console.log('✅ PHASE 5: Enhanced event listeners setup complete');
+            console.log('PHASE 5: Enhanced event listeners setup complete');
             
         } catch (error) {
             this.handleError(`Event listener setup failed: ${error.message}`, 'event-listeners', error);
@@ -701,7 +701,7 @@ class TopicsMKCGIntegration {
                 if (typeof window.performManualSaveToWordPress === 'function') {
                     window.performManualSaveToWordPress();
                 } else {
-                    console.warn('⚠️ Manual save function not available');
+                    console.warn('Manual save function not available');
                 }
             });
         }
@@ -759,7 +759,7 @@ class TopicsMKCGIntegration {
         // Update undo button state initially
         this.updateBulkUndoButtonState();
         
-        console.log('✅ Progress handlers and bulk history initialized');
+        console.log('Progress handlers and bulk history initialized');
     }
     
     /**
@@ -767,7 +767,7 @@ class TopicsMKCGIntegration {
      */
     async handleRefreshMKCGData() {
         try {
-            console.log('🔄 Refreshing MKCG data...');
+            console.log('Refreshing MKCG data...');
             
             const refreshBtn = document.querySelector('.mkcg-refresh-btn');
             if (refreshBtn) {
@@ -793,7 +793,7 @@ class TopicsMKCGIntegration {
                 refreshBtn.disabled = false;
             }
             
-            console.log('✅ MKCG data refreshed successfully');
+            console.log('MKCG data refreshed successfully');
             
         } catch (error) {
             this.handleError(`Refresh failed: ${error.message}`, 'refresh-data', error);
@@ -805,7 +805,7 @@ class TopicsMKCGIntegration {
      */
     handleSyncAllTopicsWithConfirmation() {
         try {
-            console.log('🔄 PHASE 5: Initiating Sync All Topics with confirmation...');
+            console.log('PHASE 5: Initiating Sync All Topics with confirmation...');
             
             // Get preview of topics to be synced
             const extractedTopics = this.extractTopicsFromMKCG();
@@ -846,7 +846,7 @@ class TopicsMKCGIntegration {
      */
     executeSyncAllTopics() {
         try {
-            console.log('🚀 PHASE 5: Executing Sync All Topics...');
+            console.log('PHASE 5: Executing Sync All Topics...');
             
             // Store current state for undo
             this.storeBulkOperationState('sync_all', 'Before syncing all topics from MKCG');
@@ -898,7 +898,7 @@ class TopicsMKCGIntegration {
      */
     handleClearAllTopicsWithConfirmation() {
         try {
-            console.log('🗑️ PHASE 5: Initiating Clear All Topics with confirmation...');
+            console.log('PHASE 5: Initiating Clear All Topics with confirmation...');
             
             // Get current topics for preview
             const currentTopics = this.getCurrentTopicsFromPanel();
@@ -922,7 +922,7 @@ class TopicsMKCGIntegration {
                 title: 'Clear All Topics',
                 message: `This will permanently remove all topic content. ${currentTopics.length} topics will be cleared:`,
                 preview: `<ul class="topics-preview-list warning">${previewList}</ul>`,
-                icon: '⚠️',
+                icon: '!',
                 confirmText: 'Clear All Topics',
                 confirmClass: 'btn-warning',
                 warning: 'This action will remove all topic content. You can undo this operation.',
@@ -939,7 +939,7 @@ class TopicsMKCGIntegration {
      */
     executeClearAllTopics() {
         try {
-            console.log('🗑️ PHASE 5: Executing Clear All Topics...');
+            console.log('PHASE 5: Executing Clear All Topics...');
             
             // Store current state for undo
             this.storeBulkOperationState('clear_all', 'Before clearing all topics');
@@ -989,7 +989,7 @@ class TopicsMKCGIntegration {
      */
     handleResetToMKCGWithConfirmation() {
         try {
-            console.log('🔄 PHASE 5: Initiating Reset to MKCG with confirmation...');
+            console.log('PHASE 5: Initiating Reset to MKCG with confirmation...');
             
             // Get current topics and MKCG topics for comparison
             const currentTopics = this.getCurrentTopicsFromPanel();
@@ -1026,7 +1026,7 @@ class TopicsMKCGIntegration {
      */
     executeResetToMKCG() {
         try {
-            console.log('🔄 PHASE 5: Executing Reset to MKCG...');
+            console.log('PHASE 5: Executing Reset to MKCG...');
             
             // Store current state for undo
             this.storeBulkOperationState('reset_to_mkcg', 'Before resetting to original MKCG data');
@@ -1376,7 +1376,7 @@ class TopicsMKCGIntegration {
             this.bulkOperationHistory.shift();
         }
         
-        console.log(`💾 PHASE 5: Stored bulk operation state for ${operation}:`, {
+        console.log(`PHASE 5: Stored bulk operation state for ${operation}:`, {
             historySize: this.bulkOperationHistory.length,
             operation: operation,
             topicsCount: snapshot.topics.length
@@ -1411,11 +1411,11 @@ class TopicsMKCGIntegration {
      */
     restoreTopicsFromSnapshot(snapshot) {
         if (!snapshot || !snapshot.topics) {
-            console.warn('⚠️ PHASE 5: Invalid snapshot for restore operation');
+            console.warn('PHASE 5: Invalid snapshot for restore operation');
             return;
         }
         
-        console.log('🔄 PHASE 5: Restoring topics from snapshot:', {
+        console.log('PHASE 5: Restoring topics from snapshot:', {
             operation: snapshot.operation,
             topicsCount: snapshot.topics.length,
             timestamp: new Date(snapshot.timestamp).toLocaleString()
@@ -1464,7 +1464,7 @@ class TopicsMKCGIntegration {
         // Update component preview
         this.updateTopicsInComponent();
         
-        console.log('✅ PHASE 5: Topics restored from snapshot successfully');
+        console.log('PHASE 5: Topics restored from snapshot successfully');
     }
     
     /**
@@ -1535,7 +1535,7 @@ class TopicsMKCGIntegration {
                     </ul>
                 </div>
                 
-                <div class="comparison-arrow">→</div>
+                <div class="comparison-arrow"> -></div>
                 
                 <div class="comparison-column">
                     <h4 class="comparison-title">MKCG Topics</h4>
@@ -1561,7 +1561,7 @@ class TopicsMKCGIntegration {
      */
     initValidationMonitoring() {
         try {
-            console.log('🔍 PHASE 6: Initializing enhanced validation monitoring...');
+            console.log('PHASE 6: Initializing enhanced validation monitoring...');
             
             // Set up data integrity monitoring interval
             if (this.dataIntegrity.backupInterval > 0) {
@@ -1578,7 +1578,7 @@ class TopicsMKCGIntegration {
             // Set up validation event listeners
             this.setupValidationEventListeners();
             
-            console.log('✅ PHASE 6: Enhanced validation monitoring initialized');
+            console.log('PHASE 6: Enhanced validation monitoring initialized');
             
         } catch (error) {
             this.handleError(`Validation monitoring initialization failed: ${error.message}`, 'validation-monitoring', error);
@@ -1607,7 +1607,7 @@ class TopicsMKCGIntegration {
         
         this.validationConfig.keywordRelevance.primaryKeywords = Array.from(keywords).slice(0, 20);
         
-        console.log(`🔍 PHASE 6: Extracted ${keywords.size} primary keywords for relevance scoring`);
+        console.log(`PHASE 6: Extracted ${keywords.size} primary keywords for relevance scoring`);
     }
     
     /**
@@ -1617,7 +1617,7 @@ class TopicsMKCGIntegration {
     setupValidationEventListeners() {
         // This will be called when topics are added to the panel to attach validation
         // The actual event listeners are attached in the panel-script.js enhancement
-        console.log('🎯 PHASE 6: Validation event listeners prepared for panel integration');
+        console.log('PHASE 6: Validation event listeners prepared for panel integration');
     }
     
     /**
@@ -1739,7 +1739,7 @@ class TopicsMKCGIntegration {
             results.isValid = results.errors.length === 0;
             
             // Log validation performance
-            console.log(`🔍 PHASE 6: Validation completed for topic ${topicIndex}:`, {
+            console.log(`PHASE 6: Validation completed for topic ${topicIndex}:`, {
                 isValid: results.isValid,
                 qualityScore: results.quality.score,
                 errorsCount: results.errors.length,
@@ -1869,7 +1869,7 @@ class TopicsMKCGIntegration {
         
         // Log repair actions for transparency
         if (repairResult.repaired) {
-            console.log(`🔧 PHASE 6: Safe auto-repair performed:`, repairResult.actions);
+            console.log(`PHASE 6: Safe auto-repair performed:`, repairResult.actions);
             this.validationState.repairHistory.push({
                 timestamp: Date.now(),
                 originalValue: originalValue,
@@ -2226,7 +2226,7 @@ class TopicsMKCGIntegration {
         if (validationResults.errors.length > 0) {
             feedbackHTML += `
                 <div class="validation-errors">
-                    ${validationResults.errors.map(error => `<div class="validation-error-item">❌ ${error}</div>`).join('')}
+                    ${validationResults.errors.map(error => `<div class="validation-error-item">${error}</div>`).join('')}
                 </div>
             `;
         }
@@ -2235,7 +2235,7 @@ class TopicsMKCGIntegration {
         if (validationResults.warnings.length > 0) {
             feedbackHTML += `
                 <div class="validation-warnings">
-                    ${validationResults.warnings.map(warning => `<div class="validation-warning-item">⚠️ ${warning}</div>`).join('')}
+                    ${validationResults.warnings.map(warning => `<div class="validation-warning-item">${warning}</div>`).join('')}
                 </div>
             `;
         }
@@ -2253,7 +2253,7 @@ class TopicsMKCGIntegration {
         if (validationResults.suggestions.length > 0) {
             feedbackHTML += `
                 <div class="validation-suggestions">
-                    <div class="suggestions-title">💡 Suggestions to improve quality:</div>
+                    <div class="suggestions-title">Suggestions to improve quality:</div>
                     ${validationResults.suggestions.map(suggestion => `<div class="validation-suggestion-item">• ${suggestion}</div>`).join('')}
                 </div>
             `;
@@ -2427,7 +2427,7 @@ class TopicsMKCGIntegration {
             
             if (lastChecksum && lastChecksum !== currentChecksum) {
                 // Data has changed - this is normal during editing
-                console.log('🔍 PHASE 6: Data integrity check - normal data change detected');
+                console.log('PHASE 6: Data integrity check - normal data change detected');
             }
             
             this.dataIntegrity.checksums.set('current', currentChecksum);
@@ -2582,7 +2582,7 @@ class TopicsMKCGIntegration {
     addTopicToPanel(title, description, iconClass, index, fromMKCG = false) {
         // PHASE 2A: Use enhanced topic panel for MKCG mode
         if (typeof window.addEnhancedTopicToPanel === 'function') {
-            console.log(`🎯 PHASE 2A: Adding enhanced topic ${index + 1}: "${title}"`);
+            console.log(`PHASE 2A: Adding enhanced topic ${index + 1}: "${title}"`);
             
             const topicItem = window.addEnhancedTopicToPanel(title, description, iconClass, index);
             
@@ -2615,7 +2615,7 @@ class TopicsMKCGIntegration {
         }
         // Fallback to standard method if enhanced not available
         else if (typeof window.addTopicToPanel === 'function') {
-            console.log(`📝 PHASE 2A: Fallback to standard topic panel for topic ${index + 1}`);
+            console.log(`PHASE 2A: Fallback to standard topic panel for topic ${index + 1}`);
             
             const topicItem = window.addTopicToPanel(title, description, iconClass, index);
             
@@ -2637,7 +2637,7 @@ class TopicsMKCGIntegration {
             
             return topicItem;
         } else {
-            console.warn('⚠️ PHASE 2A: No topic panel functions available from panel-script.js');
+            console.warn('PHASE 2A: No topic panel functions available from panel-script.js');
             return null;
         }
     }
@@ -2649,7 +2649,7 @@ class TopicsMKCGIntegration {
         if (typeof window.updateTopicsInComponent === 'function') {
             window.updateTopicsInComponent(this.element);
         } else {
-            console.warn('⚠️ updateTopicsInComponent function not available from panel-script.js');
+            console.warn('updateTopicsInComponent function not available from panel-script.js');
         }
     }
     
@@ -2696,7 +2696,7 @@ class TopicsMKCGIntegration {
         this.errors.push(errorInfo);
         
         // Log to console for debugging
-        console.error(`❌ TopicsMKCGIntegration [${context}]:`, message, error);
+        console.error(`TopicsMKCGIntegration [${context}]:`, message, error);
         
         // Log to WordPress debug if available
         if (window.guestifyData?.systemConfig?.enableDebugMode) {
@@ -2756,7 +2756,7 @@ class TopicsMKCGIntegration {
             }
         });
         
-        console.log('🧹 PHASE 5: TopicsMKCGIntegration cleanup complete with bulk operations');
+        console.log('PHASE 5: TopicsMKCGIntegration cleanup complete with bulk operations');
     }
 }
 
@@ -2801,10 +2801,10 @@ class TopicsMKCGIntegration {
  * - Performance testing (initialization under 100ms)
  * 
  * PHASE 5: Bulk Operations E2E Tests:
- * - Complete Sync All workflow: button click → confirmation → execution → success feedback
- * - Complete Clear All workflow: button click → warning → execution → undo capability
- * - Complete Reset to MKCG workflow: button click → comparison → execution → verification
- * - Bulk Undo workflow: operation → undo button → restoration → state verification
+ * - Complete Sync All workflow: button click  -> confirmation  -> execution  -> success feedback
+ * - Complete Clear All workflow: button click  -> warning  -> execution  -> undo capability
+ * - Complete Reset to MKCG workflow: button click  -> comparison  -> execution  -> verification
+ * - Bulk Undo workflow: operation  -> undo button  -> restoration  -> state verification
  * - Sequential bulk operations with history management
  * - Error recovery during bulk operations
  * 
@@ -2845,5 +2845,5 @@ if (typeof module !== 'undefined' && module.exports) {
         performDataIntegrityCheck: function() { return this.performDataIntegrityCheck(); }
     };
     
-    console.log('✅ PHASE 6: Enhanced TopicsMKCGIntegration exported with comprehensive validation system and Gemini\'s recommendations');
+    console.log('PHASE 6: Enhanced TopicsMKCGIntegration exported with comprehensive validation system and Gemini\'s recommendations');
 }

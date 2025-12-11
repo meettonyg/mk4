@@ -303,7 +303,7 @@ async function loadMediaLibrary(reset = false) {
       mediaItems.value.push(...normalizedMedia);
     }
 
-    console.log(`📚 Loaded ${normalizedMedia.length} media items (page ${page.value}/${totalPages.value})`);
+    console.log(`Loaded ${normalizedMedia.length} media items (page ${page.value}/${totalPages.value})`);
   } catch (err) {
     console.error('Failed to load media library:', err);
     error.value = err.message;
@@ -380,7 +380,7 @@ async function handleDelete(mediaId) {
     await deleteMediaFile(mediaId);
     mediaItems.value = mediaItems.value.filter(item => item.id !== mediaId);
     selectedMedia.value = selectedMedia.value.filter(id => id !== mediaId);
-    console.log(`✅ Deleted media: ${mediaId}`);
+    console.log(`Deleted media: ${mediaId}`);
   } catch (err) {
     console.error('Failed to delete media:', err);
     error.value = err.message;
@@ -406,7 +406,7 @@ let searchTimeout;
 function debouncedSearch() {
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => {
-    console.log(`🔍 Searching: "${searchQuery.value}"`);
+    console.log(`Searching: "${searchQuery.value}"`);
   }, 300);
 }
 

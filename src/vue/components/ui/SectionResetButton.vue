@@ -56,7 +56,7 @@ const handleClearSection = () => {
   }
   
   const message = componentCount > 0
-    ? `Remove all ${componentCount} component(s) from this section?\n\n⚠️ Components will not be deleted, just removed from this section.`
+    ? `Remove all ${componentCount} component(s) from this section?\n\nComponents will not be deleted, just removed from this section.`
     : 'This section has no components to clear.';
   
   if (componentCount === 0 || !confirm(message)) return;

@@ -120,7 +120,7 @@ function updateProp(key, value) {
     }
   })
   
-  console.log('✅ GenericEditor: Updated prop:', key, '=', value)
+  console.log('GenericEditor: Updated prop:', key, '=', value)
 }
 
 // Update prop from JSON
@@ -141,7 +141,7 @@ function updateCustomClass(value) {
     customClass: value
   })
   
-  console.log('✅ GenericEditor: Updated custom class:', value)
+  console.log('GenericEditor: Updated custom class:', value)
 }
 </script>
 

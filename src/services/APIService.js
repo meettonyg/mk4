@@ -44,7 +44,7 @@ export class APIService {
     }
     
     if (window.gmkbData?.debugMode) {
-      console.log('✅ APIService v2.0 initialized:', {
+      console.log('APIService v2.0 initialized:', {
         postId: this.postId,
         baseUrl: this.baseUrl,
         hasNonce: !!this.restNonce,
@@ -59,7 +59,7 @@ export class APIService {
    */
   normalizeRestUrl(url) {
     if (!url) {
-      console.error('❌ APIService: No REST URL provided, using fallback');
+      console.error('APIService: No REST URL provided, using fallback');
       // Fallback: construct REST URL from current domain
       const origin = window.location.origin;
       return `${origin}/wp-json/`;
@@ -67,7 +67,7 @@ export class APIService {
     
     // ROOT FIX: If URL contains 'admin-ajax.php', it's wrong - use fallback
     if (url.includes('admin-ajax.php')) {
-      console.warn('⚠️ APIService: Detected admin-ajax.php in REST URL, using fallback');
+      console.warn('APIService: Detected admin-ajax.php in REST URL, using fallback');
       const origin = window.location.origin;
       return `${origin}/wp-json/`;
     }
@@ -111,12 +111,12 @@ export class APIService {
       const normalizedUrl = `${parsedUrl.origin}${pathname}`;
       
       if (window.gmkbData?.debugMode) {
-        console.log('✅ APIService: Normalized REST URL:', url, '→', normalizedUrl);
+        console.log('APIService: Normalized REST URL:', url, ' ->', normalizedUrl);
       }
       return normalizedUrl;
       
     } catch (error) {
-      console.error('❌ APIService: Failed to parse URL:', error);
+      console.error('APIService: Failed to parse URL:', error);
       // Fallback to origin-based URL
       const origin = window.location.origin;
       return `${origin}/wp-json/`;
@@ -181,7 +181,7 @@ export class APIService {
     try {
       // PHASE 6: Check if there's already an in-flight request
       if (this.inflightRequests.has('load')) {
-        console.log('⏳ Load already in progress, waiting...');
+        console.log('Load already in progress, waiting...');
         return await this.inflightRequests.get('load');
       }
 
@@ -190,7 +190,7 @@ export class APIService {
         const cached = this.getFromCache('load');
         if (cached) {
           if (window.gmkbData?.debugMode) {
-            console.log('✅ Loaded from cache');
+            console.log('Loaded from cache');
           }
           return cached;
         }
@@ -222,7 +222,7 @@ export class APIService {
             if (response.status === 403) {
               const error = await response.json();
               if (error.code === 'rest_cookie_invalid_nonce' || error.code === 'rest_forbidden') {
-                console.error('⚠️ Nonce expired or invalid - page reload required');
+                console.error('Nonce expired or invalid - page reload required');
                 // Dispatch event for UI to handle
                 document.dispatchEvent(new CustomEvent('gmkb:nonce-expired', {
                   detail: { action: 'load' }
@@ -253,14 +253,14 @@ export class APIService {
               sections: data.state.sections || [],
               layout: data.state.layout || [],
               globalSettings: data.state.globalSettings || {},
-              theme: data.theme || 'professional_clean', // ✅ NOW STRING!
+              theme: data.theme || 'professional_clean', // NOW STRING!
               themeCustomizations: data.themeCustomizations || {},
               podsData: data.podsData || {},
               metadata: data.metadata || {}
             };
             
             // CRITICAL DEBUG: Log theme loading
-            console.log('🎨 APIService LOAD: Theme data received:', {
+            console.log('APIService LOAD: Theme data received:', {
               'data.theme (should be string)': data.theme,
               'data.theme type': typeof data.theme,
               'data.themeCustomizations': data.themeCustomizations ? 'present' : 'missing',
@@ -272,7 +272,7 @@ export class APIService {
             this.setCache('load', result);
 
             if (window.gmkbData?.debugMode) {
-              console.log('✅ Loaded media kit data:', {
+              console.log('Loaded media kit data:', {
                 components: Object.keys(result.components).length,
                 sections: result.sections.length,
                 podsFields: Object.keys(result.podsData).length,
@@ -295,7 +295,7 @@ export class APIService {
           delay: 1000,
           backoff: 2,
           onRetry: (attempt, max, wait, error) => {
-            console.warn(`⚠️ Load attempt ${attempt}/${max} failed: ${error.message}. Retrying in ${wait}ms...`);
+            console.warn(`Load attempt ${attempt}/${max} failed: ${error.message}. Retrying in ${wait}ms...`);
             
             // Dispatch retry event for UI feedback
             document.dispatchEvent(new CustomEvent('gmkb:load-retry', {
@@ -340,7 +340,7 @@ export class APIService {
     try {
       // PHASE 6: Check if there's already an in-flight save request
       if (this.inflightRequests.has('save')) {
-        console.log('⏳ Save already in progress, waiting...');
+        console.log('Save already in progress, waiting...');
         return await this.inflightRequests.get('save');
       }
 
@@ -369,7 +369,7 @@ export class APIService {
       };
       
       // CRITICAL DEBUG: Log what theme is being saved
-      console.log('🎨 APIService SAVE: Sending theme to backend:', {
+      console.log('APIService SAVE: Sending theme to backend:', {
         'payload.theme': payload.theme,
         'payload.theme type': typeof payload.theme,
         'sanitizedState.theme': sanitizedState.theme,
@@ -378,7 +378,7 @@ export class APIService {
       
       // Log payload size in debug mode
       if (window.gmkbData?.debugMode) {
-        console.log('💾 Saving media kit:', {
+        console.log('Saving media kit:', {
           components: Object.keys(payload.components).length,
           sections: payload.sections.length,
           payloadSize: sizeCheck.sizeInKB + 'KB'
@@ -410,7 +410,7 @@ export class APIService {
               
               // Handle nonce expiration gracefully
               if (error.code === 'rest_cookie_invalid_nonce' || error.code === 'rest_forbidden') {
-                console.error('⚠️ Nonce expired or invalid - page reload required');
+                console.error('Nonce expired or invalid - page reload required');
                 // Dispatch event for UI to handle
                 document.dispatchEvent(new CustomEvent('gmkb:nonce-expired', {
                   detail: { action: 'save', unsavedData: payload }
@@ -431,7 +431,7 @@ export class APIService {
             }
             
             // CRITICAL DEBUG: Log theme save response
-            console.log('🎨 APIService SAVE: Backend response received:', {
+            console.log('APIService SAVE: Backend response received:', {
               'result.theme_save_status': result.theme_save_status,
               'theme attempted': result.theme_save_status?.attempted,
               'theme success': result.theme_save_status?.success,
@@ -445,7 +445,7 @@ export class APIService {
             this.clearCache();
 
             if (!options.silent && window.gmkbData?.debugMode) {
-              console.log('✅ Saved media kit:', {
+              console.log('Saved media kit:', {
                 components: result.components_saved,
                 sections: result.sections_saved,
                 dataSize: Math.round(result.data_size / 1024) + 'KB'
@@ -467,7 +467,7 @@ export class APIService {
           delay: 1000,
           backoff: 2,
           onRetry: (attempt, max, wait, error) => {
-            console.warn(`⚠️ Save attempt ${attempt}/${max} failed: ${error.message}. Retrying in ${wait}ms...`);
+            console.warn(`Save attempt ${attempt}/${max} failed: ${error.message}. Retrying in ${wait}ms...`);
             
             // Dispatch retry event for UI feedback
             document.dispatchEvent(new CustomEvent('gmkb:save-retry', {
@@ -534,7 +534,7 @@ export class APIService {
       }
       
       if (window.gmkbData?.debugMode) {
-        console.log('✅ Loaded ' + data.components.length + ' component definitions');
+        console.log('Loaded ' + data.components.length + ' component definitions');
       }
       
       return data.components;
@@ -571,7 +571,7 @@ export class APIService {
   clearCache() {
     this.cache.clear();
     if (window.gmkbData?.debugMode) {
-      console.log('🗑️ API cache cleared');
+      console.log('API cache cleared');
     }
   }
 

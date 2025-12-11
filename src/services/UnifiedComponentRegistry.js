@@ -15,10 +15,10 @@ const componentModules = import.meta.glob('../../components/**/*Renderer.vue');
 
 // DEBUG: Log what the glob pattern found at build time
 if (typeof window !== 'undefined') {
-  console.log('🔍 DEBUG: componentModules keys at runtime:', Object.keys(componentModules));
-  console.log('🔍 DEBUG: Total component modules found:', Object.keys(componentModules).length);
+  console.log('DEBUG: componentModules keys at runtime:', Object.keys(componentModules));
+  console.log('DEBUG: Total component modules found:', Object.keys(componentModules).length);
   const hasProfilePhoto = Object.keys(componentModules).some(path => path.includes('profile-photo'));
-  console.log('🔍 DEBUG: profile-photo in componentModules?', hasProfilePhoto);
+  console.log('DEBUG: profile-photo in componentModules?', hasProfilePhoto);
 }
 
 // ARCHITECTURE COMPLIANCE: Load component metadata directly from component.json files
@@ -56,7 +56,7 @@ class UnifiedComponentRegistry {
     this.registerVueComponents();
 
     this.initialized = true;
-    console.log('✅ UnifiedComponentRegistry: Initialized with', Object.keys(this.definitions).length, 'components');
+    console.log('UnifiedComponentRegistry: Initialized with', Object.keys(this.definitions).length, 'components');
   }
 
   /**
@@ -87,7 +87,7 @@ class UnifiedComponentRegistry {
     if (wpData.componentRegistry) {
       this.definitions = wpData.componentRegistry;
       this.categories = wpData.categories || [];
-      console.log('✅ Loaded', Object.keys(this.definitions).length, 'component definitions from WordPress');
+      console.log('Loaded', Object.keys(this.definitions).length, 'component definitions from WordPress');
     } else {
       // Create fallback definitions for all known component types
       this.createFallbackDefinitions();
@@ -138,7 +138,7 @@ class UnifiedComponentRegistry {
       }
     });
 
-    console.log('✅ Registered', Object.keys(this.vueComponents).length, 'Vue components');
+    console.log('Registered', Object.keys(this.vueComponents).length, 'Vue components');
     console.log('Available component paths:', Object.keys(componentModules));
 
     // ROOT FIX: Recompute hasVueRenderer after Vue components are registered
@@ -147,7 +147,7 @@ class UnifiedComponentRegistry {
         this.definitions[type].hasVueRenderer = true;
       }
     });
-    console.log('✅ Updated hasVueRenderer flags after registration');
+    console.log('Updated hasVueRenderer flags after registration');
   }
   
   /**
@@ -241,7 +241,7 @@ class UnifiedComponentRegistry {
       // Priority 1: Use defaultProps from component.json
       if (entry.meta.defaultProps && typeof entry.meta.defaultProps === 'object') {
         if (window.gmkbData?.debugMode) {
-          console.log(`✅ Using defaultProps from component.json for ${type}`);
+          console.log(`Using defaultProps from component.json for ${type}`);
         }
         return entry.meta.defaultProps;
       }
@@ -249,7 +249,7 @@ class UnifiedComponentRegistry {
       // Priority 2: Use defaults from schema.json (nested in meta)
       if (entry.meta.schema && entry.meta.schema.defaults && typeof entry.meta.schema.defaults === 'object') {
         if (window.gmkbData?.debugMode) {
-          console.log(`✅ Using schema defaults for ${type}`);
+          console.log(`Using schema defaults for ${type}`);
         }
         return entry.meta.schema.defaults;
       }
@@ -265,7 +265,7 @@ class UnifiedComponentRegistry {
         
         if (Object.keys(extracted).length > 0) {
           if (window.gmkbData?.debugMode) {
-            console.log(`✅ Extracted defaults from schema properties for ${type}`);
+            console.log(`Extracted defaults from schema properties for ${type}`);
           }
           return extracted;
         }
@@ -275,7 +275,7 @@ class UnifiedComponentRegistry {
     // Fallback: empty object
     // This is safe - components should define their own defaults
     if (window.gmkbData?.debugMode) {
-      console.warn(`⚠️ No default props found for ${type}, using empty object`);
+      console.warn(`No default props found for ${type}, using empty object`);
     }
     return {};
   }

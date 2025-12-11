@@ -13,7 +13,7 @@
  * - This file will be removed in a future version
  */
 
-console.warn('⚠️ componentDiscovery.js is deprecated. Use APIService.loadComponents() instead.');
+console.warn('componentDiscovery.js is deprecated. Use APIService.loadComponents() instead.');
 
 class VueComponentDiscovery {
   constructor() {
@@ -35,7 +35,7 @@ class VueComponentDiscovery {
   initializeDiscovery() {
     // ROOT FIX: Prevent duplicate initialization
     if (this.isInitialized) {
-      console.warn('⚠️ ComponentDiscovery already initialized, skipping');
+      console.warn('ComponentDiscovery already initialized, skipping');
       return;
     }
     
@@ -55,7 +55,7 @@ class VueComponentDiscovery {
     window.addEventListener('gmkb:wordpress-data-ready', this.wordpressDataReadyHandler);
     
     this.isInitialized = true;
-    console.log('✅ ComponentDiscovery: Event listeners registered');
+    console.log('ComponentDiscovery: Event listeners registered');
   }
 
   /**
@@ -195,7 +195,7 @@ class VueComponentDiscovery {
     }
     
     this.isInitialized = false;
-    console.log('✅ ComponentDiscovery: Event listeners cleaned up');
+    console.log('ComponentDiscovery: Event listeners cleaned up');
   }
   
   /**
@@ -207,13 +207,13 @@ class VueComponentDiscovery {
     this.vueRenderers.clear();
     this.componentRegisteredHandler = null;
     this.wordpressDataReadyHandler = null;
-    console.log('✅ ComponentDiscovery: Instance reset');
+    console.log('ComponentDiscovery: Instance reset');
   }
 }
 
 // PHASE 2: Deprecation warning
 if (window.gmkbData?.debugMode) {
-  console.log('%c⚠️ DEPRECATED: componentDiscovery.js', 'color: orange; font-weight: bold');
+  console.log('%cDEPRECATED: componentDiscovery.js', 'color: orange; font-weight: bold');
   console.log('Use APIService.loadComponents() for component metadata.');
   console.log('See /gmkb/v2/components REST API endpoint.');
 }
@@ -221,7 +221,7 @@ if (window.gmkbData?.debugMode) {
 // ROOT FIX: Check if singleton already exists
 if (window.vueComponentDiscovery) {
   // Clean up existing instance
-  console.log('⚠️ ComponentDiscovery: Cleaning up existing instance');
+  console.log('ComponentDiscovery: Cleaning up existing instance');
   window.vueComponentDiscovery.cleanup();
 }
 
@@ -234,7 +234,7 @@ window.vueComponentDiscovery = vueComponentDiscovery;
 // ROOT FIX: Handle HMR cleanup
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {
-    console.log('🔄 HMR: Cleaning up ComponentDiscovery');
+    console.log('HMR: Cleaning up ComponentDiscovery');
     vueComponentDiscovery.cleanup();
   });
 }

@@ -62,7 +62,7 @@ export function useMediaUpload() {
       if (!multiple) break;
     }
 
-    console.log(`📤 Uploading ${validFiles.length} file(s)...`);
+    console.log(`Uploading ${validFiles.length} file(s)...`);
 
     // Upload files
     const results = [];
@@ -94,7 +94,7 @@ export function useMediaUpload() {
     uploading.value = false;
     uploadProgress.value = 100;
 
-    console.log(`✅ Uploaded ${results.length}/${validFiles.length} file(s) successfully`);
+    console.log(`Uploaded ${results.length}/${validFiles.length} file(s) successfully`);
 
     return results;
   }
@@ -135,7 +135,7 @@ export function useMediaUpload() {
 
     const media = await response.json();
 
-    console.log(`✅ Uploaded: ${file.name} → ${media.id}`);
+    console.log(`Uploaded: ${file.name}  -> ${media.id}`);
 
     // Return normalized media object
     return {
@@ -232,7 +232,7 @@ export function useMediaUpload() {
       throw new Error(error.message || 'Delete failed');
     }
 
-    console.log(`🗑️ Deleted media: ${mediaId}`);
+    console.log(`Deleted media: ${mediaId}`);
     return true;
   }
 

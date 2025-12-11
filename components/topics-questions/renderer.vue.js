@@ -4,7 +4,7 @@ import TopicsQuestions from './TopicsQuestions.vue';
 
 export default {
     render(data = {}, container) {
-        console.log('📚 Rendering Topics-Questions component with data:', data);
+        console.log('Rendering Topics-Questions component with data:', data);
         
         // Ensure container exists
         if (!container) {

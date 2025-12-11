@@ -154,11 +154,11 @@ function updateSection(sectionId, updates) {
 
 // Drag handlers for sections
 function onSectionDragStart() {
-  console.log('🎯 Section drag started')
+  console.log('Section drag started')
 }
 
 function onSectionDragEnd() {
-  console.log('✅ Section drag ended')
+  console.log('Section drag ended')
   store._trackChange()
 }
 
@@ -175,7 +175,7 @@ async function save() {
 // Export handler
 function exportMediaKit() {
   document.dispatchEvent(new CustomEvent('gmkb:open-export'))
-  console.log('✅ Opened export modal')
+  console.log('Opened export modal')
 }
 
 // Share handler
@@ -187,7 +187,7 @@ function shareMediaKit() {
 // Theme customizer handler
 function openThemeCustomizer() {
   document.dispatchEvent(new CustomEvent('gmkb:open-theme-customizer'))
-  console.log('✅ Opened theme customizer')
+  console.log('Opened theme customizer')
 }
 
 // Device change handler
@@ -196,7 +196,7 @@ function handleDeviceChange(device) {
   document.dispatchEvent(new CustomEvent('gmkb:device-change', {
     detail: { device }
   }))
-  console.log('✅ Device mode changed to:', device)
+  console.log('Device mode changed to:', device)
 }
 
 // Dark mode handler
@@ -204,7 +204,7 @@ function handleDarkModeChange(isDark) {
   document.dispatchEvent(new CustomEvent('gmkb:dark-mode-change', {
     detail: { isDark }
   }))
-  console.log('✅ Dark mode:', isDark ? 'enabled' : 'disabled')
+  console.log('Dark mode:', isDark ? 'enabled' : 'disabled')
 }
 
 // Notification system
@@ -273,7 +273,7 @@ onMounted(() => {
   // Make showNotification available globally
   window.showToast = showNotification;
   
-  console.log('✅ MediaKitBuilder: Event listeners registered');
+  console.log('MediaKitBuilder: Event listeners registered');
 });
 
 onBeforeUnmount(() => {
@@ -288,7 +288,7 @@ onBeforeUnmount(() => {
   // Clean up global reference
   delete window.showToast;
   
-  console.log('✅ MediaKitBuilder: All event listeners cleaned up');
+  console.log('MediaKitBuilder: All event listeners cleaned up');
 });
 </script>
 

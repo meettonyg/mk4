@@ -75,7 +75,7 @@
                         <div class="text-area">
                             <p v-if="store.fields.why_book_you" v-html="store.fields.why_book_you"></p>
                             <p v-else class="empty-text">
-                                <i class="info-icon">ℹ</i>
+                                <i class="info-icon">i</i>
                                 Click the edit button to share what makes you unique
                             </p>
                         </div>
@@ -131,7 +131,7 @@
                                         class="interview-link"
                                         target="_blank"
                                     >
-                                        Listen Here →
+                                        Listen Here  ->
                                     </a>
                                 </div>
                             </li>
@@ -179,19 +179,19 @@
                     <template #display>
                         <ul class="links-list">
                             <li v-if="store.socialLinks.facebook" class="link-item">
-                                <span class="link-icon">📘</span>
+                                <span class="link-icon">[Book]</span>
                                 <a :href="store.socialLinks.facebook" target="_blank">Facebook</a>
                             </li>
                             <li v-if="store.socialLinks.linkedin" class="link-item">
-                                <span class="link-icon">💼</span>
+                                <span class="link-icon">[Work]</span>
                                 <a :href="store.socialLinks.linkedin" target="_blank">LinkedIn</a>
                             </li>
                             <li v-if="store.socialLinks.twitter" class="link-item">
-                                <span class="link-icon">🐦</span>
+                                <span class="link-icon">[Twitter]</span>
                                 <a :href="store.socialLinks.twitter" target="_blank">Twitter</a>
                             </li>
                             <li v-if="store.socialLinks.instagram" class="link-item">
-                                <span class="link-icon">📷</span>
+                                <span class="link-icon">[Photo]</span>
                                 <a :href="store.socialLinks.instagram" target="_blank">Instagram</a>
                             </li>
                             <li v-if="store.socialLinks.youtube" class="link-item">

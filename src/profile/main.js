@@ -39,7 +39,7 @@ if (window.gmkbProfileInitialized) {
             return;
         }
 
-        console.log('🚀 Initializing Profile Editor for post:', postId);
+        console.log('Initializing Profile Editor for post:', postId);
 
         // Create Pinia store
         const pinia = createPinia();
@@ -63,7 +63,7 @@ if (window.gmkbProfileInitialized) {
         // Mount the app
         app.mount(mountElement);
 
-        console.log('✅ Profile Editor mounted successfully');
+        console.log('Profile Editor mounted successfully');
 
         // Expose for debugging
         window.GMKB = window.GMKB || {};

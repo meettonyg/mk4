@@ -21,13 +21,13 @@ window.gmkbArchInfo = function() {
   };
   
   console.log(`
-🏗️ GMKB Architecture Info
+GMKB Architecture Info
 ========================
 Mode: ${info.mode}
 Version: ${info.version}
-Vue App: ${info.vueApp ? '✅' : '❌'}
-State Manager: ${info.stateManager ? '✅' : '❌'}
-Pinia Store: ${info.pinia ? '✅' : '❌'}
+Vue App: ${info.vueApp ? '+' : '-'}
+State Manager: ${info.stateManager ? '+' : '-'}
+Pinia Store: ${info.pinia ? '+' : '-'}
 Vue Components: ${info.components}
 Sections: ${info.sections}
 Scripts Loaded: ${info.scriptsLoaded} (lean bundle)
@@ -70,24 +70,24 @@ export function initializeGlobalCommands() {
                         createdAt: Date.now()
                     };
                     fixed++;
-                    console.log(`✅ Added ${id} to components object`);
+                    console.log(`Added ${id} to components object`);
                 }
             });
         });
         
         if (fixed > 0) {
             sm.setState(state);
-            console.log(`\n✅ Fixed ${fixed} orphaned components`);
+            console.log(`\nFixed ${fixed} orphaned components`);
             console.log('Now try saving again');
         } else {
-            console.log('✅ No orphaned components found');
+            console.log('No orphaned components found');
             console.log('Components in state:', Object.keys(state.components || {}));
         }
         
         return fixed;
     };
     
-    console.log('✅ Global fix function available: fixOrphanedComponents()');
+    console.log('Global fix function available: fixOrphanedComponents()');
   // Wait for state manager to be available
   const setupCommands = () => {
     // Find the state manager from various possible locations
@@ -140,7 +140,7 @@ export function initializeGlobalCommands() {
           type: ACTION_TYPES.ADD_SECTION, 
           payload: section 
         });
-        console.log('✅ Section added:', section);
+        console.log('Section added:', section);
         return section;
       }
       
@@ -163,7 +163,7 @@ export function initializeGlobalCommands() {
           type: ACTION_TYPES.REMOVE_SECTION, 
           payload: sectionId 
         });
-        console.log('✅ Section removed:', sectionId);
+        console.log('Section removed:', sectionId);
         return;
       }
       
@@ -180,13 +180,13 @@ export function initializeGlobalCommands() {
     };
     
     window.debugSections = () => {
-      console.group('🔍 Section System Debug');
+      console.group('Section System Debug');
       
       const stateManager = findStateManager();
       const gmkb = findGMKB();
       
-      console.log('State Manager:', stateManager ? '✅ Found' : '❌ Not found');
-      console.log('GMKB API:', gmkb ? '✅ Found' : '❌ Not found');
+      console.log('State Manager:', stateManager ? 'Found' : 'Not found');
+      console.log('GMKB API:', gmkb ? 'Found' : 'Not found');
       
       if (stateManager) {
         const state = stateManager.getState();
@@ -207,7 +207,7 @@ export function initializeGlobalCommands() {
     
     // Log available commands
     console.log(`
-🎯 Global Section Commands Ready:
+Global Section Commands Ready:
 - getSections() - View current sections
 - addSection('two_column') - Add a new section
 - removeSection(sectionId) - Remove a section

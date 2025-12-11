@@ -2,7 +2,7 @@
  * @file renderer.js
  * @description Topics Component Self-Registering Renderer
  * 
- * ✅ CHECKLIST COMPLIANT:
+ * CHECKLIST COMPLIANT:
  * - Phase 1: Event-driven initialization, no polling
  * - Phase 2: Simplicity first, self-contained component
  * - Phase 3: No state management - pure rendering
@@ -142,7 +142,7 @@
             console.error(`Error rendering ${COMPONENT_TYPE}:`, error);
             // Return error component
             return `<div class="gmkb-component gmkb-component--error">
-                <h3>⚠️ Error Rendering Topics Component</h3>
+                <h3>Error Rendering Topics Component</h3>
                 <p>${escapeHtml(error.message)}</p>
             </div>`;
         }
@@ -273,7 +273,7 @@
                 type: COMPONENT_TYPE
             });
             if (success && window.gmkbData?.debugMode) {
-                console.log(`✅ Topics component registered successfully`);
+                console.log(`Topics component registered successfully`);
             }
         }
     }

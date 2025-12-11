@@ -44,9 +44,9 @@ onMounted(async () => {
     }
     
     mounted.value = true;
-    console.log('✅ SidebarTabs will render into #gmkb-sidebar');
+    console.log('SidebarTabs will render into #gmkb-sidebar');
   } else {
-    console.error('❌ #gmkb-sidebar mount point not found!');
+    console.error('#gmkb-sidebar mount point not found!');
   }
 });
 

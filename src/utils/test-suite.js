@@ -54,19 +54,19 @@ class MediaKitTestSuite {
   assert(condition, message) {
     if (condition) {
       this.results.passed++;
-      this.log(`✅ PASS: ${message}`, 'success');
+      this.log(`PASS: ${message}`, 'success');
       return true;
     } else {
       this.results.failed++;
       this.results.errors.push(message);
-      this.log(`❌ FAIL: ${message}`, 'error');
+      this.log(`FAIL: ${message}`, 'error');
       return false;
     }
   }
 
   warn(message) {
     this.results.warnings.push(message);
-    this.log(`⚠️  WARNING: ${message}`, 'warning');
+    this.log(` WARNING: ${message}`, 'warning');
   }
 
   getStore() {
@@ -127,7 +127,7 @@ class MediaKitTestSuite {
   }
 
   async setup() {
-    this.log('🚀 Starting Media Kit Builder Test Suite', 'test');
+    this.log('Starting Media Kit Builder Test Suite', 'test');
     this.testStartTime = Date.now();
     this.results = {
       passed: 0,
@@ -149,13 +149,13 @@ class MediaKitTestSuite {
     const duration = ((Date.now() - this.testStartTime) / 1000).toFixed(2);
     
     console.log('\n');
-    this.log('═══════════════════════════════════════════════', 'test');
-    this.log('📊 TEST SUITE RESULTS', 'test');
-    this.log('═══════════════════════════════════════════════', 'test');
-    this.log(`✅ Passed: ${this.results.passed}`, 'success');
-    this.log(`❌ Failed: ${this.results.failed}`, 'error');
-    this.log(`⚠️  Warnings: ${this.results.warnings.length}`, 'warning');
-    this.log(`⏱️  Duration: ${duration}s`, 'info');
+    this.log('', 'test');
+    this.log('TEST SUITE RESULTS', 'test');
+    this.log('', 'test');
+    this.log(`Passed: ${this.results.passed}`, 'success');
+    this.log(`Failed: ${this.results.failed}`, 'error');
+    this.log(` Warnings: ${this.results.warnings.length}`, 'warning');
+    this.log(` Duration: ${duration}s`, 'info');
     
     if (errors.length > 0) {
       this.log(`🐛 Console Errors Captured: ${errors.length}`, 'warning');
@@ -165,19 +165,19 @@ class MediaKitTestSuite {
     if (this.results.errors.length > 0) {
       console.log('\n');
       this.log('Failed Tests:', 'error');
-      this.results.errors.forEach(err => console.log(`  ❌ ${err}`));
+      this.results.errors.forEach(err => console.log(`  ${err}`));
     }
     
     if (this.results.warnings.length > 0) {
       console.log('\n');
       this.log('Warnings:', 'warning');
-      this.results.warnings.forEach(warn => console.log(`  ⚠️  ${warn}`));
+      this.results.warnings.forEach(warn => console.log(`   ${warn}`));
     }
     
     const passRate = ((this.results.passed / (this.results.passed + this.results.failed)) * 100).toFixed(1);
     console.log('\n');
     this.log(`Pass Rate: ${passRate}%`, passRate >= 80 ? 'success' : 'error');
-    this.log('═══════════════════════════════════════════════', 'test');
+    this.log('', 'test');
     
     return {
       passed: this.results.passed,
@@ -194,7 +194,7 @@ class MediaKitTestSuite {
   // ============================================================================
 
   async testSectionTabs() {
-    this.log('\n🔬 Testing Section Settings - Tab Structure', 'test');
+    this.log('\nTesting Section Settings - Tab Structure', 'test');
     
     const store = this.getStore();
     const uiStore = this.getUIStore();
@@ -241,7 +241,7 @@ class MediaKitTestSuite {
   }
 
   async testSectionContent() {
-    this.log('\n🔬 Testing Section Content Panel', 'test');
+    this.log('\nTesting Section Content Panel', 'test');
     
     // Check if content panel exists
     const contentPanel = document.querySelector('.section-content-panel');
@@ -281,7 +281,7 @@ class MediaKitTestSuite {
   }
 
   async testSectionStyle() {
-    this.log('\n🔬 Testing Section Style Panel (BaseStylePanel)', 'test');
+    this.log('\nTesting Section Style Panel (BaseStylePanel)', 'test');
     
     const stylePanel = document.querySelector('.base-style-panel');
     
@@ -329,7 +329,7 @@ class MediaKitTestSuite {
   }
 
   async testSectionAdvanced() {
-    this.log('\n🔬 Testing Section Advanced Panel (BaseAdvancedPanel)', 'test');
+    this.log('\nTesting Section Advanced Panel (BaseAdvancedPanel)', 'test');
     
     const advancedPanel = document.querySelector('.base-advanced-panel');
     
@@ -372,7 +372,7 @@ class MediaKitTestSuite {
   // ============================================================================
 
   async testComponentEditors() {
-    this.log('\n🔬 Testing Component Editors', 'test');
+    this.log('\nTesting Component Editors', 'test');
     
     const store = this.getStore();
     
@@ -413,7 +413,7 @@ class MediaKitTestSuite {
   // ============================================================================
 
   async testRealTimeUpdates() {
-    this.log('\n🔬 Testing Real-Time Updates', 'test');
+    this.log('\nTesting Real-Time Updates', 'test');
     
     const store = this.getStore();
     if (!store) {
@@ -467,7 +467,7 @@ class MediaKitTestSuite {
   }
 
   async testSettingsPersistence() {
-    this.log('\n🔬 Testing Settings Persistence', 'test');
+    this.log('\nTesting Settings Persistence', 'test');
     
     const store = this.getStore();
     if (!store) {
@@ -511,7 +511,7 @@ class MediaKitTestSuite {
   }
 
   async testAccessibility() {
-    this.log('\n🔬 Testing Accessibility Features', 'test');
+    this.log('\nTesting Accessibility Features', 'test');
     
     // Check for ARIA labels
     const ariaLabels = document.querySelectorAll('[aria-label]');
@@ -534,7 +534,7 @@ class MediaKitTestSuite {
   }
 
   async testErrorHandling() {
-    this.log('\n🔬 Testing Error Handling', 'test');
+    this.log('\nTesting Error Handling', 'test');
     
     const store = this.getStore();
     if (!store) {
@@ -562,7 +562,7 @@ class MediaKitTestSuite {
   }
 
   async testResponsiveDesign() {
-    this.log('\n🔬 Testing Responsive Design', 'test');
+    this.log('\nTesting Responsive Design', 'test');
     
     // Check for responsive classes
     const responsiveClasses = document.querySelectorAll('[class*="mobile"], [class*="tablet"], [class*="desktop"]');
@@ -650,9 +650,9 @@ class MediaKitTestSuite {
 
   async runInteractive() {
     console.clear();
-    this.log('═══════════════════════════════════════════════', 'test');
+    this.log('', 'test');
     this.log('🧪 INTERACTIVE TEST MODE', 'test');
-    this.log('═══════════════════════════════════════════════', 'test');
+    this.log('', 'test');
     
     console.log('\nAvailable test commands:');
     console.log('  testSuite.testSectionTabs()');
@@ -690,9 +690,9 @@ if (window.location.search.includes('test=auto')) {
 } else {
   // Show interactive mode
   console.log('\n');
-  console.log('%c═══════════════════════════════════════════════', 'color: #8b5cf6; font-weight: bold');
+  console.log('%c', 'color: #8b5cf6; font-weight: bold');
   console.log('%c🧪 Media Kit Builder Test Suite Loaded', 'color: #8b5cf6; font-weight: bold; font-size: 16px');
-  console.log('%c═══════════════════════════════════════════════', 'color: #8b5cf6; font-weight: bold');
+  console.log('%c', 'color: #8b5cf6; font-weight: bold');
   console.log('\n%cRun all tests:', 'color: #3b82f6; font-weight: bold');
   console.log('%c  await testSuite.runAllTests()', 'color: #10b981; font-family: monospace');
   console.log('\n%cOr explore interactive mode:', 'color: #3b82f6; font-weight: bold');

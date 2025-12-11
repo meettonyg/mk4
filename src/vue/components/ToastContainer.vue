@@ -12,7 +12,7 @@
           <span v-if="toast.type === 'success'">✓</span>
           <span v-else-if="toast.type === 'error'">✕</span>
           <span v-else-if="toast.type === 'warning'">⚠</span>
-          <span v-else>ℹ</span>
+          <span v-else>i</span>
         </div>
         <div class="toast-message">{{ toast.message }}</div>
         <button class="toast-close" @click.stop="removeToast(toast.id)" title="Dismiss">

@@ -49,7 +49,7 @@
               <strong>📄 Pods Field:</strong> Editing this text updates the 'introduction' field in the Pods database. Changes apply to ALL media kits for this guest.
             </p>
             <p v-else class="field-hint field-hint--empty">
-              <strong>⚠️ No data:</strong> The 'introduction' field is empty in the Pods database. Add text to populate it.
+              <strong>No data:</strong> The 'introduction' field is empty in the Pods database. Add text to populate it.
             </p>
           </div>
         </section>
@@ -143,10 +143,10 @@ const updatePodsField = async () => {
         introduction: localData.value.introduction
       });
 
-      console.log('✅ Saved introduction to component data');
+      console.log('Saved introduction to component data');
       store.isDirty = true;
     } catch (error) {
-      console.error('❌ Error saving component data:', error);
+      console.error('Error saving component data:', error);
     }
   }, 500); // Debounce for better UX
 };

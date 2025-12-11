@@ -150,7 +150,7 @@ if (!themeStore.activeThemeId || !themeStore.getTheme(themeStore.activeThemeId))
     // Last resort: use 'professional_clean' which should always exist
     themeStore.activeThemeId = 'professional_clean';
   }
-  console.log(`✅ ThemeCustomizer: Set fallback theme to ${themeStore.activeThemeId}`);
+  console.log(`ThemeCustomizer: Set fallback theme to ${themeStore.activeThemeId}`);
 }
 
 // ROOT FIX: Removed 'save' panel - streamlined to essential panels only

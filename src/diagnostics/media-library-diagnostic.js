@@ -8,7 +8,7 @@
 // Add to the global GMKB namespace
 if (typeof window.GMKB !== 'undefined') {
     window.GMKB.testMediaLibrary = function() {
-        console.log('🔍 WordPress Media Library Diagnostic');
+        console.log('WordPress Media Library Diagnostic');
         console.log('=====================================');
         
         const tests = {
@@ -28,7 +28,7 @@ if (typeof window.GMKB !== 'undefined') {
         let failedTests = [];
         
         Object.entries(tests).forEach(([test, result]) => {
-            const status = result ? '✅' : '❌';
+            const status = result ? '+' : '-';
             console.log(`${status} ${test}: ${result}`);
             if (!result) {
                 allPassed = false;
@@ -39,11 +39,11 @@ if (typeof window.GMKB !== 'undefined') {
         console.log('=====================================');
         
         if (allPassed) {
-            console.log('✅ All tests passed! Media library should work correctly.');
-            console.log('💡 Try: GMKB.openTestMedia() to open the media library');
+            console.log('All tests passed! Media library should work correctly.');
+            console.log('Try: GMKB.openTestMedia() to open the media library');
         } else {
-            console.error('❌ Some tests failed:', failedTests.join(', '));
-            console.log('🔧 Troubleshooting:');
+            console.error('Some tests failed:', failedTests.join(', '));
+            console.log('Troubleshooting:');
             
             if (!tests['Media templates in DOM']) {
                 console.log('  - Media templates not found. wp_print_media_templates() may not have been called.');
@@ -67,7 +67,7 @@ if (typeof window.GMKB !== 'undefined') {
     // Test function to actually open the media library
     window.GMKB.openTestMedia = function() {
         if (typeof window.wp === 'undefined' || typeof window.wp.media !== 'function') {
-            console.error('❌ Cannot open media library - wp.media is not available');
+            console.error('Cannot open media library - wp.media is not available');
             console.log('Run GMKB.testMediaLibrary() for diagnostics');
             return;
         }
@@ -82,7 +82,7 @@ if (typeof window.GMKB !== 'undefined') {
             
             frame.on('select', function() {
                 const attachment = frame.state().get('selection').first().toJSON();
-                console.log('✅ Image selected:', {
+                console.log('Image selected:', {
                     id: attachment.id,
                     url: attachment.url,
                     title: attachment.title
@@ -90,21 +90,21 @@ if (typeof window.GMKB !== 'undefined') {
             });
             
             frame.open();
-            console.log('✅ Media library opened successfully');
+            console.log('Media library opened successfully');
         } catch (error) {
-            console.error('❌ Failed to open media library:', error);
+            console.error('Failed to open media library:', error);
         }
     };
     
     // Auto-run diagnostic on page load if in debug mode
     if (window.gmkbDebug || (window.gmkbData && window.gmkbData.debugMode)) {
         setTimeout(() => {
-            console.log('🤖 Auto-running media library diagnostic...');
+            console.log('[AI] Auto-running media library diagnostic...');
             window.GMKB.testMediaLibrary();
         }, 2000);
     }
     
-    console.log('💡 Media Library Diagnostic Commands Available:');
+    console.log('Media Library Diagnostic Commands Available:');
     console.log('  GMKB.testMediaLibrary() - Run diagnostic tests');
     console.log('  GMKB.openTestMedia() - Open test media library');
 }

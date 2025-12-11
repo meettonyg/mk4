@@ -86,7 +86,7 @@
             <span class="range-value">{{ currentTheme.typography.headingScale.toFixed(2) }}x</span>
           </div>
         </label>
-        <p class="control-description">Multiplier for heading sizes (H1 → H6)</p>
+        <p class="control-description">Multiplier for heading sizes (H1  -> H6)</p>
       </div>
     </div>
     

@@ -24,7 +24,7 @@ class StorageService {
     this.isAvailable = this._checkAvailability();
     
     if (!this.isAvailable) {
-      console.warn('⚠️ localStorage is not available - storage operations will be no-ops');
+      console.warn('localStorage is not available - storage operations will be no-ops');
     }
   }
   
@@ -72,16 +72,16 @@ class StorageService {
       localStorage.setItem(namespacedKey, serialized);
       
       if (window.gmkbData?.debugMode) {
-        console.log(`💾 StorageService.set: ${key} (${serialized.length} bytes)`);
+        console.log(`StorageService.set: ${key} (${serialized.length} bytes)`);
       }
       
       return true;
     } catch (error) {
-      console.error(`❌ Failed to store ${key}:`, error);
+      console.error(`Failed to store ${key}:`, error);
       
       // Handle quota exceeded
       if (error.name === 'QuotaExceededError') {
-        console.warn('⚠️ Storage quota exceeded - attempting cleanup');
+        console.warn('Storage quota exceeded - attempting cleanup');
         this._attemptCleanup();
         
         // Retry once after cleanup
@@ -89,10 +89,10 @@ class StorageService {
           const serialized = JSON.stringify(value);
           const namespacedKey = this._getKey(key);
           localStorage.setItem(namespacedKey, serialized);
-          console.log('✅ Storage successful after cleanup');
+          console.log('Storage successful after cleanup');
           return true;
         } catch (retryError) {
-          console.error('❌ Storage failed even after cleanup:', retryError);
+          console.error('Storage failed even after cleanup:', retryError);
           return false;
         }
       }
@@ -125,12 +125,12 @@ class StorageService {
       const value = JSON.parse(serialized);
       
       if (window.gmkbData?.debugMode) {
-        console.log(`📖 StorageService.get: ${key}`);
+        console.log(`StorageService.get: ${key}`);
       }
       
       return value;
     } catch (error) {
-      console.error(`❌ Failed to retrieve ${key}:`, error);
+      console.error(`Failed to retrieve ${key}:`, error);
       return defaultValue;
     }
   }
@@ -151,12 +151,12 @@ class StorageService {
       localStorage.removeItem(namespacedKey);
       
       if (window.gmkbData?.debugMode) {
-        console.log(`🗑️ StorageService.remove: ${key}`);
+        console.log(`StorageService.remove: ${key}`);
       }
       
       return true;
     } catch (error) {
-      console.error(`❌ Failed to remove ${key}:`, error);
+      console.error(`Failed to remove ${key}:`, error);
       return false;
     }
   }
@@ -202,10 +202,10 @@ class StorageService {
       // Remove them
       keys.forEach(key => localStorage.removeItem(key));
       
-      console.log(`🗑️ StorageService.clear: Removed ${keys.length} items`);
+      console.log(`StorageService.clear: Removed ${keys.length} items`);
       return keys.length;
     } catch (error) {
-      console.error('❌ Failed to clear storage:', error);
+      console.error('Failed to clear storage:', error);
       return 0;
     }
   }
@@ -273,7 +273,7 @@ class StorageService {
    * Called automatically on quota exceeded errors
    */
   _attemptCleanup() {
-    console.log('🧹 Attempting storage cleanup...');
+    console.log('Attempting storage cleanup...');
     
     const prefix = `${this.namespace}_`;
     const items = [];
@@ -319,7 +319,7 @@ class StorageService {
       freedBytes += item.size;
     }
     
-    console.log(`🧹 Cleanup complete: Removed ${removed} items, freed ${(freedBytes / 1024).toFixed(2)} KB`);
+    console.log(`Cleanup complete: Removed ${removed} items, freed ${(freedBytes / 1024).toFixed(2)} KB`);
   }
   
   /**
@@ -360,7 +360,7 @@ class StorageService {
     // Check age
     const age = Date.now() - backup.timestamp;
     if (age > maxAge) {
-      console.log(`♻️ Backup too old (${(age / 1000).toFixed(0)}s), ignoring`);
+      console.log(`Backup too old (${(age / 1000).toFixed(0)}s), ignoring`);
       this.remove(`backup_${postId}`);
       return null;
     }

@@ -171,7 +171,7 @@ export function useTheme() {
     // Set theme attribute on document for potential theme-specific styles
     document.documentElement.setAttribute('data-gmkb-theme', themeStore.activeThemeId);
     
-    console.log('✅ Theme applied:', themeStore.activeThemeId);
+    console.log('Theme applied:', themeStore.activeThemeId);
   };
   
   // ROOT FIX: Watch theme store for changes, not media kit store

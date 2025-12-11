@@ -9,7 +9,7 @@ export class ExportService {
    * Main export method - routes to specific format handler
    */
   async export(format, state) {
-    console.log(`📤 Exporting as ${format}...`);
+    console.log(`Exporting as ${format}...`);
     
     switch (format) {
       case 'html':
@@ -31,7 +31,7 @@ export class ExportService {
   exportHTML(state) {
     const html = this.generateHTML(state);
     this.download(html, `${this.sanitizeFilename(state.postTitle)}.html`, 'text/html');
-    console.log('✅ HTML export complete');
+    console.log('HTML export complete');
   }
 
   /**
@@ -161,7 +161,7 @@ export class ExportService {
         printWindow.print();
       };
       
-      console.log('✅ PDF export initiated (print dialog)');
+      console.log('PDF export initiated (print dialog)');
     } else {
       throw new Error('Could not open print window. Please check popup blocker settings.');
     }
@@ -184,7 +184,7 @@ export class ExportService {
     
     const json = JSON.stringify(exportData, null, 2);
     this.download(json, `${this.sanitizeFilename(state.postTitle)}-backup.json`, 'application/json');
-    console.log('✅ JSON export complete');
+    console.log('JSON export complete');
   }
 
   /**
@@ -198,7 +198,7 @@ export class ExportService {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(shortcode).then(() => {
         alert(`Shortcode copied to clipboard!\n\n${shortcode}\n\nPaste this into any WordPress post or page.`);
-        console.log('✅ Shortcode copied to clipboard');
+        console.log('Shortcode copied to clipboard');
       }).catch(err => {
         // Fallback: show in alert
         prompt('Copy this shortcode:', shortcode);

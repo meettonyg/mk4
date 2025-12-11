@@ -96,7 +96,7 @@
                   <input 
                     v-model="stat.icon" 
                     @input="updateComponent"
-                    placeholder="📊 or 🎯"
+                    placeholder="or 🎯"
                   />
                 </div>
               </div>

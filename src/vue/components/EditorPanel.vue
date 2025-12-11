@@ -82,14 +82,14 @@ escapeHandler = (e) => {
 // ROOT FIX: Add keyboard listener in onMounted
 onMounted(() => {
   document.addEventListener('keydown', escapeHandler);
-  console.log('✅ EditorPanel: Escape key listener registered');
+  console.log('EditorPanel: Escape key listener registered');
 });
 
 // ROOT FIX: Proper cleanup in onUnmounted
 onUnmounted(() => {
   if (escapeHandler) {
     document.removeEventListener('keydown', escapeHandler);
-    console.log('✅ EditorPanel: Escape key listener cleaned up');
+    console.log('EditorPanel: Escape key listener cleaned up');
   }
 });
 </script>

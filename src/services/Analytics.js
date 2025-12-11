@@ -30,7 +30,7 @@ export class Analytics {
    * Initialize analytics
    */
   init() {
-    console.log('📈 Initializing Analytics...');
+    console.log('Initializing Analytics...');
     
     // Start auto-flush
     this.startAutoFlush();
@@ -43,7 +43,7 @@ export class Analytics {
       this.flush(true); // Synchronous flush
     });
     
-    console.log('✅ Analytics initialized', {
+    console.log('Analytics initialized', {
       sessionId: this.sessionId,
       userId: this.userId
     });
@@ -198,7 +198,7 @@ export class Analytics {
     const events = [...this.queue];
     this.queue = [];
     
-    console.log('📤 Flushing analytics:', events.length, 'events');
+    console.log('Flushing analytics:', events.length, 'events');
     
     try {
       if (sync) {
@@ -218,9 +218,9 @@ export class Analytics {
         });
       }
       
-      console.log('✅ Analytics flushed');
+      console.log('Analytics flushed');
     } catch (error) {
-      console.error('❌ Analytics flush failed:', error);
+      console.error('Analytics flush failed:', error);
       // Re-add to queue on failure
       this.queue.unshift(...events);
     }
@@ -281,7 +281,7 @@ export class Analytics {
    */
   setEnabled(enabled) {
     this.enabled = enabled;
-    console.log(enabled ? '✅ Analytics enabled' : '⏸️ Analytics disabled');
+    console.log(enabled ? 'Analytics enabled' : 'Analytics disabled');
   }
 
   /**
@@ -289,7 +289,7 @@ export class Analytics {
    */
   clear() {
     this.queue = [];
-    console.log('🗑️ Analytics queue cleared');
+    console.log('Analytics queue cleared');
   }
 
   /**
@@ -299,7 +299,7 @@ export class Analytics {
     this.stopAutoFlush();
     this.flush(true);
     this.clear();
-    console.log('👋 Analytics disposed');
+    console.log('Analytics disposed');
   }
 }
 

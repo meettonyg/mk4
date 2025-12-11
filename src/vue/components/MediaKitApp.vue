@@ -108,50 +108,50 @@ function handleCloseImportExport() {
 }
 
 function handleImportSuccess() {
-  console.log('✅ Import completed successfully');
+  console.log('Import completed successfully');
   // The store will automatically reload, no need to do anything else
 }
 
 // Initialize app with optimized data loading
 onMounted(async () => {
   try {
-    console.log('🚀 MediaKitApp: Starting Phase 1 initialization');
+    console.log('MediaKitApp: Starting Phase 1 initialization');
     loadingProgress.value = 10;
     
     // ROOT FIX: Verify preview mount point exists
     const previewMount = document.getElementById('media-kit-preview');
     if (previewMount) {
       previewMountReady.value = true;
-      console.log('✅ Preview mount point ready');
+      console.log('Preview mount point ready');
     } else {
-      console.warn('⚠️ Preview mount point not found yet, will retry...');
+      console.warn('Preview mount point not found yet, will retry...');
       // Retry after a tick
       await nextTick();
       const retryMount = document.getElementById('media-kit-preview');
       if (retryMount) {
         previewMountReady.value = true;
-        console.log('✅ Preview mount point ready (retry)');
+        console.log('Preview mount point ready (retry)');
       } else {
-        console.error('❌ Preview mount point not found!');
+        console.error('Preview mount point not found!');
       }
     }
     
     // ROOT FIX: Stores are ALWAYS initialized before Vue mounts (see main.js)
     // We just verify the state is ready
     if (!store.isInitialized) {
-      console.error('❌ MediaKitApp: Store not initialized - this should never happen!');
+      console.error('MediaKitApp: Store not initialized - this should never happen!');
       console.error('Check main.js initialization order - stores must initialize BEFORE Vue mount');
       throw new Error('Store not initialized - initialization order bug in main.js');
     }
     
-    console.log('✅ MediaKitApp: Store already initialized and ready');
+    console.log('MediaKitApp: Store already initialized and ready');
     loadingProgress.value = 75;
     
     // ROOT FIX: Log Pods data status for debugging
     const podsFieldCount = store.podsData ? Object.keys(store.podsData).length : 0;
-    console.log(`📊 MediaKitApp: Pods data loaded: ${podsFieldCount} fields`);
+    console.log(`MediaKitApp: Pods data loaded: ${podsFieldCount} fields`);
     if (podsFieldCount > 0 && window.gmkbData?.debugMode) {
-      console.log('📊 Pods data fields:', Object.keys(store.podsData));
+      console.log('Pods data fields:', Object.keys(store.podsData));
     }
     
     // Apply theme after data loaded
@@ -165,8 +165,8 @@ onMounted(async () => {
     // ROOT FIX: Add class to body to show builder UI
     document.body.classList.add('gmkb-vue-ready');
     
-    console.log('✅ MediaKitApp: Phase 1 initialization complete');
-    console.log('📊 MediaKitApp: Pods data loaded:', store.podsData ? Object.keys(store.podsData).length : 0, 'fields');
+    console.log('MediaKitApp: Phase 1 initialization complete');
+    console.log('MediaKitApp: Pods data loaded:', store.podsData ? Object.keys(store.podsData).length : 0, 'fields');
     
     // ROOT FIX: Listen for BOTH combined and separate import/export events
     document.addEventListener('gmkb:open-import-export', handleOpenImportExport);
@@ -175,7 +175,7 @@ onMounted(async () => {
     document.addEventListener('gmkb:close-import-export', handleCloseImportExport);
     
   } catch (error) {
-    console.error('❌ MediaKitApp: Initialization failed:', error);
+    console.error('MediaKitApp: Initialization failed:', error);
     
     // Show error state
     isReady.value = false;

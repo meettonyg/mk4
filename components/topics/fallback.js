@@ -10,7 +10,7 @@
 (function() {
     'use strict';
     
-    console.log('📚 Topics Fallback: Loading fallback system...');
+    console.log('Topics Fallback: Loading fallback system...');
     
     /**
      * Topics Fallback Handler Class
@@ -29,12 +29,12 @@
                 const { componentId, componentType, component } = event.detail;
                 
                 if (componentType === 'topics') {
-                    console.log(`📚 Topics Fallback: Handling fallback for ${componentId}`);
+                    console.log(`Topics Fallback: Handling fallback for ${componentId}`);
                     this.renderTopicsFallback(componentId, component);
                 }
             });
             
-            console.log('📚 Topics Fallback: Event listeners initialized');
+            console.log('Topics Fallback: Event listeners initialized');
         }
         
         /**
@@ -42,16 +42,16 @@
          */
         renderTopicsFallback(componentId, component) {
             try {
-                console.log(`🔧 Topics Fallback: Rendering fallback for ${componentId}`);
+                console.log(`Topics Fallback: Rendering fallback for ${componentId}`);
                 
                 const fallbackHtml = this.generateTopicsFallbackHTML(component);
                 this.insertTopicsIntoDOM(componentId, fallbackHtml, component);
                 
-                console.log(`✅ Topics Fallback: Successfully rendered fallback for ${componentId}`);
+                console.log(`Topics Fallback: Successfully rendered fallback for ${componentId}`);
                 return true;
                 
             } catch (error) {
-                console.error(`❌ Topics Fallback: Failed to render fallback for ${componentId}:`, error);
+                console.error(`Topics Fallback: Failed to render fallback for ${componentId}:`, error);
                 return false;
             }
         }
@@ -103,7 +103,7 @@
                         font-size: 0.875rem;
                         color: #856404;
                     ">
-                        ⚠️ Fallback mode: Topics loaded from cache. Click to edit directly.
+                        Fallback mode: Topics loaded from cache. Click to edit directly.
                     </div>
                 </div>
             `;
@@ -115,7 +115,7 @@
         insertTopicsIntoDOM(componentId, html, component) {
             const previewContainer = document.getElementById('media-kit-preview');
             if (!previewContainer) {
-                console.error('❌ Topics Fallback: Preview container not found');
+                console.error('Topics Fallback: Preview container not found');
                 return;
             }
             
@@ -154,7 +154,7 @@
                 });
             }
             
-            console.log(`✅ Topics Fallback: Component ${componentId} inserted into DOM`);
+            console.log(`Topics Fallback: Component ${componentId} inserted into DOM`);
         }
         
         /**
@@ -217,11 +217,11 @@
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             window.topicsFallback = new TopicsFallback();
-            console.log('✅ Topics Fallback: System initialized');
+            console.log('Topics Fallback: System initialized');
         });
     } else {
         window.topicsFallback = new TopicsFallback();
-        console.log('✅ Topics Fallback: System initialized');
+        console.log('Topics Fallback: System initialized');
     }
     
     // Export for debugging

@@ -215,7 +215,7 @@ const onDropdownLeave = () => {
 // Position dropdown relative to button
 const getDropdownStyle = computed(() => {
   if (!buttonRect.value) {
-    console.log('⚠️ ThemeSwitcher: No button rect, using fallback position');
+    console.log('ThemeSwitcher: No button rect, using fallback position');
     return {
       position: 'fixed',
       top: '60px',
@@ -231,22 +231,22 @@ const getDropdownStyle = computed(() => {
     zIndex: 10001
   };
   
-  console.log('🎨 ThemeSwitcher: Dropdown position:', style);
+  console.log('ThemeSwitcher: Dropdown position:', style);
   return style;
 });
 
 // ROOT FIX: Create handler functions that can be properly removed
 themeOpenHandler = (event) => {
-  console.log('🎨 ThemeSwitcher: Received open event');
+  console.log('ThemeSwitcher: Received open event');
   // Update button position
   const btn = document.getElementById('global-theme-btn');
   if (btn) {
     buttonElement.value = btn;
     buttonRect.value = btn.getBoundingClientRect();
-    console.log('🎨 ThemeSwitcher: Button position updated', buttonRect.value);
+    console.log('ThemeSwitcher: Button position updated', buttonRect.value);
   }
   toggleDropdown();
-  console.log('🎨 ThemeSwitcher: Dropdown toggled, open:', dropdownOpen.value);
+  console.log('ThemeSwitcher: Dropdown toggled, open:', dropdownOpen.value);
 };
 
 buttonClickHandler = handleButtonClick;
@@ -256,7 +256,7 @@ clickOutsideHandler = handleClickOutside;
 onMounted(() => {
   // Listen for custom event from toolbar
   document.addEventListener('gmkb:open-theme-switcher', themeOpenHandler);
-  console.log('✅ ThemeSwitcher: Listening for gmkb:open-theme-switcher event');
+  console.log('ThemeSwitcher: Listening for gmkb:open-theme-switcher event');
   
   // ROOT FIX: Only prevent default on button, don't toggle
   const btn = document.getElementById('global-theme-btn');
@@ -264,9 +264,9 @@ onMounted(() => {
     buttonElement.value = btn;
     btn.addEventListener('click', buttonClickHandler);
     buttonRect.value = btn.getBoundingClientRect();
-    console.log('✅ ThemeSwitcher: Attached to toolbar button');
+    console.log('ThemeSwitcher: Attached to toolbar button');
   } else {
-    console.warn('⚠️ ThemeSwitcher: Toolbar button not found');
+    console.warn('ThemeSwitcher: Toolbar button not found');
   }
   
   document.addEventListener('click', clickOutsideHandler);
@@ -292,7 +292,7 @@ onUnmounted(() => {
     clearTimeout(closeTimeout);
   }
   
-  console.log('✅ ThemeSwitcher: Event listeners properly cleaned up');
+  console.log('ThemeSwitcher: Event listeners properly cleaned up');
 });
 </script>
 

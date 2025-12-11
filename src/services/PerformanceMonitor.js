@@ -37,7 +37,7 @@ export class PerformanceMonitor {
    * Initialize performance monitoring
    */
   init() {
-    console.log('📊 Initializing Performance Monitor...');
+    console.log('Initializing Performance Monitor...');
     
     // Start FPS monitoring
     this.startFPSMonitoring();
@@ -53,7 +53,7 @@ export class PerformanceMonitor {
     // Log initial performance
     this.logInitialPerformance();
     
-    console.log('✅ Performance Monitor initialized');
+    console.log('Performance Monitor initialized');
   }
 
   /**
@@ -107,7 +107,7 @@ export class PerformanceMonitor {
           // ROOT FIX: Only warn for tasks >250ms (was 50ms)
           // Startup tasks of 100-200ms are normal and acceptable
           if (entry.duration > 250) {
-            console.warn('⚠️ Long task detected:', {
+            console.warn('Long task detected:', {
               name: entry.name,
               duration: entry.duration,
               startTime: entry.startTime
@@ -201,7 +201,7 @@ export class PerformanceMonitor {
       navigationType: navigation?.type || 'unknown'
     };
 
-    console.log('📊 Initial Performance:', metrics);
+    console.log('Initial Performance:', metrics);
     
     // Record to metrics
     this.recordMetric('pageLoad', metrics);
@@ -421,7 +421,7 @@ export class PerformanceMonitor {
         body: JSON.stringify(report)
       });
       
-      console.log('📊 Performance reported');
+      console.log('Performance reported');
     } catch (error) {
       console.error('Failed to report performance:', error);
     }
@@ -435,7 +435,7 @@ export class PerformanceMonitor {
       this.metrics[key] = [];
     });
     
-    console.log('🗑️ Performance metrics cleared');
+    console.log('Performance metrics cleared');
   }
 
   /**
@@ -446,7 +446,7 @@ export class PerformanceMonitor {
     this.observers.clear();
     this.clear();
     
-    console.log('👋 Performance Monitor disposed');
+    console.log('Performance Monitor disposed');
   }
 }
 

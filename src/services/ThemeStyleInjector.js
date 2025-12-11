@@ -23,7 +23,7 @@ class ThemeStyleInjector {
      */
     this.appliedVariables = {};
 
-    console.log('✅ ThemeStyleInjector initialized');
+    console.log('ThemeStyleInjector initialized');
   }
 
   /**
@@ -48,7 +48,7 @@ class ThemeStyleInjector {
     }
 
     try {
-      console.log(`🎨 ThemeStyleInjector: Applying theme "${themeId}"`);
+      console.log(`ThemeStyleInjector: Applying theme "${themeId}"`);
 
       // Get or create theme wrapper element
       const themeWrapper = this.getThemeWrapper();
@@ -66,13 +66,13 @@ class ThemeStyleInjector {
       this.currentThemeId = themeId;
       this.appliedVariables = cssVariables;
 
-      console.log(`✅ ThemeStyleInjector: Applied ${Object.keys(cssVariables).length} CSS variables`);
+      console.log(`ThemeStyleInjector: Applied ${Object.keys(cssVariables).length} CSS variables`);
 
       // Emit custom event for other systems
       this.emitThemeApplied(themeId, cssVariables);
 
     } catch (error) {
-      console.error('❌ ThemeStyleInjector.applyTheme: Failed to apply theme');
+      console.error('ThemeStyleInjector.applyTheme: Failed to apply theme');
       console.error('  Theme ID:', themeId);
       console.error('  Theme data:', themeData);
       console.error('  Error:', error);
@@ -100,7 +100,7 @@ class ThemeStyleInjector {
 
     // SECURITY: Verify we're NOT applying to body/app
     if (themeWrapper === document.body || themeWrapper.id === 'app') {
-      console.error('❌ CRITICAL: Theme would apply to body/app - BLOCKED');
+      console.error('CRITICAL: Theme would apply to body/app - BLOCKED');
       throw new Error('ThemeStyleInjector: Invalid theme wrapper (body/app) - theme scope violation prevented');
     }
 
@@ -136,7 +136,7 @@ class ThemeStyleInjector {
       }
 
     } catch (error) {
-      console.error('❌ generateCSSVariables: Failed to generate variables');
+      console.error('generateCSSVariables: Failed to generate variables');
       console.error('  Theme data:', themeData);
       console.error('  Error:', error);
       throw error;
@@ -262,7 +262,7 @@ class ThemeStyleInjector {
       });
       document.dispatchEvent(event);
     } catch (error) {
-      console.warn('⚠️ ThemeStyleInjector: Could not emit theme-applied event', error);
+      console.warn('ThemeStyleInjector: Could not emit theme-applied event', error);
       // Non-critical error - don't throw
     }
   }
@@ -288,10 +288,10 @@ class ThemeStyleInjector {
       this.currentThemeId = null;
       this.appliedVariables = {};
 
-      console.log('✅ ThemeStyleInjector: Theme cleared');
+      console.log('ThemeStyleInjector: Theme cleared');
 
     } catch (error) {
-      console.error('❌ ThemeStyleInjector.clearTheme: Failed to clear theme', error);
+      console.error('ThemeStyleInjector.clearTheme: Failed to clear theme', error);
       // Don't throw - graceful degradation
     }
   }

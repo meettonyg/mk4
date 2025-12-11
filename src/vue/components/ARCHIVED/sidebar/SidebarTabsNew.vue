@@ -307,7 +307,7 @@ export default {
         badge: 'PRO',
         components: [
           { id: 'video', icon: '🎥', label: 'Video Intro', isPro: true },
-          { id: 'gallery', icon: '📷', label: 'Photo Gallery', isPro: true },
+          { id: 'gallery', icon: '[Photo]', label: 'Photo Gallery', isPro: true },
           { id: 'calendar', icon: '📅', label: 'Booking Calendar', isPro: true },
           { id: 'podcast', icon: '🎙️', label: 'Podcast Player', isPro: true },
         ]

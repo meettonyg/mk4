@@ -125,7 +125,7 @@ export class DOMHandlers {
   static initialize() {
     this.setupEmptyStateHandlers();
     this.setupMinimalUIHandlers();
-    console.log('✅ DOM handlers initialized');
+    console.log('DOM handlers initialized');
   }
   
   /**
@@ -146,7 +146,7 @@ export class DOMHandlers {
       this.handlers.saveButtonHandler = null;
     }
     
-    console.log('✅ DOM handlers cleaned up');
+    console.log('DOM handlers cleaned up');
   }
 }
 

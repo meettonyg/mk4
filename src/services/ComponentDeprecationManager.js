@@ -143,7 +143,7 @@ export class ComponentDeprecationManager {
    */
   handleDeprecatedWithWarning(component, deprecationInfo) {
     // Component still works but show warning in console
-    console.warn(`⚠️ [DeprecationManager] Component "${component.type}" is deprecated and will be removed in version ${deprecationInfo.version || 'future'}`);
+    console.warn(`[DeprecationManager] Component "${component.type}" is deprecated and will be removed in version ${deprecationInfo.version || 'future'}`);
     
     if (deprecationInfo.replacement) {
       console.log(`   Suggested replacement: ${deprecationInfo.replacement}`);
@@ -203,7 +203,7 @@ export class ComponentDeprecationManager {
       });
     }
 
-    console.log(`✅ [DeprecationManager] Migrated ${component.type} to ${fallbackConfig.type}`);
+    console.log(`[DeprecationManager] Migrated ${component.type} to ${fallbackConfig.type}`);
 
     return migratedComponent;
   }
@@ -346,7 +346,7 @@ export class ComponentDeprecationManager {
       return cleaned;
     });
 
-    console.log(`✅ [DeprecationManager] Removed ${idsToRemove.size} deprecated components`);
+    console.log(`[DeprecationManager] Removed ${idsToRemove.size} deprecated components`);
 
     return {
       components: cleanedComponents,

@@ -225,7 +225,7 @@ export const useProfileStore = defineStore('profile', {
                     }
 
                     this.isDirty = false;
-                    console.log('✅ Profile loaded:', this.postId);
+                    console.log('Profile loaded:', this.postId);
                 } else {
                     throw new Error(response.message || 'Failed to load profile');
                 }
@@ -305,7 +305,7 @@ export const useProfileStore = defineStore('profile', {
                     });
                     this.checkDirtyState();
                     this.lastSaved = new Date();
-                    console.log('✅ Profile saved');
+                    console.log('Profile saved');
                     return true;
                 }
 
@@ -359,7 +359,7 @@ export const useProfileStore = defineStore('profile', {
                     });
                     this.isDirty = false;
                     this.lastSaved = new Date();
-                    console.log('✅ Profile saved');
+                    console.log('Profile saved');
                     return true;
                 }
 

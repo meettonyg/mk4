@@ -405,9 +405,9 @@ export const useThemeStore = defineStore('theme', {
         const mediaKitStore = useMediaKitStore();
         mediaKitStore.theme = this.activeThemeId;
         // DON'T call _trackChange() here - we don't want to mark as dirty on initial load
-        console.log('[Theme Store] ✅ Synced initial theme to mediaKit store:', this.activeThemeId);
+        console.log('[Theme Store] Synced initial theme to mediaKit store:', this.activeThemeId);
       } catch (error) {
-        console.error('[Theme Store] ❌ Failed to sync initial theme to mediaKit store:', error);
+        console.error('[Theme Store] Failed to sync initial theme to mediaKit store:', error);
         // Non-fatal - theme still applied to UI
       }
     },
@@ -485,9 +485,9 @@ export const useThemeStore = defineStore('theme', {
           const mediaKitStore = useMediaKitStore();
           mediaKitStore.theme = themeId;
           mediaKitStore._trackChange(); // Mark as dirty so it saves
-          console.log('[Theme Store] ✅ Synced theme to mediaKit store:', themeId);
+          console.log('[Theme Store] Synced theme to mediaKit store:', themeId);
         } catch (error) {
-          console.error('[Theme Store] ❌ Failed to sync theme to mediaKit store:', error);
+          console.error('[Theme Store] Failed to sync theme to mediaKit store:', error);
           // Non-fatal - theme still applied to UI
         }
       } else {
@@ -598,9 +598,9 @@ export const useThemeStore = defineStore('theme', {
           effects: {}
         };
         mediaKitStore._trackChange(); // Mark as dirty so it saves
-        console.log('[Theme Store] ✅ Synced theme reset to mediaKit store');
+        console.log('[Theme Store] Synced theme reset to mediaKit store');
       } catch (error) {
-        console.error('[Theme Store] ❌ Failed to sync theme reset to mediaKit store:', error);
+        console.error('[Theme Store] Failed to sync theme reset to mediaKit store:', error);
       }
       
       // Dispatch event for tracking
@@ -794,7 +794,7 @@ export const useThemeStore = defineStore('theme', {
         detail: { themeId: this.activeThemeId }
       }));
       
-      console.log(`✅ Reset customizations for theme ${this.activeThemeId}`);
+      console.log(`Reset customizations for theme ${this.activeThemeId}`);
       return true;
     },
 
@@ -823,7 +823,7 @@ export const useThemeStore = defineStore('theme', {
         detail: { themeId }
       }));
       
-      console.log(`✅ Switched to theme ${themeId}`);
+      console.log(`Switched to theme ${themeId}`);
       return true;
     },
 

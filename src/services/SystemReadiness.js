@@ -45,7 +45,7 @@ class SystemReadiness {
     
     // Log readiness
     const elapsed = Date.now() - this.startTime;
-    console.log(`[SystemReadiness] ✅ ${systemName} ready (${elapsed}ms)`);
+    console.log(`[SystemReadiness] ${systemName} ready (${elapsed}ms)`);
     
     // Check if all systems are ready
     this.checkAllSystemsReady();
@@ -63,7 +63,7 @@ class SystemReadiness {
       this.initialized = true;
       const totalTime = Date.now() - this.startTime;
       
-      console.log(`[SystemReadiness] 🎉 All systems ready! (${totalTime}ms)`);
+      console.log(`[SystemReadiness] All systems ready! (${totalTime}ms)`);
       
       // Issue #24 FIX: Emit global ready event using DOM CustomEvent
       document.dispatchEvent(new CustomEvent('gmkb:app:ready', {
@@ -186,7 +186,7 @@ const systemReadiness = new SystemReadiness();
 if (typeof window !== 'undefined' && (process.env.NODE_ENV === 'development' || window.gmkbData?.debugMode)) {
   window.__systemReadiness = systemReadiness;
   window.__systemStatus = () => systemReadiness.getStatus();
-  console.log('[SystemReadiness] ✅ System readiness coordinator initialized');
+  console.log('[SystemReadiness] System readiness coordinator initialized');
 }
 
 export default systemReadiness;

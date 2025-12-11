@@ -553,14 +553,14 @@ keyboardHandler = (e) => {
 // ROOT FIX: Add keyboard listener in lifecycle hook
 onMounted(() => {
   window.addEventListener('keydown', keyboardHandler);
-  console.log('✅ DesignPanel: Keyboard shortcuts registered');
+  console.log('DesignPanel: Keyboard shortcuts registered');
 });
 
 // ROOT FIX: Proper cleanup in onUnmounted
 onUnmounted(() => {
   if (keyboardHandler) {
     window.removeEventListener('keydown', keyboardHandler);
-    console.log('✅ DesignPanel: Keyboard shortcuts cleaned up');
+    console.log('DesignPanel: Keyboard shortcuts cleaned up');
   }
   
   // Clear any pending update timeout

@@ -155,7 +155,7 @@ export const useUIStore = defineStore('ui', {
         // DEPRECATED: Old editor actions (kept for backwards compatibility)
         // Component editing is now handled by openComponentEditor() below in the sidebar section
         closeComponentEditor() {
-            console.warn('⚠️ closeComponentEditor is deprecated, use closeSidebarEditor instead');
+            console.warn('closeComponentEditor is deprecated, use closeSidebarEditor instead');
             this.closeSidebarEditor();
         },
         
@@ -178,7 +178,7 @@ export const useUIStore = defineStore('ui', {
         
         // ROOT FIX: Elementor-style sidebar editor management
         openSectionEditor(sectionId) {
-            console.log('✅ UI Store: Opening section editor for:', sectionId);
+            console.log('UI Store: Opening section editor for:', sectionId);
             
             this.sidebarMode = 'section';
             this.editingSectionId = sectionId;
@@ -195,7 +195,7 @@ export const useUIStore = defineStore('ui', {
         },
         
         openComponentEditor(componentId) {
-            console.log('🔵🔵🔵 UI STORE: openComponentEditor CALLED 🔵🔵🔵');
+            console.log(' UI STORE: openComponentEditor CALLED ');
             console.log('   Component ID:', componentId);
             console.log('   Current mode:', this.sidebarMode);
             console.log('   Current editing component:', this.editingComponentId);
@@ -207,33 +207,33 @@ export const useUIStore = defineStore('ui', {
             // ROOT FIX: Reset to content tab when opening new component
             this.activeEditorTab = 'content';
             
-            console.log('   ✅ Updated mode to:', this.sidebarMode);
-            console.log('   ✅ Updated editingComponentId to:', this.editingComponentId);
-            console.log('   ✅ Updated sidebarOpen to:', this.sidebarOpen);
-            console.log('   ✅ Updated activeEditorTab to:', this.activeEditorTab);
+            console.log('   Updated mode to:', this.sidebarMode);
+            console.log('   Updated editingComponentId to:', this.editingComponentId);
+            console.log('   Updated sidebarOpen to:', this.sidebarOpen);
+            console.log('   Updated activeEditorTab to:', this.activeEditorTab);
             
             // Close old panels (backwards compatibility)
             this.editPanelOpen = false;
             this.designPanelOpen = false;
             
-            console.log('✅ UI Store: Sidebar mode → COMPONENT');
+            console.log('UI Store: Sidebar mode  -> COMPONENT');
             
             document.dispatchEvent(new CustomEvent('gmkb:component-editor-opened', {
                 detail: { componentId }
             }));
-            console.log('   ✅ Dispatched gmkb:component-editor-opened event');
+            console.log('   Dispatched gmkb:component-editor-opened event');
         },
         
         // ROOT FIX: Tab management for component editor
         setEditorTab(tab) {
             if (['content', 'style', 'advanced'].includes(tab)) {
                 this.activeEditorTab = tab;
-                console.log('✅ UI Store: Editor tab changed to:', tab);
+                console.log('UI Store: Editor tab changed to:', tab);
             }
         },
         
         closeSidebarEditor() {
-            console.log('🎯 UI Store: Closing sidebar editor, returning to default');
+            console.log('UI Store: Closing sidebar editor, returning to default');
             this.sidebarMode = 'default';
             this.editingSectionId = null;
             this.editingComponentId = null;
@@ -242,7 +242,7 @@ export const useUIStore = defineStore('ui', {
             this.editPanelOpen = false;
             this.designPanelOpen = false;
             
-            console.log('✅ UI Store: Sidebar mode → DEFAULT');
+            console.log('UI Store: Sidebar mode  -> DEFAULT');
             
             document.dispatchEvent(new CustomEvent('gmkb:sidebar-editor-closed'));
         },
@@ -334,7 +334,7 @@ export const useUIStore = defineStore('ui', {
                 detail: { collapsed: this.sidebarCollapsed }
             }));
             
-            console.log('✅ UI Store: Sidebar collapsed state:', this.sidebarCollapsed);
+            console.log('UI Store: Sidebar collapsed state:', this.sidebarCollapsed);
         },
         
         collapseSidebar() {
@@ -355,7 +355,7 @@ export const useUIStore = defineStore('ui', {
             const saved = storageService.get('sidebar-collapsed');
             if (saved !== null) {
                 this.sidebarCollapsed = saved;
-                console.log('✅ UI Store: Loaded sidebar collapsed state:', this.sidebarCollapsed);
+                console.log('UI Store: Loaded sidebar collapsed state:', this.sidebarCollapsed);
             }
         },
         
@@ -463,7 +463,7 @@ export const useUIStore = defineStore('ui', {
             // Clear toasts
             this.clearToasts();
             
-            console.log('✅ UI state reset');
+            console.log('UI state reset');
         }
     }
 });

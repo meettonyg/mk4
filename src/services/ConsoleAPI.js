@@ -32,7 +32,7 @@ export class ConsoleAPI {
       addComponent: (type, data) => {
         const store = window.GMKB.stores?.mediaKit;
         if (!store) {
-          console.error('❌ Media kit store not available');
+          console.error('Media kit store not available');
           return null;
         }
         if (typeof type === 'object') {
@@ -69,7 +69,7 @@ export class ConsoleAPI {
       save: async () => {
         const store = window.GMKB.stores?.mediaKit;
         if (!store) {
-          console.error('❌ Media kit store not available');
+          console.error('Media kit store not available');
           return false;
         }
         try {
@@ -88,9 +88,9 @@ export class ConsoleAPI {
         const store = window.GMKB.stores?.theme;
         if (store) {
           store.selectTheme(themeId);
-          console.log(`✅ Switched to ${themeId} theme`);
+          console.log(`Switched to ${themeId} theme`);
         } else {
-          console.error('❌ Theme store not available');
+          console.error('Theme store not available');
         }
       },
       
@@ -99,7 +99,7 @@ export class ConsoleAPI {
         if (store) {
           store.openCustomizer();
         } else {
-          console.error('❌ Theme store not available');
+          console.error('Theme store not available');
         }
       },
       
@@ -133,11 +133,11 @@ export class ConsoleAPI {
       checkOrphans: () => {
         const store = window.GMKB.stores?.mediaKit;
         if (!store) {
-          console.error('❌ Media kit store not available');
+          console.error('Media kit store not available');
           return null;
         }
         const result = store.checkForOrphanedComponents();
-        console.log('📊 Orphaned Components Report:');
+        console.log('Orphaned Components Report:');
         console.log(`  Total components: ${result.total}`);
         console.log(`  In sections: ${result.inSections}`);
         console.log(`  Orphaned: ${result.orphaned}`);
@@ -150,10 +150,10 @@ export class ConsoleAPI {
       fixOrphans: () => {
         const store = window.GMKB.stores?.mediaKit;
         if (!store) {
-          console.error('❌ Media kit store not available');
+          console.error('Media kit store not available');
           return null;
         }
-        console.log('🔧 Fixing orphaned components...');
+        console.log('Fixing orphaned components...');
         const result = store.fixOrphanedComponents();
         if (result.fixed > 0) {
           showToast(`Fixed ${result.fixed} orphaned components`, 'success', 5000);
@@ -168,7 +168,7 @@ export class ConsoleAPI {
         const store = window.GMKB.stores?.mediaKit;
         if (store) {
           store.undo();
-          console.log('↩️ Undo performed');
+          console.log('Undo performed');
         }
       },
       
@@ -176,7 +176,7 @@ export class ConsoleAPI {
         const store = window.GMKB.stores?.mediaKit;
         if (store) {
           store.redo();
-          console.log('↪️ Redo performed');
+          console.log('Redo performed');
         }
       },
       
@@ -184,7 +184,7 @@ export class ConsoleAPI {
       clearAll: () => {
         const store = window.GMKB.stores?.mediaKit;
         if (!store) {
-          console.error('❌ Media kit store not available');
+          console.error('Media kit store not available');
           return false;
         }
         if (confirm('Are you sure you want to clear all components and sections?')) {
@@ -200,7 +200,7 @@ export class ConsoleAPI {
       autoGenerate: async () => {
         const store = window.GMKB.stores?.mediaKit;
         if (!store) {
-          console.error('❌ Media kit store not available');
+          console.error('Media kit store not available');
           return false;
         }
         const componentsToAdd = ['hero', 'biography', 'topics', 'authority-hook', 'contact'];
@@ -214,7 +214,7 @@ export class ConsoleAPI {
       
       // Media Library Diagnostic Commands
       testMediaLibrary: () => {
-        console.log('🔍 WordPress Media Library Diagnostic');
+        console.log('WordPress Media Library Diagnostic');
         console.log('=====================================');
         
         const tests = {
@@ -234,7 +234,7 @@ export class ConsoleAPI {
         let failedTests = [];
         
         Object.entries(tests).forEach(([test, result]) => {
-          const status = result ? '✅' : '❌';
+          const status = result ? '+' : '-';
           console.log(`${status} ${test}: ${result}`);
           if (!result) {
             allPassed = false;
@@ -245,11 +245,11 @@ export class ConsoleAPI {
         console.log('=====================================');
         
         if (allPassed) {
-          console.log('✅ All tests passed! Media library should work correctly.');
-          console.log('💡 Try: GMKB.openTestMedia() to open the media library');
+          console.log('All tests passed! Media library should work correctly.');
+          console.log('Try: GMKB.openTestMedia() to open the media library');
         } else {
-          console.error('❌ Some tests failed:', failedTests.join(', '));
-          console.log('🔧 Troubleshooting:');
+          console.error('Some tests failed:', failedTests.join(', '));
+          console.log('Troubleshooting:');
           
           if (!tests['Media templates in DOM']) {
             console.log('  - Media templates not found. wp_print_media_templates() may not have been called.');
@@ -272,7 +272,7 @@ export class ConsoleAPI {
       
       openTestMedia: () => {
         if (typeof window.wp === 'undefined' || typeof window.wp.media !== 'function') {
-          console.error('❌ Cannot open media library - wp.media is not available');
+          console.error('Cannot open media library - wp.media is not available');
           console.log('Run GMKB.testMediaLibrary() for diagnostics');
           return;
         }
@@ -287,7 +287,7 @@ export class ConsoleAPI {
           
           frame.on('select', function() {
             const attachment = frame.state().get('selection').first().toJSON();
-            console.log('✅ Image selected:', {
+            console.log('Image selected:', {
               id: attachment.id,
               url: attachment.url,
               title: attachment.title
@@ -296,9 +296,9 @@ export class ConsoleAPI {
           });
           
           frame.open();
-          console.log('✅ Media library opened successfully');
+          console.log('Media library opened successfully');
         } catch (error) {
-          console.error('❌ Failed to open media library:', error);
+          console.error('Failed to open media library:', error);
           showToast('Failed to open media library', 'error');
         }
       },
@@ -306,7 +306,7 @@ export class ConsoleAPI {
       // Help command
       help: () => {
         console.log(`
-🎯 Media Kit Builder Console Commands
+Media Kit Builder Console Commands
 =====================================
 
 Component Commands:
@@ -363,7 +363,7 @@ Store Access:
     };
     
     // Log success
-    console.log('✅ Console API installed. Type GMKB.help() for commands.');
+    console.log('Console API installed. Type GMKB.help() for commands.');
   }
   
   /**

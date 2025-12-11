@@ -286,7 +286,7 @@ const componentSettings = computed(() => {
   
   // CRITICAL FIX: Handle empty array or invalid settings
   if (!settings || Array.isArray(settings) || typeof settings !== 'object') {
-    console.warn('⚠️ BaseAdvancedPanel: Invalid or missing settings, using defaults');
+    console.warn('BaseAdvancedPanel: Invalid or missing settings, using defaults');
     return getDefaultSettings();
   }
   

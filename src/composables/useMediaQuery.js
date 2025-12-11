@@ -52,7 +52,7 @@ export function useMediaQuery(options = {}) {
   onMounted(() => {
     updateDimensions();
     window.addEventListener('resize', handleResize);
-    console.log('📱 Media query initialized:', {
+    console.log('Media query initialized:', {
       width: windowWidth.value,
       height: windowHeight.value
     });
@@ -118,7 +118,7 @@ export function useOrientation() {
 
   const handleOrientationChange = () => {
     orientation.value = window.screen.orientation.type;
-    console.log('🔄 Orientation changed:', orientation.value);
+    console.log('Orientation changed:', orientation.value);
   };
 
   onMounted(() => {
@@ -212,7 +212,7 @@ export function useTouchGestures() {
     element.addEventListener('touchmove', onTouchMove, { passive: true });
     element.addEventListener('touchend', () => onTouchEnd(callbacks), { passive: true });
 
-    console.log('👆 Touch gestures enabled');
+    console.log('Touch gestures enabled');
 
     return () => {
       element.removeEventListener('touchstart', onTouchStart);

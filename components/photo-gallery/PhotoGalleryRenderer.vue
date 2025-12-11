@@ -4,7 +4,7 @@
     <div class="component-root photo-gallery-content">
     <h2 v-if="title" class="section-title">{{ title }}</h2>
     
-    <!-- ✅ STANDARD GRID (default/fallback) -->
+    <!-- STANDARD GRID (default/fallback) -->
     <div 
       v-if="layoutStyle === 'grid' || !layoutStyle"
       class="photo-gallery-grid" 
@@ -40,7 +40,7 @@
       </div>
     </div>
 
-    <!-- ✅ MASONRY LAYOUT -->
+    <!-- MASONRY LAYOUT -->
     <MasonryGrid
       v-else-if="layoutStyle === 'masonry'"
       :items="photos"
@@ -78,7 +78,7 @@
       </template>
     </MasonryGrid>
 
-    <!-- ✅ CAROUSEL LAYOUT -->
+    <!-- CAROUSEL LAYOUT -->
     <CarouselGrid
       v-else-if="layoutStyle === 'carousel'"
       :items="photos"
@@ -128,8 +128,8 @@
 <script>
 import { ref, computed } from 'vue';
 import Lightbox from '@/vue/components/shared/Lightbox.vue';
-import MasonryGrid from '@/vue/components/shared/MasonryGrid.vue'; // ✅ NEW
-import CarouselGrid from '@/vue/components/shared/CarouselGrid.vue'; // ✅ NEW
+import MasonryGrid from '@/vue/components/shared/MasonryGrid.vue'; // NEW
+import CarouselGrid from '@/vue/components/shared/CarouselGrid.vue'; // NEW
 
 export default {
   name: 'PhotoGalleryRenderer',
@@ -163,8 +163,8 @@ export default {
   },
   components: {
     Lightbox,
-    MasonryGrid, // ✅ NEW
-    CarouselGrid // ✅ NEW
+    MasonryGrid, // NEW
+    CarouselGrid // NEW
   },
   setup(props) {
     // Lightbox state
@@ -181,12 +181,12 @@ export default {
       return props.data?.captionStyle || 'overlay';
     });
     
-    // ✅ NEW: LAYOUT STYLE: Component data > default (graceful fallback to grid)
+    // NEW: LAYOUT STYLE: Component data > default (graceful fallback to grid)
     const layoutStyle = computed(() => {
       return props.data?.layoutStyle || 'grid';
     });
     
-    // ✅ NEW: CAROUSEL SETTINGS: Component data > defaults
+    // NEW: CAROUSEL SETTINGS: Component data > defaults
     const carouselSettings = computed(() => {
       return props.data?.carouselSettings || {
         autoplay: true,
@@ -200,7 +200,7 @@ export default {
       };
     });
     
-    // ✅ NEW: GRID STYLES: Dynamic columns based on component data
+    // NEW: GRID STYLES: Dynamic columns based on component data
     const gridStyles = computed(() => {
       const columns = props.data?.columns || '3';
       return {
@@ -231,9 +231,9 @@ export default {
       title,
       photos,
       captionStyle,
-      layoutStyle, // ✅ NEW
-      carouselSettings, // ✅ NEW
-      gridStyles, // ✅ NEW
+      layoutStyle, // NEW
+      carouselSettings, // NEW
+      gridStyles, // NEW
       lightboxRef,
       currentPhotoIndex,
       openLightbox

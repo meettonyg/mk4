@@ -79,13 +79,13 @@ const componentKey = ref(0); // For force re-render
 const componentData = computed(() => {
   // CRITICAL FIX: Guard against undefined/null componentId
   if (!props.componentId) {
-    console.error('❌ ComponentRenderer: componentId is undefined or null');
+    console.error('ComponentRenderer: componentId is undefined or null');
     return null;
   }
   
   // Check if component exists in store
   if (!store.components[props.componentId]) {
-    console.warn(`⚠️ Component ${props.componentId} not found in store`);
+    console.warn(`Component ${props.componentId} not found in store`);
     return null;
   }
   
@@ -93,7 +93,7 @@ const componentData = computed(() => {
   
   // Ensure component has required data
   if (!component.type) {
-    console.error(`❌ Component ${props.componentId} missing type property`);
+    console.error(`Component ${props.componentId} missing type property`);
     return null;
   }
   
@@ -108,7 +108,7 @@ const canRender = computed(() => {
   if (props.waitForPods) {
     const podsAvailable = store.podsData && Object.keys(store.podsData).length > 0;
     if (!podsAvailable) {
-      console.log(`⏳ Waiting for Pods data for component ${props.componentId}`);
+      console.log(`Waiting for Pods data for component ${props.componentId}`);
       return false;
     }
   }
@@ -118,7 +118,7 @@ const canRender = computed(() => {
 
 const componentType = computed(() => {
   if (!componentData.value?.type) {
-    console.warn('❌ ComponentRenderer: No component type provided');
+    console.warn('ComponentRenderer: No component type provided');
     return null;
   }
   
@@ -133,7 +133,7 @@ const componentType = computed(() => {
       return null;
     }
     
-    console.log(`✅ Loaded Vue component for type: ${componentData.value.type}`);
+    console.log(`Loaded Vue component for type: ${componentData.value.type}`);
     return vueComponent;
     
   } catch (error) {
@@ -162,7 +162,7 @@ const loadComponent = async () => {
     
     // Issue #24 FIX: Wait for store initialization using Pinia state
     if (!store.isInitialized) {
-      console.log(`⏳ Waiting for store initialization for component ${props.componentId}`);
+      console.log(`Waiting for store initialization for component ${props.componentId}`);
       
       // Use Pinia $subscribe to wait for initialization
       await new Promise((resolve, reject) => {
@@ -183,12 +183,12 @@ const loadComponent = async () => {
     
     // Issue #24 FIX: Wait for Pods data using store state
     if (props.waitForPods && (!store.podsData || Object.keys(store.podsData).length === 0)) {
-      console.log(`⏳ Waiting for Pods data for component ${props.componentId}`);
+      console.log(`Waiting for Pods data for component ${props.componentId}`);
       
       // Wait for Pods data using DOM event
       await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
-          console.warn(`⚠️ Pods data timeout for component ${props.componentId}`);
+          console.warn(`Pods data timeout for component ${props.componentId}`);
           if (currentRetry.value < props.retryAttempts) {
             retry();
           } else {
@@ -237,7 +237,7 @@ const retry = async () => {
   hasError.value = false;
   componentKey.value++; // Force re-render
   
-  console.log(`🔄 Retrying component ${props.componentId} (attempt ${currentRetry.value}/${props.retryAttempts})`);
+  console.log(`Retrying component ${props.componentId} (attempt ${currentRetry.value}/${props.retryAttempts})`);
   emit('retry', { componentId: props.componentId, attempt: currentRetry.value });
   
   await loadComponent();
@@ -245,7 +245,7 @@ const retry = async () => {
 
 const onComponentReady = () => {
   componentReady.value = true;
-  console.log(`✅ Component ${props.componentId} ready`);
+  console.log(`Component ${props.componentId} ready`);
 };
 
 const onComponentError = (error) => {
@@ -259,7 +259,7 @@ onMounted(async () => {
   // CRITICAL FIX: Guard against undefined/null componentId
   // Must be in onMounted after refs are created
   if (!props.componentId) {
-    console.error('❌ ComponentRenderer: componentId is required but was not provided');
+    console.error('ComponentRenderer: componentId is required but was not provided');
     hasError.value = true;
     isLoading.value = false;
     return; // Exit early
@@ -270,7 +270,7 @@ onMounted(async () => {
   // Listen for Pods data updates
   const handlePodsLoaded = () => {
     if (!componentReady.value && !hasError.value) {
-      console.log(`📦 Pods data loaded, retrying component ${props.componentId}`);
+      console.log(`Pods data loaded, retrying component ${props.componentId}`);
       loadComponent();
     }
   };

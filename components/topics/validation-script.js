@@ -16,28 +16,28 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // ROOT FIX: Check for simplified sync system instead of complex TopicsEnhanced
         if (typeof window.TopicsSync !== 'undefined') {
-            testsResults.push('✅ TopicsSync global object loaded (simplified system)');
+            testsResults.push('TopicsSync global object loaded (simplified system)');
             
             // Test available methods
             if (typeof window.TopicsSync.initialize === 'function') {
-                testsResults.push('✅ initialize method available');
+                testsResults.push('initialize method available');
             } else {
-                testsResults.push('❌ initialize method missing');
+                testsResults.push('initialize method missing');
             }
             
             if (typeof window.TopicsSync.testSync === 'function') {
-                testsResults.push('✅ testSync method available');
+                testsResults.push('testSync method available');
             } else {
-                testsResults.push('❌ testSync method missing');
+                testsResults.push('testSync method missing');
             }
             
             if (typeof window.TopicsSync.debug === 'function') {
-                testsResults.push('✅ debug method available');
+                testsResults.push('debug method available');
             } else {
-                testsResults.push('❌ debug method missing');
+                testsResults.push('debug method missing');
             }
         } else {
-            testsResults.push('❌ TopicsSync global object not found - check panel-script.js');
+            testsResults.push('TopicsSync global object not found - check panel-script.js');
         }
         
         // ROOT FIX: Check for simplified sync elements instead of complex topics-list
@@ -45,55 +45,55 @@ document.addEventListener('DOMContentLoaded', function() {
         const designPanelInputs = document.querySelectorAll('textarea[data-property^="topic_"], input[data-property^="topic_"]');
         
         if (previewElements.length > 0) {
-            testsResults.push(`✅ ${previewElements.length} contenteditable preview elements found`);
+            testsResults.push(`${previewElements.length} contenteditable preview elements found`);
             
             // Check for sync initialization
             const initializedElements = document.querySelectorAll('.topic-title[data-sync-initialized="true"]');
             if (initializedElements.length > 0) {
-                testsResults.push(`✅ ${initializedElements.length} elements initialized for sync`);
+                testsResults.push(`${initializedElements.length} elements initialized for sync`);
             } else {
-                testsResults.push('⚠️ No elements initialized for sync yet');
+                testsResults.push('No elements initialized for sync yet');
             }
         } else {
-            testsResults.push('❌ No contenteditable preview elements found');
+            testsResults.push('No contenteditable preview elements found');
         }
         
         if (designPanelInputs.length > 0) {
-            testsResults.push(`✅ ${designPanelInputs.length} design panel topic inputs found`);
+            testsResults.push(`${designPanelInputs.length} design panel topic inputs found`);
         } else {
-            testsResults.push('⚠️ No design panel topic inputs found (design panel may not be open)');
+            testsResults.push('No design panel topic inputs found (design panel may not be open)');
         }
         
         // Test 3: Check enhanced CSS classes
         const enhancedElements = document.querySelectorAll('.topic-item, .drag-handle, .auto-save-indicator');
         if (enhancedElements.length > 0) {
-            testsResults.push(`✅ ${enhancedElements.length} enhanced elements found`);
+            testsResults.push(`${enhancedElements.length} enhanced elements found`);
         } else {
-            testsResults.push('❌ No enhanced elements found');
+            testsResults.push('No enhanced elements found');
         }
         
         // Test 4: Check keyboard shortcuts
         const keyboardShortcuts = document.getElementById('keyboard-shortcuts');
         if (keyboardShortcuts) {
-            testsResults.push('✅ Keyboard shortcuts panel found');
+            testsResults.push('Keyboard shortcuts panel found');
         } else {
-            testsResults.push('⚠️ Keyboard shortcuts panel not found');
+            testsResults.push('Keyboard shortcuts panel not found');
         }
         
         // Test 5: Check notification system
         const notification = document.getElementById('notification');
         if (notification) {
-            testsResults.push('✅ Notification system found');
+            testsResults.push('Notification system found');
         } else {
-            testsResults.push('⚠️ Notification system not found');
+            testsResults.push('Notification system not found');
         }
         
         // Test 6: Check enhanced styles
         const styleElements = document.querySelectorAll('.sidebar-header, .live-editor-section, .display-settings');
         if (styleElements.length >= 3) {
-            testsResults.push('✅ Enhanced styling elements found');
+            testsResults.push('Enhanced styling elements found');
         } else {
-            testsResults.push(`⚠️ Only ${styleElements.length}/3 enhanced styling elements found`);
+            testsResults.push(`Only ${styleElements.length}/3 enhanced styling elements found`);
         }
         
         // Display results
@@ -103,11 +103,11 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('================================');
         
         // Overall status
-        const passed = testsResults.filter(r => r.startsWith('✅')).length;
-        const failed = testsResults.filter(r => r.startsWith('❌')).length;
-        const warnings = testsResults.filter(r => r.startsWith('⚠️')).length;
+        const passed = testsResults.filter(r => r.startsWith('+')).length;
+        const failed = testsResults.filter(r => r.startsWith('-')).length;
+        const warnings = testsResults.filter(r => r.startsWith('!')).length;
         
-        console.log(`📊 SUMMARY: ${passed} passed, ${warnings} warnings, ${failed} failed`);
+        console.log(`SUMMARY: ${passed} passed, ${warnings} warnings, ${failed} failed`);
         
         if (failed === 0) {
             console.log('TOPICS: All critical tests passed!');

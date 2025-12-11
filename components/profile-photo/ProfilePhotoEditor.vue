@@ -194,12 +194,12 @@ const handleUploadPhoto = async () => {
     try {
       const postId = store.postId || window.gmkbData?.postId;
       if (!postId) {
-        console.error('❌ Profile Photo: No post ID available');
+        console.error('Profile Photo: No post ID available');
         throw new Error('Post ID not available');
       }
       
       if (window.gmkbDebug || window.gmkbData?.debugMode) {
-        console.log('💾 Profile Photo: Saving to Pods field', {
+        console.log('Profile Photo: Saving to Pods field', {
           postId,
           fieldName: 'profile_photo',
           attachmentId: attachment.id
@@ -218,13 +218,13 @@ const handleUploadPhoto = async () => {
           await updatePodsField(postId, fieldName, attachment.id);
           fieldSaved = true;
           if (window.gmkbDebug || window.gmkbData?.debugMode) {
-            console.log(`✅ Profile Photo: Saved to Pods field '${fieldName}' successfully`);
+            console.log(`Profile Photo: Saved to Pods field '${fieldName}' successfully`);
           }
           break; // Success, stop trying other field names
         } catch (fieldError) {
           lastError = fieldError;
           if (window.gmkbDebug || window.gmkbData?.debugMode) {
-            console.log(`⚠️ Profile Photo: Field '${fieldName}' failed:`, fieldError.message);
+            console.log(`Profile Photo: Field '${fieldName}' failed:`, fieldError.message);
           }
           // Continue to try next field name
         }
@@ -235,7 +235,7 @@ const handleUploadPhoto = async () => {
       }
       
       if (window.gmkbDebug || window.gmkbData?.debugMode) {
-        console.log('✅ Profile Photo: Saved to Pods successfully');
+        console.log('Profile Photo: Saved to Pods successfully');
       }
       
       // Step 3: Update local state to show custom photo
@@ -260,11 +260,11 @@ const handleUploadPhoto = async () => {
       store.isDirty = true;
       
       if (window.gmkbDebug || window.gmkbData?.debugMode) {
-        console.log('✅ Profile Photo: Upload complete, component updated');
+        console.log('Profile Photo: Upload complete, component updated');
       }
       
     } catch (saveError) {
-      console.error('❌ Profile Photo: Failed to save to Pods', saveError);
+      console.error('Profile Photo: Failed to save to Pods', saveError);
       
       // ROOT FIX: Still update local state even if Pods save fails
       // Use the uploaded image directly without Pods
@@ -299,7 +299,7 @@ const handleUploadPhoto = async () => {
     }
     
   } catch (error) {
-    console.error('❌ Profile Photo: Upload failed', error);
+    console.error('Profile Photo: Upload failed', error);
     // jQuery-Free: Better error handling for REST API errors
     if (error.message && !error.message.includes('No file selected')) {
       const errorMessage = 'Failed to upload photo: ' + error.message;

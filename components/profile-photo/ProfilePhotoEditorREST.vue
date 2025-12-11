@@ -177,7 +177,7 @@ const updateComponent = () => {
 const handlePhotoUploaded = async (attachment) => {
   if (!attachment) return;
   
-  console.log('✅ Profile Photo: Image uploaded successfully', {
+  console.log('Profile Photo: Image uploaded successfully', {
     id: attachment.id,
     url: attachment.url
   });
@@ -194,9 +194,9 @@ const handlePhotoUploaded = async (attachment) => {
   if (attachment.id && store.postId) {
     try {
       await updatePodsField(store.postId, 'profile_photo', attachment.id);
-      console.log('✅ Profile Photo: Saved to Pods field');
+      console.log('Profile Photo: Saved to Pods field');
     } catch (error) {
-      console.error('⚠️ Failed to save to Pods field:', error);
+      console.error('Failed to save to Pods field:', error);
       // Keep using custom photo if Pods save fails
     }
   }
@@ -207,7 +207,7 @@ const handlePhotoUploaded = async (attachment) => {
 
 // Handle upload error
 const handleUploadError = (error) => {
-  console.error('❌ Profile Photo: Upload failed', error);
+  console.error('Profile Photo: Upload failed', error);
   
   // User-friendly error messages
   let message = 'Failed to upload photo. ';

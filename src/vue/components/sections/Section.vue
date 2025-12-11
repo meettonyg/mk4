@@ -149,13 +149,13 @@ function getComponent(componentId) {
 // Handle drag start
 function onDragStart(evt) {
   store.isDragging = true
-  console.log('🎯 Drag started in section', props.sectionId)
+  console.log('Drag started in section', props.sectionId)
 }
 
 // Handle drag end
 function onDragEnd(evt) {
   store.isDragging = false
-  console.log('✅ Drag ended in section', props.sectionId)
+  console.log('Drag ended in section', props.sectionId)
 }
 
 // Handle vuedraggable change events
@@ -190,7 +190,7 @@ function onDrop(event, columnIndex) {
                        event.dataTransfer.getData('text/plain')
   
   if (componentType && componentType !== 'new-component') {
-    console.log(`🎯 Dropping ${componentType} into section ${props.sectionId}, column ${columnIndex}`)
+    console.log(`Dropping ${componentType} into section ${props.sectionId}, column ${columnIndex}`)
     
     // Add new component
     const componentId = store.addComponent({
@@ -200,7 +200,7 @@ function onDrop(event, columnIndex) {
     })
     
     if (componentId) {
-      console.log(`✅ Added component ${componentId} to column ${columnIndex}`)
+      console.log(`Added component ${componentId} to column ${columnIndex}`)
       
       // Show feedback
       if (window.showToast) {
@@ -236,7 +236,7 @@ function openSectionSettings() {
   console.log('   UI Store method exists?', typeof uiStore.openSectionEditor);
   
   uiStore.openSectionEditor(props.sectionId)
-  console.log('✅ Section: Opening section editor for:', props.sectionId)
+  console.log('Section: Opening section editor for:', props.sectionId)
 }
 </script>
 

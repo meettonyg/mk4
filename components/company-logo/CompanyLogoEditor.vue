@@ -185,7 +185,7 @@ const handleUploadLogo = async () => {
     store.isDirty = true;
 
   } catch (error) {
-    console.error('❌ Company Logo: Upload failed', error);
+    console.error('Company Logo: Upload failed', error);
     if (error.message && !error.message.includes('No file selected')) {
       const errorMessage = 'Failed to upload logo: ' + error.message;
       if (window.GMKB?.services?.toast) {

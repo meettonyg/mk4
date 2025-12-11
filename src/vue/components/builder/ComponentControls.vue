@@ -152,7 +152,7 @@ const edit = () => {
   console.log('   UI Store method exists?', typeof uiStore.openComponentEditor);
   
   uiStore.openComponentEditor(props.componentId);
-  console.log('✅ ComponentControls: Opening component editor for:', props.componentId);
+  console.log('ComponentControls: Opening component editor for:', props.componentId);
 };
 
 const duplicate = () => {

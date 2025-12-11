@@ -202,7 +202,7 @@ export function useCleanup() {
     abortControllers.clear();
     
     if (process.env.NODE_ENV === 'development') {
-      console.log('✅ Cleanup completed');
+      console.log('Cleanup completed');
     }
   };
 
@@ -215,7 +215,7 @@ export function useCleanup() {
   onUnmounted(() => {
     // Final cleanup attempt
     if (intervals.size > 0 || timeouts.size > 0 || listeners.length > 0) {
-      console.warn('⚠️ Resources still active after unmount, cleaning up...');
+      console.warn('Resources still active after unmount, cleaning up...');
       cleanup();
     }
   });

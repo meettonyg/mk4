@@ -563,15 +563,15 @@ export default {
     
     // DEBUG: Watch sidebar mode changes
     watch(sidebarMode, (newMode, oldMode) => {
-      console.log('🔄 SidebarTabs: Mode changed from', oldMode, 'to', newMode);
+      console.log('SidebarTabs: Mode changed from', oldMode, 'to', newMode);
     });
     
     watch(editingSectionId, (newId) => {
-      console.log('🔄 SidebarTabs: Editing section ID:', newId);
+      console.log('SidebarTabs: Editing section ID:', newId);
     });
     
     watch(editingComponentId, (newId) => {
-      console.log('🔄 SidebarTabs: Editing component ID:', newId);
+      console.log('SidebarTabs: Editing component ID:', newId);
     });
     
     // State
@@ -722,7 +722,7 @@ export default {
       event.dataTransfer.setData('component-type', componentId);
       event.dataTransfer.setData('text/plain', componentId);
       event.dataTransfer.setData('application/json', JSON.stringify({ type: componentId }));
-      console.log('✅ Drag started:', componentId);
+      console.log('Drag started:', componentId);
     };
     
     const onDragEnd = () => {
@@ -740,7 +740,7 @@ export default {
         event.target.style.opacity = '0.5';
       }
       
-      console.log('✅ Section drag started:', sectionId);
+      console.log('Section drag started:', sectionId);
     };
     
     const onSectionDragOver = (event, sectionId) => {
@@ -784,7 +784,7 @@ export default {
       store.sections = sections;
       store._trackChange();
       
-      console.log('✅ Section reordered:', { from: sourceIndex, to: targetIndex });
+      console.log('Section reordered:', { from: sourceIndex, to: targetIndex });
     };
     
     const onSectionDragEnd = (event) => {
@@ -810,12 +810,12 @@ export default {
         sectionId: firstSection.section_id
       });
       
-      console.log('✅ Added component:', componentId);
+      console.log('Added component:', componentId);
     };
     
     const selectLayout = (layoutId) => {
       selectedLayout.value = layoutId;
-      console.log('✅ Selected layout:', layoutId);
+      console.log('Selected layout:', layoutId);
     };
     
     const selectTheme = (themeId) => {
@@ -848,13 +848,13 @@ export default {
         console.log('   - SUCCESS');
         
         console.log('=== THEME SELECTION COMPLETE ===');
-        console.log('✅ Theme changed to:', themeId);
+        console.log('Theme changed to:', themeId);
         
       } catch (error) {
         console.error('=== THEME SELECTION ERROR ===');
-        console.error('❌ Error:', error);
-        console.error('❌ Message:', error.message);
-        console.error('❌ Stack:', error.stack);
+        console.error('Error:', error);
+        console.error('Message:', error.message);
+        console.error('Stack:', error.stack);
         console.error('=== END ERROR ===');
       }
     };
@@ -862,7 +862,7 @@ export default {
     const addSection = () => {
       if (selectedLayout.value) {
         store.addSection(selectedLayout.value);
-        console.log('✅ Added section:', selectedLayout.value);
+        console.log('Added section:', selectedLayout.value);
       }
     };
     
@@ -870,14 +870,14 @@ export default {
       if (sections.value.length > 0) {
         const lastSection = sections.value[sections.value.length - 1];
         store.addSection(lastSection.type);
-        console.log('✅ Duplicated section');
+        console.log('Duplicated section');
       }
     };
     
     const removeSection = (sectionId) => {
       if (confirm('Remove this section?')) {
         store.removeSection(sectionId);
-        console.log('✅ Removed section:', sectionId);
+        console.log('Removed section:', sectionId);
       }
     };
     
@@ -920,7 +920,7 @@ export default {
     const openLibrary = () => {
       // Dispatch event to open component library
       document.dispatchEvent(new CustomEvent('gmkb:open-component-library'));
-      console.log('✅ Opening component library');
+      console.log('Opening component library');
     };
     
     const handleFooterAction = () => {
@@ -997,7 +997,7 @@ export default {
       };
       
       store._trackChange();
-      console.log('✅ Page background updated:', backgroundType.value, backgroundConfig);
+      console.log('Page background updated:', backgroundType.value, backgroundConfig);
     };
     
     // Helper: Convert hex to rgba
@@ -1041,12 +1041,12 @@ export default {
     const openThemeCustomizer = (panel = 'themes') => {
       // CRITICAL FIX: Pass panel directly to openCustomizer
       themeStore.openCustomizer(panel);
-      console.log('✅ Opened theme customizer:', panel);
+      console.log('Opened theme customizer:', panel);
     };
     
     // Refresh components from registry
     const refreshComponents = () => {
-      console.log('✅ Refreshed components from registry');
+      console.log('Refreshed components from registry');
     };
     
     // Event handlers
@@ -1057,13 +1057,13 @@ export default {
     // NEW: Toggle sidebar collapse
     const toggleCollapse = () => {
       uiStore.toggleSidebarCollapse();
-      console.log('✅ Sidebar collapse toggled:', uiStore.sidebarCollapsed);
+      console.log('Sidebar collapse toggled:', uiStore.sidebarCollapsed);
     };
     
     // NEW: Close panel and return to main sidebar
     const closePanel = () => {
       uiStore.closeSidebarEditor();
-      console.log('✅ Panel closed, returned to main sidebar');
+      console.log('Panel closed, returned to main sidebar');
     };
     
     // NEW: Keyboard shortcut handler

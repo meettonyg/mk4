@@ -421,7 +421,7 @@ const uiStore = useUIStore()
 
 // DEBUG: Log when component mounts
 onMounted(() => {
-  console.log('✅ SectionEditor: Component mounted for section:', sectionId.value);
+  console.log('SectionEditor: Component mounted for section:', sectionId.value);
 });
 
 // Active tab
@@ -482,18 +482,18 @@ const settings = reactive({})
 
 // Watch section changes and update settings
 watch(section, (newSection) => {
-  console.log('🔄 SectionEditor: Section changed:', newSection);
+  console.log('SectionEditor: Section changed:', newSection);
   if (newSection && newSection.settings) {
     Object.assign(settings, newSection.settings)
-    console.log('✅ SectionEditor: Settings loaded for section:', sectionId.value)
+    console.log('SectionEditor: Settings loaded for section:', sectionId.value)
   } else {
-    console.warn('⚠️ SectionEditor: Section has no settings:', newSection);
+    console.warn('SectionEditor: Section has no settings:', newSection);
   }
 }, { immediate: true })
 
 // Watch sectionId
 watch(sectionId, (newId) => {
-  console.log('🎯 SectionEditor: Editing section ID changed to:', newId);
+  console.log('SectionEditor: Editing section ID changed to:', newId);
 }, { immediate: true });
 
 // Update individual setting
@@ -504,7 +504,7 @@ function updateSetting(key, value) {
   if (sectionId.value) {
     const updatedSettings = { [key]: value }
     store.updateSectionSettings(sectionId.value, updatedSettings)
-    console.log('✅ SectionEditor: Live update -', key, '=', value)
+    console.log('SectionEditor: Live update -', key, '=', value)
   }
 }
 
@@ -517,7 +517,7 @@ function updateLayout(layout) {
     type: layout // For backwards compatibility
   })
   
-  console.log('✅ SectionEditor: Layout updated to:', layout)
+  console.log('SectionEditor: Layout updated to:', layout)
 }
 
 // Handle reset button
@@ -564,7 +564,7 @@ function handleReset() {
       verticalAlign: 'start'
     })
     
-    console.log('✅ Section settings reset to defaults')
+    console.log('Section settings reset to defaults')
   }
 }
 

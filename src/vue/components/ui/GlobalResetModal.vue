@@ -3,7 +3,7 @@
     <div v-if="show" class="modal-overlay" @click.self="show = false">
       <div class="modal-container">
         <div class="modal-header">
-          <h2>⚠️ Reset Entire Media Kit?</h2>
+          <h2>Reset Entire Media Kit?</h2>
           <button @click="show = false" class="close-button">
             <i class="fa-solid fa-times"></i>
           </button>

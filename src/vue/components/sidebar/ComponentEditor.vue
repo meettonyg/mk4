@@ -68,7 +68,7 @@ const editorComponent = computed(() => {
   })
   
   if (editorPath && editorModules[editorPath]) {
-    console.log(`✅ Loading component-specific editor for: ${type}`);
+    console.log(`Loading component-specific editor for: ${type}`);
     return defineAsyncComponent({
       loader: editorModules[editorPath],
       loadingComponent: null,
@@ -77,14 +77,14 @@ const editorComponent = computed(() => {
       timeout: 3000,
       suspensible: false,
       onError(error, retry, fail, attempts) {
-        console.error(`❌ Failed to load editor for ${type}:`, error);
-        console.log(`🔄 Falling back to GenericComponentEditor`);
+        console.error(`Failed to load editor for ${type}:`, error);
+        console.log(`Falling back to GenericComponentEditor`);
         fail();
       }
     })
   }
   
-  console.log(`⚠️ No specific editor found for: ${type}, using GenericComponentEditor`);
+  console.log(`No specific editor found for: ${type}, using GenericComponentEditor`);
   return null
 })
 
@@ -95,7 +95,7 @@ function handleBack() {
 
 // DEBUG logging
 onMounted(() => {
-  console.log('✅ ComponentEditor mounted:', {
+  console.log('ComponentEditor mounted:', {
     componentId: props.componentId,
     componentType: componentType.value
   });

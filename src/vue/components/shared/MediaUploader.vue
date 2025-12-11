@@ -227,7 +227,7 @@ async function processFiles(files) {
       maxSize: props.maxSize
     });
 
-    console.log(`✅ Successfully uploaded ${uploaded.length} file(s)`);
+    console.log(`Successfully uploaded ${uploaded.length} file(s)`);
 
     if (!props.multiple && uploaded.length > 0) {
       emit('select', uploaded[0]);

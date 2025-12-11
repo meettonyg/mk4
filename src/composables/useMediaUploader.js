@@ -35,7 +35,7 @@ function isWordPressMediaAvailable() {
   
   if (!available && typeof console !== 'undefined') {
     // ROOT FIX v4: More detailed debugging
-    console.warn('⚠️ WordPress Media Library check:', {
+    console.warn('WordPress Media Library check:', {
       'window': typeof window !== 'undefined',
       'wp': typeof window !== 'undefined' && window.wp ? 'exists' : 'missing',
       'wp.media': typeof window !== 'undefined' && window.wp && window.wp.media ? 'exists' : 'missing',
@@ -45,7 +45,7 @@ function isWordPressMediaAvailable() {
     // Check for specific missing components
     if (typeof window !== 'undefined' && window.wp && !window.wp.media) {
       console.error(
-        '❌ WordPress Media Library not initialized. ' +
+        'WordPress Media Library not initialized. ' +
         'The scripts are loaded but wp.media is not available. ' +
         'This usually means the media templates were not printed. ' +
         'Checking for missing dependencies...'
@@ -82,7 +82,7 @@ function waitForWordPressMedia(maxRetries = 10, retryDelay = 500) {
     const checkMedia = () => {
       if (isWordPressMediaAvailable()) {
         if (retries > 0) {
-          console.log(`✅ WordPress Media Library ready after ${retries} retries`);
+          console.log(`WordPress Media Library ready after ${retries} retries`);
         }
         resolve(true);
       } else if (retries >= maxRetries) {
@@ -90,7 +90,7 @@ function waitForWordPressMedia(maxRetries = 10, retryDelay = 500) {
       } else {
         retries++;
         if (retries === 1) {
-          console.log('⏳ Waiting for WordPress Media Library to initialize...');
+          console.log('Waiting for WordPress Media Library to initialize...');
         }
         setTimeout(checkMedia, retryDelay);
       }

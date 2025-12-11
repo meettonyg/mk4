@@ -62,7 +62,7 @@ export function useDebounceSearch(searchFunction, options = {}) {
     abortController = new AbortController();
 
     try {
-      console.log('🔍 Searching for:', term);
+      console.log('Searching for:', term);
       
       // Execute search function
       const results = await searchFunction(term, {
@@ -74,7 +74,7 @@ export function useDebounceSearch(searchFunction, options = {}) {
         ? results.slice(0, maxResults)
         : [];
 
-      console.log('✅ Search complete:', searchResults.value.length, 'results');
+      console.log('Search complete:', searchResults.value.length, 'results');
 
       // Add to history
       if (enableHistory && !searchHistoryItems.value.includes(term)) {
@@ -83,9 +83,9 @@ export function useDebounceSearch(searchFunction, options = {}) {
 
     } catch (err) {
       if (err.name === 'AbortError') {
-        console.log('🛑 Search aborted');
+        console.log('Search aborted');
       } else {
-        console.error('❌ Search error:', err);
+        console.error('Search error:', err);
         error.value = err.message;
         searchResults.value = [];
       }
@@ -124,7 +124,7 @@ export function useDebounceSearch(searchFunction, options = {}) {
     const saved = storageService.get(historyKey, []);
     if (saved && Array.isArray(saved)) {
       searchHistoryItems.value = saved;
-      console.log('📚 Loaded search history:', searchHistoryItems.value.length, 'items');
+      console.log('Loaded search history:', searchHistoryItems.value.length, 'items');
     }
   };
 
@@ -136,7 +136,7 @@ export function useDebounceSearch(searchFunction, options = {}) {
     
     // ROOT FIX: Use StorageService instead of direct localStorage
     storageService.remove(historyKey);
-    console.log('🗑️ Search history cleared');
+    console.log('Search history cleared');
   };
 
   /**

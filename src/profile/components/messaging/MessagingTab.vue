@@ -18,13 +18,13 @@
                             <div v-if="store.fields.biography" v-html="store.fields.biography"></div>
                             <div v-else class="empty-text">
                                 <p>
-                                    <span class="info-icon">ℹ</span>
+                                    <span class="info-icon">i</span>
                                     Your biography demonstrates your value to podcast hosts through your expertise,
                                     stories and results that you share.
                                 </p>
                                 <p>
                                     <a :href="biographyGeneratorUrl" target="_blank">
-                                        🤖 Create your Podcast Biography with AI
+                                        [AI] Create your Podcast Biography with AI
                                     </a>
                                 </p>
                             </div>
@@ -61,13 +61,13 @@
                             <div v-if="store.fields.podcast_intro" v-html="store.fields.podcast_intro"></div>
                             <div v-else class="empty-text">
                                 <p>
-                                    <span class="info-icon">ℹ</span>
+                                    <span class="info-icon">i</span>
                                     Click edit to add your Podcast Intro to make it easy for hosts
                                     to book and introduce you on their show.
                                 </p>
                                 <p>
                                     <a href="/app/message-builder/message-builder-ai/#intro" target="_blank">
-                                        🤖 Create your Podcast Intro with AI
+                                        [AI] Create your Podcast Intro with AI
                                     </a>
                                 </p>
                             </div>

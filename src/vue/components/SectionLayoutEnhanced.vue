@@ -123,7 +123,7 @@
                     />
                     <!-- CRITICAL: Debug placeholder for undefined IDs -->
                     <div v-else-if="!componentId" class="component-error-placeholder">
-                      <span>❌ Missing component ID at index {{ index }}</span>
+                      <span>Missing component ID at index {{ index }}</span>
                     </div>
                   </template>
                 </draggable>
@@ -175,7 +175,7 @@
                         :show-controls="true"
                       />
                       <div v-else-if="!componentId" class="component-error-placeholder">
-                        <span>❌ Missing component ID at index {{ index }}</span>
+                        <span>Missing component ID at index {{ index }}</span>
                       </div>
                     </template>
                   </draggable>
@@ -224,7 +224,7 @@
                         :show-controls="true"
                       />
                       <div v-else-if="!componentId" class="component-error-placeholder">
-                        <span>❌ Missing component ID at index {{ index }}</span>
+                        <span>Missing component ID at index {{ index }}</span>
                       </div>
                     </template>
                   </draggable>
@@ -275,7 +275,7 @@
                         :show-controls="true"
                       />
                       <div v-else-if="!componentId" class="component-error-placeholder">
-                        <span>❌ Missing component ID at index {{ index }}</span>
+                        <span>Missing component ID at index {{ index }}</span>
                       </div>
                     </template>
                   </draggable>
@@ -322,7 +322,7 @@
                         :show-controls="true"
                       />
                       <div v-else-if="!componentId" class="component-error-placeholder">
-                        <span>❌ Missing component ID at index {{ index }}</span>
+                        <span>Missing component ID at index {{ index }}</span>
                       </div>
                     </template>
                   </draggable>
@@ -373,7 +373,7 @@
                         :show-controls="true"
                       />
                       <div v-else-if="!componentId" class="component-error-placeholder">
-                        <span>❌ Missing component ID at index {{ index }}</span>
+                        <span>Missing component ID at index {{ index }}</span>
                       </div>
                     </template>
                   </draggable>
@@ -420,7 +420,7 @@
                         :show-controls="true"
                       />
                       <div v-else-if="!componentId" class="component-error-placeholder">
-                        <span>❌ Missing component ID at index {{ index }}</span>
+                        <span>Missing component ID at index {{ index }}</span>
                       </div>
                     </template>
                   </draggable>
@@ -477,7 +477,7 @@
                         :show-controls="true"
                       />
                       <div v-else-if="!componentId" class="component-error-placeholder">
-                        <span>❌ Missing component ID in col {{ col }} at index {{ index }}</span>
+                        <span>Missing component ID in col {{ col }} at index {{ index }}</span>
                       </div>
                     </template>
                   </draggable>
@@ -593,7 +593,7 @@ const getComponent = (componentId) => {
   try {
     // CRITICAL FIX: Handle various component reference formats
     if (!componentId) {
-      console.warn('⚠️ getComponent called with undefined/null componentId');
+      console.warn('getComponent called with undefined/null componentId');
       return null;
     }
     
@@ -603,20 +603,20 @@ const getComponent = (componentId) => {
     // If componentId is an object, extract the actual ID
     if (typeof componentId === 'object' && componentId !== null) {
       if (componentId.component_id) {
-        console.log('🔧 Extracting component_id from object:', componentId.component_id);
+        console.log('Extracting component_id from object:', componentId.component_id);
         normalizedId = componentId.component_id;
       } else if (componentId.id) {
-        console.log('🔧 Extracting id from object:', componentId.id);
+        console.log('Extracting id from object:', componentId.id);
         normalizedId = componentId.id;
       } else {
-        console.error('❌ Object has no recognizable ID property:', componentId);
+        console.error('Object has no recognizable ID property:', componentId);
         return null;
       }
     }
     
     // Ensure we have a string ID
     if (typeof normalizedId !== 'string') {
-      console.error('❌ Component ID is not a string:', normalizedId, typeof normalizedId);
+      console.error('Component ID is not a string:', normalizedId, typeof normalizedId);
       return null;
     }
     
@@ -624,13 +624,13 @@ const getComponent = (componentId) => {
     const component = store.components[normalizedId];
     
     if (!component) {
-      console.warn(`⚠️ Component not found: ${normalizedId}`);
+      console.warn(`Component not found: ${normalizedId}`);
       return null;
     }
     
     // CRITICAL FIX: Validate component has required data
     if (!component.type) {
-      console.error('❌ Component missing type:', normalizedId, component);
+      console.error('Component missing type:', normalizedId, component);
       return null;
     }
     
@@ -729,7 +729,7 @@ const duplicateSection = (sectionId) => {
     store.hasUnsavedChanges = true;
     store._trackChange();
     
-    console.log(`✅ Duplicated section with ${Object.keys(componentIdMap).length} new components`);
+    console.log(`Duplicated section with ${Object.keys(componentIdMap).length} new components`);
   }
 };
 
@@ -825,7 +825,7 @@ const onDrop = (e, sectionId, column) => {
     }
     
     // NOW we can log success (verified)
-    console.log('✅ Component dropped (verified):', componentData.type, 'in section:', sectionId, 'column:', column, 'id:', newComponentId);
+    console.log('Component dropped (verified):', componentData.type, 'in section:', sectionId, 'column:', column, 'id:', newComponentId);
     
     // Trigger success event (only after verification)
     document.dispatchEvent(new CustomEvent('gmkb:component-dropped', {
@@ -838,7 +838,7 @@ const onDrop = (e, sectionId, column) => {
     }));
     
   } catch (error) {
-    console.error('❌ Failed to add component:', error);
+    console.error('Failed to add component:', error);
     
     // GEMINI FIX #3: Show error to user
     document.dispatchEvent(new CustomEvent('gmkb:error', {
@@ -870,7 +870,7 @@ const onEmptyDrop = async (e) => {
   // Try to get component data from various sources
   let data = jsonData || textData || componentType;
   if (!data) {
-    console.warn('⚠️ No data in drop event');
+    console.warn('No data in drop event');
     return;
   }
   
@@ -889,7 +889,7 @@ const onEmptyDrop = async (e) => {
       componentData.type = data;
     }
     
-    console.log('🎯 Dropping component on empty canvas:', componentData.type);
+    console.log('Dropping component on empty canvas:', componentData.type);
     
     // ROOT FIX: Add component without specifying section
     // The store's addComponent will auto-create a two-column section
@@ -905,8 +905,8 @@ const onEmptyDrop = async (e) => {
       throw new Error(`Component ${newComponentId} not found in store after adding`);
     }
     
-    console.log('✅ Component added to auto-created section:', newComponentId);
-    console.log('✅ Sections now:', store.sections.length);
+    console.log('Component added to auto-created section:', newComponentId);
+    console.log('Sections now:', store.sections.length);
     
     // Wait for Vue to update the DOM
     await nextTick();
@@ -922,7 +922,7 @@ const onEmptyDrop = async (e) => {
     }));
     
   } catch (error) {
-    console.error('❌ Failed to add component:', error);
+    console.error('Failed to add component:', error);
     
     // Show error to user
     document.dispatchEvent(new CustomEvent('gmkb:error', {
@@ -1023,16 +1023,16 @@ const getColumnStyles = (section) => {
 
 // Lifecycle
 onMounted(async () => {
-  console.log('✅ Section Layout Enhanced initialized');
+  console.log('Section Layout Enhanced initialized');
   
   // CRITICAL DEBUG: Log current state
-  console.log('📑 Sections:', store.sections.length);
-  console.log('📑 Components:', Object.keys(store.components).length);
+  console.log('Sections:', store.sections.length);
+  console.log('Components:', Object.keys(store.components).length);
   
   // CRITICAL: Check for components with undefined types
   Object.entries(store.components).forEach(([id, comp]) => {
     if (!comp || !comp.type) {
-      console.error('❌ Invalid component found:', { id, component: comp });
+      console.error('Invalid component found:', { id, component: comp });
     }
   });
   
@@ -1048,11 +1048,11 @@ onMounted(async () => {
     if (section.components) {
       section.components.forEach((compId, i) => {
         if (!compId) {
-          console.error(`❌ Section ${idx} has undefined component at index ${i}`);
+          console.error(`Section ${idx} has undefined component at index ${i}`);
         } else if (!store.components[compId]) {
-          console.error(`❌ Section ${idx} references non-existent component: ${compId}`);
+          console.error(`Section ${idx} references non-existent component: ${compId}`);
         } else if (!store.components[compId].type) {
-          console.error(`❌ Component ${compId} has no type:`, store.components[compId]);
+          console.error(`Component ${compId} has no type:`, store.components[compId]);
         }
       });
     }
@@ -1063,11 +1063,11 @@ onMounted(async () => {
         if (compIds) {
           compIds.forEach((compId, i) => {
             if (!compId) {
-              console.error(`❌ Section ${idx} col ${col} has undefined component at index ${i}`);
+              console.error(`Section ${idx} col ${col} has undefined component at index ${i}`);
             } else if (!store.components[compId]) {
-              console.error(`❌ Section ${idx} col ${col} references non-existent component: ${compId}`);
+              console.error(`Section ${idx} col ${col} references non-existent component: ${compId}`);
             } else if (!store.components[compId].type) {
-              console.error(`❌ Component ${compId} in col ${col} has no type:`, store.components[compId]);
+              console.error(`Component ${compId} in col ${col} has no type:`, store.components[compId]);
             }
           });
         }

@@ -286,13 +286,13 @@ export const useMediaKitStore = defineStore('mediaKit', {
     async initialize(savedState) {
       // ROOT FIX: Prevent duplicate initialization
       if (this.isInitialized) {
-        console.log('⏭️ Store already initialized, skipping duplicate call');
+        console.log('Store already initialized, skipping duplicate call');
         return { alreadyInitialized: true };
       }
       
       // P0 FIX #10: Use Pinia $subscribe instead of EventBus
       if (this.isInitializing) {
-        console.warn('⚠️ Store is already initializing, waiting for completion...');
+        console.warn('Store is already initializing, waiting for completion...');
         // Wait for initialization using Pinia reactive state
         return new Promise((resolve) => {
           const unwatch = this.$subscribe((mutation, state) => {
@@ -331,7 +331,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
           window.gmkbAPI = this.apiService;
           
           if (window.gmkbData?.debugMode) {
-            console.log('✅ APIService initialized in store');
+            console.log('APIService initialized in store');
           }
         }
         
@@ -349,7 +349,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
             const podsDataFromWindow = window.gmkbData?.pods_data || window.gmkbData?.podsData || {};
             if (Object.keys(podsDataFromWindow).length > 0) {
               this.podsData = podsDataFromWindow;
-              console.log('✅ Loaded Pods data from window.gmkbData:', Object.keys(this.podsData).length, 'fields');
+              console.log('Loaded Pods data from window.gmkbData:', Object.keys(this.podsData).length, 'fields');
             }
           }
           
@@ -363,16 +363,16 @@ export const useMediaKitStore = defineStore('mediaKit', {
           // Tech debt removed: See _archive/PODS-SYNC-REMOVAL-2025-12-11/
           //
           // if (window.podsDataIntegration || window.gmkbPodsIntegration) { ... }
-          console.log('ℹ️ Pods enrichment DISABLED - JSON state is now single source of truth');
+          console.log('Pods enrichment DISABLED - JSON state is now single source of truth');
           
           // PHASE 4: Handle deprecated components
-          console.log('🔄 Checking for deprecated components...');
+          console.log('Checking for deprecated components...');
           this.components = deprecationManager.processAllComponents(this.components);
           
           // Show deprecation notices if any
           const notices = deprecationManager.getDeprecationNotices(this.components);
           if (notices.length > 0) {
-            console.warn(`⚠️ Found ${notices.length} deprecated component(s):`, notices);
+            console.warn(`Found ${notices.length} deprecated component(s):`, notices);
             
             // Dispatch event for UI to show notices
             document.dispatchEvent(new CustomEvent('gmkb:show-deprecation-notices', {
@@ -391,7 +391,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
           }
 
           // CRITICAL DEBUG: Log what theme data we received from API
-          console.log('🎨 MediaKit Store INITIALIZE: Theme data from API:', {
+          console.log('MediaKit Store INITIALIZE: Theme data from API:', {
             'data.theme': data.theme,
             'data.theme type': typeof data.theme,
             'data.themeCustomizations present': !!data.themeCustomizations,
@@ -410,7 +410,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
           });
           
           // CRITICAL DEBUG: Confirm what theme was actually set
-          console.log('🎨 MediaKit Store INITIALIZED: Theme set in store:', {
+          console.log('MediaKit Store INITIALIZED: Theme set in store:', {
             'this.theme': this.theme,
             'this.theme type': typeof this.theme
           });
@@ -420,7 +420,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
           // JSON state (gmkb_media_kit_state) is now the single source of truth.
           //
           // if (window.podsDataIntegration || window.gmkbPodsIntegration) { ... }
-          console.log('ℹ️ Pods enrichment DISABLED (API branch) - JSON state is single source of truth');
+          console.log('Pods enrichment DISABLED (API branch) - JSON state is single source of truth');
         }
         
         // P0 FIX #7: Normalize all component IDs after loading
@@ -430,17 +430,17 @@ export const useMediaKitStore = defineStore('mediaKit', {
         // Changed from 'full_width' to 'two_column' for layout consistency
         if (this.sections.length === 0) {
           const sectionId = this.addSection('two_column');
-          console.log('✅ Auto-created two_column section on initialization:', sectionId);
+          console.log('Auto-created two_column section on initialization:', sectionId);
         }
 
         // ROOT FIX: Auto-fix any orphaned components on initialization
         setTimeout(() => {
           const orphanCheck = this.checkForOrphanedComponents();
           if (orphanCheck.orphaned > 0) {
-            console.warn(`⚠️ Found ${orphanCheck.orphaned} orphaned components on initialization`);
+            console.warn(`Found ${orphanCheck.orphaned} orphaned components on initialization`);
             const fixResult = this.fixOrphanedComponents();
             if (fixResult.fixed > 0) {
-              console.log(`✅ Auto-fixed ${fixResult.fixed} orphaned components`);
+              console.log(`Auto-fixed ${fixResult.fixed} orphaned components`);
               // Show a subtle notification
               this.showNotification(`Fixed ${fixResult.fixed} orphaned components`, 'info');
             }
@@ -458,7 +458,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         systemReadiness.markReady('store', this);
         // P0 FIX #10: Removed eventBus.emit('store:initialized') - using Pinia reactivity
         
-        console.log('✅ State initialized via APIService (admin-ajax)');
+        console.log('State initialized via APIService (admin-ajax)');
         return data;
 
       } catch (error) {
@@ -478,13 +478,13 @@ export const useMediaKitStore = defineStore('mediaKit', {
      */
     async save() {
       if (!this.isDirty) {
-        console.log('⏭️ Save skipped: No changes to save');
+        console.log('Save skipped: No changes to save');
         return;
       }
       
       try {
         this.isSaving = true;
-        console.log('💾 Starting save operation...');
+        console.log('Starting save operation...');
         
         // Create local backup before saving
         this.backupToLocalStorage();
@@ -510,24 +510,24 @@ export const useMediaKitStore = defineStore('mediaKit', {
           layout: this.sections.map(s => s.section_id) // Add layout for compatibility
         };
         
-        // ═══════════════════════════════════════════════════════════════
+        // 
         // COMPREHENSIVE DEBUG LOGGING
-        // ═══════════════════════════════════════════════════════════════
-        console.group('📊 SAVE OPERATION DETAILS');
+        // 
+        console.group('SAVE OPERATION DETAILS');
         
-        console.log('📦 Components:', {
+        console.log('Components:', {
           count: Object.keys(cleanComponents).length,
           ids: Object.keys(cleanComponents),
           types: Object.values(cleanComponents).map(c => c.type)
         });
         
-        console.log('📑 Sections:', {
+        console.log('Sections:', {
           count: this.sections.length,
           layouts: this.sections.map(s => s.layout || s.type),
           ids: this.sections.map(s => s.section_id)
         });
         
-        console.log('🎨 Theme Data:', {
+        console.log('Theme Data:', {
           theme: this.theme,
           themeType: typeof this.theme,
           themeValue: JSON.stringify(this.theme),
@@ -535,7 +535,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
           customizationKeys: this.themeCustomizations ? Object.keys(this.themeCustomizations) : []
         });
         
-        console.log('📏 Payload Size:', {
+        console.log('Payload Size:', {
           totalBytes: new Blob([JSON.stringify(state)]).size,
           componentsBytes: new Blob([JSON.stringify(cleanComponents)]).size,
           sectionsBytes: new Blob([JSON.stringify(this.sections)]).size,
@@ -545,7 +545,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
           })]).size
         });
         
-        console.log('🔧 Store State:', {
+        console.log('Store State:', {
           isDirty: this.isDirty,
           isSaving: this.isSaving,
           lastSaved: this.lastSaved ? new Date(this.lastSaved).toLocaleString() : 'Never',
@@ -556,7 +556,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         
         // CRITICAL FIX: Ensure APIService exists, create if needed
         if (!this.apiService) {
-          console.warn('⚠️ APIService not available, creating new instance...');
+          console.warn('APIService not available, creating new instance...');
           this.apiService = new APIService(
             window.gmkbData?.restUrl,
             window.gmkbData?.restNonce,
@@ -567,23 +567,23 @@ export const useMediaKitStore = defineStore('mediaKit', {
         
         // OPTION C FIX: Use APIService which calls REST API v2
         // Use our store's apiService instance
-        console.log('🚀 Sending to API...');
+        console.log('Sending to API...');
         const result = await this.apiService.save(state);
         
-        // ═══════════════════════════════════════════════════════════════
+        // 
         // API RESPONSE LOGGING
-        // ═══════════════════════════════════════════════════════════════
-        console.group('💬 API RESPONSE');
+        // 
+        console.group('API RESPONSE');
         
-        console.log('✅ Success:', result?.success);
-        console.log('🆔 Post ID:', result?.post_id);
-        console.log('⏱️ Timestamp:', result?.timestamp ? new Date(result.timestamp * 1000).toLocaleString() : 'N/A');
-        console.log('📊 Data Size:', result?.data_size ? `${(result.data_size / 1024).toFixed(2)} KB` : 'N/A');
-        console.log('📦 Components Saved:', result?.components_saved);
-        console.log('📑 Sections Saved:', result?.sections_saved);
+        console.log('Success:', result?.success);
+        console.log('Post ID:', result?.post_id);
+        console.log('Timestamp:', result?.timestamp ? new Date(result.timestamp * 1000).toLocaleString() : 'N/A');
+        console.log('Data Size:', result?.data_size ? `${(result.data_size / 1024).toFixed(2)} KB` : 'N/A');
+        console.log('Components Saved:', result?.components_saved);
+        console.log('Sections Saved:', result?.sections_saved);
         
         if (result?.theme_save_status) {
-          console.group('🎨 Theme Save Status');
+          console.group('Theme Save Status');
           console.log('Attempted:', result.theme_save_status.attempted);
           console.log('Success:', result.theme_save_status.success);
           console.log('Verified:', result.theme_save_status.verified);
@@ -597,19 +597,19 @@ export const useMediaKitStore = defineStore('mediaKit', {
         }
         
         if (result?.warnings) {
-          console.warn('⚠️ Warnings:', result.warnings);
+          console.warn('Warnings:', result.warnings);
         }
         
-        console.log('🔍 Full Response:', result);
+        console.log('Full Response:', result);
         console.groupEnd();
         
         // Check response
         if (!result || !result.success) {
-          console.error('❌ Save failed:', result);
+          console.error('Save failed:', result);
           throw new Error('Save failed');
         }
         
-        console.log('✅ Save operation completed successfully!');
+        console.log('Save operation completed successfully!');
         this.isDirty = false;
         // hasUnsavedChanges removed - using isDirty only
         this.lastSaved = Date.now();
@@ -623,10 +623,10 @@ export const useMediaKitStore = defineStore('mediaKit', {
         return true;
         
       } catch (error) {
-        // ═══════════════════════════════════════════════════════════════
+        // 
         // ERROR LOGGING
-        // ═══════════════════════════════════════════════════════════════
-        console.group('❌ SAVE ERROR');
+        // 
+        console.group('SAVE ERROR');
         console.error('Error Type:', error.name);
         console.error('Error Message:', error.message);
         console.error('Stack Trace:', error.stack);
@@ -639,7 +639,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
           });
         }
         
-        console.log('🔧 Store State at Error:', {
+        console.log('Store State at Error:', {
           isDirty: this.isDirty,
           isSaving: this.isSaving,
           componentCount: Object.keys(this.components).length,
@@ -652,7 +652,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         throw error;
       } finally {
         this.isSaving = false;
-        console.log('➡️ Save operation finished (isSaving = false)');
+        console.log('Save operation finished (isSaving = false)');
       }
     },
 
@@ -663,7 +663,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
     _trackChange() {
       // ROOT FIX: Skip history save during undo/redo operations
       if (this._isUndoRedoOperation) {
-        console.log('⏭️ Skipping history save during undo/redo operation');
+        console.log('Skipping history save during undo/redo operation');
         return;
       }
       
@@ -704,7 +704,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
       // Component will be added to column 1 by default
       if (this.sections.length === 0) {
         const sectionId = this.addSection('two_column');
-        console.log('✅ Auto-created two_column section for component:', sectionId);
+        console.log('Auto-created two_column section for component:', sectionId);
       }
       
       // Issue #14 FIX: Use the already-validated component from validateAndGet
@@ -733,7 +733,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
           const preset = getPreset(defaultPresetId);
           if (preset) {
             componentSettings = applyPresetToSettings(baseSettings, defaultPresetId);
-            console.log(`✅ Applied "${preset.name}" (${preset.value}) preset from "${activeTheme?.name || 'current'}" theme to new ${componentData.type}`);
+            console.log(`Applied "${preset.name}" (${preset.value}) preset from "${activeTheme?.name || 'current'}" theme to new ${componentData.type}`);
           } else {
             componentSettings = baseSettings;
           }
@@ -753,7 +753,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
       
       // CRITICAL: Log component creation in debug mode
       if (window.gmkbData?.debugMode) {
-        console.log(`✅ Created component ${componentId} with settings:`, component.settings);
+        console.log(`Created component ${componentId} with settings:`, component.settings);
       }
       
       // PHASE 2: Validate component structure
@@ -835,7 +835,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         if (updates.settings) {
           // Validate settings structure
           if (Array.isArray(updates.settings) || typeof updates.settings !== 'object') {
-            console.warn(`⚠️ updateComponent: Invalid settings provided for ${componentId}, using defaults`);
+            console.warn(`updateComponent: Invalid settings provided for ${componentId}, using defaults`);
             updates.settings = getComponentDefaults(this.components[componentId].type || 'generic');
           } else {
             // Merge with existing settings to preserve structure
@@ -879,7 +879,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
       // If ref is null or undefined, return null
       if (!ref) {
         if (window.gmkbData?.debugMode) {
-          console.warn('⚠️ Encountered null/undefined component reference');
+          console.warn('Encountered null/undefined component reference');
         }
         return null;
       }
@@ -888,19 +888,19 @@ export const useMediaKitStore = defineStore('mediaKit', {
       if (typeof ref === 'object' && ref !== null) {
         if (ref.component_id) {
           if (window.gmkbData?.debugMode) {
-            console.log('🔧 Normalizing object reference to string:', ref.component_id);
+            console.log('Normalizing object reference to string:', ref.component_id);
           }
           return String(ref.component_id); // Force string conversion
         }
         // If it's an object with id property
         if (ref.id) {
           if (window.gmkbData?.debugMode) {
-            console.log('🔧 Normalizing object (id) reference to string:', ref.id);
+            console.log('Normalizing object (id) reference to string:', ref.id);
           }
           return String(ref.id); // Force string conversion
         }
         // If object has no recognizable ID, warn and skip
-        console.warn('⚠️ Object reference has no component_id or id:', ref);
+        console.warn('Object reference has no component_id or id:', ref);
         return null;
       }
       
@@ -911,12 +911,12 @@ export const useMediaKitStore = defineStore('mediaKit', {
       
       // If it's a number, convert to string
       if (typeof ref === 'number') {
-        console.warn('⚠️ Component ID is a number, converting to string:', ref);
+        console.warn('Component ID is a number, converting to string:', ref);
         return String(ref);
       }
       
       // Unknown type, warn and return null
-      console.warn('⚠️ Unknown component reference type:', typeof ref, ref);
+      console.warn('Unknown component reference type:', typeof ref, ref);
       return null;
     },
 
@@ -925,7 +925,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
      * Run this after loading data to ensure consistency
      */
     _normalizeAllComponentIds() {
-      console.log('🔧 Normalizing all component IDs to strings...');
+      console.log('Normalizing all component IDs to strings...');
       let normalizedCount = 0;
       
       // Normalize component object keys
@@ -977,13 +977,13 @@ export const useMediaKitStore = defineStore('mediaKit', {
         }
       });
       
-      console.log(`✅ Normalized ${normalizedCount} component ID references`);
+      console.log(`Normalized ${normalizedCount} component ID references`);
       return normalizedCount;
     },
 
     // Apply state data to store
     applyState(savedState) {
-      console.log('📥 Applying state with normalization...');
+      console.log('Applying state with normalization...');
       
       // CRITICAL FIX: Normalize ALL component references to strings only
       // This prevents the mixed string/object bug that causes undefined errors
@@ -1005,7 +1005,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
             
             const normalizedCount = normalized.components.length;
             if (originalCount !== normalizedCount) {
-              console.warn(`⚠️ Section ${idx}: Removed ${originalCount - normalizedCount} invalid component references`);
+              console.warn(`Section ${idx}: Removed ${originalCount - normalizedCount} invalid component references`);
             }
           }
           
@@ -1021,7 +1021,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
                 
                 const normalizedCount = normalized.columns[col].length;
                 if (originalCount !== normalizedCount) {
-                  console.warn(`⚠️ Section ${idx} col ${col}: Removed ${originalCount - normalizedCount} invalid component references`);
+                  console.warn(`Section ${idx} col ${col}: Removed ${originalCount - normalizedCount} invalid component references`);
                 }
               } else {
                 normalized.columns[col] = [];
@@ -1032,7 +1032,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
           return normalized;
         });
         
-        console.log('✅ Normalized sections (string IDs only):', this.sections.length);
+        console.log('Normalized sections (string IDs only):', this.sections.length);
       }
       
       if (savedState.components) {
@@ -1054,7 +1054,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
             }
             // Ensure component has valid settings structure
             if (!component.settings || Array.isArray(component.settings) || typeof component.settings !== 'object') {
-              console.warn(`⚠️ Component ${id} has invalid settings, applying defaults`);
+              console.warn(`Component ${id} has invalid settings, applying defaults`);
               component.settings = getComponentDefaults(component.type || 'generic');
             } else {
               // Ensure settings has style and advanced properties
@@ -1081,11 +1081,11 @@ export const useMediaKitStore = defineStore('mediaKit', {
         // If theme is 'default' or 'professional', map to 'professional_clean'
         if (savedState.theme === 'default' || savedState.theme === 'professional') {
           this.theme = 'professional_clean';
-          console.log('📝 Migrated theme from "' + savedState.theme + '" to "professional_clean"');
+          console.log('Migrated theme from "' + savedState.theme + '" to "professional_clean"');
         } else if (validThemes.includes(savedState.theme)) {
           this.theme = savedState.theme;
         } else {
-          console.warn('⚠️ Invalid theme "' + savedState.theme + '", using professional_clean');
+          console.warn('Invalid theme "' + savedState.theme + '", using professional_clean');
           this.theme = 'professional_clean';
         }
       }
@@ -1121,7 +1121,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
           this.podsData = data.podsData;
         }
         
-        console.log('✅ Loaded via APIService (admin-ajax)');
+        console.log('Loaded via APIService (admin-ajax)');
         return data;
         
       } catch (error) {
@@ -1162,7 +1162,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
             detail: { result, timestamp: this.lastSaved }
           }));
           
-          console.log('✅ Saved via APIService (admin-ajax)');
+          console.log('Saved via APIService (admin-ajax)');
           return result;
         }
         
@@ -1321,13 +1321,13 @@ export const useMediaKitStore = defineStore('mediaKit', {
         
         // Check if the currently editing component is being deleted
         if (uiStore.editingComponentId && componentIdsToDelete.includes(uiStore.editingComponentId)) {
-          console.log(`🔧 Closing sidebar editor for deleted component: ${uiStore.editingComponentId}`);
+          console.log(`Closing sidebar editor for deleted component: ${uiStore.editingComponentId}`);
           uiStore.closeSidebarEditor();
         }
         
         // ROOT FIX: If this was the section being edited, close the section editor
         if (uiStore.editingSectionId === sectionId) {
-          console.log(`🔧 Closing section editor for deleted section: ${sectionId}`);
+          console.log(`Closing section editor for deleted section: ${sectionId}`);
           uiStore.closeSidebarEditor();
         }
         
@@ -1337,7 +1337,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
             componentIdsToDelete.includes(id)
           );
           if (selectedToDelete.length > 0) {
-            console.log(`🔧 Clearing selection for ${selectedToDelete.length} deleted components`);
+            console.log(`Clearing selection for ${selectedToDelete.length} deleted components`);
             selectedToDelete.forEach(id => uiStore.deselectComponent(id));
           }
         }
@@ -1345,7 +1345,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         // Delete all collected components
         componentIdsToDelete.forEach(componentId => {
           delete this.components[componentId];
-          console.log(`🗑️ Deleted component ${componentId} from section ${sectionId}`);
+          console.log(`Deleted component ${componentId} from section ${sectionId}`);
         });
         
         // Remove the section itself
@@ -1353,12 +1353,12 @@ export const useMediaKitStore = defineStore('mediaKit', {
         
         // ROOT FIX: If this was the last section, close any section-related sidebar
         if (this.sections.length === 0 && uiStore.sidebarMode === 'section') {
-          console.log('🔧 Closing section editor after deleting last section');
+          console.log('Closing section editor after deleting last section');
           uiStore.closeSidebarEditor();
         }
         
         // Log the action
-        console.log(`🗑️ Removed section ${sectionId} and ${componentIdsToDelete.length} components`);
+        console.log(`Removed section ${sectionId} and ${componentIdsToDelete.length} components`);
         
         this.isDirty = true;
         this._trackChange();
@@ -1488,7 +1488,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
           detail: { count: componentCount }
         }));
         
-        console.log(`✅ Cleared ${componentCount} components successfully`);
+        console.log(`Cleared ${componentCount} components successfully`);
       } catch (error) {
         console.error('Error during clearAllComponents:', error);
         // Force reset to clean state even if error occurs
@@ -1522,7 +1522,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
           detail: { count: sectionCount }
         }));
         
-        console.log(`✅ Cleared ${sectionCount} sections successfully`);
+        console.log(`Cleared ${sectionCount} sections successfully`);
       } catch (error) {
         console.error('Error during clearAllSections:', error);
         // Force reset to clean state even if error occurs
@@ -1626,14 +1626,14 @@ export const useMediaKitStore = defineStore('mediaKit', {
       // CRITICAL FIX: Check if store is initialized before auto-saving
       if (!this.isInitialized) {
         if (window.gmkbData?.debugMode) {
-          console.log('⏩ Auto-save skipped: Store not initialized yet');
+          console.log('Auto-save skipped: Store not initialized yet');
         }
         return;
       }
       
       // ROOT FIX: Check if auto-save is enabled
       if (!this.autoSaveEnabled) {
-        console.log('⏩ Auto-save disabled, skipping');
+        console.log('Auto-save disabled, skipping');
         return;
       }
       
@@ -1641,7 +1641,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         try {
           // Use the new save method that uses REST API
           await this.save();
-          console.log('✅ Auto-saved');
+          console.log('Auto-saved');
         } catch (error) {
           console.error('Auto-save failed:', error);
           
@@ -1649,7 +1649,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
           const retryTimeout = setTimeout(() => {
             if (this.isDirty && !this.isSaving) {
               this.save().catch(e => 
-                console.error('❌ Auto-save retry failed:', e)
+                console.error('Auto-save retry failed:', e)
               );
             }
           }, 10000);
@@ -1735,9 +1735,9 @@ export const useMediaKitStore = defineStore('mediaKit', {
         
         const success = storageService.createBackup(this.postId, backup);
         if (success) {
-          console.log('📦 Local backup created');
+          console.log('Local backup created');
         } else {
-          console.warn('⚠️ Local backup failed (storage unavailable)');
+          console.warn('Local backup failed (storage unavailable)');
         }
       } catch (error) {
         console.warn('Local backup failed:', error);
@@ -1754,7 +1754,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         
         if (backup) {
           this.initialize(backup);
-          console.log('♻️ Restored from local backup');
+          console.log('Restored from local backup');
           return true;
         }
         
@@ -1825,17 +1825,17 @@ export const useMediaKitStore = defineStore('mediaKit', {
       
       // ROOT FIX: Log history status in debug mode
       if (window.gmkbData?.debugMode) {
-        console.log(`📚 History: ${this.history.length}/${this.maxHistorySize} entries, index: ${this.historyIndex}`);
+        console.log(`History: ${this.history.length}/${this.maxHistorySize} entries, index: ${this.historyIndex}`);
       }
     },
 
     undo() {
       if (!this.canUndo) {
-        console.warn('⚠️ Cannot undo - no history available');
+        console.warn('Cannot undo - no history available');
         return;
       }
       
-      console.log(`↩️ Undo: Moving from index ${this.historyIndex} to ${this.historyIndex - 1}`);
+      console.log(`Undo: Moving from index ${this.historyIndex} to ${this.historyIndex - 1}`);
       
       // ROOT FIX: Set flag to prevent history tracking during undo
       this._isUndoRedoOperation = true;
@@ -1845,7 +1845,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         
         const state = this.history[this.historyIndex];
         if (!state) {
-          console.error('❌ Undo failed - state not found at index', this.historyIndex);
+          console.error('Undo failed - state not found at index', this.historyIndex);
           return;
         }
         
@@ -1866,7 +1866,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
           detail: { historyIndex: this.historyIndex }
         }));
         
-        console.log('✅ Undo complete');
+        console.log('Undo complete');
       } finally {
         // ROOT FIX: Always clear the flag
         this._isUndoRedoOperation = false;
@@ -1875,11 +1875,11 @@ export const useMediaKitStore = defineStore('mediaKit', {
 
     redo() {
       if (!this.canRedo) {
-        console.warn('⚠️ Cannot redo - no forward history available');
+        console.warn('Cannot redo - no forward history available');
         return;
       }
       
-      console.log(`↪️ Redo: Moving from index ${this.historyIndex} to ${this.historyIndex + 1}`);
+      console.log(`Redo: Moving from index ${this.historyIndex} to ${this.historyIndex + 1}`);
       
       // ROOT FIX: Set flag to prevent history tracking during redo
       this._isUndoRedoOperation = true;
@@ -1889,7 +1889,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         
         const state = this.history[this.historyIndex];
         if (!state) {
-          console.error('❌ Redo failed - state not found at index', this.historyIndex);
+          console.error('Redo failed - state not found at index', this.historyIndex);
           return;
         }
         
@@ -1910,7 +1910,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
           detail: { historyIndex: this.historyIndex }
         }));
         
-        console.log('✅ Redo complete');
+        console.log('Redo complete');
       } finally {
         // ROOT FIX: Always clear the flag
         this._isUndoRedoOperation = false;
@@ -1927,13 +1927,13 @@ export const useMediaKitStore = defineStore('mediaKit', {
       
       // Check if the currently editing component is being deleted
       if (uiStore.editingComponentId === componentId) {
-        console.log(`🔧 Closing sidebar editor for deleted component: ${componentId}`);
+        console.log(`Closing sidebar editor for deleted component: ${componentId}`);
         uiStore.closeSidebarEditor();
       }
       
       // Clear selection if this component is selected
       if (uiStore.selectedComponentIds && uiStore.selectedComponentIds.includes(componentId)) {
-        console.log(`🔧 Clearing selection for deleted component: ${componentId}`);
+        console.log(`Clearing selection for deleted component: ${componentId}`);
         uiStore.deselectComponent(componentId);
       }
       
@@ -2132,7 +2132,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
     updateSection(sectionId, updates) {
       const section = this.sections.find(s => s.section_id === sectionId);
       if (!section) {
-        console.warn(`⚠️ Section ${sectionId} not found`);
+        console.warn(`Section ${sectionId} not found`);
         return;
       }
       
@@ -2143,7 +2143,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         
         // Only redistribute if layout actually changed
         if (newLayout !== oldLayout) {
-          console.log(`🔄 Section ${sectionId}: Layout change detected (${oldLayout} → ${newLayout})`);
+          console.log(`Section ${sectionId}: Layout change detected (${oldLayout}  -> ${newLayout})`);
           
           // Collect ALL existing components from current structure
           const existingComponents = [];
@@ -2167,14 +2167,14 @@ export const useMediaKitStore = defineStore('mediaKit', {
             });
           }
           
-          console.log(`📦 Preserving ${existingComponents.length} components:`, existingComponents);
+          console.log(`Preserving ${existingComponents.length} components:`, existingComponents);
           
           // Create new structure based on target layout
           if (newLayout === 'full_width') {
             // Moving TO full-width: Put all components in components array
             section.components = existingComponents;
             delete section.columns;
-            console.log(`✅ Converted to full_width with ${existingComponents.length} components`);
+            console.log(`Converted to full_width with ${existingComponents.length} components`);
           } else {
             // Moving TO multi-column: Distribute components across columns
             delete section.components;
@@ -2192,7 +2192,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
               section.columns[targetColumn].push(compId);
             });
             
-            console.log(`✅ Converted to ${newLayout} with ${existingComponents.length} components distributed:`,
+            console.log(`Converted to ${newLayout} with ${existingComponents.length} components distributed:`,
               Object.entries(section.columns).map(([col, comps]) => `col${col}: ${comps.length}`).join(', '));
           }
         }
@@ -2319,7 +2319,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
       }));
       
       // Also log to console
-      const emoji = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+      const emoji = type === 'success' ? '+' : type === 'error' ? '-' : 'i';
       console.log(`${emoji} ${message}`);
     },
 
@@ -2381,7 +2381,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
       const check = this.checkForOrphanedComponents();
       
       if (check.orphaned === 0) {
-        console.log('✅ No orphaned components found');
+        console.log('No orphaned components found');
         return { fixed: 0, total: check.total };
       }
       
@@ -2391,7 +2391,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
       // Changed from 'full_width' to 'two_column' for layout consistency
       if (this.sections.length === 0) {
         const sectionId = this.addSection('two_column');
-        console.log('✅ Created two_column section for orphaned components:', sectionId);
+        console.log('Created two_column section for orphaned components:', sectionId);
       }
       
       // Get the first section
@@ -2408,7 +2408,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
           if (!targetSection.components.includes(compId)) {
             targetSection.components.push(compId);
             fixedCount++;
-            console.log(`✅ Fixed orphan: ${compId} -> section ${targetSection.section_id}`);
+            console.log(`Fixed orphan: ${compId} -> section ${targetSection.section_id}`);
           }
         } else {
           // Add to first column of multi-column section
@@ -2418,7 +2418,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
           if (!targetSection.columns['1'].includes(compId)) {
             targetSection.columns['1'].push(compId);
             fixedCount++;
-            console.log(`✅ Fixed orphan: ${compId} -> section ${targetSection.section_id} column 1`);
+            console.log(`Fixed orphan: ${compId} -> section ${targetSection.section_id} column 1`);
           }
         }
         
@@ -2435,7 +2435,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         // Auto-save the fixes
         this.autoSave();
         
-        console.log(`✅ Fixed ${fixedCount} orphaned components`);
+        console.log(`Fixed ${fixedCount} orphaned components`);
         
         // Dispatch event
         document.dispatchEvent(new CustomEvent('gmkb:orphans-fixed', {
@@ -2462,7 +2462,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         this.historyIndex = this.history.length - 1;
         
         if (window.gmkbData?.debugMode) {
-          console.log(`🗑️ Compressed history to ${this.history.length} entries`);
+          console.log(`Compressed history to ${this.history.length} entries`);
         }
       }
     },
@@ -2474,7 +2474,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
       this.history = [];
       this.historyIndex = -1;
       this._saveToHistory(); // Save current state as first entry
-      console.log('🗑️ History cleared');
+      console.log('History cleared');
     },
     
     /**
@@ -2485,7 +2485,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
     initializeSectionColumns(sectionId) {
       const section = this.sections.find(s => s.section_id === sectionId);
       if (!section) {
-        console.warn(`⚠️ Section ${sectionId} not found`);
+        console.warn(`Section ${sectionId} not found`);
         return false;
       }
       
@@ -2497,7 +2497,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
       // Only initialize if columns don't exist
       if (!section.columns) {
         section.columns = this.getDefaultColumnsForLayout(section.type);
-        console.log(`✅ Initialized columns for section ${sectionId} (${section.type})`);
+        console.log(`Initialized columns for section ${sectionId} (${section.type})`);
         return true;
       }
       
@@ -2537,7 +2537,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         return false;
       }
       
-      console.log('⚠️ Starting complete media kit reset...');
+      console.log('Starting complete media kit reset...');
       
       // Save current state for undo
       this._saveToHistory();
@@ -2551,7 +2551,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
       // ROOT FIX: Clear UI state FIRST (closes sidebar before components disappear)
       const uiStore = useUIStore();
       uiStore.resetUIState();
-      console.log('✅ UI state reset (sidebar closed)');
+      console.log('UI state reset (sidebar closed)');
       
       // Clear all components and sections
       this.components = {};
@@ -2560,7 +2560,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
       // ROOT FIX: Add one default structured section
       // Changed from 'full_width' to 'two_column' for layout consistency
       const defaultSectionId = this.addSection('two_column');
-      console.log(`✅ Created two_column section: ${defaultSectionId}`);
+      console.log(`Created two_column section: ${defaultSectionId}`);
       
       // GEMINI REFINEMENT #1: Use imported store directly
       const themeStore = useThemeStore();
@@ -2590,7 +2590,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         }
       }));
       
-      console.log(`✅ Complete reset finished - deleted ${stats.components} components, ${stats.sections} sections`);
+      console.log(`Complete reset finished - deleted ${stats.components} components, ${stats.sections} sections`);
       return true;
     },
 
@@ -2621,7 +2621,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         detail: { sectionId }
       }));
       
-      console.log(`✅ Reset settings for section ${sectionId}`);
+      console.log(`Reset settings for section ${sectionId}`);
       return true;
     },
 
@@ -2665,7 +2665,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         detail: { sectionId, componentCount }
       }));
       
-      console.log(`✅ Cleared ${componentCount} components from section ${sectionId}`);
+      console.log(`Cleared ${componentCount} components from section ${sectionId}`);
       return true;
     },
 
@@ -2707,7 +2707,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         }
       }));
       
-      console.log(`✅ Reset settings for component ${componentId}`);
+      console.log(`Reset settings for component ${componentId}`);
       return true;
     },
 
@@ -2752,7 +2752,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         }
       }));
       
-      console.log(`✅ Fully reset component ${componentId}`);
+      console.log(`Fully reset component ${componentId}`);
       return true;
     },
 
@@ -2764,7 +2764,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
     updateColumnComponents(sectionId, column, newComponents) {
       const section = this.sections.find(s => s.section_id === sectionId);
       if (!section) {
-        console.warn(`⚠️ Section ${sectionId} not found`);
+        console.warn(`Section ${sectionId} not found`);
         return false;
       }
       
@@ -2780,7 +2780,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
       this.isDirty = true;
       this._trackChange();
       
-      console.log(`✅ Updated section ${sectionId} column ${column} with ${newComponents.length} components`);
+      console.log(`Updated section ${sectionId} column ${column} with ${newComponents.length} components`);
       return true;
     }
   }

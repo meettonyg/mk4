@@ -20,7 +20,7 @@
                                 :alt="store.fields.headshot_primary.alt || 'Primary Headshot'"
                             />
                             <div v-else class="placeholder-image">
-                                <span>📷</span>
+                                <span>[Photo]</span>
                             </div>
                             <figcaption>Primary Headshot</figcaption>
                         </figure>
@@ -33,7 +33,7 @@
                                 :alt="store.fields.headshot_vertical.alt || 'Vertical Headshot'"
                             />
                             <div v-else class="placeholder-image">
-                                <span>📷</span>
+                                <span>[Photo]</span>
                             </div>
                             <figcaption>Vertical Headshot</figcaption>
                         </figure>
@@ -46,7 +46,7 @@
                                 :alt="store.fields.headshot_horizontal.alt || 'Horizontal Headshot'"
                             />
                             <div v-else class="placeholder-image">
-                                <span>📷</span>
+                                <span>[Photo]</span>
                             </div>
                             <figcaption>Horizontal Headshot</figcaption>
                         </figure>
@@ -87,7 +87,7 @@
                         </div>
                     </template>
                     <div v-else class="empty-text">
-                        <span class="info-icon">ℹ</span>
+                        <span class="info-icon">i</span>
                         Personalize your one sheet with your own unique branding.
                     </div>
                 </div>
@@ -244,7 +244,7 @@
                         </div>
                     </template>
                     <div v-else class="empty-text">
-                        <span class="info-icon">ℹ</span>
+                        <span class="info-icon">i</span>
                         Personalize your one sheet with a logo carousel
                     </div>
                 </div>
@@ -264,7 +264,7 @@
             </div>
             <div class="panel-content">
                 <p class="layout-info">
-                    <span class="info-icon">ℹ</span>
+                    <span class="info-icon">i</span>
                     <a :href="layoutSelectorUrl" target="_blank">
                         Personalize your one sheet with your own unique layout.
                     </a>

@@ -26,7 +26,7 @@ class ImportExportService {
       window.GMKB.closeImportExport = () => this.closeModal();
     }
 
-    console.log('✅ ImportExportService initialized');
+    console.log('ImportExportService initialized');
   }
 
   /**
@@ -47,7 +47,7 @@ class ImportExportService {
         this.openModal();
       });
 
-      console.log('✅ Export button connected to ImportExportModal');
+      console.log('Export button connected to ImportExportModal');
     } else {
       // Button not found yet, retry after a short delay
       setTimeout(() => this.attachToButton(), 100);
@@ -64,7 +64,7 @@ class ImportExportService {
     // Dispatch event for Vue components to listen
     document.dispatchEvent(new CustomEvent('gmkb:open-import-export'));
     
-    console.log('📤 Opening Import/Export modal');
+    console.log('Opening Import/Export modal');
   }
 
   /**
@@ -77,7 +77,7 @@ class ImportExportService {
     // Dispatch event for Vue components to listen
     document.dispatchEvent(new CustomEvent('gmkb:close-import-export'));
     
-    console.log('📤 Closing Import/Export modal');
+    console.log('Closing Import/Export modal');
   }
 
   /**

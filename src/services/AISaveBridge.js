@@ -199,7 +199,7 @@ class AISaveBridge {
         detail: { profileId, type, fields }
       }));
 
-      console.log(`[AISaveBridge] ✅ Successfully saved ${type} to profile #${profileId}`);
+      console.log(`[AISaveBridge] Successfully saved ${type} to profile #${profileId}`);
 
       return {
         success: true,
@@ -208,7 +208,7 @@ class AISaveBridge {
       };
 
     } catch (error) {
-      console.error(`[AISaveBridge] ❌ Failed to save ${type}:`, error);
+      console.error(`[AISaveBridge] Failed to save ${type}:`, error);
 
       this._lastSaveResult = {
         success: false,
@@ -295,7 +295,7 @@ class AISaveBridge {
 
     store.isDirty = true;
 
-    console.log(`[AISaveBridge] ✅ Updated component ${componentId} with ${type} data`);
+    console.log(`[AISaveBridge] Updated component ${componentId} with ${type} data`);
 
     return {
       success: true,

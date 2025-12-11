@@ -49,7 +49,7 @@ const tooltipText = computed(() => {
 const handleReset = () => {
   const confirmMessage = props.mode === 'settings'
     ? 'Reset this component\'s styles to defaults?\n\n(Your content will be preserved)'
-    : 'Reset this component completely?\n\n⚠️ WARNING: This will delete all content!';
+    : 'Reset this component completely?\n\nWARNING: This will delete all content!';
   
   if (!confirm(confirmMessage)) return;
   

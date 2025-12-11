@@ -4,8 +4,8 @@ import GuestIntro from './GuestIntro.vue';
 
 export default {
     render(data = {}, container) {
-        console.log('🎭 Rendering Guest Intro component with data:', data);
-        console.log('🎭 Guest Intro: Available Pods data:', window.gmkbData?.pods_data || {});
+        console.log('Rendering Guest Intro component with data:', data);
+        console.log('Guest Intro: Available Pods data:', window.gmkbData?.pods_data || {});
         
         // Ensure container exists
         if (!container) {
@@ -36,8 +36,8 @@ export default {
             componentId: data.id || data.componentId || `guest-intro_${Date.now()}`
         };
         
-        console.log('🎭 Guest Intro: Merged data being passed to Vue component:', mergedData);
-        console.log('🎭 Guest Intro: Full name:', fullName);
+        console.log('Guest Intro: Merged data being passed to Vue component:', mergedData);
+        console.log('Guest Intro: Full name:', fullName);
         
         const app = createApp(GuestIntro, mergedData);
         

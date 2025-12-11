@@ -57,7 +57,7 @@ export function useAutoSave(options = {}) {
      */
     async function performSave() {
         if (!canSave.value) {
-            console.log('⏭️ Auto-save skipped:', {
+            console.log('Auto-save skipped:', {
                 isSaving: isSaving.value,
                 isDirty: isDirty.value,
                 enabled: autoSaveEnabled.value,
@@ -101,7 +101,7 @@ export function useAutoSave(options = {}) {
                 }
             }));
             
-            console.log('✅ Auto-save successful:', {
+            console.log('Auto-save successful:', {
                 timestamp: new Date(lastSaved.value).toLocaleTimeString(),
                 saveCount: saveCount.value
             });
@@ -112,7 +112,7 @@ export function useAutoSave(options = {}) {
             saveError.value = error.message || 'Save failed';
             failCount.value++;
             
-            console.error('❌ Auto-save failed:', error);
+            console.error('Auto-save failed:', error);
             
             // Show error notification
             if (showNotifications) {
@@ -227,7 +227,7 @@ export function useAutoSave(options = {}) {
      */
     function triggerAutoSave() {
         if (!autoSaveEnabled.value) {
-            console.log('⏭️ Auto-save disabled');
+            console.log('Auto-save disabled');
             return;
         }
         

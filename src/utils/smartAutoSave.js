@@ -50,7 +50,7 @@ export class SmartAutoSave {
     
     // Initialize
     this.setupEventListeners();
-    this.log('✅ Smart auto-save initialized', this.options);
+    this.log('Smart auto-save initialized', this.options);
   }
 
   /**
@@ -69,7 +69,7 @@ export class SmartAutoSave {
     this.lastChangeTime = Date.now();
     this.metrics.totalChanges++;
     
-    this.log(`📝 Change tracked: ${change.type}`, { 
+    this.log(`Change tracked: ${change.type}`, { 
       pendingCount: this.pendingChanges.length,
       batchSize: this.options.batchSize 
     });
@@ -87,7 +87,7 @@ export class SmartAutoSave {
   scheduleAutoSave() {
     // Don't schedule if currently saving
     if (this.isSaving) {
-      this.log('⏸️ Save in progress, deferring schedule');
+      this.log('Save in progress, deferring schedule');
       return;
     }
     
@@ -104,7 +104,7 @@ export class SmartAutoSave {
     );
     
     if (shouldSaveImmediately) {
-      this.log('⚡ Immediate save triggered');
+      this.log('Immediate save triggered');
       this.performSave('immediate');
     } else {
       // Schedule save after quiet period
@@ -159,13 +159,13 @@ export class SmartAutoSave {
   async performSave(trigger = 'manual') {
     // Check if we have changes to save
     if (this.pendingChanges.length === 0 && this.retryQueue.length === 0) {
-      this.log('ℹ️ No changes to save');
+      this.log('No changes to save');
       return;
     }
     
     // Prevent concurrent saves
     if (this.isSaving) {
-      this.log('⚠️ Save already in progress');
+      this.log('Save already in progress');
       return;
     }
     
@@ -184,7 +184,7 @@ export class SmartAutoSave {
     
     const saveStartTime = Date.now();
     
-    this.log(`💾 Starting save (${trigger})`, {
+    this.log(`Starting save (${trigger})`, {
       changes: changesToSave.length,
       trigger
     });
@@ -221,7 +221,7 @@ export class SmartAutoSave {
         result
       });
       
-      this.log(`✅ Save completed`, {
+      this.log(`Save completed`, {
         changes: changesToSave.length,
         duration: `${this.metrics.lastSaveDuration}ms`,
         trigger
@@ -233,7 +233,7 @@ export class SmartAutoSave {
     } catch (error) {
       this.failureCount++;
       
-      this.log(`❌ Save failed (attempt ${this.failureCount})`, error);
+      this.log(`Save failed (attempt ${this.failureCount})`, error);
       
       // Emit failure event
       eventBus.emit('autosave:save-error', {
@@ -249,7 +249,7 @@ export class SmartAutoSave {
         
         // Schedule retry
         setTimeout(() => {
-          this.log(`🔄 Retrying save (${this.failureCount + 1}/${this.options.retryAttempts})`);
+          this.log(`Retrying save (${this.failureCount + 1}/${this.options.retryAttempts})`);
           this.isSaving = false;
           this.performSave('retry');
         }, this.options.retryDelay * Math.pow(2, this.failureCount - 1)); // Exponential backoff
@@ -314,12 +314,12 @@ export class SmartAutoSave {
     const success = storageService.set('autosave_backup', backup);
     
     if (success) {
-      this.log('💾 Changes backed up to local storage');
+      this.log('Changes backed up to local storage');
       
       // Emit backup event
       eventBus.emit('autosave:local-backup', backup);
     } else {
-      this.log('❌ Failed to save local backup');
+      this.log('Failed to save local backup');
     }
   }
 
@@ -334,7 +334,7 @@ export class SmartAutoSave {
     
     // Check if backup is recent (within 1 hour)
     if (Date.now() - data.timestamp < 3600000) {
-      this.log('♻️ Restored changes from backup', data);
+      this.log('Restored changes from backup', data);
       return data.changes;
     }
     
@@ -384,7 +384,7 @@ export class SmartAutoSave {
   pause() {
     this.clearTimers();
     this.paused = true;
-    this.log('⏸️ Auto-save paused');
+    this.log('Auto-save paused');
   }
 
   /**
@@ -450,7 +450,7 @@ export class SmartAutoSave {
     this.pendingChanges = [];
     this.retryQueue = [];
     
-    this.log('🔚 Auto-save destroyed');
+    this.log('Auto-save destroyed');
   }
 }
 

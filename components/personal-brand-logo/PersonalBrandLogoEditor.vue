@@ -172,7 +172,7 @@ const handleUploadLogo = async () => {
     }
     
     if (window.gmkbDebug || window.gmkbData?.debugMode) {
-      console.log('🎨 Personal Brand Logo: Image uploaded via REST API', {
+      console.log('Personal Brand Logo: Image uploaded via REST API', {
         id: attachment.id,
         url: attachment.url
       });
@@ -182,12 +182,12 @@ const handleUploadLogo = async () => {
     try {
       const postId = store.postId || window.gmkbData?.postId;
       if (!postId) {
-        console.error('❌ Personal Brand Logo: No post ID available');
+        console.error('Personal Brand Logo: No post ID available');
         throw new Error('Post ID not available');
       }
       
       if (window.gmkbDebug || window.gmkbData?.debugMode) {
-        console.log('💾 Personal Brand Logo: Saving to Pods field', {
+        console.log('Personal Brand Logo: Saving to Pods field', {
           postId,
           fieldName: 'personal_brand_logo',
           attachmentId: attachment.id
@@ -199,7 +199,7 @@ const handleUploadLogo = async () => {
       await updatePodsField(postId, 'personal_brand_logo', attachment.id);
       
       if (window.gmkbDebug || window.gmkbData?.debugMode) {
-        console.log('✅ Personal Brand Logo: Saved to Pods successfully');
+        console.log('Personal Brand Logo: Saved to Pods successfully');
       }
       
       // Step 3: Update local state
@@ -223,11 +223,11 @@ const handleUploadLogo = async () => {
       store.isDirty = true;
       
       if (window.gmkbDebug || window.gmkbData?.debugMode) {
-        console.log('✅ Personal Brand Logo: Upload complete, component updated');
+        console.log('Personal Brand Logo: Upload complete, component updated');
       }
       
     } catch (saveError) {
-      console.error('❌ Personal Brand Logo: Failed to save to Pods', saveError);
+      console.error('Personal Brand Logo: Failed to save to Pods', saveError);
       
       // ROOT FIX: Still update local state even if Pods save fails
       // Use the uploaded image directly without Pods
@@ -261,7 +261,7 @@ const handleUploadLogo = async () => {
     }
     
   } catch (error) {
-    console.error('❌ Personal Brand Logo: Upload failed', error);
+    console.error('Personal Brand Logo: Upload failed', error);
     // jQuery-Free: Better error handling for REST API errors
     if (error.message && !error.message.includes('No file selected')) {
       const errorMessage = 'Failed to upload logo: ' + error.message;

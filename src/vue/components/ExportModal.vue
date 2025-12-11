@@ -156,14 +156,14 @@ openExportHandler = () => {
 // Listen for global export event in onMounted
 onMounted(() => {
   document.addEventListener('gmkb:open-export', openExportHandler);
-  console.log('✅ ExportModal: Event listener registered');
+  console.log('ExportModal: Event listener registered');
 });
 
 // ROOT FIX: Proper cleanup in onUnmounted
 onUnmounted(() => {
   if (openExportHandler) {
     document.removeEventListener('gmkb:open-export', openExportHandler);
-    console.log('✅ ExportModal: Event listener cleaned up');
+    console.log('ExportModal: Event listener cleaned up');
   }
 });
 </script>

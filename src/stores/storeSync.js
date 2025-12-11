@@ -29,7 +29,7 @@ export class StoreSync {
    */
   initialize() {
     if (this.initialized) {
-      console.warn('⚠️ StoreSync already initialized');
+      console.warn('StoreSync already initialized');
       return;
     }
 
@@ -44,7 +44,7 @@ export class StoreSync {
       this.initialized = true;
       eventBus.emit('storesync:initialized');
       
-      console.log('✅ Store synchronization initialized');
+      console.log('Store synchronization initialized');
     } catch (error) {
       console.error('Failed to initialize StoreSync:', error);
       throw error;
@@ -180,7 +180,7 @@ export class StoreSync {
         lastSync.source === target && 
         lastSync.target === source &&
         Date.now() - lastSync.timestamp < 100) {
-      console.warn(`⚠️ Circular sync detected for ${property}, skipping`);
+      console.warn(`Circular sync detected for ${property}, skipping`);
       return;
     }
 
@@ -259,7 +259,7 @@ export class StoreSync {
    * Force a full sync between stores
    */
   forceSync() {
-    console.log('🔄 Forcing store synchronization...');
+    console.log('Forcing store synchronization...');
     
     this.syncActive = true;
     
@@ -273,7 +273,7 @@ export class StoreSync {
         customizations: this.mediaKitStore.themeCustomizations
       });
       
-      console.log('✅ Force sync completed');
+      console.log('Force sync completed');
     } catch (error) {
       console.error('Force sync failed:', error);
     } finally {
@@ -302,7 +302,7 @@ export class StoreSync {
     }
     
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[StoreSync] ${type}: ${source} → ${target} (${property})`);
+      console.log(`[StoreSync] ${type}: ${source}  -> ${target} (${property})`);
     }
   }
 
@@ -369,7 +369,7 @@ export class StoreSync {
     this.syncActive = false;
     this.initialized = false;
     
-    console.log('🔚 Store synchronization destroyed');
+    console.log('Store synchronization destroyed');
   }
 }
 

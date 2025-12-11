@@ -17,7 +17,7 @@ class NonceManager {
       this.nonce = e.detail.nonce;
       this.restNonce = e.detail.restNonce || e.detail.nonce;
       this.lastRefresh = Date.now();
-      console.log('✅ Nonce updated via event');
+      console.log('Nonce updated via event');
     });
   }
   
@@ -56,7 +56,7 @@ class NonceManager {
     }
     
     this.refreshing = true;
-    console.log('🔄 Refreshing WordPress nonce...');
+    console.log('Refreshing WordPress nonce...');
     
     try {
       const formData = new FormData();
@@ -86,7 +86,7 @@ class NonceManager {
           window.gmkbData.restNonce = this.restNonce;
         }
         
-        console.log('✅ Nonce refreshed successfully');
+        console.log('Nonce refreshed successfully');
         
         // Dispatch event for other systems
         document.dispatchEvent(new CustomEvent('gmkb:nonce-refreshed', {
@@ -106,7 +106,7 @@ class NonceManager {
         throw new Error(data.data || 'Failed to refresh nonce');
       }
     } catch (error) {
-      console.error('❌ Nonce refresh failed:', error);
+      console.error('Nonce refresh failed:', error);
       
       // Resolve callbacks with current nonce
       this.refreshCallbacks.forEach(cb => cb(this.nonce));
@@ -149,7 +149,7 @@ class NonceManager {
       if (!result.success && retryCount === 0) {
         const errorMsg = result.data?.message || result.data || '';
         if (errorMsg.toLowerCase().includes('nonce') || errorMsg.toLowerCase().includes('session')) {
-          console.log('🔄 Nonce error detected, refreshing and retrying...');
+          console.log('Nonce error detected, refreshing and retrying...');
           await this.refreshNonce();
           return this.ajaxRequest(action, data, 1);
         }

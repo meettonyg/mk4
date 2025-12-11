@@ -17,10 +17,10 @@ export const testDeepCloneUtilities = () => {
     totalTests++;
     try {
       fn();
-      console.log(`✅ ${name}`);
+      console.log(`${name}`);
       passedTests++;
     } catch (error) {
-      console.error(`❌ ${name}:`, error.message);
+      console.error(`${name}:`, error.message);
     }
   };
   
@@ -133,8 +133,8 @@ export const testDeepCloneUtilities = () => {
     const deepResult = deepEqual(obj1, obj2);
     const deepTime = performance.now() - deepStart;
     
-    console.log(`  ⏱️  JSON: ${jsonTime.toFixed(3)}ms, deepEqual: ${deepTime.toFixed(3)}ms`);
-    console.log(`  🚀 deepEqual is ${(jsonTime / deepTime).toFixed(1)}x faster`);
+    console.log(`   JSON: ${jsonTime.toFixed(3)}ms, deepEqual: ${deepTime.toFixed(3)}ms`);
+    console.log(`  deepEqual is ${(jsonTime / deepTime).toFixed(1)}x faster`);
     
     if (deepTime > jsonTime) {
       throw new Error('deepEqual is not faster than JSON method');
@@ -178,13 +178,13 @@ export const testDeepCloneUtilities = () => {
   });
   
   // Summary
-  console.log(`\n📊 Test Results: ${passedTests}/${totalTests} passed`);
+  console.log(`\nTest Results: ${passedTests}/${totalTests} passed`);
   
   if (passedTests === totalTests) {
-    console.log('🎉 All tests passed! ✅\n');
+    console.log('All tests passed! ✅\n');
     return true;
   } else {
-    console.error(`⚠️ ${totalTests - passedTests} tests failed\n`);
+    console.error(`${totalTests - passedTests} tests failed\n`);
     return false;
   }
 };
@@ -192,5 +192,5 @@ export const testDeepCloneUtilities = () => {
 // Auto-run if in browser
 if (typeof window !== 'undefined') {
   window.testDeepCloneUtilities = testDeepCloneUtilities;
-  console.log('💡 Run testDeepCloneUtilities() to test the utilities');
+  console.log('Run testDeepCloneUtilities() to test the utilities');
 }

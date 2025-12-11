@@ -198,7 +198,7 @@ const isEditing = computed(() => {
 const showControlsComputed = computed(() => {
   try {
     const result = props.showControls && (isHovered.value || isSelected.value);
-    console.log('🔍 showControlsComputed:', {
+    console.log('showControlsComputed:', {
       componentId: props.componentId || props.component?.id,
       propsShowControls: props.showControls,
       isHovered: isHovered.value,
@@ -309,12 +309,12 @@ function onMouseLeave(event) {
   console.log('   Controls element exists:', !!controls)
   console.log('   Related target:', event.relatedTarget)
   if (controls && event.relatedTarget && controls.contains(event.relatedTarget)) {
-    console.log('   ✅ Keeping hover - mouse over controls')
+    console.log('   Keeping hover - mouse over controls')
     // Mouse moved to controls, keep hover state
     return
   }
   
-  console.log('   ❌ Removing hover')
+  console.log('   Removing hover')
   isHovered.value = false
   const id = props.componentId || props.component?.id
   if (id && store.hoveredComponentId === id) {

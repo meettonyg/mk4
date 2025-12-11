@@ -109,7 +109,7 @@ const handleMigrate = () => {
     // Remove this deprecated component
     store.removeComponent(props.componentId);
     
-    console.log(`✅ Migrated ${originalType.value} to ${fallbackConfig.type}`);
+    console.log(`Migrated ${originalType.value} to ${fallbackConfig.type}`);
     
     // Show success notification
     document.dispatchEvent(new CustomEvent('gmkb:notification', {
@@ -125,7 +125,7 @@ const handleRemove = () => {
   if (confirm(`Remove this deprecated component (${originalType.value})?`)) {
     store.removeComponent(props.componentId);
     
-    console.log(`🗑️ Removed deprecated component: ${originalType.value}`);
+    console.log(`Removed deprecated component: ${originalType.value}`);
     
     // Show notification
     document.dispatchEvent(new CustomEvent('gmkb:notification', {

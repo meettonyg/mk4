@@ -37,10 +37,10 @@
     };
     
     const socialIcons = {
-        facebook: '📘',
-        twitter: '🐦',
-        linkedin: '💼',
-        instagram: '📷',
+        facebook: '[Book]',
+        twitter: '[Twitter]',
+        linkedin: '[Work]',
+        instagram: '[Photo]',
         youtube: '📺',
         github: '💻',
         website: '🌐',
@@ -149,7 +149,7 @@
         } catch (error) {
             console.error(`Error rendering ${COMPONENT_TYPE}:`, error);
             return `<div class="gmkb-component gmkb-component--error">
-                <h3>⚠️ Error Rendering Social Links</h3>
+                <h3>Error Rendering Social Links</h3>
                 <p>${escapeHtml(error.message)}</p>
             </div>`;
         }
@@ -172,7 +172,7 @@
                 type: COMPONENT_TYPE
             });
             if (success && window.gmkbData?.debugMode) {
-                console.log(`✅ Social Links component registered successfully`);
+                console.log(`Social Links component registered successfully`);
             }
         }
     }
