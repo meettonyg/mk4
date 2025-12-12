@@ -244,7 +244,8 @@ class AISaveBridge {
           if (existingResponse.ok) {
             const existingData = await existingResponse.json();
             const existingIds = (existingData.offers || []).map(o => o.id);
-            allOfferIds = [...existingIds, ...newOfferIds];
+            // Use Set to deduplicate IDs in case an offer is already linked
+            allOfferIds = [...new Set([...existingIds, ...newOfferIds])];
           }
         }
 

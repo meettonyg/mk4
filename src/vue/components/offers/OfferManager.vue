@@ -276,6 +276,7 @@ const {
   filters,
   fetchOffers,
   deleteOffer,
+  bulkDeleteOffers,
   duplicateOffer,
   setFilter,
   setPage,
@@ -429,12 +430,13 @@ const bulkDelete = async () => {
     return;
   }
 
-  for (const id of selectedOffers.value) {
-    try {
-      await deleteOffer(id);
-    } catch (err) {
-      console.error(`Failed to delete offer ${id}:`, err);
+  try {
+    const result = await bulkDeleteOffers(selectedOffers.value);
+    if (result.failed?.length > 0) {
+      console.warn('Some offers failed to delete:', result.failed);
     }
+  } catch (err) {
+    console.error('Bulk delete failed:', err);
   }
   clearSelection();
 };

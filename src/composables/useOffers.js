@@ -222,6 +222,43 @@ export function useOffers() {
   };
 
   /**
+   * Bulk delete offers (single API request for better performance)
+   */
+  const bulkDeleteOffers = async (offerIds) => {
+    if (!offerIds || offerIds.length === 0) {
+      return { success: true, deleted: [], deleted_count: 0 };
+    }
+
+    isSaving.value = true;
+    error.value = null;
+
+    try {
+      const result = await apiRequest('offers/bulk-delete', {
+        method: 'POST',
+        body: JSON.stringify({ ids: offerIds }),
+      });
+
+      if (result.success && result.deleted) {
+        // Remove deleted offers from local list
+        const deletedSet = new Set(result.deleted);
+        offers.value = offers.value.filter(o => !deletedSet.has(o.id));
+
+        // Clear current offer if it was deleted
+        if (currentOffer.value && deletedSet.has(currentOffer.value.id)) {
+          currentOffer.value = null;
+        }
+      }
+
+      return result;
+    } catch (err) {
+      error.value = err.message;
+      throw err;
+    } finally {
+      isSaving.value = false;
+    }
+  };
+
+  /**
    * Duplicate offer
    */
   const duplicateOffer = async (offerId) => {
@@ -410,6 +447,7 @@ export function useOffers() {
     createOffer,
     updateOffer,
     deleteOffer,
+    bulkDeleteOffers,
     duplicateOffer,
     trackClick,
 

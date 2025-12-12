@@ -110,6 +110,24 @@ class GMKB_Offers_API {
             'permission_callback' => [__CLASS__, 'check_read_permission'],
         ]);
 
+        // Bulk delete offers
+        register_rest_route(self::NAMESPACE, '/offers/bulk-delete', [
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => [__CLASS__, 'bulk_delete_offers'],
+            'permission_callback' => [__CLASS__, 'check_list_permission'],
+            'args' => [
+                'ids' => [
+                    'required' => true,
+                    'validate_callback' => function($param) {
+                        return is_array($param) && !empty($param);
+                    },
+                    'sanitize_callback' => function($param) {
+                        return array_map('absint', $param);
+                    },
+                ],
+            ],
+        ]);
+
         // Profile-Offer relationships
         register_rest_route(self::NAMESPACE, '/profiles/(?P<id>\d+)/offers', [
             [
@@ -481,9 +499,27 @@ class GMKB_Offers_API {
             return new WP_Error('not_found', 'Offer not found', ['status' => 404]);
         }
 
-        // Increment click counter
+        // Use transient lock to prevent race condition on concurrent clicks
+        $lock_key = 'gmkb_offer_click_lock_' . $post_id;
+        if (get_transient($lock_key)) {
+            // Another process is updating - for click tracking, return current count
+            $clicks = (int) get_post_meta($post_id, 'offer_clicks', true);
+            return rest_ensure_response([
+                'success' => true,
+                'clicks' => $clicks,
+                'queued' => true,
+            ]);
+        }
+
+        // Acquire lock for 5 seconds
+        set_transient($lock_key, true, 5);
+
+        // Increment click counter atomically
         $clicks = (int) get_post_meta($post_id, 'offer_clicks', true);
         update_post_meta($post_id, 'offer_clicks', $clicks + 1);
+
+        // Release lock
+        delete_transient($lock_key);
 
         return rest_ensure_response([
             'success' => true,
@@ -548,6 +584,67 @@ class GMKB_Offers_API {
             'success' => true,
             'offer' => self::format_offer($new_post, 'detail'),
             'message' => 'Offer duplicated successfully',
+        ]);
+    }
+
+    /**
+     * Bulk delete offers
+     *
+     * Deletes multiple offers in a single request for better performance.
+     * Only deletes offers that the current user has permission to delete.
+     */
+    public static function bulk_delete_offers($request) {
+        $ids = $request->get_param('ids');
+        $user_id = get_current_user_id();
+
+        if (empty($ids)) {
+            return new WP_Error('invalid_ids', 'No offer IDs provided', ['status' => 400]);
+        }
+
+        $deleted = [];
+        $failed = [];
+        $skipped = [];
+
+        foreach ($ids as $id) {
+            $post = get_post($id);
+
+            if (!$post || $post->post_type !== 'gmkb_offer') {
+                $failed[] = [
+                    'id' => $id,
+                    'reason' => 'not_found',
+                ];
+                continue;
+            }
+
+            // Check permission - user must own the offer or be admin
+            if ((int) $post->post_author !== $user_id && !current_user_can('delete_others_posts')) {
+                $skipped[] = [
+                    'id' => $id,
+                    'reason' => 'permission_denied',
+                ];
+                continue;
+            }
+
+            // Move to trash (soft delete)
+            $result = wp_trash_post($id);
+
+            if ($result) {
+                $deleted[] = $id;
+            } else {
+                $failed[] = [
+                    'id' => $id,
+                    'reason' => 'delete_failed',
+                ];
+            }
+        }
+
+        return rest_ensure_response([
+            'success' => true,
+            'deleted' => $deleted,
+            'deleted_count' => count($deleted),
+            'failed' => $failed,
+            'skipped' => $skipped,
+            'message' => sprintf('%d offer(s) deleted', count($deleted)),
         ]);
     }
 
