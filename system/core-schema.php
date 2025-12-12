@@ -27,6 +27,7 @@ class GMKB_Core_Schema {
 
     private function __construct() {
         add_action('init', [$this, 'register_post_types'], 5);
+        add_action('init', [$this, 'register_taxonomies'], 5);
         add_action('init', [$this, 'register_meta_fields'], 6);
     }
 
@@ -82,18 +83,102 @@ class GMKB_Core_Schema {
             'rest_base' => 'media-kits-legacy',
             'supports' => ['title', 'custom-fields'],
         ]);
+
+        // Offers CPT - Reusable offer assets for Media Kits
+        register_post_type('gmkb_offer', [
+            'labels' => [
+                'name' => __('Offers', 'gmkb'),
+                'singular_name' => __('Offer', 'gmkb'),
+                'add_new' => __('Add New Offer', 'gmkb'),
+                'add_new_item' => __('Add New Offer', 'gmkb'),
+                'edit_item' => __('Edit Offer', 'gmkb'),
+                'view_item' => __('View Offer', 'gmkb'),
+                'search_items' => __('Search Offers', 'gmkb'),
+                'not_found' => __('No offers found', 'gmkb'),
+                'not_found_in_trash' => __('No offers found in trash', 'gmkb'),
+            ],
+            'public' => false,
+            'publicly_queryable' => false,
+            'show_ui' => true,
+            'show_in_menu' => 'edit.php?post_type=guests',
+            'show_in_rest' => true,
+            'rest_base' => 'offers',
+            'rest_controller_class' => 'WP_REST_Posts_Controller',
+            'capability_type' => 'post',
+            'map_meta_cap' => true,
+            'menu_icon' => 'dashicons-tag',
+            'supports' => [
+                'title',
+                'editor',
+                'author',
+                'revisions',
+                'custom-fields',
+            ],
+        ]);
+    }
+
+    /**
+     * Register Taxonomies
+     */
+    public function register_taxonomies() {
+        // Offer Type taxonomy - gift, prize, deal
+        register_taxonomy('offer_type', 'gmkb_offer', [
+            'labels' => [
+                'name' => __('Offer Types', 'gmkb'),
+                'singular_name' => __('Offer Type', 'gmkb'),
+                'search_items' => __('Search Offer Types', 'gmkb'),
+                'all_items' => __('All Offer Types', 'gmkb'),
+                'edit_item' => __('Edit Offer Type', 'gmkb'),
+                'update_item' => __('Update Offer Type', 'gmkb'),
+                'add_new_item' => __('Add New Offer Type', 'gmkb'),
+                'new_item_name' => __('New Offer Type Name', 'gmkb'),
+                'menu_name' => __('Offer Types', 'gmkb'),
+            ],
+            'public' => false,
+            'show_ui' => true,
+            'show_in_rest' => true,
+            'hierarchical' => false,
+            'rewrite' => false,
+        ]);
+
+        // Insert default terms if they don't exist
+        $this->ensure_offer_type_terms();
+    }
+
+    /**
+     * Ensure default offer type terms exist
+     */
+    private function ensure_offer_type_terms() {
+        $default_terms = [
+            'gift' => __('Gift', 'gmkb'),
+            'prize' => __('Prize', 'gmkb'),
+            'deal' => __('Deal', 'gmkb'),
+        ];
+
+        foreach ($default_terms as $slug => $name) {
+            if (!term_exists($slug, 'offer_type')) {
+                wp_insert_term($name, 'offer_type', ['slug' => $slug]);
+            }
+        }
     }
 
     /**
      * Register all meta fields
      */
     public function register_meta_fields() {
+        // Guest/Media Kit fields
         $this->register_personal_fields();
         $this->register_contact_fields();
         $this->register_social_fields();
         $this->register_content_fields();
         $this->register_media_fields();
         $this->register_system_fields();
+
+        // Offer fields
+        $this->register_offer_fields();
+
+        // Relationship fields
+        $this->register_relationship_fields();
     }
 
     /**
@@ -415,6 +500,208 @@ class GMKB_Core_Schema {
         }
 
         return $sizes;
+    }
+
+    /**
+     * Offer Meta Fields
+     * Registered for gmkb_offer post type
+     */
+    private function register_offer_fields() {
+        // List View Fields (needed for cards/grid)
+        $list_fields = [
+            'offer_format' => [
+                'type' => 'string',
+                'description' => 'Format: discount, trial, content, event, consultation, addon, delivery',
+                'sanitize_callback' => 'sanitize_text_field',
+            ],
+            'offer_cta_text' => [
+                'type' => 'string',
+                'description' => 'Call to action button text',
+                'sanitize_callback' => 'sanitize_text_field',
+            ],
+            'offer_url' => [
+                'type' => 'string',
+                'description' => 'Landing page URL',
+                'sanitize_callback' => 'esc_url_raw',
+            ],
+            'offer_retail_value' => [
+                'type' => 'number',
+                'description' => 'Original retail value',
+                'sanitize_callback' => 'floatval',
+            ],
+            'offer_image_id' => [
+                'type' => 'integer',
+                'description' => 'Featured image attachment ID',
+                'sanitize_callback' => 'absint',
+            ],
+            'offer_expiry_date' => [
+                'type' => 'string',
+                'description' => 'Expiry date (YYYY-MM-DD)',
+                'sanitize_callback' => 'sanitize_text_field',
+            ],
+        ];
+
+        // Detail View Fields (only loaded on single offer view)
+        $detail_fields = [
+            'offer_code' => [
+                'type' => 'string',
+                'description' => 'Promo/coupon code',
+                'sanitize_callback' => 'sanitize_text_field',
+            ],
+            'offer_redemption_instructions' => [
+                'type' => 'string',
+                'description' => 'How to redeem the offer',
+                'sanitize_callback' => 'wp_kses_post',
+            ],
+            'offer_price_cost' => [
+                'type' => 'number',
+                'description' => 'Cost to recipient (usually 0 for gifts)',
+                'sanitize_callback' => 'floatval',
+            ],
+            'offer_discount_percent' => [
+                'type' => 'integer',
+                'description' => 'Discount percentage (0-100)',
+                'sanitize_callback' => 'absint',
+            ],
+            'offer_quantity_limit' => [
+                'type' => 'integer',
+                'description' => 'Limited quantity available',
+                'sanitize_callback' => 'absint',
+            ],
+            'offer_scarcity_text' => [
+                'type' => 'string',
+                'description' => 'Scarcity message (e.g., "Only 5 spots available")',
+                'sanitize_callback' => 'sanitize_text_field',
+            ],
+            'offer_video_url' => [
+                'type' => 'string',
+                'description' => 'Demo/promo video URL',
+                'sanitize_callback' => 'esc_url_raw',
+            ],
+            'offer_reason' => [
+                'type' => 'string',
+                'description' => 'Reason for offer (holiday, thank you, etc.)',
+                'sanitize_callback' => 'sanitize_text_field',
+            ],
+            'offer_notes' => [
+                'type' => 'string',
+                'description' => 'Internal notes (admin only)',
+                'sanitize_callback' => 'sanitize_textarea_field',
+            ],
+            'offer_clicks' => [
+                'type' => 'integer',
+                'description' => 'Click tracking counter',
+                'sanitize_callback' => 'absint',
+                'default' => 0,
+            ],
+        ];
+
+        // Register all offer fields
+        $all_fields = array_merge($list_fields, $detail_fields);
+
+        foreach ($all_fields as $field_name => $config) {
+            register_post_meta('gmkb_offer', $field_name, [
+                'show_in_rest' => true,
+                'single' => true,
+                'type' => $config['type'],
+                'description' => $config['description'] ?? '',
+                'sanitize_callback' => $config['sanitize_callback'] ?? 'sanitize_text_field',
+                'default' => $config['default'] ?? null,
+            ]);
+        }
+
+        // Register offer_image_id with prepare callback for full image object
+        register_post_meta('gmkb_offer', 'offer_image_id', [
+            'show_in_rest' => [
+                'schema' => ['type' => 'integer'],
+                'prepare_callback' => [$this, 'prepare_media_field'],
+            ],
+            'single' => true,
+            'type' => 'integer',
+            'description' => 'Featured image attachment ID',
+            'sanitize_callback' => 'absint',
+        ]);
+    }
+
+    /**
+     * Relationship Fields
+     * Links between CPTs (stored as ID arrays)
+     */
+    private function register_relationship_fields() {
+        // Associated offers on guests/media kits
+        register_post_meta('guests', 'associated_offers', [
+            'show_in_rest' => [
+                'schema' => [
+                    'type' => 'array',
+                    'items' => ['type' => 'integer'],
+                ],
+                'prepare_callback' => [$this, 'prepare_offers_field'],
+            ],
+            'single' => true,
+            'type' => 'array',
+            'description' => 'Array of associated offer IDs',
+            'sanitize_callback' => [$this, 'sanitize_id_array'],
+            'default' => [],
+        ]);
+    }
+
+    /**
+     * Prepare associated offers field for REST API response
+     * Expands offer IDs to full offer objects
+     */
+    public function prepare_offers_field($value, $request, $args) {
+        if (empty($value)) {
+            return [];
+        }
+
+        $value = maybe_unserialize($value);
+        if (!is_array($value)) {
+            return [];
+        }
+
+        $offers = [];
+        foreach ($value as $offer_id) {
+            $offer_id = absint($offer_id);
+            if (!$offer_id) {
+                continue;
+            }
+
+            $offer = get_post($offer_id);
+            if (!$offer || $offer->post_type !== 'gmkb_offer') {
+                continue;
+            }
+
+            // Build offer object with list-view fields
+            $offer_data = [
+                'id' => $offer_id,
+                'title' => $offer->post_title,
+                'status' => $offer->post_status,
+                'type' => $this->get_offer_type($offer_id),
+                'format' => get_post_meta($offer_id, 'offer_format', true),
+                'cta_text' => get_post_meta($offer_id, 'offer_cta_text', true),
+                'url' => get_post_meta($offer_id, 'offer_url', true),
+                'retail_value' => (float) get_post_meta($offer_id, 'offer_retail_value', true),
+                'expiry_date' => get_post_meta($offer_id, 'offer_expiry_date', true),
+            ];
+
+            // Add image if set
+            $image_id = get_post_meta($offer_id, 'offer_image_id', true);
+            if ($image_id) {
+                $offer_data['image'] = $this->prepare_media_field($image_id, null, null);
+            }
+
+            $offers[] = $offer_data;
+        }
+
+        return $offers;
+    }
+
+    /**
+     * Get offer type taxonomy term
+     */
+    private function get_offer_type($offer_id) {
+        $terms = wp_get_object_terms($offer_id, 'offer_type', ['fields' => 'slugs']);
+        return !empty($terms) && !is_wp_error($terms) ? $terms[0] : null;
     }
 }
 
