@@ -167,6 +167,11 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-profile-api.ph
     require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-profile-api.php';
 }
 
+// Offers API - CRUD for relational Offers system
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-offers-api.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-offers-api.php';
+}
+
 // AI INTEGRATION: AI Content Generation REST API Controller
 // Part of the Unified AI Generator Architecture ("Modular Widgets")
 // Supports both integrated (builder) and standalone (free tools) modes
