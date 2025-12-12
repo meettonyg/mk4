@@ -95,23 +95,41 @@ const FIELD_MAPPINGS = {
   },
 
   guest_intro: {
+    // Maps to podcast_intro field in schema
     mapToFields: (intro) => ({
-      introduction: typeof intro === 'object' ? intro.text || intro.value : intro
+      podcast_intro: typeof intro === 'object' ? intro.text || intro.value : intro
+    })
+  },
+
+  podcast_intro: {
+    // Direct mapping to podcast_intro field
+    mapToFields: (intro) => ({
+      podcast_intro: typeof intro === 'object' ? intro.text || intro.value : intro
     })
   },
 
   authority_hook: {
-    // Authority hook has multiple sub-fields
+    // Authority hook has multiple sub-fields in schema
+    // Maps to: hook_who, hook_when, hook_what, hook_how, authority_hook, impact_intro
     mapToFields: (hookData) => {
       const fields = {};
 
-      if (typeof hookData === 'object') {
+      if (typeof hookData === 'string') {
+        // If just a string, save to the main authority_hook field
+        fields.authority_hook = hookData;
+      } else if (typeof hookData === 'object') {
         if (hookData.who) fields.hook_who = hookData.who;
         if (hookData.what) fields.hook_what = hookData.what;
         if (hookData.when) fields.hook_when = hookData.when;
         if (hookData.how) fields.hook_how = hookData.how;
-        if (hookData.statement) fields.authority_statement = hookData.statement;
-        if (hookData.summary) fields.authority_hook_summary = hookData.summary;
+        // Full authority hook statement
+        if (hookData.statement || hookData.hook || hookData.full) {
+          fields.authority_hook = hookData.statement || hookData.hook || hookData.full;
+        }
+        // Impact intro is related
+        if (hookData.impact || hookData.impactIntro) {
+          fields.impact_intro = hookData.impact || hookData.impactIntro;
+        }
       }
 
       return fields;
