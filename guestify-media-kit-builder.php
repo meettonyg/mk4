@@ -252,6 +252,12 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-free-tools
     require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-free-tools-shortcode.php';
 }
 
+// Offers Shortcode - Display offers on any page
+// Usage: [gmkb_offers] or [gmkb_offers profile_id="123" layout="grid" columns="3"]
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/offers-shortcode.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/offers-shortcode.php';
+}
+
 // ROOT FIX: Include debug REST endpoint for troubleshooting
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/debug-rest-endpoint.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/debug-rest-endpoint.php';
