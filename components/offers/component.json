@@ -1,0 +1,22 @@
+{
+  "type": "offers",
+  "name": "Offers",
+  "description": "Display promotional offers, gifts, prizes, and deals",
+  "icon": "fa-solid fa-gift",
+  "category": "content",
+  "accordionGroup": "basic",
+  "version": "1.0.0",
+  "renderers": {
+    "php": "template.php",
+    "vue": "Offers.vue",
+    "editor": "OffersEditor.vue"
+  },
+  "styles": "styles.css",
+  "schema": "schema.json",
+  "supports": {
+    "serverRender": true,
+    "vueRender": true,
+    "inlineEdit": false,
+    "designPanel": true
+  }
+}

@@ -1,0 +1,163 @@
+{
+  "component_type": "offers",
+  "name": "Offers",
+  "description": "Display promotional offers linked to this profile",
+  "version": "1.0.0",
+  "dataBindings": {
+    "offers": {
+      "source": "api.associated_offers",
+      "label": "Profile Offers",
+      "fieldType": "relationship"
+    }
+  },
+  "componentOptions": {
+    "layout": {
+      "type": "select",
+      "label": "Layout Style",
+      "default": "grid",
+      "options": [
+        { "value": "grid", "label": "Grid Layout" },
+        { "value": "list", "label": "List Layout" },
+        { "value": "carousel", "label": "Carousel" },
+        { "value": "featured", "label": "Featured (Single)" }
+      ],
+      "description": "Choose how offers are displayed",
+      "category": "layout"
+    },
+    "columns": {
+      "type": "select",
+      "label": "Number of Columns",
+      "default": "3",
+      "options": [
+        { "value": "1", "label": "1 Column" },
+        { "value": "2", "label": "2 Columns" },
+        { "value": "3", "label": "3 Columns" },
+        { "value": "4", "label": "4 Columns" }
+      ],
+      "description": "For grid layout only",
+      "category": "layout"
+    },
+    "filterByType": {
+      "type": "select",
+      "label": "Filter by Type",
+      "default": "all",
+      "options": [
+        { "value": "all", "label": "All Types" },
+        { "value": "gift", "label": "Gifts Only" },
+        { "value": "prize", "label": "Prizes Only" },
+        { "value": "deal", "label": "Deals Only" }
+      ],
+      "category": "content"
+    },
+    "showImage": {
+      "type": "boolean",
+      "label": "Show Images",
+      "default": true,
+      "checkboxLabel": "Display offer images",
+      "category": "appearance"
+    },
+    "showValue": {
+      "type": "boolean",
+      "label": "Show Value",
+      "default": true,
+      "checkboxLabel": "Display retail value",
+      "category": "appearance"
+    },
+    "showDescription": {
+      "type": "boolean",
+      "label": "Show Description",
+      "default": true,
+      "checkboxLabel": "Display offer description",
+      "category": "appearance"
+    },
+    "showExpiry": {
+      "type": "boolean",
+      "label": "Show Expiry",
+      "default": true,
+      "checkboxLabel": "Display expiration date",
+      "category": "appearance"
+    },
+    "showCTA": {
+      "type": "boolean",
+      "label": "Show CTA Button",
+      "default": true,
+      "checkboxLabel": "Display call-to-action button",
+      "category": "appearance"
+    },
+    "cardStyle": {
+      "type": "select",
+      "label": "Card Style",
+      "default": "elevated",
+      "options": [
+        { "value": "bordered", "label": "Bordered" },
+        { "value": "elevated", "label": "Elevated (Shadow)" },
+        { "value": "flat", "label": "Flat" },
+        { "value": "gradient", "label": "Gradient Background" }
+      ],
+      "category": "appearance"
+    },
+    "primaryColor": {
+      "type": "color",
+      "label": "Primary Color",
+      "default": "#3b82f6",
+      "description": "Color for buttons and accents",
+      "category": "colors"
+    },
+    "backgroundColor": {
+      "type": "color",
+      "label": "Card Background",
+      "default": "#ffffff",
+      "category": "colors"
+    },
+    "maxOffers": {
+      "type": "number",
+      "label": "Maximum Offers",
+      "default": 6,
+      "min": 1,
+      "max": 20,
+      "description": "Limit number of offers displayed",
+      "category": "content"
+    },
+    "customTitle": {
+      "type": "text",
+      "label": "Section Title",
+      "default": "Special Offers",
+      "placeholder": "Enter custom title",
+      "category": "content"
+    },
+    "titleAlignment": {
+      "type": "radio",
+      "label": "Title Alignment",
+      "default": "center",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ],
+      "category": "layout"
+    },
+    "selectedOfferIds": {
+      "type": "hidden",
+      "label": "Selected Offers",
+      "default": [],
+      "description": "Specific offer IDs to display (overrides profile association)"
+    }
+  },
+  "defaultOptions": {
+    "layout": "grid",
+    "columns": "3",
+    "filterByType": "all",
+    "showImage": true,
+    "showValue": true,
+    "showDescription": true,
+    "showExpiry": true,
+    "showCTA": true,
+    "cardStyle": "elevated",
+    "primaryColor": "#3b82f6",
+    "backgroundColor": "#ffffff",
+    "maxOffers": 6,
+    "customTitle": "Special Offers",
+    "titleAlignment": "center",
+    "selectedOfferIds": []
+  }
+}
