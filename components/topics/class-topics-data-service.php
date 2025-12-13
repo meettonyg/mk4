@@ -29,9 +29,9 @@ if (!class_exists('Abstract_Component_Integration')) {
     }
 }
 
-// Load component-specific integration if not already loaded
-if (!class_exists('Topics_Pods_Integration')) {
-    require_once __DIR__ . '/Topics_Pods_Integration.php';
+// Load component-specific integration (Phase 8: use native data-integration.php)
+if (!class_exists('Topics_Data_Integration')) {
+    require_once __DIR__ . '/data-integration.php';
 }
 
 class Topics_Data_Service extends Base_Component_Data_Service {
@@ -68,8 +68,8 @@ class Topics_Data_Service extends Base_Component_Data_Service {
         
         $current_post_id = $validation['post_id'];
         
-        // PHASE 1 FIX: Use component-specific Pods integration
-        $pods_result = Topics_Pods_Integration::load_topics_data($current_post_id);
+        // PHASE 8: Use native Topics_Data_Integration
+        $pods_result = Topics_Data_Integration::load_component_data($current_post_id);
         
         // EVENT-DRIVEN result
         $result = array(
@@ -237,8 +237,8 @@ class Topics_Data_Service extends Base_Component_Data_Service {
             return false;
         }
         
-        // PHASE 1 FIX: Use component-specific Pods integration for save
-        $save_result = Topics_Pods_Integration::save_topics_data($post_id, $topics);
+        // PHASE 8: Use native Topics_Data_Integration for save
+        $save_result = Topics_Data_Integration::save_component_data($post_id, array('topics' => $topics));
         
         // Also use base class for additional metadata if needed
         if ($save_result['success']) {
