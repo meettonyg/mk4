@@ -245,7 +245,7 @@ class GMKB_REST_API_V2 {
                     'validate_callback' => fn($param, $request, $key) => is_numeric($param)
                 ),
                 'field' => array(
-                    'validate_callback' => fn($param, $request, $key) => preg_match('/^[a-zA-Z0-9_-]+$/', $param)
+                    'validate_callback' => fn($param, $request, $key) => (bool) preg_match('/^[a-zA-Z0-9_-]+$/', $param)
                 )
             )
         ));
