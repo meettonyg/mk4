@@ -4,11 +4,11 @@
   "description": "Display promotional offers, gifts, prizes, and deals",
   "icon": "fa-solid fa-gift",
   "category": "content",
-  "accordionGroup": "basic",
+  "accordionGroup": "premium",
   "version": "1.0.0",
   "renderers": {
     "php": "template.php",
-    "vue": "Offers.vue",
+    "vue": "OffersRenderer.vue",
     "editor": "OffersEditor.vue"
   },
   "styles": "styles.css",

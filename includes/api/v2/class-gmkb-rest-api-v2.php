@@ -211,9 +211,7 @@ class GMKB_REST_API_V2 {
             'permission_callback' => array($this, 'check_read_permissions'), // ROOT FIX: Custom permission check
             'args' => array(
                 'id' => array(
-                    'validate_callback' => function($param) {
-                        return is_numeric($param);
-                    }
+                    'validate_callback' => 'is_numeric'
                 )
             )
         ));
@@ -225,9 +223,7 @@ class GMKB_REST_API_V2 {
             'permission_callback' => array($this, 'check_write_permissions'),
             'args' => array(
                 'id' => array(
-                    'validate_callback' => function($param) {
-                        return is_numeric($param);
-                    }
+                    'validate_callback' => 'is_numeric'
                 )
             )
         ));
@@ -246,9 +242,7 @@ class GMKB_REST_API_V2 {
             'permission_callback' => array($this, 'check_write_permissions'),
             'args' => array(
                 'id' => array(
-                    'validate_callback' => function($param) {
-                        return is_numeric($param);
-                    }
+                    'validate_callback' => 'is_numeric'
                 ),
                 'field' => array(
                     'validate_callback' => function($param) {
@@ -295,9 +289,7 @@ class GMKB_REST_API_V2 {
             ),
             'args' => array(
                 'id' => array(
-                    'validate_callback' => function($param) {
-                        return is_numeric($param);
-                    }
+                    'validate_callback' => 'is_numeric'
                 )
             )
         ));
@@ -309,9 +301,7 @@ class GMKB_REST_API_V2 {
             'permission_callback' => array($this, 'check_offers_write_permissions'),
             'args' => array(
                 'id' => array(
-                    'validate_callback' => function($param) {
-                        return is_numeric($param);
-                    }
+                    'validate_callback' => 'is_numeric'
                 )
             )
         ));
@@ -323,9 +313,7 @@ class GMKB_REST_API_V2 {
             'permission_callback' => '__return_true',
             'args' => array(
                 'id' => array(
-                    'validate_callback' => function($param) {
-                        return is_numeric($param);
-                    }
+                    'validate_callback' => 'is_numeric'
                 )
             )
         ));
@@ -348,9 +336,7 @@ class GMKB_REST_API_V2 {
             'permission_callback' => array($this, 'check_read_permissions'),
             'args' => array(
                 'id' => array(
-                    'validate_callback' => function($param) {
-                        return is_numeric($param);
-                    }
+                    'validate_callback' => 'is_numeric'
                 )
             )
         ));
