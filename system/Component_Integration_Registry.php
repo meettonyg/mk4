@@ -73,6 +73,13 @@ class Component_Integration_Registry {
 
         $component_dirs = scandir($components_dir);
 
+        if ($component_dirs === false) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('Component Registry: Failed to scan components directory: ' . $components_dir);
+            }
+            return;
+        }
+
         foreach ($component_dirs as $dir) {
             // Skip . and .. and files
             if ($dir === '.' || $dir === '..') {

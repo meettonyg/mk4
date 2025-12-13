@@ -214,10 +214,10 @@ class Offers_Data_Integration {
      * Save profile-offer associations
      *
      * @param int $post_id Profile post ID
-     * @param array $offer_ids Array of offer IDs to associate
+     * @param array $data Data array containing offer IDs (supports 'offers', 'offer_ids', or direct array)
      * @return array Save result
      */
-    public static function save_component_data($post_id, $offer_ids) {
+    public static function save_component_data($post_id, $data) {
         $result = array(
             'success' => false,
             'count' => 0,
@@ -230,6 +230,9 @@ class Offers_Data_Integration {
             $result['message'] = 'Invalid post ID';
             return $result;
         }
+
+        // Extract offer IDs from the data array, supporting multiple formats for robustness
+        $offer_ids = is_array($data) ? ($data['offers'] ?? $data['offer_ids'] ?? $data) : array();
 
         if (!is_array($offer_ids)) {
             $offer_ids = array();
@@ -308,7 +311,7 @@ class Offers_Data_Integration {
      * @return bool Success
      */
     public static function unlink_offer($profile_id, $offer_id) {
-        if (!self::validate_post_id($profile_id)) {
+        if (!self::validate_post_id($profile_id) || !self::validate_post_id($offer_id)) {
             return false;
         }
 
