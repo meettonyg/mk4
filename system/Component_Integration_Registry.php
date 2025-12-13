@@ -1,12 +1,12 @@
 <?php
 /**
  * Component Integration Registry
- * 
- * PHASE 1 ARCHITECTURAL FIX: Central registry for component integrations
- * Manages discovery, loading, and coordination of component-level integrations
- * 
+ *
+ * PHASE 8: Central registry for component integrations
+ * Uses dynamic discovery of data-integration.php files
+ *
  * @package Guestify/System
- * @version 1.0.0-phase1-component-isolation
+ * @version 2.0.0-phase8-native
  */
 
 // Prevent direct access
@@ -58,47 +58,59 @@ class Component_Integration_Registry {
     
     /**
      * Register all component integrations
+     * PHASE 8: Dynamic discovery of data-integration.php files
      */
     private static function register_component_integrations() {
         $components_dir = GUESTIFY_PLUGIN_DIR . 'components/';
-        
-        // PHASE 1: Core component integrations
-        $component_configs = array(
-            'topics' => array(
-                'class' => 'Topics_Pods_Integration',
-                'file' => 'Topics_Pods_Integration.php',
-                'path' => $components_dir . 'topics/',
-                'fields' => array('topic_1', 'topic_2', 'topic_3', 'topic_4', 'topic_5')
-            ),
-            'biography' => array(
-                'class' => 'Biography_Pods_Integration',
-                'file' => 'Biography_Pods_Integration.php',
-                'path' => $components_dir . 'biography/',
-                'fields' => array('biography_name', 'biography_short', 'biography_medium', 'biography_long')
-            ),
-            'authority_hook' => array(
-                'class' => 'Authority_Hook_Pods_Integration',
-                'file' => 'Authority_Hook_Pods_Integration.php',
-                'path' => $components_dir . 'authority-hook/',
-                'fields' => array('authority_hook_who', 'authority_hook_what', 'authority_hook_why', 'authority_hook_how')
-            ),
-            'questions' => array(
-                'class' => 'Questions_Pods_Integration',
-                'file' => 'Questions_Pods_Integration.php',
-                'path' => $components_dir . 'questions/',
-                'fields' => array('question_1', 'question_2', 'question_3', 'question_4', 'question_5')
-            ),
-            'social' => array(
-                'class' => 'Social_Pods_Integration',
-                'file' => 'Social_Pods_Integration.php',
-                'path' => $components_dir . 'social/',
-                'fields' => array('social_twitter', 'social_linkedin', 'social_instagram', 'social_facebook')
-            )
-        );
-        
-        foreach ($component_configs as $component_type => $config) {
-            self::register_integration($component_type, $config);
+
+        // Scan components directory for data-integration.php files
+        if (!is_dir($components_dir)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('Component Registry: Components directory not found: ' . $components_dir);
+            }
+            return;
         }
+
+        $component_dirs = scandir($components_dir);
+
+        foreach ($component_dirs as $dir) {
+            // Skip . and .. and files
+            if ($dir === '.' || $dir === '..') {
+                continue;
+            }
+
+            $component_path = $components_dir . $dir . '/';
+            $integration_file = $component_path . 'data-integration.php';
+
+            // Only register if data-integration.php exists
+            if (file_exists($integration_file)) {
+                // Convert directory name to class name (e.g., 'call-to-action' -> 'Call_To_Action')
+                $class_name = self::dir_to_class_name($dir) . '_Data_Integration';
+
+                $config = array(
+                    'class' => $class_name,
+                    'file' => 'data-integration.php',
+                    'path' => $component_path,
+                    'fields' => array() // Fields are managed within each integration class
+                );
+
+                self::register_integration($dir, $config);
+            }
+        }
+    }
+
+    /**
+     * Convert directory name to class name
+     * e.g., 'call-to-action' -> 'Call_To_Action'
+     *
+     * @param string $dir Directory name
+     * @return string Class name prefix
+     */
+    private static function dir_to_class_name($dir) {
+        // Replace hyphens with underscores and capitalize each word
+        $parts = explode('-', $dir);
+        $parts = array_map('ucfirst', $parts);
+        return implode('_', $parts);
     }
     
     /**
@@ -446,5 +458,5 @@ class Component_Integration_Registry {
 add_action('init', array('Component_Integration_Registry', 'initialize'));
 
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ PHASE 1: Component Integration Registry loaded - Central component management');
+    error_log('✅ PHASE 8: Component Integration Registry loaded - Dynamic component discovery');
 }
