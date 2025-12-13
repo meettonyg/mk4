@@ -91,7 +91,6 @@
 <script setup>
 import { ref, watch, computed } from 'vue';
 import { useMediaKitStore } from '@/stores/mediaKit';
-import { usePodsFieldUpdate } from '@composables/usePodsFieldUpdate';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 import ModernMediaLibrary from '@/vue/components/ModernMediaLibrary.vue';
 
@@ -105,7 +104,6 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 const store = useMediaKitStore();
-const { updatePodsField, isUpdating: isSavingToPods } = usePodsFieldUpdate();
 
 // Active tab state
 const activeTab = ref('content');

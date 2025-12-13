@@ -106,7 +106,6 @@ import { ref, watch, computed } from 'vue';
 import { useMediaKitStore } from '@/stores/mediaKit';
 // jQuery-Free: Using modern REST API uploader instead of WordPress Media Library
 import { useModernMediaUploader } from '@composables/useModernMediaUploader';
-import { usePodsFieldUpdate } from '@composables/usePodsFieldUpdate';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 
 const props = defineProps({ 
@@ -121,7 +120,6 @@ const emit = defineEmits(['close']);
 const store = useMediaKitStore();
 // jQuery-Free: Using modern uploader with direct REST API calls
 const { selectAndUploadImage, isUploading } = useModernMediaUploader();
-const { updatePodsField, isUpdating: isSavingToPods } = usePodsFieldUpdate();
 
 // Active tab state
 const activeTab = ref('content');

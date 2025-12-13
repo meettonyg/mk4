@@ -167,6 +167,16 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-profile-api.ph
     require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-profile-api.php';
 }
 
+// Offers API - CRUD for relational Offers system
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-offers-api.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-offers-api.php';
+}
+
+// Offers Migration - Migrate Formidable offers to native CPT
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/migrations/class-gmkb-offers-migration.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/migrations/class-gmkb-offers-migration.php';
+}
+
 // AI INTEGRATION: AI Content Generation REST API Controller
 // Part of the Unified AI Generator Architecture ("Modular Widgets")
 // Supports both integrated (builder) and standalone (free tools) modes
@@ -240,6 +250,12 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/profile-list-shortcod
 // Usage: [gmkb_free_tool type="biography" title="Free Bio Generator"]
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-free-tools-shortcode.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-free-tools-shortcode.php';
+}
+
+// Offers Shortcode - Display offers on any page
+// Usage: [gmkb_offers] or [gmkb_offers profile_id="123" layout="grid" columns="3"]
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/offers-shortcode.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/offers-shortcode.php';
 }
 
 // ROOT FIX: Include debug REST endpoint for troubleshooting
