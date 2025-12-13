@@ -211,9 +211,7 @@ class GMKB_REST_API_V2 {
             'permission_callback' => array($this, 'check_read_permissions'), // ROOT FIX: Custom permission check
             'args' => array(
                 'id' => array(
-                    'validate_callback' => function($param) {
-                        return is_numeric($param);
-                    }
+                    'validate_callback' => fn($param) => is_numeric($param)
                 )
             )
         ));
@@ -225,9 +223,7 @@ class GMKB_REST_API_V2 {
             'permission_callback' => array($this, 'check_write_permissions'),
             'args' => array(
                 'id' => array(
-                    'validate_callback' => function($param) {
-                        return is_numeric($param);
-                    }
+                    'validate_callback' => fn($param) => is_numeric($param)
                 )
             )
         ));
@@ -246,9 +242,7 @@ class GMKB_REST_API_V2 {
             'permission_callback' => array($this, 'check_write_permissions'),
             'args' => array(
                 'id' => array(
-                    'validate_callback' => function($param) {
-                        return is_numeric($param);
-                    }
+                    'validate_callback' => fn($param) => is_numeric($param)
                 ),
                 'field' => array(
                     'validate_callback' => function($param) {
