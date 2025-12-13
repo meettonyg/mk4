@@ -124,7 +124,8 @@ class UnifiedComponentRegistry {
           type,
           meta?.name,
           meta?.category,
-          meta?.icon
+          meta?.icon,
+          meta?.accordionGroup
         );
       } else if (meta) {
         // Merge metadata into existing definition to keep data consistent
@@ -133,7 +134,8 @@ class UnifiedComponentRegistry {
           name: meta.name || this.definitions[type].name,
           description: meta.description || this.definitions[type].description,
           category: meta.category || this.definitions[type].category,
-          icon: meta.icon || this.definitions[type].icon
+          icon: meta.icon || this.definitions[type].icon,
+          accordionGroup: meta.accordionGroup || this.definitions[type].accordionGroup || 'basic'
         };
       }
     });
@@ -172,9 +174,10 @@ class UnifiedComponentRegistry {
       const category = meta?.category || 'general';
       const icon = meta?.icon || null;
       const description = meta?.description || `${name} component`;
+      const accordionGroup = meta?.accordionGroup || 'basic';
 
       this.definitions[type] = {
-        ...this.createComponentDefinition(type, name, category, icon),
+        ...this.createComponentDefinition(type, name, category, icon, accordionGroup),
         description
       };
     });
@@ -195,13 +198,14 @@ class UnifiedComponentRegistry {
   /**
    * Create a component definition
    */
-  createComponentDefinition(type, name = null, category = 'general', icon = null) {
+  createComponentDefinition(type, name = null, category = 'general', icon = null, accordionGroup = 'basic') {
     return {
       type: type,
       name: name || this.formatComponentName(type),
       description: `${name || this.formatComponentName(type)} component`,
       category: category,
       icon: icon || 'fa-solid fa-cube',
+      accordionGroup: accordionGroup,
       hasVueRenderer: !!this.vueComponents[type],
       supports: {
         vueRender: true,
