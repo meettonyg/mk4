@@ -71,8 +71,8 @@ class GMKB_Offers_API {
                 'permission_callback' => [__CLASS__, 'check_read_permission'],
                 'args' => [
                     'id' => [
-                        'validate_callback' => function($param) {
-                            return is_numeric($param);
+                        'validate_callback' => function($value, $request, $key) {
+                            return is_numeric($value);
                         }
                     ],
                 ],
@@ -96,8 +96,8 @@ class GMKB_Offers_API {
             'permission_callback' => '__return_true', // Public tracking
             'args' => [
                 'id' => [
-                    'validate_callback' => function($param) {
-                        return is_numeric($param);
+                    'validate_callback' => function($value, $request, $key) {
+                        return is_numeric($value);
                     }
                 ],
             ],
@@ -118,11 +118,11 @@ class GMKB_Offers_API {
             'args' => [
                 'ids' => [
                     'required' => true,
-                    'validate_callback' => function($param) {
-                        return is_array($param) && !empty($param);
+                    'validate_callback' => function($value, $request, $key) {
+                        return is_array($value) && !empty($value);
                     },
-                    'sanitize_callback' => function($param) {
-                        return array_map('absint', $param);
+                    'sanitize_callback' => function($value, $request, $key) {
+                        return array_map('absint', $value);
                     },
                 ],
             ],
@@ -901,5 +901,6 @@ class GMKB_Offers_API {
     }
 }
 
-// Initialize the API
+// Initialize the self-contained Offers API
+// Note: validate_callbacks accept 3 params (value, request, key) per WordPress REST API spec
 GMKB_Offers_API::init();
