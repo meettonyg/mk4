@@ -67,7 +67,8 @@ import { ref, computed, h } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
 import { useUIStore } from '../../stores/ui';
 import ComponentLibrary from './ComponentLibraryNew.vue';
-import { componentDefinitions } from '../../data/componentDefinitions';
+// PHASE 2: Import the Registry instead of the static data file
+import UnifiedComponentRegistry from '../../services/UnifiedComponentRegistry';
 // ROOT FIX: Import StorageService for centralized localStorage access
 import storageService from '../../services/StorageService';
 
@@ -107,32 +108,32 @@ export default {
     const componentLibrary = ref(null);
     const recentTypes = ref([]);
     
-    // Quick components - most commonly used
+    // PHASE 2: Use the Registry to look up components dynamically
     const quickComponents = computed(() => {
       const quickTypes = ['hero', 'biography', 'topics', 'contact', 'social', 'call-to-action'];
-      return quickTypes.map(type => 
-        componentDefinitions.find(c => c.type === type)
+      return quickTypes.map(type =>
+        UnifiedComponentRegistry.get(type) // Retrieve from Registry
       ).filter(Boolean);
     });
     
-    // Recent components - track last 3 unique types added
+    // PHASE 2: Use the Registry for recent components
     const recentComponents = computed(() => {
-      return recentTypes.value.map(type => 
-        componentDefinitions.find(c => c.type === type)
+      return recentTypes.value.map(type =>
+        UnifiedComponentRegistry.get(type) // Retrieve from Registry
       ).filter(Boolean);
     });
     
     // Methods
     const addComponent = (component) => {
-      // Add to store
+      // The mediaKit store's addComponent action already handles fetching default props
+      // from UnifiedComponentRegistry, so we just pass the type
       store.addComponent({
-        type: component.type,
-        data: component.defaultData || {}
+        type: component.type
       });
-      
+
       // Track in recent
       updateRecent(component.type);
-      
+
       // Show feedback
       if (window.showToast) {
         window.showToast(`Added ${component.name}`, 'success');
@@ -172,22 +173,25 @@ export default {
       // Set drag data with component information
       event.dataTransfer.effectAllowed = 'copy';
       event.dataTransfer.dropEffect = 'copy';
-      
+
       // Set multiple data formats for compatibility
       event.dataTransfer.setData('text/plain', component.type);
       event.dataTransfer.setData('component-type', component.type);
+
+      // PHASE 2: Ensure dragged data uses Registry defaults
+      const defaultProps = UnifiedComponentRegistry.getDefaultProps(component.type);
       event.dataTransfer.setData('application/json', JSON.stringify({
         type: component.type,
         name: component.name,
-        defaultData: component.defaultData || {}
+        defaultData: defaultProps
       }));
-      
+
       // Set dragging state in UI store
       uiStore.startDrag(null, component.type);
-      
+
       // Add visual feedback
       event.target.classList.add('dragging');
-      
+
       console.log('🎯 Started dragging component from sidebar:', component.type);
     };
     
