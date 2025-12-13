@@ -227,7 +227,6 @@ const isLoadingLinkedOffers = ref(false);
 
 // Section field mappings
 const sectionFields = {
-    offers: ['offer_1', 'offer_1_link', 'offer_2', 'offer_2_link'],
     brands: ['my_brands', 'other_brands'],
 };
 
@@ -266,6 +265,7 @@ const loadLinkedOffers = async () => {
     } catch (error) {
         console.error('Failed to load linked offers:', error);
         linkedOffers.value = [];
+        selectedOfferIds.value = [];
     } finally {
         isLoadingLinkedOffers.value = false;
     }
@@ -288,10 +288,11 @@ const saveLinkedOffers = async () => {
 
 // Initialize on mount
 onMounted(async () => {
-    // Fetch available offers
-    await fetchOffers({ status: 'publish', perPage: 100 });
-    // Load linked offers for this profile
-    await loadLinkedOffers();
+    // Fetch available offers and load linked offers in parallel
+    await Promise.all([
+        fetchOffers({ status: 'publish', perPage: 100 }),
+        loadLinkedOffers(),
+    ]);
 });
 
 // Topic methods
