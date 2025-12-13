@@ -355,40 +355,24 @@ class GMKB_REST_API_V2 {
             )
         ));
 
-        // Link offer to profile
+        // Link/Unlink offer from profile (combined to prevent route overwrite)
         register_rest_route($this->namespace, '/profiles/(?P<id>\d+)/offers/(?P<offer_id>\d+)', array(
-            'methods' => 'POST',
-            'callback' => array($this, 'link_offer_to_profile'),
-            'permission_callback' => array($this, 'check_write_permissions'),
+            array(
+                'methods' => 'POST',
+                'callback' => array($this, 'link_offer_to_profile'),
+                'permission_callback' => array($this, 'check_write_permissions'),
+            ),
+            array(
+                'methods' => 'DELETE',
+                'callback' => array($this, 'unlink_offer_from_profile'),
+                'permission_callback' => array($this, 'check_write_permissions'),
+            ),
             'args' => array(
                 'id' => array(
-                    'validate_callback' => function($param) {
-                        return is_numeric($param);
-                    }
+                    'validate_callback' => 'is_numeric'
                 ),
                 'offer_id' => array(
-                    'validate_callback' => function($param) {
-                        return is_numeric($param);
-                    }
-                )
-            )
-        ));
-
-        // Unlink offer from profile
-        register_rest_route($this->namespace, '/profiles/(?P<id>\d+)/offers/(?P<offer_id>\d+)', array(
-            'methods' => 'DELETE',
-            'callback' => array($this, 'unlink_offer_from_profile'),
-            'permission_callback' => array($this, 'check_write_permissions'),
-            'args' => array(
-                'id' => array(
-                    'validate_callback' => function($param) {
-                        return is_numeric($param);
-                    }
-                ),
-                'offer_id' => array(
-                    'validate_callback' => function($param) {
-                        return is_numeric($param);
-                    }
+                    'validate_callback' => 'is_numeric'
                 )
             )
         ));
@@ -1361,7 +1345,7 @@ class GMKB_REST_API_V2 {
      * @return bool Whether the user can read offers
      */
     public function check_offers_read_permissions() {
-        return is_user_logged_in();
+        return current_user_can('read');
     }
 
     /**
@@ -1420,7 +1404,11 @@ class GMKB_REST_API_V2 {
             $offers[] = $this->format_offer_response($post->ID);
         }
 
-        return rest_ensure_response($offers);
+        // Add pagination headers
+        $response = new WP_REST_Response($offers);
+        $response->header('X-WP-Total', (int) $query->found_posts);
+        $response->header('X-WP-TotalPages', (int) $query->max_num_pages);
+        return $response;
     }
 
     /**
@@ -1447,11 +1435,25 @@ class GMKB_REST_API_V2 {
             return $offer_id;
         }
 
-        // Save metadata
+        // Save metadata with proper sanitization per field type
         $meta_fields = array('retail_value', 'cta_text', 'url', 'format', 'image_id');
         foreach ($meta_fields as $field) {
             if (isset($params[$field])) {
-                update_post_meta($offer_id, 'gmkb_offer_' . $field, sanitize_text_field($params[$field]));
+                $value = $params[$field];
+                switch ($field) {
+                    case 'url':
+                        $sanitized_value = esc_url_raw($value);
+                        break;
+                    case 'image_id':
+                        $sanitized_value = absint($value);
+                        break;
+                    case 'retail_value':
+                        $sanitized_value = floatval($value);
+                        break;
+                    default:
+                        $sanitized_value = sanitize_text_field($value);
+                }
+                update_post_meta($offer_id, 'gmkb_offer_' . $field, $sanitized_value);
             }
         }
 
@@ -1526,11 +1528,25 @@ class GMKB_REST_API_V2 {
             wp_update_post($post_update);
         }
 
-        // Update metadata
+        // Update metadata with proper sanitization per field type
         $meta_fields = array('retail_value', 'cta_text', 'url', 'format', 'image_id');
         foreach ($meta_fields as $field) {
             if (isset($params[$field])) {
-                update_post_meta($offer_id, 'gmkb_offer_' . $field, sanitize_text_field($params[$field]));
+                $value = $params[$field];
+                switch ($field) {
+                    case 'url':
+                        $sanitized_value = esc_url_raw($value);
+                        break;
+                    case 'image_id':
+                        $sanitized_value = absint($value);
+                        break;
+                    case 'retail_value':
+                        $sanitized_value = floatval($value);
+                        break;
+                    default:
+                        $sanitized_value = sanitize_text_field($value);
+                }
+                update_post_meta($offer_id, 'gmkb_offer_' . $field, $sanitized_value);
             }
         }
 
@@ -1612,11 +1628,11 @@ class GMKB_REST_API_V2 {
             return $new_id;
         }
 
-        // Copy metadata
+        // Copy metadata (use !== '' to preserve 0 values)
         $meta_keys = array('gmkb_offer_retail_value', 'gmkb_offer_cta_text', 'gmkb_offer_url', 'gmkb_offer_format', 'gmkb_offer_image_id');
         foreach ($meta_keys as $key) {
             $val = get_post_meta($offer_id, $key, true);
-            if ($val) {
+            if ($val !== '') {
                 update_post_meta($new_id, $key, $val);
             }
         }
@@ -1653,13 +1669,35 @@ class GMKB_REST_API_V2 {
             return new WP_Error('not_found', 'Offer not found', array('status' => 404));
         }
 
+        // Use transient lock to prevent race condition in concurrent requests
+        $lock_key = 'gmkb_offer_click_lock_' . $offer_id;
+        $lock_acquired = false;
+        $attempts = 0;
+
+        while (!$lock_acquired && $attempts < 3) {
+            if (get_transient($lock_key) === false) {
+                set_transient($lock_key, true, 2); // 2 second lock
+                $lock_acquired = true;
+            } else {
+                usleep(50000); // Wait 50ms
+                $attempts++;
+            }
+        }
+
+        // Perform atomic-ish update
         $clicks = (int) get_post_meta($offer_id, 'gmkb_offer_clicks', true);
         $clicks++;
         update_post_meta($offer_id, 'gmkb_offer_clicks', $clicks);
 
+        // Release lock
+        if ($lock_acquired) {
+            delete_transient($lock_key);
+        }
+
         return rest_ensure_response(array(
             'success' => true,
             'clicks'  => $clicks,
+            'queued'  => !$lock_acquired, // Indicate if lock wasn't acquired
         ));
     }
 
@@ -1843,7 +1881,7 @@ class GMKB_REST_API_V2 {
         }
 
         $terms = get_the_terms($offer_id, 'offer_type');
-        $type = ($terms && !is_wp_error($terms)) ? $terms[0]->slug : 'generic';
+        $type = ($terms && !is_wp_error($terms) && !empty($terms)) ? $terms[0]->slug : null;
 
         return array(
             'id'           => $offer_id,
