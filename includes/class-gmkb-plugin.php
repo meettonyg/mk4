@@ -96,6 +96,7 @@ class GMKB_Plugin {
     private function init_hooks() {
         add_action('init', array($this, 'load_textdomain'));
         add_action('init', array($this, 'ensure_topics_ajax_handlers_registered'), 5);
+        add_action('init', array($this, 'register_offers_cpt'));
         add_action('rest_api_init', array($this, 'register_rest_routes'));
         add_shortcode('guestify_media_kit', array($this, 'media_kit_shortcode'));
     }
@@ -109,6 +110,98 @@ class GMKB_Plugin {
             false,
             dirname(plugin_basename(GUESTIFY_PLUGIN_DIR . 'guestify-media-kit-builder.php')) . '/languages'
         );
+    }
+
+    /**
+     * Register Offers CPT and Taxonomy
+     *
+     * Creates the gmkb_offer custom post type and offer_type taxonomy
+     * for managing reusable offers in media kits.
+     */
+    public function register_offers_cpt() {
+        // 1. Register Taxonomy: offer_type
+        $labels_tax = array(
+            'name'              => _x('Offer Types', 'taxonomy general name', 'guestify-media-kit-builder'),
+            'singular_name'     => _x('Offer Type', 'taxonomy singular name', 'guestify-media-kit-builder'),
+            'search_items'      => __('Search Offer Types', 'guestify-media-kit-builder'),
+            'all_items'         => __('All Offer Types', 'guestify-media-kit-builder'),
+            'edit_item'         => __('Edit Offer Type', 'guestify-media-kit-builder'),
+            'update_item'       => __('Update Offer Type', 'guestify-media-kit-builder'),
+            'add_new_item'      => __('Add New Offer Type', 'guestify-media-kit-builder'),
+            'new_item_name'     => __('New Offer Type Name', 'guestify-media-kit-builder'),
+            'menu_name'         => __('Offer Types', 'guestify-media-kit-builder'),
+        );
+
+        register_taxonomy('offer_type', array('gmkb_offer'), array(
+            'hierarchical'      => true,
+            'labels'            => $labels_tax,
+            'show_ui'           => true,
+            'show_in_rest'      => true,
+            'query_var'         => true,
+            'rewrite'           => array('slug' => 'offer-type'),
+        ));
+
+        // 2. Register CPT: gmkb_offer
+        $labels_cpt = array(
+            'name'                  => _x('Offers', 'Post Type General Name', 'guestify-media-kit-builder'),
+            'singular_name'         => _x('Offer', 'Post Type Singular Name', 'guestify-media-kit-builder'),
+            'menu_name'             => __('Offers', 'guestify-media-kit-builder'),
+            'name_admin_bar'        => __('Offer', 'guestify-media-kit-builder'),
+            'archives'              => __('Offer Archives', 'guestify-media-kit-builder'),
+            'attributes'            => __('Offer Attributes', 'guestify-media-kit-builder'),
+            'parent_item_colon'     => __('Parent Offer:', 'guestify-media-kit-builder'),
+            'all_items'             => __('All Offers', 'guestify-media-kit-builder'),
+            'add_new_item'          => __('Add New Offer', 'guestify-media-kit-builder'),
+            'add_new'               => __('Add New', 'guestify-media-kit-builder'),
+            'new_item'              => __('New Offer', 'guestify-media-kit-builder'),
+            'edit_item'             => __('Edit Offer', 'guestify-media-kit-builder'),
+            'update_item'           => __('Update Offer', 'guestify-media-kit-builder'),
+            'view_item'             => __('View Offer', 'guestify-media-kit-builder'),
+            'view_items'            => __('View Offers', 'guestify-media-kit-builder'),
+            'search_items'          => __('Search Offer', 'guestify-media-kit-builder'),
+        );
+
+        $args = array(
+            'label'                 => __('Offer', 'guestify-media-kit-builder'),
+            'description'           => __('Offers and giveaways for media kits', 'guestify-media-kit-builder'),
+            'labels'                => $labels_cpt,
+            'supports'              => array('title', 'editor', 'thumbnail', 'custom-fields'),
+            'taxonomies'            => array('offer_type'),
+            'hierarchical'          => false,
+            'public'                => false,
+            'show_ui'               => true,
+            'show_in_menu'          => true,
+            'menu_position'         => 25,
+            'menu_icon'             => 'dashicons-tickets-alt',
+            'show_in_admin_bar'     => true,
+            'show_in_nav_menus'     => true,
+            'can_export'            => true,
+            'has_archive'           => false,
+            'exclude_from_search'   => true,
+            'publicly_queryable'    => false,
+            'capability_type'       => 'post',
+            'show_in_rest'          => true,
+            'rest_base'             => 'offers',
+        );
+
+        register_post_type('gmkb_offer', $args);
+
+        // 3. Create default taxonomy terms if they don't exist
+        $default_terms = array(
+            'gift'  => __('Gift', 'guestify-media-kit-builder'),
+            'prize' => __('Prize', 'guestify-media-kit-builder'),
+            'deal'  => __('Deal', 'guestify-media-kit-builder'),
+        );
+
+        foreach ($default_terms as $slug => $name) {
+            if (!term_exists($slug, 'offer_type')) {
+                wp_insert_term($name, 'offer_type', array('slug' => $slug));
+            }
+        }
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB: Registered gmkb_offer CPT and offer_type taxonomy');
+        }
     }
 
     /**

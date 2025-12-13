@@ -119,30 +119,184 @@ const FIELD_MAPPINGS = {
   },
 
   offers: {
-    // AI outputs array of offers
+    // AI outputs array of offers - now uses native Offers CPT
+    // This mapping is used for legacy/fallback only
+    // Use saveOffersToProfile() method for native offer creation
     mapToFields: (offers) => {
-      const fields = {};
-      const offersArray = Array.isArray(offers) ? offers : [offers];
-
-      offersArray.slice(0, 5).forEach((offer, index) => {
-        const num = index + 1;
-        if (typeof offer === 'object') {
-          fields[`offer_${num}`] = offer.title || offer.name || '';
-          fields[`offer_${num}_description`] = offer.description || '';
-          fields[`offer_${num}_link`] = offer.link || offer.url || '';
-        } else {
-          fields[`offer_${num}`] = offer;
-        }
-      });
-
-      return fields;
-    }
+      // For native offers, we don't map to flat fields
+      // Instead return empty - use saveOffersToProfile() method
+      return {};
+    },
+    // Native offers require special handling via Offers API
+    requiresNativeApi: true
   }
 };
+
+/**
+ * Helper to get REST API base URL and nonce
+ */
+const getApiConfig = () => ({
+  baseUrl: window.gmkbData?.restUrl || '/wp-json/',
+  nonce: window.gmkbData?.restNonce || window.wpApiSettings?.nonce || ''
+});
 
 class AISaveBridge {
   constructor() {
     this._lastSaveResult = null;
+  }
+
+  /**
+   * Save AI-generated offers to native Offers CPT and link to profile
+   *
+   * Creates offer posts via the Offers API and links them to the specified profile.
+   * This is the preferred method for saving AI-generated offers.
+   *
+   * @param {number} profileId - The profile/post ID to link offers to
+   * @param {Array} offers - Array of offer objects from AI generation
+   * @param {Object} options - Additional options
+   * @param {boolean} options.replaceExisting - Replace existing offers (default: false, appends)
+   * @param {string} options.defaultType - Default offer type if not specified (gift, prize, deal)
+   * @returns {Promise<{success: boolean, created: Array, linked: Array, errors: Array}>}
+   */
+  async saveOffersToProfile(profileId, offers, options = {}) {
+    if (!profileId) {
+      throw new Error('Profile ID is required');
+    }
+
+    const offersArray = Array.isArray(offers) ? offers : [offers];
+    if (offersArray.length === 0) {
+      return { success: true, created: [], linked: [], errors: [] };
+    }
+
+    const { baseUrl, nonce } = getApiConfig();
+    const apiBase = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+
+    const createdOffers = [];
+    const errors = [];
+
+    console.log(`[AISaveBridge] Creating ${offersArray.length} native offers for profile #${profileId}`);
+
+    // Step 1: Create each offer as a native gmkb_offer post
+    for (const offerData of offersArray) {
+      try {
+        // Map AI output fields to offer API format
+        const offerPayload = {
+          title: offerData.title || offerData.name || 'Untitled Offer',
+          description: offerData.description || '',
+          type: offerData.type || options.defaultType || 'gift',
+          status: 'publish',
+          // Map additional fields
+          format: offerData.format || '',
+          cta_text: offerData.cta_text || offerData.ctaText || offerData.cta || 'Learn More',
+          url: offerData.url || offerData.link || '',
+          retail_value: offerData.retail_value || offerData.retailValue || offerData.value || null,
+          code: offerData.code || offerData.promoCode || '',
+          expiry_date: offerData.expiry_date || offerData.expiryDate || '',
+          // Package/tier specific (from AI packages generator)
+          ...(offerData.deliverables && {
+            redemption_instructions: Array.isArray(offerData.deliverables)
+              ? offerData.deliverables.join('\n- ')
+              : offerData.deliverables
+          }),
+          ...(offerData.idealClient && {
+            notes: `Ideal for: ${offerData.idealClient}`
+          })
+        };
+
+        const response = await fetch(`${apiBase}gmkb/v2/offers`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-WP-Nonce': nonce
+          },
+          credentials: 'same-origin',
+          body: JSON.stringify(offerPayload)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || `HTTP ${response.status}`);
+        }
+
+        const result = await response.json();
+        if (result.success && result.offer) {
+          createdOffers.push(result.offer);
+          console.log(`[AISaveBridge] Created offer #${result.offer.id}: ${result.offer.title}`);
+        }
+      } catch (err) {
+        console.error('[AISaveBridge] Failed to create offer:', err);
+        errors.push(`Failed to create offer "${offerData.title}": ${err.message}`);
+      }
+    }
+
+    // Step 2: Link created offers to the profile
+    if (createdOffers.length > 0) {
+      try {
+        const newOfferIds = createdOffers.map(o => o.id);
+
+        // Get existing linked offers if not replacing
+        let allOfferIds = newOfferIds;
+        if (!options.replaceExisting) {
+          const existingResponse = await fetch(`${apiBase}gmkb/v2/profiles/${profileId}/offers`, {
+            headers: { 'X-WP-Nonce': nonce },
+            credentials: 'same-origin'
+          });
+          if (existingResponse.ok) {
+            const existingData = await existingResponse.json();
+            const existingIds = (existingData.offers || []).map(o => o.id);
+            // Use Set to deduplicate IDs in case an offer is already linked
+            allOfferIds = [...new Set([...existingIds, ...newOfferIds])];
+          }
+        }
+
+        // Update profile's associated offers
+        const linkResponse = await fetch(`${apiBase}gmkb/v2/profiles/${profileId}/offers`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-WP-Nonce': nonce
+          },
+          credentials: 'same-origin',
+          body: JSON.stringify({ offer_ids: allOfferIds })
+        });
+
+        if (!linkResponse.ok) {
+          const errorData = await linkResponse.json().catch(() => ({}));
+          throw new Error(errorData.message || `HTTP ${linkResponse.status}`);
+        }
+
+        console.log(`[AISaveBridge] Linked ${newOfferIds.length} offers to profile #${profileId}`);
+
+      } catch (err) {
+        console.error('[AISaveBridge] Failed to link offers to profile:', err);
+        errors.push(`Failed to link offers to profile: ${err.message}`);
+      }
+    }
+
+    const success = createdOffers.length > 0 && errors.length === 0;
+
+    this._lastSaveResult = {
+      success,
+      profileId,
+      type: 'offers',
+      created: createdOffers,
+      errors,
+      timestamp: Date.now()
+    };
+
+    // Dispatch success event
+    if (success) {
+      document.dispatchEvent(new CustomEvent('gmkb:ai-offers-saved', {
+        detail: { profileId, offers: createdOffers }
+      }));
+    }
+
+    return {
+      success,
+      created: createdOffers,
+      linked: createdOffers.map(o => o.id),
+      errors
+    };
   }
 
   /**
@@ -151,9 +305,10 @@ class AISaveBridge {
    * @param {number} profileId - The profile/post ID to save to
    * @param {string} type - The AI tool type (topics, biography, questions, etc.)
    * @param {*} data - The AI-generated data to save
+   * @param {Object} options - Additional options passed to specialized save methods
    * @returns {Promise<{success: boolean, saved: Object, errors: Array}>}
    */
-  async saveToProfile(profileId, type, data) {
+  async saveToProfile(profileId, type, data, options = {}) {
     if (!profileId) {
       throw new Error('Profile ID is required');
     }
@@ -161,6 +316,16 @@ class AISaveBridge {
     const mapping = FIELD_MAPPINGS[type];
     if (!mapping) {
       throw new Error(`Unknown AI tool type: ${type}. Available types: ${Object.keys(FIELD_MAPPINGS).join(', ')}`);
+    }
+
+    // Handle offers specially - use native Offers API
+    if (type === 'offers' && mapping.requiresNativeApi) {
+      const result = await this.saveOffersToProfile(profileId, data, options);
+      return {
+        success: result.success,
+        saved: { offers: result.created },
+        errors: result.errors
+      };
     }
 
     // Map AI output to profile fields
