@@ -37,27 +37,41 @@
                     section-id="offers"
                     :is-editing="editingSection === 'offers'"
                     :is-saving="isSaving"
-                    @edit="startEditing"
-                    @save="saveSection"
-                    @cancel="cancelSectionEditing"
+                    @edit="startEditingOffers"
+                    @save="saveOffersSection"
+                    @cancel="cancelOffersEditing"
                 >
                     <template #display>
-                        <ul class="offers-list">
-                            <li v-for="offer in store.offers" :key="offer.id" class="offer-item">
+                        <!-- Loading state -->
+                        <div v-if="isLoadingLinkedOffers" class="loading-state">
+                            <div class="spinner"></div>
+                            Loading offers...
+                        </div>
+
+                        <!-- Linked offers from managed system -->
+                        <ul v-else-if="linkedOffers.length > 0" class="offers-list">
+                            <li v-for="offer in linkedOffers" :key="offer.id" class="offer-item managed-offer">
                                 <span class="offer-icon">🎯</span>
                                 <span class="offer-text">
-                                    {{ offer.text || 'Add your offer here' }}
-                                    <a
-                                        v-if="offer.link"
-                                        :href="offer.link"
-                                        target="_blank"
-                                        class="offer-link"
-                                    >
-                                        🔗
-                                    </a>
+                                    <span class="offer-title">{{ offer.title }}</span>
+                                    <span v-if="offer.type" class="offer-type-badge">{{ offer.type }}</span>
+                                    <span v-if="offer.retail_value" class="offer-value">${{ offer.retail_value }}</span>
                                 </span>
+                                <a
+                                    v-if="offer.cta_url"
+                                    :href="offer.cta_url"
+                                    target="_blank"
+                                    class="offer-link"
+                                >
+                                    🔗
+                                </a>
                             </li>
                         </ul>
+
+                        <!-- Empty state when no offers linked -->
+                        <div v-else class="empty-offers">
+                            <p class="empty-text">No offers linked yet. Click edit to add offers.</p>
+                        </div>
 
                         <div class="cta-container">
                             <h3 class="cta-title">Ready to convert listeners?</h3>
@@ -69,47 +83,55 @@
                     </template>
 
                     <template #edit>
-                        <div class="offer-edit-group">
-                            <h4>Offer 1</h4>
-                            <div class="form-group">
-                                <label class="form-label">Offer Text</label>
-                                <input
-                                    type="text"
-                                    class="form-input"
-                                    v-model="editFields.offer_1"
-                                    placeholder="Free consultation, discount code, etc."
-                                />
+                        <!-- Offer Selector -->
+                        <div class="offer-selector">
+                            <div v-if="isLoadingOffers" class="loading-state">
+                                <div class="spinner"></div>
+                                Loading available offers...
                             </div>
-                            <div class="form-group">
-                                <label class="form-label">Offer Link</label>
-                                <input
-                                    type="url"
-                                    class="form-input"
-                                    v-model="editFields.offer_1_link"
-                                    placeholder="https://..."
-                                />
-                            </div>
-                        </div>
 
-                        <div class="offer-edit-group">
-                            <h4>Offer 2</h4>
-                            <div class="form-group">
-                                <label class="form-label">Offer Text</label>
-                                <input
-                                    type="text"
-                                    class="form-input"
-                                    v-model="editFields.offer_2"
-                                    placeholder="Free consultation, discount code, etc."
-                                />
+                            <div v-else-if="availableOffers.length === 0" class="empty-state">
+                                <p>No offers found. Create offers first using the AI offer generator.</p>
+                                <a :href="offerGeneratorUrl" target="_blank" class="create-link">
+                                    Create Offers with AI
+                                </a>
                             </div>
-                            <div class="form-group">
-                                <label class="form-label">Offer Link</label>
-                                <input
-                                    type="url"
-                                    class="form-input"
-                                    v-model="editFields.offer_2_link"
-                                    placeholder="https://..."
-                                />
+
+                            <div v-else>
+                                <div class="search-box">
+                                    <input
+                                        v-model="searchTerm"
+                                        type="text"
+                                        placeholder="Search offers..."
+                                        class="search-input"
+                                    />
+                                </div>
+
+                                <div class="offers-checklist">
+                                    <label
+                                        v-for="offer in filteredOffers"
+                                        :key="offer.id"
+                                        class="offer-checkbox"
+                                        :class="{ 'is-selected': isOfferSelected(offer.id) }"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            :checked="isOfferSelected(offer.id)"
+                                            @change="toggleOffer(offer.id)"
+                                        />
+                                        <span class="offer-info">
+                                            <span class="offer-name">{{ offer.title }}</span>
+                                            <span class="offer-meta">
+                                                <span v-if="offer.type" class="offer-type">{{ offer.type }}</span>
+                                                <span v-if="offer.retail_value">${{ offer.retail_value }}</span>
+                                            </span>
+                                        </span>
+                                    </label>
+                                </div>
+
+                                <p class="selection-count">
+                                    {{ selectedOfferIds.length }} offer{{ selectedOfferIds.length !== 1 ? 's' : '' }} selected
+                                </p>
                             </div>
                         </div>
                     </template>
@@ -163,12 +185,20 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { useProfileStore } from '../../stores/profile.js';
+import { useOffers } from '../../../composables/useOffers.js';
 import EditablePanel from '../layout/EditablePanel.vue';
 import TopicAccordion from './TopicAccordion.vue';
 
 const store = useProfileStore();
+const {
+    offers: availableOffers,
+    isLoading: isLoadingOffers,
+    fetchOffers,
+    getProfileOffers,
+    updateProfileOffers
+} = useOffers();
 
 // URL constants
 const OFFER_GENERATOR_BASE_URL = '/app/offer-generator/';
@@ -189,11 +219,80 @@ const isSaving = ref(false);
 const editFields = reactive({});
 const topicEditFields = reactive({});
 
+// Managed offers state
+const linkedOffers = ref([]);
+const selectedOfferIds = ref([]);
+const searchTerm = ref('');
+const isLoadingLinkedOffers = ref(false);
+
 // Section field mappings
 const sectionFields = {
     offers: ['offer_1', 'offer_1_link', 'offer_2', 'offer_2_link'],
     brands: ['my_brands', 'other_brands'],
 };
+
+// Filtered available offers based on search
+const filteredOffers = computed(() => {
+    if (!searchTerm.value) return availableOffers.value;
+    const term = searchTerm.value.toLowerCase();
+    return availableOffers.value.filter(o =>
+        o.title?.toLowerCase().includes(term) ||
+        (o.type && o.type.toLowerCase().includes(term))
+    );
+});
+
+// Check if an offer is selected
+const isOfferSelected = (id) => selectedOfferIds.value.includes(id);
+
+// Toggle offer selection
+const toggleOffer = (id) => {
+    const idx = selectedOfferIds.value.indexOf(id);
+    if (idx === -1) {
+        selectedOfferIds.value = [...selectedOfferIds.value, id];
+    } else {
+        selectedOfferIds.value = selectedOfferIds.value.filter(i => i !== id);
+    }
+};
+
+// Load linked offers for the profile
+const loadLinkedOffers = async () => {
+    if (!store.postId) return;
+
+    isLoadingLinkedOffers.value = true;
+    try {
+        const offers = await getProfileOffers(store.postId);
+        linkedOffers.value = offers || [];
+        selectedOfferIds.value = linkedOffers.value.map(o => o.id);
+    } catch (error) {
+        console.error('Failed to load linked offers:', error);
+        linkedOffers.value = [];
+    } finally {
+        isLoadingLinkedOffers.value = false;
+    }
+};
+
+// Save linked offers
+const saveLinkedOffers = async () => {
+    if (!store.postId) return false;
+
+    try {
+        await updateProfileOffers(store.postId, selectedOfferIds.value);
+        // Refresh linked offers
+        await loadLinkedOffers();
+        return true;
+    } catch (error) {
+        console.error('Failed to save linked offers:', error);
+        return false;
+    }
+};
+
+// Initialize on mount
+onMounted(async () => {
+    // Fetch available offers
+    await fetchOffers({ status: 'publish', perPage: 100 });
+    // Load linked offers for this profile
+    await loadLinkedOffers();
+});
 
 // Topic methods
 const startEditingTopic = (topicId) => {
@@ -287,6 +386,36 @@ const saveSection = async (sectionId) => {
         isSaving.value = false;
     }
 };
+
+// Offers section methods
+const startEditingOffers = () => {
+    editingSection.value = 'offers';
+    // Initialize selection from linked offers
+    selectedOfferIds.value = linkedOffers.value.map(o => o.id);
+    searchTerm.value = '';
+};
+
+const cancelOffersEditing = () => {
+    editingSection.value = null;
+    // Reset selection to match current linked offers
+    selectedOfferIds.value = linkedOffers.value.map(o => o.id);
+    searchTerm.value = '';
+};
+
+const saveOffersSection = async () => {
+    isSaving.value = true;
+
+    try {
+        const success = await saveLinkedOffers();
+
+        if (success) {
+            editingSection.value = null;
+            searchTerm.value = '';
+        }
+    } finally {
+        isSaving.value = false;
+    }
+};
 </script>
 
 <style scoped>
@@ -365,11 +494,188 @@ const saveSection = async (sectionId) => {
     flex: 1;
     font-size: 14px;
     color: #334155;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.offer-title {
+    font-weight: 500;
+}
+
+.offer-type-badge {
+    font-size: 11px;
+    text-transform: capitalize;
+    background-color: #e0f2fe;
+    color: #0369a1;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.offer-value {
+    font-size: 12px;
+    color: #059669;
+    font-weight: 500;
 }
 
 .offer-link {
     margin-left: 8px;
     text-decoration: none;
+}
+
+/* Empty state */
+.empty-offers {
+    padding: 16px;
+    text-align: center;
+    background: #f9fafb;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.empty-text {
+    margin: 0;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+/* Loading state */
+.loading-state {
+    padding: 24px;
+    text-align: center;
+    color: #6b7280;
+}
+
+.spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #e5e7eb;
+    border-top-color: #14b8a6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 8px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Empty state for selector */
+.empty-state {
+    padding: 20px;
+    text-align: center;
+    background: #f9fafb;
+    border-radius: 8px;
+}
+
+.empty-state p {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.create-link {
+    display: inline-block;
+    padding: 8px 16px;
+    background: #14b8a6;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.create-link:hover {
+    background: #0d9488;
+}
+
+/* Search box */
+.search-box {
+    margin-bottom: 12px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #14b8a6;
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+}
+
+/* Offers checklist */
+.offers-checklist {
+    max-height: 240px;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+}
+
+.offer-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.offer-checkbox:last-child {
+    border-bottom: none;
+}
+
+.offer-checkbox:hover {
+    background: #f9fafb;
+}
+
+.offer-checkbox.is-selected {
+    background: #ecfdf5;
+}
+
+.offer-checkbox input {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+}
+
+.offer-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.offer-name {
+    display: block;
+    font-weight: 500;
+    color: #111827;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 14px;
+}
+
+.offer-meta {
+    display: flex;
+    gap: 8px;
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+.offer-type {
+    text-transform: capitalize;
+}
+
+.selection-count {
+    margin: 12px 0 0;
+    font-size: 12px;
+    color: #6b7280;
 }
 
 /* CTA Container */
