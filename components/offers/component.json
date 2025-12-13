@@ -8,7 +8,7 @@
   "version": "1.0.0",
   "renderers": {
     "php": "template.php",
-    "vue": "Offers.vue",
+    "vue": "OffersRenderer.vue",
     "editor": "OffersEditor.vue"
   },
   "styles": "styles.css",
