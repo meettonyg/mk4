@@ -527,7 +527,7 @@ class GMKB_Core_Schema {
             'offer_retail_value' => [
                 'type' => 'number',
                 'description' => 'Original retail value',
-                'sanitize_callback' => 'floatval',
+                'sanitize_callback' => function($value) { return floatval($value); },
             ],
             'offer_image_id' => [
                 'type' => 'integer',
@@ -556,7 +556,7 @@ class GMKB_Core_Schema {
             'offer_price_cost' => [
                 'type' => 'number',
                 'description' => 'Cost to recipient (usually 0 for gifts)',
-                'sanitize_callback' => 'floatval',
+                'sanitize_callback' => function($value) { return floatval($value); },
             ],
             'offer_discount_percent' => [
                 'type' => 'integer',
