@@ -125,14 +125,10 @@ export default {
     
     // Methods
     const addComponent = (component) => {
-      // PHASE 2: Get default props from Registry standard API
-      const defaultProps = UnifiedComponentRegistry.getDefaultProps(component.type);
-
-      // Add to store
+      // The mediaKit store's addComponent action already handles fetching default props
+      // from UnifiedComponentRegistry, so we just pass the type
       store.addComponent({
-        type: component.type,
-        data: defaultProps,
-        props: defaultProps // Ensure compatibility with new data structure
+        type: component.type
       });
 
       // Track in recent
