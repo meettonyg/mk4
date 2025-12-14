@@ -1,0 +1,156 @@
+{
+  "component_type": "interviews",
+  "name": "Featured Interviews",
+  "description": "Display featured podcast interviews linked to this profile",
+  "version": "1.0.0",
+  "dataBindings": {
+    "interviews": {
+      "source": "api.featured_interviews",
+      "label": "Profile Interviews",
+      "fieldType": "relationship"
+    }
+  },
+  "componentOptions": {
+    "layout": {
+      "type": "select",
+      "label": "Layout Style",
+      "default": "grid",
+      "options": [
+        { "value": "grid", "label": "Grid Layout" },
+        { "value": "list", "label": "List Layout" },
+        { "value": "featured", "label": "Featured (Single)" }
+      ],
+      "description": "Choose how interviews are displayed",
+      "category": "layout"
+    },
+    "columns": {
+      "type": "select",
+      "label": "Number of Columns",
+      "default": "2",
+      "options": [
+        { "value": "1", "label": "1 Column" },
+        { "value": "2", "label": "2 Columns" },
+        { "value": "3", "label": "3 Columns" }
+      ],
+      "description": "For grid layout only",
+      "category": "layout"
+    },
+    "showPodcastName": {
+      "type": "boolean",
+      "label": "Show Podcast Name",
+      "default": true,
+      "checkboxLabel": "Display podcast name",
+      "category": "appearance"
+    },
+    "showHostName": {
+      "type": "boolean",
+      "label": "Show Host Name",
+      "default": true,
+      "checkboxLabel": "Display host name",
+      "category": "appearance"
+    },
+    "showDate": {
+      "type": "boolean",
+      "label": "Show Date",
+      "default": true,
+      "checkboxLabel": "Display publish date",
+      "category": "appearance"
+    },
+    "showDuration": {
+      "type": "boolean",
+      "label": "Show Duration",
+      "default": true,
+      "checkboxLabel": "Display episode duration",
+      "category": "appearance"
+    },
+    "showTopics": {
+      "type": "boolean",
+      "label": "Show Topics",
+      "default": true,
+      "checkboxLabel": "Display topics discussed",
+      "category": "appearance"
+    },
+    "showListenButton": {
+      "type": "boolean",
+      "label": "Show Listen Button",
+      "default": true,
+      "checkboxLabel": "Display listen/watch button",
+      "category": "appearance"
+    },
+    "cardStyle": {
+      "type": "select",
+      "label": "Card Style",
+      "default": "elevated",
+      "options": [
+        { "value": "bordered", "label": "Bordered" },
+        { "value": "elevated", "label": "Elevated (Shadow)" },
+        { "value": "flat", "label": "Flat" },
+        { "value": "gradient", "label": "Gradient Background" }
+      ],
+      "category": "appearance"
+    },
+    "primaryColor": {
+      "type": "color",
+      "label": "Primary Color",
+      "default": "#8b5cf6",
+      "description": "Color for buttons and accents",
+      "category": "colors"
+    },
+    "backgroundColor": {
+      "type": "color",
+      "label": "Card Background",
+      "default": "#ffffff",
+      "category": "colors"
+    },
+    "maxInterviews": {
+      "type": "number",
+      "label": "Maximum Interviews",
+      "default": 6,
+      "min": 1,
+      "max": 20,
+      "description": "Limit number of interviews displayed",
+      "category": "content"
+    },
+    "customTitle": {
+      "type": "text",
+      "label": "Section Title",
+      "default": "Featured Interviews",
+      "placeholder": "Enter custom title",
+      "category": "content"
+    },
+    "titleAlignment": {
+      "type": "radio",
+      "label": "Title Alignment",
+      "default": "center",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ],
+      "category": "layout"
+    },
+    "selectedInterviewIds": {
+      "type": "hidden",
+      "label": "Selected Interviews",
+      "default": [],
+      "description": "Specific interview IDs to display (overrides profile association)"
+    }
+  },
+  "defaultOptions": {
+    "layout": "grid",
+    "columns": "2",
+    "showPodcastName": true,
+    "showHostName": true,
+    "showDate": true,
+    "showDuration": true,
+    "showTopics": true,
+    "showListenButton": true,
+    "cardStyle": "elevated",
+    "primaryColor": "#8b5cf6",
+    "backgroundColor": "#ffffff",
+    "maxInterviews": 6,
+    "customTitle": "Featured Interviews",
+    "titleAlignment": "center",
+    "selectedInterviewIds": []
+  }
+}
