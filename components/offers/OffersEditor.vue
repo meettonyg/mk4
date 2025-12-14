@@ -9,11 +9,11 @@
         Loading offers...
       </div>
 
-      <div v-else-if="availableOffers.length === 0" class="empty-state">
-        <p>No offers found. Create offers in the Offers Manager first.</p>
-        <a href="/wp-admin/edit.php?post_type=gmkb_offer" target="_blank" class="create-link">
-          Create Offers
-        </a>
+      <div v-else-if="availableOffers.length === 0 && !showAddForm" class="empty-state">
+        <p>No offers found. Create your first offer below.</p>
+        <button type="button" class="create-link" @click="showAddForm = true">
+          + Add Offer
+        </button>
       </div>
 
       <div v-else class="offers-selector">
@@ -51,6 +51,95 @@
         <p class="selection-count">
           {{ selectedOfferIds.length }} offer{{ selectedOfferIds.length !== 1 ? 's' : '' }} selected
         </p>
+
+        <button type="button" class="add-offer-btn" @click="showAddForm = true" v-if="!showAddForm">
+          + Add New Offer
+        </button>
+      </div>
+
+      <!-- Add Offer Form -->
+      <div v-if="showAddForm" class="add-offer-form">
+        <h5 class="form-title">Add New Offer</h5>
+
+        <div class="field-group">
+          <label class="field-label">Offer Title *</label>
+          <input
+            v-model="newOffer.title"
+            type="text"
+            class="field-input"
+            placeholder="e.g., Free Consultation Call"
+          />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Type</label>
+          <select v-model="newOffer.type" class="field-select">
+            <option value="">Select type...</option>
+            <option value="gift">Gift</option>
+            <option value="prize">Prize</option>
+            <option value="deal">Deal</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">URL</label>
+          <input
+            v-model="newOffer.url"
+            type="url"
+            class="field-input"
+            placeholder="https://..."
+          />
+        </div>
+
+        <div class="field-row">
+          <div class="field-group field-half">
+            <label class="field-label">Retail Value ($)</label>
+            <input
+              v-model.number="newOffer.retail_value"
+              type="number"
+              class="field-input"
+              placeholder="0.00"
+              min="0"
+              step="0.01"
+            />
+          </div>
+
+          <div class="field-group field-half">
+            <label class="field-label">CTA Text</label>
+            <input
+              v-model="newOffer.cta_text"
+              type="text"
+              class="field-input"
+              placeholder="Get Offer"
+            />
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Description</label>
+          <textarea
+            v-model="newOffer.description"
+            class="field-textarea"
+            placeholder="Brief description of the offer..."
+            rows="3"
+          ></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-cancel" @click="cancelAddOffer">
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="btn-save"
+            @click="saveNewOffer"
+            :disabled="!newOffer.title || isSavingOffer"
+          >
+            {{ isSavingOffer ? 'Saving...' : 'Save Offer' }}
+          </button>
+        </div>
+
+        <p v-if="saveError" class="error-message">{{ saveError }}</p>
       </div>
     </div>
 
@@ -175,6 +264,18 @@ const store = useMediaKitStore();
 const isLoadingOffers = ref(false);
 const availableOffers = ref([]);
 const searchTerm = ref('');
+const showAddForm = ref(false);
+const isSavingOffer = ref(false);
+const saveError = ref('');
+
+const newOffer = reactive({
+  title: '',
+  type: '',
+  url: '',
+  retail_value: null,
+  cta_text: '',
+  description: '',
+});
 
 const localData = reactive({
   selectedOfferIds: [],
@@ -252,6 +353,72 @@ const fetchOffers = async () => {
     console.error('Failed to fetch offers:', error);
   } finally {
     isLoadingOffers.value = false;
+  }
+};
+
+const resetNewOfferForm = () => {
+  newOffer.title = '';
+  newOffer.type = '';
+  newOffer.url = '';
+  newOffer.retail_value = null;
+  newOffer.cta_text = '';
+  newOffer.description = '';
+  saveError.value = '';
+};
+
+const cancelAddOffer = () => {
+  showAddForm.value = false;
+  resetNewOfferForm();
+};
+
+const saveNewOffer = async () => {
+  if (!newOffer.title) return;
+
+  isSavingOffer.value = true;
+  saveError.value = '';
+
+  try {
+    const apiUrl = window.gmkbData?.apiUrl || '/wp-json/';
+    const response = await fetch(`${apiUrl}gmkb/v2/offers`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-WP-Nonce': window.gmkbData?.nonce || ''
+      },
+      body: JSON.stringify({
+        title: newOffer.title,
+        type: newOffer.type || undefined,
+        url: newOffer.url || undefined,
+        retail_value: newOffer.retail_value || undefined,
+        cta_text: newOffer.cta_text || undefined,
+        description: newOffer.description || undefined,
+        status: 'publish',
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && data.offer) {
+        // Add the new offer to the list and select it
+        availableOffers.value.unshift(data.offer);
+        selectedOfferIds.value = [...selectedOfferIds.value, data.offer.id];
+        updateData();
+
+        // Reset form and hide
+        showAddForm.value = false;
+        resetNewOfferForm();
+      } else {
+        saveError.value = data.message || 'Failed to create offer';
+      }
+    } else {
+      const errorData = await response.json().catch(() => ({}));
+      saveError.value = errorData.message || 'Failed to create offer';
+    }
+  } catch (error) {
+    console.error('Failed to save offer:', error);
+    saveError.value = 'Network error. Please try again.';
+  } finally {
+    isSavingOffer.value = false;
   }
 };
 
@@ -454,5 +621,118 @@ watch(() => props.data, (newData) => {
 .checkbox-field input {
   width: 16px;
   height: 16px;
+}
+
+/* Add Offer Button */
+.add-offer-btn {
+  display: block;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.625rem 1rem;
+  background: transparent;
+  color: #3b82f6;
+  border: 1px dashed #3b82f6;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.add-offer-btn:hover {
+  background: #eff6ff;
+}
+
+/* Add Offer Form */
+.add-offer-form {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.form-title {
+  margin: 0 0 1rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.field-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.field-half {
+  flex: 1;
+}
+
+.field-textarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 70px;
+}
+
+.field-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.btn-cancel,
+.btn-save {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-cancel {
+  background: #fff;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+
+.btn-cancel:hover {
+  background: #f3f4f6;
+}
+
+.btn-save {
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+}
+
+.btn-save:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.btn-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error-message {
+  margin: 0.75rem 0 0;
+  padding: 0.5rem 0.75rem;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 0.8rem;
+  border-radius: 4px;
 }
 </style>
