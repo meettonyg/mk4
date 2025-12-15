@@ -234,6 +234,7 @@ class GMKB_Interviews_API {
                     e.url AS episode_url,
                     e.published_date AS episode_date,
                     e.thumbnail_url,
+                    e.audio_url,
                     p.title AS podcast_name,
                     p.artwork_url AS podcast_image
                  FROM {$credits_table} sc
@@ -285,6 +286,7 @@ class GMKB_Interviews_API {
                     e.url AS episode_url,
                     e.published_date AS episode_date,
                     e.thumbnail_url,
+                    e.audio_url,
                     p.title AS podcast_name,
                     p.artwork_url AS podcast_image
                  FROM {$credits_table} sc
@@ -353,6 +355,7 @@ class GMKB_Interviews_API {
                     e.url AS episode_url,
                     e.published_date AS episode_date,
                     e.thumbnail_url,
+                    e.audio_url,
                     p.title AS podcast_name,
                     p.artwork_url AS podcast_image
                  FROM {$credits_table} sc
@@ -467,7 +470,8 @@ class GMKB_Interviews_API {
     public static function format_interview($row) {
         $podcast_name = $row->podcast_name ?? '';
         $episode_title = $row->episode_title ?? '';
-        $podcast_image = $row->podcast_image ?? $row->thumbnail_url ?? null;
+        // Prioritize episode thumbnail, fall back to podcast artwork
+        $image = $row->thumbnail_url ?? $row->podcast_image ?? null;
 
         return [
             'id'            => (int) $row->id,
@@ -478,10 +482,11 @@ class GMKB_Interviews_API {
             'label'         => ($podcast_name ? $podcast_name . ' - ' : '') . $episode_title,
             'link'          => $row->episode_url ?? '',
             'episode_url'   => $row->episode_url ?? '',
+            'audio_url'     => $row->audio_url ?? '',
             'date'          => $row->episode_date ?? '',
             'publish_date'  => $row->episode_date ?? '',
-            'image'         => $podcast_image,
-            'image_url'     => $podcast_image,
+            'image'         => $image,
+            'image_url'     => $image,
             'is_featured'   => !empty($row->is_featured),
             'status'        => 'publish',
         ];
