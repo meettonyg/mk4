@@ -799,6 +799,7 @@ class GMKB_Core_Schema {
                     e.url AS episode_url,
                     e.published_date AS episode_date,
                     e.thumbnail_url,
+                    e.audio_url,
                     p.title AS podcast_name,
                     p.artwork_url AS podcast_image
                  FROM {$credits_table} sc
