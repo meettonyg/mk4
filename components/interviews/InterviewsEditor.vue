@@ -201,6 +201,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
+import { apiRequest } from '../../src/utils/api.js';
 
 const props = defineProps({
   componentId: { type: String, required: true },
@@ -282,15 +283,8 @@ const updateData = () => {
 const fetchInterviews = async () => {
   isLoadingInterviews.value = true;
   try {
-    const apiUrl = window.gmkbData?.apiUrl || '/wp-json/';
-    const response = await fetch(`${apiUrl}gmkb/v2/interviews?per_page=100`, {
-      headers: { 'X-WP-Nonce': window.gmkbData?.nonce || '' }
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      availableInterviews.value = Array.isArray(data) ? data : (data.interviews || []);
-    }
+    const result = await apiRequest('interviews?per_page=100');
+    availableInterviews.value = result.interviews || [];
   } catch (error) {
     console.error('Failed to fetch interviews:', error);
   } finally {
