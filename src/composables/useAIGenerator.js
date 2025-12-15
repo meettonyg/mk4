@@ -23,6 +23,10 @@ function getRestUrl() {
   if (window.gmkbData?.restUrl) {
     return window.gmkbData.restUrl;
   }
+  // Check for profile editor context
+  if (window.gmkbProfileData?.apiUrl) {
+    return window.gmkbProfileData.apiUrl;
+  }
   // Check for standalone/public context
   if (window.gmkbPublicData?.restUrl) {
     return window.gmkbPublicData.restUrl;
@@ -38,7 +42,7 @@ function getRestUrl() {
  */
 function getNonce(context) {
   if (context === 'builder') {
-    return window.gmkbData?.restNonce || window.gmkbData?.nonce || '';
+    return window.gmkbData?.restNonce || window.gmkbData?.nonce || window.gmkbProfileData?.nonce || '';
   }
   // Public context
   return window.gmkbPublicNonce || window.gmkbPublicData?.publicNonce || '';
@@ -84,6 +88,10 @@ export function useAIGenerator(type) {
   const getContext = () => {
     // Check if we're in the builder (has gmkbData with postId)
     if (window.gmkbData?.postId || window.gmkbData?.post_id) {
+      return 'builder';
+    }
+    // Check if we're in the profile editor
+    if (window.gmkbProfileData?.postId) {
       return 'builder';
     }
     return 'public';

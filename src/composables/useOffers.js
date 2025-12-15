@@ -21,12 +21,14 @@ import { ref, computed, reactive } from 'vue';
 
 // API helper
 const getApiUrl = () => {
-  const restUrl = window.gmkbData?.restUrl || '/wp-json/';
+  // Check gmkbData (media kit builder), gmkbProfileData (profile editor), or fallback
+  const restUrl = window.gmkbData?.restUrl || window.gmkbProfileData?.apiUrl || '/wp-json/';
   return restUrl.endsWith('/') ? restUrl : restUrl + '/';
 };
 
 const getNonce = () => {
-  return window.gmkbData?.restNonce || window.wpApiSettings?.nonce || '';
+  // Check gmkbData (media kit builder), gmkbProfileData (profile editor), or wpApiSettings fallback
+  return window.gmkbData?.restNonce || window.gmkbProfileData?.nonce || window.wpApiSettings?.nonce || '';
 };
 
 const apiRequest = async (endpoint, options = {}) => {
