@@ -1,0 +1,22 @@
+{
+  "type": "interviews",
+  "name": "Featured Interviews",
+  "description": "Display featured podcast interviews and appearances",
+  "icon": "fa-solid fa-microphone",
+  "category": "content",
+  "accordionGroup": "premium",
+  "version": "1.0.0",
+  "renderers": {
+    "php": "template.php",
+    "vue": "InterviewsRenderer.vue",
+    "editor": "InterviewsEditor.vue"
+  },
+  "styles": "styles.css",
+  "schema": "schema.json",
+  "supports": {
+    "serverRender": true,
+    "vueRender": true,
+    "inlineEdit": false,
+    "designPanel": true
+  }
+}

@@ -172,6 +172,11 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-offers-api.php
     require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-offers-api.php';
 }
 
+// Interviews API - CRUD for relational Interviews system
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-interviews-api.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-interviews-api.php';
+}
+
 // Offers Migration - Migrate Formidable offers to native CPT
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/migrations/class-gmkb-offers-migration.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/migrations/class-gmkb-offers-migration.php';

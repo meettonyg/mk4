@@ -115,6 +115,39 @@ class GMKB_Core_Schema {
                 'custom-fields',
             ],
         ]);
+
+        // Interviews CPT - Podcast appearances for Media Kits
+        register_post_type('gmkb_interview', [
+            'labels' => [
+                'name' => __('Interviews', 'gmkb'),
+                'singular_name' => __('Interview', 'gmkb'),
+                'add_new' => __('Add New Interview', 'gmkb'),
+                'add_new_item' => __('Add New Interview', 'gmkb'),
+                'edit_item' => __('Edit Interview', 'gmkb'),
+                'view_item' => __('View Interview', 'gmkb'),
+                'search_items' => __('Search Interviews', 'gmkb'),
+                'not_found' => __('No interviews found', 'gmkb'),
+                'not_found_in_trash' => __('No interviews found in trash', 'gmkb'),
+            ],
+            'public' => false,
+            'publicly_queryable' => false,
+            'show_ui' => true,
+            'show_in_menu' => 'edit.php?post_type=guests',
+            'show_in_rest' => true,
+            'rest_base' => 'interviews',
+            'rest_controller_class' => 'WP_REST_Posts_Controller',
+            'capability_type' => 'post',
+            'map_meta_cap' => true,
+            'menu_icon' => 'dashicons-microphone',
+            'supports' => [
+                'title',
+                'editor',
+                'author',
+                'thumbnail',
+                'revisions',
+                'custom-fields',
+            ],
+        ]);
     }
 
     /**
@@ -643,6 +676,22 @@ class GMKB_Core_Schema {
             'sanitize_callback' => [$this, 'sanitize_id_array'],
             'default' => [],
         ]);
+
+        // Featured interviews on guests/media kits
+        register_post_meta('guests', 'featured_interviews', [
+            'show_in_rest' => [
+                'schema' => [
+                    'type' => 'array',
+                    'items' => ['type' => 'integer'],
+                ],
+                'prepare_callback' => [$this, 'prepare_interviews_field'],
+            ],
+            'single' => true,
+            'type' => 'array',
+            'description' => 'Array of featured interview IDs',
+            'sanitize_callback' => [$this, 'sanitize_id_array'],
+            'default' => [],
+        ]);
     }
 
     /**
@@ -702,6 +751,57 @@ class GMKB_Core_Schema {
     private function get_offer_type($offer_id) {
         $terms = wp_get_object_terms($offer_id, 'offer_type', ['fields' => 'slugs']);
         return !empty($terms) && !is_wp_error($terms) ? $terms[0] : null;
+    }
+
+    /**
+     * Prepare featured interviews field for REST API response
+     * Expands interview IDs to full interview objects
+     */
+    public function prepare_interviews_field($value, $request, $args) {
+        if (empty($value)) {
+            return [];
+        }
+
+        $value = maybe_unserialize($value);
+        if (!is_array($value)) {
+            return [];
+        }
+
+        $interviews = [];
+        foreach ($value as $interview_id) {
+            $interview_id = absint($interview_id);
+            if (!$interview_id) {
+                continue;
+            }
+
+            $interview = get_post($interview_id);
+            if (!$interview || $interview->post_type !== 'gmkb_interview') {
+                continue;
+            }
+
+            // Build interview object with list-view fields
+            $interview_data = [
+                'id' => $interview_id,
+                'title' => $interview->post_title,
+                'status' => $interview->post_status,
+                'podcast_name' => get_post_meta($interview_id, 'interview_podcast_name', true),
+                'episode_url' => get_post_meta($interview_id, 'interview_episode_url', true),
+                'publish_date' => get_post_meta($interview_id, 'interview_publish_date', true),
+                'description' => $interview->post_content,
+            ];
+
+            // Add image if set
+            $image_id = get_post_meta($interview_id, 'interview_image_id', true);
+            if ($image_id) {
+                $interview_data['image'] = $this->prepare_media_field($image_id, null, null);
+            } elseif (has_post_thumbnail($interview_id)) {
+                $interview_data['image'] = $this->prepare_media_field(get_post_thumbnail_id($interview_id), null, null);
+            }
+
+            $interviews[] = $interview_data;
+        }
+
+        return $interviews;
     }
 }
 
