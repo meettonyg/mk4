@@ -211,6 +211,10 @@ const props = defineProps({
 const emit = defineEmits(['update']);
 const store = useMediaKitStore();
 
+// Check if editing a profile (guests post type) - interviews should sync with profile
+const isProfilePost = computed(() => window.gmkbData?.postType === 'guests');
+const profileId = computed(() => isProfilePost.value ? window.gmkbData?.postId : null);
+
 // Local state
 const isLoadingInterviews = ref(false);
 const availableInterviews = ref([]);
@@ -278,6 +282,40 @@ const updateData = () => {
   if (store.components[props.componentId]) {
     store.updateComponent(props.componentId, { data: updatedData });
   }
+
+  // Sync with profile's featured interviews if editing a profile
+  if (profileId.value) {
+    syncToProfile();
+  }
+};
+
+// Load profile's featured interviews (for syncing with profile page)
+const loadProfileInterviews = async () => {
+  if (!profileId.value) return;
+
+  try {
+    const result = await apiRequest(`profiles/${profileId.value}/interviews`);
+    const profileInterviewIds = (result.interviews || []).map(i => i.id);
+    if (profileInterviewIds.length > 0) {
+      selectedInterviewIds.value = profileInterviewIds;
+    }
+  } catch (error) {
+    console.error('Failed to load profile interviews:', error);
+  }
+};
+
+// Sync selected interviews to profile's featured interviews
+const syncToProfile = async () => {
+  if (!profileId.value) return;
+
+  try {
+    await apiRequest(`profiles/${profileId.value}/interviews`, {
+      method: 'PUT',
+      body: { interview_ids: selectedInterviewIds.value }
+    });
+  } catch (error) {
+    console.error('Failed to sync interviews to profile:', error);
+  }
 };
 
 const fetchInterviews = async () => {
@@ -293,8 +331,14 @@ const fetchInterviews = async () => {
 };
 
 // Initialize
-onMounted(() => {
-  fetchInterviews();
+onMounted(async () => {
+  await fetchInterviews();
+
+  // If editing a profile, load profile's featured interviews for sync
+  // Only load if no interviews are already selected in component data
+  if (profileId.value && selectedInterviewIds.value.length === 0) {
+    await loadProfileInterviews();
+  }
 });
 
 // Sync props changes
