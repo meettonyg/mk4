@@ -44,6 +44,9 @@ class Interviews_Data_Integration {
     /**
      * Load interviews data for a profile
      *
+     * Queries PIT tables (pit_speaking_credits, pit_engagements, pit_podcasts)
+     * using speaking_credit IDs stored in featured_interviews meta.
+     *
      * @param int $post_id Profile post ID
      * @return array Interviews data with metadata
      */
@@ -51,7 +54,7 @@ class Interviews_Data_Integration {
         $result = array(
             'interviews' => array(),
             'count' => 0,
-            'source' => 'native_meta',
+            'source' => 'pit_tables',
             'component_type' => self::$component_type,
             'success' => false,
             'message' => '',
@@ -63,7 +66,7 @@ class Interviews_Data_Integration {
             return $result;
         }
 
-        // Load featured interview IDs from profile meta
+        // Load featured interview IDs (speaking_credit IDs) from profile meta
         $interview_ids = get_post_meta($post_id, self::RELATIONSHIP_META_KEY, true);
 
         if (empty($interview_ids) || !is_array($interview_ids)) {
@@ -72,27 +75,53 @@ class Interviews_Data_Integration {
             return $result;
         }
 
-        // Load each interview's data
-        foreach ($interview_ids as $interview_id) {
-            $interview_id = absint($interview_id);
-            if (!$interview_id) continue;
+        global $wpdb;
+        $credits_table = $wpdb->prefix . 'pit_speaking_credits';
+        $engagements_table = $wpdb->prefix . 'pit_engagements';
+        $podcasts_table = $wpdb->prefix . 'pit_podcasts';
 
-            $interview_post = get_post($interview_id);
+        // Check if PIT tables exist
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$credits_table'") === $credits_table;
+        if (!$table_exists) {
+            $result['message'] = 'PIT tables not found';
+            self::debug_log($result['message']);
+            return $result;
+        }
 
-            // Skip if interview doesn't exist or is wrong post type
-            if (!$interview_post || $interview_post->post_type !== 'gmkb_interview') {
-                self::debug_log("Skipping invalid interview ID: {$interview_id}");
-                continue;
+        $sanitized_ids = array_filter(array_map('absint', $interview_ids));
+
+        if (empty($sanitized_ids)) {
+            $result['message'] = "No valid interview IDs for profile {$post_id}";
+            self::debug_log($result['message']);
+            return $result;
+        }
+
+        // Query PIT tables for interview data
+        $id_placeholders = implode(',', array_fill(0, count($sanitized_ids), '%d'));
+        $query = $wpdb->prepare(
+            "SELECT
+                sc.id,
+                sc.is_featured,
+                e.title AS episode_title,
+                e.url AS episode_url,
+                e.published_date AS episode_date,
+                e.thumbnail_url,
+                p.title AS podcast_name,
+                p.artwork_url AS podcast_image
+             FROM {$credits_table} sc
+             JOIN {$engagements_table} e ON sc.engagement_id = e.id
+             LEFT JOIN {$podcasts_table} p ON e.podcast_id = p.id
+             WHERE sc.id IN ($id_placeholders)",
+            $sanitized_ids
+        );
+        $results_by_id = $wpdb->get_results($query, OBJECT_K);
+
+        // Reorder results to match original interview_ids order
+        foreach ($sanitized_ids as $id) {
+            if (isset($results_by_id[$id])) {
+                $result['interviews'][] = self::format_pit_interview($results_by_id[$id]);
+                $result['count']++;
             }
-
-            // Skip non-published interviews (unless in preview/edit context)
-            if (!in_array($interview_post->post_status, array('publish', 'draft', 'private'))) {
-                continue;
-            }
-
-            $interview_data = self::format_interview($interview_post);
-            $result['interviews'][] = $interview_data;
-            $result['count']++;
         }
 
         $result['success'] = $result['count'] > 0;
@@ -106,27 +135,32 @@ class Interviews_Data_Integration {
     }
 
     /**
-     * Format single interview for component display
+     * Format interview data from PIT tables for component display
      *
-     * @param WP_Post $post Interview post object
+     * @param object $row Database row from PIT tables query
      * @return array Formatted interview data
      */
-    private static function format_interview($post) {
-        $topics = get_post_meta($post->ID, 'topics', true);
-        if (is_string($topics)) {
-            $topics = array_filter(array_map('trim', explode(',', $topics)));
-        }
+    private static function format_pit_interview($row) {
+        $podcast_name = $row->podcast_name ?? '';
+        $episode_title = $row->episode_title ?? '';
+        $podcast_image = $row->podcast_image ?? $row->thumbnail_url ?? null;
 
         return array(
-            'id' => $post->ID,
-            'title' => $post->post_title,
-            'status' => $post->post_status,
-            'podcast_name' => get_post_meta($post->ID, 'podcast_name', true),
-            'episode_url' => get_post_meta($post->ID, 'episode_url', true),
-            'publish_date' => get_post_meta($post->ID, 'publish_date', true),
-            'host_name' => get_post_meta($post->ID, 'host_name', true),
-            'duration' => get_post_meta($post->ID, 'duration', true),
-            'topics' => $topics ?: array(),
+            'id'            => (int) $row->id,
+            'title'         => $podcast_name ?: $episode_title,
+            'subtitle'      => $episode_title,
+            'podcast_name'  => $podcast_name ?: 'Podcast',
+            'episode_title' => $episode_title,
+            'episode_url'   => $row->episode_url ?? '',
+            'publish_date'  => $row->episode_date ?? '',
+            'image'         => $podcast_image,
+            'image_url'     => $podcast_image,
+            'is_featured'   => !empty($row->is_featured),
+            'status'        => 'publish',
+            // For backwards compatibility with templates expecting these fields
+            'host_name'     => '',
+            'duration'      => '',
+            'topics'        => array(),
         );
     }
 
@@ -150,8 +184,10 @@ class Interviews_Data_Integration {
     /**
      * Save profile-interview associations
      *
+     * Validates speaking_credit IDs against PIT tables before saving.
+     *
      * @param int $post_id Profile post ID
-     * @param array $data Data array containing interview IDs
+     * @param array $data Data array containing interview IDs (speaking_credit IDs)
      * @return array Save result
      */
     public static function save_component_data($post_id, $data) {
@@ -175,15 +211,20 @@ class Interviews_Data_Integration {
             $interview_ids = array();
         }
 
-        // Validate and sanitize interview IDs
+        // Sanitize IDs
+        $sanitized_ids = array_filter(array_map('absint', $interview_ids));
+
+        // Validate IDs against PIT speaking_credits table
         $valid_ids = array();
-        foreach ($interview_ids as $interview_id) {
-            $interview_id = absint($interview_id);
-            if ($interview_id) {
-                $post = get_post($interview_id);
-                if ($post && $post->post_type === 'gmkb_interview') {
-                    $valid_ids[] = $interview_id;
-                }
+        if (!empty($sanitized_ids)) {
+            global $wpdb;
+            $credits_table = $wpdb->prefix . 'pit_speaking_credits';
+
+            $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$credits_table'") === $credits_table;
+            if ($table_exists) {
+                $id_placeholders = implode(',', array_fill(0, count($sanitized_ids), '%d'));
+                $query = $wpdb->prepare("SELECT id FROM {$credits_table} WHERE id IN ({$id_placeholders})", $sanitized_ids);
+                $valid_ids = array_map('intval', $wpdb->get_col($query));
             }
         }
 
@@ -218,7 +259,7 @@ class Interviews_Data_Integration {
      * Link a single interview to a profile
      *
      * @param int $profile_id Profile post ID
-     * @param int $interview_id Interview post ID
+     * @param int $interview_id Speaking credit ID from PIT tables
      * @return bool Success
      */
     public static function link_interview($profile_id, $interview_id) {
@@ -244,7 +285,7 @@ class Interviews_Data_Integration {
      * Unlink a single interview from a profile
      *
      * @param int $profile_id Profile post ID
-     * @param int $interview_id Interview post ID
+     * @param int $interview_id Speaking credit ID from PIT tables
      * @return bool Success
      */
     public static function unlink_interview($profile_id, $interview_id) {
