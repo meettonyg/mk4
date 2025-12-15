@@ -1,56 +1,102 @@
 <template>
   <div class="interviews-editor">
-    <!-- Interview Selection -->
+    <!-- Interview Selection with Dropdown UI -->
     <div class="editor-section">
       <h4 class="editor-section-title">Select Interviews</h4>
 
       <div v-if="isLoadingInterviews" class="loading-state">
         <div class="spinner"></div>
-        Loading interviews...
+        Loading interviews from portfolio...
       </div>
 
       <div v-else-if="availableInterviews.length === 0" class="empty-state">
-        <p>No interviews found. Create interviews in the Interviews Manager first.</p>
-        <a href="/wp-admin/edit.php?post_type=gmkb_interview" target="_blank" class="create-link">
-          Create Interviews
+        <p>No interviews found in your portfolio.</p>
+        <a href="/wp-admin/admin.php?page=showauthority-appearances" target="_blank" class="create-link">
+          Add Interviews to Portfolio
         </a>
       </div>
 
       <div v-else class="interviews-selector">
-        <div class="search-box">
-          <input
-            v-model="searchTerm"
-            type="text"
-            placeholder="Search interviews..."
-            class="search-input"
-          />
-        </div>
-
-        <div class="interviews-checklist">
-          <label
-            v-for="interview in filteredInterviews"
+        <!-- Selected Interviews as Cards -->
+        <div v-if="selectedInterviewCards.length > 0" class="selected-interviews-cards">
+          <div
+            v-for="interview in selectedInterviewCards"
             :key="interview.id"
-            class="interview-checkbox"
-            :class="{ 'is-selected': isSelected(interview.id) }"
+            class="featured-card"
           >
-            <input
-              type="checkbox"
-              :checked="isSelected(interview.id)"
-              @change="toggleInterview(interview.id)"
-            />
-            <span class="interview-info">
-              <span class="interview-name">{{ interview.title }}</span>
-              <span class="interview-meta">
-                <span v-if="interview.podcast_name" class="interview-podcast">{{ interview.podcast_name }}</span>
-                <span v-if="interview.publish_date" class="interview-date">{{ formatDate(interview.publish_date) }}</span>
-              </span>
-            </span>
-          </label>
+            <div class="featured-card-content">
+              <div class="featured-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                </svg>
+              </div>
+              <div class="featured-card-info">
+                <div class="featured-card-title">{{ interview.podcast_name || 'Podcast' }}</div>
+                <div class="featured-card-subtitle">{{ interview.title || interview.episode_title }}</div>
+              </div>
+            </div>
+            <button
+              @click="removeFromSelection(interview.id)"
+              class="featured-card-remove"
+              title="Remove from selection"
+              type="button"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
-        <p class="selection-count">
-          {{ selectedInterviewIds.length }} interview{{ selectedInterviewIds.length !== 1 ? 's' : '' }} selected
-        </p>
+        <div v-else class="empty-selection-state">
+          <p>No interviews selected. Use the dropdown below to add interviews.</p>
+        </div>
+
+        <!-- Dropdown Selector -->
+        <div class="add-interview-dropdown">
+          <label class="dropdown-label">Add from Portfolio</label>
+
+          <div class="dropdown-row">
+            <select
+              v-model="selectedForAdd"
+              class="dropdown-select"
+              :disabled="availableInterviews.length === 0"
+            >
+              <option value="" disabled>Select an interview...</option>
+              <option
+                v-for="interview in availableInterviews"
+                :key="interview.id"
+                :value="interview.id"
+                :disabled="isSelected(interview.id)"
+              >
+                {{ interview.label || (interview.podcast_name + ' - ' + (interview.title || interview.episode_title)) }}
+                {{ isSelected(interview.id) ? ' (Added)' : '' }}
+              </option>
+            </select>
+
+            <button
+              @click="addSelectedInterview"
+              class="btn-add"
+              :disabled="!selectedForAdd"
+              type="button"
+            >
+              Add
+            </button>
+          </div>
+
+          <p class="selection-hint">
+            {{ selectedInterviewIds.length }} interview{{ selectedInterviewIds.length !== 1 ? 's' : '' }} selected
+          </p>
+        </div>
+
+        <!-- Link to Portfolio -->
+        <div class="portfolio-link-section">
+          <a href="/wp-admin/admin.php?page=showauthority-appearances" target="_blank" class="portfolio-link">
+            + Add new interview to Portfolio
+          </a>
+        </div>
       </div>
     </div>
 
@@ -167,7 +213,7 @@ const store = useMediaKitStore();
 // Local state
 const isLoadingInterviews = ref(false);
 const availableInterviews = ref([]);
-const searchTerm = ref('');
+const selectedForAdd = ref('');
 
 const localData = reactive({
   selectedInterviewIds: [],
@@ -190,25 +236,28 @@ const selectedInterviewIds = computed({
   set: (val) => { localData.selectedInterviewIds = val; }
 });
 
-const filteredInterviews = computed(() => {
-  if (!searchTerm.value) return availableInterviews.value;
-  const term = searchTerm.value.toLowerCase();
-  return availableInterviews.value.filter(i =>
-    i.title.toLowerCase().includes(term) ||
-    (i.podcast_name && i.podcast_name.toLowerCase().includes(term)) ||
-    (i.host_name && i.host_name.toLowerCase().includes(term))
-  );
+// Hydrate selected IDs into full interview objects for card display
+const selectedInterviewCards = computed(() => {
+  return selectedInterviewIds.value
+    .map(id => availableInterviews.value.find(i => i.id === id))
+    .filter(Boolean);
 });
 
 const isSelected = (id) => selectedInterviewIds.value.includes(id);
 
-const toggleInterview = (id) => {
-  const idx = selectedInterviewIds.value.indexOf(id);
-  if (idx === -1) {
-    selectedInterviewIds.value = [...selectedInterviewIds.value, id];
-  } else {
-    selectedInterviewIds.value = selectedInterviewIds.value.filter(i => i !== id);
+// Add from dropdown
+const addSelectedInterview = () => {
+  if (!selectedForAdd.value) return;
+  if (!isSelected(selectedForAdd.value)) {
+    selectedInterviewIds.value = [...selectedInterviewIds.value, selectedForAdd.value];
+    updateData();
   }
+  selectedForAdd.value = '';
+};
+
+// Remove from selection
+const removeFromSelection = (idToRemove) => {
+  selectedInterviewIds.value = selectedInterviewIds.value.filter(id => id !== idToRemove);
   updateData();
 };
 
@@ -247,12 +296,6 @@ const fetchInterviews = async () => {
   } finally {
     isLoadingInterviews.value = false;
   }
-};
-
-const formatDate = (dateStr) => {
-  if (!dateStr) return '';
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 };
 
 // Initialize
@@ -325,89 +368,203 @@ watch(() => props.data, (newData) => {
   font-size: 0.875rem;
 }
 
-/* Search */
-.search-box {
-  margin-bottom: 0.75rem;
+/* Selected Interviews Cards */
+.selected-interviews-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
-.search-input {
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 0.875rem;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
-}
-
-/* Interviews Checklist */
-.interviews-checklist {
-  max-height: 240px;
-  overflow-y: auto;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-}
-
-.interview-checkbox {
+.featured-card {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  cursor: pointer;
-  transition: background 0.15s;
-  border-bottom: 1px solid #f3f4f6;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  transition: all 0.2s ease;
 }
 
-.interview-checkbox:last-child {
-  border-bottom: none;
+.featured-card:hover {
+  border-color: #8b5cf6;
 }
 
-.interview-checkbox:hover {
-  background: #f9fafb;
-}
-
-.interview-checkbox.is-selected {
-  background: #f5f3ff;
-}
-
-.interview-checkbox input {
-  flex-shrink: 0;
-}
-
-.interview-info {
+.featured-card-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   flex: 1;
   min-width: 0;
 }
 
-.interview-name {
-  display: block;
-  font-weight: 500;
+.featured-card-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f3ff;
+  border-radius: 6px;
+  color: #8b5cf6;
+  flex-shrink: 0;
+}
+
+.featured-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.featured-card-title {
+  font-weight: 600;
   color: #111827;
+  font-size: 0.8rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.interview-meta {
+.featured-card-subtitle {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.featured-card-remove {
+  width: 24px;
+  height: 24px;
   display: flex;
-  gap: 0.5rem;
-  font-size: 0.75rem;
-  color: #6b7280;
-  margin-top: 0.25rem;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s;
+  flex-shrink: 0;
 }
 
-.interview-podcast {
+.featured-card-remove:hover {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.empty-selection-state {
+  padding: 16px;
+  text-align: center;
+  background: #f9fafb;
+  border: 2px dashed #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.empty-selection-state p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+/* Dropdown Selector */
+.add-interview-dropdown {
+  background: #f9fafb;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.dropdown-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.dropdown-row {
+  display: flex;
+  gap: 6px;
+}
+
+.dropdown-select {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  background: white;
+  color: #374151;
+  cursor: pointer;
+}
+
+.dropdown-select:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
+}
+
+.dropdown-select:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.btn-add {
+  padding: 8px 16px;
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.btn-add:hover {
+  background: #7c3aed;
+}
+
+.btn-add:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.selection-hint {
+  margin: 8px 0 0;
+  font-size: 0.7rem;
+  color: #6b7280;
+}
+
+/* Portfolio Link */
+.portfolio-link-section {
+  text-align: center;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.portfolio-link {
+  display: inline-block;
+  padding: 8px 12px;
   color: #8b5cf6;
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px dashed #8b5cf6;
+  border-radius: 6px;
+  transition: all 0.2s;
 }
 
-.selection-count {
-  margin: 0.75rem 0 0;
-  font-size: 0.75rem;
-  color: #6b7280;
+.portfolio-link:hover {
+  background: #f5f3ff;
+  border-style: solid;
 }
 
 /* Field Groups */

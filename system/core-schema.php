@@ -116,38 +116,41 @@ class GMKB_Core_Schema {
             ],
         ]);
 
-        // Interviews CPT - Podcast appearances for Media Kits
-        register_post_type('gmkb_interview', [
-            'labels' => [
-                'name' => __('Interviews', 'gmkb'),
-                'singular_name' => __('Interview', 'gmkb'),
-                'add_new' => __('Add New Interview', 'gmkb'),
-                'add_new_item' => __('Add New Interview', 'gmkb'),
-                'edit_item' => __('Edit Interview', 'gmkb'),
-                'view_item' => __('View Interview', 'gmkb'),
-                'search_items' => __('Search Interviews', 'gmkb'),
-                'not_found' => __('No interviews found', 'gmkb'),
-                'not_found_in_trash' => __('No interviews found in trash', 'gmkb'),
-            ],
-            'public' => false,
-            'publicly_queryable' => false,
-            'show_ui' => true,
-            'show_in_menu' => 'edit.php?post_type=guests',
-            'show_in_rest' => true,
-            'rest_base' => 'interviews',
-            'rest_controller_class' => 'WP_REST_Posts_Controller',
-            'capability_type' => 'post',
-            'map_meta_cap' => true,
-            'menu_icon' => 'dashicons-microphone',
-            'supports' => [
-                'title',
-                'editor',
-                'author',
-                'thumbnail',
-                'revisions',
-                'custom-fields',
-            ],
-        ]);
+        // BRIDGE ARCHITECTURE: gmkb_interview CPT DISABLED
+        // Interview data is sourced from legacy ShowAuthority plugin table: wp_showauthority_appearances
+        // The prepare_interviews_field() method and GMKB_Interviews_API now bridge to that legacy data.
+        //
+        // register_post_type('gmkb_interview', [
+        //     'labels' => [
+        //         'name' => __('Interviews', 'gmkb'),
+        //         'singular_name' => __('Interview', 'gmkb'),
+        //         'add_new' => __('Add New Interview', 'gmkb'),
+        //         'add_new_item' => __('Add New Interview', 'gmkb'),
+        //         'edit_item' => __('Edit Interview', 'gmkb'),
+        //         'view_item' => __('View Interview', 'gmkb'),
+        //         'search_items' => __('Search Interviews', 'gmkb'),
+        //         'not_found' => __('No interviews found', 'gmkb'),
+        //         'not_found_in_trash' => __('No interviews found in trash', 'gmkb'),
+        //     ],
+        //     'public' => false,
+        //     'publicly_queryable' => false,
+        //     'show_ui' => true,
+        //     'show_in_menu' => 'edit.php?post_type=guests',
+        //     'show_in_rest' => true,
+        //     'rest_base' => 'interviews',
+        //     'rest_controller_class' => 'WP_REST_Posts_Controller',
+        //     'capability_type' => 'post',
+        //     'map_meta_cap' => true,
+        //     'menu_icon' => 'dashicons-microphone',
+        //     'supports' => [
+        //         'title',
+        //         'editor',
+        //         'author',
+        //         'thumbnail',
+        //         'revisions',
+        //         'custom-fields',
+        //     ],
+        // ]);
     }
 
     /**
@@ -754,8 +757,13 @@ class GMKB_Core_Schema {
     }
 
     /**
-     * Prepare featured interviews field for REST API response
-     * Expands interview IDs to full interview objects
+     * Prepare featured interviews field for REST API response.
+     * BRIDGE: Fetches interview data from legacy ShowAuthority table (wp_showauthority_appearances).
+     *
+     * @param mixed $value Array of interview IDs from post meta
+     * @param WP_REST_Request $request REST request object
+     * @param array $args Field arguments
+     * @return array Hydrated interview objects
      */
     public function prepare_interviews_field($value, $request, $args) {
         if (empty($value)) {
@@ -767,38 +775,47 @@ class GMKB_Core_Schema {
             return [];
         }
 
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'showauthority_appearances';
+
+        // Check if legacy table exists
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") === $table_name;
+        if (!$table_exists) {
+            // Fail gracefully if ShowAuthority plugin not installed
+            return [];
+        }
+
+        // FIX: Batch fetch all interviews in a single query to avoid N+1 problem
         $interviews = [];
-        foreach ($value as $interview_id) {
-            $interview_id = absint($interview_id);
-            if (!$interview_id) {
-                continue;
+        $sanitized_ids = array_filter(array_map('absint', $value));
+
+        if (!empty($sanitized_ids)) {
+            $id_placeholders = implode(',', array_fill(0, count($sanitized_ids), '%d'));
+            $query = $wpdb->prepare("SELECT * FROM {$table_name} WHERE id IN ($id_placeholders)", $sanitized_ids);
+            $results_by_id = $wpdb->get_results($query, OBJECT_K);
+
+            // Reorder results to match original $value order
+            foreach ($sanitized_ids as $interview_id) {
+                if (isset($results_by_id[$interview_id])) {
+                    $interview = $results_by_id[$interview_id];
+                    // Map Legacy Table columns to standard Frontend Schema
+                    $interview_data = [
+                        'id'            => (int) $interview->id,
+                        'title'         => $interview->podcast_name,
+                        'subtitle'      => $interview->episode_title,
+                        'podcast_name'  => $interview->podcast_name ?: 'Podcast',
+                        'episode_title' => $interview->episode_title,
+                        'link'          => $interview->url,
+                        'episode_url'   => $interview->url,
+                        'publish_date'  => $interview->date,
+                        'date'          => $interview->date,
+                        'label'         => ($interview->podcast_name ? $interview->podcast_name . ' - ' : '') . $interview->episode_title,
+                        'image'         => !empty($interview->image_url) ? $interview->image_url : null,
+                        'image_url'     => !empty($interview->image_url) ? $interview->image_url : null,
+                    ];
+                    $interviews[] = $interview_data;
+                }
             }
-
-            $interview = get_post($interview_id);
-            if (!$interview || $interview->post_type !== 'gmkb_interview') {
-                continue;
-            }
-
-            // Build interview object with list-view fields
-            $interview_data = [
-                'id' => $interview_id,
-                'title' => $interview->post_title,
-                'status' => $interview->post_status,
-                'podcast_name' => get_post_meta($interview_id, 'interview_podcast_name', true),
-                'episode_url' => get_post_meta($interview_id, 'interview_episode_url', true),
-                'publish_date' => get_post_meta($interview_id, 'interview_publish_date', true),
-                'description' => $interview->post_content,
-            ];
-
-            // Add image if set
-            $image_id = get_post_meta($interview_id, 'interview_image_id', true);
-            if ($image_id) {
-                $interview_data['image'] = $this->prepare_media_field($image_id, null, null);
-            } elseif (has_post_thumbnail($interview_id)) {
-                $interview_data['image'] = $this->prepare_media_field(get_post_thumbnail_id($interview_id), null, null);
-            }
-
-            $interviews[] = $interview_data;
         }
 
         return $interviews;

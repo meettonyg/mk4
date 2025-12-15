@@ -151,7 +151,7 @@
                     </template>
 
                     <template #edit>
-                        <!-- Interview Selector -->
+                        <!-- Interview Selector with Dropdown UI -->
                         <div class="interview-selector">
                             <div v-if="isLoadingInterviews" class="loading-state">
                                 <div class="spinner"></div>
@@ -159,105 +159,85 @@
                             </div>
 
                             <div v-else>
-                                <!-- Add new interview toggle -->
-                                <div class="add-interview-section">
-                                    <button
-                                        v-if="!showAddForm"
-                                        type="button"
-                                        class="add-interview-btn"
-                                        @click="showAddForm = true"
+                                <!-- 1. List of Selected (Featured) Interviews as Cards -->
+                                <div v-if="selectedInterviewCards.length > 0" class="selected-interviews-cards mb-4">
+                                    <div
+                                        v-for="interview in selectedInterviewCards"
+                                        :key="interview.id"
+                                        class="featured-card"
                                     >
-                                        + Add New Interview
-                                    </button>
-
-                                    <!-- Add new interview form -->
-                                    <div v-else class="add-interview-form">
-                                        <h4>Add New Interview</h4>
-                                        <div class="form-group">
-                                            <label class="form-label">Episode Title *</label>
-                                            <input
-                                                type="text"
-                                                class="form-input"
-                                                v-model="newInterview.title"
-                                                placeholder="Episode title..."
-                                            />
+                                        <div class="featured-card-content">
+                                            <div class="featured-card-icon">
+                                                <span class="dashicon">🎙️</span>
+                                            </div>
+                                            <div class="featured-card-info">
+                                                <div class="featured-card-title">{{ interview.podcast_name || 'Podcast' }}</div>
+                                                <div class="featured-card-subtitle">{{ interview.title || interview.episode_title }}</div>
+                                            </div>
                                         </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Podcast Name</label>
-                                            <input
-                                                type="text"
-                                                class="form-input"
-                                                v-model="newInterview.podcast_name"
-                                                placeholder="Podcast name..."
-                                            />
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Episode URL</label>
-                                            <input
-                                                type="url"
-                                                class="form-input"
-                                                v-model="newInterview.episode_url"
-                                                placeholder="https://..."
-                                            />
-                                        </div>
-                                        <div class="form-actions">
-                                            <button
-                                                type="button"
-                                                class="btn-secondary"
-                                                @click="showAddForm = false"
-                                            >
-                                                Cancel
-                                            </button>
-                                            <button
-                                                type="button"
-                                                class="btn-primary"
-                                                @click="addNewInterview"
-                                                :disabled="!newInterview.title"
-                                            >
-                                                Add Interview
-                                            </button>
-                                        </div>
+                                        <button
+                                            @click="removeFromFeatured(interview.id)"
+                                            class="featured-card-remove"
+                                            title="Remove from featured"
+                                            type="button"
+                                        >
+                                            ✕
+                                        </button>
                                     </div>
                                 </div>
 
-                                <!-- Search and select existing interviews -->
-                                <div v-if="availableInterviews.length > 0" class="select-interviews-section">
-                                    <h4>Select Featured Interviews</h4>
-                                    <div class="search-box">
-                                        <input
-                                            v-model="searchTerm"
-                                            type="text"
-                                            placeholder="Search interviews..."
-                                            class="search-input"
-                                        />
-                                    </div>
+                                <div v-else class="empty-selection-state">
+                                    <p>No interviews selected yet. Use the dropdown below to add interviews.</p>
+                                </div>
 
-                                    <div class="interviews-checklist">
-                                        <label
-                                            v-for="interview in filteredInterviews"
-                                            :key="interview.id"
-                                            class="interview-checkbox"
-                                            :class="{ 'is-selected': isInterviewSelected(interview.id) }"
+                                <!-- 2. Dropdown Selector to Add New -->
+                                <div class="add-interview-dropdown">
+                                    <label class="dropdown-label">Add from Portfolio</label>
+
+                                    <div class="dropdown-row">
+                                        <select
+                                            v-model="selectedForAdd"
+                                            class="form-select"
+                                            :disabled="dropdownOptions.length === 0"
                                         >
-                                            <input
-                                                type="checkbox"
-                                                :checked="isInterviewSelected(interview.id)"
-                                                @change="toggleInterview(interview.id)"
-                                            />
-                                            <span class="interview-info">
-                                                <span class="interview-name">{{ interview.title }}</span>
-                                                <span class="interview-podcast">{{ interview.podcast_name || 'Podcast' }}</span>
-                                            </span>
-                                        </label>
+                                            <option value="" disabled>
+                                                {{ dropdownOptions.length === 0 ? 'No interviews available' : 'Select an interview to feature...' }}
+                                            </option>
+                                            <option
+                                                v-for="interview in dropdownOptions"
+                                                :key="interview.id"
+                                                :value="interview.id"
+                                                :disabled="isInterviewSelected(interview.id)"
+                                            >
+                                                {{ interview.label || (interview.podcast_name + ' - ' + interview.title) }}
+                                                {{ isInterviewSelected(interview.id) ? ' (Added)' : '' }}
+                                            </option>
+                                        </select>
+
+                                        <button
+                                            @click="addSelectedToFeatured"
+                                            class="btn-add"
+                                            :disabled="!selectedForAdd || selectedInterviewIds.length >= 3"
+                                            type="button"
+                                        >
+                                            Add
+                                        </button>
                                     </div>
 
-                                    <p class="selection-count">
-                                        {{ selectedInterviewIds.length }} interview{{ selectedInterviewIds.length !== 1 ? 's' : '' }} selected
+                                    <p class="selection-hint">
+                                        {{ selectedInterviewIds.length }} of 3 interviews selected
                                     </p>
                                 </div>
 
-                                <div v-else-if="!showAddForm" class="empty-state">
-                                    <p>No interviews found. Add your first interview above.</p>
+                                <!-- Link to add new interviews in Portfolio -->
+                                <div class="add-new-interview-section">
+                                    <a
+                                        href="/wp-admin/admin.php?page=showauthority-appearances"
+                                        target="_blank"
+                                        class="add-portfolio-link"
+                                    >
+                                        + Add new interview to Portfolio
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -456,8 +436,7 @@ const {
     isLoading: isLoadingInterviews,
     fetchInterviews,
     getProfileInterviews,
-    updateProfileInterviews,
-    createInterview
+    updateProfileInterviews
 } = useInterviews();
 
 // Edit state
@@ -470,12 +449,7 @@ const featuredInterviews = ref([]);
 const selectedInterviewIds = ref([]);
 const searchTerm = ref('');
 const isLoadingFeatured = ref(false);
-const showAddForm = ref(false);
-const newInterview = reactive({
-    title: '',
-    podcast_name: '',
-    episode_url: ''
-});
+const selectedForAdd = ref('');
 
 // Computed
 const expertiseTags = computed(() => {
@@ -500,10 +474,39 @@ const filteredInterviews = computed(() => {
     );
 });
 
+// Hydrate selected IDs into full interview objects for card display
+const selectedInterviewCards = computed(() => {
+    return selectedInterviewIds.value
+        .map(id => availableInterviews.value.find(i => i.id === id))
+        .filter(Boolean);
+});
+
+// Dropdown options - all interviews available for selection
+const dropdownOptions = computed(() => {
+    return availableInterviews.value;
+});
+
 // Check if an interview is selected
 const isInterviewSelected = (id) => selectedInterviewIds.value.includes(id);
 
-// Toggle interview selection
+// Add from dropdown
+// FIX: Removed alert() - button is now disabled when limit reached for better UX
+const addSelectedToFeatured = () => {
+    if (!selectedForAdd.value || selectedInterviewIds.value.length >= 3) {
+        return;
+    }
+    if (!isInterviewSelected(selectedForAdd.value)) {
+        selectedInterviewIds.value = [...selectedInterviewIds.value, selectedForAdd.value];
+    }
+    selectedForAdd.value = '';
+};
+
+// Remove from featured
+const removeFromFeatured = (idToRemove) => {
+    selectedInterviewIds.value = selectedInterviewIds.value.filter(id => id !== idToRemove);
+};
+
+// Toggle interview selection (kept for backward compatibility)
 const toggleInterview = (id) => {
     const idx = selectedInterviewIds.value.indexOf(id);
     if (idx === -1) {
@@ -543,34 +546,6 @@ const saveFeaturedInterviews = async () => {
     } catch (error) {
         console.error('Failed to save featured interviews:', error);
         return false;
-    }
-};
-
-// Add new interview
-const addNewInterview = async () => {
-    if (!newInterview.title) return;
-
-    try {
-        const result = await createInterview({
-            title: newInterview.title,
-            podcast_name: newInterview.podcast_name,
-            episode_url: newInterview.episode_url,
-            status: 'publish'
-        });
-
-        if (result.success) {
-            // Auto-select the new interview
-            selectedInterviewIds.value = [...selectedInterviewIds.value, result.interview.id];
-            // Refresh available interviews
-            await fetchInterviews({ status: 'publish', perPage: 100 });
-            // Reset form
-            newInterview.title = '';
-            newInterview.podcast_name = '';
-            newInterview.episode_url = '';
-            showAddForm.value = false;
-        }
-    } catch (error) {
-        console.error('Failed to create interview:', error);
     }
 };
 
@@ -645,7 +620,7 @@ const startEditingInterviews = () => {
     // Initialize selection from featured interviews
     selectedInterviewIds.value = featuredInterviews.value.map(i => i.id);
     searchTerm.value = '';
-    showAddForm.value = false;
+    selectedForAdd.value = '';
 };
 
 const cancelInterviewsEditing = () => {
@@ -653,7 +628,7 @@ const cancelInterviewsEditing = () => {
     // Reset selection to match current featured interviews
     selectedInterviewIds.value = featuredInterviews.value.map(i => i.id);
     searchTerm.value = '';
-    showAddForm.value = false;
+    selectedForAdd.value = '';
 };
 
 const saveInterviewsSection = async () => {
@@ -883,6 +858,214 @@ const saveInterviewsSection = async () => {
     margin: 0;
     font-size: 14px;
     color: #6b7280;
+}
+
+/* Selected Interviews Cards (Dropdown UI) */
+.selected-interviews-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.featured-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+.featured-card:hover {
+    border-color: #14b8a6;
+    box-shadow: 0 2px 6px rgba(20, 184, 166, 0.1);
+}
+
+.featured-card-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.featured-card-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0fdfa;
+    border-radius: 8px;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.featured-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.featured-card-title {
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.featured-card-subtitle {
+    font-size: 13px;
+    color: #64748b;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.featured-card-remove {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.15s;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.featured-card-remove:hover {
+    background: #fef2f2;
+    color: #ef4444;
+}
+
+.empty-selection-state {
+    padding: 20px;
+    text-align: center;
+    background: #f9fafb;
+    border: 2px dashed #e2e8f0;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.empty-selection-state p {
+    margin: 0;
+    color: #64748b;
+    font-size: 14px;
+}
+
+/* Dropdown Selector */
+.add-interview-dropdown {
+    background: #f8fafc;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.dropdown-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+}
+
+.dropdown-row {
+    display: flex;
+    gap: 8px;
+}
+
+.form-select {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+    color: #334155;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: #14b8a6;
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+}
+
+.form-select:disabled {
+    background: #f1f5f9;
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+.btn-add {
+    padding: 10px 20px;
+    background: #14b8a6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+}
+
+.btn-add:hover {
+    background: #0d9488;
+}
+
+.btn-add:disabled {
+    background: #94a3b8;
+    cursor: not-allowed;
+}
+
+.selection-hint {
+    margin: 8px 0 0;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.mb-4 {
+    margin-bottom: 16px;
+}
+
+/* Add new interview section */
+.add-new-interview-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+}
+
+.add-portfolio-link {
+    display: inline-block;
+    padding: 10px 16px;
+    color: #14b8a6;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px dashed #14b8a6;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.add-portfolio-link:hover {
+    background: #f0fdfa;
+    border-style: solid;
 }
 
 /* Add interview section */

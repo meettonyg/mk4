@@ -340,9 +340,18 @@ const updateData = () => {
 const fetchOffers = async () => {
   isLoadingOffers.value = true;
   try {
-    const apiUrl = window.gmkbData?.apiUrl || '/wp-json/';
-    const response = await fetch(`${apiUrl}gmkb/v2/offers?per_page=100`, {
-      headers: { 'X-WP-Nonce': window.gmkbData?.nonce || '' }
+    // Use correct property names from gmkbData
+    const restUrl = window.gmkbData?.restUrl || '/wp-json/';
+    const baseUrl = restUrl.endsWith('/') ? restUrl : restUrl + '/';
+    const nonce = window.gmkbData?.restNonce || '';
+
+    // Fetch all statuses (publish, draft, private) so user sees all their offers
+    const response = await fetch(`${baseUrl}gmkb/v2/offers?per_page=100&status=any`, {
+      headers: {
+        'X-WP-Nonce': nonce,
+        'Content-Type': 'application/json'
+      },
+      credentials: 'same-origin'
     });
 
     if (response.ok) {
@@ -378,13 +387,18 @@ const saveNewOffer = async () => {
   saveError.value = '';
 
   try {
-    const apiUrl = window.gmkbData?.apiUrl || '/wp-json/';
-    const response = await fetch(`${apiUrl}gmkb/v2/offers`, {
+    // Use correct property names from gmkbData
+    const restUrl = window.gmkbData?.restUrl || '/wp-json/';
+    const baseUrl = restUrl.endsWith('/') ? restUrl : restUrl + '/';
+    const nonce = window.gmkbData?.restNonce || '';
+
+    const response = await fetch(`${baseUrl}gmkb/v2/offers`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-WP-Nonce': window.gmkbData?.nonce || ''
+        'X-WP-Nonce': nonce
       },
+      credentials: 'same-origin',
       body: JSON.stringify({
         title: newOffer.title,
         type: newOffer.type || undefined,
