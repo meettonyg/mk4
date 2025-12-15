@@ -758,9 +758,9 @@ class GMKB_Core_Schema {
 
     /**
      * Prepare featured interviews field for REST API response.
-     * BRIDGE: Fetches interview data from PIT guest appearances table (mls_pit_guest_appearances).
+     * BRIDGE: Fetches interview data from PIT speaking_credits + engagements tables.
      *
-     * @param mixed $value Array of interview IDs from post meta
+     * @param mixed $value Array of speaking_credit IDs from post meta
      * @param WP_REST_Request $request REST request object
      * @param array $args Field arguments
      * @return array Hydrated interview objects
@@ -776,27 +776,35 @@ class GMKB_Core_Schema {
         }
 
         global $wpdb;
-        $table_name = $wpdb->prefix . 'pit_guest_appearances';
+        $credits_table = $wpdb->prefix . 'pit_speaking_credits';
+        $engagements_table = $wpdb->prefix . 'pit_engagements';
+        $podcasts_table = $wpdb->prefix . 'pit_podcasts';
 
-        // Check if legacy table exists
-        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") === $table_name;
+        // Check if table exists
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$credits_table'") === $credits_table;
         if (!$table_exists) {
-            // Fail gracefully if PIT guest appearances table not found
             return [];
         }
 
-        // FIX: Batch fetch all interviews in a single query to avoid N+1 problem
-        $podcasts_table = $wpdb->prefix . 'pit_podcasts';
         $interviews = [];
         $sanitized_ids = array_filter(array_map('absint', $value));
 
         if (!empty($sanitized_ids)) {
             $id_placeholders = implode(',', array_fill(0, count($sanitized_ids), '%d'));
             $query = $wpdb->prepare(
-                "SELECT a.*, p.title AS podcast_name, p.artwork_url AS podcast_image
-                 FROM {$table_name} a
-                 LEFT JOIN {$podcasts_table} p ON a.podcast_id = p.id
-                 WHERE a.id IN ($id_placeholders)",
+                "SELECT
+                    sc.id,
+                    sc.is_featured,
+                    e.title AS episode_title,
+                    e.url AS episode_url,
+                    e.published_date AS episode_date,
+                    e.thumbnail_url,
+                    p.title AS podcast_name,
+                    p.artwork_url AS podcast_image
+                 FROM {$credits_table} sc
+                 JOIN {$engagements_table} e ON sc.engagement_id = e.id
+                 LEFT JOIN {$podcasts_table} p ON e.podcast_id = p.id
+                 WHERE sc.id IN ($id_placeholders)",
                 $sanitized_ids
             );
             $results_by_id = $wpdb->get_results($query, OBJECT_K);
@@ -805,10 +813,9 @@ class GMKB_Core_Schema {
             foreach ($sanitized_ids as $interview_id) {
                 if (isset($results_by_id[$interview_id])) {
                     $interview = $results_by_id[$interview_id];
-                    // Map PIT table columns to standard Frontend Schema
                     $podcast_name = $interview->podcast_name ?? '';
                     $episode_title = $interview->episode_title ?? '';
-                    $podcast_image = $interview->podcast_image ?? null;
+                    $podcast_image = $interview->podcast_image ?? $interview->thumbnail_url ?? null;
                     $interview_data = [
                         'id'            => (int) $interview->id,
                         'title'         => $podcast_name ?: $episode_title,
@@ -822,6 +829,7 @@ class GMKB_Core_Schema {
                         'label'         => ($podcast_name ? $podcast_name . ' - ' : '') . $episode_title,
                         'image'         => $podcast_image,
                         'image_url'     => $podcast_image,
+                        'is_featured'   => !empty($interview->is_featured),
                     ];
                     $interviews[] = $interview_data;
                 }
