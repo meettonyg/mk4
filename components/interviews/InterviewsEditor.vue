@@ -318,6 +318,8 @@ watch(selectedInterviewIds, () => {
   if (profileId.value) {
     syncToProfile();
   }
+  // Always update component data so renderer gets interviewsData
+  updateData();
 }, { deep: true });
 
 const fetchInterviews = async () => {
@@ -343,6 +345,9 @@ onMounted(async () => {
   if (profileId.value && selectedInterviewIds.value.length === 0) {
     await loadProfileInterviews();
   }
+
+  // Ensure renderer gets interview data after everything is loaded
+  updateData();
 });
 
 // Sync props changes
