@@ -19,20 +19,10 @@ import { useAIStore } from '../stores/ai';
  * @returns {string} REST API base URL
  */
 function getRestUrl() {
-  // Check for builder context
-  if (window.gmkbData?.restUrl) {
-    return window.gmkbData.restUrl;
-  }
-  // Check for profile editor context
-  if (window.gmkbProfileData?.apiUrl) {
-    return window.gmkbProfileData.apiUrl;
-  }
-  // Check for standalone/public context
-  if (window.gmkbPublicData?.restUrl) {
-    return window.gmkbPublicData.restUrl;
-  }
-  // Fallback
-  return '/wp-json/gmkb/v2/';
+  return window.gmkbData?.restUrl
+    || window.gmkbProfileData?.apiUrl
+    || window.gmkbPublicData?.restUrl
+    || '/wp-json/gmkb/v2/';
 }
 
 /**
@@ -42,9 +32,11 @@ function getRestUrl() {
  */
 function getNonce(context) {
   if (context === 'builder') {
-    return window.gmkbData?.restNonce || window.gmkbData?.nonce || window.gmkbProfileData?.nonce || '';
+    return window.gmkbData?.restNonce
+      || window.gmkbData?.nonce
+      || window.gmkbProfileData?.nonce
+      || '';
   }
-  // Public context
   return window.gmkbPublicNonce || window.gmkbPublicData?.publicNonce || '';
 }
 
@@ -86,15 +78,10 @@ export function useAIGenerator(type) {
    * @returns {string} 'builder' or 'public'
    */
   const getContext = () => {
-    // Check if we're in the builder (has gmkbData with postId)
-    if (window.gmkbData?.postId || window.gmkbData?.post_id) {
-      return 'builder';
-    }
-    // Check if we're in the profile editor
-    if (window.gmkbProfileData?.postId) {
-      return 'builder';
-    }
-    return 'public';
+    const isBuilderContext = window.gmkbData?.postId
+      || window.gmkbData?.post_id
+      || window.gmkbProfileData?.postId;
+    return isBuilderContext ? 'builder' : 'public';
   };
 
   /**

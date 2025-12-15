@@ -20,45 +20,7 @@
  */
 
 import { ref, computed, reactive } from 'vue';
-
-// API helper
-const getApiUrl = () => {
-  // Check gmkbData (media kit builder), gmkbProfileData (profile editor), or fallback
-  const restUrl = window.gmkbData?.restUrl || window.gmkbProfileData?.apiUrl || '/wp-json/';
-  return restUrl.endsWith('/') ? restUrl : restUrl + '/';
-};
-
-const getNonce = () => {
-  // Check gmkbData (media kit builder), gmkbProfileData (profile editor), or wpApiSettings fallback
-  return window.gmkbData?.restNonce || window.gmkbProfileData?.nonce || window.wpApiSettings?.nonce || '';
-};
-
-const apiRequest = async (endpoint, options = {}) => {
-  const baseUrl = getApiUrl();
-  const url = `${baseUrl}gmkb/v2/${endpoint}`;
-
-  const config = {
-    headers: {
-      'Content-Type': 'application/json',
-      'X-WP-Nonce': getNonce(),
-    },
-    credentials: 'same-origin',
-    ...options,
-  };
-
-  if (options.body && typeof options.body === 'object') {
-    config.body = JSON.stringify(options.body);
-  }
-
-  const response = await fetch(url, config);
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `HTTP ${response.status}`);
-  }
-
-  return response.json();
-};
+import { apiRequest } from '../utils/api.js';
 
 export function useInterviews() {
   // State
