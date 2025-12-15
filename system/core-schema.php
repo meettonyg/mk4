@@ -785,39 +785,37 @@ class GMKB_Core_Schema {
             return [];
         }
 
+        // FIX: Batch fetch all interviews in a single query to avoid N+1 problem
         $interviews = [];
-        foreach ($value as $interview_id) {
-            $interview_id = absint($interview_id);
-            if (!$interview_id) {
-                continue;
+        $sanitized_ids = array_filter(array_map('absint', $value));
+
+        if (!empty($sanitized_ids)) {
+            $id_placeholders = implode(',', array_fill(0, count($sanitized_ids), '%d'));
+            $query = $wpdb->prepare("SELECT * FROM {$table_name} WHERE id IN ($id_placeholders)", $sanitized_ids);
+            $results_by_id = $wpdb->get_results($query, OBJECT_K);
+
+            // Reorder results to match original $value order
+            foreach ($sanitized_ids as $interview_id) {
+                if (isset($results_by_id[$interview_id])) {
+                    $interview = $results_by_id[$interview_id];
+                    // Map Legacy Table columns to standard Frontend Schema
+                    $interview_data = [
+                        'id'            => (int) $interview->id,
+                        'title'         => $interview->podcast_name,
+                        'subtitle'      => $interview->episode_title,
+                        'podcast_name'  => $interview->podcast_name ?: 'Podcast',
+                        'episode_title' => $interview->episode_title,
+                        'link'          => $interview->url,
+                        'episode_url'   => $interview->url,
+                        'publish_date'  => $interview->date,
+                        'date'          => $interview->date,
+                        'label'         => ($interview->podcast_name ? $interview->podcast_name . ' - ' : '') . $interview->episode_title,
+                        'image'         => !empty($interview->image_url) ? $interview->image_url : null,
+                        'image_url'     => !empty($interview->image_url) ? $interview->image_url : null,
+                    ];
+                    $interviews[] = $interview_data;
+                }
             }
-
-            // FETCH FROM LEGACY TABLE
-            $interview = $wpdb->get_row(
-                $wpdb->prepare("SELECT * FROM {$table_name} WHERE id = %d", $interview_id)
-            );
-
-            if (!$interview) {
-                continue;
-            }
-
-            // Map Legacy Table columns to standard Frontend Schema
-            $interview_data = [
-                'id'            => (int) $interview->id,
-                'title'         => $interview->podcast_name,
-                'subtitle'      => $interview->episode_title,
-                'podcast_name'  => $interview->podcast_name ?: 'Podcast',
-                'episode_title' => $interview->episode_title,
-                'link'          => $interview->url,
-                'episode_url'   => $interview->url,
-                'publish_date'  => $interview->date,
-                'date'          => $interview->date,
-                'label'         => ($interview->podcast_name ? $interview->podcast_name . ' - ' : '') . $interview->episode_title,
-                'image'         => !empty($interview->image_url) ? $interview->image_url : null,
-                'image_url'     => !empty($interview->image_url) ? $interview->image_url : null,
-            ];
-
-            $interviews[] = $interview_data;
         }
 
         return $interviews;

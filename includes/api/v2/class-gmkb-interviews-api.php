@@ -297,17 +297,20 @@ class GMKB_Interviews_API {
             ]);
         }
 
+        // FIX: Batch fetch all interviews in a single query to avoid N+1 problem
         $interviews = [];
-        foreach ($interview_ids as $interview_id) {
-            $interview_id = absint($interview_id);
-            if (!$interview_id) continue;
+        $sanitized_ids = array_filter(array_map('absint', $interview_ids));
 
-            $row = $wpdb->get_row(
-                $wpdb->prepare("SELECT * FROM {$table_name} WHERE id = %d", $interview_id)
-            );
+        if (!empty($sanitized_ids)) {
+            $id_placeholders = implode(',', array_fill(0, count($sanitized_ids), '%d'));
+            $query = $wpdb->prepare("SELECT * FROM {$table_name} WHERE id IN ($id_placeholders)", $sanitized_ids);
+            $results_by_id = $wpdb->get_results($query, OBJECT_K);
 
-            if ($row) {
-                $interviews[] = self::format_legacy_interview($row);
+            // Reorder results to match original $interview_ids order
+            foreach ($sanitized_ids as $id) {
+                if (isset($results_by_id[$id])) {
+                    $interviews[] = self::format_legacy_interview($results_by_id[$id]);
+                }
             }
         }
 
@@ -332,17 +335,14 @@ class GMKB_Interviews_API {
         global $wpdb;
         $table_name = $wpdb->prefix . 'showauthority_appearances';
 
+        // FIX: Validate all IDs in a single query to avoid N+1 problem
         $valid_ids = [];
-        foreach ($interview_ids as $interview_id) {
-            if (!$interview_id) continue;
+        $sanitized_ids = array_filter(array_map('absint', $interview_ids));
 
-            $exists = $wpdb->get_var(
-                $wpdb->prepare("SELECT id FROM {$table_name} WHERE id = %d", $interview_id)
-            );
-
-            if ($exists) {
-                $valid_ids[] = $interview_id;
-            }
+        if (!empty($sanitized_ids)) {
+            $id_placeholders = implode(',', array_fill(0, count($sanitized_ids), '%d'));
+            $query = $wpdb->prepare("SELECT id FROM {$table_name} WHERE id IN ({$id_placeholders})", $sanitized_ids);
+            $valid_ids = array_map('intval', $wpdb->get_col($query));
         }
 
         update_post_meta($profile_id, 'featured_interviews', $valid_ids);

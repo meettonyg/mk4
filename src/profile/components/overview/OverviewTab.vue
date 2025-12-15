@@ -217,7 +217,7 @@
                                         <button
                                             @click="addSelectedToFeatured"
                                             class="btn-add"
-                                            :disabled="!selectedForAdd"
+                                            :disabled="!selectedForAdd || selectedInterviewIds.length >= 3"
                                             type="button"
                                         >
                                             Add
@@ -490,10 +490,9 @@ const dropdownOptions = computed(() => {
 const isInterviewSelected = (id) => selectedInterviewIds.value.includes(id);
 
 // Add from dropdown
+// FIX: Removed alert() - button is now disabled when limit reached for better UX
 const addSelectedToFeatured = () => {
-    if (!selectedForAdd.value) return;
-    if (selectedInterviewIds.value.length >= 3) {
-        alert('You can only feature up to 3 interviews.');
+    if (!selectedForAdd.value || selectedInterviewIds.value.length >= 3) {
         return;
     }
     if (!isInterviewSelected(selectedForAdd.value)) {
