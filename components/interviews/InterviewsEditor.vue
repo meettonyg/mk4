@@ -26,7 +26,7 @@
           >
             <div class="featured-card-content">
               <div class="featured-card-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
                   <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
                 </svg>
@@ -39,10 +39,10 @@
             <button
               @click="removeFromSelection(interview.id)"
               class="featured-card-remove"
-              title="Remove from selection"
+              title="Remove"
               type="button"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="18" y1="6" x2="6" y2="18"/>
                 <line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
@@ -51,52 +51,36 @@
         </div>
 
         <div v-else class="empty-selection-state">
-          <p>No interviews selected. Use the dropdown below to add interviews.</p>
+          <p>No interviews selected.</p>
         </div>
 
-        <!-- Dropdown Selector -->
+        <!-- Dropdown Selector - Auto-add on select -->
         <div class="add-interview-dropdown">
           <label class="dropdown-label">Add from Portfolio</label>
-
-          <div class="dropdown-row">
-            <select
-              v-model="selectedForAdd"
-              class="dropdown-select"
-              :disabled="availableInterviews.length === 0"
+          <select
+            v-model="selectedForAdd"
+            class="dropdown-select"
+            :disabled="availableInterviews.length === 0"
+            @change="addSelectedInterview"
+          >
+            <option value="" disabled>Select an interview...</option>
+            <option
+              v-for="interview in unselectedInterviews"
+              :key="interview.id"
+              :value="interview.id"
             >
-              <option value="" disabled>Select an interview...</option>
-              <option
-                v-for="interview in availableInterviews"
-                :key="interview.id"
-                :value="interview.id"
-                :disabled="isSelected(interview.id)"
-              >
-                {{ interview.label || (interview.podcast_name + ' - ' + (interview.title || interview.episode_title)) }}
-                {{ isSelected(interview.id) ? ' (Added)' : '' }}
-              </option>
-            </select>
-
-            <button
-              @click="addSelectedInterview"
-              class="btn-add"
-              :disabled="!selectedForAdd"
-              type="button"
-            >
-              Add
-            </button>
-          </div>
-
+              {{ interview.podcast_name }} - {{ truncate(interview.episode_title || interview.title, 30) }}
+            </option>
+          </select>
           <p class="selection-hint">
-            {{ selectedInterviewIds.length }} interview{{ selectedInterviewIds.length !== 1 ? 's' : '' }} selected
+            {{ selectedInterviewIds.length }} selected
           </p>
         </div>
 
         <!-- Link to Portfolio -->
-        <div class="portfolio-link-section">
-          <a href="/wp-admin/admin.php?page=showauthority-appearances" target="_blank" class="portfolio-link">
-            + Add new interview to Portfolio
-          </a>
-        </div>
+        <a href="/wp-admin/admin.php?page=showauthority-appearances" target="_blank" class="portfolio-link">
+          + Add new to Portfolio
+        </a>
       </div>
     </div>
 
@@ -249,6 +233,17 @@ const selectedInterviewCards = computed(() => {
 });
 
 const isSelected = (id) => selectedInterviewIds.value.includes(id);
+
+// Filter out already-selected interviews for the dropdown
+const unselectedInterviews = computed(() => {
+  return availableInterviews.value.filter(i => !isSelected(i.id));
+});
+
+// Truncate helper for compact display
+const truncate = (str, len) => {
+  if (!str) return '';
+  return str.length > len ? str.substring(0, len) + '...' : str;
+};
 
 // Add from dropdown
 const addSelectedInterview = () => {
@@ -419,18 +414,18 @@ watch(() => props.data, (newData) => {
 .selected-interviews-cards {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 6px;
+  margin-bottom: 10px;
 }
 
 .featured-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
+  padding: 8px 10px;
   background: white;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 6px;
   transition: all 0.2s ease;
 }
 
@@ -441,19 +436,19 @@ watch(() => props.data, (newData) => {
 .featured-card-content {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex: 1;
   min-width: 0;
 }
 
 .featured-card-icon {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #f5f3ff;
-  border-radius: 6px;
+  border-radius: 4px;
   color: #8b5cf6;
   flex-shrink: 0;
 }
@@ -466,24 +461,24 @@ watch(() => props.data, (newData) => {
 .featured-card-title {
   font-weight: 600;
   color: #111827;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .featured-card-subtitle {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #6b7280;
-  margin-top: 2px;
+  margin-top: 1px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .featured-card-remove {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -494,6 +489,7 @@ watch(() => props.data, (newData) => {
   border-radius: 4px;
   transition: all 0.15s;
   flex-shrink: 0;
+  margin-left: 4px;
 }
 
 .featured-card-remove:hover {
@@ -502,26 +498,23 @@ watch(() => props.data, (newData) => {
 }
 
 .empty-selection-state {
-  padding: 16px;
+  padding: 12px;
   text-align: center;
   background: #f9fafb;
-  border: 2px dashed #e5e7eb;
-  border-radius: 8px;
-  margin-bottom: 12px;
+  border: 1px dashed #e5e7eb;
+  border-radius: 6px;
+  margin-bottom: 10px;
 }
 
 .empty-selection-state p {
   margin: 0;
   color: #6b7280;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
 }
 
 /* Dropdown Selector */
 .add-interview-dropdown {
-  background: #f9fafb;
-  padding: 12px;
-  border-radius: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .dropdown-label {
@@ -530,17 +523,12 @@ watch(() => props.data, (newData) => {
   font-weight: 600;
   text-transform: uppercase;
   color: #6b7280;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   letter-spacing: 0.5px;
 }
 
-.dropdown-row {
-  display: flex;
-  gap: 6px;
-}
-
 .dropdown-select {
-  flex: 1;
+  width: 100%;
   padding: 8px 10px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
@@ -562,56 +550,30 @@ watch(() => props.data, (newData) => {
   cursor: not-allowed;
 }
 
-.btn-add {
-  padding: 8px 16px;
-  background: #8b5cf6;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.2s;
-}
-
-.btn-add:hover {
-  background: #7c3aed;
-}
-
-.btn-add:disabled {
-  background: #9ca3af;
-  cursor: not-allowed;
-}
-
 .selection-hint {
-  margin: 8px 0 0;
+  margin: 4px 0 0;
   font-size: 0.7rem;
   color: #6b7280;
 }
 
 /* Portfolio Link */
-.portfolio-link-section {
-  text-align: center;
-  padding-top: 12px;
-  border-top: 1px solid #e5e7eb;
-}
-
 .portfolio-link {
-  display: inline-block;
-  padding: 8px 12px;
+  display: block;
+  padding: 8px;
   color: #8b5cf6;
   text-decoration: none;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 500;
-  border: 1px dashed #8b5cf6;
+  text-align: center;
+  border: 1px dashed #d1d5db;
   border-radius: 6px;
   transition: all 0.2s;
+  margin-top: 8px;
 }
 
 .portfolio-link:hover {
   background: #f5f3ff;
-  border-style: solid;
+  border-color: #8b5cf6;
 }
 
 /* Field Groups */
