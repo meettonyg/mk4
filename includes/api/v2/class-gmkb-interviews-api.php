@@ -91,6 +91,12 @@ class GMKB_Interviews_API {
     // Permission Callbacks
     // =========================================================================
 
+    /**
+     * Check if user can list interviews
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return bool|WP_Error True if permission granted, WP_Error otherwise.
+     */
     public static function check_list_permission($request) {
         if (!is_user_logged_in()) {
             return new WP_Error('unauthorized', 'Authentication required', ['status' => 401]);
@@ -98,16 +104,35 @@ class GMKB_Interviews_API {
         return true;
     }
 
+    /**
+     * Check if user can read profile (for profile-interview endpoints)
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return bool|WP_Error True if permission granted, WP_Error otherwise.
+     */
     public static function check_profile_read_permission($request) {
         $profile_id = (int) $request->get_param('id');
         return self::check_profile_permission($profile_id, 'read');
     }
 
+    /**
+     * Check if user can edit profile
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return bool|WP_Error True if permission granted, WP_Error otherwise.
+     */
     public static function check_profile_edit_permission($request) {
         $profile_id = (int) $request->get_param('id');
         return self::check_profile_permission($profile_id, 'edit');
     }
 
+    /**
+     * Shared profile permission check
+     *
+     * @param int    $profile_id Profile post ID.
+     * @param string $action     Action to check ('read' or 'edit').
+     * @return bool|WP_Error True if permission granted, WP_Error otherwise.
+     */
     private static function check_profile_permission($profile_id, $action = 'read') {
         $post = get_post($profile_id);
 
@@ -121,15 +146,18 @@ class GMKB_Interviews_API {
 
         $user_id = get_current_user_id();
 
+        // Admins can do anything
         if (current_user_can('edit_others_posts')) {
             return true;
         }
 
+        // Check ownership
         $owner_id = (int) get_post_meta($profile_id, 'owner_user_id', true);
         if ($owner_id === $user_id || (int) $post->post_author === $user_id) {
             return true;
         }
 
+        // Organization access for read
         if ($action === 'read' && self::user_in_same_org($user_id, (int) $post->post_author)) {
             return true;
         }
@@ -137,6 +165,13 @@ class GMKB_Interviews_API {
         return new WP_Error('forbidden', "You do not have permission to {$action} this profile", ['status' => 403]);
     }
 
+    /**
+     * Check if two users are in the same organization
+     *
+     * @param int $user_id_1 First user ID.
+     * @param int $user_id_2 Second user ID.
+     * @return bool True if users are in the same organization.
+     */
     private static function user_in_same_org($user_id_1, $user_id_2) {
         $org_1 = get_user_meta($user_id_1, 'mepr_org', true);
         $org_2 = get_user_meta($user_id_2, 'mepr_org', true);
@@ -154,6 +189,9 @@ class GMKB_Interviews_API {
 
     /**
      * List interviews for current user from PIT speaking_credits + engagements.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response|WP_Error Response object.
      */
     public static function list_interviews($request) {
         $guest_id = self::get_target_guest_id();
@@ -235,6 +273,9 @@ class GMKB_Interviews_API {
 
     /**
      * Get single interview by speaking_credit ID.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response|WP_Error Response object.
      */
     public static function get_interview($request) {
         $interview_id = (int) $request->get_param('id');
@@ -280,6 +321,9 @@ class GMKB_Interviews_API {
     /**
      * Get featured interviews linked to a profile.
      * IDs are speaking_credit IDs stored in profile meta.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response object.
      */
     public static function get_profile_interviews($request) {
         $profile_id = (int) $request->get_param('id');
@@ -331,6 +375,7 @@ class GMKB_Interviews_API {
             );
             $results_by_id = $wpdb->get_results($query, OBJECT_K);
 
+            // Reorder results to match original $interview_ids order
             foreach ($sanitized_ids as $id) {
                 if (isset($results_by_id[$id])) {
                     $interviews[] = self::format_interview($results_by_id[$id]);
@@ -348,6 +393,9 @@ class GMKB_Interviews_API {
     /**
      * Update featured interviews linked to a profile.
      * Stores speaking_credit IDs in profile meta.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response object.
      */
     public static function update_profile_interviews($request) {
         $profile_id = (int) $request->get_param('id');
@@ -382,6 +430,8 @@ class GMKB_Interviews_API {
 
     /**
      * Get the Guest ID associated with the current user.
+     *
+     * @return int|false Guest ID or false if not found.
      */
     private static function get_target_guest_id() {
         $user_id = get_current_user_id();
@@ -408,8 +458,15 @@ class GMKB_Interviews_API {
 
     /**
      * Format database row for Vue frontend.
+     * Maps DB columns to JSON fields expected by the frontend.
+     *
+     * This method is public static so it can be reused by GMKB_Core_Schema
+     * to avoid code duplication.
+     *
+     * @param object $row Database row object from joined query.
+     * @return array Formatted interview data for frontend.
      */
-    private static function format_interview($row) {
+    public static function format_interview($row) {
         $podcast_name = $row->podcast_name ?? '';
         $episode_title = $row->episode_title ?? '';
         $podcast_image = $row->podcast_image ?? $row->thumbnail_url ?? null;
