@@ -786,12 +786,19 @@ class GMKB_Core_Schema {
         }
 
         // FIX: Batch fetch all interviews in a single query to avoid N+1 problem
+        $podcasts_table = $wpdb->prefix . 'pit_podcasts';
         $interviews = [];
         $sanitized_ids = array_filter(array_map('absint', $value));
 
         if (!empty($sanitized_ids)) {
             $id_placeholders = implode(',', array_fill(0, count($sanitized_ids), '%d'));
-            $query = $wpdb->prepare("SELECT * FROM {$table_name} WHERE id IN ($id_placeholders)", $sanitized_ids);
+            $query = $wpdb->prepare(
+                "SELECT a.*, p.title AS podcast_name, p.artwork_url AS podcast_image
+                 FROM {$table_name} a
+                 LEFT JOIN {$podcasts_table} p ON a.podcast_id = p.id
+                 WHERE a.id IN ($id_placeholders)",
+                $sanitized_ids
+            );
             $results_by_id = $wpdb->get_results($query, OBJECT_K);
 
             // Reorder results to match original $value order
@@ -801,6 +808,7 @@ class GMKB_Core_Schema {
                     // Map PIT table columns to standard Frontend Schema
                     $podcast_name = $interview->podcast_name ?? '';
                     $episode_title = $interview->episode_title ?? '';
+                    $podcast_image = $interview->podcast_image ?? null;
                     $interview_data = [
                         'id'            => (int) $interview->id,
                         'title'         => $podcast_name ?: $episode_title,
@@ -812,8 +820,8 @@ class GMKB_Core_Schema {
                         'publish_date'  => $interview->episode_date ?? '',
                         'date'          => $interview->episode_date ?? '',
                         'label'         => ($podcast_name ? $podcast_name . ' - ' : '') . $episode_title,
-                        'image'         => null,
-                        'image_url'     => null,
+                        'image'         => $podcast_image,
+                        'image_url'     => $podcast_image,
                     ];
                     $interviews[] = $interview_data;
                 }

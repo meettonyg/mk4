@@ -213,10 +213,16 @@ class GMKB_Interviews_API {
             $wpdb->prepare("SELECT COUNT(*) FROM {$table_name} WHERE guest_id = %d", $guest_id)
         );
 
-        // Fetch appearances
+        // Fetch appearances with podcast info via JOIN
+        $podcasts_table = $wpdb->prefix . 'pit_podcasts';
         $results = $wpdb->get_results(
             $wpdb->prepare(
-                "SELECT * FROM {$table_name} WHERE guest_id = %d ORDER BY date DESC LIMIT %d OFFSET %d",
+                "SELECT a.*, p.title AS podcast_name, p.artwork_url AS podcast_image
+                 FROM {$table_name} a
+                 LEFT JOIN {$podcasts_table} p ON a.podcast_id = p.id
+                 WHERE a.guest_id = %d
+                 ORDER BY a.episode_date DESC
+                 LIMIT %d OFFSET %d",
                 $guest_id,
                 $per_page,
                 $offset
@@ -248,9 +254,16 @@ class GMKB_Interviews_API {
 
         global $wpdb;
         $table_name = $wpdb->prefix . 'pit_guest_appearances';
+        $podcasts_table = $wpdb->prefix . 'pit_podcasts';
 
         $interview = $wpdb->get_row(
-            $wpdb->prepare("SELECT * FROM {$table_name} WHERE id = %d", $interview_id)
+            $wpdb->prepare(
+                "SELECT a.*, p.title AS podcast_name, p.artwork_url AS podcast_image
+                 FROM {$table_name} a
+                 LEFT JOIN {$podcasts_table} p ON a.podcast_id = p.id
+                 WHERE a.id = %d",
+                $interview_id
+            )
         );
 
         if (!$interview) {
@@ -286,6 +299,7 @@ class GMKB_Interviews_API {
 
         global $wpdb;
         $table_name = $wpdb->prefix . 'pit_guest_appearances';
+        $podcasts_table = $wpdb->prefix . 'pit_podcasts';
 
         // Check if legacy table exists
         $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") === $table_name;
@@ -303,7 +317,13 @@ class GMKB_Interviews_API {
 
         if (!empty($sanitized_ids)) {
             $id_placeholders = implode(',', array_fill(0, count($sanitized_ids), '%d'));
-            $query = $wpdb->prepare("SELECT * FROM {$table_name} WHERE id IN ($id_placeholders)", $sanitized_ids);
+            $query = $wpdb->prepare(
+                "SELECT a.*, p.title AS podcast_name, p.artwork_url AS podcast_image
+                 FROM {$table_name} a
+                 LEFT JOIN {$podcasts_table} p ON a.podcast_id = p.id
+                 WHERE a.id IN ($id_placeholders)",
+                $sanitized_ids
+            );
             $results_by_id = $wpdb->get_results($query, OBJECT_K);
 
             // Reorder results to match original $interview_ids order
@@ -393,6 +413,7 @@ class GMKB_Interviews_API {
     private static function format_legacy_interview($row) {
         $podcast_name = $row->podcast_name ?? '';  // From JOIN with podcasts table
         $episode_title = $row->episode_title ?? '';
+        $podcast_image = $row->podcast_image ?? null;  // From JOIN with podcasts table
 
         return [
             'id'            => (int) $row->id,
@@ -405,8 +426,8 @@ class GMKB_Interviews_API {
             'episode_url'   => $row->episode_url ?? '',
             'date'          => $row->episode_date ?? '',
             'publish_date'  => $row->episode_date ?? '',
-            'image'         => null,  // Not available in this table
-            'image_url'     => null,
+            'image'         => $podcast_image,
+            'image_url'     => $podcast_image,
             'status'        => 'publish',
         ];
     }
