@@ -758,7 +758,7 @@ class GMKB_Core_Schema {
 
     /**
      * Prepare featured interviews field for REST API response.
-     * BRIDGE: Fetches interview data from legacy ShowAuthority table (wp_showauthority_appearances).
+     * BRIDGE: Fetches interview data from PIT guest appearances table (mls_pit_guest_appearances).
      *
      * @param mixed $value Array of interview IDs from post meta
      * @param WP_REST_Request $request REST request object
@@ -776,12 +776,12 @@ class GMKB_Core_Schema {
         }
 
         global $wpdb;
-        $table_name = $wpdb->prefix . 'showauthority_appearances';
+        $table_name = $wpdb->prefix . 'pit_guest_appearances';
 
         // Check if legacy table exists
         $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") === $table_name;
         if (!$table_exists) {
-            // Fail gracefully if ShowAuthority plugin not installed
+            // Fail gracefully if PIT guest appearances table not found
             return [];
         }
 

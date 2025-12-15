@@ -3,7 +3,7 @@
  * REST API endpoints for Interviews - BRIDGE EDITION
  *
  * This API acts as a modern interface for the Vue frontend but fetches data
- * directly from the legacy ShowAuthority plugin table (wp_showauthority_appearances).
+ * directly from the PIT guest appearances table (mls_pit_guest_appearances).
  *
  * @package GMKB
  * @since 3.2.0
@@ -169,7 +169,7 @@ class GMKB_Interviews_API {
     // =========================================================================
 
     /**
-     * List interviews for current user from Legacy ShowAuthority Table.
+     * List interviews for current user from PIT Guest Appearances Table.
      *
      * @param WP_REST_Request $request Request object.
      * @return WP_REST_Response|WP_Error Response object.
@@ -189,7 +189,7 @@ class GMKB_Interviews_API {
         }
 
         global $wpdb;
-        $table_name = $wpdb->prefix . 'showauthority_appearances';
+        $table_name = $wpdb->prefix . 'pit_guest_appearances';
 
         // Check if legacy table exists
         $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") === $table_name;
@@ -200,7 +200,7 @@ class GMKB_Interviews_API {
                 'total' => 0,
                 'pages' => 0,
                 'page' => 1,
-                'message' => 'ShowAuthority appearances table not found',
+                'message' => 'PIT guest appearances table not found',
             ]);
         }
 
@@ -238,7 +238,7 @@ class GMKB_Interviews_API {
     }
 
     /**
-     * Get single interview by ID from Legacy Table.
+     * Get single interview by ID from PIT Guest Appearances Table.
      *
      * @param WP_REST_Request $request Request object.
      * @return WP_REST_Response|WP_Error Response object.
@@ -247,7 +247,7 @@ class GMKB_Interviews_API {
         $interview_id = (int) $request->get_param('id');
 
         global $wpdb;
-        $table_name = $wpdb->prefix . 'showauthority_appearances';
+        $table_name = $wpdb->prefix . 'pit_guest_appearances';
 
         $interview = $wpdb->get_row(
             $wpdb->prepare("SELECT * FROM {$table_name} WHERE id = %d", $interview_id)
@@ -285,7 +285,7 @@ class GMKB_Interviews_API {
         }
 
         global $wpdb;
-        $table_name = $wpdb->prefix . 'showauthority_appearances';
+        $table_name = $wpdb->prefix . 'pit_guest_appearances';
 
         // Check if legacy table exists
         $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") === $table_name;
@@ -333,7 +333,7 @@ class GMKB_Interviews_API {
 
         // Validate all interview IDs exist in legacy table
         global $wpdb;
-        $table_name = $wpdb->prefix . 'showauthority_appearances';
+        $table_name = $wpdb->prefix . 'pit_guest_appearances';
 
         // FIX: Validate all IDs in a single query to avoid N+1 problem
         $valid_ids = [];
@@ -359,7 +359,7 @@ class GMKB_Interviews_API {
     // =========================================================================
 
     /**
-     * Get the Guest ID associated with the current user from Legacy ShowAuthority table.
+     * Get the Guest ID associated with the current user from PIT guests table.
      *
      * @return int|false Guest ID or false if not found.
      */
@@ -370,7 +370,7 @@ class GMKB_Interviews_API {
         }
 
         global $wpdb;
-        $table = $wpdb->prefix . 'showauthority_guests';
+        $table = $wpdb->prefix . 'pit_guests';
 
         // Check if table exists
         $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table'") === $table;
@@ -387,7 +387,7 @@ class GMKB_Interviews_API {
      * Format legacy database row for Vue frontend.
      * Maps DB columns to JSON fields expected by the frontend.
      *
-     * @param object $row Database row object from wp_showauthority_appearances.
+     * @param object $row Database row object from pit_guest_appearances.
      * @return array Prepared data for frontend.
      */
     private static function format_legacy_interview($row) {
