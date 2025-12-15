@@ -798,20 +798,22 @@ class GMKB_Core_Schema {
             foreach ($sanitized_ids as $interview_id) {
                 if (isset($results_by_id[$interview_id])) {
                     $interview = $results_by_id[$interview_id];
-                    // Map Legacy Table columns to standard Frontend Schema
+                    // Map PIT table columns to standard Frontend Schema
+                    $podcast_name = $interview->podcast_name ?? '';
+                    $episode_title = $interview->episode_title ?? '';
                     $interview_data = [
                         'id'            => (int) $interview->id,
-                        'title'         => $interview->podcast_name,
-                        'subtitle'      => $interview->episode_title,
-                        'podcast_name'  => $interview->podcast_name ?: 'Podcast',
-                        'episode_title' => $interview->episode_title,
-                        'link'          => $interview->url,
-                        'episode_url'   => $interview->url,
-                        'publish_date'  => $interview->date,
-                        'date'          => $interview->date,
-                        'label'         => ($interview->podcast_name ? $interview->podcast_name . ' - ' : '') . $interview->episode_title,
-                        'image'         => !empty($interview->image_url) ? $interview->image_url : null,
-                        'image_url'     => !empty($interview->image_url) ? $interview->image_url : null,
+                        'title'         => $podcast_name ?: $episode_title,
+                        'subtitle'      => $episode_title,
+                        'podcast_name'  => $podcast_name ?: 'Podcast',
+                        'episode_title' => $episode_title,
+                        'link'          => $interview->episode_url ?? '',
+                        'episode_url'   => $interview->episode_url ?? '',
+                        'publish_date'  => $interview->episode_date ?? '',
+                        'date'          => $interview->episode_date ?? '',
+                        'label'         => ($podcast_name ? $podcast_name . ' - ' : '') . $episode_title,
+                        'image'         => null,
+                        'image_url'     => null,
                     ];
                     $interviews[] = $interview_data;
                 }

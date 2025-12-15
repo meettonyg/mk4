@@ -391,23 +391,23 @@ class GMKB_Interviews_API {
      * @return array Prepared data for frontend.
      */
     private static function format_legacy_interview($row) {
-        $podcast_name = $row->podcast_name ?? '';
+        $podcast_name = $row->podcast_name ?? '';  // From JOIN with podcasts table
         $episode_title = $row->episode_title ?? '';
 
         return [
             'id'            => (int) $row->id,
-            'title'         => $podcast_name,
+            'title'         => $podcast_name ?: $episode_title,
             'subtitle'      => $episode_title,
             'podcast_name'  => $podcast_name ?: 'Podcast',
             'episode_title' => $episode_title,
             'label'         => ($podcast_name ? $podcast_name . ' - ' : '') . $episode_title,
-            'link'          => $row->url ?? '',
-            'episode_url'   => $row->url ?? '',
-            'date'          => $row->date ?? '',
-            'publish_date'  => $row->date ?? '',
-            'image'         => !empty($row->image_url) ? $row->image_url : null,
-            'image_url'     => !empty($row->image_url) ? $row->image_url : null,
-            'status'        => 'publish', // Legacy items are considered published
+            'link'          => $row->episode_url ?? '',
+            'episode_url'   => $row->episode_url ?? '',
+            'date'          => $row->episode_date ?? '',
+            'publish_date'  => $row->episode_date ?? '',
+            'image'         => null,  // Not available in this table
+            'image_url'     => null,
+            'status'        => 'publish',
         ];
     }
 }
