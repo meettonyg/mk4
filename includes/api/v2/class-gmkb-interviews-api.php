@@ -503,25 +503,37 @@ class GMKB_Interviews_API {
      * @return array Formatted interview data
      */
     private static function format_interview($post, $context = 'list') {
+        $podcast_name = get_post_meta($post->ID, 'interview_podcast_name', true);
+        $episode_title = $post->post_title;
+        $episode_url = get_post_meta($post->ID, 'interview_episode_url', true);
+
         $interview = [
-            'id' => $post->ID,
-            'title' => $post->post_title,
-            'status' => $post->post_status,
-            'podcast_name' => get_post_meta($post->ID, 'interview_podcast_name', true),
-            'episode_url' => get_post_meta($post->ID, 'interview_episode_url', true),
-            'publish_date' => get_post_meta($post->ID, 'interview_publish_date', true),
-            'created' => $post->post_date,
-            'modified' => $post->post_modified,
+            'id'            => $post->ID,
+            'title'         => $episode_title,
+            'subtitle'      => $podcast_name,
+            'podcast_name'  => $podcast_name ?: 'Podcast',
+            'episode_title' => $episode_title,
+            'link'          => $episode_url,
+            'episode_url'   => $episode_url,
+            'publish_date'  => get_post_meta($post->ID, 'interview_publish_date', true),
+            'status'        => $post->post_status,
+            'label'         => ($podcast_name ? $podcast_name . ' - ' : '') . $episode_title,
+            'created'       => $post->post_date,
+            'modified'      => $post->post_modified,
         ];
 
         // Add image (expanded object)
         $image_id = get_post_meta($post->ID, 'interview_image_id', true);
         if ($image_id) {
             $interview['image'] = self::format_image($image_id);
+            $interview['image_url'] = wp_get_attachment_url($image_id);
         } elseif (has_post_thumbnail($post->ID)) {
-            $interview['image'] = self::format_image(get_post_thumbnail_id($post->ID));
+            $thumb_id = get_post_thumbnail_id($post->ID);
+            $interview['image'] = self::format_image($thumb_id);
+            $interview['image_url'] = wp_get_attachment_url($thumb_id);
         } else {
             $interview['image'] = null;
+            $interview['image_url'] = null;
         }
 
         // Add detail fields for full view

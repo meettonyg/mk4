@@ -755,7 +755,7 @@ class GMKB_Core_Schema {
 
     /**
      * Prepare featured interviews field for REST API response
-     * Expands interview IDs to full interview objects
+     * Expands interview IDs to full interview objects with consistent format
      */
     public function prepare_interviews_field($value, $request, $args) {
         if (empty($value)) {
@@ -779,15 +779,21 @@ class GMKB_Core_Schema {
                 continue;
             }
 
-            // Build interview object with list-view fields
+            $podcast_name = get_post_meta($interview_id, 'interview_podcast_name', true);
+            $episode_title = $interview->post_title;
+
+            // Build interview object with consistent format for frontend
             $interview_data = [
-                'id' => $interview_id,
-                'title' => $interview->post_title,
-                'status' => $interview->post_status,
-                'podcast_name' => get_post_meta($interview_id, 'interview_podcast_name', true),
-                'episode_url' => get_post_meta($interview_id, 'interview_episode_url', true),
-                'publish_date' => get_post_meta($interview_id, 'interview_publish_date', true),
-                'description' => $interview->post_content,
+                'id'            => $interview_id,
+                'title'         => $episode_title,
+                'subtitle'      => $podcast_name,
+                'podcast_name'  => $podcast_name ?: 'Podcast',
+                'episode_title' => $episode_title,
+                'link'          => get_post_meta($interview_id, 'interview_episode_url', true),
+                'episode_url'   => get_post_meta($interview_id, 'interview_episode_url', true),
+                'publish_date'  => get_post_meta($interview_id, 'interview_publish_date', true),
+                'status'        => $interview->post_status,
+                'label'         => ($podcast_name ? $podcast_name . ' - ' : '') . $episode_title,
             ];
 
             // Add image if set
@@ -796,6 +802,8 @@ class GMKB_Core_Schema {
                 $interview_data['image'] = $this->prepare_media_field($image_id, null, null);
             } elseif (has_post_thumbnail($interview_id)) {
                 $interview_data['image'] = $this->prepare_media_field(get_post_thumbnail_id($interview_id), null, null);
+            } else {
+                $interview_data['image'] = null;
             }
 
             $interviews[] = $interview_data;
