@@ -289,8 +289,9 @@ const saveLinkedOffers = async () => {
 // Initialize on mount
 onMounted(async () => {
     // Fetch available offers and load linked offers in parallel
+    // Use status: 'any' to include publish, draft, and private offers
     await Promise.all([
-        fetchOffers({ status: 'publish', perPage: 100 }),
+        fetchOffers({ status: 'any', perPage: 100 }),
         loadLinkedOffers(),
     ]);
 });
