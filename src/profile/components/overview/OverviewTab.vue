@@ -229,65 +229,15 @@
                                     </p>
                                 </div>
 
-                                <!-- Add new interview toggle -->
+                                <!-- Link to add new interviews in Portfolio -->
                                 <div class="add-new-interview-section">
-                                    <button
-                                        v-if="!showAddForm"
-                                        type="button"
-                                        class="add-interview-btn"
-                                        @click="showAddForm = true"
+                                    <a
+                                        href="/wp-admin/admin.php?page=showauthority-appearances"
+                                        target="_blank"
+                                        class="add-portfolio-link"
                                     >
-                                        + Create New Interview
-                                    </button>
-
-                                    <!-- Add new interview form -->
-                                    <div v-else class="add-interview-form">
-                                        <h4>Create New Interview</h4>
-                                        <div class="form-group">
-                                            <label class="form-label">Episode Title *</label>
-                                            <input
-                                                type="text"
-                                                class="form-input"
-                                                v-model="newInterview.title"
-                                                placeholder="Episode title..."
-                                            />
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Podcast Name</label>
-                                            <input
-                                                type="text"
-                                                class="form-input"
-                                                v-model="newInterview.podcast_name"
-                                                placeholder="Podcast name..."
-                                            />
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Episode URL</label>
-                                            <input
-                                                type="url"
-                                                class="form-input"
-                                                v-model="newInterview.episode_url"
-                                                placeholder="https://..."
-                                            />
-                                        </div>
-                                        <div class="form-actions">
-                                            <button
-                                                type="button"
-                                                class="btn-secondary"
-                                                @click="showAddForm = false"
-                                            >
-                                                Cancel
-                                            </button>
-                                            <button
-                                                type="button"
-                                                class="btn-primary"
-                                                @click="addNewInterview"
-                                                :disabled="!newInterview.title"
-                                            >
-                                                Create & Add
-                                            </button>
-                                        </div>
-                                    </div>
+                                        + Add new interview to Portfolio
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -486,8 +436,7 @@ const {
     isLoading: isLoadingInterviews,
     fetchInterviews,
     getProfileInterviews,
-    updateProfileInterviews,
-    createInterview
+    updateProfileInterviews
 } = useInterviews();
 
 // Edit state
@@ -500,13 +449,7 @@ const featuredInterviews = ref([]);
 const selectedInterviewIds = ref([]);
 const searchTerm = ref('');
 const isLoadingFeatured = ref(false);
-const showAddForm = ref(false);
 const selectedForAdd = ref('');
-const newInterview = reactive({
-    title: '',
-    podcast_name: '',
-    episode_url: ''
-});
 
 // Computed
 const expertiseTags = computed(() => {
@@ -607,34 +550,6 @@ const saveFeaturedInterviews = async () => {
     }
 };
 
-// Add new interview
-const addNewInterview = async () => {
-    if (!newInterview.title) return;
-
-    try {
-        const result = await createInterview({
-            title: newInterview.title,
-            podcast_name: newInterview.podcast_name,
-            episode_url: newInterview.episode_url,
-            status: 'publish'
-        });
-
-        if (result.success) {
-            // Auto-select the new interview
-            selectedInterviewIds.value = [...selectedInterviewIds.value, result.interview.id];
-            // Refresh available interviews
-            await fetchInterviews({ status: 'publish', perPage: 100 });
-            // Reset form
-            newInterview.title = '';
-            newInterview.podcast_name = '';
-            newInterview.episode_url = '';
-            showAddForm.value = false;
-        }
-    } catch (error) {
-        console.error('Failed to create interview:', error);
-    }
-};
-
 // Initialize on mount
 onMounted(async () => {
     // Fetch available interviews and load featured interviews in parallel
@@ -706,7 +621,6 @@ const startEditingInterviews = () => {
     // Initialize selection from featured interviews
     selectedInterviewIds.value = featuredInterviews.value.map(i => i.id);
     searchTerm.value = '';
-    showAddForm.value = false;
     selectedForAdd.value = '';
 };
 
@@ -715,7 +629,6 @@ const cancelInterviewsEditing = () => {
     // Reset selection to match current featured interviews
     selectedInterviewIds.value = featuredInterviews.value.map(i => i.id);
     searchTerm.value = '';
-    showAddForm.value = false;
     selectedForAdd.value = '';
 };
 
@@ -1136,6 +1049,24 @@ const saveInterviewsSection = async () => {
     margin-top: 16px;
     padding-top: 16px;
     border-top: 1px solid #e2e8f0;
+    text-align: center;
+}
+
+.add-portfolio-link {
+    display: inline-block;
+    padding: 10px 16px;
+    color: #14b8a6;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px dashed #14b8a6;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.add-portfolio-link:hover {
+    background: #f0fdfa;
+    border-style: solid;
 }
 
 /* Add interview section */
