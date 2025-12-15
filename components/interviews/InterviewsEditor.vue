@@ -282,11 +282,6 @@ const updateData = () => {
   if (store.components[props.componentId]) {
     store.updateComponent(props.componentId, { data: updatedData });
   }
-
-  // Sync with profile's featured interviews if editing a profile
-  if (profileId.value) {
-    syncToProfile();
-  }
 };
 
 // Load profile's featured interviews (for syncing with profile page)
@@ -317,6 +312,13 @@ const syncToProfile = async () => {
     console.error('Failed to sync interviews to profile:', error);
   }
 };
+
+// Watch for interview selection changes and sync to profile
+watch(selectedInterviewIds, () => {
+  if (profileId.value) {
+    syncToProfile();
+  }
+}, { deep: true });
 
 const fetchInterviews = async () => {
   isLoadingInterviews.value = true;
