@@ -52,6 +52,10 @@ class GMKB_Interviews_API {
                         'default' => 1,
                         'sanitize_callback' => 'absint',
                     ],
+                    'profile_id' => [
+                        'default' => 0,
+                        'sanitize_callback' => 'absint',
+                    ],
                 ],
             ],
         ]);
@@ -180,7 +184,8 @@ class GMKB_Interviews_API {
      * @return WP_REST_Response|WP_Error Response object.
      */
     public static function list_interviews($request) {
-        $guest_id = self::get_target_guest_id();
+        $profile_id = (int) $request->get_param('profile_id');
+        $guest_id = self::get_target_guest_id($profile_id);
 
         if (!$guest_id) {
             return rest_ensure_response([
@@ -409,12 +414,29 @@ class GMKB_Interviews_API {
     // =========================================================================
 
     /**
-     * Get the Guest ID associated with the current user.
+     * Get the Guest ID associated with a profile or the current user.
      *
+     * @param int $profile_id Optional profile (guests post) ID to get guest for.
      * @return int|false Guest ID or false if not found.
      */
-    private static function get_target_guest_id() {
-        $user_id = get_current_user_id();
+    private static function get_target_guest_id($profile_id = 0) {
+        // If profile_id provided, get owner_user_id from that profile
+        if ($profile_id > 0) {
+            $post = get_post($profile_id);
+            if ($post && $post->post_type === 'guests') {
+                $user_id = (int) get_post_meta($profile_id, 'owner_user_id', true);
+                // Fall back to post author if no owner_user_id
+                if (!$user_id) {
+                    $user_id = (int) $post->post_author;
+                }
+            }
+        }
+
+        // Fall back to current user if no profile or no owner found
+        if (empty($user_id)) {
+            $user_id = get_current_user_id();
+        }
+
         if (!$user_id) {
             return false;
         }

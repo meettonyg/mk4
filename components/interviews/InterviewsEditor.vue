@@ -323,7 +323,9 @@ watch(selectedInterviewIds, () => {
 const fetchInterviews = async () => {
   isLoadingInterviews.value = true;
   try {
-    const result = await apiRequest('interviews?per_page=100');
+    // Pass profile_id so API can get interviews for the profile's owner
+    const postId = window.gmkbData?.postId || '';
+    const result = await apiRequest(`interviews?per_page=100&profile_id=${postId}`);
     availableInterviews.value = result.interviews || [];
   } catch (error) {
     console.error('Failed to fetch interviews:', error);
