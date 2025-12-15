@@ -758,9 +758,9 @@ class GMKB_Core_Schema {
 
     /**
      * Prepare featured interviews field for REST API response.
-     * BRIDGE: Fetches interview data from legacy ShowAuthority table (wp_showauthority_appearances).
+     * BRIDGE: Fetches interview data from PIT speaking_credits + engagements tables.
      *
-     * @param mixed $value Array of interview IDs from post meta
+     * @param mixed $value Array of speaking_credit IDs from post meta
      * @param WP_REST_Request $request REST request object
      * @param array $args Field arguments
      * @return array Hydrated interview objects
@@ -776,42 +776,60 @@ class GMKB_Core_Schema {
         }
 
         global $wpdb;
-        $table_name = $wpdb->prefix . 'showauthority_appearances';
+        $credits_table = $wpdb->prefix . 'pit_speaking_credits';
+        $engagements_table = $wpdb->prefix . 'pit_engagements';
+        $podcasts_table = $wpdb->prefix . 'pit_podcasts';
 
-        // Check if legacy table exists
-        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") === $table_name;
+        // Check if table exists
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$credits_table'") === $credits_table;
         if (!$table_exists) {
-            // Fail gracefully if ShowAuthority plugin not installed
             return [];
         }
 
-        // FIX: Batch fetch all interviews in a single query to avoid N+1 problem
         $interviews = [];
         $sanitized_ids = array_filter(array_map('absint', $value));
 
         if (!empty($sanitized_ids)) {
             $id_placeholders = implode(',', array_fill(0, count($sanitized_ids), '%d'));
-            $query = $wpdb->prepare("SELECT * FROM {$table_name} WHERE id IN ($id_placeholders)", $sanitized_ids);
+            $query = $wpdb->prepare(
+                "SELECT
+                    sc.id,
+                    sc.is_featured,
+                    e.title AS episode_title,
+                    e.url AS episode_url,
+                    e.published_date AS episode_date,
+                    e.thumbnail_url,
+                    p.title AS podcast_name,
+                    p.artwork_url AS podcast_image
+                 FROM {$credits_table} sc
+                 JOIN {$engagements_table} e ON sc.engagement_id = e.id
+                 LEFT JOIN {$podcasts_table} p ON e.podcast_id = p.id
+                 WHERE sc.id IN ($id_placeholders)",
+                $sanitized_ids
+            );
             $results_by_id = $wpdb->get_results($query, OBJECT_K);
 
             // Reorder results to match original $value order
             foreach ($sanitized_ids as $interview_id) {
                 if (isset($results_by_id[$interview_id])) {
                     $interview = $results_by_id[$interview_id];
-                    // Map Legacy Table columns to standard Frontend Schema
+                    $podcast_name = $interview->podcast_name ?? '';
+                    $episode_title = $interview->episode_title ?? '';
+                    $podcast_image = $interview->podcast_image ?? $interview->thumbnail_url ?? null;
                     $interview_data = [
                         'id'            => (int) $interview->id,
-                        'title'         => $interview->podcast_name,
-                        'subtitle'      => $interview->episode_title,
-                        'podcast_name'  => $interview->podcast_name ?: 'Podcast',
-                        'episode_title' => $interview->episode_title,
-                        'link'          => $interview->url,
-                        'episode_url'   => $interview->url,
-                        'publish_date'  => $interview->date,
-                        'date'          => $interview->date,
-                        'label'         => ($interview->podcast_name ? $interview->podcast_name . ' - ' : '') . $interview->episode_title,
-                        'image'         => !empty($interview->image_url) ? $interview->image_url : null,
-                        'image_url'     => !empty($interview->image_url) ? $interview->image_url : null,
+                        'title'         => $podcast_name ?: $episode_title,
+                        'subtitle'      => $episode_title,
+                        'podcast_name'  => $podcast_name ?: 'Podcast',
+                        'episode_title' => $episode_title,
+                        'link'          => $interview->episode_url ?? '',
+                        'episode_url'   => $interview->episode_url ?? '',
+                        'publish_date'  => $interview->episode_date ?? '',
+                        'date'          => $interview->episode_date ?? '',
+                        'label'         => ($podcast_name ? $podcast_name . ' - ' : '') . $episode_title,
+                        'image'         => $podcast_image,
+                        'image_url'     => $podcast_image,
+                        'is_featured'   => !empty($interview->is_featured),
                     ];
                     $interviews[] = $interview_data;
                 }
