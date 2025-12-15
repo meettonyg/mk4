@@ -812,26 +812,7 @@ class GMKB_Core_Schema {
             // Reorder results to match original $value order
             foreach ($sanitized_ids as $interview_id) {
                 if (isset($results_by_id[$interview_id])) {
-                    $interview = $results_by_id[$interview_id];
-                    $podcast_name = $interview->podcast_name ?? '';
-                    $episode_title = $interview->episode_title ?? '';
-                    $podcast_image = $interview->podcast_image ?? $interview->thumbnail_url ?? null;
-                    $interview_data = [
-                        'id'            => (int) $interview->id,
-                        'title'         => $podcast_name ?: $episode_title,
-                        'subtitle'      => $episode_title,
-                        'podcast_name'  => $podcast_name ?: 'Podcast',
-                        'episode_title' => $episode_title,
-                        'link'          => $interview->episode_url ?? '',
-                        'episode_url'   => $interview->episode_url ?? '',
-                        'publish_date'  => $interview->episode_date ?? '',
-                        'date'          => $interview->episode_date ?? '',
-                        'label'         => ($podcast_name ? $podcast_name . ' - ' : '') . $episode_title,
-                        'image'         => $podcast_image,
-                        'image_url'     => $podcast_image,
-                        'is_featured'   => !empty($interview->is_featured),
-                    ];
-                    $interviews[] = $interview_data;
+                    $interviews[] = GMKB_Interviews_API::format_interview($results_by_id[$interview_id]);
                 }
             }
         }

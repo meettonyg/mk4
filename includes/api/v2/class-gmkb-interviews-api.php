@@ -91,6 +91,12 @@ class GMKB_Interviews_API {
     // Permission Callbacks
     // =========================================================================
 
+    /**
+     * Check if user can list interviews (requires authentication).
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return bool|WP_Error True if authorized, WP_Error otherwise.
+     */
     public static function check_list_permission($request) {
         if (!is_user_logged_in()) {
             return new WP_Error('unauthorized', 'Authentication required', ['status' => 401]);
@@ -98,11 +104,23 @@ class GMKB_Interviews_API {
         return true;
     }
 
+    /**
+     * Check if user can read profile (for profile-interview endpoints).
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return bool|WP_Error True if authorized, WP_Error otherwise.
+     */
     public static function check_profile_read_permission($request) {
         $profile_id = (int) $request->get_param('id');
         return self::check_profile_permission($profile_id, 'read');
     }
 
+    /**
+     * Check if user can edit profile.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return bool|WP_Error True if authorized, WP_Error otherwise.
+     */
     public static function check_profile_edit_permission($request) {
         $profile_id = (int) $request->get_param('id');
         return self::check_profile_permission($profile_id, 'edit');
@@ -121,15 +139,18 @@ class GMKB_Interviews_API {
 
         $user_id = get_current_user_id();
 
+        // Admins can do anything
         if (current_user_can('edit_others_posts')) {
             return true;
         }
 
+        // Check ownership
         $owner_id = (int) get_post_meta($profile_id, 'owner_user_id', true);
         if ($owner_id === $user_id || (int) $post->post_author === $user_id) {
             return true;
         }
 
+        // Organization access for read
         if ($action === 'read' && self::user_in_same_org($user_id, (int) $post->post_author)) {
             return true;
         }
@@ -154,6 +175,9 @@ class GMKB_Interviews_API {
 
     /**
      * List interviews for current user from PIT speaking_credits + engagements.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response|WP_Error Response object.
      */
     public static function list_interviews($request) {
         $guest_id = self::get_target_guest_id();
@@ -235,6 +259,9 @@ class GMKB_Interviews_API {
 
     /**
      * Get single interview by speaking_credit ID.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response|WP_Error Response object.
      */
     public static function get_interview($request) {
         $interview_id = (int) $request->get_param('id');
@@ -331,6 +358,7 @@ class GMKB_Interviews_API {
             );
             $results_by_id = $wpdb->get_results($query, OBJECT_K);
 
+            // Reorder results to match original $interview_ids order
             foreach ($sanitized_ids as $id) {
                 if (isset($results_by_id[$id])) {
                     $interviews[] = self::format_interview($results_by_id[$id]);
@@ -382,6 +410,8 @@ class GMKB_Interviews_API {
 
     /**
      * Get the Guest ID associated with the current user.
+     *
+     * @return int|false Guest ID or false if not found.
      */
     private static function get_target_guest_id() {
         $user_id = get_current_user_id();
@@ -408,8 +438,11 @@ class GMKB_Interviews_API {
 
     /**
      * Format database row for Vue frontend.
+     *
+     * @param object $row Database row with interview data.
+     * @return array Formatted interview data for frontend.
      */
-    private static function format_interview($row) {
+    public static function format_interview($row) {
         $podcast_name = $row->podcast_name ?? '';
         $episode_title = $row->episode_title ?? '';
         $podcast_image = $row->podcast_image ?? $row->thumbnail_url ?? null;
