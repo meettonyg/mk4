@@ -106,6 +106,9 @@ class Interviews_Data_Integration {
                 e.url AS episode_url,
                 e.published_date AS episode_date,
                 e.thumbnail_url,
+                e.audio_url,
+                e.description AS episode_description,
+                e.duration AS episode_duration,
                 p.title AS podcast_name,
                 p.artwork_url AS podcast_image
              FROM {$credits_table} sc
@@ -152,6 +155,9 @@ class Interviews_Data_Integration {
             'podcast_name'  => $podcast_name ?: 'Podcast',
             'episode_title' => $episode_title,
             'episode_url'   => $row->episode_url ?? '',
+            'audio_url'     => $row->audio_url ?? '',
+            'description'   => $row->episode_description ?? '',
+            'duration'      => $row->episode_duration ?? '',
             'publish_date'  => $row->episode_date ?? '',
             'image'         => $podcast_image,
             'image_url'     => $podcast_image,
@@ -159,7 +165,6 @@ class Interviews_Data_Integration {
             'status'        => 'publish',
             // For backwards compatibility with templates expecting these fields
             'host_name'     => '',
-            'duration'      => '',
             'topics'        => array(),
         );
     }
