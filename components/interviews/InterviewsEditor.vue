@@ -201,6 +201,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
+import { apiRequest } from '../../src/utils/api.js';
 
 const props = defineProps({
   componentId: { type: String, required: true },
@@ -209,6 +210,10 @@ const props = defineProps({
 
 const emit = defineEmits(['update']);
 const store = useMediaKitStore();
+
+// Check if editing a profile (guests post type) - interviews should sync with profile
+const isProfilePost = computed(() => window.gmkbData?.postType === 'guests');
+const profileId = computed(() => isProfilePost.value ? window.gmkbData?.postId : null);
 
 // Local state
 const isLoadingInterviews = ref(false);
@@ -279,18 +284,47 @@ const updateData = () => {
   }
 };
 
+// Load profile's featured interviews (for syncing with profile page)
+const loadProfileInterviews = async () => {
+  if (!profileId.value) return;
+
+  try {
+    const result = await apiRequest(`profiles/${profileId.value}/interviews`);
+    const profileInterviewIds = (result.interviews || []).map(i => i.id);
+    if (profileInterviewIds.length > 0) {
+      selectedInterviewIds.value = profileInterviewIds;
+    }
+  } catch (error) {
+    console.error('Failed to load profile interviews:', error);
+  }
+};
+
+// Sync selected interviews to profile's featured interviews
+const syncToProfile = async () => {
+  if (!profileId.value) return;
+
+  try {
+    await apiRequest(`profiles/${profileId.value}/interviews`, {
+      method: 'PUT',
+      body: { interview_ids: selectedInterviewIds.value }
+    });
+  } catch (error) {
+    console.error('Failed to sync interviews to profile:', error);
+  }
+};
+
+// Watch for interview selection changes and sync to profile
+watch(selectedInterviewIds, () => {
+  if (profileId.value) {
+    syncToProfile();
+  }
+}, { deep: true });
+
 const fetchInterviews = async () => {
   isLoadingInterviews.value = true;
   try {
-    const apiUrl = window.gmkbData?.apiUrl || '/wp-json/';
-    const response = await fetch(`${apiUrl}gmkb/v2/interviews?per_page=100`, {
-      headers: { 'X-WP-Nonce': window.gmkbData?.nonce || '' }
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      availableInterviews.value = Array.isArray(data) ? data : (data.interviews || []);
-    }
+    const result = await apiRequest('interviews?per_page=100');
+    availableInterviews.value = result.interviews || [];
   } catch (error) {
     console.error('Failed to fetch interviews:', error);
   } finally {
@@ -299,8 +333,14 @@ const fetchInterviews = async () => {
 };
 
 // Initialize
-onMounted(() => {
-  fetchInterviews();
+onMounted(async () => {
+  await fetchInterviews();
+
+  // If editing a profile, load profile's featured interviews for sync
+  // Only load if no interviews are already selected in component data
+  if (profileId.value && selectedInterviewIds.value.length === 0) {
+    await loadProfileInterviews();
+  }
 });
 
 // Sync props changes

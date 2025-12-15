@@ -761,6 +761,7 @@ function gmkb_prepare_data_for_injection() {
         'ajaxUrl'           => admin_url('admin-ajax.php'),
         'nonce'             => $nonce,
         'postId'            => $post_id,
+        'postType'          => get_post_type($post_id),
         'postTitle'         => get_the_title($post_id),
         'pluginUrl'         => GUESTIFY_PLUGIN_URL,
         'isDevelopment'     => defined('GMKB_DEV_MODE') && GMKB_DEV_MODE,
