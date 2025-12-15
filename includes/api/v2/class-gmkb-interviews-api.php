@@ -229,9 +229,6 @@ class GMKB_Interviews_API {
                     e.url AS episode_url,
                     e.published_date AS episode_date,
                     e.thumbnail_url,
-                    e.audio_url,
-                    e.description AS episode_description,
-                    e.duration AS episode_duration,
                     p.title AS podcast_name,
                     p.artwork_url AS podcast_image
                  FROM {$credits_table} sc
@@ -283,9 +280,6 @@ class GMKB_Interviews_API {
                     e.url AS episode_url,
                     e.published_date AS episode_date,
                     e.thumbnail_url,
-                    e.audio_url,
-                    e.description AS episode_description,
-                    e.duration AS episode_duration,
                     p.title AS podcast_name,
                     p.artwork_url AS podcast_image
                  FROM {$credits_table} sc
@@ -354,9 +348,6 @@ class GMKB_Interviews_API {
                     e.url AS episode_url,
                     e.published_date AS episode_date,
                     e.thumbnail_url,
-                    e.audio_url,
-                    e.description AS episode_description,
-                    e.duration AS episode_duration,
                     p.title AS podcast_name,
                     p.artwork_url AS podcast_image
                  FROM {$credits_table} sc
@@ -465,9 +456,6 @@ class GMKB_Interviews_API {
             'label'         => ($podcast_name ? $podcast_name . ' - ' : '') . $episode_title,
             'link'          => $row->episode_url ?? '',
             'episode_url'   => $row->episode_url ?? '',
-            'audio_url'     => $row->audio_url ?? '',
-            'description'   => $row->episode_description ?? '',
-            'duration'      => $row->episode_duration ?? '',
             'date'          => $row->episode_date ?? '',
             'publish_date'  => $row->episode_date ?? '',
             'image'         => $podcast_image,
