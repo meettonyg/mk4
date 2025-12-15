@@ -379,7 +379,7 @@ class GMKB_Interviews_API {
         }
 
         return $wpdb->get_var(
-            $wpdb->prepare("SELECT id FROM {$table} WHERE user_id = %d", $user_id)
+            $wpdb->prepare("SELECT id FROM {$table} WHERE claimed_by_user_id = %d", $user_id)
         );
     }
 
