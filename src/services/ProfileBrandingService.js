@@ -230,8 +230,8 @@ class ProfileBrandingService {
     const effectivePrimary = colors.primary || colors.accent || null;
 
     // For secondary, prefer contrasting color, then fall back to accent if primary was used
-    const effectiveSecondary = colors.contrasting ||
-      (colors.primary ? colors.accent : null) || null;
+    const secondaryFromAccent = colors.primary ? colors.accent : null;
+    const effectiveSecondary = colors.contrasting || secondaryFromAccent || null;
 
     return {
       primary: effectivePrimary,
