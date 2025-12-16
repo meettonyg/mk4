@@ -305,41 +305,13 @@
                 >
                     <template #display>
                         <ul class="links-list">
-                            <li v-if="store.socialLinks.facebook" class="link-item">
-                                <span class="link-icon"><i class="fab fa-facebook-f"></i></span>
-                                <a :href="store.socialLinks.facebook" target="_blank">Facebook</a>
-                            </li>
-                            <li v-if="store.socialLinks.linkedin" class="link-item">
-                                <span class="link-icon"><i class="fab fa-linkedin-in"></i></span>
-                                <a :href="store.socialLinks.linkedin" target="_blank">LinkedIn</a>
-                            </li>
-                            <li v-if="store.socialLinks.twitter" class="link-item">
-                                <span class="link-icon"><i class="fab fa-twitter"></i></span>
-                                <a :href="store.socialLinks.twitter" target="_blank">Twitter</a>
-                            </li>
-                            <li v-if="store.socialLinks.instagram" class="link-item">
-                                <span class="link-icon"><i class="fab fa-instagram"></i></span>
-                                <a :href="store.socialLinks.instagram" target="_blank">Instagram</a>
-                            </li>
-                            <li v-if="store.socialLinks.youtube" class="link-item">
-                                <span class="link-icon"><i class="fab fa-youtube"></i></span>
-                                <a :href="store.socialLinks.youtube" target="_blank">YouTube</a>
-                            </li>
-                            <li v-if="store.socialLinks.tiktok" class="link-item">
-                                <span class="link-icon"><i class="fab fa-tiktok"></i></span>
-                                <a :href="store.socialLinks.tiktok" target="_blank">TikTok</a>
-                            </li>
-                            <li v-if="store.socialLinks.pinterest" class="link-item">
-                                <span class="link-icon"><i class="fab fa-pinterest-p"></i></span>
-                                <a :href="store.socialLinks.pinterest" target="_blank">Pinterest</a>
-                            </li>
-                            <li v-if="store.socialLinks.website1" class="link-item">
-                                <span class="link-icon"><i class="fas fa-globe"></i></span>
-                                <a :href="store.socialLinks.website1" target="_blank">Website</a>
-                            </li>
-                            <li v-if="store.socialLinks.website2" class="link-item">
-                                <span class="link-icon"><i class="fas fa-globe"></i></span>
-                                <a :href="store.socialLinks.website2" target="_blank">Website 2</a>
+                            <li
+                                v-for="link in activeLinks"
+                                :key="link.key"
+                                class="link-item"
+                            >
+                                <span class="link-icon"><i :class="link.icon"></i></span>
+                                <a :href="store.socialLinks[link.key]" target="_blank">{{ link.name }}</a>
                             </li>
                             <li v-if="!hasAnyLinks" class="empty-text">
                                 No links added yet
@@ -508,6 +480,23 @@ const expertiseTags = computed(() => {
 const hasAnyLinks = computed(() => {
     const links = store.socialLinks;
     return Object.values(links).some((v) => v);
+});
+
+// Social link configuration for v-for rendering
+const socialLinkConfig = [
+    { key: 'facebook', name: 'Facebook', icon: 'fab fa-facebook-f' },
+    { key: 'linkedin', name: 'LinkedIn', icon: 'fab fa-linkedin-in' },
+    { key: 'twitter', name: 'Twitter', icon: 'fab fa-twitter' },
+    { key: 'instagram', name: 'Instagram', icon: 'fab fa-instagram' },
+    { key: 'youtube', name: 'YouTube', icon: 'fab fa-youtube' },
+    { key: 'tiktok', name: 'TikTok', icon: 'fab fa-tiktok' },
+    { key: 'pinterest', name: 'Pinterest', icon: 'fab fa-pinterest-p' },
+    { key: 'website1', name: 'Website', icon: 'fas fa-globe' },
+    { key: 'website2', name: 'Website 2', icon: 'fas fa-globe' }
+];
+
+const activeLinks = computed(() => {
+    return socialLinkConfig.filter(link => store.socialLinks[link.key]);
 });
 
 // Filtered available interviews based on search
