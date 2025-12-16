@@ -328,6 +328,10 @@ class GMKB_REST_API_V2 {
                 error_log('  - Has customizations: ' . (!empty($state_data['themeCustomizations']) ? 'YES' : 'NO'));
             }
 
+            // PHASE 1: Fetch profile branding from post meta (2025-12-16)
+            // This exposes brand colors, fonts, and images to the Media Kit Builder
+            $profile_branding = $this->get_profile_branding($post_id);
+
             // Build response - theme is ONLY in state, nowhere else
             $response = array(
                 'success' => true,
@@ -349,10 +353,13 @@ class GMKB_REST_API_V2 {
                     'globalSettings' => $state_data['globalSettings'] ?? new stdClass()
                 ),
                 'podsData' => $pods_data,
+                // PHASE 1: Profile branding data for theme synchronization
+                'profileBranding' => $profile_branding,
                 'metadata' => array(
                     'componentCount' => is_object($state_data['components'] ?? null) ? 0 : count($state_data['components'] ?? array()),
                     'sectionCount' => count($state_data['sections'] ?? array()),
-                    'lastSaved' => $state_data['lastSaved'] ?? null
+                    'lastSaved' => $state_data['lastSaved'] ?? null,
+                    'hasBranding' => $profile_branding['hasBrandingData'] ?? false
                 )
             );
 
@@ -1208,6 +1215,145 @@ class GMKB_REST_API_V2 {
 
     // NOTE: Offers API methods are handled by the self-contained GMKB_Offers_API class
     // in class-gmkb-offers-api.php (following component self-containment architecture)
+
+    /**
+     * Get profile branding data from WordPress post meta
+     *
+     * PHASE 1: Branding Integration (2025-12-16)
+     * Fetches brand colors, fonts, and images from the profile post meta
+     * to expose to the Media Kit Builder for theme synchronization.
+     *
+     * @param int $post_id The post ID to fetch branding from
+     * @return array Profile branding data structure
+     */
+    private function get_profile_branding($post_id) {
+        $branding = array(
+            'colors' => array(
+                'primary' => get_post_meta($post_id, 'color_primary', true) ?: null,
+                'accent' => get_post_meta($post_id, 'color_accent', true) ?: null,
+                'contrasting' => get_post_meta($post_id, 'color_contrasting', true) ?: null,
+                'background' => get_post_meta($post_id, 'color_background', true) ?: null,
+                'header' => get_post_meta($post_id, 'color_header', true) ?: null,
+                'headerAccent' => get_post_meta($post_id, 'color_header_accent', true) ?: null,
+                'headerText' => get_post_meta($post_id, 'color_header_text', true) ?: null,
+                'paragraph' => get_post_meta($post_id, 'color_paragraph', true) ?: null,
+            ),
+            'fonts' => array(
+                'primary' => get_post_meta($post_id, 'font_primary', true) ?: null,
+                'secondary' => get_post_meta($post_id, 'font_secondary', true) ?: null,
+            ),
+            'images' => array(
+                'headshotPrimary' => $this->expand_branding_image($post_id, 'headshot_primary'),
+                'headshotVertical' => $this->expand_branding_image($post_id, 'headshot_vertical'),
+                'headshotHorizontal' => $this->expand_branding_image($post_id, 'headshot_horizontal'),
+                'logos' => $this->expand_branding_gallery($post_id, 'logos'),
+                'carouselImages' => $this->expand_branding_gallery($post_id, 'carousel_images'),
+            ),
+        );
+
+        // Check if any branding data exists
+        $has_colors = !empty(array_filter($branding['colors']));
+        $has_fonts = !empty(array_filter($branding['fonts']));
+        $has_images = !empty($branding['images']['headshotPrimary']) ||
+                      !empty($branding['images']['logos']);
+
+        $branding['hasBrandingData'] = $has_colors || $has_fonts || $has_images;
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('🎨 GMKB REST API v2: Profile branding for post #' . $post_id);
+            error_log('  - Has colors: ' . ($has_colors ? 'YES' : 'NO'));
+            error_log('  - Has fonts: ' . ($has_fonts ? 'YES' : 'NO'));
+            error_log('  - Has images: ' . ($has_images ? 'YES' : 'NO'));
+        }
+
+        return $branding;
+    }
+
+    /**
+     * Expand a single image field from attachment ID to full data
+     *
+     * @param int $post_id The post ID
+     * @param string $meta_key The meta key for the image field
+     * @return array|null Image data or null if not found
+     */
+    private function expand_branding_image($post_id, $meta_key) {
+        $attachment_id = get_post_meta($post_id, $meta_key, true);
+
+        if (empty($attachment_id)) {
+            return null;
+        }
+
+        $attachment_id = (int) $attachment_id;
+
+        // Handle case where meta stores full image data array (from Profile Editor)
+        if (is_array($attachment_id) && isset($attachment_id['id'])) {
+            return $attachment_id; // Already expanded
+        }
+
+        if (!wp_attachment_is_image($attachment_id)) {
+            return null;
+        }
+
+        return array(
+            'id' => $attachment_id,
+            'url' => wp_get_attachment_url($attachment_id),
+            'alt' => get_post_meta($attachment_id, '_wp_attachment_image_alt', true),
+            'sizes' => array(
+                'thumbnail' => wp_get_attachment_image_url($attachment_id, 'thumbnail'),
+                'medium' => wp_get_attachment_image_url($attachment_id, 'medium'),
+                'large' => wp_get_attachment_image_url($attachment_id, 'large'),
+                'full' => wp_get_attachment_image_url($attachment_id, 'full'),
+            ),
+        );
+    }
+
+    /**
+     * Expand a gallery field from attachment IDs to full data array
+     *
+     * @param int $post_id The post ID
+     * @param string $meta_key The meta key for the gallery field
+     * @return array Array of image data
+     */
+    private function expand_branding_gallery($post_id, $meta_key) {
+        $value = get_post_meta($post_id, $meta_key, true);
+
+        if (empty($value)) {
+            return array();
+        }
+
+        // Handle comma-separated string (legacy format)
+        if (is_string($value)) {
+            $ids = array_map('trim', explode(',', $value));
+        } else {
+            $ids = (array) $value;
+        }
+
+        $images = array();
+        foreach ($ids as $id) {
+            // Handle case where array contains full image objects
+            if (is_array($id) && isset($id['id'])) {
+                $images[] = $id;
+                continue;
+            }
+
+            $attachment_id = (int) $id;
+            if ($attachment_id && wp_attachment_is_image($attachment_id)) {
+                $images[] = array(
+                    'id' => $attachment_id,
+                    'url' => wp_get_attachment_url($attachment_id),
+                    'alt' => get_post_meta($attachment_id, '_wp_attachment_image_alt', true),
+                    'sizes' => array(
+                        'thumbnail' => wp_get_attachment_image_url($attachment_id, 'thumbnail'),
+                        'medium' => wp_get_attachment_image_url($attachment_id, 'medium'),
+                        'large' => wp_get_attachment_image_url($attachment_id, 'large'),
+                        'full' => wp_get_attachment_image_url($attachment_id, 'full'),
+                    ),
+                );
+            }
+        }
+
+        return $images;
+    }
 }
 
 // ROOT FIX: Instantiation now happens via init hook in main plugin file

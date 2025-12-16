@@ -753,10 +753,14 @@ function gmkb_prepare_data_for_injection() {
     
     // STEP 10: Build final data array
     // ROOT FIX: Include pods_data if we managed to load it, otherwise Vue will fetch via REST API
-    
+
     // ROOT FIX: Load deprecation configuration (empty by default, can be extended via filter)
     $deprecation_config = apply_filters('gmkb_deprecation_config', array());
-    
+
+    // PHASE 1: Branding Integration (2025-12-16)
+    // Fetch profile branding from post meta for theme synchronization
+    $profile_branding = gmkb_get_profile_branding($post_id);
+
     $gmkb_data = array(
         'ajaxUrl'           => admin_url('admin-ajax.php'),
         'nonce'             => $nonce,
@@ -776,6 +780,8 @@ function gmkb_prepare_data_for_injection() {
         'themes'            => $themes,
         'savedState'        => $saved_state,
         'pods_data'         => $pods_data, // ROOT FIX: Include if available, empty array if not
+        // PHASE 1: Profile branding data for theme synchronization
+        'profileBranding'   => $profile_branding,
         // ROOT FIX: Inject deprecation configuration for ComponentDeprecationManager
         // Empty array by default - add deprecated components via 'gmkb_deprecation_config' filter
         'deprecationConfig' => $deprecation_config,
@@ -804,9 +810,10 @@ function gmkb_prepare_data_for_injection() {
         error_log('  - Themes: ' . $theme_count);
         error_log('  - Has saved state: ' . ($saved_state ? 'YES' : 'NO'));
         error_log('  - Pods data: ' . count($pods_data) . ' fields loaded');
+        error_log('  - Profile branding: ' . ($profile_branding['hasBrandingData'] ? 'YES' : 'NO'));
         error_log('  - Deprecation config: ' . count($deprecation_config) . ' deprecated components');
         error_log('  - Data keys: ' . implode(', ', array_keys($gmkb_data)));
-        
+
         // Critical check: Verify componentRegistry is not empty
         if (empty($gmkb_data['componentRegistry'])) {
             error_log('❌ GMKB DATA PREP - WARNING: componentRegistry is EMPTY!');
@@ -1268,6 +1275,146 @@ function gmkb_get_pods_data($post_id) {
     }
     
     return $pods_data;
+}
+
+/**
+ * PHASE 1: Branding Integration (2025-12-16)
+ *
+ * Fetch profile branding data from WordPress post meta.
+ * This provides the same data structure as the REST API v2 endpoint,
+ * enabling the Media Kit Builder to access brand colors, fonts, and images
+ * on initial page load without an additional API call.
+ *
+ * @param int $post_id The post ID
+ * @return array Profile branding data
+ */
+function gmkb_get_profile_branding($post_id) {
+    $branding = array(
+        'colors' => array(
+            'primary' => get_post_meta($post_id, 'color_primary', true) ?: null,
+            'accent' => get_post_meta($post_id, 'color_accent', true) ?: null,
+            'contrasting' => get_post_meta($post_id, 'color_contrasting', true) ?: null,
+            'background' => get_post_meta($post_id, 'color_background', true) ?: null,
+            'header' => get_post_meta($post_id, 'color_header', true) ?: null,
+            'headerAccent' => get_post_meta($post_id, 'color_header_accent', true) ?: null,
+            'headerText' => get_post_meta($post_id, 'color_header_text', true) ?: null,
+            'paragraph' => get_post_meta($post_id, 'color_paragraph', true) ?: null,
+        ),
+        'fonts' => array(
+            'primary' => get_post_meta($post_id, 'font_primary', true) ?: null,
+            'secondary' => get_post_meta($post_id, 'font_secondary', true) ?: null,
+        ),
+        'images' => array(
+            'headshotPrimary' => gmkb_expand_branding_image($post_id, 'headshot_primary'),
+            'headshotVertical' => gmkb_expand_branding_image($post_id, 'headshot_vertical'),
+            'headshotHorizontal' => gmkb_expand_branding_image($post_id, 'headshot_horizontal'),
+            'logos' => gmkb_expand_branding_gallery($post_id, 'logos'),
+            'carouselImages' => gmkb_expand_branding_gallery($post_id, 'carousel_images'),
+        ),
+    );
+
+    // Check if any branding data exists
+    $has_colors = !empty(array_filter($branding['colors']));
+    $has_fonts = !empty(array_filter($branding['fonts']));
+    $has_images = !empty($branding['images']['headshotPrimary']) ||
+                  !empty($branding['images']['logos']);
+
+    $branding['hasBrandingData'] = $has_colors || $has_fonts || $has_images;
+
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('🎨 GMKB Profile Branding: Post #' . $post_id);
+        error_log('  - Has colors: ' . ($has_colors ? 'YES' : 'NO'));
+        error_log('  - Has fonts: ' . ($has_fonts ? 'YES' : 'NO'));
+        error_log('  - Has images: ' . ($has_images ? 'YES' : 'NO'));
+    }
+
+    return $branding;
+}
+
+/**
+ * Expand a single image field from attachment ID to full data
+ *
+ * @param int $post_id The post ID
+ * @param string $meta_key The meta key for the image field
+ * @return array|null Image data or null if not found
+ */
+function gmkb_expand_branding_image($post_id, $meta_key) {
+    $attachment_id = get_post_meta($post_id, $meta_key, true);
+
+    if (empty($attachment_id)) {
+        return null;
+    }
+
+    // Handle case where meta stores full image data array (from Profile Editor)
+    if (is_array($attachment_id) && isset($attachment_id['id'])) {
+        return $attachment_id; // Already expanded
+    }
+
+    $attachment_id = (int) $attachment_id;
+
+    if (!wp_attachment_is_image($attachment_id)) {
+        return null;
+    }
+
+    return array(
+        'id' => $attachment_id,
+        'url' => wp_get_attachment_url($attachment_id),
+        'alt' => get_post_meta($attachment_id, '_wp_attachment_image_alt', true),
+        'sizes' => array(
+            'thumbnail' => wp_get_attachment_image_url($attachment_id, 'thumbnail'),
+            'medium' => wp_get_attachment_image_url($attachment_id, 'medium'),
+            'large' => wp_get_attachment_image_url($attachment_id, 'large'),
+            'full' => wp_get_attachment_image_url($attachment_id, 'full'),
+        ),
+    );
+}
+
+/**
+ * Expand a gallery field from attachment IDs to full data array
+ *
+ * @param int $post_id The post ID
+ * @param string $meta_key The meta key for the gallery field
+ * @return array Array of image data
+ */
+function gmkb_expand_branding_gallery($post_id, $meta_key) {
+    $value = get_post_meta($post_id, $meta_key, true);
+
+    if (empty($value)) {
+        return array();
+    }
+
+    // Handle comma-separated string (legacy format)
+    if (is_string($value)) {
+        $ids = array_map('trim', explode(',', $value));
+    } else {
+        $ids = (array) $value;
+    }
+
+    $images = array();
+    foreach ($ids as $id) {
+        // Handle case where array contains full image objects
+        if (is_array($id) && isset($id['id'])) {
+            $images[] = $id;
+            continue;
+        }
+
+        $attachment_id = (int) $id;
+        if ($attachment_id && wp_attachment_is_image($attachment_id)) {
+            $images[] = array(
+                'id' => $attachment_id,
+                'url' => wp_get_attachment_url($attachment_id),
+                'alt' => get_post_meta($attachment_id, '_wp_attachment_image_alt', true),
+                'sizes' => array(
+                    'thumbnail' => wp_get_attachment_image_url($attachment_id, 'thumbnail'),
+                    'medium' => wp_get_attachment_image_url($attachment_id, 'medium'),
+                    'large' => wp_get_attachment_image_url($attachment_id, 'large'),
+                    'full' => wp_get_attachment_image_url($attachment_id, 'full'),
+                ),
+            );
+        }
+    }
+
+    return $images;
 }
 
 function gmkb_display_build_error_notice() {
