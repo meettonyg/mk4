@@ -265,13 +265,38 @@ class ProfileBrandingService {
     return {
       primary_font: effectivePrimaryFont ? {
         family: effectivePrimaryFont,
-        fallback: 'sans-serif'
+        fallback: this._getFontFallback(effectivePrimaryFont)
       } : null,
       heading_font: effectiveHeadingFont ? {
         family: effectiveHeadingFont,
-        fallback: 'sans-serif'
+        fallback: this._getFontFallback(effectiveHeadingFont)
       } : null
     };
+  }
+
+  /**
+   * Get appropriate CSS fallback for a font family
+   * @param {string} fontName - The font family name
+   * @returns {string} CSS fallback stack (serif, sans-serif, or cursive)
+   * @private
+   */
+  _getFontFallback(fontName) {
+    // Serif fonts
+    const serifFonts = [
+      'Amiri', 'Georgia', 'Lora', 'Merriweather',
+      'Playfair Display', 'Roboto Slab', 'Times New Roman'
+    ];
+
+    // Display/decorative fonts
+    const cursiveFonts = ['Bonbon'];
+
+    if (serifFonts.includes(fontName)) {
+      return 'serif';
+    }
+    if (cursiveFonts.includes(fontName)) {
+      return 'cursive';
+    }
+    return 'sans-serif';
   }
 
   /**
