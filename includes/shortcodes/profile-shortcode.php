@@ -101,6 +101,10 @@ function gmkb_enqueue_profile_assets($post_id) {
     $plugin_path = plugin_dir_path(dirname(dirname(__FILE__)));
     $dist_path = $plugin_path . 'dist/profile/';
 
+    // Enqueue WordPress Media Library for image uploads (headshots, logos, etc.)
+    // This loads jQuery, Backbone, Underscore, and wp.media scripts
+    wp_enqueue_media();
+
     // Check if built files exist
     $js_file = $dist_path . 'gmkb-profile.iife.js';
     $css_file = $dist_path . 'gmkb-profile.css';
