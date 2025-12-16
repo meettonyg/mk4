@@ -248,18 +248,27 @@ class ProfileBrandingService {
   /**
    * Convert profile fonts to theme-compatible format
    * Maps profile font keys to theme.js typography structure
+   *
+   * IMPORTANT: Similar to colors, if only one font is set, use it for both
+   * body text and headings so the user's brand font actually affects the UI.
+   *
    * @returns {Object} Typography formatted for theme system
    */
   getThemeTypography() {
     const fonts = this.getFonts();
 
+    // Smart fallback: if only primary is set, use it for headings too
+    // If only secondary is set, use it for body text too
+    const effectivePrimaryFont = fonts.primary || fonts.secondary || null;
+    const effectiveHeadingFont = fonts.secondary || fonts.primary || null;
+
     return {
-      primary_font: fonts.primary ? {
-        family: fonts.primary,
+      primary_font: effectivePrimaryFont ? {
+        family: effectivePrimaryFont,
         fallback: 'sans-serif'
       } : null,
-      heading_font: fonts.secondary ? {
-        family: fonts.secondary,
+      heading_font: effectiveHeadingFont ? {
+        family: effectiveHeadingFont,
         fallback: 'sans-serif'
       } : null
     };
