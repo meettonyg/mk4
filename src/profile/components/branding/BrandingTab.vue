@@ -409,7 +409,15 @@ const saveSection = async (sectionId) => {
 
         if (success) {
             editingSection.value = null;
+        } else {
+            // Show error feedback to user
+            const errorMsg = store.lastError || 'Failed to save. Please try again.';
+            console.error('Save failed:', errorMsg);
+            alert(errorMsg);
         }
+    } catch (error) {
+        console.error('Save error:', error);
+        alert('An error occurred while saving. Please try again.');
     } finally {
         isSaving.value = false;
     }
