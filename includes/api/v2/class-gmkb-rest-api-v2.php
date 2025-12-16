@@ -328,6 +328,11 @@ class GMKB_REST_API_V2 {
                 error_log('  - Has customizations: ' . (!empty($state_data['themeCustomizations']) ? 'YES' : 'NO'));
             }
 
+            // PHASE 1: Fetch profile branding from post meta (2025-12-16)
+            // This exposes brand colors, fonts, and images to the Media Kit Builder
+            // Uses shared function from includes/profile-branding.php
+            $profile_branding = gmkb_get_profile_branding($post_id);
+
             // Build response - theme is ONLY in state, nowhere else
             $response = array(
                 'success' => true,
@@ -349,10 +354,13 @@ class GMKB_REST_API_V2 {
                     'globalSettings' => $state_data['globalSettings'] ?? new stdClass()
                 ),
                 'podsData' => $pods_data,
+                // PHASE 1: Profile branding data for theme synchronization
+                'profileBranding' => $profile_branding,
                 'metadata' => array(
                     'componentCount' => is_object($state_data['components'] ?? null) ? 0 : count($state_data['components'] ?? array()),
                     'sectionCount' => count($state_data['sections'] ?? array()),
-                    'lastSaved' => $state_data['lastSaved'] ?? null
+                    'lastSaved' => $state_data['lastSaved'] ?? null,
+                    'hasBranding' => $profile_branding['hasBrandingData'] ?? false
                 )
             );
 
@@ -1208,6 +1216,16 @@ class GMKB_REST_API_V2 {
 
     // NOTE: Offers API methods are handled by the self-contained GMKB_Offers_API class
     // in class-gmkb-offers-api.php (following component self-containment architecture)
+
+    /**
+     * PHASE 1: Branding Integration (2025-12-16)
+     *
+     * Profile branding functions have been moved to includes/profile-branding.php
+     * to eliminate code duplication. This class now uses gmkb_get_profile_branding()
+     * from the shared file.
+     *
+     * @see includes/profile-branding.php
+     */
 }
 
 // ROOT FIX: Instantiation now happens via init hook in main plugin file

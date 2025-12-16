@@ -753,10 +753,14 @@ function gmkb_prepare_data_for_injection() {
     
     // STEP 10: Build final data array
     // ROOT FIX: Include pods_data if we managed to load it, otherwise Vue will fetch via REST API
-    
+
     // ROOT FIX: Load deprecation configuration (empty by default, can be extended via filter)
     $deprecation_config = apply_filters('gmkb_deprecation_config', array());
-    
+
+    // PHASE 1: Branding Integration (2025-12-16)
+    // Fetch profile branding from post meta for theme synchronization
+    $profile_branding = gmkb_get_profile_branding($post_id);
+
     $gmkb_data = array(
         'ajaxUrl'           => admin_url('admin-ajax.php'),
         'nonce'             => $nonce,
@@ -776,6 +780,8 @@ function gmkb_prepare_data_for_injection() {
         'themes'            => $themes,
         'savedState'        => $saved_state,
         'pods_data'         => $pods_data, // ROOT FIX: Include if available, empty array if not
+        // PHASE 1: Profile branding data for theme synchronization
+        'profileBranding'   => $profile_branding,
         // ROOT FIX: Inject deprecation configuration for ComponentDeprecationManager
         // Empty array by default - add deprecated components via 'gmkb_deprecation_config' filter
         'deprecationConfig' => $deprecation_config,
@@ -804,9 +810,10 @@ function gmkb_prepare_data_for_injection() {
         error_log('  - Themes: ' . $theme_count);
         error_log('  - Has saved state: ' . ($saved_state ? 'YES' : 'NO'));
         error_log('  - Pods data: ' . count($pods_data) . ' fields loaded');
+        error_log('  - Profile branding: ' . ($profile_branding['hasBrandingData'] ? 'YES' : 'NO'));
         error_log('  - Deprecation config: ' . count($deprecation_config) . ' deprecated components');
         error_log('  - Data keys: ' . implode(', ', array_keys($gmkb_data)));
-        
+
         // Critical check: Verify componentRegistry is not empty
         if (empty($gmkb_data['componentRegistry'])) {
             error_log('❌ GMKB DATA PREP - WARNING: componentRegistry is EMPTY!');
@@ -1269,6 +1276,20 @@ function gmkb_get_pods_data($post_id) {
     
     return $pods_data;
 }
+
+/**
+ * PHASE 1: Branding Integration (2025-12-16)
+ *
+ * Profile branding functions have been moved to includes/profile-branding.php
+ * to eliminate code duplication between enqueue.php and REST API v2.
+ *
+ * Available functions from profile-branding.php:
+ * - gmkb_get_profile_branding($post_id) - Get all branding data
+ * - gmkb_expand_branding_image($post_id, $meta_key) - Expand single image
+ * - gmkb_expand_branding_gallery($post_id, $meta_key) - Expand gallery
+ *
+ * @see includes/profile-branding.php
+ */
 
 function gmkb_display_build_error_notice() {
     ?>

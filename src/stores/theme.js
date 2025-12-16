@@ -5,6 +5,8 @@
 import { defineStore } from 'pinia';
 import { useMediaKitStore } from './mediaKit';
 import ThemeStyleInjector from '../services/ThemeStyleInjector';
+import profileBrandingService from '../services/ProfileBrandingService';
+import googleFontsService from '../services/GoogleFontsService';
 
 export const useThemeStore = defineStore('theme', {
   state: () => ({
@@ -679,7 +681,7 @@ export const useThemeStore = defineStore('theme', {
       if (!themeData.id || !themeData.colors) {
         throw new Error('Invalid theme data');
       }
-      
+
       // Add as custom theme
       const customTheme = {
         ...themeData,
@@ -688,13 +690,114 @@ export const useThemeStore = defineStore('theme', {
         imported: true,
         importedAt: new Date().toISOString()
       };
-      
+
       this.customThemes.push(customTheme);
       this.selectTheme(customTheme.id);
-      
+
       return customTheme;
     },
-    
+
+    /**
+     * Apply profile branding colors and fonts to the current theme
+     * PHASE 3: Branding Integration (2025-12-16)
+     *
+     * This action reads branding data from ProfileBrandingService and applies
+     * it as theme customizations. Does not modify the base theme - only adds
+     * customizations on top.
+     *
+     * @param {Object} options - Options for applying branding
+     * @param {boolean} options.colors - Apply profile colors (default: true)
+     * @param {boolean} options.fonts - Apply profile fonts (default: true)
+     * @returns {Object} Summary of what was applied
+     */
+    applyProfileBranding(options = {}) {
+      const { colors = true, fonts = true } = options;
+      const applied = { colors: [], fonts: [] };
+
+      // Ensure service is initialized
+      if (!profileBrandingService.hasBrandingData()) {
+        console.log('[Theme Store] No profile branding data available');
+        return { success: false, reason: 'no_data', applied };
+      }
+
+      console.log('[Theme Store] Applying profile branding...');
+
+      // Apply colors from profile branding
+      if (colors && profileBrandingService.hasColors()) {
+        const themeColors = profileBrandingService.getThemeColors();
+
+        Object.entries(themeColors).forEach(([key, value]) => {
+          if (value) {
+            this.updateColor(key, value);
+            applied.colors.push(key);
+          }
+        });
+
+        console.log(`[Theme Store] Applied ${applied.colors.length} profile colors:`, applied.colors);
+      }
+
+      // Apply fonts from profile branding
+      if (fonts && profileBrandingService.hasFonts()) {
+        const themeTypography = profileBrandingService.getThemeTypography();
+        const fontsToLoad = [];
+
+        if (themeTypography.primary_font) {
+          fontsToLoad.push(themeTypography.primary_font.family);
+          // Strip any existing quotes to prevent double-quoting
+          const primaryFamily = themeTypography.primary_font.family.replace(/['"]/g, '');
+          const fontFamily = `'${primaryFamily}', ${themeTypography.primary_font.fallback}`;
+          this.updateTypography('fontFamily', fontFamily);
+          applied.fonts.push('fontFamily');
+        }
+
+        if (themeTypography.heading_font) {
+          fontsToLoad.push(themeTypography.heading_font.family);
+          // Strip any existing quotes to prevent double-quoting
+          const headingFamilyName = themeTypography.heading_font.family.replace(/['"]/g, '');
+          const headingFamily = `'${headingFamilyName}', ${themeTypography.heading_font.fallback}`;
+          this.updateTypography('headingFamily', headingFamily);
+          applied.fonts.push('headingFamily');
+        }
+
+        // PHASE 6: Dynamically load Google Fonts
+        if (fontsToLoad.length > 0) {
+          googleFontsService.loadFonts(fontsToLoad).then((result) => {
+            console.log(`[Theme Store] Google Fonts loaded:`, result.success);
+          });
+        }
+
+        console.log(`[Theme Store] Applied ${applied.fonts.length} profile fonts:`, applied.fonts);
+      }
+
+      // Mark as having unsaved changes
+      this.hasUnsavedChanges = true;
+
+      // Dispatch event for other systems
+      document.dispatchEvent(new CustomEvent('gmkb:profile-branding-applied', {
+        detail: { applied }
+      }));
+
+      console.log('[Theme Store] Profile branding applied successfully');
+      return { success: true, applied };
+    },
+
+    /**
+     * Get summary of available profile branding
+     * Useful for UI to show what can be applied
+     * @returns {Object} Summary from ProfileBrandingService
+     */
+    getProfileBrandingSummary() {
+      return profileBrandingService.getBrandingSummary();
+    },
+
+    /**
+     * Check if profile branding is available
+     * @returns {boolean}
+     */
+    hasProfileBranding() {
+      return profileBrandingService.hasBrandingData();
+    },
+
     // Apply theme CSS variables to DOM
     applyThemeToDOM() {
       const root = document.documentElement;

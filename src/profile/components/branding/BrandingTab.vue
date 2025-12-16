@@ -12,53 +12,56 @@
         >
             <template #display>
                 <div class="headshots-grid">
-                    <div class="headshot-item">
+                    <div
+                        v-for="headshot in headshotTypes"
+                        :key="headshot.key"
+                        class="headshot-item"
+                    >
                         <figure>
                             <img
-                                v-if="store.fields.headshot_primary?.url"
-                                :src="store.fields.headshot_primary.sizes?.medium || store.fields.headshot_primary.url"
-                                :alt="store.fields.headshot_primary.alt || 'Primary Headshot'"
+                                v-if="store.fields[headshot.key]?.url"
+                                :src="store.fields[headshot.key].sizes?.medium || store.fields[headshot.key].url"
+                                :alt="store.fields[headshot.key].alt || headshot.label"
                             />
                             <div v-else class="placeholder-image">
                                 <span>📷</span>
                             </div>
-                            <figcaption>Primary Headshot</figcaption>
-                        </figure>
-                    </div>
-                    <div class="headshot-item">
-                        <figure>
-                            <img
-                                v-if="store.fields.headshot_vertical?.url"
-                                :src="store.fields.headshot_vertical.sizes?.medium || store.fields.headshot_vertical.url"
-                                :alt="store.fields.headshot_vertical.alt || 'Vertical Headshot'"
-                            />
-                            <div v-else class="placeholder-image">
-                                <span>📷</span>
-                            </div>
-                            <figcaption>Vertical Headshot</figcaption>
-                        </figure>
-                    </div>
-                    <div class="headshot-item">
-                        <figure>
-                            <img
-                                v-if="store.fields.headshot_horizontal?.url"
-                                :src="store.fields.headshot_horizontal.sizes?.medium || store.fields.headshot_horizontal.url"
-                                :alt="store.fields.headshot_horizontal.alt || 'Horizontal Headshot'"
-                            />
-                            <div v-else class="placeholder-image">
-                                <span>📷</span>
-                            </div>
-                            <figcaption>Horizontal Headshot</figcaption>
+                            <figcaption>{{ headshot.label }}</figcaption>
                         </figure>
                     </div>
                 </div>
             </template>
 
             <template #edit>
-                <p class="edit-note">
-                    To change headshots, use the WordPress Media Library.
-                    Image uploads will be available in a future update.
-                </p>
+                <div class="headshots-edit-grid">
+                    <div
+                        v-for="headshot in headshotTypes"
+                        :key="headshot.key"
+                        class="headshot-upload-item"
+                    >
+                        <label class="upload-label">{{ headshot.label }}</label>
+                        <div class="upload-preview" @click="selectHeadshot(headshot.key)">
+                            <img
+                                v-if="editFields[headshot.key]?.url"
+                                :src="editFields[headshot.key].sizes?.medium || editFields[headshot.key].url"
+                                :alt="headshot.label"
+                            />
+                            <div v-else class="upload-placeholder">
+                                <span class="upload-icon">📷</span>
+                                <span class="upload-text">Click to select</span>
+                            </div>
+                        </div>
+                        <button
+                            v-if="editFields[headshot.key]?.url"
+                            type="button"
+                            class="remove-btn"
+                            @click.stop="removeImage(headshot.key)"
+                        >
+                            Remove
+                        </button>
+                    </div>
+                </div>
+                <p v-if="mediaError" class="upload-error">{{ mediaError }}</p>
             </template>
         </EditablePanel>
 
@@ -94,9 +97,14 @@
             </template>
 
             <template #edit>
-                <p class="edit-note">
-                    To change logos, use the WordPress Media Library.
-                </p>
+                <GalleryEditor
+                    :items="editFields.logos || []"
+                    alt-default="Logo"
+                    add-button-text="Add Logo"
+                    :error="mediaError"
+                    @add="addToGallery('logos')"
+                    @remove="(index) => removeGalleryItem('logos', index)"
+                />
             </template>
         </EditablePanel>
 
@@ -251,9 +259,14 @@
             </template>
 
             <template #edit>
-                <p class="edit-note">
-                    To change carousel images, use the WordPress Media Library.
-                </p>
+                <GalleryEditor
+                    :items="editFields.carousel_images || []"
+                    alt-default="Carousel"
+                    add-button-text="Add Image"
+                    :error="mediaError"
+                    @add="addToGallery('carousel_images')"
+                    @remove="(index) => removeGalleryItem('carousel_images', index)"
+                />
             </template>
         </EditablePanel>
 
@@ -285,9 +298,15 @@
 <script setup>
 import { ref, reactive, computed } from 'vue';
 import { useProfileStore } from '../../stores/profile.js';
+import { useMediaUploader } from '../../../composables/useMediaUploader.js';
 import EditablePanel from '../layout/EditablePanel.vue';
+import GalleryEditor from './GalleryEditor.vue';
 
 const store = useProfileStore();
+const { selectImage, selectImages, isUploading, error: mediaUploaderError } = useMediaUploader();
+
+// Media error state
+const mediaError = ref(null);
 
 // Layout selector URL with post ID
 const layoutSelectorUrl = computed(() => {
@@ -307,6 +326,13 @@ const currentLayout = computed(() => {
 const editingSection = ref(null);
 const isSaving = ref(false);
 const editFields = reactive({});
+
+// Headshot types for v-for loops
+const headshotTypes = [
+    { key: 'headshot_primary', label: 'Primary Headshot' },
+    { key: 'headshot_vertical', label: 'Vertical Headshot' },
+    { key: 'headshot_horizontal', label: 'Horizontal Headshot' },
+];
 
 // Color fields
 const colorFields = [
@@ -383,6 +409,92 @@ const saveSection = async (sectionId) => {
         }
     } finally {
         isSaving.value = false;
+    }
+};
+
+/**
+ * Select a single headshot image using WordPress Media Library
+ * @param {string} fieldName - The headshot field (headshot_primary, etc.)
+ */
+const selectHeadshot = async (fieldName) => {
+    mediaError.value = null;
+
+    try {
+        const attachment = await selectImage({
+            title: 'Select Headshot',
+            buttonText: 'Use This Image',
+        });
+
+        if (attachment) {
+            // Format attachment for storage
+            editFields[fieldName] = {
+                id: attachment.id,
+                url: attachment.url,
+                alt: attachment.alt || '',
+                sizes: attachment.sizes || {},
+            };
+        }
+    } catch (err) {
+        if (err.message !== 'No media selected') {
+            mediaError.value = err.message;
+            console.error('Failed to select headshot:', err);
+        }
+    }
+};
+
+/**
+ * Remove an image from a single-image field
+ * @param {string} fieldName - The field name
+ */
+const removeImage = (fieldName) => {
+    editFields[fieldName] = null;
+};
+
+/**
+ * Add images to a gallery field using WordPress Media Library
+ * @param {string} fieldName - The gallery field (logos, carousel_images)
+ */
+const addToGallery = async (fieldName) => {
+    mediaError.value = null;
+
+    try {
+        const attachments = await selectImages({
+            title: fieldName === 'logos' ? 'Select Logos' : 'Select Images',
+            buttonText: 'Add to Gallery',
+        });
+
+        if (attachments && attachments.length > 0) {
+            // Initialize array if needed
+            if (!editFields[fieldName] || !Array.isArray(editFields[fieldName])) {
+                editFields[fieldName] = [];
+            }
+
+            // Add new images to gallery
+            attachments.forEach((attachment) => {
+                editFields[fieldName].push({
+                    id: attachment.id,
+                    url: attachment.url,
+                    alt: attachment.alt || '',
+                    sizes: attachment.sizes || {},
+                });
+            });
+        }
+    } catch (err) {
+        if (err.message !== 'No media selected') {
+            mediaError.value = err.message;
+            console.error('Failed to add to gallery:', err);
+        }
+    }
+};
+
+/**
+ * Remove an item from a gallery field
+ * @param {string} fieldName - The gallery field
+ * @param {number} index - Index of item to remove
+ */
+const removeGalleryItem = (fieldName, index) => {
+    if (editFields[fieldName] && Array.isArray(editFields[fieldName])) {
+        editFields[fieldName].splice(index, 1);
     }
 };
 </script>
@@ -694,4 +806,83 @@ const saveSection = async (sectionId) => {
 .secondary-button:hover {
     background-color: #f8fafc;
 }
+
+/* Headshots Edit Grid */
+.headshots-edit-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.headshot-upload-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.upload-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #334155;
+}
+
+.upload-preview {
+    width: 180px;
+    height: 180px;
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    overflow: hidden;
+    background: #f8fafc;
+}
+
+.upload-preview:hover {
+    border-color: #14b8a6;
+    background: #f0fdfa;
+}
+
+.upload-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: #94a3b8;
+}
+
+.upload-icon {
+    font-size: 32px;
+}
+
+.upload-text {
+    font-size: 13px;
+}
+
+.remove-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    color: #dc2626;
+    background: white;
+    border: 1px solid #fecaca;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.remove-btn:hover {
+    background: #fef2f2;
+    border-color: #dc2626;
+}
+
+/* Gallery Edit Styles moved to GalleryEditor.vue component */
 </style>

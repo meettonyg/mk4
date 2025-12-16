@@ -12,6 +12,15 @@
         <section class="editor-section">
           <h4>Logo Source</h4>
 
+          <!-- PHASE 5: Profile Image Picker -->
+          <ProfileImagePicker
+            type="logos"
+            title="Use from Profile Branding"
+            icon="🏢"
+            :selected-id="localData.logo?.id"
+            @select="handleProfileLogoSelect"
+          />
+
           <!-- Upload Button -->
           <div class="field-group">
             <button
@@ -92,6 +101,8 @@ import { useMediaKitStore } from '@/stores/mediaKit';
 // jQuery-Free: Using modern REST API uploader instead of WordPress Media Library
 import { useModernMediaUploader } from '@composables/useModernMediaUploader';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
+// PHASE 5: Profile branding integration
+import ProfileImagePicker from '@/vue/components/shared/ProfileImagePicker.vue';
 
 const props = defineProps({
   componentId: {
@@ -152,6 +163,25 @@ const updateComponent = () => {
   }, 300);
 };
 
+/**
+ * Helper: Update logo data and save component immediately
+ * Used by both upload and profile selection handlers
+ * @param {Object} logoData - Logo data object with url, alt, id, etc.
+ */
+const updateLogoAndSave = (logoData) => {
+  localData.value.logo = logoData;
+
+  const dataToSave = {
+    logo: localData.value.logo,
+    usePodsData: false,
+    size: localData.value.size,
+    alignment: localData.value.alignment
+  };
+
+  store.updateComponent(props.componentId, { data: dataToSave });
+  store.isDirty = true;
+};
+
 // Handle logo upload - jQuery-Free Implementation
 const handleUploadLogo = async () => {
   try {
@@ -165,24 +195,12 @@ const handleUploadLogo = async () => {
       return; // User cancelled
     }
 
-    // Update local state with uploaded image
-    localData.value.logo = {
+    updateLogoAndSave({
       url: attachment.url,
       alt: attachment.alt || 'Company Logo',
       id: attachment.id,
       type: 'company'
-    };
-
-    // Update component state immediately
-    const dataToSave = {
-      logo: localData.value.logo,
-      usePodsData: false,
-      size: localData.value.size,
-      alignment: localData.value.alignment
-    };
-
-    store.updateComponent(props.componentId, { data: dataToSave });
-    store.isDirty = true;
+    });
 
   } catch (error) {
     console.error('❌ Company Logo: Upload failed', error);
@@ -195,6 +213,24 @@ const handleUploadLogo = async () => {
       }
     }
   }
+};
+
+/**
+ * PHASE 5: Handle selection from profile branding logos
+ * @param {Object} image - Selected logo object from ProfileImagePicker
+ */
+const handleProfileLogoSelect = (image) => {
+  if (!image) return;
+
+  console.log('🏢 Company Logo: Selected from profile branding', image);
+
+  updateLogoAndSave({
+    url: image.url,
+    alt: image.alt || 'Company Logo',
+    id: image.id,
+    sizes: image.sizes,
+    source: 'profile'
+  });
 };
 
 const handleBack = () => emit('close');
