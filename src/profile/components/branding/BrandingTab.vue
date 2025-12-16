@@ -55,10 +55,75 @@
             </template>
 
             <template #edit>
-                <p class="edit-note">
-                    To change headshots, use the WordPress Media Library.
-                    Image uploads will be available in a future update.
-                </p>
+                <div class="headshots-edit-grid">
+                    <div class="headshot-upload-item">
+                        <label class="upload-label">Primary Headshot</label>
+                        <div class="upload-preview" @click="selectHeadshot('headshot_primary')">
+                            <img
+                                v-if="editFields.headshot_primary?.url"
+                                :src="editFields.headshot_primary.sizes?.medium || editFields.headshot_primary.url"
+                                alt="Primary Headshot"
+                            />
+                            <div v-else class="upload-placeholder">
+                                <span class="upload-icon">📷</span>
+                                <span class="upload-text">Click to select</span>
+                            </div>
+                        </div>
+                        <button
+                            v-if="editFields.headshot_primary?.url"
+                            type="button"
+                            class="remove-btn"
+                            @click.stop="removeImage('headshot_primary')"
+                        >
+                            Remove
+                        </button>
+                    </div>
+                    <div class="headshot-upload-item">
+                        <label class="upload-label">Vertical Headshot</label>
+                        <div class="upload-preview" @click="selectHeadshot('headshot_vertical')">
+                            <img
+                                v-if="editFields.headshot_vertical?.url"
+                                :src="editFields.headshot_vertical.sizes?.medium || editFields.headshot_vertical.url"
+                                alt="Vertical Headshot"
+                            />
+                            <div v-else class="upload-placeholder">
+                                <span class="upload-icon">📷</span>
+                                <span class="upload-text">Click to select</span>
+                            </div>
+                        </div>
+                        <button
+                            v-if="editFields.headshot_vertical?.url"
+                            type="button"
+                            class="remove-btn"
+                            @click.stop="removeImage('headshot_vertical')"
+                        >
+                            Remove
+                        </button>
+                    </div>
+                    <div class="headshot-upload-item">
+                        <label class="upload-label">Horizontal Headshot</label>
+                        <div class="upload-preview" @click="selectHeadshot('headshot_horizontal')">
+                            <img
+                                v-if="editFields.headshot_horizontal?.url"
+                                :src="editFields.headshot_horizontal.sizes?.medium || editFields.headshot_horizontal.url"
+                                alt="Horizontal Headshot"
+                            />
+                            <div v-else class="upload-placeholder">
+                                <span class="upload-icon">📷</span>
+                                <span class="upload-text">Click to select</span>
+                            </div>
+                        </div>
+                        <button
+                            v-if="editFields.headshot_horizontal?.url"
+                            type="button"
+                            class="remove-btn"
+                            @click.stop="removeImage('headshot_horizontal')"
+                        >
+                            Remove
+                        </button>
+                    </div>
+                </div>
+                <p v-if="mediaError" class="upload-error">{{ mediaError }}</p>
             </template>
         </EditablePanel>
 
@@ -94,9 +159,30 @@
             </template>
 
             <template #edit>
-                <p class="edit-note">
-                    To change logos, use the WordPress Media Library.
-                </p>
+                <div class="gallery-edit">
+                    <div class="gallery-grid">
+                        <div
+                            v-for="(logo, index) in editFields.logos || []"
+                            :key="logo.id || index"
+                            class="gallery-item"
+                        >
+                            <img :src="logo.sizes?.thumbnail || logo.url" :alt="logo.alt || 'Logo'" />
+                            <button
+                                type="button"
+                                class="gallery-remove-btn"
+                                @click="removeGalleryItem('logos', index)"
+                                title="Remove"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <div class="gallery-add" @click="addToGallery('logos')">
+                            <span class="upload-icon">+</span>
+                            <span class="upload-text">Add Logo</span>
+                        </div>
+                    </div>
+                </div>
+                <p v-if="mediaError" class="upload-error">{{ mediaError }}</p>
             </template>
         </EditablePanel>
 
@@ -251,9 +337,30 @@
             </template>
 
             <template #edit>
-                <p class="edit-note">
-                    To change carousel images, use the WordPress Media Library.
-                </p>
+                <div class="gallery-edit">
+                    <div class="gallery-grid">
+                        <div
+                            v-for="(image, index) in editFields.carousel_images || []"
+                            :key="image.id || index"
+                            class="gallery-item"
+                        >
+                            <img :src="image.sizes?.thumbnail || image.url" :alt="image.alt || 'Carousel'" />
+                            <button
+                                type="button"
+                                class="gallery-remove-btn"
+                                @click="removeGalleryItem('carousel_images', index)"
+                                title="Remove"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <div class="gallery-add" @click="addToGallery('carousel_images')">
+                            <span class="upload-icon">+</span>
+                            <span class="upload-text">Add Image</span>
+                        </div>
+                    </div>
+                </div>
+                <p v-if="mediaError" class="upload-error">{{ mediaError }}</p>
             </template>
         </EditablePanel>
 
@@ -285,9 +392,14 @@
 <script setup>
 import { ref, reactive, computed } from 'vue';
 import { useProfileStore } from '../../stores/profile.js';
+import { useMediaUploader } from '../../../composables/useMediaUploader.js';
 import EditablePanel from '../layout/EditablePanel.vue';
 
 const store = useProfileStore();
+const { selectImage, selectImages, isUploading, error: mediaUploaderError } = useMediaUploader();
+
+// Media error state
+const mediaError = ref(null);
 
 // Layout selector URL with post ID
 const layoutSelectorUrl = computed(() => {
@@ -383,6 +495,92 @@ const saveSection = async (sectionId) => {
         }
     } finally {
         isSaving.value = false;
+    }
+};
+
+/**
+ * Select a single headshot image using WordPress Media Library
+ * @param {string} fieldName - The headshot field (headshot_primary, etc.)
+ */
+const selectHeadshot = async (fieldName) => {
+    mediaError.value = null;
+
+    try {
+        const attachment = await selectImage({
+            title: 'Select Headshot',
+            buttonText: 'Use This Image',
+        });
+
+        if (attachment) {
+            // Format attachment for storage
+            editFields[fieldName] = {
+                id: attachment.id,
+                url: attachment.url,
+                alt: attachment.alt || '',
+                sizes: attachment.sizes || {},
+            };
+        }
+    } catch (err) {
+        if (err.message !== 'No media selected') {
+            mediaError.value = err.message;
+            console.error('Failed to select headshot:', err);
+        }
+    }
+};
+
+/**
+ * Remove an image from a single-image field
+ * @param {string} fieldName - The field name
+ */
+const removeImage = (fieldName) => {
+    editFields[fieldName] = null;
+};
+
+/**
+ * Add images to a gallery field using WordPress Media Library
+ * @param {string} fieldName - The gallery field (logos, carousel_images)
+ */
+const addToGallery = async (fieldName) => {
+    mediaError.value = null;
+
+    try {
+        const attachments = await selectImages({
+            title: fieldName === 'logos' ? 'Select Logos' : 'Select Images',
+            buttonText: 'Add to Gallery',
+        });
+
+        if (attachments && attachments.length > 0) {
+            // Initialize array if needed
+            if (!editFields[fieldName] || !Array.isArray(editFields[fieldName])) {
+                editFields[fieldName] = [];
+            }
+
+            // Add new images to gallery
+            attachments.forEach((attachment) => {
+                editFields[fieldName].push({
+                    id: attachment.id,
+                    url: attachment.url,
+                    alt: attachment.alt || '',
+                    sizes: attachment.sizes || {},
+                });
+            });
+        }
+    } catch (err) {
+        if (err.message !== 'No media selected') {
+            mediaError.value = err.message;
+            console.error('Failed to add to gallery:', err);
+        }
+    }
+};
+
+/**
+ * Remove an item from a gallery field
+ * @param {string} fieldName - The gallery field
+ * @param {number} index - Index of item to remove
+ */
+const removeGalleryItem = (fieldName, index) => {
+    if (editFields[fieldName] && Array.isArray(editFields[fieldName])) {
+        editFields[fieldName].splice(index, 1);
     }
 };
 </script>
@@ -693,5 +891,176 @@ const saveSection = async (sectionId) => {
 
 .secondary-button:hover {
     background-color: #f8fafc;
+}
+
+/* Headshots Edit Grid */
+.headshots-edit-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.headshot-upload-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.upload-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #334155;
+}
+
+.upload-preview {
+    width: 180px;
+    height: 180px;
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    overflow: hidden;
+    background: #f8fafc;
+}
+
+.upload-preview:hover {
+    border-color: #14b8a6;
+    background: #f0fdfa;
+}
+
+.upload-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: #94a3b8;
+}
+
+.upload-icon {
+    font-size: 32px;
+}
+
+.upload-text {
+    font-size: 13px;
+}
+
+.remove-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    color: #dc2626;
+    background: white;
+    border: 1px solid #fecaca;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.remove-btn:hover {
+    background: #fef2f2;
+    border-color: #dc2626;
+}
+
+/* Gallery Edit Styles */
+.gallery-edit {
+    padding: 0;
+}
+
+.gallery-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.gallery-item {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+}
+
+.gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.gallery-remove-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 24px;
+    height: 24px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.gallery-item:hover .gallery-remove-btn {
+    opacity: 1;
+}
+
+.gallery-remove-btn:hover {
+    background: #dc2626;
+}
+
+.gallery-add {
+    width: 100px;
+    height: 100px;
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #f8fafc;
+}
+
+.gallery-add:hover {
+    border-color: #14b8a6;
+    background: #f0fdfa;
+}
+
+.gallery-add .upload-icon {
+    font-size: 24px;
+    color: #94a3b8;
+}
+
+.gallery-add .upload-text {
+    font-size: 11px;
+    color: #64748b;
+}
+
+/* Upload Error */
+.upload-error {
+    margin-top: 12px;
+    padding: 8px 12px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 4px;
+    color: #dc2626;
+    font-size: 13px;
 }
 </style>
