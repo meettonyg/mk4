@@ -306,39 +306,39 @@
                     <template #display>
                         <ul class="links-list">
                             <li v-if="store.socialLinks.facebook" class="link-item">
-                                <span class="link-icon facebook"><i class="fab fa-facebook-f"></i></span>
+                                <span class="link-icon"><i class="fab fa-facebook-f"></i></span>
                                 <a :href="store.socialLinks.facebook" target="_blank">Facebook</a>
                             </li>
                             <li v-if="store.socialLinks.linkedin" class="link-item">
-                                <span class="link-icon linkedin"><i class="fab fa-linkedin-in"></i></span>
+                                <span class="link-icon"><i class="fab fa-linkedin-in"></i></span>
                                 <a :href="store.socialLinks.linkedin" target="_blank">LinkedIn</a>
                             </li>
                             <li v-if="store.socialLinks.twitter" class="link-item">
-                                <span class="link-icon twitter"><i class="fab fa-twitter"></i></span>
+                                <span class="link-icon"><i class="fab fa-twitter"></i></span>
                                 <a :href="store.socialLinks.twitter" target="_blank">Twitter</a>
                             </li>
                             <li v-if="store.socialLinks.instagram" class="link-item">
-                                <span class="link-icon instagram"><i class="fab fa-instagram"></i></span>
+                                <span class="link-icon"><i class="fab fa-instagram"></i></span>
                                 <a :href="store.socialLinks.instagram" target="_blank">Instagram</a>
                             </li>
                             <li v-if="store.socialLinks.youtube" class="link-item">
-                                <span class="link-icon youtube"><i class="fab fa-youtube"></i></span>
+                                <span class="link-icon"><i class="fab fa-youtube"></i></span>
                                 <a :href="store.socialLinks.youtube" target="_blank">YouTube</a>
                             </li>
                             <li v-if="store.socialLinks.tiktok" class="link-item">
-                                <span class="link-icon tiktok"><i class="fab fa-tiktok"></i></span>
+                                <span class="link-icon"><i class="fab fa-tiktok"></i></span>
                                 <a :href="store.socialLinks.tiktok" target="_blank">TikTok</a>
                             </li>
                             <li v-if="store.socialLinks.pinterest" class="link-item">
-                                <span class="link-icon pinterest"><i class="fab fa-pinterest-p"></i></span>
+                                <span class="link-icon"><i class="fab fa-pinterest-p"></i></span>
                                 <a :href="store.socialLinks.pinterest" target="_blank">Pinterest</a>
                             </li>
                             <li v-if="store.socialLinks.website1" class="link-item">
-                                <span class="link-icon website"><i class="fas fa-globe"></i></span>
+                                <span class="link-icon"><i class="fas fa-globe"></i></span>
                                 <a :href="store.socialLinks.website1" target="_blank">Website</a>
                             </li>
                             <li v-if="store.socialLinks.website2" class="link-item">
-                                <span class="link-icon website"><i class="fas fa-globe"></i></span>
+                                <span class="link-icon"><i class="fas fa-globe"></i></span>
                                 <a :href="store.socialLinks.website2" target="_blank">Website 2</a>
                             </li>
                             <li v-if="!hasAnyLinks" class="empty-text">
@@ -799,47 +799,9 @@ const truncateText = (text, maxLength) => {
 
 .link-icon {
     margin-right: 12px;
-    font-size: 14px;
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    color: white;
-    flex-shrink: 0;
-}
-
-.link-icon.facebook {
-    background-color: #1877f2;
-}
-
-.link-icon.linkedin {
-    background-color: #0a66c2;
-}
-
-.link-icon.twitter {
-    background-color: #1da1f2;
-}
-
-.link-icon.instagram {
-    background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
-}
-
-.link-icon.youtube {
-    background-color: #ff0000;
-}
-
-.link-icon.tiktok {
-    background-color: #000000;
-}
-
-.link-icon.pinterest {
-    background-color: #e60023;
-}
-
-.link-icon.website {
-    background-color: #64748b;
+    font-size: 16px;
+    width: 20px;
+    color: #64748b;
 }
 
 .link-item a {
