@@ -298,12 +298,12 @@
 <script setup>
 import { ref, reactive, computed } from 'vue';
 import { useProfileStore } from '../../stores/profile.js';
-import { useMediaUploader } from '../../../composables/useMediaUploader.js';
+import { useMediaUpload } from '../../../composables/useMediaUpload.js';
 import EditablePanel from '../layout/EditablePanel.vue';
 import GalleryEditor from './GalleryEditor.vue';
 
 const store = useProfileStore();
-const { selectImage, selectImages, isUploading, error: mediaUploaderError } = useMediaUploader();
+const { openFilePicker, uploading: isUploading, uploadError: mediaUploaderError } = useMediaUpload();
 
 // Media error state
 const mediaError = ref(null);
@@ -379,7 +379,10 @@ const startEditing = (sectionId) => {
 
     const fields = sectionFields[sectionId] || [];
     fields.forEach((field) => {
-        editFields[field] = store.fields[field] || '';
+        const value = store.fields[field];
+        // Deep copy to prevent direct mutation of the store state
+        // This ensures cancel will properly discard changes
+        editFields[field] = value ? JSON.parse(JSON.stringify(value)) : '';
     });
 };
 
@@ -413,32 +416,37 @@ const saveSection = async (sectionId) => {
 };
 
 /**
- * Select a single headshot image using WordPress Media Library
+ * Select a single headshot image using REST API upload
  * @param {string} fieldName - The headshot field (headshot_primary, etc.)
  */
 const selectHeadshot = async (fieldName) => {
     mediaError.value = null;
 
     try {
-        const attachment = await selectImage({
-            title: 'Select Headshot',
-            buttonText: 'Use This Image',
+        const uploaded = await openFilePicker({
+            multiple: false,
+            accept: 'image/*',
+            allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
         });
 
-        if (attachment) {
+        if (uploaded && uploaded.length > 0) {
+            const attachment = uploaded[0];
             // Format attachment for storage
             editFields[fieldName] = {
                 id: attachment.id,
                 url: attachment.url,
                 alt: attachment.alt || '',
-                sizes: attachment.sizes || {},
+                sizes: {
+                    thumbnail: attachment.thumbnail,
+                    medium: attachment.medium,
+                    large: attachment.large,
+                    full: attachment.full,
+                },
             };
         }
     } catch (err) {
-        if (err.message !== 'No media selected') {
-            mediaError.value = err.message;
-            console.error('Failed to select headshot:', err);
-        }
+        mediaError.value = err.message;
+        console.error('Failed to select headshot:', err);
     }
 };
 
@@ -451,39 +459,43 @@ const removeImage = (fieldName) => {
 };
 
 /**
- * Add images to a gallery field using WordPress Media Library
+ * Add images to a gallery field using REST API upload
  * @param {string} fieldName - The gallery field (logos, carousel_images)
  */
 const addToGallery = async (fieldName) => {
     mediaError.value = null;
 
     try {
-        const attachments = await selectImages({
-            title: fieldName === 'logos' ? 'Select Logos' : 'Select Images',
-            buttonText: 'Add to Gallery',
+        const uploaded = await openFilePicker({
+            multiple: true,
+            accept: 'image/*',
+            allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
         });
 
-        if (attachments && attachments.length > 0) {
+        if (uploaded && uploaded.length > 0) {
             // Initialize array if needed
             if (!editFields[fieldName] || !Array.isArray(editFields[fieldName])) {
                 editFields[fieldName] = [];
             }
 
             // Add new images to gallery
-            attachments.forEach((attachment) => {
+            uploaded.forEach((attachment) => {
                 editFields[fieldName].push({
                     id: attachment.id,
                     url: attachment.url,
                     alt: attachment.alt || '',
-                    sizes: attachment.sizes || {},
+                    sizes: {
+                        thumbnail: attachment.thumbnail,
+                        medium: attachment.medium,
+                        large: attachment.large,
+                        full: attachment.full,
+                    },
                 });
             });
         }
     } catch (err) {
-        if (err.message !== 'No media selected') {
-            mediaError.value = err.message;
-            console.error('Failed to add to gallery:', err);
-        }
+        mediaError.value = err.message;
+        console.error('Failed to add to gallery:', err);
     }
 };
 
