@@ -214,15 +214,29 @@ class ProfileBrandingService {
   /**
    * Convert profile colors to theme-compatible format
    * Maps profile color keys to theme.js color structure
+   *
+   * IMPORTANT: The theme system primarily uses `primary` for buttons and UI elements.
+   * If the user only sets their "Secondary/Accent Color" in the profile branding tab,
+   * we need to use that as the `primary` color so it actually affects the visible UI.
+   *
    * @returns {Object} Colors formatted for theme system
    */
   getThemeColors() {
     const colors = this.getColors();
 
+    // Determine the primary color with smart fallback
+    // If profile primary is not set but accent is, use accent as primary
+    // This ensures the user's brand color actually affects buttons/UI
+    const effectivePrimary = colors.primary || colors.accent || null;
+
+    // For secondary, prefer contrasting color, then fall back to accent if primary was used
+    const effectiveSecondary = colors.contrasting ||
+      (colors.primary ? colors.accent : null) || null;
+
     return {
-      primary: colors.primary || null,
+      primary: effectivePrimary,
       accent: colors.accent || null,
-      secondary: colors.contrasting || null,
+      secondary: effectiveSecondary,
       background: colors.background || null,
       text: colors.paragraph || null,
       heading: colors.header || null,
