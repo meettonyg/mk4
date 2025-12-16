@@ -38,7 +38,15 @@
 
         <section class="editor-section">
           <h4>Logo Source</h4>
-          
+
+          <!-- PHASE 5: Profile Image Picker -->
+          <ProfileImagePicker
+            type="logos"
+            title="Use from Profile Branding"
+            icon="🏢"
+            @select="handleProfileLogoSelect"
+          />
+
           <!-- Custom Logos Section -->
           <div>
             <div class="field-group">
@@ -370,6 +378,8 @@ import { ToastService } from '@/services/ToastService';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 import ImageCropper from '@/vue/components/shared/ImageCropper.vue';
 import MediaUploader from '@/vue/components/shared/MediaUploader.vue';
+// PHASE 5: Profile branding integration
+import ProfileImagePicker from '@/vue/components/shared/ProfileImagePicker.vue';
 
 const props = defineProps({
   componentId: {
@@ -779,6 +789,35 @@ const handleCropComplete = async ({ blob, url }) => {
   } finally {
     currentCropIndex.value = null;
   }
+};
+
+/**
+ * PHASE 5: Handle selection from profile branding logos
+ * @param {Object} image - Selected logo object from ProfileImagePicker
+ */
+const handleProfileLogoSelect = (image) => {
+  if (!image) return;
+
+  console.log('🏢 Logo Grid: Selected from profile branding', image);
+
+  // Add the logo to the list
+  const newIndex = localData.value.logos.length;
+  localData.value.logos.push({
+    url: image.url,
+    name: image.alt || 'Logo',
+    alt: image.alt || '',
+    link: '',
+    id: image.id,
+    source: 'profile'
+  });
+
+  // Auto-expand newly added logo
+  expandedItems.value.add(newIndex);
+
+  // Update component
+  updateComponent();
+
+  ToastService.success('Logo added from profile branding', { duration: 2000 });
 };
 </script>
 

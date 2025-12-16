@@ -37,7 +37,15 @@
 
         <section class="editor-section">
           <h4>Photo Source</h4>
-          
+
+          <!-- PHASE 5: Profile Image Picker -->
+          <ProfileImagePicker
+            type="carousel"
+            title="Use from Profile Branding"
+            icon="🖼️"
+            @select="handleProfilePhotoSelect"
+          />
+
           <!-- Custom Photos Section -->
           <div>
             <div class="field-group">
@@ -313,6 +321,8 @@ import { useModernMediaUploader } from '@/composables/useModernMediaUploader';
 import { ToastService } from '@/services/ToastService';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 import ImageCropper from '@/vue/components/shared/ImageCropper.vue';  // ✅ NEW: Image cropper
+// PHASE 5: Profile branding integration
+import ProfileImagePicker from '@/vue/components/shared/ProfileImagePicker.vue';
 
 const props = defineProps({ 
   componentId: { 
@@ -608,6 +618,36 @@ const handleCropComplete = async ({ blob, url }) => {
   } finally {
     currentCropIndex.value = null;
   }
+};
+
+/**
+ * PHASE 5: Handle selection from profile branding carousel images
+ * @param {Object} image - Selected image object from ProfileImagePicker
+ */
+const handleProfilePhotoSelect = (image) => {
+  if (!image) return;
+
+  // Check photo limit
+  if (localData.value.photos.length >= 12) {
+    ToastService.warning('Maximum 12 photos allowed', { duration: 3000 });
+    return;
+  }
+
+  console.log('🖼️ Photo Gallery: Selected from profile branding', image);
+
+  // Add the photo to the list
+  localData.value.photos.push({
+    url: image.url,
+    caption: image.alt || '',
+    alt: image.alt || '',
+    id: image.id,
+    source: 'profile'
+  });
+
+  // Update component
+  updateComponent();
+
+  ToastService.success('Photo added from profile branding', { duration: 2000 });
 };
 </script>
 

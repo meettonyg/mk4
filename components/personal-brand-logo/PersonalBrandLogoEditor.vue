@@ -11,7 +11,16 @@
       <div class="content-fields">
         <section class="editor-section">
           <h4>Logo Source</h4>
-          
+
+          <!-- PHASE 5: Profile Image Picker -->
+          <ProfileImagePicker
+            type="logos"
+            title="Use from Profile Branding"
+            icon="🎨"
+            :selected-id="localData.logo?.id"
+            @select="handleProfileLogoSelect"
+          />
+
           <!-- Custom Logo Section -->
           <div>
             <!-- Upload Button -->
@@ -95,6 +104,8 @@ import { useMediaKitStore } from '@/stores/mediaKit';
 // jQuery-Free: Using modern REST API uploader instead of WordPress Media Library
 import { useModernMediaUploader } from '@composables/useModernMediaUploader';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
+// PHASE 5: Profile branding integration
+import ProfileImagePicker from '@/vue/components/shared/ProfileImagePicker.vue';
 
 const props = defineProps({ 
   componentId: { 
@@ -257,6 +268,36 @@ const handleUploadLogo = async () => {
 };
 
 const handleBack = () => emit('close');
+
+/**
+ * PHASE 5: Handle selection from profile branding logos
+ * @param {Object} image - Selected logo object from ProfileImagePicker
+ */
+const handleProfileLogoSelect = (image) => {
+  if (!image) return;
+
+  console.log('🎨 Personal Brand Logo: Selected from profile branding', image);
+
+  // Update local state
+  localData.value.logo = {
+    url: image.url,
+    alt: image.alt || 'Personal Brand Logo',
+    id: image.id,
+    sizes: image.sizes,
+    source: 'profile'
+  };
+
+  // Update component immediately
+  const dataToSave = {
+    logo: localData.value.logo,
+    usePodsData: false,
+    size: localData.value.size,
+    alignment: localData.value.alignment
+  };
+
+  store.updateComponent(props.componentId, { data: dataToSave });
+  store.isDirty = true;
+};
 </script>
 
 <style scoped>

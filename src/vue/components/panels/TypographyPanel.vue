@@ -2,7 +2,28 @@
   <div class="panel-content">
     <h3>Typography Settings</h3>
     <p class="panel-description">Customize fonts, sizes, and text styling</p>
-    
+
+    <!-- Profile Branding Section - PHASE 7: Typography Integration (2025-12-16) -->
+    <div v-if="hasProfileFonts" class="section profile-branding-section">
+      <h4>Profile Branding</h4>
+      <p class="branding-description">
+        Apply your brand fonts from the Profile Branding tab.
+        <span v-if="brandingSummary.fontCount > 0">
+          {{ brandingSummary.fontCount }} font(s) available.
+        </span>
+      </p>
+      <div class="branding-actions">
+        <button
+          class="apply-branding-btn"
+          @click="applyProfileFonts"
+          title="Apply your profile brand fonts to this theme"
+        >
+          <span class="btn-icon">🔤</span>
+          Apply Profile Brand Fonts
+        </button>
+      </div>
+    </div>
+
     <!-- Font Family -->
     <div class="section">
       <h4>Font Family</h4>
@@ -144,6 +165,17 @@ const themeStore = useThemeStore();
 
 const currentTheme = computed(() => themeStore.mergedTheme);
 
+// PHASE 7: Profile Branding Integration (2025-12-16)
+const brandingSummary = computed(() => themeStore.getProfileBrandingSummary());
+const hasProfileFonts = computed(() => brandingSummary.value.fontCount > 0);
+
+const applyProfileFonts = () => {
+  const result = themeStore.applyProfileBranding({ colors: false, fonts: true });
+  if (result.success) {
+    console.log('[TypographyPanel] Profile fonts applied:', result.applied);
+  }
+};
+
 const updateTypography = (key, value) => {
   themeStore.updateTypography(key, value);
 };
@@ -267,4 +299,52 @@ const updateTypography = (key, value) => {
 }
 
 /* ROOT FIX: Preview CSS removed - using main left preview */
+
+/* PHASE 7: Profile Branding Section Styles (2025-12-16) */
+.profile-branding-section {
+  background: linear-gradient(135deg, #fdf4ff 0%, #fae8ff 100%);
+  border: 1px solid #e879f9;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.branding-description {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  color: #a21caf;
+}
+
+.branding-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.apply-branding-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #c026d3 0%, #a21caf 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(162, 28, 175, 0.2);
+}
+
+.apply-branding-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(162, 28, 175, 0.3);
+}
+
+.apply-branding-btn:active {
+  transform: translateY(0);
+}
+
+.btn-icon {
+  font-size: 16px;
+}
 </style>

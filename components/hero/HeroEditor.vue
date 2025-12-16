@@ -76,12 +76,20 @@
 
         <section class="editor-section">
           <h4>Background Image</h4>
-          
+
+          <!-- PHASE 5: Profile Image Picker -->
+          <ProfileImagePicker
+            type="headshots"
+            title="Use from Profile Branding"
+            icon="📸"
+            @select="handleProfileImageSelect"
+          />
+
           <div class="field-group">
             <label for="hero-bg-image">Background Image URL</label>
-            <input 
+            <input
               id="hero-bg-image"
-              v-model="localData.backgroundImage" 
+              v-model="localData.backgroundImage"
               @input="updateComponent"
               type="url"
               placeholder="https://example.com/background.jpg"
@@ -132,6 +140,8 @@ import { ref, watch } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
 import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 import { AiModal, TaglineGenerator } from '../../src/vue/components/ai';
+// PHASE 5: Profile branding integration
+import ProfileImagePicker from '../../src/vue/components/shared/ProfileImagePicker.vue';
 
 const props = defineProps({
   componentId: {
@@ -236,6 +246,22 @@ const handleAiApplied = (data) => {
     updateComponent();
   }
   showAiModal.value = false;
+};
+
+/**
+ * PHASE 5: Handle selection from profile branding headshots
+ * @param {Object} image - Selected image object from ProfileImagePicker
+ */
+const handleProfileImageSelect = (image) => {
+  if (!image) return;
+
+  console.log('📸 Hero: Selected from profile branding', image);
+
+  // Use the selected headshot as background image
+  localData.value.backgroundImage = image.url;
+
+  // Update component
+  updateComponent();
 };
 </script>
 
