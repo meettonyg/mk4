@@ -417,12 +417,11 @@ export const useThemeStore = defineStore('theme', {
     // Open theme customizer
     openCustomizer(panel = 'themes') {
       this.customizerOpen = true;
-      // CRITICAL FIX: Allow specifying which panel to open
-      if (panel && ['themes', 'colors', 'typography', 'spacing', 'effects', 'save'].includes(panel)) {
-        this.activePanel = panel;
-      } else {
-        this.activePanel = 'themes';
-      }
+
+      // Only allow panels that actually exist in the ThemeCustomizer UI
+      const validPanels = ['themes', 'colors', 'typography', 'spacing', 'effects'];
+      this.activePanel = validPanels.includes(panel) ? panel : 'themes';
+
       console.log(`[Theme Store] Opened customizer on panel: ${this.activePanel}`);
     },
     
@@ -446,7 +445,8 @@ export const useThemeStore = defineStore('theme', {
     
     // Switch active panel
     setActivePanel(panel) {
-      this.activePanel = panel;
+      const validPanels = ['themes', 'colors', 'typography', 'spacing', 'effects'];
+      this.activePanel = validPanels.includes(panel) ? panel : 'themes';
     },
     
     // Select a theme
