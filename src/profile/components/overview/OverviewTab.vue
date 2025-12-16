@@ -112,37 +112,83 @@
                         </div>
 
                         <!-- Featured interviews from managed system -->
-                        <ul v-else-if="featuredInterviews.length > 0" class="interviews-list">
-                            <li
-                                v-for="interview in featuredInterviews"
+                        <div v-else-if="featuredInterviews.length > 0" class="featured-interviews-grid">
+                            <div
+                                v-for="(interview, index) in featuredInterviews"
                                 :key="interview.id"
-                                class="interview-item featured-interview"
+                                class="episode-card"
                             >
-                                <div class="interview-details">
-                                    <div class="interview-meta">
-                                        <span class="podcast-name">{{ interview.podcast_name || 'Podcast' }}</span>
-                                        <span class="episode-title">
-                                            <a
-                                                v-if="interview.episode_url"
-                                                :href="interview.episode_url"
-                                                target="_blank"
-                                            >
-                                                {{ interview.title }}
-                                            </a>
-                                            <span v-else>{{ interview.title }}</span>
+                                <!-- Thumbnail -->
+                                <div class="episode-thumbnail-wrapper">
+                                    <img
+                                        v-if="interview.image || interview.image_url"
+                                        :src="interview.image || interview.image_url"
+                                        :alt="interview.episode_title || interview.title"
+                                        class="episode-thumbnail"
+                                        loading="lazy"
+                                    />
+                                    <div v-else class="episode-thumbnail-placeholder">
+                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                                        </svg>
+                                    </div>
+                                </div>
+
+                                <div class="episode-content">
+                                    <!-- Date and Duration Row -->
+                                    <div class="episode-meta-row">
+                                        <span v-if="interview.publish_date || interview.date" class="episode-date">
+                                            {{ formatDate(interview.publish_date || interview.date) }}
+                                        </span>
+                                        <span v-if="interview.duration" class="episode-duration">
+                                            <svg class="duration-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"/>
+                                                <polyline points="12 6 12 12 16 14"/>
+                                            </svg>
+                                            {{ interview.duration }}
                                         </span>
                                     </div>
+
+                                    <!-- Title -->
+                                    <h4 class="episode-title">
+                                        {{ interview.episode_title || interview.title }}
+                                    </h4>
+
+                                    <!-- Podcast Name -->
+                                    <div class="episode-podcast-name">
+                                        {{ interview.podcast_name || 'Podcast' }}
+                                    </div>
+
+                                    <!-- Description (truncated) -->
+                                    <p v-if="interview.description" class="episode-description">
+                                        {{ truncateText(interview.description, 120) }}
+                                    </p>
+
+                                    <!-- Audio Player -->
+                                    <div v-if="interview.audio_url" class="episode-player">
+                                        <audio controls preload="none">
+                                            <source :src="interview.audio_url" type="audio/mpeg" />
+                                            Your browser does not support audio.
+                                        </audio>
+                                    </div>
+
+                                    <!-- Fallback Listen Button (when no audio_url) -->
                                     <a
-                                        v-if="interview.episode_url"
+                                        v-else-if="interview.episode_url"
                                         :href="interview.episode_url"
-                                        class="interview-link"
+                                        class="episode-listen-btn"
                                         target="_blank"
+                                        rel="noopener"
                                     >
-                                        Listen Here →
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polygon points="5 3 19 12 5 21 5 3"/>
+                                        </svg>
+                                        Listen Now
                                     </a>
                                 </div>
-                            </li>
-                        </ul>
+                            </div>
+                        </div>
 
                         <!-- Empty state when no interviews featured -->
                         <div v-else class="empty-interviews">
@@ -645,6 +691,19 @@ const saveInterviewsSection = async () => {
     } finally {
         isSaving.value = false;
     }
+};
+
+// Helper functions for interview display
+const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+};
+
+const truncateText = (text, maxLength) => {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength).trim() + '...';
 };
 </script>
 
@@ -1344,5 +1403,149 @@ const saveInterviewsSection = async () => {
 
 .primary-button:hover {
     background-color: #0d9488;
+}
+
+/* Featured Interviews Media Player Styles */
+.featured-interviews-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.episode-card {
+    display: flex;
+    gap: 16px;
+    padding: 16px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.episode-card:hover {
+    border-color: #14b8a6;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.episode-thumbnail-wrapper {
+    flex-shrink: 0;
+    width: 80px;
+    height: 80px;
+}
+
+.episode-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.episode-thumbnail-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    border-radius: 8px;
+    color: #9ca3af;
+}
+
+.episode-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.episode-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.episode-date {
+    font-size: 13px;
+    color: #14b8a6;
+    font-weight: 500;
+}
+
+.episode-duration {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.duration-icon {
+    opacity: 0.7;
+}
+
+.episode-title {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.4;
+}
+
+.episode-podcast-name {
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 8px;
+}
+
+.episode-description {
+    font-size: 14px;
+    color: #4b5563;
+    line-height: 1.5;
+    margin: 0 0 12px 0;
+}
+
+.episode-player {
+    margin-top: auto;
+}
+
+.episode-player audio {
+    width: 100%;
+    height: 40px;
+    border-radius: 20px;
+}
+
+.episode-listen-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: #14b8a6;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 14px;
+    transition: background 0.2s, transform 0.2s;
+    margin-top: auto;
+    width: fit-content;
+}
+
+.episode-listen-btn:hover {
+    background: #0d9488;
+    transform: translateY(-1px);
+}
+
+/* Responsive: Stack on small screens */
+@media (max-width: 480px) {
+    .episode-card {
+        flex-direction: column;
+    }
+
+    .episode-thumbnail-wrapper {
+        width: 100%;
+        height: 160px;
+    }
 }
 </style>
