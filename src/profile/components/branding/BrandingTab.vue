@@ -12,43 +12,21 @@
         >
             <template #display>
                 <div class="headshots-grid">
-                    <div class="headshot-item">
+                    <div
+                        v-for="headshot in headshotTypes"
+                        :key="headshot.key"
+                        class="headshot-item"
+                    >
                         <figure>
                             <img
-                                v-if="store.fields.headshot_primary?.url"
-                                :src="store.fields.headshot_primary.sizes?.medium || store.fields.headshot_primary.url"
-                                :alt="store.fields.headshot_primary.alt || 'Primary Headshot'"
+                                v-if="store.fields[headshot.key]?.url"
+                                :src="store.fields[headshot.key].sizes?.medium || store.fields[headshot.key].url"
+                                :alt="store.fields[headshot.key].alt || headshot.label"
                             />
                             <div v-else class="placeholder-image">
                                 <span>📷</span>
                             </div>
-                            <figcaption>Primary Headshot</figcaption>
-                        </figure>
-                    </div>
-                    <div class="headshot-item">
-                        <figure>
-                            <img
-                                v-if="store.fields.headshot_vertical?.url"
-                                :src="store.fields.headshot_vertical.sizes?.medium || store.fields.headshot_vertical.url"
-                                :alt="store.fields.headshot_vertical.alt || 'Vertical Headshot'"
-                            />
-                            <div v-else class="placeholder-image">
-                                <span>📷</span>
-                            </div>
-                            <figcaption>Vertical Headshot</figcaption>
-                        </figure>
-                    </div>
-                    <div class="headshot-item">
-                        <figure>
-                            <img
-                                v-if="store.fields.headshot_horizontal?.url"
-                                :src="store.fields.headshot_horizontal.sizes?.medium || store.fields.headshot_horizontal.url"
-                                :alt="store.fields.headshot_horizontal.alt || 'Horizontal Headshot'"
-                            />
-                            <div v-else class="placeholder-image">
-                                <span>📷</span>
-                            </div>
-                            <figcaption>Horizontal Headshot</figcaption>
+                            <figcaption>{{ headshot.label }}</figcaption>
                         </figure>
                     </div>
                 </div>
@@ -56,13 +34,17 @@
 
             <template #edit>
                 <div class="headshots-edit-grid">
-                    <div class="headshot-upload-item">
-                        <label class="upload-label">Primary Headshot</label>
-                        <div class="upload-preview" @click="selectHeadshot('headshot_primary')">
+                    <div
+                        v-for="headshot in headshotTypes"
+                        :key="headshot.key"
+                        class="headshot-upload-item"
+                    >
+                        <label class="upload-label">{{ headshot.label }}</label>
+                        <div class="upload-preview" @click="selectHeadshot(headshot.key)">
                             <img
-                                v-if="editFields.headshot_primary?.url"
-                                :src="editFields.headshot_primary.sizes?.medium || editFields.headshot_primary.url"
-                                alt="Primary Headshot"
+                                v-if="editFields[headshot.key]?.url"
+                                :src="editFields[headshot.key].sizes?.medium || editFields[headshot.key].url"
+                                :alt="headshot.label"
                             />
                             <div v-else class="upload-placeholder">
                                 <span class="upload-icon">📷</span>
@@ -70,54 +52,10 @@
                             </div>
                         </div>
                         <button
-                            v-if="editFields.headshot_primary?.url"
+                            v-if="editFields[headshot.key]?.url"
                             type="button"
                             class="remove-btn"
-                            @click.stop="removeImage('headshot_primary')"
-                        >
-                            Remove
-                        </button>
-                    </div>
-                    <div class="headshot-upload-item">
-                        <label class="upload-label">Vertical Headshot</label>
-                        <div class="upload-preview" @click="selectHeadshot('headshot_vertical')">
-                            <img
-                                v-if="editFields.headshot_vertical?.url"
-                                :src="editFields.headshot_vertical.sizes?.medium || editFields.headshot_vertical.url"
-                                alt="Vertical Headshot"
-                            />
-                            <div v-else class="upload-placeholder">
-                                <span class="upload-icon">📷</span>
-                                <span class="upload-text">Click to select</span>
-                            </div>
-                        </div>
-                        <button
-                            v-if="editFields.headshot_vertical?.url"
-                            type="button"
-                            class="remove-btn"
-                            @click.stop="removeImage('headshot_vertical')"
-                        >
-                            Remove
-                        </button>
-                    </div>
-                    <div class="headshot-upload-item">
-                        <label class="upload-label">Horizontal Headshot</label>
-                        <div class="upload-preview" @click="selectHeadshot('headshot_horizontal')">
-                            <img
-                                v-if="editFields.headshot_horizontal?.url"
-                                :src="editFields.headshot_horizontal.sizes?.medium || editFields.headshot_horizontal.url"
-                                alt="Horizontal Headshot"
-                            />
-                            <div v-else class="upload-placeholder">
-                                <span class="upload-icon">📷</span>
-                                <span class="upload-text">Click to select</span>
-                            </div>
-                        </div>
-                        <button
-                            v-if="editFields.headshot_horizontal?.url"
-                            type="button"
-                            class="remove-btn"
-                            @click.stop="removeImage('headshot_horizontal')"
+                            @click.stop="removeImage(headshot.key)"
                         >
                             Remove
                         </button>
@@ -159,30 +97,14 @@
             </template>
 
             <template #edit>
-                <div class="gallery-edit">
-                    <div class="gallery-grid">
-                        <div
-                            v-for="(logo, index) in editFields.logos || []"
-                            :key="logo.id || index"
-                            class="gallery-item"
-                        >
-                            <img :src="logo.sizes?.thumbnail || logo.url" :alt="logo.alt || 'Logo'" />
-                            <button
-                                type="button"
-                                class="gallery-remove-btn"
-                                @click="removeGalleryItem('logos', index)"
-                                title="Remove"
-                            >
-                                ✕
-                            </button>
-                        </div>
-                        <div class="gallery-add" @click="addToGallery('logos')">
-                            <span class="upload-icon">+</span>
-                            <span class="upload-text">Add Logo</span>
-                        </div>
-                    </div>
-                </div>
-                <p v-if="mediaError" class="upload-error">{{ mediaError }}</p>
+                <GalleryEditor
+                    :items="editFields.logos || []"
+                    alt-default="Logo"
+                    add-button-text="Add Logo"
+                    :error="mediaError"
+                    @add="addToGallery('logos')"
+                    @remove="(index) => removeGalleryItem('logos', index)"
+                />
             </template>
         </EditablePanel>
 
@@ -337,30 +259,14 @@
             </template>
 
             <template #edit>
-                <div class="gallery-edit">
-                    <div class="gallery-grid">
-                        <div
-                            v-for="(image, index) in editFields.carousel_images || []"
-                            :key="image.id || index"
-                            class="gallery-item"
-                        >
-                            <img :src="image.sizes?.thumbnail || image.url" :alt="image.alt || 'Carousel'" />
-                            <button
-                                type="button"
-                                class="gallery-remove-btn"
-                                @click="removeGalleryItem('carousel_images', index)"
-                                title="Remove"
-                            >
-                                ✕
-                            </button>
-                        </div>
-                        <div class="gallery-add" @click="addToGallery('carousel_images')">
-                            <span class="upload-icon">+</span>
-                            <span class="upload-text">Add Image</span>
-                        </div>
-                    </div>
-                </div>
-                <p v-if="mediaError" class="upload-error">{{ mediaError }}</p>
+                <GalleryEditor
+                    :items="editFields.carousel_images || []"
+                    alt-default="Carousel"
+                    add-button-text="Add Image"
+                    :error="mediaError"
+                    @add="addToGallery('carousel_images')"
+                    @remove="(index) => removeGalleryItem('carousel_images', index)"
+                />
             </template>
         </EditablePanel>
 
@@ -394,6 +300,7 @@ import { ref, reactive, computed } from 'vue';
 import { useProfileStore } from '../../stores/profile.js';
 import { useMediaUploader } from '../../../composables/useMediaUploader.js';
 import EditablePanel from '../layout/EditablePanel.vue';
+import GalleryEditor from './GalleryEditor.vue';
 
 const store = useProfileStore();
 const { selectImage, selectImages, isUploading, error: mediaUploaderError } = useMediaUploader();
@@ -419,6 +326,13 @@ const currentLayout = computed(() => {
 const editingSection = ref(null);
 const isSaving = ref(false);
 const editFields = reactive({});
+
+// Headshot types for v-for loops
+const headshotTypes = [
+    { key: 'headshot_primary', label: 'Primary Headshot' },
+    { key: 'headshot_vertical', label: 'Vertical Headshot' },
+    { key: 'headshot_horizontal', label: 'Horizontal Headshot' },
+];
 
 // Color fields
 const colorFields = [
@@ -970,97 +884,5 @@ const removeGalleryItem = (fieldName, index) => {
     border-color: #dc2626;
 }
 
-/* Gallery Edit Styles */
-.gallery-edit {
-    padding: 0;
-}
-
-.gallery-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-}
-
-.gallery-item {
-    position: relative;
-    width: 100px;
-    height: 100px;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid #e2e8f0;
-}
-
-.gallery-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.gallery-remove-btn {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 24px;
-    height: 24px;
-    background: rgba(0, 0, 0, 0.6);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-.gallery-item:hover .gallery-remove-btn {
-    opacity: 1;
-}
-
-.gallery-remove-btn:hover {
-    background: #dc2626;
-}
-
-.gallery-add {
-    width: 100px;
-    height: 100px;
-    border: 2px dashed #cbd5e1;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-    background: #f8fafc;
-}
-
-.gallery-add:hover {
-    border-color: #14b8a6;
-    background: #f0fdfa;
-}
-
-.gallery-add .upload-icon {
-    font-size: 24px;
-    color: #94a3b8;
-}
-
-.gallery-add .upload-text {
-    font-size: 11px;
-    color: #64748b;
-}
-
-/* Upload Error */
-.upload-error {
-    margin-top: 12px;
-    padding: 8px 12px;
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    border-radius: 4px;
-    color: #dc2626;
-    font-size: 13px;
-}
+/* Gallery Edit Styles moved to GalleryEditor.vue component */
 </style>
