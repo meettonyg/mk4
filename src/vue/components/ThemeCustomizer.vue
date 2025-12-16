@@ -578,7 +578,7 @@ onUnmounted(() => {
   flex-direction: column;
   background: white;
   min-height: 0;
-  overflow: visible;
+  overflow: hidden;
 }
 
 /* Horizontal Tabs */
