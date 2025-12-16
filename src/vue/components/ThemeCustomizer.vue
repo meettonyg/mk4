@@ -452,6 +452,7 @@ onUnmounted(() => {
 .modal-body {
   display: grid;
   grid-template-columns: 1fr 540px;
+  grid-template-rows: 1fr; /* ROOT FIX: Ensure row stretches to fill available space */
   flex: 1;
   overflow: hidden;
   min-height: 0;
@@ -578,6 +579,7 @@ onUnmounted(() => {
   flex-direction: column;
   background: white;
   min-height: 0;
+  height: 100%; /* ROOT FIX: Stretch to fill grid cell so child flex items work */
   overflow: hidden;
 }
 
@@ -625,12 +627,11 @@ onUnmounted(() => {
 }
 
 .tab-content {
-  flex: 1 1 auto;
+  flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 1.5rem;
-  min-height: 0;
-  height: 0;
+  min-height: 0; /* ROOT FIX: Allow flex shrinking for scroll container */
   position: relative;
 }
 
@@ -825,6 +826,57 @@ onUnmounted(() => {
   
   .modal-body {
     grid-template-rows: 250px 1fr;
+  }
+}
+</style>
+
+<!-- Non-scoped critical layout styles to prevent cache coherence issues -->
+<style>
+.theme-customizer-modal .modal-body {
+  display: grid !important;
+  grid-template-columns: 1fr 540px !important;
+  grid-template-rows: 1fr !important;
+  flex: 1 !important;
+  overflow: hidden !important;
+  min-height: 0 !important;
+}
+
+.theme-customizer-modal .settings-section {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+.theme-customizer-modal .tab-content {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 1.5rem !important;
+  min-height: 0 !important;
+}
+
+.theme-customizer-modal .tab-pane {
+  display: block;
+}
+
+@media (max-width: 1200px) {
+  .theme-customizer-modal .modal-body {
+    grid-template-columns: 1fr 480px !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .theme-customizer-modal .modal-body {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: 300px 1fr !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .theme-customizer-modal .modal-body {
+    grid-template-rows: 250px 1fr !important;
   }
 }
 </style>
