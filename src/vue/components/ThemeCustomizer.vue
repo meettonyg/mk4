@@ -66,10 +66,10 @@
             <div class="settings-section">
               <!-- Horizontal Tabs -->
               <div class="tabs-container">
-                <button 
-                  v-for="(panel, index) in panels" 
+                <button
+                  v-for="(panel, index) in panels"
                   :key="panel.id"
-                  :class="['tab', { active: themeStore.activePanel === panel.id }]"
+                  :class="['tab', { active: activePanel === panel.id }]"
                   @click="switchPanel(panel.id)"
                 >
                   <span>{{ panel.label }}</span>
@@ -79,27 +79,27 @@
               <!-- Tab Content -->
               <div ref="tabContent" class="tab-content" :class="{ 'has-scroll': tabContentHasScroll }">
                 <!-- Themes Panel -->
-                <div v-show="themeStore.activePanel === 'themes'" class="tab-pane">
+                <div v-show="activePanel === 'themes'" class="tab-pane">
                   <ThemesPanel />
                 </div>
-                
+
                 <!-- Colors Panel -->
-                <div v-show="themeStore.activePanel === 'colors'" class="tab-pane">
+                <div v-show="activePanel === 'colors'" class="tab-pane">
                   <ColorsPanel />
                 </div>
-                
+
                 <!-- Typography Panel -->
-                <div v-show="themeStore.activePanel === 'typography'" class="tab-pane">
+                <div v-show="activePanel === 'typography'" class="tab-pane">
                   <TypographyPanel />
                 </div>
-                
+
                 <!-- Spacing Panel -->
-                <div v-show="themeStore.activePanel === 'spacing'" class="tab-pane">
+                <div v-show="activePanel === 'spacing'" class="tab-pane">
                   <SpacingPanel />
                 </div>
-                
+
                 <!-- Effects Panel -->
-                <div v-show="themeStore.activePanel === 'effects'" class="tab-pane">
+                <div v-show="activePanel === 'effects'" class="tab-pane">
                   <EffectsPanel />
                 </div>
               </div>
@@ -131,6 +131,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, nextTick, watch } from 'vue';
 import { useThemeStore } from '../../stores/theme';
+import { THEME_CUSTOMIZER_PANELS, THEME_CUSTOMIZER_PANEL_IDS } from '../../constants/themeCustomizerPanels';
 import ThemesPanel from './panels/ThemesPanel.vue';
 import ColorsPanel from './panels/ColorsPanel.vue';
 import TypographyPanel from './panels/TypographyPanel.vue';
@@ -154,13 +155,13 @@ if (!themeStore.activeThemeId || !themeStore.getTheme(themeStore.activeThemeId))
 }
 
 // ROOT FIX: Removed 'save' panel - streamlined to essential panels only
-const panels = [
-  { id: 'themes', label: 'Themes' },
-  { id: 'colors', label: 'Colors' },
-  { id: 'typography', label: 'Typography' },
-  { id: 'spacing', label: 'Spacing' },
-  { id: 'effects', label: 'Effects' }
-];
+const panels = THEME_CUSTOMIZER_PANELS;
+
+// Keep a definitive list of available panel ids for validation
+const panelIds = THEME_CUSTOMIZER_PANEL_IDS;
+const activePanel = computed(() =>
+  panelIds.includes(themeStore.activePanel) ? themeStore.activePanel : panelIds[0]
+);
 
 // Refs for scroll detection
 const previewSection = ref(null);
