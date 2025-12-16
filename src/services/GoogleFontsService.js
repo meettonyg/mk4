@@ -155,8 +155,8 @@ class GoogleFontsService {
       const weightList = weights.split(';').join(',');
       weightSpec = `ital,wght@0,${weightList};1,${weightList}`;
     } else {
-      // Normal weights only
-      weightSpec = `wght@${weights.replace(/;/g, ';')}`;
+      // Normal weights only - convert semicolons to commas for Google Fonts API
+      weightSpec = `wght@${weights.replace(/;/g, ',')}`;
     }
 
     // Build URL with display=swap for better performance

@@ -163,6 +163,25 @@ const updateComponent = () => {
   }, 300);
 };
 
+/**
+ * Helper: Update logo data and save component immediately
+ * Used by both upload and profile selection handlers
+ * @param {Object} logoData - Logo data object with url, alt, id, etc.
+ */
+const updateLogoAndSave = (logoData) => {
+  localData.value.logo = logoData;
+
+  const dataToSave = {
+    logo: localData.value.logo,
+    usePodsData: false,
+    size: localData.value.size,
+    alignment: localData.value.alignment
+  };
+
+  store.updateComponent(props.componentId, { data: dataToSave });
+  store.isDirty = true;
+};
+
 // Handle logo upload - jQuery-Free Implementation
 const handleUploadLogo = async () => {
   try {
@@ -176,24 +195,12 @@ const handleUploadLogo = async () => {
       return; // User cancelled
     }
 
-    // Update local state with uploaded image
-    localData.value.logo = {
+    updateLogoAndSave({
       url: attachment.url,
       alt: attachment.alt || 'Company Logo',
       id: attachment.id,
       type: 'company'
-    };
-
-    // Update component state immediately
-    const dataToSave = {
-      logo: localData.value.logo,
-      usePodsData: false,
-      size: localData.value.size,
-      alignment: localData.value.alignment
-    };
-
-    store.updateComponent(props.componentId, { data: dataToSave });
-    store.isDirty = true;
+    });
 
   } catch (error) {
     console.error('❌ Company Logo: Upload failed', error);
@@ -217,25 +224,13 @@ const handleProfileLogoSelect = (image) => {
 
   console.log('🏢 Company Logo: Selected from profile branding', image);
 
-  // Update local state
-  localData.value.logo = {
+  updateLogoAndSave({
     url: image.url,
     alt: image.alt || 'Company Logo',
     id: image.id,
     sizes: image.sizes,
     source: 'profile'
-  };
-
-  // Update component immediately
-  const dataToSave = {
-    logo: localData.value.logo,
-    usePodsData: false,
-    size: localData.value.size,
-    alignment: localData.value.alignment
-  };
-
-  store.updateComponent(props.componentId, { data: dataToSave });
-  store.isDirty = true;
+  });
 };
 
 const handleBack = () => emit('close');

@@ -743,14 +743,18 @@ export const useThemeStore = defineStore('theme', {
 
         if (themeTypography.primary_font) {
           fontsToLoad.push(themeTypography.primary_font.family);
-          const fontFamily = `'${themeTypography.primary_font.family}', ${themeTypography.primary_font.fallback}`;
+          // Strip any existing quotes to prevent double-quoting
+          const primaryFamily = themeTypography.primary_font.family.replace(/['"]/g, '');
+          const fontFamily = `'${primaryFamily}', ${themeTypography.primary_font.fallback}`;
           this.updateTypography('fontFamily', fontFamily);
           applied.fonts.push('fontFamily');
         }
 
         if (themeTypography.heading_font) {
           fontsToLoad.push(themeTypography.heading_font.family);
-          const headingFamily = `'${themeTypography.heading_font.family}', ${themeTypography.heading_font.fallback}`;
+          // Strip any existing quotes to prevent double-quoting
+          const headingFamilyName = themeTypography.heading_font.family.replace(/['"]/g, '');
+          const headingFamily = `'${headingFamilyName}', ${themeTypography.heading_font.fallback}`;
           this.updateTypography('headingFamily', headingFamily);
           applied.fonts.push('headingFamily');
         }

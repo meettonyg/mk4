@@ -66,7 +66,10 @@ function gmkb_get_profile_branding($post_id) {
     $has_colors = !empty(array_filter($branding['colors']));
     $has_fonts = !empty(array_filter($branding['fonts']));
     $has_images = !empty($branding['images']['headshotPrimary']) ||
-                  !empty($branding['images']['logos']);
+                  !empty($branding['images']['headshotVertical']) ||
+                  !empty($branding['images']['headshotHorizontal']) ||
+                  !empty($branding['images']['logos']) ||
+                  !empty($branding['images']['carouselImages']);
 
     $branding['hasBrandingData'] = $has_colors || $has_fonts || $has_images;
 
