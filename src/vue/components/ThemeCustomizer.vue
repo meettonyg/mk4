@@ -452,6 +452,7 @@ onUnmounted(() => {
 .modal-body {
   display: grid;
   grid-template-columns: 1fr 540px;
+  grid-template-rows: 1fr; /* ROOT FIX: Ensure row stretches to fill available space */
   flex: 1;
   overflow: hidden;
   min-height: 0;
@@ -578,6 +579,7 @@ onUnmounted(() => {
   flex-direction: column;
   background: white;
   min-height: 0;
+  height: 100%; /* ROOT FIX: Stretch to fill grid cell so child flex items work */
   overflow: hidden;
 }
 
@@ -625,12 +627,11 @@ onUnmounted(() => {
 }
 
 .tab-content {
-  flex: 1 1 auto;
+  flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 1.5rem;
-  min-height: 0;
-  height: 0;
+  min-height: 0; /* ROOT FIX: Allow flex shrinking for scroll container */
   position: relative;
 }
 
