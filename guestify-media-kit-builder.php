@@ -52,6 +52,9 @@ define('GMKB_ARCHITECTURE', 'pure-vue'); // PHASE 3 COMPLETE: 100% Vue architect
 define('GMKB_USE_PURE_VUE', true); // PHASE 3: Always use Pure Vue template
 define('GMKB_DEV_MODE', defined('WP_DEBUG') && WP_DEBUG);
 
+// Include shared profile branding functions (used by enqueue.php and REST API)
+require_once GUESTIFY_PLUGIN_DIR . 'includes/profile-branding.php';
+
 // Include Vue-only enqueue system
 require_once GUESTIFY_PLUGIN_DIR . 'includes/enqueue.php';
 
