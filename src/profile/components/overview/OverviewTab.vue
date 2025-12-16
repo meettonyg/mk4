@@ -128,7 +128,7 @@
                                         loading="lazy"
                                     />
                                     <div v-else class="episode-thumbnail-placeholder">
-                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" role="img" aria-label="Placeholder for episode thumbnail">
                                             <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
                                             <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
                                         </svg>
@@ -168,7 +168,7 @@
                                     <!-- Audio Player -->
                                     <div v-if="interview.audio_url" class="episode-player">
                                         <audio controls preload="none">
-                                            <source :src="interview.audio_url" type="audio/mpeg" />
+                                            <source :src="interview.audio_url" />
                                             Your browser does not support audio.
                                         </audio>
                                     </div>
@@ -697,7 +697,7 @@ const saveInterviewsSection = async () => {
 const formatDate = (dateStr) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+    return date.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
 };
 
 const truncateText = (text, maxLength) => {
