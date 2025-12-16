@@ -131,6 +131,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, nextTick, watch } from 'vue';
 import { useThemeStore } from '../../stores/theme';
+import { THEME_CUSTOMIZER_PANELS, THEME_CUSTOMIZER_PANEL_IDS } from '../../constants/themeCustomizerPanels';
 import ThemesPanel from './panels/ThemesPanel.vue';
 import ColorsPanel from './panels/ColorsPanel.vue';
 import TypographyPanel from './panels/TypographyPanel.vue';
@@ -154,16 +155,10 @@ if (!themeStore.activeThemeId || !themeStore.getTheme(themeStore.activeThemeId))
 }
 
 // ROOT FIX: Removed 'save' panel - streamlined to essential panels only
-const panels = [
-  { id: 'themes', label: 'Themes' },
-  { id: 'colors', label: 'Colors' },
-  { id: 'typography', label: 'Typography' },
-  { id: 'spacing', label: 'Spacing' },
-  { id: 'effects', label: 'Effects' }
-];
+const panels = THEME_CUSTOMIZER_PANELS;
 
 // Keep a definitive list of available panel ids for validation
-const panelIds = panels.map((panel) => panel.id);
+const panelIds = THEME_CUSTOMIZER_PANEL_IDS;
 const activePanel = computed(() =>
   panelIds.includes(themeStore.activePanel) ? themeStore.activePanel : panelIds[0]
 );

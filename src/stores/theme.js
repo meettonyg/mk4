@@ -7,6 +7,7 @@ import { useMediaKitStore } from './mediaKit';
 import ThemeStyleInjector from '../services/ThemeStyleInjector';
 import profileBrandingService from '../services/ProfileBrandingService';
 import googleFontsService from '../services/GoogleFontsService';
+import { THEME_CUSTOMIZER_PANEL_IDS } from '../constants/themeCustomizerPanels';
 
 export const useThemeStore = defineStore('theme', {
   state: () => ({
@@ -419,8 +420,8 @@ export const useThemeStore = defineStore('theme', {
       this.customizerOpen = true;
 
       // Only allow panels that actually exist in the ThemeCustomizer UI
-      const validPanels = ['themes', 'colors', 'typography', 'spacing', 'effects'];
-      this.activePanel = validPanels.includes(panel) ? panel : 'themes';
+      const fallbackPanel = THEME_CUSTOMIZER_PANEL_IDS[0] || 'themes';
+      this.activePanel = THEME_CUSTOMIZER_PANEL_IDS.includes(panel) ? panel : fallbackPanel;
 
       console.log(`[Theme Store] Opened customizer on panel: ${this.activePanel}`);
     },
@@ -445,8 +446,8 @@ export const useThemeStore = defineStore('theme', {
     
     // Switch active panel
     setActivePanel(panel) {
-      const validPanels = ['themes', 'colors', 'typography', 'spacing', 'effects'];
-      this.activePanel = validPanels.includes(panel) ? panel : 'themes';
+      const fallbackPanel = THEME_CUSTOMIZER_PANEL_IDS[0] || 'themes';
+      this.activePanel = THEME_CUSTOMIZER_PANEL_IDS.includes(panel) ? panel : fallbackPanel;
     },
     
     // Select a theme
