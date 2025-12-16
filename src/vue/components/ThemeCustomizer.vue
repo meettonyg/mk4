@@ -829,3 +829,54 @@ onUnmounted(() => {
   }
 }
 </style>
+
+<!-- Non-scoped critical layout styles to prevent cache coherence issues -->
+<style>
+.theme-customizer-modal .modal-body {
+  display: grid !important;
+  grid-template-columns: 1fr 540px !important;
+  grid-template-rows: 1fr !important;
+  flex: 1 !important;
+  overflow: hidden !important;
+  min-height: 0 !important;
+}
+
+.theme-customizer-modal .settings-section {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+.theme-customizer-modal .tab-content {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 1.5rem !important;
+  min-height: 0 !important;
+}
+
+.theme-customizer-modal .tab-pane {
+  display: block;
+}
+
+@media (max-width: 1200px) {
+  .theme-customizer-modal .modal-body {
+    grid-template-columns: 1fr 480px !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .theme-customizer-modal .modal-body {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: 300px 1fr !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .theme-customizer-modal .modal-body {
+    grid-template-rows: 250px 1fr !important;
+  }
+}
+</style>
