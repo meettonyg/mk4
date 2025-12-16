@@ -6,6 +6,7 @@ import { defineStore } from 'pinia';
 import { useMediaKitStore } from './mediaKit';
 import ThemeStyleInjector from '../services/ThemeStyleInjector';
 import profileBrandingService from '../services/ProfileBrandingService';
+import googleFontsService from '../services/GoogleFontsService';
 
 export const useThemeStore = defineStore('theme', {
   state: () => ({
@@ -738,17 +739,27 @@ export const useThemeStore = defineStore('theme', {
       // Apply fonts from profile branding
       if (fonts && profileBrandingService.hasFonts()) {
         const themeTypography = profileBrandingService.getThemeTypography();
+        const fontsToLoad = [];
 
         if (themeTypography.primary_font) {
+          fontsToLoad.push(themeTypography.primary_font.family);
           const fontFamily = `'${themeTypography.primary_font.family}', ${themeTypography.primary_font.fallback}`;
           this.updateTypography('fontFamily', fontFamily);
           applied.fonts.push('fontFamily');
         }
 
         if (themeTypography.heading_font) {
+          fontsToLoad.push(themeTypography.heading_font.family);
           const headingFamily = `'${themeTypography.heading_font.family}', ${themeTypography.heading_font.fallback}`;
           this.updateTypography('headingFamily', headingFamily);
           applied.fonts.push('headingFamily');
+        }
+
+        // PHASE 6: Dynamically load Google Fonts
+        if (fontsToLoad.length > 0) {
+          googleFontsService.loadFonts(fontsToLoad).then((result) => {
+            console.log(`[Theme Store] Google Fonts loaded:`, result.success);
+          });
         }
 
         console.log(`[Theme Store] Applied ${applied.fonts.length} profile fonts:`, applied.fonts);

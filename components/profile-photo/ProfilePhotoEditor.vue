@@ -11,7 +11,16 @@
       <div class="content-fields">
         <section class="editor-section">
           <h4>Photo Source</h4>
-          
+
+          <!-- PHASE 5: Profile Image Picker -->
+          <ProfileImagePicker
+            type="headshots"
+            title="Use from Profile Branding"
+            icon="👤"
+            :selected-id="localData.photo?.id"
+            @select="handleProfileImageSelect"
+          />
+
           <!-- Custom Photo Section -->
           <div>
             <!-- Upload Button -->
@@ -107,6 +116,8 @@ import { useMediaKitStore } from '@/stores/mediaKit';
 // jQuery-Free: Using modern REST API uploader instead of WordPress Media Library
 import { useModernMediaUploader } from '@composables/useModernMediaUploader';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
+// PHASE 5: Profile branding integration
+import ProfileImagePicker from '@/vue/components/shared/ProfileImagePicker.vue';
 
 const props = defineProps({ 
   componentId: { 
@@ -309,6 +320,37 @@ const handleUploadPhoto = async () => {
       }
     }
   }
+};
+
+/**
+ * PHASE 5: Handle selection from profile branding images
+ * @param {Object} image - Selected image object from ProfileImagePicker
+ */
+const handleProfileImageSelect = (image) => {
+  if (!image) return;
+
+  console.log('📸 Profile Photo: Selected from profile branding', image);
+
+  // Update local state
+  localData.value.photo = {
+    url: image.url,
+    caption: '',
+    alt: image.alt || 'Profile Photo',
+    id: image.id,
+    sizes: image.sizes,
+    source: 'profile'
+  };
+
+  // Update component immediately
+  const dataToSave = {
+    photo: localData.value.photo,
+    usePodsData: false,
+    shape: localData.value.shape,
+    size: localData.value.size
+  };
+
+  store.updateComponent(props.componentId, { data: dataToSave });
+  store.isDirty = true;
 };
 
 const handleBack = () => emit('close');
