@@ -379,7 +379,10 @@ const startEditing = (sectionId) => {
 
     const fields = sectionFields[sectionId] || [];
     fields.forEach((field) => {
-        editFields[field] = store.fields[field] || '';
+        const value = store.fields[field];
+        // Deep copy to prevent direct mutation of the store state
+        // This ensures cancel will properly discard changes
+        editFields[field] = value ? JSON.parse(JSON.stringify(value)) : '';
     });
 };
 
