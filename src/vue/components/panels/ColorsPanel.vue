@@ -2,7 +2,28 @@
   <div class="panel-content">
     <h3>Color Customization</h3>
     <p class="panel-description">Customize your theme colors</p>
-    
+
+    <!-- Profile Branding Section - PHASE 4: Branding Integration (2025-12-16) -->
+    <div v-if="hasProfileBranding" class="section profile-branding-section">
+      <h4>Profile Branding</h4>
+      <p class="branding-description">
+        Apply your brand colors from the Profile Branding tab.
+        <span v-if="brandingSummary.colorCount > 0">
+          {{ brandingSummary.colorCount }} color(s) available.
+        </span>
+      </p>
+      <div class="branding-actions">
+        <button
+          class="apply-branding-btn"
+          @click="applyProfileBranding"
+          title="Apply your profile brand colors to this theme"
+        >
+          <span class="btn-icon">🎨</span>
+          Apply Profile Brand Colors
+        </button>
+      </div>
+    </div>
+
     <!-- Color Presets -->
     <div class="section">
       <h4>Quick Presets</h4>
@@ -67,12 +88,23 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useThemeStore } from '../../../stores/theme';
 
 const themeStore = useThemeStore();
 
 const currentTheme = computed(() => themeStore.mergedTheme);
+
+// PHASE 4: Profile Branding Integration (2025-12-16)
+const hasProfileBranding = computed(() => themeStore.hasProfileBranding());
+const brandingSummary = computed(() => themeStore.getProfileBrandingSummary());
+
+const applyProfileBranding = () => {
+  const result = themeStore.applyProfileBranding({ colors: true, fonts: false });
+  if (result.success) {
+    console.log('[ColorsPanel] Profile branding applied:', result.applied);
+  }
+};
 
 // ROOT FIX: Streamlined to ~8 essential color settings per design philosophy
 // REMOVED: textLight (auto-generated), border (auto-generated), status colors (dev responsibility)
@@ -268,6 +300,54 @@ const getContrastColor = (hexColor) => {
   margin: 4px 0 0 0;
   font-size: 12px;
   color: #9ca3af;
+}
+
+/* PHASE 4: Profile Branding Section Styles (2025-12-16) */
+.profile-branding-section {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.branding-description {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  color: #0369a1;
+}
+
+.branding-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.apply-branding-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(3, 105, 161, 0.2);
+}
+
+.apply-branding-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(3, 105, 161, 0.3);
+}
+
+.apply-branding-btn:active {
+  transform: translateY(0);
+}
+
+.btn-icon {
+  font-size: 16px;
 }
 
 /* ROOT FIX: Preview CSS removed - using main left preview */
