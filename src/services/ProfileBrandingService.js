@@ -214,15 +214,29 @@ class ProfileBrandingService {
   /**
    * Convert profile colors to theme-compatible format
    * Maps profile color keys to theme.js color structure
+   *
+   * IMPORTANT: The theme system primarily uses `primary` for buttons and UI elements.
+   * If the user only sets their "Secondary/Accent Color" in the profile branding tab,
+   * we need to use that as the `primary` color so it actually affects the visible UI.
+   *
    * @returns {Object} Colors formatted for theme system
    */
   getThemeColors() {
     const colors = this.getColors();
 
+    // Determine the primary color with smart fallback
+    // If profile primary is not set but accent is, use accent as primary
+    // This ensures the user's brand color actually affects buttons/UI
+    const effectivePrimary = colors.primary || colors.accent || null;
+
+    // For secondary, prefer contrasting color, then fall back to accent if primary was used
+    const secondaryFromAccent = colors.primary ? colors.accent : null;
+    const effectiveSecondary = colors.contrasting || secondaryFromAccent || null;
+
     return {
-      primary: colors.primary || null,
+      primary: effectivePrimary,
       accent: colors.accent || null,
-      secondary: colors.contrasting || null,
+      secondary: effectiveSecondary,
       background: colors.background || null,
       text: colors.paragraph || null,
       heading: colors.header || null,
@@ -234,21 +248,55 @@ class ProfileBrandingService {
   /**
    * Convert profile fonts to theme-compatible format
    * Maps profile font keys to theme.js typography structure
+   *
+   * IMPORTANT: Similar to colors, if only one font is set, use it for both
+   * body text and headings so the user's brand font actually affects the UI.
+   *
    * @returns {Object} Typography formatted for theme system
    */
   getThemeTypography() {
     const fonts = this.getFonts();
 
+    // Smart fallback: if only primary is set, use it for headings too
+    // If only secondary is set, use it for body text too
+    const effectivePrimaryFont = fonts.primary || fonts.secondary || null;
+    const effectiveHeadingFont = fonts.secondary || fonts.primary || null;
+
     return {
-      primary_font: fonts.primary ? {
-        family: fonts.primary,
-        fallback: 'sans-serif'
+      primary_font: effectivePrimaryFont ? {
+        family: effectivePrimaryFont,
+        fallback: this._getFontFallback(effectivePrimaryFont)
       } : null,
-      heading_font: fonts.secondary ? {
-        family: fonts.secondary,
-        fallback: 'sans-serif'
+      heading_font: effectiveHeadingFont ? {
+        family: effectiveHeadingFont,
+        fallback: this._getFontFallback(effectiveHeadingFont)
       } : null
     };
+  }
+
+  /**
+   * Get appropriate CSS fallback for a font family
+   * @param {string} fontName - The font family name
+   * @returns {string} CSS fallback stack (serif, sans-serif, or cursive)
+   * @private
+   */
+  _getFontFallback(fontName) {
+    // Serif fonts
+    const serifFonts = [
+      'Amiri', 'Georgia', 'Lora', 'Merriweather',
+      'Playfair Display', 'Roboto Slab', 'Times New Roman'
+    ];
+
+    // Display/decorative fonts
+    const cursiveFonts = ['Bonbon'];
+
+    if (serifFonts.includes(fontName)) {
+      return 'serif';
+    }
+    if (cursiveFonts.includes(fontName)) {
+      return 'cursive';
+    }
+    return 'sans-serif';
   }
 
   /**
