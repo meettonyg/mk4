@@ -129,6 +129,21 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-profile-repository.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/class-profile-repository.php';
 }
 
+// Onboarding Schema - Single Source of Truth for gamification tasks and rewards
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-schema.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-schema.php';
+}
+
+// Onboarding Repository - Progress calculation and data access
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-repository.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-repository.php';
+}
+
+// Onboarding Migration - Progress recalculation and data migration tools
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/migrations/class-onboarding-migration.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/migrations/class-onboarding-migration.php';
+}
+
 // Legacy: Formidable Field ID to Post Meta mapping
 // TODO: Remove after migration verification complete
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/formidable-field-map.php')) {
@@ -178,6 +193,16 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-offers-api.php
 // Interviews API - CRUD for relational Interviews system
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-interviews-api.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-interviews-api.php';
+}
+
+// Onboarding API - Progress tracking and gamification endpoints
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-onboarding-api.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-onboarding-api.php';
+}
+
+// Onboarding Admin API - Rewards management endpoints
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-onboarding-admin-api.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-onboarding-admin-api.php';
 }
 
 // Offers Migration - Migrate Formidable offers to native CPT
