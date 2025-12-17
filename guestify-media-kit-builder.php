@@ -149,6 +149,11 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-sync.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-sync.php';
 }
 
+// Onboarding Hooks - Event integration for automatic progress updates
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-hooks.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-hooks.php';
+}
+
 // Legacy: Formidable Field ID to Post Meta mapping
 // TODO: Remove after migration verification complete
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/formidable-field-map.php')) {
