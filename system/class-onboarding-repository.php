@@ -418,17 +418,24 @@ class GMKB_Onboarding_Repository {
      *
      * @param int $user_id User ID
      * @param int $percentage Progress percentage
+     * @param array|null $progress Full progress data (optional, for event hooks)
      * @return bool Success
      */
-    public function update_progress_meta(int $user_id, int $percentage): bool {
+    public function update_progress_meta(int $user_id, int $percentage, ?array $progress = null): bool {
         $result = update_user_meta($user_id, 'guestify_onboarding_progress_percent', $percentage);
 
-        // Sync to GHL via WP Fusion if available
-        if (function_exists('wp_fusion')) {
-            wp_fusion()->user->push_user_meta($user_id, [
-                'guestify_onboarding_progress_percent' => $percentage,
-            ]);
+        // Fire progress updated action for integrations (GHL sync, notifications, etc.)
+        if ($progress === null) {
+            $progress = $this->calculate_progress($user_id);
         }
+
+        /**
+         * Fires when onboarding progress is updated
+         *
+         * @param int $user_id WordPress user ID
+         * @param array $progress Progress data including points, tasks, groups
+         */
+        do_action('gmkb_onboarding_progress_updated', $user_id, $progress);
 
         return $result !== false;
     }
@@ -523,5 +530,97 @@ class GMKB_Onboarding_Repository {
             'rewards' => $rewards,
             'profiles' => $profiles,
         ];
+    }
+
+    /**
+     * Complete a manual task and fire events
+     *
+     * For tasks that can be manually marked as complete (e.g., survey).
+     *
+     * @param int $user_id User ID
+     * @param string $task_id Task identifier
+     * @return bool Success
+     */
+    public function complete_manual_task(int $user_id, string $task_id): bool {
+        $tasks = GMKB_Onboarding_Schema::TASKS;
+
+        if (!isset($tasks[$task_id])) {
+            return false;
+        }
+
+        $task = $tasks[$task_id];
+        $success = false;
+
+        // Handle different manual task types
+        switch ($task_id) {
+            case 'survey':
+                $success = $this->mark_survey_completed($user_id);
+                break;
+
+            default:
+                // Generic manual completion via user meta
+                $meta_key = '_gmkb_task_' . $task_id . '_completed';
+                $success = update_user_meta($user_id, $meta_key, current_time('mysql')) !== false;
+                break;
+        }
+
+        if ($success) {
+            /**
+             * Fires when an onboarding task is completed
+             *
+             * @param int $user_id WordPress user ID
+             * @param string $task_id Task identifier
+             * @param array $task Task definition from schema
+             */
+            do_action('gmkb_onboarding_task_completed', $user_id, $task_id, $task);
+
+            // Recalculate and update progress
+            $progress = $this->calculate_progress($user_id);
+            $this->update_progress_meta($user_id, $progress['points']['percentage'], $progress);
+
+            // Check for newly unlocked rewards
+            $this->check_and_fire_reward_events($user_id, $progress);
+        }
+
+        return $success;
+    }
+
+    /**
+     * Check for newly unlocked rewards and fire events
+     *
+     * @param int $user_id User ID
+     * @param array $progress Progress data
+     */
+    private function check_and_fire_reward_events(int $user_id, array $progress): void {
+        $current_points = $progress['points']['earned'] ?? $progress['points']['total'] ?? 0;
+        $previously_unlocked = get_user_meta($user_id, '_gmkb_unlocked_rewards', true) ?: [];
+
+        if (!is_array($previously_unlocked)) {
+            $previously_unlocked = [];
+        }
+
+        $rewards = GMKB_Onboarding_Schema::get_rewards();
+        $newly_unlocked = [];
+
+        foreach ($rewards as $reward) {
+            if ($current_points >= $reward['threshold'] && !in_array($reward['id'], $previously_unlocked)) {
+                $newly_unlocked[] = $reward['id'];
+
+                /**
+                 * Fires when a reward is unlocked
+                 *
+                 * @param int $user_id WordPress user ID
+                 * @param string $reward_id Reward identifier
+                 * @param array $reward Reward data
+                 */
+                do_action('gmkb_onboarding_reward_unlocked', $user_id, $reward['id'], $reward);
+            }
+        }
+
+        // Update the list of unlocked rewards
+        if (!empty($newly_unlocked)) {
+            $all_unlocked = array_merge($previously_unlocked, $newly_unlocked);
+            update_user_meta($user_id, '_gmkb_unlocked_rewards', $all_unlocked);
+        }
     }
 }

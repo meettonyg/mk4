@@ -144,6 +144,11 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/migrations/class-onboarding-migrat
     require_once GUESTIFY_PLUGIN_DIR . 'system/migrations/class-onboarding-migration.php';
 }
 
+// Onboarding Sync - GHL integration via WP Fusion
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-sync.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-sync.php';
+}
+
 // Legacy: Formidable Field ID to Post Meta mapping
 // TODO: Remove after migration verification complete
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/formidable-field-map.php')) {
@@ -314,10 +319,15 @@ if (is_admin()) {
     if (file_exists($diagnostic_file)) {
         require_once $diagnostic_file;
     }
-    
+
     $viewer_file = GUESTIFY_PLUGIN_DIR . 'admin/media-kit-viewer.php';
     if (file_exists($viewer_file)) {
         require_once $viewer_file;
+    }
+
+    // Onboarding Admin - Rewards management and statistics
+    if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/admin/class-gmkb-onboarding-admin.php')) {
+        require_once GUESTIFY_PLUGIN_DIR . 'includes/admin/class-gmkb-onboarding-admin.php';
     }
 }
 
