@@ -279,6 +279,12 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/profile-list-shortcod
     require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/profile-list-shortcode.php';
 }
 
+// Onboarding Dashboard Shortcode - Vue-based gamification dashboard
+// Usage: [gmkb_onboarding] or [gmkb_profile_strength profile_id="123" size="medium"]
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/onboarding-shortcode.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/onboarding-shortcode.php';
+}
+
 // AI INTEGRATION: Free Tools Shortcode for public AI generators (standalone mode)
 // Usage: [gmkb_free_tool type="biography" title="Free Bio Generator"]
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-free-tools-shortcode.php')) {
