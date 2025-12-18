@@ -86,21 +86,51 @@
             </div>
         </div>
 
-        <!-- Profile Completeness Progress Bar -->
-        <div v-if="completeness !== null" class="progress-bar-container">
-            <div class="progress-bar">
-                <div class="progress-fill" :style="{ width: completeness + '%' }"></div>
+        <!-- Enhanced Profile Strength Section -->
+        <div v-if="completeness !== null" class="progress-section">
+            <div class="progress-bar-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" :style="{ width: displayPercentage + '%' }"></div>
+                </div>
+                <div class="progress-labels">
+                    <span class="progress-label">Profile Strength</span>
+                    <span class="progress-value">{{ displayPercentage }}%</span>
+                </div>
             </div>
-            <div class="progress-labels">
-                <span class="progress-label">Profile Completeness</span>
-                <span class="progress-value">{{ completeness }}%</span>
+
+            <!-- Incomplete Fields Hint -->
+            <div v-if="topIncompleteFields.length > 0" class="progress-hints">
+                <span class="hints-label">Complete to improve:</span>
+                <div class="hints-tags">
+                    <span
+                        v-for="field in topIncompleteFields"
+                        :key="field"
+                        class="hint-tag"
+                    >
+                        {{ formatFieldName(field) }}
+                    </span>
+                    <span v-if="remainingIncomplete > 0" class="hint-more">
+                        +{{ remainingIncomplete }} more
+                    </span>
+                </div>
+            </div>
+
+            <!-- Next Reward Teaser -->
+            <div v-if="onboarding.nextReward.value && displayPercentage < 100" class="next-reward">
+                <span class="reward-icon">{{ onboarding.nextReward.value.icon || '🎁' }}</span>
+                <span class="reward-text">
+                    {{ onboarding.pointsToNextReward.value }} points to unlock
+                    <strong>{{ onboarding.nextReward.value.title }}</strong>
+                </span>
+                <a href="/app/onboarding/" class="reward-link">View Progress</a>
             </div>
         </div>
     </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
+import { useOnboardingProgress } from '@/composables/useOnboardingProgress.js';
 
 const props = defineProps({
     postData: {
@@ -124,6 +154,55 @@ const props = defineProps({
         default: null,
     },
 });
+
+// Initialize onboarding progress composable
+const profileId = computed(() => props.postData?.id || null);
+const onboarding = useOnboardingProgress({
+    profileId: profileId.value,
+    autoFetch: true,
+});
+
+// Watch for profile ID changes
+watch(profileId, (newId) => {
+    if (newId) {
+        onboarding.fetchProfileStrength(newId);
+    }
+});
+
+// Use onboarding percentage if available, fallback to prop
+const displayPercentage = computed(() => {
+    if (onboarding.profileStrengthPercentage.value > 0) {
+        return onboarding.profileStrengthPercentage.value;
+    }
+    return props.completeness || 0;
+});
+
+// Get top 3 incomplete fields
+const topIncompleteFields = computed(() => {
+    return onboarding.incompleteFields.value.slice(0, 3);
+});
+
+const remainingIncomplete = computed(() => {
+    return Math.max(0, onboarding.incompleteFields.value.length - 3);
+});
+
+// Format field name for display
+const formatFieldName = (field) => {
+    const fieldLabels = {
+        authority_hook: 'Authority Hook',
+        impact_intro: 'Impact Intro',
+        topic_1: 'Topic 1',
+        topic_2: 'Topic 2',
+        topic_3: 'Topic 3',
+        biography: 'Biography',
+        tagline: 'Tagline',
+        headshot_primary: 'Headshot',
+        social_linkedin: 'LinkedIn',
+        website_primary: 'Website',
+        question_1: 'Question 1',
+    };
+    return fieldLabels[field] || field.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+};
 
 const formattedDate = computed(() => {
     if (!props.postData?.created) return '';
@@ -283,11 +362,15 @@ const mediaKitBuilderUrl = computed(() => {
     margin-left: 4px;
 }
 
-/* Progress Bar */
-.progress-bar-container {
+/* Enhanced Progress Section */
+.progress-section {
     margin-top: 20px;
     padding-top: 16px;
     border-top: 1px solid #f1f5f9;
+}
+
+.progress-bar-container {
+    margin-bottom: 12px;
 }
 
 .progress-bar {
@@ -300,9 +383,9 @@ const mediaKitBuilderUrl = computed(() => {
 
 .progress-fill {
     height: 100%;
-    background-color: #14b8a6;
+    background: linear-gradient(90deg, #14b8a6, #0d9488);
     border-radius: 4px;
-    transition: width 0.3s ease;
+    transition: width 0.5s ease;
 }
 
 .progress-labels {
@@ -322,6 +405,76 @@ const mediaKitBuilderUrl = computed(() => {
     color: #14b8a6;
 }
 
+/* Incomplete Fields Hints */
+.progress-hints {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.hints-label {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+.hints-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.hint-tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    background: #fef3c7;
+    color: #b45309;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.hint-more {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+/* Next Reward Teaser */
+.next-reward {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: #f0fdfa;
+    border-radius: 8px;
+    border: 1px solid #99f6e4;
+}
+
+.reward-icon {
+    font-size: 18px;
+}
+
+.reward-text {
+    flex: 1;
+    font-size: 13px;
+    color: #0f766e;
+}
+
+.reward-text strong {
+    font-weight: 600;
+}
+
+.reward-link {
+    font-size: 12px;
+    color: #14b8a6;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.reward-link:hover {
+    text-decoration: underline;
+}
+
 @media (max-width: 640px) {
     .profile-title-row {
         flex-direction: column;
@@ -334,6 +487,16 @@ const mediaKitBuilderUrl = computed(() => {
     .button {
         flex: 1;
         justify-content: center;
+    }
+
+    .next-reward {
+        flex-wrap: wrap;
+    }
+
+    .reward-link {
+        width: 100%;
+        text-align: center;
+        margin-top: 8px;
     }
 }
 </style>

@@ -129,6 +129,41 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-profile-repository.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/class-profile-repository.php';
 }
 
+// Onboarding Schema - Single Source of Truth for gamification tasks and rewards
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-schema.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-schema.php';
+}
+
+// Onboarding Repository - Progress calculation and data access
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-repository.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-repository.php';
+}
+
+// Onboarding Migration - Progress recalculation and data migration tools
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/migrations/class-onboarding-migration.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/migrations/class-onboarding-migration.php';
+}
+
+// Onboarding Sync - GHL integration via WP Fusion
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-sync.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-sync.php';
+}
+
+// Onboarding Hooks - Event integration for automatic progress updates
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-hooks.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-hooks.php';
+}
+
+// Onboarding Leaderboard - Displays top users by progress
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-leaderboard.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-leaderboard.php';
+}
+
+// Profile Scoring - Cialdini-based influence scoring (separate from onboarding gamification)
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-profile-scoring.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-profile-scoring.php';
+}
+
 // Legacy: Formidable Field ID to Post Meta mapping
 // TODO: Remove after migration verification complete
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/formidable-field-map.php')) {
@@ -157,6 +192,16 @@ if (is_admin()) {
             break;
         }
     }
+
+    // Onboarding system tests
+    if (file_exists(GUESTIFY_PLUGIN_DIR . 'tests/onboarding/onboarding-test.php')) {
+        require_once GUESTIFY_PLUGIN_DIR . 'tests/onboarding/onboarding-test.php';
+    }
+
+    // Profile Scoring (Cialdini model) tests
+    if (file_exists(GUESTIFY_PLUGIN_DIR . 'tests/onboarding/profile-scoring-test.php')) {
+        require_once GUESTIFY_PLUGIN_DIR . 'tests/onboarding/profile-scoring-test.php';
+    }
 }
 
 // PHASE 2 IMPLEMENTATION: Pure Vue REST API v2 - Unified Endpoint
@@ -178,6 +223,16 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-offers-api.php
 // Interviews API - CRUD for relational Interviews system
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-interviews-api.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-interviews-api.php';
+}
+
+// Onboarding API - Progress tracking and gamification endpoints
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-onboarding-api.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-onboarding-api.php';
+}
+
+// Onboarding Admin API - Rewards management endpoints
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-onboarding-admin-api.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-onboarding-admin-api.php';
 }
 
 // Offers Migration - Migrate Formidable offers to native CPT
@@ -254,6 +309,12 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/profile-list-shortcod
     require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/profile-list-shortcode.php';
 }
 
+// Onboarding Dashboard Shortcode - Vue-based gamification dashboard
+// Usage: [gmkb_onboarding] or [gmkb_profile_strength profile_id="123" size="medium"]
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/onboarding-shortcode.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/onboarding-shortcode.php';
+}
+
 // AI INTEGRATION: Free Tools Shortcode for public AI generators (standalone mode)
 // Usage: [gmkb_free_tool type="biography" title="Free Bio Generator"]
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-free-tools-shortcode.php')) {
@@ -283,10 +344,15 @@ if (is_admin()) {
     if (file_exists($diagnostic_file)) {
         require_once $diagnostic_file;
     }
-    
+
     $viewer_file = GUESTIFY_PLUGIN_DIR . 'admin/media-kit-viewer.php';
     if (file_exists($viewer_file)) {
         require_once $viewer_file;
+    }
+
+    // Onboarding Admin - Rewards management and statistics
+    if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/admin/class-gmkb-onboarding-admin.php')) {
+        require_once GUESTIFY_PLUGIN_DIR . 'includes/admin/class-gmkb-onboarding-admin.php';
     }
 }
 

@@ -72,7 +72,7 @@
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount } from 'vue';
+import { computed, onMounted, onBeforeUnmount } from 'vue';
 import { useProfileStore } from './stores/profile.js';
 
 // Components

@@ -260,6 +260,12 @@ class GMKB_Profile_API {
         $repo = self::get_repository();
         $result = $repo->update($post_id, $fields);
 
+        // Fire action for onboarding progress tracking
+        $user_id = get_post_field('post_author', $post_id);
+        if ($user_id) {
+            do_action('gmkb_profile_updated', $post_id, (int) $user_id);
+        }
+
         return rest_ensure_response($result);
     }
 
@@ -284,6 +290,9 @@ class GMKB_Profile_API {
             return $result;
         }
 
+        // Fire action for onboarding progress tracking
+        do_action('gmkb_profile_field_updated', $post_id, $field, $value);
+
         return rest_ensure_response([
             'success' => true,
             'field' => $field,
@@ -304,6 +313,12 @@ class GMKB_Profile_API {
 
         $repo = self::get_repository();
         $result = $repo->update($post_id, $fields);
+
+        // Fire action for onboarding progress tracking
+        $user_id = get_post_field('post_author', $post_id);
+        if ($user_id) {
+            do_action('gmkb_profile_updated', $post_id, (int) $user_id);
+        }
 
         return rest_ensure_response($result);
     }
