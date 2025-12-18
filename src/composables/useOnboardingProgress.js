@@ -38,10 +38,16 @@ export function useOnboardingProgress(options = {}) {
 
     // Initialize config from globals
     const initConfig = () => {
-        if (window.gmkbData) {
+        if (window.gmkbProfileData) {
+            // Profile app context
+            apiUrl.value = window.gmkbProfileData.apiUrl || '/wp-json/';
+            nonce.value = window.gmkbProfileData.nonce;
+        } else if (window.gmkbData) {
+            // Onboarding/general context
             apiUrl.value = window.gmkbData.restUrl || '/wp-json/';
             nonce.value = window.gmkbData.restNonce;
         } else if (window.wpApiSettings) {
+            // WordPress default
             apiUrl.value = window.wpApiSettings.root || '/wp-json/';
             nonce.value = window.wpApiSettings.nonce;
         }
