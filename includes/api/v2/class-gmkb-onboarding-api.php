@@ -120,6 +120,27 @@ class GMKB_Onboarding_API {
             ],
         ]);
 
+        // Get Cialdini-based profile influence score (detailed breakdown)
+        register_rest_route(self::NAMESPACE, '/profile/(?P<profile_id>\d+)/strength', [
+            'methods' => WP_REST_Server::READABLE,
+            'callback' => [__CLASS__, 'get_cialdini_strength'],
+            'permission_callback' => [__CLASS__, 'check_profile_permission'],
+            'args' => [
+                'profile_id' => [
+                    'validate_callback' => function($param) {
+                        return is_numeric($param);
+                    }
+                ],
+            ],
+        ]);
+
+        // Get Profile Scoring schema
+        register_rest_route(self::NAMESPACE, '/profile/strength-schema', [
+            'methods' => WP_REST_Server::READABLE,
+            'callback' => [__CLASS__, 'get_strength_schema'],
+            'permission_callback' => '__return_true',
+        ]);
+
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('✅ GMKB Onboarding API: Routes registered');
         }
@@ -375,6 +396,69 @@ class GMKB_Onboarding_API {
                 'strength' => $strength,
                 'max' => 100,
             ],
+        ]);
+    }
+
+    /**
+     * GET /gmkb/v2/profile/{profile_id}/strength
+     *
+     * Get Cialdini-based profile influence score with detailed breakdown
+     * This uses the new GMKB_Profile_Scoring class for quality-based scoring.
+     *
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response|WP_Error
+     */
+    public static function get_cialdini_strength($request) {
+        $profile_id = (int) $request->get_param('profile_id');
+
+        // Verify class exists
+        if (!class_exists('GMKB_Profile_Scoring')) {
+            return new WP_Error(
+                'class_not_found',
+                'Profile Scoring class not available',
+                ['status' => 500]
+            );
+        }
+
+        // Verify profile exists
+        $profile = get_post($profile_id);
+        if (!$profile || $profile->post_type !== 'guests') {
+            return new WP_Error(
+                'profile_not_found',
+                'Profile not found',
+                ['status' => 404]
+            );
+        }
+
+        // Calculate strength using Cialdini model
+        $strength = GMKB_Profile_Scoring::calculate_strength($profile_id);
+
+        return rest_ensure_response([
+            'success' => true,
+            'data'    => $strength,
+        ]);
+    }
+
+    /**
+     * GET /gmkb/v2/profile/strength-schema
+     *
+     * Get the Profile Scoring schema definition
+     *
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response
+     */
+    public static function get_strength_schema($request) {
+        if (!class_exists('GMKB_Profile_Scoring')) {
+            return new WP_Error(
+                'class_not_found',
+                'Profile Scoring class not available',
+                ['status' => 500]
+            );
+        }
+
+        return rest_ensure_response([
+            'success' => true,
+            'data'    => GMKB_Profile_Scoring::get_schema(),
         ]);
     }
 }

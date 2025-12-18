@@ -159,6 +159,11 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-leaderboard.php')
     require_once GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-leaderboard.php';
 }
 
+// Profile Scoring - Cialdini-based influence scoring (separate from onboarding gamification)
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-profile-scoring.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-profile-scoring.php';
+}
+
 // Legacy: Formidable Field ID to Post Meta mapping
 // TODO: Remove after migration verification complete
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/formidable-field-map.php')) {
@@ -191,6 +196,11 @@ if (is_admin()) {
     // Onboarding system tests
     if (file_exists(GUESTIFY_PLUGIN_DIR . 'tests/onboarding/onboarding-test.php')) {
         require_once GUESTIFY_PLUGIN_DIR . 'tests/onboarding/onboarding-test.php';
+    }
+
+    // Profile Scoring (Cialdini model) tests
+    if (file_exists(GUESTIFY_PLUGIN_DIR . 'tests/onboarding/profile-scoring-test.php')) {
+        require_once GUESTIFY_PLUGIN_DIR . 'tests/onboarding/profile-scoring-test.php';
     }
 }
 
