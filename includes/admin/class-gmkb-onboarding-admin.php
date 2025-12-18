@@ -27,7 +27,7 @@ class GMKB_Onboarding_Admin {
      */
     public static function register_admin_menu(): void {
         add_submenu_page(
-            'edit.php?post_type=guest_profile', // Parent slug (under Guest Profiles)
+            'edit.php?post_type=guests',         // Parent slug (under Guests post type)
             'Onboarding Settings',               // Page title
             'Onboarding',                        // Menu title
             'manage_options',                    // Capability
@@ -43,7 +43,7 @@ class GMKB_Onboarding_Admin {
      */
     public static function enqueue_admin_scripts(string $hook_suffix): void {
         // Only load on our admin page
-        if ($hook_suffix !== 'guest_profile_page_gmkb-onboarding') {
+        if ($hook_suffix !== 'guests_page_gmkb-onboarding') {
             return;
         }
 
@@ -180,7 +180,7 @@ class GMKB_Onboarding_Admin {
         $total_users = $wpdb->get_var(
             "SELECT COUNT(DISTINCT post_author)
              FROM {$wpdb->posts}
-             WHERE post_type = 'guest_profile'
+             WHERE post_type = 'guests'
              AND post_status IN ('publish', 'draft', 'private')
              AND post_author > 0"
         );
