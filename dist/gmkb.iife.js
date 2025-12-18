@@ -204,7 +204,7 @@ Method Results:`),console.log("- sanitizeText():",o.sanitizeText(e)),console.log
         <div class="gmkb-error">
           <h1 class="gmkb-error__title">⚠️ Initialization Failed</h1>
           <p class="gmkb-error__message">
-            ${d.message}
+            ${c.message}
           </p>
           <p class="gmkb-error__detail">
             Check the browser console for more details.
@@ -274,8 +274,8 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
 <body>
     <div class="media-kit-container">
         <h1>${this.escapeHtml(o)}</h1>
-`;return s&&s.length>0&&s.forEach(d=>{i+=`        <div class="section">
-`,(d.components||[]).forEach(c=>{const u=n[c];u&&(i+=`            <div class="component">
+`;return s&&s.length>0&&s.forEach(c=>{i+=`        <div class="section">
+`,(c.components||[]).forEach(d=>{const u=n[d];u&&(i+=`            <div class="component">
 `,i+=`                ${this.renderComponent(u)}
 `,i+=`            </div>
 `)}),i+=`        </div>

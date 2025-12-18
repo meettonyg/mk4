@@ -257,7 +257,11 @@ export const useProfileStore = defineStore('profile', {
          * Save a single field to the server
          */
         async saveField(fieldName) {
-            if (!this.postId) return;
+            if (!this.postId) {
+                console.error('Cannot save field: postId not set');
+                this.lastError = 'Profile ID not available';
+                return false;
+            }
 
             try {
                 const response = await this.apiRequest(
@@ -283,7 +287,11 @@ export const useProfileStore = defineStore('profile', {
          * Save multiple fields to the server
          */
         async saveFields(fieldNames) {
-            if (!this.postId) return;
+            if (!this.postId) {
+                console.error('Cannot save fields: postId not set');
+                this.lastError = 'Profile ID not available';
+                return false;
+            }
 
             const fieldsToSave = {};
             fieldNames.forEach((name) => {

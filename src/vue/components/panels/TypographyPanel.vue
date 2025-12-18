@@ -27,43 +27,81 @@
     <!-- Font Family -->
     <div class="section">
       <h4>Font Family</h4>
-      
+
       <div class="control-group">
         <label>
           <span class="label-text">Primary Font (Body Text)</span>
-          <select 
+          <select
             class="form-control"
-            :value="currentTheme.typography.fontFamily"
+            :value="currentFontFamily"
             @change="updateTypography('fontFamily', $event.target.value)"
           >
-            <option value="system-ui, -apple-system, sans-serif">System Default</option>
-            <option value="'Inter', system-ui, sans-serif">Inter</option>
-            <option value="'Roboto', sans-serif">Roboto</option>
-            <option value="'Open Sans', sans-serif">Open Sans</option>
-            <option value="'Lato', sans-serif">Lato</option>
-            <option value="'Poppins', sans-serif">Poppins</option>
-            <option value="'Montserrat', sans-serif">Montserrat</option>
-            <option value="'Source Sans Pro', sans-serif">Source Sans Pro</option>
+            <optgroup label="System Fonts">
+              <option value="system-ui, -apple-system, sans-serif">System Default</option>
+              <option value="'Georgia', serif">Georgia</option>
+            </optgroup>
+            <optgroup label="Sans-Serif">
+              <option value="'Inter', sans-serif">Inter</option>
+              <option value="'Lato', sans-serif">Lato</option>
+              <option value="'Montserrat', sans-serif">Montserrat</option>
+              <option value="'Open Sans', sans-serif">Open Sans</option>
+              <option value="'Oswald', sans-serif">Oswald</option>
+              <option value="'Poppins', sans-serif">Poppins</option>
+              <option value="'Raleway', sans-serif">Raleway</option>
+              <option value="'Roboto', sans-serif">Roboto</option>
+              <option value="'Roboto Condensed', sans-serif">Roboto Condensed</option>
+              <option value="'Source Sans Pro', sans-serif">Source Sans Pro</option>
+              <option value="'Ubuntu', sans-serif">Ubuntu</option>
+            </optgroup>
+            <optgroup label="Serif">
+              <option value="'Amiri', serif">Amiri</option>
+              <option value="'Lora', serif">Lora</option>
+              <option value="'Merriweather', serif">Merriweather</option>
+              <option value="'Playfair Display', serif">Playfair Display</option>
+              <option value="'Roboto Slab', serif">Roboto Slab</option>
+            </optgroup>
+            <optgroup label="Display">
+              <option value="'Bebas Neue', sans-serif">Bebas Neue</option>
+              <option value="'Bonbon', cursive">Bonbon</option>
+            </optgroup>
           </select>
         </label>
       </div>
-      
+
       <div class="control-group">
         <label>
           <span class="label-text">Heading Font</span>
-          <select 
+          <select
             class="form-control"
-            :value="currentTheme.typography.headingFamily"
+            :value="currentHeadingFamily"
             @change="updateTypography('headingFamily', $event.target.value)"
           >
             <option value="inherit">Same as body</option>
-            <option value="'Playfair Display', serif">Playfair Display</option>
-            <option value="'Merriweather', serif">Merriweather</option>
-            <option value="'Georgia', serif">Georgia</option>
-            <option value="'Lora', serif">Lora</option>
-            <option value="'Raleway', sans-serif">Raleway</option>
-            <option value="'Bebas Neue', sans-serif">Bebas Neue</option>
-            <option value="'Oswald', sans-serif">Oswald</option>
+            <optgroup label="Sans-Serif">
+              <option value="'Inter', sans-serif">Inter</option>
+              <option value="'Lato', sans-serif">Lato</option>
+              <option value="'Montserrat', sans-serif">Montserrat</option>
+              <option value="'Open Sans', sans-serif">Open Sans</option>
+              <option value="'Oswald', sans-serif">Oswald</option>
+              <option value="'Poppins', sans-serif">Poppins</option>
+              <option value="'Raleway', sans-serif">Raleway</option>
+              <option value="'Roboto', sans-serif">Roboto</option>
+              <option value="'Roboto Condensed', sans-serif">Roboto Condensed</option>
+              <option value="'Source Sans Pro', sans-serif">Source Sans Pro</option>
+              <option value="'Ubuntu', sans-serif">Ubuntu</option>
+            </optgroup>
+            <optgroup label="Serif">
+              <option value="'Amiri', serif">Amiri</option>
+              <option value="'Georgia', serif">Georgia</option>
+              <option value="'Lora', serif">Lora</option>
+              <option value="'Merriweather', serif">Merriweather</option>
+              <option value="'Playfair Display', serif">Playfair Display</option>
+              <option value="'Roboto Slab', serif">Roboto Slab</option>
+            </optgroup>
+            <optgroup label="Display">
+              <option value="'Bebas Neue', sans-serif">Bebas Neue</option>
+              <option value="'Bonbon', cursive">Bonbon</option>
+            </optgroup>
           </select>
         </label>
       </div>
@@ -168,6 +206,69 @@ const currentTheme = computed(() => themeStore.mergedTheme);
 // PHASE 7: Profile Branding Integration (2025-12-16)
 const brandingSummary = computed(() => themeStore.getProfileBrandingSummary());
 const hasProfileFonts = computed(() => brandingSummary.value.fontCount > 0);
+
+/**
+ * Font family options map for normalizing values
+ * Maps font names to their full CSS values used in dropdown options
+ */
+const fontFamilyMap = {
+  'Inter': "'Inter', sans-serif",
+  'Lato': "'Lato', sans-serif",
+  'Montserrat': "'Montserrat', sans-serif",
+  'Open Sans': "'Open Sans', sans-serif",
+  'Oswald': "'Oswald', sans-serif",
+  'Poppins': "'Poppins', sans-serif",
+  'Raleway': "'Raleway', sans-serif",
+  'Roboto': "'Roboto', sans-serif",
+  'Roboto Condensed': "'Roboto Condensed', sans-serif",
+  'Source Sans Pro': "'Source Sans Pro', sans-serif",
+  'Ubuntu': "'Ubuntu', sans-serif",
+  'Amiri': "'Amiri', serif",
+  'Georgia': "'Georgia', serif",
+  'Lora': "'Lora', serif",
+  'Merriweather': "'Merriweather', serif",
+  'Playfair Display': "'Playfair Display', serif",
+  'Roboto Slab': "'Roboto Slab', serif",
+  'Bebas Neue': "'Bebas Neue', sans-serif",
+  'Bonbon': "'Bonbon', cursive",
+};
+
+/**
+ * Normalize font family value to match dropdown option
+ * Extracts the font name and maps it to the standard format
+ */
+const normalizeFontFamily = (value) => {
+  if (!value) return 'system-ui, -apple-system, sans-serif';
+
+  // Extract font name from value like "'Amiri', sans-serif" or "Amiri"
+  const match = value.match(/['"]?([^'"]+)['"]?/);
+  if (match) {
+    const fontName = match[1].trim();
+    // Check if we have a mapping for this font
+    if (fontFamilyMap[fontName]) {
+      return fontFamilyMap[fontName];
+    }
+  }
+
+  // Return original value if no mapping found
+  return value;
+};
+
+/**
+ * Get current font family value, normalized to match dropdown options
+ */
+const currentFontFamily = computed(() => {
+  return normalizeFontFamily(currentTheme.value.typography.fontFamily);
+});
+
+/**
+ * Get current heading family value, normalized to match dropdown options
+ */
+const currentHeadingFamily = computed(() => {
+  const value = currentTheme.value.typography.headingFamily;
+  if (!value || value === 'inherit') return 'inherit';
+  return normalizeFontFamily(value);
+});
 
 const applyProfileFonts = () => {
   const result = themeStore.applyProfileBranding({ colors: false, fonts: true });
