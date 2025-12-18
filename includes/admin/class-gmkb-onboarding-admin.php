@@ -217,5 +217,6 @@ class GMKB_Onboarding_Admin {
     }
 }
 
-// Initialize admin
-add_action('plugins_loaded', ['GMKB_Onboarding_Admin', 'init']);
+// Initialize admin - call directly since file is loaded inside is_admin() block
+// and plugins_loaded may have already fired
+GMKB_Onboarding_Admin::init();
