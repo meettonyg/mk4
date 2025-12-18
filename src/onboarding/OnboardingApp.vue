@@ -26,8 +26,8 @@
                     <div v-else class="task-checkbox"></div>
 
                     <a
-                        v-if="reward.unlocked && reward.url"
-                        :href="reward.url"
+                        v-if="reward.unlocked && reward.download_url"
+                        :href="reward.download_url"
                         class="reward-link"
                         target="_blank"
                     >

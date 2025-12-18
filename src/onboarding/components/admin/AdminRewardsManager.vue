@@ -32,7 +32,7 @@
                         <h3>{{ reward.title }}</h3>
                         <p class="reward-meta">
                             <span class="threshold">{{ reward.threshold }} points</span>
-                            <span v-if="reward.url" class="has-url">Has link</span>
+                            <span v-if="reward.download_url" class="has-url">Has link</span>
                         </p>
                     </div>
                     <div class="reward-actions">
@@ -81,7 +81,7 @@
                             <label class="flex-grow">
                                 Reward URL (optional)
                                 <input
-                                    v-model="editForm.url"
+                                    v-model="editForm.download_url"
                                     type="url"
                                     placeholder="https://..."
                                 />
@@ -142,7 +142,7 @@
                         <label class="flex-grow">
                             Reward URL (optional)
                             <input
-                                v-model="newReward.url"
+                                v-model="newReward.download_url"
                                 type="url"
                                 placeholder="https://..."
                             />
@@ -190,14 +190,14 @@ const editForm = ref({
     icon: '',
     title: '',
     threshold: 0,
-    url: '',
+    download_url: '',
 });
 
 const newReward = ref({
     icon: '🎁',
     title: '',
     threshold: 50,
-    url: '',
+    download_url: '',
 });
 
 // Load rewards from API
@@ -226,7 +226,7 @@ const startEditing = (reward) => {
 // Cancel editing
 const cancelEditing = () => {
     editingId.value = null;
-    editForm.value = { id: null, icon: '', title: '', threshold: 0, url: '' };
+    editForm.value = { id: null, icon: '', title: '', threshold: 0, download_url: '' };
 };
 
 // Save edited reward
@@ -257,7 +257,7 @@ const saveReward = async () => {
 // Start adding new reward
 const startAdding = () => {
     isAdding.value = true;
-    newReward.value = { icon: '🎁', title: '', threshold: 50, url: '' };
+    newReward.value = { icon: '🎁', title: '', threshold: 50, download_url: '' };
 };
 
 // Cancel adding
