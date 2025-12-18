@@ -208,7 +208,7 @@ const loadRewards = async () => {
     try {
         const response = await apiRequest('GET', '/admin/rewards');
         if (response.success) {
-            rewards.value = response.data || [];
+            rewards.value = response.data?.rewards || [];
         }
     } catch (e) {
         error.value = e.message;
@@ -275,9 +275,16 @@ const addReward = async () => {
     isSaving.value = true;
 
     try {
-        const response = await apiRequest('POST', '/admin/rewards', newReward.value);
-        if (response.success && response.data) {
-            rewards.value.push(response.data);
+        // Generate a unique ID for the new reward
+        const newId = `reward_${newReward.value.threshold}_${Date.now()}`;
+        const rewardToAdd = { ...newReward.value, id: newId };
+
+        // Send all rewards including the new one
+        const allRewards = [...rewards.value, rewardToAdd];
+        const response = await apiRequest('POST', '/admin/rewards', { rewards: allRewards });
+
+        if (response.success) {
+            rewards.value = response.data?.rewards || allRewards;
             cancelAdding();
         }
     } catch (e) {
@@ -295,9 +302,9 @@ const deleteReward = async (rewardId) => {
 
     try {
         const updatedRewards = rewards.value.filter((r) => r.id !== rewardId);
-        const response = await apiRequest('POST', '/admin/rewards', updatedRewards);
+        const response = await apiRequest('POST', '/admin/rewards', { rewards: updatedRewards });
         if (response.success) {
-            rewards.value = updatedRewards;
+            rewards.value = response.data?.rewards || updatedRewards;
         }
     } catch (e) {
         alert('Failed to delete: ' + e.message);
