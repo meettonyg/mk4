@@ -227,7 +227,7 @@ export const useOnboardingStore = defineStore('onboarding', {
                 const response = await this.apiRequest('GET', '/onboarding/rewards');
 
                 if (response.success) {
-                    this.rewards = response.data?.rewards || [];
+                    this.rewards = response.data?.rewards?.list || [];
                 }
             } catch (error) {
                 console.error('Failed to load rewards:', error);
