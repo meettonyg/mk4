@@ -293,6 +293,16 @@
 
             <!-- Sidebar -->
             <div class="sidebar">
+                <!-- Profile Strength Meter -->
+                <ProfileStrengthMeter
+                    v-if="store.postId"
+                    ref="strengthMeterRef"
+                    :profile-id="store.postId"
+                    :show-pillars="true"
+                    :show-recommendations="true"
+                    :max-recommendations="3"
+                />
+
                 <!-- Links Panel -->
                 <EditablePanel
                     title="Links"
@@ -443,10 +453,11 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, onMounted } from 'vue';
+import { ref, computed, reactive, onMounted, watch } from 'vue';
 import { useProfileStore } from '../../stores/profile.js';
 import { useInterviews } from '../../../composables/useInterviews.js';
 import EditablePanel from '../layout/EditablePanel.vue';
+import ProfileStrengthMeter from '../strength/ProfileStrengthMeter.vue';
 
 const store = useProfileStore();
 const {
@@ -456,6 +467,16 @@ const {
     getProfileInterviews,
     updateProfileInterviews
 } = useInterviews();
+
+// Profile Strength Meter ref
+const strengthMeterRef = ref(null);
+
+// Refresh strength meter when profile is saved
+watch(() => store.lastSaved, () => {
+    if (strengthMeterRef.value) {
+        strengthMeterRef.value.refresh();
+    }
+});
 
 // Edit state
 const editingSection = ref(null);
@@ -717,6 +738,7 @@ const truncateText = (text, maxLength) => {
 .sidebar {
     display: flex;
     flex-direction: column;
+    gap: 20px;
 }
 
 /* Text areas */
