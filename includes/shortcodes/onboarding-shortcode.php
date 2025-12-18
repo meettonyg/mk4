@@ -127,6 +127,24 @@ function gmkb_register_profile_strength_shortcode() {
 add_action('init', 'gmkb_register_profile_strength_shortcode');
 
 /**
+ * Enqueue onboarding CSS only (for shortcodes that don't need the full Vue app)
+ */
+function gmkb_enqueue_onboarding_styles() {
+    $plugin_url = plugin_dir_url(dirname(dirname(__FILE__)));
+    $plugin_path = plugin_dir_path(dirname(dirname(__FILE__)));
+    $css_file = $plugin_path . 'dist/onboarding/gmkb-onboarding.css';
+
+    if (file_exists($css_file)) {
+        wp_enqueue_style(
+            'gmkb-onboarding',
+            $plugin_url . 'dist/onboarding/gmkb-onboarding.css',
+            [],
+            filemtime($css_file)
+        );
+    }
+}
+
+/**
  * Profile strength shortcode handler
  *
  * @param array $atts Shortcode attributes
@@ -143,6 +161,9 @@ function gmkb_profile_strength_shortcode_handler($atts) {
     if (!is_user_logged_in()) {
         return '';
     }
+
+    // Enqueue styles
+    gmkb_enqueue_onboarding_styles();
 
     // Get profile ID
     $profile_id = $atts['profile_id'] ? intval($atts['profile_id']) : null;
@@ -172,7 +193,7 @@ function gmkb_profile_strength_shortcode_handler($atts) {
     // Size classes
     $size_class = 'gmkb-profile-strength--' . esc_attr($atts['size']);
 
-    // Render inline (no Vue needed for simple display)
+    // Render (styles loaded via enqueued CSS)
     ob_start();
     ?>
     <div class="gmkb-profile-strength <?php echo $size_class; ?>">
@@ -182,69 +203,6 @@ function gmkb_profile_strength_shortcode_handler($atts) {
         </div>
         <span class="gmkb-profile-strength__label">Profile Strength</span>
     </div>
-    <style>
-    .gmkb-profile-strength {
-        display: inline-flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-    }
-    .gmkb-profile-strength__ring {
-        position: relative;
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        background: conic-gradient(
-            #14b8a6 0% var(--progress),
-            #e2e8f0 var(--progress) 100%
-        );
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .gmkb-profile-strength__ring::before {
-        content: '';
-        position: absolute;
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background: white;
-    }
-    .gmkb-profile-strength__value {
-        position: relative;
-        font-size: 18px;
-        font-weight: 700;
-        color: #1e293b;
-    }
-    .gmkb-profile-strength__label {
-        font-size: 12px;
-        color: #64748b;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    .gmkb-profile-strength--small .gmkb-profile-strength__ring {
-        width: 48px;
-        height: 48px;
-    }
-    .gmkb-profile-strength--small .gmkb-profile-strength__ring::before {
-        width: 36px;
-        height: 36px;
-    }
-    .gmkb-profile-strength--small .gmkb-profile-strength__value {
-        font-size: 12px;
-    }
-    .gmkb-profile-strength--large .gmkb-profile-strength__ring {
-        width: 120px;
-        height: 120px;
-    }
-    .gmkb-profile-strength--large .gmkb-profile-strength__ring::before {
-        width: 90px;
-        height: 90px;
-    }
-    .gmkb-profile-strength--large .gmkb-profile-strength__value {
-        font-size: 28px;
-    }
-    </style>
     <?php
     return ob_get_clean();
 }

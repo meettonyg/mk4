@@ -239,6 +239,24 @@ class GMKB_Onboarding_Leaderboard {
     }
 
     /**
+     * Enqueue leaderboard styles
+     */
+    private static function enqueue_styles(): void {
+        $plugin_url = plugin_dir_url(dirname(__FILE__));
+        $plugin_path = plugin_dir_path(dirname(__FILE__));
+        $css_file = $plugin_path . 'dist/onboarding/gmkb-onboarding.css';
+
+        if (file_exists($css_file)) {
+            wp_enqueue_style(
+                'gmkb-onboarding',
+                $plugin_url . 'dist/onboarding/gmkb-onboarding.css',
+                [],
+                filemtime($css_file)
+            );
+        }
+    }
+
+    /**
      * Render leaderboard shortcode
      *
      * @param array $atts Shortcode attributes
@@ -252,6 +270,9 @@ class GMKB_Onboarding_Leaderboard {
             'highlight_current' => 'true',
             'title' => 'Leaderboard',
         ], $atts, 'gmkb_leaderboard');
+
+        // Enqueue styles
+        self::enqueue_styles();
 
         $limit = (int) $atts['limit'];
         $show_avatars = $atts['show_avatars'] === 'true';
@@ -319,162 +340,6 @@ class GMKB_Onboarding_Leaderboard {
                 <?php endif; ?>
             <?php endif; ?>
         </div>
-
-        <style>
-            .gmkb-leaderboard {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                max-width: 600px;
-                background: white;
-                border-radius: 12px;
-                padding: 24px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            }
-
-            .gmkb-leaderboard__title {
-                margin: 0 0 20px 0;
-                font-size: 20px;
-                font-weight: 600;
-                color: #1e293b;
-            }
-
-            .gmkb-leaderboard__empty {
-                text-align: center;
-                color: #64748b;
-                padding: 20px;
-            }
-
-            .gmkb-leaderboard__list {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            .gmkb-leaderboard__item {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                padding: 12px;
-                background: #f8fafc;
-                border-radius: 8px;
-                transition: background 0.2s;
-            }
-
-            .gmkb-leaderboard__item:hover {
-                background: #f1f5f9;
-            }
-
-            .gmkb-leaderboard__item--current {
-                background: #f0fdfa;
-                border: 2px solid #14b8a6;
-            }
-
-            .gmkb-leaderboard__rank {
-                width: 32px;
-                height: 32px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: 700;
-                font-size: 14px;
-                border-radius: 50%;
-                background: #e2e8f0;
-                color: #64748b;
-                flex-shrink: 0;
-            }
-
-            .gmkb-leaderboard__rank--gold {
-                background: linear-gradient(135deg, #fbbf24, #f59e0b);
-                color: white;
-            }
-
-            .gmkb-leaderboard__rank--silver {
-                background: linear-gradient(135deg, #cbd5e1, #94a3b8);
-                color: white;
-            }
-
-            .gmkb-leaderboard__rank--bronze {
-                background: linear-gradient(135deg, #d97706, #b45309);
-                color: white;
-            }
-
-            .gmkb-leaderboard__avatar {
-                width: 40px;
-                height: 40px;
-                border-radius: 50%;
-                object-fit: cover;
-                flex-shrink: 0;
-            }
-
-            .gmkb-leaderboard__name {
-                flex: 1;
-                font-weight: 500;
-                color: #1e293b;
-                min-width: 0;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-
-            .gmkb-leaderboard__you {
-                font-weight: 400;
-                color: #14b8a6;
-                font-size: 12px;
-            }
-
-            .gmkb-leaderboard__progress {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                flex-shrink: 0;
-            }
-
-            .gmkb-leaderboard__progress-bar {
-                width: 60px;
-                height: 6px;
-                background: #e2e8f0;
-                border-radius: 3px;
-                overflow: hidden;
-            }
-
-            .gmkb-leaderboard__progress-fill {
-                height: 100%;
-                background: #14b8a6;
-                border-radius: 3px;
-                transition: width 0.3s;
-            }
-
-            .gmkb-leaderboard__progress-text {
-                font-size: 13px;
-                font-weight: 600;
-                color: #14b8a6;
-                min-width: 40px;
-            }
-
-            .gmkb-leaderboard__points {
-                font-size: 12px;
-                color: #64748b;
-                flex-shrink: 0;
-            }
-
-            .gmkb-leaderboard__current-rank {
-                margin-top: 16px;
-                padding-top: 16px;
-                border-top: 1px solid #e2e8f0;
-                text-align: center;
-                color: #64748b;
-                font-size: 14px;
-            }
-
-            @media (max-width: 480px) {
-                .gmkb-leaderboard__progress-bar {
-                    display: none;
-                }
-
-                .gmkb-leaderboard__item {
-                    flex-wrap: wrap;
-                }
-            }
-        </style>
         <?php
         return ob_get_clean();
     }

@@ -165,67 +165,6 @@ class GMKB_Onboarding_Admin {
                 </table>
             </div>
         </div>
-
-        <style>
-            .gmkb-onboarding-stats,
-            .gmkb-onboarding-rewards,
-            .gmkb-onboarding-cli {
-                margin: 20px 0;
-                padding: 20px;
-                background: white;
-                border: 1px solid #c3c4c7;
-                border-radius: 4px;
-            }
-
-            .gmkb-onboarding-stats h2,
-            .gmkb-onboarding-rewards h2,
-            .gmkb-onboarding-cli h2 {
-                margin-top: 0;
-            }
-
-            .stats-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-                gap: 16px;
-            }
-
-            .stat-card {
-                background: #f9f9f9;
-                padding: 20px;
-                border-radius: 4px;
-                text-align: center;
-                border: 1px solid #e0e0e0;
-            }
-
-            .stat-value {
-                display: block;
-                font-size: 32px;
-                font-weight: 600;
-                color: #2271b1;
-                line-height: 1.2;
-            }
-
-            .stat-label {
-                display: block;
-                font-size: 12px;
-                color: #646970;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                margin-top: 4px;
-            }
-
-            .loading-message {
-                padding: 40px;
-                text-align: center;
-                color: #646970;
-            }
-
-            .gmkb-onboarding-cli code {
-                background: #f1f1f1;
-                padding: 2px 6px;
-                border-radius: 3px;
-            }
-        </style>
         <?php
     }
 
@@ -279,4 +218,4 @@ class GMKB_Onboarding_Admin {
 }
 
 // Initialize admin
-add_action('admin_init', ['GMKB_Onboarding_Admin', 'init']);
+add_action('plugins_loaded', ['GMKB_Onboarding_Admin', 'init']);

@@ -4,6 +4,8 @@
  * Vue 3 application for managing onboarding rewards in wp-admin.
  */
 
+import './styles/admin.css';
+
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 

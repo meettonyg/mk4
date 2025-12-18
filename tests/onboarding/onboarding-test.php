@@ -123,10 +123,10 @@ class GMKB_Onboarding_Test {
         $valid_thresholds = true;
         $threshold_values = [];
         foreach ($rewards as $reward) {
-            if (!isset($reward['points_required']) || $reward['points_required'] < 0 || $reward['points_required'] > 100) {
+            if (!isset($reward['threshold']) || $reward['threshold'] < 0 || $reward['threshold'] > 100) {
                 $valid_thresholds = false;
             }
-            $threshold_values[] = $reward['points_required'] ?? 'missing';
+            $threshold_values[] = $reward['threshold'] ?? 'missing';
         }
         $tests['reward_thresholds_valid'] = [
             'description' => 'Reward thresholds between 0-100',
@@ -439,7 +439,7 @@ class GMKB_Onboarding_Test {
         $hooks_to_check = [
             'updated_post_meta' => 'Profile meta update hook',
             'gmkb_pitch_sent' => 'Pitch sent hook',
-            'gmkb_podcast_search_performed' => 'Search performed hook',
+            'gmkb_search_performed' => 'Search performed hook',
         ];
 
         foreach ($hooks_to_check as $hook => $description) {

@@ -89,3 +89,237 @@
 #gmkb-onboarding-app .animate-pulse {
     animation: gmkb-pulse 2s ease-in-out infinite;
 }
+
+/* ==========================================================================
+   Profile Strength Shortcode Styles
+   ========================================================================== */
+
+.gmkb-profile-strength {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.gmkb-profile-strength__ring {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: conic-gradient(
+        #14b8a6 0% var(--progress),
+        #e2e8f0 var(--progress) 100%
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gmkb-profile-strength__ring::before {
+    content: '';
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: white;
+}
+
+.gmkb-profile-strength__value {
+    position: relative;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.gmkb-profile-strength__label {
+    font-size: 12px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.gmkb-profile-strength--small .gmkb-profile-strength__ring {
+    width: 48px;
+    height: 48px;
+}
+
+.gmkb-profile-strength--small .gmkb-profile-strength__ring::before {
+    width: 36px;
+    height: 36px;
+}
+
+.gmkb-profile-strength--small .gmkb-profile-strength__value {
+    font-size: 12px;
+}
+
+.gmkb-profile-strength--large .gmkb-profile-strength__ring {
+    width: 120px;
+    height: 120px;
+}
+
+.gmkb-profile-strength--large .gmkb-profile-strength__ring::before {
+    width: 90px;
+    height: 90px;
+}
+
+.gmkb-profile-strength--large .gmkb-profile-strength__value {
+    font-size: 28px;
+}
+
+/* ==========================================================================
+   Leaderboard Shortcode Styles
+   ========================================================================== */
+
+.gmkb-leaderboard {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    max-width: 600px;
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.gmkb-leaderboard__title {
+    margin: 0 0 20px 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.gmkb-leaderboard__empty {
+    text-align: center;
+    color: #64748b;
+    padding: 20px;
+}
+
+.gmkb-leaderboard__list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.gmkb-leaderboard__item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.gmkb-leaderboard__item:hover {
+    background: #f1f5f9;
+}
+
+.gmkb-leaderboard__item--current {
+    background: #f0fdfa;
+    border: 2px solid #14b8a6;
+}
+
+.gmkb-leaderboard__rank {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #64748b;
+    flex-shrink: 0;
+}
+
+.gmkb-leaderboard__rank--gold {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: white;
+}
+
+.gmkb-leaderboard__rank--silver {
+    background: linear-gradient(135deg, #cbd5e1, #94a3b8);
+    color: white;
+}
+
+.gmkb-leaderboard__rank--bronze {
+    background: linear-gradient(135deg, #d97706, #b45309);
+    color: white;
+}
+
+.gmkb-leaderboard__avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.gmkb-leaderboard__name {
+    flex: 1;
+    font-weight: 500;
+    color: #1e293b;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.gmkb-leaderboard__you {
+    font-weight: 400;
+    color: #14b8a6;
+    font-size: 12px;
+}
+
+.gmkb-leaderboard__progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.gmkb-leaderboard__progress-bar {
+    width: 60px;
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.gmkb-leaderboard__progress-fill {
+    height: 100%;
+    background: #14b8a6;
+    border-radius: 3px;
+    transition: width 0.3s;
+}
+
+.gmkb-leaderboard__progress-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: #14b8a6;
+    min-width: 40px;
+}
+
+.gmkb-leaderboard__points {
+    font-size: 12px;
+    color: #64748b;
+    flex-shrink: 0;
+}
+
+.gmkb-leaderboard__current-rank {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+    color: #64748b;
+    font-size: 14px;
+}
+
+@media (max-width: 480px) {
+    .gmkb-leaderboard__progress-bar {
+        display: none;
+    }
+
+    .gmkb-leaderboard__item {
+        flex-wrap: wrap;
+    }
+}
