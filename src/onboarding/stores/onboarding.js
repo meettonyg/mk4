@@ -40,14 +40,14 @@ export const useOnboardingStore = defineStore('onboarding', {
          * Total points earned
          */
         totalPoints: (state) => {
-            return state.progress?.points?.earned ?? 0;
+            return state.progress?.points?.total ?? 0;
         },
 
         /**
          * Maximum possible points
          */
         maxPoints: (state) => {
-            return state.progress?.points?.possible ?? 100;
+            return state.progress?.points?.max ?? 100;
         },
 
         /**
@@ -143,7 +143,7 @@ export const useOnboardingStore = defineStore('onboarding', {
                 .sort((a, b) => a.threshold - b.threshold)[0];
 
             if (!next) return 0;
-            return Math.max(0, next.threshold - (state.progress?.points?.earned || 0));
+            return Math.max(0, next.threshold - (state.progress?.points?.total || 0));
         },
 
         /**
