@@ -71,7 +71,8 @@ export function useOnboardingProgress(options = {}) {
     });
 
     const profileStrengthPercentage = computed(() => {
-        return profileStrength.value?.percentage ?? 0;
+        // API returns { strength: number, max: 100 }
+        return profileStrength.value?.strength ?? profileStrength.value?.percentage ?? 0;
     });
 
     const incompleteFields = computed(() => {
@@ -165,7 +166,8 @@ export function useOnboardingProgress(options = {}) {
             const response = await apiRequest('GET', '/onboarding/rewards');
 
             if (response.success) {
-                rewards.value = response.data || [];
+                // API returns { rewards: [...], total_points: ... }
+                rewards.value = response.data?.rewards?.list || response.data?.rewards || [];
             }
         } catch (e) {
             console.error('Failed to fetch rewards:', e);

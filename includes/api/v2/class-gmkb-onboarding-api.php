@@ -422,7 +422,7 @@ class GMKB_Onboarding_API {
 
         // Verify profile exists
         $profile = get_post($profile_id);
-        if (!$profile || $profile->post_type !== 'guest_profile') {
+        if (!$profile || $profile->post_type !== 'guests') {
             return new WP_Error(
                 'profile_not_found',
                 'Profile not found',
