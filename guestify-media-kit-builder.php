@@ -154,6 +154,11 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-hooks.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-hooks.php';
 }
 
+// Onboarding Leaderboard - Displays top users by progress
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-leaderboard.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-leaderboard.php';
+}
+
 // Legacy: Formidable Field ID to Post Meta mapping
 // TODO: Remove after migration verification complete
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/formidable-field-map.php')) {
@@ -181,6 +186,11 @@ if (is_admin()) {
             require_once GUESTIFY_PLUGIN_DIR . $path;
             break;
         }
+    }
+
+    // Onboarding system tests
+    if (file_exists(GUESTIFY_PLUGIN_DIR . 'tests/onboarding/onboarding-test.php')) {
+        require_once GUESTIFY_PLUGIN_DIR . 'tests/onboarding/onboarding-test.php';
     }
 }
 
