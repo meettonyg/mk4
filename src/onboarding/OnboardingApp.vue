@@ -22,7 +22,7 @@
                         'next': isNextReward(reward)
                     }"
                 >
-                    <div v-if="reward.unlocked" class="task-checkmark">✓</div>
+                    <div v-if="reward.unlocked" class="task-checkmark"><i class="fas fa-check"></i></div>
                     <div v-else class="task-checkbox"></div>
 
                     <a
@@ -40,7 +40,7 @@
                     <div v-else class="reward-info">
                         <div class="reward-points">
                             {{ reward.threshold }} Points
-                            <i v-if="!reward.unlocked" class="lock-icon">🔒</i>
+                            <i v-if="!reward.unlocked" class="lock-icon fas fa-lock"></i>
                         </div>
                         <div class="reward-title">{{ reward.title }}</div>
                         <div class="reward-description">{{ reward.description }}</div>
@@ -60,10 +60,10 @@
             <!-- Bottom Links -->
             <div class="sidebar-bottom">
                 <a href="/account/" class="sidebar-link">
-                    <span>👥</span> Invite your team
+                    <span class="fas fa-users"></span> Invite your team
                 </a>
                 <a href="/account/" class="sidebar-link">
-                    <span>📋</span> View your plan
+                    <span class="fas fa-clipboard-list"></span> View your plan
                 </a>
             </div>
         </div>
@@ -126,7 +126,7 @@
                                     <td>{{ task.complete ? task.points : `0/${task.max_points}` }}</td>
                                     <td :class="task.complete ? 'status-complete' : 'status-incomplete'">
                                         <span :class="task.complete ? 'check-icon' : 'x-icon'">
-                                            {{ task.complete ? '✓' : '✗' }}
+                                            <i :class="task.complete ? 'fas fa-check' : 'fas fa-times'"></i>
                                         </span>
                                         {{ task.complete ? 'Complete' : 'Incomplete' }}
                                     </td>
@@ -167,7 +167,7 @@
                         :key="task.id"
                         class="task-item"
                     >
-                        <div v-if="task.complete" class="task-checkmark">✓</div>
+                        <div v-if="task.complete" class="task-checkmark"><i class="fas fa-check"></i></div>
                         <div v-else class="task-checkbox"></div>
 
                         <div class="task-content">

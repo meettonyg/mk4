@@ -43,7 +43,7 @@
                 :class="{ complete: pillar.percentage === 100 }"
             >
                 <div class="pillar-header">
-                    <span class="pillar-icon">{{ pillarIcons[pillar.id] }}</span>
+                    <span class="pillar-icon"><i :class="pillarIcons[pillar.id]"></i></span>
                     <span class="pillar-label">{{ pillar.label }}</span>
                     <span class="pillar-score">{{ pillar.score }}/{{ pillar.max }}</span>
                 </div>
@@ -63,7 +63,7 @@
                     class="recommendation-item"
                     :class="`priority-${rec.priority}`"
                 >
-                    <span class="rec-icon">{{ priorityIcons[rec.priority] }}</span>
+                    <span class="rec-icon"><i :class="priorityIcons[rec.priority]"></i></span>
                     <span class="rec-message">{{ rec.message }}</span>
                     <span class="rec-points">+{{ rec.points }}</span>
                 </li>
@@ -134,20 +134,20 @@ const {
     autoFetch: true,
 });
 
-// Pillar icons mapping
+// Pillar icons mapping (Font Awesome classes)
 const pillarIcons = {
-    identity: '👤',
-    authority: '🏆',
-    value: '🎁',
-    proof: '✓',
+    identity: 'fas fa-user',
+    authority: 'fas fa-trophy',
+    value: 'fas fa-gift',
+    proof: 'fas fa-check',
 };
 
-// Priority icons
+// Priority icons (Font Awesome classes)
 const priorityIcons = {
-    critical: '⚠',
-    high: '↑',
-    medium: '→',
-    low: '○',
+    critical: 'fas fa-exclamation-triangle',
+    high: 'fas fa-arrow-up',
+    medium: 'fas fa-arrow-right',
+    low: 'far fa-circle',
 };
 
 // Convert pillars object to array for v-for

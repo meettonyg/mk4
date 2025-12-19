@@ -51,7 +51,7 @@
                         <!-- Linked offers from managed system -->
                         <ul v-else-if="linkedOffers.length > 0" class="offers-list">
                             <li v-for="offer in linkedOffers" :key="offer.id" class="offer-item managed-offer">
-                                <span class="offer-icon">🎯</span>
+                                <span class="offer-icon"><i class="fas fa-bullseye"></i></span>
                                 <span class="offer-text">
                                     <span class="offer-title">{{ offer.title }}</span>
                                     <span v-if="offer.type" class="offer-type-badge">{{ offer.type }}</span>
@@ -63,7 +63,7 @@
                                     target="_blank"
                                     class="offer-link"
                                 >
-                                    🔗
+                                    <i class="fas fa-external-link-alt"></i>
                                 </a>
                             </li>
                         </ul>

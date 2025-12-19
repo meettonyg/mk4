@@ -27,7 +27,7 @@
             >
                 <!-- View Mode -->
                 <template v-if="editingId !== reward.id">
-                    <div class="reward-icon">{{ reward.icon || '🎁' }}</div>
+                    <div class="reward-icon"><i :class="reward.icon || 'fas fa-gift'"></i></div>
                     <div class="reward-details">
                         <h3>{{ reward.title }}</h3>
                         <p class="reward-meta">
@@ -50,13 +50,12 @@
                     <div class="edit-form">
                         <div class="form-row">
                             <label>
-                                Icon (emoji)
+                                Icon (Font Awesome class)
                                 <input
                                     v-model="editForm.icon"
                                     type="text"
-                                    class="small-input"
-                                    placeholder="🎁"
-                                    maxlength="4"
+                                    class="icon-input"
+                                    placeholder="fas fa-gift"
                                 />
                             </label>
                             <label class="flex-grow">
@@ -111,13 +110,12 @@
                 <div v-else class="edit-form">
                     <div class="form-row">
                         <label>
-                            Icon (emoji)
+                            Icon (Font Awesome class)
                             <input
                                 v-model="newReward.icon"
                                 type="text"
-                                class="small-input"
-                                placeholder="🎁"
-                                maxlength="4"
+                                class="icon-input"
+                                placeholder="fas fa-gift"
                             />
                         </label>
                         <label class="flex-grow">
@@ -194,7 +192,7 @@ const editForm = ref({
 });
 
 const newReward = ref({
-    icon: '🎁',
+    icon: 'fas fa-gift',
     title: '',
     threshold: 50,
     download_url: '',
@@ -257,7 +255,7 @@ const saveReward = async () => {
 // Start adding new reward
 const startAdding = () => {
     isAdding.value = true;
-    newReward.value = { icon: '🎁', title: '', threshold: 50, download_url: '' };
+    newReward.value = { icon: 'fas fa-gift', title: '', threshold: 50, download_url: '' };
 };
 
 // Cancel adding
@@ -513,6 +511,10 @@ onMounted(() => {
 .form-row input.small-input {
     width: 60px;
     text-align: center;
+}
+
+.form-row input.icon-input {
+    width: 140px;
 }
 
 .form-actions {

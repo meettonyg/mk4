@@ -24,7 +24,7 @@
                                 :alt="store.fields[headshot.key].alt || headshot.label"
                             />
                             <div v-else class="placeholder-image">
-                                <span>📷</span>
+                                <i class="fas fa-camera"></i>
                             </div>
                             <figcaption>{{ headshot.label }}</figcaption>
                         </figure>
@@ -47,7 +47,7 @@
                                 :alt="headshot.label"
                             />
                             <div v-else class="upload-placeholder">
-                                <span class="upload-icon">📷</span>
+                                <i class="upload-icon fas fa-camera"></i>
                                 <span class="upload-text">Click to select</span>
                             </div>
                         </div>
@@ -90,7 +90,7 @@
                         </div>
                     </template>
                     <div v-else class="empty-text">
-                        <span class="info-icon">ℹ</span>
+                        <i class="info-icon fas fa-info-circle"></i>
                         Personalize your one sheet with your own unique branding.
                     </div>
                 </div>
@@ -252,7 +252,7 @@
                         </div>
                     </template>
                     <div v-else class="empty-text">
-                        <span class="info-icon">ℹ</span>
+                        <i class="info-icon fas fa-info-circle"></i>
                         Personalize your one sheet with a logo carousel
                     </div>
                 </div>
@@ -277,7 +277,7 @@
             </div>
             <div class="panel-content">
                 <p class="layout-info">
-                    <span class="info-icon">ℹ</span>
+                    <i class="info-icon fas fa-info-circle"></i>
                     <a :href="layoutSelectorUrl" target="_blank">
                         Personalize your one sheet with your own unique layout.
                     </a>
