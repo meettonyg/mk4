@@ -60,10 +60,10 @@
             <!-- Bottom Links -->
             <div class="sidebar-bottom">
                 <a href="/account/" class="sidebar-link">
-                    <span><i class="fas fa-users"></i></span> Invite your team
+                    <span class="fas fa-users"></span> Invite your team
                 </a>
                 <a href="/account/" class="sidebar-link">
-                    <span><i class="fas fa-clipboard-list"></i></span> View your plan
+                    <span class="fas fa-clipboard-list"></span> View your plan
                 </a>
             </div>
         </div>
