@@ -6,6 +6,7 @@
 
 import { defineStore } from 'pinia';
 import storageService from '../../services/StorageService';
+import { PROFILE_TAB_IDS, DEFAULT_TAB } from '../constants/tabs';
 
 // Key fields that contribute to profile completeness (matches API calculation)
 const REQUIRED_FIELDS = [
@@ -38,7 +39,7 @@ export const useProfileStore = defineStore('profile', {
         isLoading: false,
         isSaving: false,
         isDirty: false,
-        activeTab: 'overview',
+        activeTab: DEFAULT_TAB,
         editingSection: null, // Which panel is being edited
 
         // Errors
@@ -420,7 +421,7 @@ export const useProfileStore = defineStore('profile', {
          * Get storage key for active tab (namespaced by postId)
          */
         _getTabStorageKey() {
-            return this.postId ? `profile-active-tab-${this.postId}` : 'profile-active-tab';
+            return this.postId != null ? `profile-active-tab-${this.postId}` : 'profile-active-tab';
         },
 
         /**
@@ -436,9 +437,11 @@ export const useProfileStore = defineStore('profile', {
          */
         loadActiveTabFromStorage() {
             const savedTab = storageService.get(this._getTabStorageKey());
-            if (savedTab && ['overview', 'value', 'messaging', 'branding'].includes(savedTab)) {
+            if (savedTab && PROFILE_TAB_IDS.includes(savedTab)) {
                 this.activeTab = savedTab;
-                console.log('✅ Profile: Loaded active tab from storage:', savedTab);
+                if (window.gmkbData?.debugMode) {
+                    console.log('✅ Profile: Loaded active tab from storage:', savedTab);
+                }
             }
         },
 

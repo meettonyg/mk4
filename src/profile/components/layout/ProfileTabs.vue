@@ -50,17 +50,14 @@
 </template>
 
 <script setup>
-const tabs = [
-    { id: 'overview', label: 'Profile Overview' },
-    { id: 'value', label: 'Value' },
-    { id: 'messaging', label: 'Messaging' },
-    { id: 'branding', label: 'Branding' },
-];
+import { PROFILE_TABS, DEFAULT_TAB } from '../../constants/tabs';
+
+const tabs = PROFILE_TABS;
 
 defineProps({
     activeTab: {
         type: String,
-        default: 'overview',
+        default: DEFAULT_TAB,
     },
 });
 
