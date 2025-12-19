@@ -5,6 +5,7 @@
  */
 
 import { defineStore } from 'pinia';
+import storageService from '../../services/StorageService';
 
 // Key fields that contribute to profile completeness (matches API calculation)
 const REQUIRED_FIELDS = [
@@ -416,10 +417,29 @@ export const useProfileStore = defineStore('profile', {
         },
 
         /**
-         * Set active tab
+         * Get storage key for active tab (namespaced by postId)
+         */
+        _getTabStorageKey() {
+            return this.postId ? `profile-active-tab-${this.postId}` : 'profile-active-tab';
+        },
+
+        /**
+         * Set active tab and persist to localStorage
          */
         setActiveTab(tabId) {
             this.activeTab = tabId;
+            storageService.set(this._getTabStorageKey(), tabId);
+        },
+
+        /**
+         * Load active tab from localStorage
+         */
+        loadActiveTabFromStorage() {
+            const savedTab = storageService.get(this._getTabStorageKey());
+            if (savedTab && ['overview', 'value', 'messaging', 'branding'].includes(savedTab)) {
+                this.activeTab = savedTab;
+                console.log('✅ Profile: Loaded active tab from storage:', savedTab);
+            }
         },
 
         /**
