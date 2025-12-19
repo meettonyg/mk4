@@ -117,7 +117,7 @@
 
             <!-- Next Reward Teaser -->
             <div v-if="onboarding.nextReward.value && displayPercentage < 100" class="next-reward">
-                <span class="reward-icon">{{ onboarding.nextReward.value.icon || '🎁' }}</span>
+                <span class="reward-icon"><i :class="onboarding.nextReward.value.icon || 'fas fa-gift'"></i></span>
                 <span class="reward-text">
                     {{ onboarding.pointsToNextReward.value }} points to unlock
                     <strong>{{ onboarding.nextReward.value.title }}</strong>

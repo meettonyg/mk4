@@ -75,7 +75,7 @@
                         <div class="text-area">
                             <p v-if="store.fields.why_book_you" v-html="store.fields.why_book_you"></p>
                             <p v-else class="empty-text">
-                                <i class="info-icon">ℹ</i>
+                                <i class="info-icon fas fa-info-circle"></i>
                                 Click the edit button to share what makes you unique
                             </p>
                         </div>
@@ -214,7 +214,7 @@
                                     >
                                         <div class="featured-card-content">
                                             <div class="featured-card-icon">
-                                                <span class="dashicon">🎙️</span>
+                                                <i class="fas fa-microphone"></i>
                                             </div>
                                             <div class="featured-card-info">
                                                 <div class="featured-card-title">{{ interview.podcast_name || 'Podcast' }}</div>
@@ -227,7 +227,7 @@
                                             title="Remove from featured"
                                             type="button"
                                         >
-                                            ✕
+                                            <i class="fas fa-times"></i>
                                         </button>
                                     </div>
                                 </div>

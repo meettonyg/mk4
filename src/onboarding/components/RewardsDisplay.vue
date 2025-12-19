@@ -16,7 +16,7 @@
                     :style="{ left: `${reward.threshold}%` }"
                     :title="`${reward.title} - ${reward.threshold} points`"
                 >
-                    <span class="marker-icon">{{ reward.icon || '🎁' }}</span>
+                    <span class="marker-icon"><i :class="reward.icon || 'fas fa-gift'"></i></span>
                 </div>
             </div>
             <div class="progress-labels">
@@ -36,7 +36,7 @@
                     'is-next': isNextReward(reward),
                 }"
             >
-                <div class="reward-icon">{{ reward.icon || '🎁' }}</div>
+                <div class="reward-icon"><i :class="reward.icon || 'fas fa-gift'"></i></div>
                 <div class="reward-info">
                     <h4 class="reward-title">{{ reward.title }}</h4>
                     <p class="reward-threshold">
