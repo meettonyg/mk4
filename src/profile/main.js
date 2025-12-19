@@ -60,6 +60,9 @@ if (window.gmkbProfileInitialized) {
             apiUrl,
         });
 
+        // Load persisted tab state from localStorage
+        profileStore.loadActiveTabFromStorage();
+
         // Mount the app
         app.mount(mountElement);
 
