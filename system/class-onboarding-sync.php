@@ -72,6 +72,18 @@ class GMKB_Onboarding_Sync {
         // Register custom fields with WP Fusion
         add_filter('wpf_meta_fields', [__CLASS__, 'register_wpf_fields']);
         add_filter('wpf_meta_field_groups', [__CLASS__, 'register_wpf_field_groups']);
+
+        // =========================================================
+        // THE BRIDGE: Prospector Interview Finder Integration
+        // Listen for imports from the Podcast Interview Tracker plugin
+        // =========================================================
+        add_action('interview_finder_import_completed', [__CLASS__, 'on_interview_finder_import'], 10, 2);
+
+        // Also listen for user meta updates to trigger progress recalculation
+        add_action('updated_user_meta', [__CLASS__, 'on_user_meta_updated_for_sync'], 10, 4);
+
+        // Hook into save_post for gmkb_pitch to track pitch counts
+        add_action('save_post_gmkb_pitch', [__CLASS__, 'on_pitch_saved'], 10, 3);
     }
 
     /**
@@ -386,6 +398,236 @@ class GMKB_Onboarding_Sync {
         ];
 
         return $groups;
+    }
+
+    // =========================================================
+    // THE BRIDGE: Prospector Interview Finder Integration
+    // =========================================================
+
+    /**
+     * Handle interview finder import completion
+     *
+     * CRITICAL: This is the bridge between the Podcast Interview Tracker (PIT)
+     * plugin and the GMKB Onboarding System. When an interview opportunity is
+     * imported via the Interview Finder, this method:
+     *
+     * 1. Queries the wp_pit_opportunities table for the user
+     * 2. Counts total opportunities imported by that user
+     * 3. Updates the guestify_total_interview_entries user meta
+     * 4. Triggers onboarding progress recalculation
+     *
+     * @param int $user_id WordPress user ID who imported the opportunity
+     * @param array $import_data Optional data about the import (opportunity_id, etc.)
+     */
+    public static function on_interview_finder_import(int $user_id, array $import_data = []): void {
+        if ($user_id <= 0) {
+            return;
+        }
+
+        // Count opportunities from the PIT table
+        $opportunity_count = self::count_user_opportunities($user_id);
+
+        // Update user meta with total interview entries
+        $previous_count = (int) get_user_meta($user_id, 'guestify_total_interview_entries', true);
+        update_user_meta($user_id, 'guestify_total_interview_entries', $opportunity_count);
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log(sprintf(
+                '[Onboarding Sync BRIDGE] User %d imported opportunity. Count: %d -> %d (import_data: %s)',
+                $user_id,
+                $previous_count,
+                $opportunity_count,
+                json_encode($import_data)
+            ));
+        }
+
+        // Check if this is the first import (trigger task completion)
+        if ($previous_count === 0 && $opportunity_count > 0) {
+            do_action('gmkb_onboarding_task_completed', $user_id, 'import', [
+                'points' => 10,
+                'label'  => 'First Podcast Imported',
+            ]);
+        }
+
+        // Trigger progress recalculation
+        if (class_exists('GMKB_Onboarding_Repository')) {
+            $repo = new GMKB_Onboarding_Repository();
+            $progress = $repo->calculate_progress($user_id);
+            $repo->update_progress_meta($user_id, $progress['points']['percentage'], $progress);
+        }
+
+        // Push to GHL via WP Fusion
+        if (self::is_wpf_available()) {
+            self::push_user_meta($user_id, [
+                'guestify_total_interview_entries' => $opportunity_count,
+            ]);
+        }
+
+        // Fire extensibility action
+        do_action('gmkb_onboarding_sync_import_completed', $user_id, $opportunity_count, $import_data);
+    }
+
+    /**
+     * Count opportunities for a user from the PIT tables
+     *
+     * Queries the wp_pit_opportunities table to count all opportunities
+     * associated with the given user ID.
+     *
+     * @param int $user_id WordPress user ID
+     * @return int Number of opportunities
+     */
+    public static function count_user_opportunities(int $user_id): int {
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'pit_opportunities';
+
+        // Check if table exists
+        $table_exists = $wpdb->get_var(
+            $wpdb->prepare("SHOW TABLES LIKE %s", $table_name)
+        );
+
+        if ($table_exists !== $table_name) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log(sprintf(
+                    '[Onboarding Sync BRIDGE] Table %s does not exist',
+                    $table_name
+                ));
+            }
+            return 0;
+        }
+
+        // Count opportunities for this user
+        $count = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$table_name} WHERE user_id = %d",
+            $user_id
+        ));
+
+        return (int) $count;
+    }
+
+    /**
+     * Handle user meta updates for sync purposes
+     *
+     * Listens for updates to onboarding-related user meta and triggers
+     * GHL sync when milestones are reached.
+     *
+     * @param int $meta_id Meta ID
+     * @param int $user_id User ID
+     * @param string $meta_key Meta key
+     * @param mixed $meta_value New meta value
+     */
+    public static function on_user_meta_updated_for_sync(int $meta_id, int $user_id, string $meta_key, $meta_value): void {
+        // Only process relevant meta keys
+        $sync_keys = [
+            'guestify_total_pitches_sent',
+            'guestify_total_searches',
+            'guestify_total_interview_entries',
+            'guestify_onboarding_progress_percent',
+        ];
+
+        if (!in_array($meta_key, $sync_keys, true)) {
+            return;
+        }
+
+        // Push to GHL if WP Fusion is available
+        if (self::is_wpf_available()) {
+            self::push_user_meta($user_id, [
+                $meta_key => $meta_value,
+            ]);
+        }
+    }
+
+    /**
+     * Handle pitch save to update pitch counts
+     *
+     * When a gmkb_pitch post is created/updated, this method:
+     * 1. Counts total pitches for the user
+     * 2. Updates guestify_total_pitches_sent user meta
+     * 3. Triggers onboarding progress recalculation
+     *
+     * @param int $post_id Post ID
+     * @param WP_Post $post Post object
+     * @param bool $update Whether this is an update
+     */
+    public static function on_pitch_saved(int $post_id, $post, bool $update): void {
+        // Skip auto-drafts and revisions
+        if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+            return;
+        }
+
+        // Skip drafts for counting (only count published/private pitches with 'sent' status)
+        $pitch_status = get_post_meta($post_id, 'pitch_status', true);
+        if ($pitch_status !== 'sent' && $pitch_status !== 'opened' && $pitch_status !== 'replied' && $pitch_status !== 'booked') {
+            return;
+        }
+
+        $user_id = (int) $post->post_author;
+        if ($user_id <= 0) {
+            return;
+        }
+
+        // Count sent pitches using the Post Types helper
+        $pitch_count = 0;
+        if (class_exists('GMKB_Post_Types')) {
+            // Count pitches with sent-like statuses
+            $sent_statuses = ['sent', 'opened', 'replied', 'booked'];
+            foreach ($sent_statuses as $status) {
+                $pitch_count += GMKB_Post_Types::count_user_pitches($user_id, $status);
+            }
+        } else {
+            // Fallback: count via direct query
+            $pitch_count = count(get_posts([
+                'post_type'   => 'gmkb_pitch',
+                'author'      => $user_id,
+                'post_status' => ['publish', 'private'],
+                'meta_query'  => [
+                    [
+                        'key'     => 'pitch_status',
+                        'value'   => ['sent', 'opened', 'replied', 'booked'],
+                        'compare' => 'IN',
+                    ],
+                ],
+                'fields'      => 'ids',
+                'posts_per_page' => -1,
+            ]));
+        }
+
+        // Get previous count
+        $previous_count = (int) get_user_meta($user_id, 'guestify_total_pitches_sent', true);
+
+        // Update user meta
+        update_user_meta($user_id, 'guestify_total_pitches_sent', $pitch_count);
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log(sprintf(
+                '[Onboarding Sync] User %d pitch saved. Count: %d -> %d',
+                $user_id,
+                $previous_count,
+                $pitch_count
+            ));
+        }
+
+        // Check milestones
+        if ($previous_count === 0 && $pitch_count >= 1) {
+            do_action('gmkb_onboarding_task_completed', $user_id, 'first_pitch', [
+                'points' => 10,
+                'label'  => 'First Pitch Sent',
+            ]);
+        }
+
+        if ($previous_count < 3 && $pitch_count >= 3) {
+            do_action('gmkb_onboarding_task_completed', $user_id, 'three_pitches', [
+                'points' => 10,
+                'label'  => 'Three Pitches Sent',
+            ]);
+        }
+
+        // Trigger progress recalculation
+        if (class_exists('GMKB_Onboarding_Repository')) {
+            $repo = new GMKB_Onboarding_Repository();
+            $progress = $repo->calculate_progress($user_id);
+            $repo->update_progress_meta($user_id, $progress['points']['percentage'], $progress);
+        }
     }
 
     /**

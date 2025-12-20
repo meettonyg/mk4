@@ -157,9 +157,83 @@ class GMKB_Onboarding_Repository {
             case 'profile_exists':
                 return $profile_id > 0;
 
+            case 'profile_mvp':
+                return $this->check_profile_mvp($profile_id);
+
             default:
                 return false;
         }
+    }
+
+    /**
+     * Check if profile meets Minimum Viable Profile (MVP) requirements
+     *
+     * A profile is considered MVP-complete when it has:
+     * - First Name (or full name)
+     * - Professional Title
+     * - Biography
+     * - Headshot
+     *
+     * This is the minimum required for a profile to be "publishable"
+     * and represents the basic Identity pillar of the Cialdini model.
+     *
+     * @param int|null $profile_id Profile post ID
+     * @return bool Whether the profile meets MVP requirements
+     */
+    public function check_profile_mvp(?int $profile_id): bool {
+        if (!$profile_id || $profile_id <= 0) {
+            return false;
+        }
+
+        // Check First Name (required for Identity)
+        $first_name = get_post_meta($profile_id, 'first_name', true);
+        if (empty(trim((string) $first_name))) {
+            // Fallback: check full_name
+            $full_name = get_post_meta($profile_id, 'full_name', true);
+            if (empty(trim((string) $full_name))) {
+                return false;
+            }
+        }
+
+        // Check Professional Title (required for Identity)
+        $guest_title = get_post_meta($profile_id, 'guest_title', true);
+        if (empty(trim((string) $guest_title))) {
+            // Fallback: check title
+            $title = get_post_meta($profile_id, 'title', true);
+            if (empty(trim((string) $title))) {
+                return false;
+            }
+        }
+
+        // Check Biography (required for Identity)
+        $biography = get_post_meta($profile_id, 'biography', true);
+        if (empty(trim((string) $biography))) {
+            // Fallback: check bio or bio_summary
+            $bio = get_post_meta($profile_id, 'bio', true);
+            $bio_summary = get_post_meta($profile_id, 'bio_summary', true);
+            if (empty(trim((string) $bio)) && empty(trim((string) $bio_summary))) {
+                return false;
+            }
+        }
+
+        // Check Headshot (required for Identity)
+        $headshot = get_post_meta($profile_id, 'headshot_primary', true);
+        if (empty($headshot)) {
+            // Fallback: check other headshot fields
+            $headshot = get_post_meta($profile_id, 'headshot', true);
+            if (empty($headshot)) {
+                $headshot = get_post_meta($profile_id, 'guest_headshot', true);
+                if (empty($headshot)) {
+                    $headshot = get_post_meta($profile_id, 'profile_photo', true);
+                    if (empty($headshot)) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        // All MVP fields are present
+        return true;
     }
 
     /**

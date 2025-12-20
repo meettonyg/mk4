@@ -114,6 +114,11 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/core-schema.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/core-schema.php';
 }
 
+// Additional CPTs: Pitch and Interview (replaces Formidable Forms 621, 518)
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/post-types/class-gmkb-post-types.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/post-types/class-gmkb-post-types.php';
+}
+
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/field-migration-map.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/field-migration-map.php';
 }
