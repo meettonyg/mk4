@@ -474,16 +474,44 @@ class GMKB_Onboarding_Sync {
      * plugin and the GMKB Onboarding System. When an interview opportunity is
      * imported via the Interview Finder, this method:
      *
-     * 1. Queries the wp_pit_opportunities table for the user
-     * 2. Counts total opportunities imported by that user
-     * 3. Updates the guestify_total_interview_entries user meta
-     * 4. Triggers onboarding progress recalculation
+     * 1. Extracts user_id from the import details
+     * 2. Queries the wp_pit_opportunities table for the user
+     * 3. Counts total opportunities imported by that user
+     * 4. Updates the guestify_total_interview_entries user meta
+     * 5. Triggers onboarding progress recalculation
      *
-     * @param int $user_id WordPress user ID who imported the opportunity
-     * @param array $import_data Optional data about the import (opportunity_id, etc.)
+     * NOTE: The PROspector hook fires as:
+     *   do_action('interview_finder_import_completed', $success_count, $details)
+     * Where $details contains opportunity_id, podcast_id, podcast_name, user_id, etc.
+     *
+     * @param int $success_count Number of successfully imported items
+     * @param array $details Import details containing opportunity info and user_id
      */
-    public static function on_interview_finder_import(int $user_id, array $import_data = []): void {
+    public static function on_interview_finder_import(int $success_count, array $details = []): void {
+        // Extract user_id from details - PROspector passes it in the details array
+        $user_id = 0;
+
+        // Try to get user_id from details array
+        if (!empty($details['user_id'])) {
+            $user_id = (int) $details['user_id'];
+        } elseif (!empty($details['opportunity_id'])) {
+            // Fallback: look up user from the opportunity record
+            $user_id = self::get_user_from_opportunity($details['opportunity_id']);
+        }
+
+        // If still no user_id, try current user as last resort
         if ($user_id <= 0) {
+            $user_id = get_current_user_id();
+        }
+
+        if ($user_id <= 0) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log(sprintf(
+                    '[Onboarding Sync BRIDGE] Could not determine user_id from import. success_count: %d, details: %s',
+                    $success_count,
+                    json_encode($details)
+                ));
+            }
             return;
         }
 
@@ -496,11 +524,12 @@ class GMKB_Onboarding_Sync {
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log(sprintf(
-                '[Onboarding Sync BRIDGE] User %d imported opportunity. Count: %d -> %d (import_data: %s)',
+                '[Onboarding Sync BRIDGE] User %d imported opportunity. Count: %d -> %d (success_count: %d, details: %s)',
                 $user_id,
                 $previous_count,
                 $opportunity_count,
-                json_encode($import_data)
+                $success_count,
+                json_encode($details)
             ));
         }
 
@@ -526,7 +555,35 @@ class GMKB_Onboarding_Sync {
         }
 
         // Fire extensibility action
-        do_action('gmkb_onboarding_sync_import_completed', $user_id, $opportunity_count, $import_data);
+        do_action('gmkb_onboarding_sync_import_completed', $user_id, $opportunity_count, $details);
+    }
+
+    /**
+     * Get user ID from an opportunity record
+     *
+     * @param int $opportunity_id Opportunity ID from PIT table
+     * @return int User ID or 0 if not found
+     */
+    private static function get_user_from_opportunity(int $opportunity_id): int {
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'pit_opportunities';
+
+        // Check if table exists
+        $table_exists = $wpdb->get_var(
+            $wpdb->prepare("SHOW TABLES LIKE %s", $table_name)
+        );
+
+        if ($table_exists !== $table_name) {
+            return 0;
+        }
+
+        $user_id = $wpdb->get_var($wpdb->prepare(
+            "SELECT user_id FROM {$table_name} WHERE id = %d",
+            $opportunity_id
+        ));
+
+        return (int) $user_id;
     }
 
     // =========================================================
@@ -544,6 +601,19 @@ class GMKB_Onboarding_Sync {
      * 3. Updates the guestify_total_pitches_sent user meta
      * 4. Triggers onboarding progress recalculation
      * 5. Applies milestone tags via WP Fusion
+     *
+     * EXTERNAL PLUGIN REQUIREMENT:
+     * The email outreach plugin MUST fire this hook after sending a message:
+     *
+     *   do_action('guestify_outreach_message_sent', $user_id, [
+     *       'message_id'     => (int) $message_id,
+     *       'opportunity_id' => (int) $opportunity_id,  // optional
+     *       'recipient'      => (string) $email,        // optional
+     *       'status'         => 'sent',                 // optional
+     *   ]);
+     *
+     * The $user_id parameter is REQUIRED and must be the WordPress user ID.
+     * The table wp_guestify_messages must have columns: id, user_id, status.
      *
      * @param int $user_id WordPress user ID who sent the message
      * @param array $message_data Optional data about the message (message_id, etc.)
