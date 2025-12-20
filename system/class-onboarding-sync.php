@@ -596,30 +596,42 @@ class GMKB_Onboarding_Sync {
      * CRITICAL: This is the bridge between the guestify-email-outreach plugin
      * and the GMKB Onboarding System. When a message is sent, this method:
      *
-     * 1. Queries the wp_guestify_messages table for the user
-     * 2. Counts total sent messages by that user
-     * 3. Updates the guestify_total_pitches_sent user meta
-     * 4. Triggers onboarding progress recalculation
-     * 5. Applies milestone tags via WP Fusion
+     * 1. Extracts user_id from the message data
+     * 2. Queries the wp_guestify_messages table for the user
+     * 3. Counts total sent messages by that user
+     * 4. Updates the guestify_total_pitches_sent user meta
+     * 5. Triggers onboarding progress recalculation
+     * 6. Applies milestone tags via WP Fusion
      *
-     * EXTERNAL PLUGIN REQUIREMENT:
-     * The email outreach plugin MUST fire this hook after sending a message:
+     * NOTE: The guestify-email-outreach plugin fires this hook as:
+     *   do_action('guestify_outreach_message_sent', $insert_id, $data)
+     * Where $data contains: user_id, template_id, campaign_id, recipient_email,
+     * subject, body_text, body_html, status, sent_at, brevo_message_id, etc.
      *
-     *   do_action('guestify_outreach_message_sent', $user_id, [
-     *       'message_id'     => (int) $message_id,
-     *       'opportunity_id' => (int) $opportunity_id,  // optional
-     *       'recipient'      => (string) $email,        // optional
-     *       'status'         => 'sent',                 // optional
-     *   ]);
-     *
-     * The $user_id parameter is REQUIRED and must be the WordPress user ID.
-     * The table wp_guestify_messages must have columns: id, user_id, status.
-     *
-     * @param int $user_id WordPress user ID who sent the message
-     * @param array $message_data Optional data about the message (message_id, etc.)
+     * @param int $message_id Database insert ID of the message
+     * @param array $message_data Message data array containing user_id and other fields
      */
-    public static function on_outreach_message_sent(int $user_id, array $message_data = []): void {
+    public static function on_outreach_message_sent(int $message_id, array $message_data = []): void {
+        // Extract user_id from message data - outreach plugin passes it in the data array
+        $user_id = 0;
+
+        if (!empty($message_data['user_id'])) {
+            $user_id = (int) $message_data['user_id'];
+        }
+
+        // Fallback to current user if not in data
         if ($user_id <= 0) {
+            $user_id = get_current_user_id();
+        }
+
+        if ($user_id <= 0) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log(sprintf(
+                    '[Onboarding Sync OUTREACH] Could not determine user_id from message. message_id: %d, data: %s',
+                    $message_id,
+                    json_encode($message_data)
+                ));
+            }
             return;
         }
 
@@ -632,10 +644,11 @@ class GMKB_Onboarding_Sync {
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log(sprintf(
-                '[Onboarding Sync OUTREACH] User %d sent message. Count: %d -> %d (message_data: %s)',
+                '[Onboarding Sync OUTREACH] User %d sent message. Count: %d -> %d (message_id: %d, data: %s)',
                 $user_id,
                 $previous_count,
                 $message_count,
+                $message_id,
                 json_encode($message_data)
             ));
         }
@@ -669,8 +682,8 @@ class GMKB_Onboarding_Sync {
             ]);
         }
 
-        // Fire extensibility action
-        do_action('gmkb_onboarding_sync_message_sent', $user_id, $message_count, $message_data);
+        // Fire extensibility action (includes message_id for tracking)
+        do_action('gmkb_onboarding_sync_message_sent', $user_id, $message_count, $message_id, $message_data);
     }
 
     /**
