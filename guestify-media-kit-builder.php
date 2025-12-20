@@ -114,6 +114,10 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/core-schema.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/core-schema.php';
 }
 
+// NOTE: gmkb_pitch and gmkb_interview CPTs were removed.
+// Pitch/Interview data is synced from external plugin tables via bridge hooks.
+// See: system/class-onboarding-sync.php for bridge implementation.
+
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/field-migration-map.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/field-migration-map.php';
 }

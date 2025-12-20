@@ -291,49 +291,159 @@ function gmkb_render_interview_featured($interview, $card_style, $show_podcast_n
 }
 
 /**
- * Get interviews by IDs
+ * Get interviews by IDs from PIT tables
+ *
+ * NOTE: The gmkb_interview CPT was removed. Interview data now comes from
+ * PIT tables (pit_speaking_credits, pit_engagements, pit_podcasts).
+ * The IDs passed here should be speaking_credit IDs.
+ *
+ * @param array $ids Array of speaking_credit IDs
+ * @return array Formatted interview data
  */
 function gmkb_get_interviews_by_ids($ids) {
     if (empty($ids)) return [];
 
-    $interviews = [];
-    foreach ($ids as $id) {
-        $post = get_post($id);
-        if ($post && $post->post_type === 'gmkb_interview' && $post->post_status === 'publish') {
-            $interviews[] = gmkb_format_interview_for_display($post);
-        }
+    global $wpdb;
+    $credits_table = $wpdb->prefix . 'pit_speaking_credits';
+    $engagements_table = $wpdb->prefix . 'pit_engagements';
+    $podcasts_table = $wpdb->prefix . 'pit_podcasts';
+
+    // Check if tables exist
+    $table_exists = $wpdb->get_var(
+        $wpdb->prepare("SHOW TABLES LIKE %s", $credits_table)
+    );
+    if ($table_exists !== $credits_table) {
+        return [];
     }
+
+    $placeholders = implode(',', array_fill(0, count($ids), '%d'));
+    $results = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT
+                sc.id as credit_id,
+                sc.guest_id,
+                e.id as engagement_id,
+                e.episode_title,
+                e.episode_url,
+                e.publish_date,
+                e.duration,
+                e.topics,
+                p.podcast_name,
+                p.host_name,
+                p.artwork_url
+            FROM {$credits_table} sc
+            LEFT JOIN {$engagements_table} e ON sc.engagement_id = e.id
+            LEFT JOIN {$podcasts_table} p ON e.podcast_id = p.id
+            WHERE sc.id IN ($placeholders)",
+            ...$ids
+        )
+    );
+
+    $interviews = [];
+    foreach ($results as $row) {
+        $topics = $row->topics;
+        if (is_string($topics)) {
+            $topics = array_filter(array_map('trim', explode(',', $topics)));
+        }
+
+        $interviews[] = [
+            'id' => (int) $row->credit_id,
+            'title' => $row->episode_title ?: 'Untitled Episode',
+            'podcast_name' => $row->podcast_name ?: '',
+            'episode_url' => $row->episode_url ?: '',
+            'publish_date' => $row->publish_date ?: '',
+            'host_name' => $row->host_name ?: '',
+            'duration' => $row->duration ?: '',
+            'topics' => $topics ?: [],
+            'artwork_url' => $row->artwork_url ?: '',
+        ];
+    }
+
     return $interviews;
 }
 
 /**
- * Get profile's featured interviews
+ * Get profile's featured interviews from PIT tables
+ *
+ * NOTE: The gmkb_interview CPT was removed. This function now queries
+ * the PIT tables to get interviews associated with the profile's guest.
+ *
+ * @param int $profile_id Profile post ID
+ * @return array Formatted interview data
  */
 function gmkb_get_profile_interviews($profile_id) {
+    // First check for stored featured interview IDs (speaking_credit IDs)
     $interview_ids = get_post_meta($profile_id, 'featured_interviews', true);
-    if (empty($interview_ids) || !is_array($interview_ids)) return [];
-    return gmkb_get_interviews_by_ids($interview_ids);
-}
-
-/**
- * Format interview post for display
- */
-function gmkb_format_interview_for_display($post) {
-    $topics = get_post_meta($post->ID, 'topics', true);
-    if (is_string($topics)) {
-        $topics = array_filter(array_map('trim', explode(',', $topics)));
+    if (!empty($interview_ids) && is_array($interview_ids)) {
+        return gmkb_get_interviews_by_ids($interview_ids);
     }
 
-    return [
-        'id' => $post->ID,
-        'title' => $post->post_title,
-        'podcast_name' => get_post_meta($post->ID, 'podcast_name', true),
-        'episode_url' => get_post_meta($post->ID, 'episode_url', true),
-        'publish_date' => get_post_meta($post->ID, 'publish_date', true),
-        'host_name' => get_post_meta($post->ID, 'host_name', true),
-        'duration' => get_post_meta($post->ID, 'duration', true),
-        'topics' => $topics ?: [],
-    ];
+    // Fallback: Get all interviews for the profile's guest from PIT tables
+    global $wpdb;
+    $credits_table = $wpdb->prefix . 'pit_speaking_credits';
+    $engagements_table = $wpdb->prefix . 'pit_engagements';
+    $podcasts_table = $wpdb->prefix . 'pit_podcasts';
+
+    // Check if tables exist
+    $table_exists = $wpdb->get_var(
+        $wpdb->prepare("SHOW TABLES LIKE %s", $credits_table)
+    );
+    if ($table_exists !== $credits_table) {
+        return [];
+    }
+
+    // Get guest_id from profile (check common meta keys)
+    $guest_id = get_post_meta($profile_id, 'pit_guest_id', true);
+    if (!$guest_id) {
+        $guest_id = get_post_meta($profile_id, 'guest_id', true);
+    }
+    if (!$guest_id) {
+        return [];
+    }
+
+    $results = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT
+                sc.id as credit_id,
+                e.episode_title,
+                e.episode_url,
+                e.publish_date,
+                e.duration,
+                e.topics,
+                p.podcast_name,
+                p.host_name,
+                p.artwork_url
+            FROM {$credits_table} sc
+            LEFT JOIN {$engagements_table} e ON sc.engagement_id = e.id
+            LEFT JOIN {$podcasts_table} p ON e.podcast_id = p.id
+            WHERE sc.guest_id = %d
+            ORDER BY e.publish_date DESC
+            LIMIT 10",
+            $guest_id
+        )
+    );
+
+    $interviews = [];
+    foreach ($results as $row) {
+        $topics = $row->topics;
+        if (is_string($topics)) {
+            $topics = array_filter(array_map('trim', explode(',', $topics)));
+        }
+
+        $interviews[] = [
+            'id' => (int) $row->credit_id,
+            'title' => $row->episode_title ?: 'Untitled Episode',
+            'podcast_name' => $row->podcast_name ?: '',
+            'episode_url' => $row->episode_url ?: '',
+            'publish_date' => $row->publish_date ?: '',
+            'host_name' => $row->host_name ?: '',
+            'duration' => $row->duration ?: '',
+            'topics' => $topics ?: [],
+            'artwork_url' => $row->artwork_url ?: '',
+        ];
+    }
+
+    return $interviews;
 }
 
 /**

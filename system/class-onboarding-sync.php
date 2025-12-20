@@ -44,6 +44,32 @@ class GMKB_Onboarding_Sync {
     ];
 
     /**
+     * Pitch count milestones for GHL tags
+     * Maps pitch count thresholds to tag names
+     */
+    const PITCH_MILESTONES = [
+        1 => 'pitches: 1 sent',
+        3 => 'pitches: 3 sent',
+        5 => 'pitches: 5 sent',
+        10 => 'pitches: 10 sent',
+        25 => 'pitches: 25 sent',
+        50 => 'pitches: 50 sent',
+        100 => 'pitches: 100 sent',
+    ];
+
+    /**
+     * Import count milestones for GHL tags
+     * Maps import count thresholds to tag names
+     */
+    const IMPORT_MILESTONES = [
+        1 => 'imports: 1 podcast',
+        5 => 'imports: 5 podcasts',
+        10 => 'imports: 10 podcasts',
+        25 => 'imports: 25 podcasts',
+        50 => 'imports: 50 podcasts',
+    ];
+
+    /**
      * Custom fields to sync
      */
     const CUSTOM_FIELDS = [
@@ -51,7 +77,29 @@ class GMKB_Onboarding_Sync {
         'guestify_onboarding_points',
         'guestify_total_pitches_sent',
         'guestify_total_searches',
+        'guestify_total_interview_entries',
     ];
+
+    /**
+     * Recalculate progress and sync to user meta
+     *
+     * Helper method to avoid code duplication across bridge handlers.
+     * Calculates the user's current progress and updates meta.
+     *
+     * @param int $user_id WordPress user ID
+     * @return array|null Progress data or null if repository unavailable
+     */
+    private static function recalculate_and_sync_progress(int $user_id): ?array {
+        if (!class_exists('GMKB_Onboarding_Repository')) {
+            return null;
+        }
+
+        $repo = new GMKB_Onboarding_Repository();
+        $progress = $repo->calculate_progress($user_id);
+        $repo->update_progress_meta($user_id, $progress['points']['percentage'], $progress);
+
+        return $progress;
+    }
 
     /**
      * Initialize sync hooks
@@ -72,6 +120,27 @@ class GMKB_Onboarding_Sync {
         // Register custom fields with WP Fusion
         add_filter('wpf_meta_fields', [__CLASS__, 'register_wpf_fields']);
         add_filter('wpf_meta_field_groups', [__CLASS__, 'register_wpf_field_groups']);
+
+        // =========================================================
+        // THE BRIDGE: Prospector Interview Finder Integration
+        // Listen for imports from the Podcast Interview Tracker plugin
+        // =========================================================
+        add_action('interview_finder_import_completed', [__CLASS__, 'on_interview_finder_import'], 10, 2);
+
+        // =========================================================
+        // THE BRIDGE: Outreach Email Integration
+        // Listen for messages sent from guestify-email-outreach plugin
+        // =========================================================
+        add_action('guestify_outreach_message_sent', [__CLASS__, 'on_outreach_message_sent'], 10, 2);
+
+        // =========================================================
+        // THE REACTOR: GHL/WP Fusion Sync on Meta Updates
+        // Push to GHL when milestone counts are reached
+        // =========================================================
+        add_action('updated_user_meta', [__CLASS__, 'on_user_meta_updated_for_sync'], 10, 4);
+
+        // NOTE: save_post_gmkb_pitch hook removed - CPTs no longer used.
+        // Pitch tracking is handled via on_outreach_message_sent() bridge.
     }
 
     /**
@@ -370,6 +439,12 @@ class GMKB_Onboarding_Sync {
             'group' => 'guestify_onboarding',
         ];
 
+        $fields['guestify_total_interview_entries'] = [
+            'type' => 'int',
+            'label' => 'Total Podcasts Imported',
+            'group' => 'guestify_onboarding',
+        ];
+
         return $fields;
     }
 
@@ -387,6 +462,317 @@ class GMKB_Onboarding_Sync {
 
         return $groups;
     }
+
+    // =========================================================
+    // THE BRIDGE: Prospector Interview Finder Integration
+    // =========================================================
+
+    /**
+     * Handle interview finder import completion
+     *
+     * CRITICAL: This is the bridge between the Podcast Interview Tracker (PIT)
+     * plugin and the GMKB Onboarding System. When an interview opportunity is
+     * imported via the Interview Finder, this method:
+     *
+     * 1. Queries the wp_pit_opportunities table for the user
+     * 2. Counts total opportunities imported by that user
+     * 3. Updates the guestify_total_interview_entries user meta
+     * 4. Triggers onboarding progress recalculation
+     *
+     * @param int $user_id WordPress user ID who imported the opportunity
+     * @param array $import_data Optional data about the import (opportunity_id, etc.)
+     */
+    public static function on_interview_finder_import(int $user_id, array $import_data = []): void {
+        if ($user_id <= 0) {
+            return;
+        }
+
+        // Count opportunities from the PIT table
+        $opportunity_count = self::count_user_opportunities($user_id);
+
+        // Update user meta with total interview entries
+        $previous_count = (int) get_user_meta($user_id, 'guestify_total_interview_entries', true);
+        update_user_meta($user_id, 'guestify_total_interview_entries', $opportunity_count);
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log(sprintf(
+                '[Onboarding Sync BRIDGE] User %d imported opportunity. Count: %d -> %d (import_data: %s)',
+                $user_id,
+                $previous_count,
+                $opportunity_count,
+                json_encode($import_data)
+            ));
+        }
+
+        // Check if this is the first import (trigger task completion)
+        if ($previous_count === 0 && $opportunity_count > 0) {
+            do_action('gmkb_onboarding_task_completed', $user_id, 'import', [
+                'points' => 10,
+                'label'  => 'First Podcast Imported',
+            ]);
+        }
+
+        // Check for import milestones and apply GHL tags
+        self::check_and_apply_import_milestones($user_id, $previous_count, $opportunity_count);
+
+        // Trigger progress recalculation
+        self::recalculate_and_sync_progress($user_id);
+
+        // Push to GHL via WP Fusion
+        if (self::is_wpf_available()) {
+            self::push_user_meta($user_id, [
+                'guestify_total_interview_entries' => $opportunity_count,
+            ]);
+        }
+
+        // Fire extensibility action
+        do_action('gmkb_onboarding_sync_import_completed', $user_id, $opportunity_count, $import_data);
+    }
+
+    // =========================================================
+    // THE BRIDGE: Outreach Email Integration
+    // =========================================================
+
+    /**
+     * Handle outreach message sent
+     *
+     * CRITICAL: This is the bridge between the guestify-email-outreach plugin
+     * and the GMKB Onboarding System. When a message is sent, this method:
+     *
+     * 1. Queries the wp_guestify_messages table for the user
+     * 2. Counts total sent messages by that user
+     * 3. Updates the guestify_total_pitches_sent user meta
+     * 4. Triggers onboarding progress recalculation
+     * 5. Applies milestone tags via WP Fusion
+     *
+     * @param int $user_id WordPress user ID who sent the message
+     * @param array $message_data Optional data about the message (message_id, etc.)
+     */
+    public static function on_outreach_message_sent(int $user_id, array $message_data = []): void {
+        if ($user_id <= 0) {
+            return;
+        }
+
+        // Count messages from the Outreach table
+        $message_count = self::count_user_messages($user_id);
+
+        // Update user meta with total pitches sent
+        $previous_count = (int) get_user_meta($user_id, 'guestify_total_pitches_sent', true);
+        update_user_meta($user_id, 'guestify_total_pitches_sent', $message_count);
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log(sprintf(
+                '[Onboarding Sync OUTREACH] User %d sent message. Count: %d -> %d (message_data: %s)',
+                $user_id,
+                $previous_count,
+                $message_count,
+                json_encode($message_data)
+            ));
+        }
+
+        // Check for first pitch (task completion)
+        if ($previous_count === 0 && $message_count > 0) {
+            do_action('gmkb_onboarding_task_completed', $user_id, 'first_pitch', [
+                'points' => 10,
+                'label'  => 'First Pitch Sent',
+            ]);
+        }
+
+        // Check for three pitches (task completion)
+        if ($previous_count < 3 && $message_count >= 3) {
+            do_action('gmkb_onboarding_task_completed', $user_id, 'three_pitches', [
+                'points' => 10,
+                'label'  => 'Three Pitches Sent',
+            ]);
+        }
+
+        // Check for pitch milestones and apply GHL tags
+        self::check_and_apply_pitch_milestones($user_id, $previous_count, $message_count);
+
+        // Trigger progress recalculation
+        self::recalculate_and_sync_progress($user_id);
+
+        // Push to GHL via WP Fusion
+        if (self::is_wpf_available()) {
+            self::push_user_meta($user_id, [
+                'guestify_total_pitches_sent' => $message_count,
+            ]);
+        }
+
+        // Fire extensibility action
+        do_action('gmkb_onboarding_sync_message_sent', $user_id, $message_count, $message_data);
+    }
+
+    /**
+     * Count sent messages for a user from the Outreach tables
+     *
+     * Queries the wp_guestify_messages table to count all sent messages
+     * for the given user ID.
+     *
+     * @param int $user_id WordPress user ID
+     * @return int Number of sent messages
+     */
+    public static function count_user_messages(int $user_id): int {
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'guestify_messages';
+
+        // Check if table exists
+        $table_exists = $wpdb->get_var(
+            $wpdb->prepare("SHOW TABLES LIKE %s", $table_name)
+        );
+
+        if ($table_exists !== $table_name) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log(sprintf(
+                    '[Onboarding Sync OUTREACH] Table %s does not exist',
+                    $table_name
+                ));
+            }
+            return 0;
+        }
+
+        // Count sent messages for this user
+        $count = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$table_name} WHERE user_id = %d AND status = 'sent'",
+            $user_id
+        ));
+
+        return (int) $count;
+    }
+
+    /**
+     * Check and apply pitch milestone tags
+     *
+     * @param int $user_id WordPress user ID
+     * @param int $previous_count Previous pitch count
+     * @param int $new_count New pitch count
+     */
+    public static function check_and_apply_pitch_milestones(int $user_id, int $previous_count, int $new_count): void {
+        if (!self::is_wpf_available()) {
+            return;
+        }
+
+        foreach (self::PITCH_MILESTONES as $threshold => $tag_name) {
+            // If threshold is between old and new counts, milestone just reached
+            if ($new_count >= $threshold && $previous_count < $threshold) {
+                self::apply_tag($user_id, $tag_name);
+
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log(sprintf(
+                        '[Onboarding Sync] User %d reached pitch milestone %d - applied tag "%s"',
+                        $user_id,
+                        $threshold,
+                        $tag_name
+                    ));
+                }
+            }
+        }
+    }
+
+    /**
+     * Check and apply import milestone tags
+     *
+     * @param int $user_id WordPress user ID
+     * @param int $previous_count Previous import count
+     * @param int $new_count New import count
+     */
+    public static function check_and_apply_import_milestones(int $user_id, int $previous_count, int $new_count): void {
+        if (!self::is_wpf_available()) {
+            return;
+        }
+
+        foreach (self::IMPORT_MILESTONES as $threshold => $tag_name) {
+            // If threshold is between old and new counts, milestone just reached
+            if ($new_count >= $threshold && $previous_count < $threshold) {
+                self::apply_tag($user_id, $tag_name);
+
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log(sprintf(
+                        '[Onboarding Sync] User %d reached import milestone %d - applied tag "%s"',
+                        $user_id,
+                        $threshold,
+                        $tag_name
+                    ));
+                }
+            }
+        }
+    }
+
+    /**
+     * Count opportunities for a user from the PIT tables
+     *
+     * Queries the wp_pit_opportunities table to count all opportunities
+     * associated with the given user ID.
+     *
+     * @param int $user_id WordPress user ID
+     * @return int Number of opportunities
+     */
+    public static function count_user_opportunities(int $user_id): int {
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'pit_opportunities';
+
+        // Check if table exists
+        $table_exists = $wpdb->get_var(
+            $wpdb->prepare("SHOW TABLES LIKE %s", $table_name)
+        );
+
+        if ($table_exists !== $table_name) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log(sprintf(
+                    '[Onboarding Sync BRIDGE] Table %s does not exist',
+                    $table_name
+                ));
+            }
+            return 0;
+        }
+
+        // Count opportunities for this user
+        $count = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$table_name} WHERE user_id = %d",
+            $user_id
+        ));
+
+        return (int) $count;
+    }
+
+    /**
+     * Handle user meta updates for sync purposes
+     *
+     * Listens for updates to onboarding-related user meta and triggers
+     * GHL sync when milestones are reached.
+     *
+     * @param int $meta_id Meta ID
+     * @param int $user_id User ID
+     * @param string $meta_key Meta key
+     * @param mixed $meta_value New meta value
+     */
+    public static function on_user_meta_updated_for_sync(int $meta_id, int $user_id, string $meta_key, $meta_value): void {
+        // Only process relevant meta keys
+        $sync_keys = [
+            'guestify_total_pitches_sent',
+            'guestify_total_searches',
+            'guestify_total_interview_entries',
+            'guestify_onboarding_progress_percent',
+        ];
+
+        if (!in_array($meta_key, $sync_keys, true)) {
+            return;
+        }
+
+        // Push to GHL if WP Fusion is available
+        if (self::is_wpf_available()) {
+            self::push_user_meta($user_id, [
+                $meta_key => $meta_value,
+            ]);
+        }
+    }
+
+    // NOTE: on_pitch_saved() method removed - CPTs no longer used.
+    // Pitch tracking is now handled exclusively by on_outreach_message_sent().
+    // This bridge listens to 'guestify_outreach_message_sent' hook from the
+    // guestify-email-outreach plugin and queries wp_guestify_messages table.
 
     /**
      * Bulk sync all users (for migration)

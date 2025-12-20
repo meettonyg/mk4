@@ -157,9 +157,59 @@ class GMKB_Onboarding_Repository {
             case 'profile_exists':
                 return $profile_id > 0;
 
+            case 'profile_mvp':
+                return $this->check_profile_mvp($profile_id);
+
             default:
                 return false;
         }
+    }
+
+    /**
+     * Check if profile meets Minimum Viable Profile (MVP) requirements
+     *
+     * A profile is considered MVP-complete when it has:
+     * - First Name (or full name)
+     * - Professional Title
+     * - Biography
+     * - Headshot
+     *
+     * This is the minimum required for a profile to be "publishable"
+     * and represents the basic Identity pillar of the Cialdini model.
+     *
+     * @param int|null $profile_id Profile post ID
+     * @return bool Whether the profile meets MVP requirements
+     */
+    public function check_profile_mvp(?int $profile_id): bool {
+        if (!$profile_id || $profile_id <= 0) {
+            return false;
+        }
+
+        // Define field groups with fallback keys
+        // Each group must have at least one non-empty value
+        $field_groups = [
+            ['first_name', 'full_name'],                              // Name
+            ['guest_title', 'title'],                                 // Title
+            ['biography', 'bio', 'bio_summary'],                      // Bio
+            ['headshot_primary', 'headshot', 'guest_headshot', 'profile_photo'], // Photo
+        ];
+
+        foreach ($field_groups as $keys) {
+            $has_value = false;
+            foreach ($keys as $key) {
+                $value = get_post_meta($profile_id, $key, true);
+                if (!empty(trim((string) $value))) {
+                    $has_value = true;
+                    break;
+                }
+            }
+            if (!$has_value) {
+                return false;
+            }
+        }
+
+        // All MVP fields are present
+        return true;
     }
 
     /**
