@@ -118,8 +118,8 @@ class GMKB_Onboarding_Sync {
         // =========================================================
         add_action('updated_user_meta', [__CLASS__, 'on_user_meta_updated_for_sync'], 10, 4);
 
-        // Hook into save_post for gmkb_pitch to track pitch counts
-        add_action('save_post_gmkb_pitch', [__CLASS__, 'on_pitch_saved'], 10, 3);
+        // NOTE: save_post_gmkb_pitch hook removed - CPTs no longer used.
+        // Pitch tracking is handled via on_outreach_message_sent() bridge.
     }
 
     /**
@@ -756,98 +756,10 @@ class GMKB_Onboarding_Sync {
         }
     }
 
-    /**
-     * Handle pitch save to update pitch counts
-     *
-     * When a gmkb_pitch post is created/updated, this method:
-     * 1. Counts total pitches for the user
-     * 2. Updates guestify_total_pitches_sent user meta
-     * 3. Triggers onboarding progress recalculation
-     *
-     * @param int $post_id Post ID
-     * @param WP_Post $post Post object
-     * @param bool $update Whether this is an update
-     */
-    public static function on_pitch_saved(int $post_id, $post, bool $update): void {
-        // Skip auto-drafts and revisions
-        if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
-            return;
-        }
-
-        // Skip drafts for counting (only count published/private pitches with 'sent' status)
-        $pitch_status = get_post_meta($post_id, 'pitch_status', true);
-        if ($pitch_status !== 'sent' && $pitch_status !== 'opened' && $pitch_status !== 'replied' && $pitch_status !== 'booked') {
-            return;
-        }
-
-        $user_id = (int) $post->post_author;
-        if ($user_id <= 0) {
-            return;
-        }
-
-        // Count sent pitches using the Post Types helper
-        $pitch_count = 0;
-        if (class_exists('GMKB_Post_Types')) {
-            // Count pitches with sent-like statuses
-            $sent_statuses = ['sent', 'opened', 'replied', 'booked'];
-            foreach ($sent_statuses as $status) {
-                $pitch_count += GMKB_Post_Types::count_user_pitches($user_id, $status);
-            }
-        } else {
-            // Fallback: count via direct query
-            $pitch_count = count(get_posts([
-                'post_type'   => 'gmkb_pitch',
-                'author'      => $user_id,
-                'post_status' => ['publish', 'private'],
-                'meta_query'  => [
-                    [
-                        'key'     => 'pitch_status',
-                        'value'   => ['sent', 'opened', 'replied', 'booked'],
-                        'compare' => 'IN',
-                    ],
-                ],
-                'fields'      => 'ids',
-                'posts_per_page' => -1,
-            ]));
-        }
-
-        // Get previous count
-        $previous_count = (int) get_user_meta($user_id, 'guestify_total_pitches_sent', true);
-
-        // Update user meta
-        update_user_meta($user_id, 'guestify_total_pitches_sent', $pitch_count);
-
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log(sprintf(
-                '[Onboarding Sync] User %d pitch saved. Count: %d -> %d',
-                $user_id,
-                $previous_count,
-                $pitch_count
-            ));
-        }
-
-        // Check milestones
-        if ($previous_count === 0 && $pitch_count >= 1) {
-            do_action('gmkb_onboarding_task_completed', $user_id, 'first_pitch', [
-                'points' => 10,
-                'label'  => 'First Pitch Sent',
-            ]);
-        }
-
-        if ($previous_count < 3 && $pitch_count >= 3) {
-            do_action('gmkb_onboarding_task_completed', $user_id, 'three_pitches', [
-                'points' => 10,
-                'label'  => 'Three Pitches Sent',
-            ]);
-        }
-
-        // Trigger progress recalculation
-        if (class_exists('GMKB_Onboarding_Repository')) {
-            $repo = new GMKB_Onboarding_Repository();
-            $progress = $repo->calculate_progress($user_id);
-            $repo->update_progress_meta($user_id, $progress['points']['percentage'], $progress);
-        }
-    }
+    // NOTE: on_pitch_saved() method removed - CPTs no longer used.
+    // Pitch tracking is now handled exclusively by on_outreach_message_sent().
+    // This bridge listens to 'guestify_outreach_message_sent' hook from the
+    // guestify-email-outreach plugin and queries wp_guestify_messages table.
 
     /**
      * Bulk sync all users (for migration)
