@@ -81,6 +81,27 @@ class GMKB_Onboarding_Sync {
     ];
 
     /**
+     * Recalculate progress and sync to user meta
+     *
+     * Helper method to avoid code duplication across bridge handlers.
+     * Calculates the user's current progress and updates meta.
+     *
+     * @param int $user_id WordPress user ID
+     * @return array|null Progress data or null if repository unavailable
+     */
+    private static function recalculate_and_sync_progress(int $user_id): ?array {
+        if (!class_exists('GMKB_Onboarding_Repository')) {
+            return null;
+        }
+
+        $repo = new GMKB_Onboarding_Repository();
+        $progress = $repo->calculate_progress($user_id);
+        $repo->update_progress_meta($user_id, $progress['points']['percentage'], $progress);
+
+        return $progress;
+    }
+
+    /**
      * Initialize sync hooks
      */
     public static function init(): void {
@@ -495,11 +516,7 @@ class GMKB_Onboarding_Sync {
         self::check_and_apply_import_milestones($user_id, $previous_count, $opportunity_count);
 
         // Trigger progress recalculation
-        if (class_exists('GMKB_Onboarding_Repository')) {
-            $repo = new GMKB_Onboarding_Repository();
-            $progress = $repo->calculate_progress($user_id);
-            $repo->update_progress_meta($user_id, $progress['points']['percentage'], $progress);
-        }
+        self::recalculate_and_sync_progress($user_id);
 
         // Push to GHL via WP Fusion
         if (self::is_wpf_available()) {
@@ -573,11 +590,7 @@ class GMKB_Onboarding_Sync {
         self::check_and_apply_pitch_milestones($user_id, $previous_count, $message_count);
 
         // Trigger progress recalculation
-        if (class_exists('GMKB_Onboarding_Repository')) {
-            $repo = new GMKB_Onboarding_Repository();
-            $progress = $repo->calculate_progress($user_id);
-            $repo->update_progress_meta($user_id, $progress['points']['percentage'], $progress);
-        }
+        self::recalculate_and_sync_progress($user_id);
 
         // Push to GHL via WP Fusion
         if (self::is_wpf_available()) {

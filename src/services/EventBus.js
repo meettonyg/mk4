@@ -131,14 +131,18 @@ class EventBusService {
     }
 
     /**
-     * Remove all listeners for an event
-     * Note: This only works for listeners added via this EventBus
+     * Broadcast a "cleared" event for an event name
      *
-     * @param {string} eventName - Event name to clear
+     * NOTE: This does NOT remove event listeners. Due to the browser's
+     * addEventListener API, we cannot remove listeners we don't have
+     * direct references to. Instead, this broadcasts a notification
+     * that listeners can subscribe to for cleanup coordination.
+     *
+     * For proper cleanup, use the unsubscribe function returned by on().
+     *
+     * @param {string} eventName - Event name to broadcast clear for
      */
-    off(eventName) {
-        // Create a new event to signify clearing
-        // Listeners should check for this if they need cleanup notification
+    broadcastClear(eventName) {
         this.emit(`${eventName}:cleared`);
     }
 

@@ -185,50 +185,26 @@ class GMKB_Onboarding_Repository {
             return false;
         }
 
-        // Check First Name (required for Identity)
-        $first_name = get_post_meta($profile_id, 'first_name', true);
-        if (empty(trim((string) $first_name))) {
-            // Fallback: check full_name
-            $full_name = get_post_meta($profile_id, 'full_name', true);
-            if (empty(trim((string) $full_name))) {
-                return false;
-            }
-        }
+        // Define field groups with fallback keys
+        // Each group must have at least one non-empty value
+        $field_groups = [
+            ['first_name', 'full_name'],                              // Name
+            ['guest_title', 'title'],                                 // Title
+            ['biography', 'bio', 'bio_summary'],                      // Bio
+            ['headshot_primary', 'headshot', 'guest_headshot', 'profile_photo'], // Photo
+        ];
 
-        // Check Professional Title (required for Identity)
-        $guest_title = get_post_meta($profile_id, 'guest_title', true);
-        if (empty(trim((string) $guest_title))) {
-            // Fallback: check title
-            $title = get_post_meta($profile_id, 'title', true);
-            if (empty(trim((string) $title))) {
-                return false;
-            }
-        }
-
-        // Check Biography (required for Identity)
-        $biography = get_post_meta($profile_id, 'biography', true);
-        if (empty(trim((string) $biography))) {
-            // Fallback: check bio or bio_summary
-            $bio = get_post_meta($profile_id, 'bio', true);
-            $bio_summary = get_post_meta($profile_id, 'bio_summary', true);
-            if (empty(trim((string) $bio)) && empty(trim((string) $bio_summary))) {
-                return false;
-            }
-        }
-
-        // Check Headshot (required for Identity)
-        $headshot = get_post_meta($profile_id, 'headshot_primary', true);
-        if (empty($headshot)) {
-            // Fallback: check other headshot fields
-            $headshot = get_post_meta($profile_id, 'headshot', true);
-            if (empty($headshot)) {
-                $headshot = get_post_meta($profile_id, 'guest_headshot', true);
-                if (empty($headshot)) {
-                    $headshot = get_post_meta($profile_id, 'profile_photo', true);
-                    if (empty($headshot)) {
-                        return false;
-                    }
+        foreach ($field_groups as $keys) {
+            $has_value = false;
+            foreach ($keys as $key) {
+                $value = get_post_meta($profile_id, $key, true);
+                if (!empty(trim((string) $value))) {
+                    $has_value = true;
+                    break;
                 }
+            }
+            if (!$has_value) {
+                return false;
             }
         }
 
