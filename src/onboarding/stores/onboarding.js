@@ -3,9 +3,19 @@
  *
  * Manages state for the onboarding gamification dashboard.
  * Fetches data from /gmkb/v2/onboarding/* endpoints.
+ *
+ * Subscribes to EventBus events for automatic progress refresh:
+ * - PITCH_SENT: When a pitch is sent via gmkb_pitch CPT
+ * - IMPORT_COMPLETED: When podcasts are imported from Prospector
+ * - PROFILE_SAVED: When profile fields are updated
+ * - TASK_COMPLETED: When an onboarding task is manually completed
+ *
+ * @package GMKB
+ * @since 3.0.0
  */
 
 import { defineStore } from 'pinia';
+import { EventBus, EVENTS } from '../../services/EventBus';
 
 export const useOnboardingStore = defineStore('onboarding', {
     state: () => ({
@@ -33,6 +43,14 @@ export const useOnboardingStore = defineStore('onboarding', {
         // Cache control
         lastFetched: null,
         cacheTimeout: 60000, // 1 minute
+
+        // Event bus subscriptions (for cleanup)
+        _eventSubscriptions: [],
+        _isSubscribed: false,
+
+        // Background refresh state
+        isRefreshing: false,
+        refreshDebounceTimer: null,
     }),
 
     getters: {
@@ -332,6 +350,168 @@ export const useOnboardingStore = defineStore('onboarding', {
             }
 
             return response.json();
+        },
+
+        // =========================================================
+        // Event Bus Integration
+        // =========================================================
+
+        /**
+         * Silent background refresh (no loading indicator)
+         * Used when events trigger a refresh
+         */
+        async refreshProgress() {
+            // Debounce rapid refreshes (e.g., multiple events firing at once)
+            if (this.refreshDebounceTimer) {
+                clearTimeout(this.refreshDebounceTimer);
+            }
+
+            return new Promise((resolve) => {
+                this.refreshDebounceTimer = setTimeout(async () => {
+                    // Skip if already refreshing
+                    if (this.isRefreshing) {
+                        resolve();
+                        return;
+                    }
+
+                    this.isRefreshing = true;
+
+                    try {
+                        // Fetch fresh data without showing loading state
+                        const [progressRes, rewardsRes] = await Promise.all([
+                            this.apiRequest('GET', '/onboarding/progress'),
+                            this.apiRequest('GET', '/onboarding/rewards'),
+                        ]);
+
+                        if (progressRes.success) {
+                            const oldPoints = this.progress?.points?.total ?? 0;
+                            this.progress = progressRes.data;
+                            const newPoints = progressRes.data?.points?.total ?? 0;
+
+                            // Check if a new reward was unlocked
+                            if (newPoints > oldPoints) {
+                                this.checkForNewRewards(oldPoints, newPoints);
+                            }
+                        }
+
+                        if (rewardsRes.success) {
+                            this.rewards = rewardsRes.data?.rewards?.list || [];
+                        }
+
+                        this.lastFetched = Date.now();
+                        console.log('🔄 Onboarding progress refreshed (background)');
+
+                        // Emit progress updated event
+                        EventBus.emit(EVENTS.PROGRESS_UPDATED, {
+                            points: this.progress?.points,
+                            percentage: this.percentage,
+                        });
+                    } catch (error) {
+                        console.error('Background refresh failed:', error);
+                        // Don't set lastError for background refreshes
+                    } finally {
+                        this.isRefreshing = false;
+                        this.refreshDebounceTimer = null;
+                        resolve();
+                    }
+                }, 500); // 500ms debounce
+            });
+        },
+
+        /**
+         * Check if any new rewards were unlocked
+         */
+        checkForNewRewards(oldPoints, newPoints) {
+            const rewards = this.rewards || [];
+
+            rewards.forEach((reward) => {
+                // If reward threshold is between old and new points, it was just unlocked
+                if (reward.threshold > oldPoints && reward.threshold <= newPoints) {
+                    console.log(`🎉 Reward unlocked: ${reward.title}`);
+                    EventBus.emit(EVENTS.REWARD_UNLOCKED, {
+                        reward,
+                        totalPoints: newPoints,
+                    });
+                }
+            });
+        },
+
+        /**
+         * Subscribe to relevant events for automatic progress updates
+         */
+        subscribeToEvents() {
+            if (this._isSubscribed) {
+                console.log('[Onboarding Store] Already subscribed to events');
+                return;
+            }
+
+            console.log('[Onboarding Store] Subscribing to events...');
+
+            // Define events that should trigger a progress refresh
+            const eventsToWatch = [
+                EVENTS.PITCH_SENT,
+                EVENTS.IMPORT_COMPLETED,
+                EVENTS.PROFILE_SAVED,
+                EVENTS.TASK_COMPLETED,
+                EVENTS.SEARCH_PERFORMED,
+                EVENTS.PROFILE_FIELD_UPDATED,
+                EVENTS.INTERVIEW_IMPORTED,
+            ];
+
+            // Subscribe to each event
+            eventsToWatch.forEach((eventName) => {
+                const unsubscribe = EventBus.on(eventName, (data) => {
+                    console.log(`[Onboarding Store] Event received: ${eventName}`, data);
+                    this.refreshProgress();
+                });
+                this._eventSubscriptions.push(unsubscribe);
+            });
+
+            this._isSubscribed = true;
+            console.log(`[Onboarding Store] Subscribed to ${eventsToWatch.length} events`);
+        },
+
+        /**
+         * Unsubscribe from all events (cleanup)
+         */
+        unsubscribeFromEvents() {
+            if (!this._isSubscribed) return;
+
+            console.log('[Onboarding Store] Unsubscribing from events...');
+
+            // Call all unsubscribe functions
+            this._eventSubscriptions.forEach((unsubscribe) => {
+                if (typeof unsubscribe === 'function') {
+                    unsubscribe();
+                }
+            });
+
+            this._eventSubscriptions = [];
+            this._isSubscribed = false;
+
+            // Clear any pending debounce timer
+            if (this.refreshDebounceTimer) {
+                clearTimeout(this.refreshDebounceTimer);
+                this.refreshDebounceTimer = null;
+            }
+        },
+
+        /**
+         * Initialize store with event subscriptions
+         */
+        async initializeWithEvents() {
+            // Set up event subscriptions
+            this.subscribeToEvents();
+
+            // Fetch initial data
+            await this.initialize();
+        },
+
+        /**
+         * Cleanup store (call when component unmounts)
+         */
+        cleanup() {
+            this.unsubscribeFromEvents();
         },
     },
 });
