@@ -5,8 +5,8 @@
  * Fetches data from /gmkb/v2/onboarding/* endpoints.
  *
  * Subscribes to EventBus events for automatic progress refresh:
- * - PITCH_SENT: When a pitch is sent via gmkb_pitch CPT
- * - IMPORT_COMPLETED: When podcasts are imported from Prospector
+ * - PITCH_SENT: When a pitch is sent via outreach system (bridges to wp_guestify_messages)
+ * - IMPORT_COMPLETED: When podcasts are imported from Prospector (bridges to wp_pit_opportunities)
  * - PROFILE_SAVED: When profile fields are updated
  * - TASK_COMPLETED: When an onboarding task is manually completed
  *
