@@ -158,12 +158,12 @@ class GMKB_Tool_Pages {
         $version = defined('GMKB_VERSION') ? GMKB_VERSION : '1.0.0';
 
         // Check for standalone tools bundle first
-        $js_file = GMKB_PLUGIN_DIR . 'dist/standalone-tools/standalone-tools.js';
+        $js_file = GMKB_PLUGIN_DIR . 'dist/standalone-tools/standalone-tools.iife.js';
         $css_file = GMKB_PLUGIN_DIR . 'dist/standalone-tools/standalone-tools.css';
 
         // Fallback to seo-tools bundle
         if (!file_exists($js_file)) {
-            $js_file = GMKB_PLUGIN_DIR . 'dist/seo-tools/seo-tools.js';
+            $js_file = GMKB_PLUGIN_DIR . 'dist/seo-tools/seo-tools.iife.js';
             $css_file = GMKB_PLUGIN_DIR . 'dist/seo-tools/seo-tools.css';
         }
 
