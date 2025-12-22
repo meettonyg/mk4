@@ -471,6 +471,16 @@ get_footer();
 
                 <!-- Right Panel: Guidance -->
                 <div class="gmkb-tool-app__panel gmkb-tool-app__panel--right">
+                    <!-- Formula -->
+                    <?php if (!empty($landing['formula'])): ?>
+                    <div class="gmkb-tool-app__section gmkb-tool-app__section--formula">
+                        <h3>The Formula</h3>
+                        <div class="gmkb-tool-app__formula">
+                            <?php echo esc_html($landing['formula']); ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
                     <!-- How It Works -->
                     <?php if (!empty($landing['howItWorks'])): ?>
                     <div class="gmkb-tool-app__section">
@@ -597,6 +607,21 @@ get_footer();
                 font-weight: 600;
                 margin: 0 0 1rem;
                 color: #374151;
+            }
+            .gmkb-tool-app__section--formula {
+                background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+                border: 1px solid #bfdbfe;
+            }
+            .gmkb-tool-app__formula {
+                font-size: 1.125rem;
+                font-weight: 500;
+                color: #1e40af;
+                padding: 1rem;
+                background: white;
+                border-radius: 8px;
+                text-align: center;
+                font-family: Georgia, serif;
+                font-style: italic;
             }
             .gmkb-tool-app__steps {
                 display: flex;

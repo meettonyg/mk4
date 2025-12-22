@@ -42,6 +42,27 @@
   "landingContent": {
     "heroTagline": "Position Yourself as the Go-To Expert",
     "heroSubtitle": "Build your Authority Hook using the proven 6 W's framework to clearly communicate your unique expertise and value.",
+    "formula": "I help [WHO] achieve [WHAT] when [WHEN] through [HOW].",
+    "tips": [
+      "Be specific about WHO - 'busy entrepreneurs' beats 'business owners'",
+      "Focus on tangible RESULTS, not just activities",
+      "Make your HOW unique - this is your differentiator",
+      "Test your hook by saying it out loud - it should flow naturally"
+    ],
+    "examples": [
+      {
+        "title": "SaaS Founder",
+        "content": "I help SaaS founders scale to $1M+ ARR when they're stuck at the growth plateau through AI-driven marketing systems."
+      },
+      {
+        "title": "Business Coach",
+        "content": "I help coaches fill their programs with high-ticket clients when they're struggling with inconsistent revenue through podcast guesting strategies."
+      },
+      {
+        "title": "Author",
+        "content": "I help authors convert their books into six-figure businesses when they launch through strategic media exposure campaigns."
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,
