@@ -88,7 +88,8 @@ import { ref, watch, computed } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
 import BaseStylePanel from '../../src/vue/components/sidebar/editors/BaseStylePanel.vue';
 import BaseAdvancedPanel from '../../src/vue/components/sidebar/editors/BaseAdvancedPanel.vue';
-import { AiModal, GuestIntroGenerator } from '../../src/vue/components/ai';
+import { AiModal } from '../../src/vue/components/ai';
+import GuestIntroGenerator from '@tools/guest-intro-generator/GuestIntroGenerator.vue';
 
 const props = defineProps({
   componentId: {
