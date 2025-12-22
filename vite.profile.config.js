@@ -48,6 +48,8 @@ export default defineConfig(({ mode }) => ({
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './src'),
+            '@tools': path.resolve(__dirname, './tools'),
+            '@ai': path.resolve(__dirname, './src/vue/components/ai'),
             '@components': path.resolve(__dirname, './components'),
             '@stores': path.resolve(__dirname, './src/stores'),
             '@services': path.resolve(__dirname, './src/services'),
