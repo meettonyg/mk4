@@ -10,7 +10,7 @@
 </template>
 
 <script setup>
-import SimpleGenerator from './SimpleGenerator.vue';
+import SimpleGenerator from '@ai/SimpleGenerator.vue';
 
 defineProps({
   mode: { type: String, default: 'standalone' },

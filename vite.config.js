@@ -76,6 +76,8 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@tools': path.resolve(__dirname, './tools'),
+      '@ai': path.resolve(__dirname, './src/vue/components/ai'),
       '@components': path.resolve(__dirname, './components'),
       '@themes': path.resolve(__dirname, './themes'),
       '@renderers': path.resolve(__dirname, './src/vue/components/renderers'),

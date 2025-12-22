@@ -111,10 +111,10 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { useAIOffers, PACKAGE_TIERS } from '../../../composables/useAIOffers';
-import { useAuthorityHook } from '../../../composables/useAuthorityHook';
-import AiWidgetFrame from './AiWidgetFrame.vue';
-import AiGenerateButton from './AiGenerateButton.vue';
+import { useAIOffers, PACKAGE_TIERS } from '@composables/useAIOffers';
+import { useAuthorityHook } from '@composables/useAuthorityHook';
+import AiWidgetFrame from '@ai/AiWidgetFrame.vue';
+import AiGenerateButton from '@ai/AiGenerateButton.vue';
 
 const props = defineProps({
   /**

@@ -211,8 +211,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useImpactIntro, CREDENTIAL_TYPES } from '../../../composables/useImpactIntro';
-import AiWidgetFrame from './AiWidgetFrame.vue';
+import { useImpactIntro, CREDENTIAL_TYPES } from '@composables/useImpactIntro';
+import AiWidgetFrame from '@ai/AiWidgetFrame.vue';
 
 const props = defineProps({
   /**

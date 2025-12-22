@@ -111,13 +111,13 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { useAITopics } from '../../../composables/useAITopics';
-import { useAuthorityHook } from '../../../composables/useAuthorityHook';
-import { useProfileContext } from '../../../composables/useProfileContext';
-import AiWidgetFrame from './AiWidgetFrame.vue';
-import AiGenerateButton from './AiGenerateButton.vue';
-import AiResultsDisplay from './AiResultsDisplay.vue';
-import ProfileSelector from '../shared/ProfileSelector.vue';
+import { useAITopics } from '@composables/useAITopics';
+import { useAuthorityHook } from '@composables/useAuthorityHook';
+import { useProfileContext } from '@composables/useProfileContext';
+import AiWidgetFrame from '@ai/AiWidgetFrame.vue';
+import AiGenerateButton from '@ai/AiGenerateButton.vue';
+import AiResultsDisplay from '@ai/AiResultsDisplay.vue';
+import ProfileSelector from '@/vue/components/shared/ProfileSelector.vue';
 
 const props = defineProps({
   /**

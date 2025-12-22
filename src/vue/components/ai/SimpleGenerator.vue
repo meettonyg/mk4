@@ -90,11 +90,11 @@
 
 <script setup>
 import { ref, computed, reactive, onMounted } from 'vue';
-import { useAIGenerator } from '../../../composables/useAIGenerator';
-import AiWidgetFrame from './AiWidgetFrame.vue';
-import AiToneSelector from './AiToneSelector.vue';
-import AiGenerateButton from './AiGenerateButton.vue';
-import AiResultsDisplay from './AiResultsDisplay.vue';
+import { useAIGenerator } from '@composables/useAIGenerator';
+import AiWidgetFrame from '@ai/AiWidgetFrame.vue';
+import AiToneSelector from '@ai/AiToneSelector.vue';
+import AiGenerateButton from '@ai/AiGenerateButton.vue';
+import AiResultsDisplay from '@ai/AiResultsDisplay.vue';
 
 const props = defineProps({
   /**

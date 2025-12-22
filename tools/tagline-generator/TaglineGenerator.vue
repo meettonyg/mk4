@@ -111,12 +111,12 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { useAITagline } from '../../../composables/useAITagline';
-import { useAuthorityHook } from '../../../composables/useAuthorityHook';
-import AiWidgetFrame from './AiWidgetFrame.vue';
-import AiToneSelector from './AiToneSelector.vue';
-import AiGenerateButton from './AiGenerateButton.vue';
-import AiResultsDisplay from './AiResultsDisplay.vue';
+import { useAITagline } from '@composables/useAITagline';
+import { useAuthorityHook } from '@composables/useAuthorityHook';
+import AiWidgetFrame from '@ai/AiWidgetFrame.vue';
+import AiToneSelector from '@ai/AiToneSelector.vue';
+import AiGenerateButton from '@ai/AiGenerateButton.vue';
+import AiResultsDisplay from '@ai/AiResultsDisplay.vue';
 
 const props = defineProps({
   /**

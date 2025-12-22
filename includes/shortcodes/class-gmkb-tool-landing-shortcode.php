@@ -10,10 +10,12 @@
  * Attributes:
  * - tool: The tool slug (e.g., 'topics-generator', 'biography-generator')
  * - base_url: Base URL for related tool links (default: /tools/)
+ * - show_tool: Whether to show the interactive tool (default: true)
+ * - show_faq: Whether to show FAQ section (default: true)
  *
  * @package GMKB
  * @subpackage Shortcodes
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2.3.0
  */
 
@@ -30,6 +32,12 @@ class GMKB_Tool_Landing_Shortcode {
     private static $instance = null;
 
     /**
+     * Tool Discovery service
+     * @var GMKB_Tool_Discovery
+     */
+    private $tool_discovery = null;
+
+    /**
      * Whether assets have been enqueued
      * @var bool
      */
@@ -40,6 +48,12 @@ class GMKB_Tool_Landing_Shortcode {
      * @var string
      */
     private $current_tool = null;
+
+    /**
+     * Current tool metadata
+     * @var array
+     */
+    private $current_metadata = null;
 
     /**
      * Get singleton instance
@@ -63,6 +77,21 @@ class GMKB_Tool_Landing_Shortcode {
         add_action('wp_head', array($this, 'output_seo_tags'), 1);
         add_filter('document_title_parts', array($this, 'filter_document_title'));
         add_filter('pre_get_document_title', array($this, 'get_document_title'));
+
+        // Load tool discovery
+        $this->load_tool_discovery();
+    }
+
+    /**
+     * Load Tool Discovery service
+     */
+    private function load_tool_discovery() {
+        $discovery_path = GMKB_PLUGIN_DIR . 'includes/services/class-gmkb-tool-discovery.php';
+
+        if (file_exists($discovery_path)) {
+            require_once $discovery_path;
+            $this->tool_discovery = GMKB_Tool_Discovery::instance();
+        }
     }
 
     /**
@@ -77,11 +106,10 @@ class GMKB_Tool_Landing_Shortcode {
         $version = defined('GMKB_VERSION') ? GMKB_VERSION : '1.0.0';
 
         // Check if built assets exist
-        $js_file = GMKB_PLUGIN_PATH . 'dist/seo-tools/seo-tools.js';
-        $css_file = GMKB_PLUGIN_PATH . 'dist/seo-tools/seo-tools.css';
+        $js_file = GMKB_PLUGIN_DIR . 'dist/seo-tools/seo-tools.js';
+        $css_file = GMKB_PLUGIN_DIR . 'dist/seo-tools/seo-tools.css';
 
         if (file_exists($js_file)) {
-            // Enqueue built Vue app
             wp_enqueue_script(
                 'gmkb-seo-tools',
                 GMKB_PLUGIN_URL . 'dist/seo-tools/seo-tools.js',
@@ -90,7 +118,6 @@ class GMKB_Tool_Landing_Shortcode {
                 true
             );
 
-            // Enqueue CSS if it exists
             if (file_exists($css_file)) {
                 wp_enqueue_style(
                     'gmkb-seo-tools',
@@ -100,9 +127,10 @@ class GMKB_Tool_Landing_Shortcode {
                 );
             }
 
-            // Add public nonce for API calls
-            wp_localize_script('gmkb-seo-tools', 'gmkbPublicData', array(
-                'publicNonce' => wp_create_nonce('gmkb_public_generate'),
+            // Add public nonce and API data
+            wp_localize_script('gmkb-seo-tools', 'gmkbToolLanding', array(
+                'nonce' => wp_create_nonce('gmkb_public_ai'),
+                'apiBase' => rest_url('gmkb/v2'),
                 'ajaxUrl' => admin_url('admin-ajax.php'),
             ));
         }
@@ -120,111 +148,312 @@ class GMKB_Tool_Landing_Shortcode {
         $atts = shortcode_atts(array(
             'tool' => '',
             'base_url' => '/tools/',
+            'show_tool' => 'true',
+            'show_faq' => 'true',
+            'show_features' => 'true',
+            'show_related' => 'true',
         ), $atts, 'gmkb_tool_landing');
 
         $tool_slug = sanitize_text_field($atts['tool']);
         $base_url = esc_url($atts['base_url']);
 
         if (empty($tool_slug)) {
-            return '<!-- GMKB Tool Landing: No tool specified -->';
+            return $this->render_admin_error('No tool specified. Usage: [gmkb_tool_landing tool="topics-generator"]');
         }
 
-        // Get tool metadata
-        $metadata = gmkb_tool_metadata();
-        $tool = $metadata->get_tool_by_slug($tool_slug);
+        if (!$this->tool_discovery) {
+            return $this->render_admin_error('Tool Discovery service not available.');
+        }
+
+        // Get tool config from /tools/{slug}/tool.json
+        $tool = $this->tool_discovery->get_tool($tool_slug);
 
         if (!$tool) {
-            return '<!-- GMKB Tool Landing: Tool not found: ' . esc_html($tool_slug) . ' -->';
+            return $this->render_admin_error('Tool not found: ' . esc_html($tool_slug));
         }
 
-        // Store current tool for SEO hooks
+        // Get tool metadata from /tools/{slug}/meta.json
+        $metadata = $this->tool_discovery->get_tool_metadata($tool_slug);
+
+        if (!$metadata) {
+            return $this->render_admin_error('Tool metadata not found: ' . esc_html($tool_slug));
+        }
+
+        // Store for SEO hooks
         $this->current_tool = $tool_slug;
+        $this->current_metadata = $metadata;
 
         // Enqueue assets
         $this->enqueue_assets();
+
+        // Build landing page data
+        $landing_data = array(
+            'tool' => $tool,
+            'metadata' => $metadata,
+            'config' => array(
+                'baseUrl' => $base_url,
+                'showTool' => filter_var($atts['show_tool'], FILTER_VALIDATE_BOOLEAN),
+                'showFaq' => filter_var($atts['show_faq'], FILTER_VALIDATE_BOOLEAN),
+                'showFeatures' => filter_var($atts['show_features'], FILTER_VALIDATE_BOOLEAN),
+                'showRelated' => filter_var($atts['show_related'], FILTER_VALIDATE_BOOLEAN),
+            ),
+            'nonce' => wp_create_nonce('gmkb_public_ai'),
+            'apiBase' => rest_url('gmkb/v2'),
+        );
+
+        // Get related tools
+        if (!empty($metadata['landingContent']['relatedToolSlugs'])) {
+            $related = array();
+            foreach ($metadata['landingContent']['relatedToolSlugs'] as $related_slug) {
+                $related_meta = $this->tool_discovery->get_tool_metadata($related_slug);
+                if ($related_meta) {
+                    $related[] = array(
+                        'slug' => $related_slug,
+                        'name' => $related_meta['name'] ?? $related_slug,
+                        'shortDescription' => $related_meta['shortDescription'] ?? '',
+                        'icon' => $related_meta['icon'] ?? 'SparklesIcon',
+                    );
+                }
+            }
+            $landing_data['relatedTools'] = $related;
+        }
 
         // Build output
         $output = '';
 
         // Add JSON-LD structured data
-        $output .= $metadata->get_json_ld($tool_slug);
+        $output .= $this->get_json_ld($tool_slug, $metadata);
 
-        // Create Vue mount point for the landing page
-        $output .= '<div id="gmkb-tool-landing-' . esc_attr($tool_slug) . '" class="gmkb-tool-landing-container">';
-        $output .= '<div data-gmkb-landing="' . esc_attr($tool_slug) . '" data-base-url="' . esc_attr($base_url) . '"></div>';
+        // Container with data attribute
+        $container_id = 'gmkb-tool-landing-' . esc_attr($tool_slug);
+        $output .= '<div id="' . $container_id . '" class="gmkb-tool-landing-container">';
+        $output .= '<div class="gmkb-tool-landing" data-tool="' . esc_attr($tool_slug) . '">';
+
+        // Server-side rendered content for SEO (Vue will hydrate/replace)
+        $output .= $this->render_static_content($metadata, $atts);
+
+        $output .= '</div>';
         $output .= '</div>';
 
-        // Add inline script to mount the landing page component
-        $output .= $this->get_mount_script($tool_slug, $base_url);
+        // Add data and mount script
+        $output .= '<script type="application/json" id="' . $container_id . '-data">';
+        $output .= wp_json_encode($landing_data);
+        $output .= '</script>';
+
+        $output .= $this->get_mount_script($container_id, $tool_slug);
 
         return $output;
     }
 
     /**
-     * Get the JavaScript to mount the landing page Vue component
+     * Render static HTML content for SEO (before Vue hydration)
+     *
+     * @param array $metadata Tool metadata
+     * @param array $atts Shortcode attributes
+     * @return string HTML
+     */
+    private function render_static_content($metadata, $atts) {
+        $landing = $metadata['landingContent'] ?? array();
+        $html = '';
+
+        // Hero Section
+        $html .= '<section class="gmkb-landing-hero">';
+        $html .= '<h1 class="gmkb-landing-hero__title">' . esc_html($landing['heroTagline'] ?? $metadata['name'] ?? '') . '</h1>';
+        if (!empty($landing['heroSubtitle'])) {
+            $html .= '<p class="gmkb-landing-hero__subtitle">' . esc_html($landing['heroSubtitle']) . '</p>';
+        }
+        $html .= '</section>';
+
+        // Features Section
+        if (filter_var($atts['show_features'], FILTER_VALIDATE_BOOLEAN) && !empty($landing['features'])) {
+            $html .= '<section class="gmkb-landing-features">';
+            $html .= '<h2>Features</h2>';
+            $html .= '<div class="gmkb-landing-features__grid">';
+            foreach ($landing['features'] as $feature) {
+                $html .= '<div class="gmkb-landing-feature">';
+                $html .= '<h3>' . esc_html($feature['title'] ?? '') . '</h3>';
+                $html .= '<p>' . esc_html($feature['description'] ?? '') . '</p>';
+                $html .= '</div>';
+            }
+            $html .= '</div>';
+            $html .= '</section>';
+        }
+
+        // How It Works Section
+        if (!empty($landing['howItWorks'])) {
+            $html .= '<section class="gmkb-landing-how-it-works">';
+            $html .= '<h2>How It Works</h2>';
+            $html .= '<ol class="gmkb-landing-steps">';
+            foreach ($landing['howItWorks'] as $step) {
+                $html .= '<li class="gmkb-landing-step">';
+                $html .= '<strong>' . esc_html($step['title'] ?? '') . '</strong>';
+                $html .= '<p>' . esc_html($step['description'] ?? '') . '</p>';
+                $html .= '</li>';
+            }
+            $html .= '</ol>';
+            $html .= '</section>';
+        }
+
+        // Tool Section (placeholder for Vue)
+        if (filter_var($atts['show_tool'], FILTER_VALIDATE_BOOLEAN)) {
+            $html .= '<section class="gmkb-landing-tool">';
+            $html .= '<h2>Try ' . esc_html($metadata['name'] ?? 'This Tool') . '</h2>';
+            $html .= '<div class="gmkb-landing-tool__container" data-tool-mount="true">';
+            $html .= '<div class="gmkb-landing-tool__loading">Loading tool...</div>';
+            $html .= '</div>';
+            $html .= '</section>';
+        }
+
+        // FAQ Section
+        if (filter_var($atts['show_faq'], FILTER_VALIDATE_BOOLEAN) && !empty($landing['faq'])) {
+            $html .= '<section class="gmkb-landing-faq">';
+            $html .= '<h2>Frequently Asked Questions</h2>';
+            $html .= '<div class="gmkb-landing-faq__list">';
+            foreach ($landing['faq'] as $item) {
+                $html .= '<details class="gmkb-landing-faq__item">';
+                $html .= '<summary>' . esc_html($item['question'] ?? '') . '</summary>';
+                $html .= '<p>' . esc_html($item['answer'] ?? '') . '</p>';
+                $html .= '</details>';
+            }
+            $html .= '</div>';
+            $html .= '</section>';
+        }
+
+        return $html;
+    }
+
+    /**
+     * Get JSON-LD structured data
      *
      * @param string $tool_slug Tool slug
-     * @param string $base_url Base URL for links
+     * @param array $metadata Tool metadata
+     * @return string Script tag with JSON-LD
+     */
+    private function get_json_ld($tool_slug, $metadata) {
+        $seo = $metadata['seoMeta'] ?? array();
+
+        $schema = array(
+            '@context' => 'https://schema.org',
+            '@type' => 'WebApplication',
+            'name' => $metadata['name'] ?? $tool_slug,
+            'description' => $seo['description'] ?? $metadata['shortDescription'] ?? '',
+            'url' => home_url('/tools/' . $tool_slug . '/'),
+            'applicationCategory' => 'BusinessApplication',
+            'operatingSystem' => 'Web Browser',
+            'offers' => array(
+                '@type' => 'Offer',
+                'price' => '0',
+                'priceCurrency' => 'USD',
+            ),
+        );
+
+        // Add FAQ schema if present
+        if (!empty($metadata['landingContent']['faq'])) {
+            $faq_schema = array(
+                '@context' => 'https://schema.org',
+                '@type' => 'FAQPage',
+                'mainEntity' => array(),
+            );
+
+            foreach ($metadata['landingContent']['faq'] as $item) {
+                $faq_schema['mainEntity'][] = array(
+                    '@type' => 'Question',
+                    'name' => $item['question'] ?? '',
+                    'acceptedAnswer' => array(
+                        '@type' => 'Answer',
+                        'text' => $item['answer'] ?? '',
+                    ),
+                );
+            }
+
+            return '<script type="application/ld+json">' . wp_json_encode($schema) . '</script>' . "\n" .
+                   '<script type="application/ld+json">' . wp_json_encode($faq_schema) . '</script>' . "\n";
+        }
+
+        return '<script type="application/ld+json">' . wp_json_encode($schema) . '</script>' . "\n";
+    }
+
+    /**
+     * Get the JavaScript to mount the landing page Vue component
+     *
+     * @param string $container_id Container ID
+     * @param string $tool_slug Tool slug
      * @return string Script tag
      */
-    private function get_mount_script($tool_slug, $base_url) {
-        $script = "
+    private function get_mount_script($container_id, $tool_slug) {
+        return "
         <script>
         (function() {
-            function mountLanding() {
-                if (typeof window.GMKBSeoTools !== 'undefined' && typeof window.GMKBSeoTools.mountLanding === 'function') {
-                    var container = document.querySelector('[data-gmkb-landing=\"" . esc_js($tool_slug) . "\"]');
-                    if (container) {
-                        window.GMKBSeoTools.mountLanding(container, {
-                            slug: '" . esc_js($tool_slug) . "',
-                            baseUrl: '" . esc_js($base_url) . "'
-                        });
-                    }
-                } else {
-                    // Fallback: initialize the tool component directly
-                    var toolContainer = document.querySelector('[data-gmkb-landing=\"" . esc_js($tool_slug) . "\"]');
-                    if (toolContainer) {
-                        // Convert landing container to tool container for backward compatibility
-                        toolContainer.setAttribute('data-gmkb-tool', '" . esc_js($this->slug_to_tool_type($tool_slug)) . "');
-                    }
+            function mountToolLanding() {
+                var container = document.getElementById('" . esc_js($container_id) . "');
+                var dataEl = document.getElementById('" . esc_js($container_id) . "-data');
+
+                if (!container || !dataEl) return;
+
+                var data = JSON.parse(dataEl.textContent);
+
+                if (window.GMKB && window.GMKB.mountToolLanding) {
+                    window.GMKB.mountToolLanding(container, data);
+                } else if (window.GMKBSeoTools && window.GMKBSeoTools.mountLanding) {
+                    window.GMKBSeoTools.mountLanding(container.querySelector('.gmkb-tool-landing'), {
+                        slug: '" . esc_js($tool_slug) . "',
+                        baseUrl: data.config.baseUrl
+                    });
                 }
             }
 
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', function() {
-                    setTimeout(mountLanding, 100);
-                });
+                document.addEventListener('DOMContentLoaded', mountToolLanding);
             } else {
-                setTimeout(mountLanding, 100);
+                mountToolLanding();
             }
         })();
         </script>";
-
-        return $script;
-    }
-
-    /**
-     * Convert tool slug to tool type for data attribute
-     *
-     * @param string $slug Tool slug (e.g., 'topics-generator')
-     * @return string Tool type (e.g., 'topics')
-     */
-    private function slug_to_tool_type($slug) {
-        // Remove common suffixes
-        $type = preg_replace('/-(generator|builder|writer|optimizer|repurposer|notes)$/', '', $slug);
-        return $type;
     }
 
     /**
      * Output SEO meta tags in wp_head
      */
     public function output_seo_tags() {
-        if (empty($this->current_tool)) {
+        if (empty($this->current_tool) || empty($this->current_metadata)) {
             return;
         }
 
-        $metadata = gmkb_tool_metadata();
-        $metadata->output_seo_tags($this->current_tool);
+        $seo = $this->current_metadata['seoMeta'] ?? array();
+
+        if (!empty($seo['description'])) {
+            echo '<meta name="description" content="' . esc_attr($seo['description']) . '">' . "\n";
+        }
+
+        if (!empty($seo['keywords']) && is_array($seo['keywords'])) {
+            echo '<meta name="keywords" content="' . esc_attr(implode(', ', $seo['keywords'])) . '">' . "\n";
+        }
+
+        // Open Graph
+        if (!empty($seo['title'])) {
+            echo '<meta property="og:title" content="' . esc_attr($seo['title']) . '">' . "\n";
+        }
+        if (!empty($seo['description'])) {
+            echo '<meta property="og:description" content="' . esc_attr($seo['description']) . '">' . "\n";
+        }
+        echo '<meta property="og:type" content="website">' . "\n";
+        if (!empty($seo['canonicalPath'])) {
+            echo '<meta property="og:url" content="' . esc_attr(home_url($seo['canonicalPath'])) . '">' . "\n";
+        }
+
+        // Twitter Card
+        echo '<meta name="twitter:card" content="summary">' . "\n";
+        if (!empty($seo['title'])) {
+            echo '<meta name="twitter:title" content="' . esc_attr($seo['title']) . '">' . "\n";
+        }
+        if (!empty($seo['description'])) {
+            echo '<meta name="twitter:description" content="' . esc_attr($seo['description']) . '">' . "\n";
+        }
+
+        // Canonical URL
+        if (!empty($seo['canonicalPath'])) {
+            echo '<link rel="canonical" href="' . esc_attr(home_url($seo['canonicalPath'])) . '">' . "\n";
+        }
     }
 
     /**
@@ -234,14 +463,13 @@ class GMKB_Tool_Landing_Shortcode {
      * @return array Modified title parts
      */
     public function filter_document_title($title_parts) {
-        if (empty($this->current_tool)) {
+        if (empty($this->current_metadata)) {
             return $title_parts;
         }
 
-        $metadata = gmkb_tool_metadata();
-        $seo = $metadata->get_seo_meta($this->current_tool);
+        $seo = $this->current_metadata['seoMeta'] ?? array();
 
-        if ($seo && !empty($seo['title'])) {
+        if (!empty($seo['title'])) {
             $title_parts['title'] = $seo['title'];
         }
 
@@ -255,23 +483,28 @@ class GMKB_Tool_Landing_Shortcode {
      * @return string Modified title
      */
     public function get_document_title($title) {
-        if (empty($this->current_tool)) {
+        if (empty($this->current_metadata)) {
             return $title;
         }
 
-        $metadata = gmkb_tool_metadata();
-        $new_title = $metadata->get_document_title($this->current_tool);
+        $seo = $this->current_metadata['seoMeta'] ?? array();
 
-        return $new_title ? $new_title : $title;
+        return !empty($seo['title']) ? $seo['title'] : $title;
     }
 
     /**
-     * Set the current tool being rendered (for SEO)
+     * Render admin-only error message
      *
-     * @param string $tool_slug Tool slug
+     * @param string $message Error message
+     * @return string HTML or empty string
      */
-    public function set_current_tool($tool_slug) {
-        $this->current_tool = $tool_slug;
+    private function render_admin_error($message) {
+        if (current_user_can('manage_options')) {
+            return '<div class="gmkb-tool-landing-error" style="padding: 20px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; color: #856404; margin: 20px 0;">
+                <strong>Tool Landing Error:</strong> ' . esc_html($message) . '
+            </div>';
+        }
+        return '<!-- GMKB Tool Landing: ' . esc_html($message) . ' -->';
     }
 }
 

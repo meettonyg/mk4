@@ -100,10 +100,10 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { useAuthorityHook, AUTHORITY_HOOK_FIELDS } from '../../../composables/useAuthorityHook';
-import { useAIGenerator } from '../../../composables/useAIGenerator';
-import AiWidgetFrame from './AiWidgetFrame.vue';
-import AiGenerateButton from './AiGenerateButton.vue';
+import { useAuthorityHook, AUTHORITY_HOOK_FIELDS } from '@composables/useAuthorityHook';
+import { useAIGenerator } from '@composables/useAIGenerator';
+import AiWidgetFrame from '@ai/AiWidgetFrame.vue';
+import AiGenerateButton from '@ai/AiGenerateButton.vue';
 
 const props = defineProps({
   /**

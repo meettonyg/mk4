@@ -106,11 +106,11 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useAIGuestIntro } from '../../../composables/useAIGuestIntro';
-import { useImpactIntro } from '../../../composables/useImpactIntro';
-import AiWidgetFrame from './AiWidgetFrame.vue';
-import AiGenerateButton from './AiGenerateButton.vue';
-import AiResultsDisplay from './AiResultsDisplay.vue';
+import { useAIGuestIntro } from '@composables/useAIGuestIntro';
+import { useImpactIntro } from '@composables/useImpactIntro';
+import AiWidgetFrame from '@ai/AiWidgetFrame.vue';
+import AiGenerateButton from '@ai/AiGenerateButton.vue';
+import AiResultsDisplay from '@ai/AiResultsDisplay.vue';
 
 const props = defineProps({
   /**

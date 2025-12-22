@@ -108,10 +108,10 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { useAIQuestions, QUESTION_CATEGORIES } from '../../../composables/useAIQuestions';
-import { useAuthorityHook } from '../../../composables/useAuthorityHook';
-import AiWidgetFrame from './AiWidgetFrame.vue';
-import AiGenerateButton from './AiGenerateButton.vue';
+import { useAIQuestions, QUESTION_CATEGORIES } from '@composables/useAIQuestions';
+import { useAuthorityHook } from '@composables/useAuthorityHook';
+import AiWidgetFrame from '@ai/AiWidgetFrame.vue';
+import AiGenerateButton from '@ai/AiGenerateButton.vue';
 
 const props = defineProps({
   /**
