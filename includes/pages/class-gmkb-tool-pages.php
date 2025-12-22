@@ -120,8 +120,8 @@ class GMKB_Tool_Pages {
         // Body class
         add_filter('body_class', array($this, 'add_body_class'));
 
-        // Flush rewrite rules on activation
-        register_activation_hook(GMKB_PLUGIN_FILE, array($this, 'flush_rewrite_rules'));
+        // Flush rewrite rules when needed
+        add_action('admin_init', array($this, 'maybe_flush_rewrite_rules'));
     }
 
     /**
@@ -924,11 +924,25 @@ get_footer();
     }
 
     /**
+     * Maybe flush rewrite rules (once after plugin update)
+     */
+    public function maybe_flush_rewrite_rules() {
+        $version_key = 'gmkb_tool_pages_version';
+        $current_version = '1.0.0';
+
+        if (get_option($version_key) !== $current_version) {
+            flush_rewrite_rules();
+            update_option($version_key, $current_version);
+        }
+    }
+
+    /**
      * Flush rewrite rules
      */
     public function flush_rewrite_rules() {
         $this->register_rewrite_rules();
         flush_rewrite_rules();
+        update_option('gmkb_tool_pages_version', '1.0.0');
     }
 
     /**
