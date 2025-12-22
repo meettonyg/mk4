@@ -140,6 +140,11 @@ class GMKB_Tool_Pages {
             return;
         }
 
+        // Only enqueue scripts on the tool app page (with ?use=1)
+        if (!isset($_GET['use']) || $_GET['use'] !== '1') {
+            return;
+        }
+
         // Verify tool exists
         if (!$this->discovery) {
             return;
@@ -412,7 +417,8 @@ get_footer();
     }
 
     /**
-     * Render the tool landing page content
+     * Render the tool page content
+     * Detects ?use=1 for tool app vs landing page
      */
     public function render_tool_page() {
         if (!$this->current_tool || !$this->current_meta) {
@@ -420,12 +426,292 @@ get_footer();
             return;
         }
 
+        // Check if this is the tool app view
+        if (isset($_GET['use']) && $_GET['use'] === '1') {
+            $this->render_tool_app_page();
+            return;
+        }
+
+        // Otherwise render the SEO landing page
+        $this->render_tool_landing_page();
+    }
+
+    /**
+     * Render the tool app page with 2-column layout
+     * This is the actual interactive tool
+     */
+    private function render_tool_app_page() {
         $tool = $this->current_tool;
         $meta = $this->current_meta;
         $landing = isset($meta['landingContent']) ? $meta['landingContent'] : array();
 
-        // CTA URL - can be customized in meta.json or defaults to free tools page
-        $cta_url = $landing['ctaUrl'] ?? '/free-tools/?tool=' . esc_attr($tool['id']);
+        // Get guidance content from meta.json
+        $guidance = $landing['guidance'] ?? array();
+        $examples = $landing['examples'] ?? array();
+        $tips = $landing['tips'] ?? array();
+        ?>
+        <div class="gmkb-tool-app">
+            <div class="gmkb-tool-app__header">
+                <div class="gmkb-container">
+                    <a href="<?php echo esc_url(home_url('/' . $this->base_path . '/' . $tool['id'] . '/')); ?>" class="gmkb-tool-app__back">
+                        ← Back to Overview
+                    </a>
+                    <h1 class="gmkb-tool-app__title"><?php echo esc_html($meta['name']); ?></h1>
+                    <p class="gmkb-tool-app__description"><?php echo esc_html($meta['shortDescription']); ?></p>
+                </div>
+            </div>
+
+            <div class="gmkb-tool-app__content">
+                <!-- Left Panel: Tool Widget -->
+                <div class="gmkb-tool-app__panel gmkb-tool-app__panel--left">
+                    <div class="gmkb-tool-app__widget">
+                        <?php echo do_shortcode('[gmkb_tool tool="' . esc_attr($tool['id']) . '"]'); ?>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Guidance -->
+                <div class="gmkb-tool-app__panel gmkb-tool-app__panel--right">
+                    <!-- How It Works -->
+                    <?php if (!empty($landing['howItWorks'])): ?>
+                    <div class="gmkb-tool-app__section">
+                        <h3>How It Works</h3>
+                        <div class="gmkb-tool-app__steps">
+                            <?php foreach ($landing['howItWorks'] as $step): ?>
+                            <div class="gmkb-tool-app__step">
+                                <span class="gmkb-tool-app__step-num"><?php echo esc_html($step['step']); ?></span>
+                                <div class="gmkb-tool-app__step-content">
+                                    <strong><?php echo esc_html($step['title']); ?></strong>
+                                    <p><?php echo esc_html($step['description']); ?></p>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
+                    <!-- Tips -->
+                    <?php if (!empty($tips)): ?>
+                    <div class="gmkb-tool-app__section">
+                        <h3>Pro Tips</h3>
+                        <ul class="gmkb-tool-app__tips">
+                            <?php foreach ($tips as $tip): ?>
+                            <li><?php echo esc_html($tip); ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                    <?php endif; ?>
+
+                    <!-- Examples -->
+                    <?php if (!empty($examples)): ?>
+                    <div class="gmkb-tool-app__section">
+                        <h3>Examples</h3>
+                        <div class="gmkb-tool-app__examples">
+                            <?php foreach ($examples as $example): ?>
+                            <div class="gmkb-tool-app__example">
+                                <?php if (isset($example['title'])): ?>
+                                <h4><?php echo esc_html($example['title']); ?></h4>
+                                <?php endif; ?>
+                                <p><?php echo esc_html($example['content'] ?? $example); ?></p>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
+                    <!-- Key Benefits -->
+                    <?php if (!empty($meta['keyBenefits'])): ?>
+                    <div class="gmkb-tool-app__section">
+                        <h3>Benefits</h3>
+                        <ul class="gmkb-tool-app__benefits">
+                            <?php foreach ($meta['keyBenefits'] as $benefit): ?>
+                            <li>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                <?php echo esc_html($benefit); ?>
+                            </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+
+        <style>
+            .gmkb-tool-app {
+                max-width: 1400px;
+                margin: 0 auto;
+                padding: 0 1rem 2rem;
+            }
+            .gmkb-tool-app__header {
+                padding: 2rem 0;
+                border-bottom: 1px solid #e5e7eb;
+                margin-bottom: 2rem;
+            }
+            .gmkb-tool-app__back {
+                display: inline-flex;
+                align-items: center;
+                color: #6b7280;
+                text-decoration: none;
+                font-size: 0.875rem;
+                margin-bottom: 0.5rem;
+            }
+            .gmkb-tool-app__back:hover {
+                color: #3b82f6;
+            }
+            .gmkb-tool-app__title {
+                font-size: 1.75rem;
+                font-weight: 700;
+                margin: 0 0 0.5rem;
+                color: #111827;
+            }
+            .gmkb-tool-app__description {
+                color: #6b7280;
+                margin: 0;
+            }
+            .gmkb-tool-app__content {
+                display: grid;
+                grid-template-columns: 1fr 380px;
+                gap: 2rem;
+                align-items: start;
+            }
+            .gmkb-tool-app__panel--left {
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                padding: 1.5rem;
+            }
+            .gmkb-tool-app__panel--right {
+                position: sticky;
+                top: 2rem;
+            }
+            .gmkb-tool-app__section {
+                background: #f9fafb;
+                border-radius: 12px;
+                padding: 1.5rem;
+                margin-bottom: 1rem;
+            }
+            .gmkb-tool-app__section h3 {
+                font-size: 1rem;
+                font-weight: 600;
+                margin: 0 0 1rem;
+                color: #374151;
+            }
+            .gmkb-tool-app__steps {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+            }
+            .gmkb-tool-app__step {
+                display: flex;
+                gap: 0.75rem;
+            }
+            .gmkb-tool-app__step-num {
+                width: 24px;
+                height: 24px;
+                background: #3b82f6;
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.75rem;
+                font-weight: 600;
+                flex-shrink: 0;
+            }
+            .gmkb-tool-app__step-content strong {
+                display: block;
+                font-size: 0.875rem;
+                margin-bottom: 0.25rem;
+            }
+            .gmkb-tool-app__step-content p {
+                font-size: 0.8125rem;
+                color: #6b7280;
+                margin: 0;
+            }
+            .gmkb-tool-app__tips,
+            .gmkb-tool-app__benefits {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+            .gmkb-tool-app__tips li {
+                padding: 0.5rem 0;
+                padding-left: 1.5rem;
+                position: relative;
+                font-size: 0.875rem;
+                color: #374151;
+            }
+            .gmkb-tool-app__tips li::before {
+                content: "💡";
+                position: absolute;
+                left: 0;
+            }
+            .gmkb-tool-app__benefits li {
+                display: flex;
+                align-items: flex-start;
+                gap: 0.5rem;
+                padding: 0.5rem 0;
+                font-size: 0.875rem;
+                color: #374151;
+            }
+            .gmkb-tool-app__benefits svg {
+                width: 16px;
+                height: 16px;
+                color: #10b981;
+                flex-shrink: 0;
+                margin-top: 2px;
+            }
+            .gmkb-tool-app__example {
+                padding: 1rem;
+                background: white;
+                border-radius: 8px;
+                margin-bottom: 0.75rem;
+            }
+            .gmkb-tool-app__example:last-child {
+                margin-bottom: 0;
+            }
+            .gmkb-tool-app__example h4 {
+                font-size: 0.8125rem;
+                font-weight: 600;
+                color: #6b7280;
+                margin: 0 0 0.5rem;
+            }
+            .gmkb-tool-app__example p {
+                font-size: 0.875rem;
+                color: #374151;
+                margin: 0;
+                font-style: italic;
+            }
+            @media (max-width: 1024px) {
+                .gmkb-tool-app__content {
+                    grid-template-columns: 1fr;
+                }
+                .gmkb-tool-app__panel--right {
+                    position: static;
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                    gap: 1rem;
+                }
+                .gmkb-tool-app__section {
+                    margin-bottom: 0;
+                }
+            }
+        </style>
+        <?php
+    }
+
+    /**
+     * Render the SEO landing page content
+     */
+    private function render_tool_landing_page() {
+        $tool = $this->current_tool;
+        $meta = $this->current_meta;
+        $landing = isset($meta['landingContent']) ? $meta['landingContent'] : array();
+
+        // CTA URL - links to the tool app page
+        $cta_url = home_url('/' . $this->base_path . '/' . $tool['id'] . '/?use=1');
         $cta_text = $landing['ctaText'] ?? 'Try ' . esc_html($meta['name']) . ' Free';
 
         ?>
