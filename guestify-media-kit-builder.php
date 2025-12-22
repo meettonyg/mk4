@@ -336,6 +336,12 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-tool-landi
     require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-tool-landing-shortcode.php';
 }
 
+// Virtual Tool Pages: Auto-generated pages at /tools/ and /tools/{slug}/
+// No manual page creation required - URLs are handled via rewrite rules
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/pages/class-gmkb-tool-pages.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/pages/class-gmkb-tool-pages.php';
+}
+
 // Offers Shortcode - Display offers on any page
 // Usage: [gmkb_offers] or [gmkb_offers profile_id="123" layout="grid" columns="3"]
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/offers-shortcode.php')) {
