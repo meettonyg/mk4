@@ -422,30 +422,55 @@ get_footer();
 
         $tool = $this->current_tool;
         $meta = $this->current_meta;
-        $landing = isset($meta['landing']) ? $meta['landing'] : array();
+        $landing = isset($meta['landingContent']) ? $meta['landingContent'] : array();
+
+        // CTA URL - can be customized in meta.json or defaults to free tools page
+        $cta_url = $landing['ctaUrl'] ?? '/free-tools/?tool=' . esc_attr($tool['id']);
+        $cta_text = $landing['ctaText'] ?? 'Try ' . esc_html($meta['name']) . ' Free';
 
         ?>
         <div class="gmkb-tool-landing">
             <!-- Hero Section -->
             <section class="gmkb-tool-hero">
                 <div class="gmkb-container">
+                    <span class="gmkb-tool-hero__category"><?php echo esc_html($this->get_category_label($meta['category'] ?? '')); ?></span>
                     <h1 class="gmkb-tool-hero__title">
-                        <?php echo esc_html($landing['hero']['title'] ?? $meta['name']); ?>
+                        <?php echo esc_html($landing['heroTagline'] ?? $meta['name']); ?>
                     </h1>
-                    <?php if (!empty($landing['hero']['subtitle'])): ?>
+                    <?php if (!empty($landing['heroSubtitle'])): ?>
                         <p class="gmkb-tool-hero__subtitle">
-                            <?php echo esc_html($landing['hero']['subtitle']); ?>
+                            <?php echo esc_html($landing['heroSubtitle']); ?>
+                        </p>
+                    <?php elseif (!empty($meta['shortDescription'])): ?>
+                        <p class="gmkb-tool-hero__subtitle">
+                            <?php echo esc_html($meta['shortDescription']); ?>
                         </p>
                     <?php endif; ?>
+                    <div class="gmkb-tool-hero__cta">
+                        <a href="<?php echo esc_url($cta_url); ?>" class="gmkb-btn gmkb-btn--primary gmkb-btn--large">
+                            <?php echo esc_html($cta_text); ?>
+                        </a>
+                    </div>
                 </div>
             </section>
 
-            <!-- Tool Widget -->
-            <section class="gmkb-tool-widget-section">
+            <!-- Key Benefits -->
+            <?php if (!empty($meta['keyBenefits'])): ?>
+            <section class="gmkb-tool-benefits">
                 <div class="gmkb-container">
-                    <?php echo do_shortcode('[gmkb_tool tool="' . esc_attr($tool['id']) . '"]'); ?>
+                    <div class="gmkb-benefits-grid">
+                        <?php foreach ($meta['keyBenefits'] as $benefit): ?>
+                            <div class="gmkb-benefit">
+                                <svg class="gmkb-benefit__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                <span><?php echo esc_html($benefit); ?></span>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
             </section>
+            <?php endif; ?>
 
             <!-- How It Works -->
             <?php if (!empty($landing['howItWorks'])): ?>
@@ -496,6 +521,20 @@ get_footer();
             </section>
             <?php endif; ?>
 
+            <!-- Target Audience -->
+            <?php if (!empty($meta['targetAudience'])): ?>
+            <section class="gmkb-tool-audience">
+                <div class="gmkb-container">
+                    <h2>Who Is This For?</h2>
+                    <ul class="gmkb-audience-list">
+                        <?php foreach ($meta['targetAudience'] as $audience): ?>
+                            <li><?php echo esc_html($audience); ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            </section>
+            <?php endif; ?>
+
             <!-- FAQ -->
             <?php if (!empty($landing['faq'])): ?>
             <section class="gmkb-tool-faq">
@@ -512,6 +551,17 @@ get_footer();
                 </div>
             </section>
             <?php endif; ?>
+
+            <!-- Bottom CTA -->
+            <section class="gmkb-tool-bottom-cta">
+                <div class="gmkb-container">
+                    <h2>Ready to Get Started?</h2>
+                    <p>Create your <?php echo esc_html(strtolower($meta['name'])); ?> in seconds with our free AI-powered tool.</p>
+                    <a href="<?php echo esc_url($cta_url); ?>" class="gmkb-btn gmkb-btn--primary gmkb-btn--large">
+                        <?php echo esc_html($cta_text); ?>
+                    </a>
+                </div>
+            </section>
 
             <!-- Related Tools -->
             <?php if (!empty($landing['relatedToolSlugs'])): ?>
@@ -546,28 +596,92 @@ get_footer();
                 max-width: 900px;
                 margin: 0 auto;
             }
+            /* Hero Section */
             .gmkb-tool-hero {
                 text-align: center;
-                padding: 3rem 0;
-                margin-bottom: 2rem;
+                padding: 4rem 0 3rem;
+            }
+            .gmkb-tool-hero__category {
+                display: inline-block;
+                padding: 0.25rem 0.75rem;
+                background: #eff6ff;
+                color: #3b82f6;
+                border-radius: 9999px;
+                font-size: 0.875rem;
+                font-weight: 500;
+                margin-bottom: 1rem;
             }
             .gmkb-tool-hero__title {
-                font-size: 2.5rem;
-                font-weight: 700;
+                font-size: 2.75rem;
+                font-weight: 800;
                 margin: 0 0 1rem;
                 color: #111827;
+                line-height: 1.2;
             }
             .gmkb-tool-hero__subtitle {
                 font-size: 1.25rem;
                 color: #6b7280;
-                margin: 0;
+                margin: 0 0 2rem;
+                max-width: 600px;
+                margin-left: auto;
+                margin-right: auto;
             }
-            .gmkb-tool-widget-section {
-                margin-bottom: 3rem;
+            .gmkb-tool-hero__cta {
+                margin-top: 2rem;
             }
+            /* CTA Button */
+            .gmkb-btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 600;
+                border-radius: 8px;
+                transition: all 0.2s;
+                text-decoration: none;
+                cursor: pointer;
+            }
+            .gmkb-btn--primary {
+                background: #3b82f6;
+                color: white;
+            }
+            .gmkb-btn--primary:hover {
+                background: #2563eb;
+                color: white;
+            }
+            .gmkb-btn--large {
+                padding: 1rem 2rem;
+                font-size: 1.125rem;
+            }
+            /* Key Benefits */
+            .gmkb-tool-benefits {
+                padding: 2rem 0;
+                background: #f9fafb;
+                border-radius: 12px;
+                margin-bottom: 2rem;
+            }
+            .gmkb-benefits-grid {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 1.5rem 2.5rem;
+            }
+            .gmkb-benefit {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                color: #374151;
+            }
+            .gmkb-benefit__icon {
+                width: 20px;
+                height: 20px;
+                color: #10b981;
+                flex-shrink: 0;
+            }
+            /* Section Styling */
             .gmkb-tool-how-it-works,
             .gmkb-tool-features,
             .gmkb-tool-use-cases,
+            .gmkb-tool-audience,
             .gmkb-tool-faq,
             .gmkb-tool-related {
                 padding: 3rem 0;
@@ -576,6 +690,7 @@ get_footer();
             .gmkb-tool-how-it-works h2,
             .gmkb-tool-features h2,
             .gmkb-tool-use-cases h2,
+            .gmkb-tool-audience h2,
             .gmkb-tool-faq h2,
             .gmkb-tool-related h2 {
                 font-size: 1.75rem;
@@ -693,6 +808,59 @@ get_footer();
                 margin: 0;
                 font-size: 0.875rem;
                 color: #6b7280;
+            }
+            /* Audience List */
+            .gmkb-audience-list {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 0.75rem;
+            }
+            .gmkb-audience-list li {
+                padding: 0.75rem 1rem;
+                background: #f9fafb;
+                border-radius: 6px;
+                position: relative;
+                padding-left: 2.5rem;
+            }
+            .gmkb-audience-list li::before {
+                content: "→";
+                position: absolute;
+                left: 1rem;
+                color: #3b82f6;
+            }
+            /* Bottom CTA */
+            .gmkb-tool-bottom-cta {
+                padding: 4rem 0;
+                text-align: center;
+                background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+                border-radius: 16px;
+                margin-top: 2rem;
+            }
+            .gmkb-tool-bottom-cta h2 {
+                font-size: 2rem;
+                margin: 0 0 0.75rem;
+                color: #111827;
+            }
+            .gmkb-tool-bottom-cta p {
+                color: #6b7280;
+                margin: 0 0 1.5rem;
+                font-size: 1.125rem;
+            }
+            /* Responsive */
+            @media (max-width: 768px) {
+                .gmkb-tool-hero__title {
+                    font-size: 2rem;
+                }
+                .gmkb-tool-hero__subtitle {
+                    font-size: 1rem;
+                }
+                .gmkb-benefits-grid {
+                    flex-direction: column;
+                    align-items: center;
+                }
             }
         </style>
         <?php
@@ -986,6 +1154,26 @@ get_footer();
             $classes[] = 'gmkb-tools-directory-page';
         }
         return $classes;
+    }
+
+    /**
+     * Get human-readable category label
+     *
+     * @param string $category Category slug
+     * @return string Category label
+     */
+    private function get_category_label($category) {
+        $labels = array(
+            'seo-tools' => 'SEO Tools',
+            'profile-content' => 'Profile Content',
+            'value-builder' => 'Value Builder',
+            'media-kit' => 'Media Kit',
+            'messaging' => 'Messaging',
+            'outreach' => 'Outreach',
+            'social-media' => 'Social Media',
+            'content-creation' => 'Content Creation',
+        );
+        return $labels[$category] ?? ucwords(str_replace('-', ' ', $category));
     }
 
     /**
