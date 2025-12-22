@@ -112,6 +112,9 @@ class GMKB_Tool_Pages {
         // Template handling
         add_filter('template_include', array($this, 'load_template'));
 
+        // Enqueue scripts early for tool pages
+        add_action('wp_enqueue_scripts', array($this, 'enqueue_tool_assets'));
+
         // SEO hooks
         add_action('wp_head', array($this, 'output_seo_tags'), 1);
         add_filter('document_title_parts', array($this, 'filter_title'));
@@ -122,6 +125,68 @@ class GMKB_Tool_Pages {
 
         // Flush rewrite rules when needed
         add_action('admin_init', array($this, 'maybe_flush_rewrite_rules'));
+    }
+
+    /**
+     * Enqueue tool assets for virtual pages
+     * Must be called during wp_enqueue_scripts hook (before content rendering)
+     */
+    public function enqueue_tool_assets() {
+        global $wp_query;
+
+        // Check if this is a tool page
+        $tool_slug = get_query_var($this->query_var);
+        if (empty($tool_slug)) {
+            return;
+        }
+
+        // Verify tool exists
+        if (!$this->discovery) {
+            return;
+        }
+
+        $tool = $this->discovery->get_tool($tool_slug);
+        if (!$tool) {
+            return;
+        }
+
+        $version = defined('GMKB_VERSION') ? GMKB_VERSION : '1.0.0';
+
+        // Check for standalone tools bundle first
+        $js_file = GMKB_PLUGIN_DIR . 'dist/standalone-tools/standalone-tools.js';
+        $css_file = GMKB_PLUGIN_DIR . 'dist/standalone-tools/standalone-tools.css';
+
+        // Fallback to seo-tools bundle
+        if (!file_exists($js_file)) {
+            $js_file = GMKB_PLUGIN_DIR . 'dist/seo-tools/seo-tools.js';
+            $css_file = GMKB_PLUGIN_DIR . 'dist/seo-tools/seo-tools.css';
+        }
+
+        if (file_exists($js_file)) {
+            wp_enqueue_script(
+                'gmkb-standalone-tools',
+                str_replace(GMKB_PLUGIN_DIR, GMKB_PLUGIN_URL, $js_file),
+                array(),
+                $version,
+                true
+            );
+
+            if (file_exists($css_file)) {
+                wp_enqueue_style(
+                    'gmkb-standalone-tools',
+                    str_replace(GMKB_PLUGIN_DIR, GMKB_PLUGIN_URL, $css_file),
+                    array(),
+                    $version
+                );
+            }
+
+            // Add global data for Vue components
+            wp_localize_script('gmkb-standalone-tools', 'gmkbStandaloneTools', array(
+                'nonce' => wp_create_nonce('gmkb_public_ai'),
+                'apiBase' => rest_url('gmkb/v2'),
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+            ));
+        }
     }
 
     /**
