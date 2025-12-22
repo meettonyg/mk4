@@ -29,41 +29,41 @@ import { createPinia } from 'pinia';
 import './styles/ai-standalone.css';
 import './styles/ai-shared.css';
 
-// Import generator components (standalone mode only)
-// Original tools
-import BiographyGenerator from './vue/components/ai/BiographyGenerator.vue';
-import TopicsGenerator from './vue/components/ai/TopicsGenerator.vue';
-import QuestionsGenerator from './vue/components/ai/QuestionsGenerator.vue';
-import TaglineGenerator from './vue/components/ai/TaglineGenerator.vue';
-import GuestIntroGenerator from './vue/components/ai/GuestIntroGenerator.vue';
-import AuthorityHookBuilder from './vue/components/ai/AuthorityHookBuilder.vue';
-import OffersGenerator from './vue/components/ai/OffersGenerator.vue';
+// Import generator components from /tools/ directory (standalone mode only)
+// Message Builder tools
+import BiographyGenerator from '@tools/biography-generator/BiographyGenerator.vue';
+import TopicsGenerator from '@tools/topics-generator/TopicsGenerator.vue';
+import QuestionsGenerator from '@tools/questions-generator/QuestionsGenerator.vue';
+import TaglineGenerator from '@tools/tagline-generator/TaglineGenerator.vue';
+import GuestIntroGenerator from '@tools/guest-intro-generator/GuestIntroGenerator.vue';
+import AuthorityHookBuilder from '@tools/authority-hook-builder/AuthorityHookBuilder.vue';
+import OffersGenerator from '@tools/offers-generator/OffersGenerator.vue';
 
 // Value Builder tools
-import ElevatorPitchGenerator from './vue/components/ai/ElevatorPitchGenerator.vue';
-import SoundBiteGenerator from './vue/components/ai/SoundBiteGenerator.vue';
-import PersonaGenerator from './vue/components/ai/PersonaGenerator.vue';
-import ImpactIntroBuilder from './vue/components/ai/ImpactIntroBuilder.vue';
+import ElevatorPitchGenerator from '@tools/elevator-pitch-generator/ElevatorPitchGenerator.vue';
+import SoundBiteGenerator from '@tools/sound-bite-generator/SoundBiteGenerator.vue';
+import PersonaGenerator from '@tools/persona-generator/PersonaGenerator.vue';
+import ImpactIntroBuilder from '@tools/impact-intro-builder/ImpactIntroBuilder.vue';
 
 // Strategy tools
-import BrandStoryGenerator from './vue/components/ai/BrandStoryGenerator.vue';
-import SignatureStoryGenerator from './vue/components/ai/SignatureStoryGenerator.vue';
-import CredibilityStoryGenerator from './vue/components/ai/CredibilityStoryGenerator.vue';
-import FrameworkGenerator from './vue/components/ai/FrameworkGenerator.vue';
-import InterviewPrepGenerator from './vue/components/ai/InterviewPrepGenerator.vue';
+import BrandStoryGenerator from '@tools/brand-story-generator/BrandStoryGenerator.vue';
+import SignatureStoryGenerator from '@tools/signature-story-generator/SignatureStoryGenerator.vue';
+import CredibilityStoryGenerator from '@tools/credibility-story-generator/CredibilityStoryGenerator.vue';
+import FrameworkGenerator from '@tools/framework-builder/FrameworkGenerator.vue';
+import InterviewPrepGenerator from '@tools/interview-prep-generator/InterviewPrepGenerator.vue';
 
 // Content tools
-import BlogGenerator from './vue/components/ai/BlogGenerator.vue';
-import ContentRepurposerGenerator from './vue/components/ai/ContentRepurposerGenerator.vue';
-import PressReleaseGenerator from './vue/components/ai/PressReleaseGenerator.vue';
+import BlogGenerator from '@tools/blog-generator/BlogGenerator.vue';
+import ContentRepurposerGenerator from '@tools/content-repurposer/ContentRepurposerGenerator.vue';
+import PressReleaseGenerator from '@tools/press-release-generator/PressReleaseGenerator.vue';
 
 // Social/Email tools
-import SocialPostGenerator from './vue/components/ai/SocialPostGenerator.vue';
-import EmailWriterGenerator from './vue/components/ai/EmailWriterGenerator.vue';
-import NewsletterGenerator from './vue/components/ai/NewsletterGenerator.vue';
-import YoutubeDescriptionGenerator from './vue/components/ai/YoutubeDescriptionGenerator.vue';
-import PodcastNotesGenerator from './vue/components/ai/PodcastNotesGenerator.vue';
-import SeoOptimizerGenerator from './vue/components/ai/SeoOptimizerGenerator.vue';
+import SocialPostGenerator from '@tools/social-post-generator/SocialPostGenerator.vue';
+import EmailWriterGenerator from '@tools/email-writer/EmailWriterGenerator.vue';
+import NewsletterGenerator from '@tools/newsletter-writer/NewsletterGenerator.vue';
+import YoutubeDescriptionGenerator from '@tools/youtube-description-generator/YoutubeDescriptionGenerator.vue';
+import PodcastNotesGenerator from '@tools/podcast-notes-generator/PodcastNotesGenerator.vue';
+import SeoOptimizerGenerator from '@tools/seo-optimizer/SeoOptimizerGenerator.vue';
 
 /**
  * Component registry for data-gmkb-tool attribute values
