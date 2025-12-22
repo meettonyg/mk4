@@ -2,17 +2,26 @@
  * Tool Registry Service
  *
  * Provides centralized access to all AI tool metadata using Vite's glob imports.
- * This service loads all meta.json files from the generators directory and provides
- * methods for querying tools by slug, category, or related tools.
+ *
+ * Supports two directory structures:
+ * - NEW: /tools/{tool-name}/ with tool.json, meta.json, prompts.php, Component.vue
+ * - LEGACY: /src/vue/components/generators/{tool-name}/ with meta.json only
+ *
+ * The new /tools/ directory is prioritized; legacy paths are for backward compatibility.
  *
  * @package GMKB
  * @subpackage Services
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2.3.0
  */
 
-// Use Vite's glob import to load all meta.json files eagerly
-const metaModules = import.meta.glob('../components/generators/**/meta.json', { eager: true });
+// Use Vite's glob import to load meta.json files from BOTH directories
+// New /tools/ directory (prioritized)
+const toolsMetaModules = import.meta.glob('../../../tools/**/meta.json', { eager: true });
+const toolsConfigModules = import.meta.glob('../../../tools/**/tool.json', { eager: true });
+
+// Legacy /components/generators/ directory (fallback)
+const legacyMetaModules = import.meta.glob('../components/generators/**/meta.json', { eager: true });
 
 /**
  * Category configuration for display and ordering
@@ -47,34 +56,74 @@ const CATEGORY_CONFIG = {
 
 /**
  * Process and normalize all tool metadata
+ * Merges tools from both directories, prioritizing /tools/
  */
 function loadTools() {
-    const tools = [];
+    const toolsMap = new Map();
 
-    Object.entries(metaModules).forEach(([path, module]) => {
-        // Extract the slug from the path (e.g., '../components/generators/topics-generator/meta.json' -> 'topics-generator')
+    // First, load legacy tools from generators directory
+    Object.entries(legacyMetaModules).forEach(([path, module]) => {
         const match = path.match(/generators\/([^/]+)\/meta\.json$/);
         if (match) {
             const slug = match[1];
             const meta = module.default || module;
 
-            // Ensure slug matches directory name
-            if (meta.slug !== slug) {
-                console.warn(`[ToolRegistry] Slug mismatch: ${meta.slug} !== ${slug}`);
-            }
-
-            tools.push({
+            toolsMap.set(slug, {
                 ...meta,
-                slug: slug, // Use directory name as canonical slug
+                slug: slug,
+                _source: 'legacy',
+                _path: path,
             });
         }
     });
 
-    return tools;
+    // Then, load new tools from /tools/ directory (overrides legacy)
+    Object.entries(toolsMetaModules).forEach(([path, module]) => {
+        const match = path.match(/tools\/([^/]+)\/meta\.json$/);
+        if (match) {
+            const slug = match[1];
+            const meta = module.default || module;
+
+            // Find corresponding tool.json for additional config
+            const toolConfigPath = path.replace('meta.json', 'tool.json');
+            const toolConfig = toolsConfigModules[toolConfigPath]?.default || toolsConfigModules[toolConfigPath] || {};
+
+            toolsMap.set(slug, {
+                ...meta,
+                slug: slug,
+                id: toolConfig.id || slug,
+                icon: toolConfig.icon || meta.icon,
+                category: toolConfig.category || meta.category,
+                component: toolConfig.component || null,
+                supports: toolConfig.supports || {},
+                _source: 'tools',
+                _path: path,
+            });
+        }
+    });
+
+    // Convert Map to array
+    return Array.from(toolsMap.values());
 }
 
 // Load all tools on module initialization
 const allTools = loadTools();
+
+// Log tool sources in development
+if (import.meta.env.DEV) {
+    const toolsSources = allTools.reduce(
+        (acc, tool) => {
+            acc[tool._source] = (acc[tool._source] || 0) + 1;
+            return acc;
+        },
+        { tools: 0, legacy: 0 }
+    );
+    console.log('[ToolRegistry] Loaded tools:', {
+        total: allTools.length,
+        fromTools: toolsSources.tools,
+        fromLegacy: toolsSources.legacy,
+    });
+}
 
 /**
  * Tool Registry API
@@ -89,12 +138,37 @@ const ToolRegistry = {
     },
 
     /**
+     * Get only tools from the new /tools/ directory
+     * @returns {Array} Tools from /tools/ directory
+     */
+    getNewTools() {
+        return allTools.filter((tool) => tool._source === 'tools');
+    },
+
+    /**
+     * Get only legacy tools (for migration tracking)
+     * @returns {Array} Tools from legacy generators directory
+     */
+    getLegacyTools() {
+        return allTools.filter((tool) => tool._source === 'legacy');
+    },
+
+    /**
      * Get a tool by its slug
      * @param {string} slug - The tool slug (e.g., 'topics-generator')
      * @returns {Object|null} Tool metadata or null if not found
      */
     getToolBySlug(slug) {
         return allTools.find((tool) => tool.slug === slug) || null;
+    },
+
+    /**
+     * Get a tool by its ID (from tool.json)
+     * @param {string} id - The tool ID (e.g., 'biography-generator')
+     * @returns {Object|null} Tool metadata or null if not found
+     */
+    getToolById(id) {
+        return allTools.find((tool) => tool.id === id || tool.slug === id) || null;
     },
 
     /**
@@ -179,7 +253,7 @@ const ToolRegistry = {
         return allTools.filter((tool) => {
             return (
                 tool.name.toLowerCase().includes(lowerQuery) ||
-                tool.shortDescription.toLowerCase().includes(lowerQuery) ||
+                tool.shortDescription?.toLowerCase().includes(lowerQuery) ||
                 tool.seoMeta?.keywords?.some((kw) => kw.toLowerCase().includes(lowerQuery))
             );
         });
@@ -191,6 +265,34 @@ const ToolRegistry = {
      */
     getToolCount() {
         return allTools.length;
+    },
+
+    /**
+     * Check if a tool uses the new /tools/ architecture
+     * @param {string} slug - The tool slug
+     * @returns {boolean} True if tool is in /tools/ directory
+     */
+    isNewArchitecture(slug) {
+        const tool = this.getToolBySlug(slug);
+        return tool?._source === 'tools';
+    },
+
+    /**
+     * Get migration status
+     * @returns {Object} Migration progress information
+     */
+    getMigrationStatus() {
+        const newTools = this.getNewTools();
+        const legacyTools = this.getLegacyTools();
+
+        return {
+            total: allTools.length,
+            migrated: newTools.length,
+            pending: legacyTools.length,
+            progress: allTools.length > 0 ? Math.round((newTools.length / allTools.length) * 100) : 0,
+            migratedSlugs: newTools.map((t) => t.slug),
+            pendingSlugs: legacyTools.map((t) => t.slug),
+        };
     },
 };
 

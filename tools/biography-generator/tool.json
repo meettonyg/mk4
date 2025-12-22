@@ -1,0 +1,22 @@
+{
+  "id": "biography-generator",
+  "name": "Biography Generator",
+  "version": "2.0.0",
+  "category": "message-builder",
+  "icon": "UserCircleIcon",
+  "description": "Generate professional biographies in three lengths (short, medium, long).",
+  "component": "BiographyGenerator.vue",
+  "prompts": "prompts.php",
+  "supports": {
+    "standalone": true,
+    "builder": true,
+    "modal": true
+  },
+  "endpoints": {
+    "generate": true
+  },
+  "fields": {
+    "required": ["name"],
+    "optional": ["title", "organization", "tone", "pov", "length", "authorityHook", "impactIntro", "existingBio"]
+  }
+}

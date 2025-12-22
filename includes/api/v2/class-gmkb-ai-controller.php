@@ -7,9 +7,13 @@
  * - Integrated Mode: Inside Media Kit Builder (Auth required, saves to store)
  * - Standalone Mode: On public WordPress pages (No auth, rate-limited)
  *
+ * Supports two generation approaches:
+ * - Legacy: /ai/generate with 'type' parameter (biography, topics, etc.)
+ * - New: /ai/tool/generate with 'tool' parameter (biography-generator, topics-generator, etc.)
+ *
  * @package GMKB
  * @subpackage AI
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2.2.0
  */
 
@@ -30,6 +34,12 @@ class GMKB_AI_Controller {
      * @var GMKB_AI_Service
      */
     private $ai_service;
+
+    /**
+     * Tool Discovery instance
+     * @var GMKB_Tool_Discovery
+     */
+    private $tool_discovery;
 
     /**
      * Rate limit for public (anonymous) users
@@ -55,8 +65,9 @@ class GMKB_AI_Controller {
     public function __construct() {
         add_action('rest_api_init', array($this, 'register_routes'), 10);
 
-        // Load AI Service
+        // Load services
         $this->load_ai_service();
+        $this->load_tool_discovery();
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('GMKB AI Controller: Initialized');
@@ -75,6 +86,22 @@ class GMKB_AI_Controller {
         } else {
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log('GMKB AI Controller: AI Service file not found at ' . $service_path);
+            }
+        }
+    }
+
+    /**
+     * Load the Tool Discovery service
+     */
+    private function load_tool_discovery() {
+        $discovery_path = GMKB_PLUGIN_DIR . 'includes/services/class-gmkb-tool-discovery.php';
+
+        if (file_exists($discovery_path)) {
+            require_once $discovery_path;
+            $this->tool_discovery = GMKB_Tool_Discovery::instance();
+        } else {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB AI Controller: Tool Discovery not found at ' . $discovery_path);
             }
         }
     }
@@ -139,9 +166,51 @@ class GMKB_AI_Controller {
             'permission_callback' => '__return_true'
         ));
 
+        // New tool-based generation endpoint (for /tools/ architecture)
+        register_rest_route($this->namespace, '/ai/tool/generate', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'generate_from_tool'),
+            'permission_callback' => array($this, 'check_generate_permissions'),
+            'args' => array(
+                'tool' => array(
+                    'required' => true,
+                    'type' => 'string',
+                    'description' => 'Tool ID (e.g., biography-generator)',
+                    'sanitize_callback' => 'sanitize_text_field'
+                ),
+                'params' => array(
+                    'required' => true,
+                    'type' => 'object',
+                    'description' => 'Generation parameters'
+                ),
+                'context' => array(
+                    'required' => false,
+                    'type' => 'string',
+                    'default' => 'public',
+                    'enum' => array('builder', 'public'),
+                    'sanitize_callback' => 'sanitize_text_field'
+                ),
+                'nonce' => array(
+                    'required' => false,
+                    'type' => 'string',
+                    'description' => 'Security nonce for public requests',
+                    'sanitize_callback' => 'sanitize_text_field'
+                )
+            )
+        ));
+
+        // Tool discovery endpoint (lists available tools)
+        register_rest_route($this->namespace, '/ai/tools', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'list_tools'),
+            'permission_callback' => '__return_true'
+        ));
+
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('GMKB AI Controller: Routes registered');
             error_log('  - POST /' . $this->namespace . '/ai/generate');
+            error_log('  - POST /' . $this->namespace . '/ai/tool/generate');
+            error_log('  - GET  /' . $this->namespace . '/ai/tools');
             error_log('  - GET  /' . $this->namespace . '/ai/test');
             error_log('  - GET  /' . $this->namespace . '/ai/usage');
         }
@@ -647,6 +716,289 @@ class GMKB_AI_Controller {
             'success' => true,
             'context' => $context,
             'usage' => $usage
+        ));
+    }
+
+    /**
+     * Tool-based AI content generation endpoint
+     *
+     * POST /wp-json/gmkb/v2/ai/tool/generate
+     *
+     * Uses the /tools/ directory architecture with self-contained prompts.php
+     *
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response|WP_Error
+     */
+    public function generate_from_tool($request) {
+        $tool_id = $request->get_param('tool');
+        $params = $request->get_param('params');
+        $context = $request->get_param('context') ?? 'public';
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB AI Controller: Tool-based generate request');
+            error_log('  - Tool: ' . $tool_id);
+            error_log('  - Context: ' . $context);
+            error_log('  - Params: ' . wp_json_encode($params));
+        }
+
+        // Check if tool discovery is available
+        if (!$this->tool_discovery) {
+            return new WP_Error(
+                'service_unavailable',
+                'Tool discovery service is not available.',
+                array('status' => 503)
+            );
+        }
+
+        // Check if tool exists
+        if (!$this->tool_discovery->tool_exists($tool_id)) {
+            return new WP_Error(
+                'tool_not_found',
+                sprintf('Tool "%s" not found.', $tool_id),
+                array('status' => 404)
+            );
+        }
+
+        // Load tool prompts configuration
+        $prompts = $this->tool_discovery->get_tool_prompts($tool_id);
+
+        if (!$prompts) {
+            return new WP_Error(
+                'prompts_not_found',
+                sprintf('Prompts configuration for tool "%s" not found.', $tool_id),
+                array('status' => 500)
+            );
+        }
+
+        // Validate prompts structure
+        $validation = $this->tool_discovery->validate_tool_prompts($tool_id);
+        if (!$validation['valid']) {
+            return new WP_Error(
+                'invalid_prompts',
+                'Tool prompts configuration is invalid: ' . implode(', ', $validation['errors']),
+                array('status' => 500)
+            );
+        }
+
+        // Apply validation from prompts.php
+        if (isset($prompts['validation'])) {
+            $param_validation = $this->validate_tool_params($params, $prompts['validation']);
+            if (is_wp_error($param_validation)) {
+                return $param_validation;
+            }
+            // Merge defaults
+            if (isset($prompts['validation']['defaults'])) {
+                $params = array_merge($prompts['validation']['defaults'], $params);
+            }
+        }
+
+        try {
+            // Get AI settings from prompts.php
+            $settings = isset($prompts['settings']) ? $prompts['settings'] : array();
+            $model = isset($settings['model']) ? $settings['model'] : 'gpt-4o-mini';
+            $temperature = isset($settings['temperature']) ? $settings['temperature'] : 0.7;
+            $max_tokens = isset($settings['max_tokens']) ? $settings['max_tokens'] : 1000;
+
+            // Build system prompt
+            $system_prompt = isset($prompts['system_prompt']) ? $prompts['system_prompt'] : '';
+
+            // Build user prompt using the callable
+            if (!is_callable($prompts['user_prompt'])) {
+                return new WP_Error(
+                    'invalid_prompt_function',
+                    'user_prompt must be a callable function.',
+                    array('status' => 500)
+                );
+            }
+            $user_prompt = call_user_func($prompts['user_prompt'], $params);
+
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB AI Controller: Calling AI service');
+                error_log('  - Model: ' . $model);
+                error_log('  - System prompt length: ' . strlen($system_prompt));
+                error_log('  - User prompt length: ' . strlen($user_prompt));
+            }
+
+            // Call AI service directly with messages
+            $api_key = get_option('gmkb_openai_api_key', '');
+
+            if (empty($api_key)) {
+                return new WP_Error(
+                    'api_key_missing',
+                    'OpenAI API key is not configured.',
+                    array('status' => 500)
+                );
+            }
+
+            // Make OpenAI API call
+            $response = wp_remote_post('https://api.openai.com/v1/chat/completions', array(
+                'timeout' => 60,
+                'headers' => array(
+                    'Authorization' => 'Bearer ' . $api_key,
+                    'Content-Type' => 'application/json'
+                ),
+                'body' => wp_json_encode(array(
+                    'model' => $model,
+                    'messages' => array(
+                        array('role' => 'system', 'content' => $system_prompt),
+                        array('role' => 'user', 'content' => $user_prompt)
+                    ),
+                    'temperature' => $temperature,
+                    'max_tokens' => $max_tokens
+                ))
+            ));
+
+            if (is_wp_error($response)) {
+                return new WP_Error(
+                    'api_error',
+                    'Failed to connect to AI service: ' . $response->get_error_message(),
+                    array('status' => 502)
+                );
+            }
+
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+
+            if (isset($body['error'])) {
+                return new WP_Error(
+                    'api_error',
+                    'AI service error: ' . ($body['error']['message'] ?? 'Unknown error'),
+                    array('status' => 502)
+                );
+            }
+
+            if (!isset($body['choices'][0]['message']['content'])) {
+                return new WP_Error(
+                    'invalid_response',
+                    'Invalid response from AI service.',
+                    array('status' => 502)
+                );
+            }
+
+            $raw_content = $body['choices'][0]['message']['content'];
+            $tokens_used = isset($body['usage']['total_tokens']) ? $body['usage']['total_tokens'] : null;
+
+            // Parse response using the tool's parser function
+            if (!is_callable($prompts['parser'])) {
+                return new WP_Error(
+                    'invalid_parser_function',
+                    'parser must be a callable function.',
+                    array('status' => 500)
+                );
+            }
+            $parsed_content = call_user_func($prompts['parser'], $raw_content);
+
+            // Increment usage counter on success
+            $this->increment_usage($context);
+
+            // Get updated usage info
+            $usage = $this->get_usage_info($context);
+
+            // Build response
+            $response_data = array(
+                'success' => true,
+                'data' => array(
+                    'content' => $parsed_content,
+                    'tool' => $tool_id,
+                    'metadata' => array(
+                        'tokens_used' => $tokens_used,
+                        'model' => $model,
+                        'generated_at' => current_time('mysql')
+                    )
+                ),
+                'usage' => $usage
+            );
+
+            $rest_response = rest_ensure_response($response_data);
+
+            // Add rate limit headers
+            $rest_response->header('X-RateLimit-Limit', $usage['limit']);
+            $rest_response->header('X-RateLimit-Remaining', $usage['remaining']);
+            $rest_response->header('X-RateLimit-Reset', time() + $usage['reset_time']);
+
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB AI Controller: Tool generation successful');
+                error_log('  - Content type: ' . gettype($parsed_content));
+                error_log('  - Remaining usage: ' . $usage['remaining']);
+            }
+
+            return $rest_response;
+
+        } catch (Exception $e) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB AI Controller: Exception during tool generation');
+                error_log('  - Error: ' . $e->getMessage());
+            }
+
+            return new WP_Error(
+                'generation_error',
+                'An error occurred during content generation: ' . $e->getMessage(),
+                array('status' => 500)
+            );
+        }
+    }
+
+    /**
+     * Validate tool parameters against validation config
+     *
+     * @param array $params User-provided parameters
+     * @param array $validation Validation config from prompts.php
+     * @return true|WP_Error
+     */
+    private function validate_tool_params($params, $validation) {
+        if (!is_array($params)) {
+            return new WP_Error(
+                'invalid_params',
+                'Parameters must be an object.',
+                array('status' => 400)
+            );
+        }
+
+        // Check required fields
+        if (isset($validation['required']) && is_array($validation['required'])) {
+            foreach ($validation['required'] as $field) {
+                if (empty($params[$field])) {
+                    return new WP_Error(
+                        'missing_required_param',
+                        sprintf('Missing required parameter: %s', $field),
+                        array('status' => 400)
+                    );
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * List available tools endpoint
+     *
+     * GET /wp-json/gmkb/v2/ai/tools
+     *
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response
+     */
+    public function list_tools($request) {
+        if (!$this->tool_discovery) {
+            return rest_ensure_response(array(
+                'success' => false,
+                'message' => 'Tool discovery service not available',
+                'tools' => array()
+            ));
+        }
+
+        $tools = $this->tool_discovery->get_all_tools();
+
+        // Filter out internal properties (those starting with _)
+        $public_tools = array_map(function($tool) {
+            return array_filter($tool, function($key) {
+                return strpos($key, '_') !== 0;
+            }, ARRAY_FILTER_USE_KEY);
+        }, $tools);
+
+        return rest_ensure_response(array(
+            'success' => true,
+            'count' => count($public_tools),
+            'tools' => array_values($public_tools)
         ));
     }
 }
