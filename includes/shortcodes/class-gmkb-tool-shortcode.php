@@ -5,7 +5,43 @@
  * Embeds individual AI tools on any WordPress page.
  *
  * Generic usage: [gmkb_tool tool="topics-generator"]
- * Convenience aliases: [gmkb_topics], [gmkb_biography], etc.
+ *
+ * Convenience aliases (25 tools):
+ *
+ * MESSAGE BUILDER:
+ * - [gmkb_biography] - Biography Generator
+ * - [gmkb_topics] - Topics Generator
+ * - [gmkb_questions] - Questions Generator
+ * - [gmkb_tagline] - Tagline Generator
+ * - [gmkb_guest_intro] - Guest Intro Generator
+ * - [gmkb_offers] - Offers Generator
+ *
+ * VALUE BUILDER:
+ * - [gmkb_elevator_pitch] - Elevator Pitch Generator
+ * - [gmkb_sound_bite] - Sound Bite Generator
+ * - [gmkb_authority_hook] - Authority Hook Builder
+ * - [gmkb_impact_intro] - Impact Intro Builder
+ * - [gmkb_persona] - Persona Generator
+ *
+ * STRATEGY:
+ * - [gmkb_brand_story] - Brand Story Generator
+ * - [gmkb_signature_story] - Signature Story Generator
+ * - [gmkb_credibility_story] - Credibility Story Generator
+ * - [gmkb_framework] - Framework Builder
+ * - [gmkb_interview_prep] - Interview Prep Generator
+ *
+ * CONTENT:
+ * - [gmkb_blog] - Blog Post Generator
+ * - [gmkb_repurpose] - Content Repurposer
+ * - [gmkb_press_release] - Press Release Generator
+ *
+ * SOCIAL/EMAIL:
+ * - [gmkb_social] - Social Post Generator
+ * - [gmkb_email] - Email Writer
+ * - [gmkb_newsletter] - Newsletter Writer
+ * - [gmkb_youtube] - YouTube Description Generator
+ * - [gmkb_podcast_notes] - Podcast Show Notes Generator
+ * - [gmkb_seo] - SEO Content Optimizer
  *
  * Attributes:
  * - tool: The tool slug (required for generic shortcode)

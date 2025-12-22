@@ -5,44 +5,20 @@
  * Part of the Unified AI Generator Architecture ("Modular Widgets")
  * Provides shortcode for embedding AI tools on public pages (standalone mode).
  *
- * Generic Usage: [gmkb_free_tool type="biography" title="Free Bio Generator"]
+ * Tools are dynamically discovered from the /tools/ directory via GMKB_Tool_Discovery.
  *
- * Individual Shortcodes (25 tools):
+ * Usage:
  *
- * MESSAGE BUILDER:
- * - [gmkb_biography] - AI Biography Generator
- * - [gmkb_topics] - AI Topics Generator
- * - [gmkb_questions] - AI Questions Generator
- * - [gmkb_tagline] - AI Tagline Generator
- * - [gmkb_guest_intro] - AI Guest Intro Generator
- * - [gmkb_offers] - AI Offers Generator
+ * Generic: [gmkb_free_tool type="biography" title="Free Bio Generator"]
+ * Directory: [gmkb_tools_directory]
  *
- * VALUE BUILDER:
- * - [gmkb_elevator_pitch] - Elevator Pitch Generator
- * - [gmkb_sound_bite] - Sound Bite Generator
- * - [gmkb_authority_hook] - Authority Hook Builder
- * - [gmkb_impact_intro] - Impact Intro Builder
- * - [gmkb_persona] - Ideal Client Persona Generator
+ * Shortcode names are auto-generated from tool IDs by removing suffixes:
+ * - biography-generator -> [gmkb_biography]
+ * - content-repurposer -> [gmkb_content]
+ * - seo-optimizer -> [gmkb_seo]
  *
- * STRATEGY:
- * - [gmkb_brand_story] - Brand Story Generator
- * - [gmkb_signature_story] - Signature Story Generator
- * - [gmkb_credibility_story] - Credibility Story Generator
- * - [gmkb_framework] - Framework Builder
- * - [gmkb_interview_prep] - Interview Prep Generator
- *
- * CONTENT:
- * - [gmkb_blog] - Blog Post Generator
- * - [gmkb_content_repurpose] - Content Repurposer
- * - [gmkb_press_release] - Press Release Generator
- *
- * SOCIAL/EMAIL:
- * - [gmkb_social_post] - Social Post Generator
- * - [gmkb_email] - Email Writer
- * - [gmkb_newsletter] - Newsletter Writer
- * - [gmkb_youtube_description] - YouTube Description Generator
- * - [gmkb_podcast_notes] - Podcast Show Notes Generator
- * - [gmkb_seo_optimizer] - SEO Content Optimizer
+ * Note: For the most reliable tool embedding, use [gmkb_tool tool="..."] from
+ * class-gmkb-tool-shortcode.php with explicit tool slugs.
  *
  * All shortcodes accept these attributes:
  * - title: Custom widget title
@@ -55,7 +31,7 @@
  *
  * @package GMKB
  * @subpackage Shortcodes
- * @version 2.0.0
+ * @version 2.1.0
  * @since 2.2.0
  */
 
@@ -78,40 +54,53 @@ class GMKB_Free_Tools_Shortcode {
     private $enqueued = false;
 
     /**
-     * Valid tool types
+     * Tool Discovery service
+     * @var GMKB_Tool_Discovery
+     */
+    private $tool_discovery = null;
+
+    /**
+     * Valid tool types (built dynamically from Tool Discovery)
      * @var array
      */
-    private $valid_types = array(
-        // Message Builder
-        'biography',
-        'topics',
-        'questions',
-        'tagline',
-        'guest-intro',
-        'offers',
-        // Value Builder
-        'elevator-pitch',
-        'sound-bite',
-        'authority-hook',
-        'impact-intro',
-        'persona',
-        // Strategy
-        'brand-story',
-        'signature-story',
-        'credibility-story',
-        'framework',
-        'interview-prep',
-        // Content
-        'blog',
-        'content-repurpose',
-        'press-release',
-        // Social/Email
-        'social-post',
-        'email',
-        'newsletter',
-        'youtube-description',
-        'podcast-notes',
-        'seo-optimizer'
+    private $valid_types = null;
+
+    /**
+     * Tools organized by category (built dynamically from Tool Discovery)
+     * @var array
+     */
+    private $tools_by_category = null;
+
+
+    /**
+     * Icon mapping from HeroIcons to Feather icons for directory display
+     * @var array
+     */
+    private $icon_map = array(
+        'UserCircleIcon' => 'user',
+        'ChatBubbleLeftRightIcon' => 'list',
+        'QuestionMarkCircleIcon' => 'help-circle',
+        'TagIcon' => 'tag',
+        'MicrophoneIcon' => 'mic',
+        'CubeIcon' => 'package',
+        'RocketLaunchIcon' => 'trending-up',
+        'SpeakerWaveIcon' => 'volume-2',
+        'BoltIcon' => 'zap',
+        'SparklesIcon' => 'target',
+        'UsersIcon' => 'users',
+        'BookOpenIcon' => 'book-open',
+        'PencilSquareIcon' => 'edit-3',
+        'ShieldCheckIcon' => 'shield',
+        'Squares2X2Icon' => 'grid',
+        'ClipboardDocumentListIcon' => 'clipboard',
+        'DocumentTextIcon' => 'edit',
+        'ArrowPathIcon' => 'refresh-cw',
+        'NewspaperIcon' => 'send',
+        'ShareIcon' => 'share',
+        'EnvelopeIcon' => 'mail',
+        'InboxIcon' => 'inbox',
+        'PlayCircleIcon' => 'youtube',
+        'MagnifyingGlassIcon' => 'search',
     );
 
     /**
@@ -127,201 +116,15 @@ class GMKB_Free_Tools_Shortcode {
     }
 
     /**
-     * Tools organized by category with metadata
-     * @var array
-     */
-    private $tools_by_category = array(
-        'message-builder' => array(
-            'label' => 'Message Builder',
-            'description' => 'Craft your core messaging and professional content',
-            'icon' => 'message-square',
-            'tools' => array(
-                'biography' => array(
-                    'title' => 'Biography Generator',
-                    'description' => 'Create professional bios for media kits, speaker profiles, and websites.',
-                    'icon' => 'user',
-                    'slug' => 'biography-generator'
-                ),
-                'topics' => array(
-                    'title' => 'Topics Generator',
-                    'description' => 'Generate compelling speaking and interview topics.',
-                    'icon' => 'list',
-                    'slug' => 'topics-generator'
-                ),
-                'questions' => array(
-                    'title' => 'Questions Generator',
-                    'description' => 'Create 25 engaging interview questions for podcasts and media.',
-                    'icon' => 'help-circle',
-                    'slug' => 'questions-generator'
-                ),
-                'tagline' => array(
-                    'title' => 'Tagline Generator',
-                    'description' => 'Craft memorable taglines and positioning statements.',
-                    'icon' => 'tag',
-                    'slug' => 'tagline-generator'
-                ),
-                'guest-intro' => array(
-                    'title' => 'Guest Intro Generator',
-                    'description' => 'Write host-ready introductions for podcast appearances.',
-                    'icon' => 'mic',
-                    'slug' => 'guest-intro-generator'
-                ),
-                'offers' => array(
-                    'title' => 'Offers Generator',
-                    'description' => 'Create compelling service packages and offers.',
-                    'icon' => 'package',
-                    'slug' => 'offers-generator'
-                )
-            )
-        ),
-        'value-builder' => array(
-            'label' => 'Value Builder',
-            'description' => 'Define your unique value and authority positioning',
-            'icon' => 'award',
-            'tools' => array(
-                'elevator-pitch' => array(
-                    'title' => 'Elevator Pitch Generator',
-                    'description' => 'Create a compelling 30-second pitch that captures attention.',
-                    'icon' => 'trending-up',
-                    'slug' => 'elevator-pitch-generator'
-                ),
-                'sound-bite' => array(
-                    'title' => 'Sound Bite Generator',
-                    'description' => 'Generate quotable sound bites for media appearances.',
-                    'icon' => 'volume-2',
-                    'slug' => 'sound-bite-generator'
-                ),
-                'authority-hook' => array(
-                    'title' => 'Authority Hook Builder',
-                    'description' => 'Build your unique authority positioning statement.',
-                    'icon' => 'zap',
-                    'slug' => 'authority-hook-builder'
-                ),
-                'impact-intro' => array(
-                    'title' => 'Impact Intro Builder',
-                    'description' => 'Create powerful introductions that showcase your impact.',
-                    'icon' => 'target',
-                    'slug' => 'impact-intro-builder'
-                ),
-                'persona' => array(
-                    'title' => 'Ideal Client Persona',
-                    'description' => 'Define your ideal client avatar with clarity.',
-                    'icon' => 'users',
-                    'slug' => 'persona-generator'
-                )
-            )
-        ),
-        'strategy' => array(
-            'label' => 'Strategy',
-            'description' => 'Develop your brand narrative and frameworks',
-            'icon' => 'compass',
-            'tools' => array(
-                'brand-story' => array(
-                    'title' => 'Brand Story Generator',
-                    'description' => 'Craft your compelling brand origin story.',
-                    'icon' => 'book-open',
-                    'slug' => 'brand-story-generator'
-                ),
-                'signature-story' => array(
-                    'title' => 'Signature Story Generator',
-                    'description' => 'Create your signature transformation story.',
-                    'icon' => 'edit-3',
-                    'slug' => 'signature-story-generator'
-                ),
-                'credibility-story' => array(
-                    'title' => 'Credibility Story Generator',
-                    'description' => 'Build stories that establish your expertise.',
-                    'icon' => 'shield',
-                    'slug' => 'credibility-story-generator'
-                ),
-                'framework' => array(
-                    'title' => 'Framework Builder',
-                    'description' => 'Create your proprietary methodology framework.',
-                    'icon' => 'grid',
-                    'slug' => 'framework-builder'
-                ),
-                'interview-prep' => array(
-                    'title' => 'Interview Prep Generator',
-                    'description' => 'Prepare talking points and answers for interviews.',
-                    'icon' => 'clipboard',
-                    'slug' => 'interview-prep-generator'
-                )
-            )
-        ),
-        'content' => array(
-            'label' => 'Content',
-            'description' => 'Generate long-form content and press materials',
-            'icon' => 'file-text',
-            'tools' => array(
-                'blog' => array(
-                    'title' => 'Blog Post Generator',
-                    'description' => 'Create SEO-optimized blog posts from your expertise.',
-                    'icon' => 'edit',
-                    'slug' => 'blog-generator'
-                ),
-                'content-repurpose' => array(
-                    'title' => 'Content Repurposer',
-                    'description' => 'Transform content into multiple formats.',
-                    'icon' => 'refresh-cw',
-                    'slug' => 'content-repurposer'
-                ),
-                'press-release' => array(
-                    'title' => 'Press Release Generator',
-                    'description' => 'Write professional press releases for announcements.',
-                    'icon' => 'send',
-                    'slug' => 'press-release-generator'
-                )
-            )
-        ),
-        'social-email' => array(
-            'label' => 'Social & Email',
-            'description' => 'Create content for social media and email marketing',
-            'icon' => 'share-2',
-            'tools' => array(
-                'social-post' => array(
-                    'title' => 'Social Post Generator',
-                    'description' => 'Create engaging posts for LinkedIn, Twitter, and more.',
-                    'icon' => 'share',
-                    'slug' => 'social-post-generator'
-                ),
-                'email' => array(
-                    'title' => 'Email Writer',
-                    'description' => 'Write compelling emails that convert.',
-                    'icon' => 'mail',
-                    'slug' => 'email-writer'
-                ),
-                'newsletter' => array(
-                    'title' => 'Newsletter Writer',
-                    'description' => 'Create engaging newsletter content.',
-                    'icon' => 'inbox',
-                    'slug' => 'newsletter-writer'
-                ),
-                'youtube-description' => array(
-                    'title' => 'YouTube Description Generator',
-                    'description' => 'Write SEO-optimized YouTube video descriptions.',
-                    'icon' => 'youtube',
-                    'slug' => 'youtube-description-generator'
-                ),
-                'podcast-notes' => array(
-                    'title' => 'Podcast Show Notes',
-                    'description' => 'Generate comprehensive podcast show notes.',
-                    'icon' => 'headphones',
-                    'slug' => 'podcast-show-notes-generator'
-                ),
-                'seo-optimizer' => array(
-                    'title' => 'SEO Content Optimizer',
-                    'description' => 'Optimize your content for search engines.',
-                    'icon' => 'search',
-                    'slug' => 'seo-optimizer'
-                )
-            )
-        )
-    );
-
-    /**
      * Constructor
      */
     private function __construct() {
+        // Load Tool Discovery service
+        $this->load_tool_discovery();
+
+        // Build tools data from discovery
+        $this->build_tools_data();
+
         // Register the generic shortcode
         add_shortcode('gmkb_free_tool', array($this, 'render'));
 
@@ -329,14 +132,93 @@ class GMKB_Free_Tools_Shortcode {
         add_shortcode('gmkb_tools_directory', array($this, 'render_directory'));
 
         // Register individual shortcodes dynamically for each tool type
-        foreach ($this->valid_types as $type) {
-            $shortcode_tag = 'gmkb_' . str_replace('-', '_', $type);
-            add_shortcode($shortcode_tag, array($this, 'render_from_tag'));
+        if ($this->valid_types) {
+            foreach ($this->valid_types as $type) {
+                $shortcode_tag = 'gmkb_' . str_replace('-', '_', $type);
+                add_shortcode($shortcode_tag, array($this, 'render_from_tag'));
+            }
         }
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB Free Tools Shortcode: Registered ' . (count($this->valid_types) + 2) . ' shortcodes');
+            $type_count = $this->valid_types ? count($this->valid_types) : 0;
+            error_log('GMKB Free Tools Shortcode: Registered ' . ($type_count + 2) . ' shortcodes');
         }
+    }
+
+    /**
+     * Load Tool Discovery service
+     */
+    private function load_tool_discovery() {
+        $discovery_path = GMKB_PLUGIN_DIR . 'includes/services/class-gmkb-tool-discovery.php';
+
+        if (file_exists($discovery_path)) {
+            require_once $discovery_path;
+            $this->tool_discovery = GMKB_Tool_Discovery::instance();
+        }
+    }
+
+    /**
+     * Build tools data from Tool Discovery service
+     */
+    private function build_tools_data() {
+        if (!$this->tool_discovery) {
+            // Fallback to empty arrays if discovery not available
+            $this->valid_types = array();
+            $this->tools_by_category = array();
+            return;
+        }
+
+        $this->valid_types = array();
+        $this->tools_by_category = array();
+
+        // Get categories from discovery
+        $categories = $this->tool_discovery->get_all_categories();
+
+        // Get all tools grouped by category
+        $grouped = $this->tool_discovery->get_tools_grouped_by_category();
+
+        foreach ($grouped as $category_slug => $category_data) {
+            // Build category structure (icon comes from Tool Discovery)
+            $this->tools_by_category[$category_slug] = array(
+                'label' => $category_data['name'],
+                'description' => $category_data['description'],
+                'icon' => isset($category_data['icon']) ? $category_data['icon'] : 'folder',
+                'tools' => array(),
+            );
+
+            // Process tools in this category
+            foreach ($category_data['tools'] as $tool) {
+                // Get metadata for richer display info
+                $metadata = $this->tool_discovery->get_tool_metadata($tool['id']);
+
+                // Derive short type from tool ID (e.g., biography-generator -> biography)
+                $short_type = str_replace('-generator', '', $tool['id']);
+                $short_type = str_replace('-builder', '', $short_type);
+                $short_type = str_replace('-writer', '', $short_type);
+                $short_type = str_replace('-repurposer', '', $short_type);
+                $short_type = str_replace('-optimizer', '', $short_type);
+
+                // Add to valid types
+                $this->valid_types[] = $short_type;
+
+                // Map icon to feather icon format
+                $tool_icon = isset($tool['icon']) ? $tool['icon'] : 'file';
+                if (isset($this->icon_map[$tool_icon])) {
+                    $tool_icon = $this->icon_map[$tool_icon];
+                }
+
+                // Build tool entry
+                $this->tools_by_category[$category_slug]['tools'][$short_type] = array(
+                    'title' => $metadata ? $metadata['name'] : $tool['name'],
+                    'description' => $metadata ? $metadata['shortDescription'] : '',
+                    'icon' => $tool_icon,
+                    'slug' => $tool['id'],
+                );
+            }
+        }
+
+        // Remove duplicates from valid_types
+        $this->valid_types = array_unique($this->valid_types);
     }
 
     /**

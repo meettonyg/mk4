@@ -819,63 +819,32 @@ class GMKB_AI_Controller {
                 error_log('  - User prompt length: ' . strlen($user_prompt));
             }
 
-            // Call AI service directly with messages
-            $api_key = get_option('gmkb_openai_api_key', '');
-
-            if (empty($api_key)) {
+            // Verify AI service is available
+            if (!$this->ai_service) {
                 return new WP_Error(
-                    'api_key_missing',
-                    'OpenAI API key is not configured.',
+                    'service_unavailable',
+                    'AI service is not available.',
                     array('status' => 500)
                 );
             }
 
-            // Make OpenAI API call
-            $response = wp_remote_post('https://api.openai.com/v1/chat/completions', array(
-                'timeout' => 60,
-                'headers' => array(
-                    'Authorization' => 'Bearer ' . $api_key,
-                    'Content-Type' => 'application/json'
-                ),
-                'body' => wp_json_encode(array(
-                    'model' => $model,
-                    'messages' => array(
-                        array('role' => 'system', 'content' => $system_prompt),
-                        array('role' => 'user', 'content' => $user_prompt)
-                    ),
-                    'temperature' => $temperature,
-                    'max_tokens' => $max_tokens
-                ))
+            // Use centralized AI service for API call
+            $api_result = $this->ai_service->call_api($system_prompt, $user_prompt, array(
+                'model' => $model,
+                'temperature' => $temperature,
+                'max_tokens' => $max_tokens
             ));
 
-            if (is_wp_error($response)) {
+            if (!$api_result['success']) {
                 return new WP_Error(
                     'api_error',
-                    'Failed to connect to AI service: ' . $response->get_error_message(),
+                    $api_result['message'],
                     array('status' => 502)
                 );
             }
 
-            $body = json_decode(wp_remote_retrieve_body($response), true);
-
-            if (isset($body['error'])) {
-                return new WP_Error(
-                    'api_error',
-                    'AI service error: ' . ($body['error']['message'] ?? 'Unknown error'),
-                    array('status' => 502)
-                );
-            }
-
-            if (!isset($body['choices'][0]['message']['content'])) {
-                return new WP_Error(
-                    'invalid_response',
-                    'Invalid response from AI service.',
-                    array('status' => 502)
-                );
-            }
-
-            $raw_content = $body['choices'][0]['message']['content'];
-            $tokens_used = isset($body['usage']['total_tokens']) ? $body['usage']['total_tokens'] : null;
+            $raw_content = $api_result['content'];
+            $tokens_used = $api_result['tokens_used'];
 
             // Parse response using the tool's parser function
             if (!is_callable($prompts['parser'])) {

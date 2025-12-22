@@ -25,31 +25,39 @@ const legacyMetaModules = import.meta.glob('../components/generators/**/meta.jso
 
 /**
  * Category configuration for display and ordering
+ *
+ * Note: This configuration mirrors GMKB_Tool_Discovery::$categories in PHP.
+ * Any changes here should be reflected there for consistency.
  */
 const CATEGORY_CONFIG = {
     'message-builder': {
         name: 'Message Builder',
         description: 'Create compelling bios, topics, and core messaging',
+        icon: 'ChatBubbleLeftRightIcon', // Feather: message-square
         order: 1,
     },
     'value-builder': {
         name: 'Value Builder',
         description: 'Craft your elevator pitch, sound bites, and authority positioning',
+        icon: 'TrophyIcon', // Feather: award
         order: 2,
     },
     'strategy': {
         name: 'Strategy',
         description: 'Develop your brand story, frameworks, and interview preparation',
+        icon: 'MapIcon', // Feather: compass
         order: 3,
     },
     'content': {
         name: 'Content',
         description: 'Generate blogs, press releases, and repurposed content',
+        icon: 'DocumentTextIcon', // Feather: file-text
         order: 4,
     },
     'social-email': {
         name: 'Social & Email',
         description: 'Create social posts, emails, newsletters, and show notes',
+        icon: 'ShareIcon', // Feather: share-2
         order: 5,
     },
 };

@@ -56,7 +56,8 @@ class GMKB_AI_Service {
      * Constructor
      */
     public function __construct() {
-        $this->api_key = defined('OPENAI_API_KEY') ? OPENAI_API_KEY : '';
+        // Check constant first, then fall back to WordPress option
+        $this->api_key = defined('OPENAI_API_KEY') ? OPENAI_API_KEY : get_option('gmkb_openai_api_key', '');
         $this->config = new GMKB_AI_Config();
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -66,13 +67,20 @@ class GMKB_AI_Service {
     }
 
     /**
-     * Generate content using OpenAI API
+     * Make a raw API call to OpenAI
      *
-     * @param string $type The type of content (biography, topics, questions, etc.)
-     * @param array $params Generation parameters
-     * @return array Success/error response with content
+     * This is the central method for all OpenAI interactions. It handles:
+     * - API key validation
+     * - Request formatting
+     * - Error handling
+     * - Response parsing
+     *
+     * @param string $system_prompt The system prompt
+     * @param string $user_prompt The user prompt
+     * @param array $settings Optional settings (model, temperature, max_tokens)
+     * @return array Success/error response with raw content
      */
-    public function generate_content($type, $params) {
+    public function call_api($system_prompt, $user_prompt, $settings = array()) {
         // Validate API key
         if (empty($this->api_key)) {
             error_log('GMKB AI Service: Missing OpenAI API key');
@@ -82,28 +90,31 @@ class GMKB_AI_Service {
             );
         }
 
-        // Get system prompt for this type
-        $system_prompt = $this->config->get_system_prompt($type);
-
-        // Build user prompt from params
-        $user_prompt = $this->build_user_prompt($type, $params);
+        // Extract settings with defaults
+        $model = isset($settings['model']) ? $settings['model'] : $this->model;
+        $temperature = isset($settings['temperature']) ? floatval($settings['temperature']) : 0.7;
+        $max_tokens = isset($settings['max_tokens']) ? intval($settings['max_tokens']) : 1000;
+        $timeout = isset($settings['timeout']) ? intval($settings['timeout']) : $this->timeout;
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB AI Service: Generating ' . $type . ' content');
+            error_log('GMKB AI Service: Making API call');
+            error_log('  - Model: ' . $model);
+            error_log('  - System prompt length: ' . strlen($system_prompt));
             error_log('  - User prompt length: ' . strlen($user_prompt));
         }
 
-        // Make API request
+        // Build request body
         $body = wp_json_encode(array(
-            'model' => $this->model,
+            'model' => $model,
             'messages' => array(
                 array('role' => 'system', 'content' => $system_prompt),
                 array('role' => 'user', 'content' => $user_prompt)
             ),
-            'temperature' => $this->config->get_temperature($type),
-            'max_tokens' => $this->config->get_max_tokens($type)
+            'temperature' => $temperature,
+            'max_tokens' => $max_tokens
         ));
 
+        // Make API request
         $response = wp_remote_post($this->api_url, array(
             'method' => 'POST',
             'headers' => array(
@@ -111,7 +122,7 @@ class GMKB_AI_Service {
                 'Content-Type' => 'application/json',
             ),
             'body' => $body,
-            'timeout' => $this->timeout,
+            'timeout' => $timeout,
         ));
 
         // Handle request error
@@ -157,24 +168,68 @@ class GMKB_AI_Service {
         }
 
         $raw_content = $data['choices'][0]['message']['content'];
+        $tokens_used = isset($data['usage']['total_tokens']) ? $data['usage']['total_tokens'] : null;
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB AI Service: API call successful');
+            error_log('  - Tokens used: ' . ($tokens_used ?? 'unknown'));
+        }
+
+        return array(
+            'success' => true,
+            'content' => $raw_content,
+            'tokens_used' => $tokens_used,
+            'model' => $model
+        );
+    }
+
+    /**
+     * Generate content using OpenAI API
+     *
+     * Uses the legacy config-based prompt system for backward compatibility.
+     *
+     * @param string $type The type of content (biography, topics, questions, etc.)
+     * @param array $params Generation parameters
+     * @return array Success/error response with content
+     */
+    public function generate_content($type, $params) {
+        // Get system prompt for this type
+        $system_prompt = $this->config->get_system_prompt($type);
+
+        // Build user prompt from params
+        $user_prompt = $this->build_user_prompt($type, $params);
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB AI Service: Generating ' . $type . ' content');
+        }
+
+        // Use centralized API call
+        $result = $this->call_api($system_prompt, $user_prompt, array(
+            'temperature' => $this->config->get_temperature($type),
+            'max_tokens' => $this->config->get_max_tokens($type)
+        ));
+
+        // Return error if API call failed
+        if (!$result['success']) {
+            return $result;
+        }
+
+        $raw_content = $result['content'];
 
         // Format content based on type
         $formatted_content = $this->format_response($raw_content, $type, $params);
 
-        // Get token usage
-        $tokens_used = isset($data['usage']['total_tokens']) ? $data['usage']['total_tokens'] : null;
-
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('GMKB AI Service: Generation successful');
-            error_log('  - Tokens used: ' . ($tokens_used ?? 'unknown'));
+            error_log('  - Tokens used: ' . ($result['tokens_used'] ?? 'unknown'));
         }
 
         return array(
             'success' => true,
             'content' => $formatted_content,
             'raw_content' => $raw_content,
-            'tokens_used' => $tokens_used,
-            'model' => $this->model
+            'tokens_used' => $result['tokens_used'],
+            'model' => $result['model']
         );
     }
 
