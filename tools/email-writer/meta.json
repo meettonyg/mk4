@@ -42,6 +42,27 @@
   "landingContent": {
     "heroTagline": "Write Emails That Get Responses",
     "heroSubtitle": "Generate professional, persuasive emails that achieve your communication goals and build relationships.",
+    "formula": "[PERSONALIZED HOOK] + [VALUE PROPOSITION] + [CLEAR ASK] + [EASY CTA] = Response-Worthy Email",
+    "tips": [
+      "Personalize the first line - reference something specific to the recipient to show you did your research",
+      "Lead with value - explain what's in it for them before asking for anything",
+      "One clear ask - don't confuse recipients with multiple requests; pick your priority",
+      "Make responding easy - suggest specific times, yes/no questions, or simple next steps"
+    ],
+    "examples": [
+      {
+        "title": "Cold Outreach",
+        "content": "Subject: Quick question about [their recent post]\n\nHi [Name], I saw your post about [topic] - the point about [specific insight] really resonated. I help [target audience] with [outcome]. Would a 15-minute call next week make sense?"
+      },
+      {
+        "title": "Follow-Up",
+        "content": "Subject: Following up\n\nHi [Name], wanted to bump this to the top of your inbox. I know you're busy - would a quick reply with 'not now' or 'let's talk' help me know where we stand?"
+      },
+      {
+        "title": "Partnership Proposal",
+        "content": "Subject: Collaboration idea for [their project]\n\nHi [Name], I've been following [their work] and have an idea that could [benefit]. I'd love to share a 2-minute proposal. Would that be worth your time?"
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,

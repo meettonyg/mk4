@@ -42,6 +42,31 @@
   "landingContent": {
     "heroTagline": "Become the Expert Everyone Quotes",
     "heroSubtitle": "Generate memorable sound bites and quotable phrases that journalists share and audiences remember.",
+    "formula": "10-25 words + Tweet-worthy + Stands alone without context + Memorable and quotable",
+    "tips": [
+      "Keep it short - 10-25 words maximum for maximum impact",
+      "Make it shareable - write for Twitter, not for textbooks",
+      "Stand alone - each sound bite should work without explanation",
+      "Use vivid language - avoid generic platitudes and corporate speak"
+    ],
+    "examples": [
+      {
+        "title": "Network Value",
+        "content": "Your network isn't who you know. It's who knows what you're capable of."
+      },
+      {
+        "title": "Strategy vs Execution",
+        "content": "Strategy without execution is a daydream. Execution without strategy is a nightmare."
+      },
+      {
+        "title": "Action Over Ideas",
+        "content": "Most people don't lack ideas. They lack the courage to act on them."
+      },
+      {
+        "title": "Growth Mindset",
+        "content": "The best time to plant a tree was 20 years ago. The second best time is right now."
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,

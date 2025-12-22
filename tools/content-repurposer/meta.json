@@ -42,6 +42,27 @@
   "landingContent": {
     "heroTagline": "Get 10x More From Every Piece of Content",
     "heroSubtitle": "Transform your existing content into multiple formats optimized for different platforms and audiences.",
+    "formula": "[SOURCE CONTENT] → [EXTRACT KEY POINTS] → [ADAPT FOR PLATFORM] → [OPTIMIZE FORMAT] = Multiplied Content",
+    "tips": [
+      "Start with long-form - it's easier to break down than build up; podcasts and blogs make great source material",
+      "Extract 3-5 key insights - each insight can become its own piece of content",
+      "Adapt, don't copy - each platform has different norms; LinkedIn isn't Twitter isn't Instagram",
+      "Create a content calendar - plan which piece goes where and when for maximum impact"
+    ],
+    "examples": [
+      {
+        "title": "Podcast to Multi-Format",
+        "content": "1 podcast episode → Blog post recap → 5 LinkedIn posts → Twitter thread → Email newsletter → 3 Instagram quotes → YouTube Shorts"
+      },
+      {
+        "title": "Blog to Social",
+        "content": "'5 Steps to...' blog → Each step becomes a LinkedIn carousel slide → Thread on Twitter → Email to subscribers → Quote graphics for Instagram"
+      },
+      {
+        "title": "Webinar to Content",
+        "content": "60-min webinar → 3 blog posts → 15 social posts → Lead magnet PDF → Email nurture sequence → Podcast episode"
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,

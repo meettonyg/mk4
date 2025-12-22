@@ -42,6 +42,27 @@
   "landingContent": {
     "heroTagline": "Create Your Go-To Story That Sells",
     "heroSubtitle": "Develop a memorable signature story that demonstrates your expertise and makes your methodology unforgettable.",
+    "formula": "[SITUATION] → [COMPLICATION] → [TURNING POINT] → [RESOLUTION] → [LESSON] = Signature Story",
+    "tips": [
+      "Start in the middle of the action - skip the setup and drop the listener into the tension",
+      "Include specific details - names, numbers, and sensory details make stories believable",
+      "Show the moment of change - what was the insight or decision that changed everything?",
+      "End with a universal lesson - make sure the takeaway applies to your listener's situation too"
+    ],
+    "examples": [
+      {
+        "title": "Client Transformation Story",
+        "content": "When I met Sarah, she was working 80-hour weeks and her business was plateaued at $400K. Six months later, she was working 40 hours and had crossed $1M. The difference? We eliminated 80% of what she thought was essential."
+      },
+      {
+        "title": "Personal Origin Story",
+        "content": "I was sitting in a hospital bed, realizing I'd sacrificed my health for success. That moment changed everything. Now I help executives build wealth without burning out."
+      },
+      {
+        "title": "Methodology Discovery Story",
+        "content": "After my third failed product launch, I finally saw the pattern. I'd been building what I wanted, not what they needed. That insight became the core of my Customer-First Framework."
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,

@@ -42,6 +42,31 @@
   "landingContent": {
     "heroTagline": "Lead with Your Results, Not Your Resume",
     "heroSubtitle": "Create powerful introductions that immediately communicate the transformation you deliver and the results you achieve.",
+    "formula": "I've [WHERE]. My mission is [WHY].",
+    "tips": [
+      "Lead with impact - start with the transformation you create, not your title",
+      "Quantify when possible - numbers make results tangible and memorable",
+      "Focus on their gain - frame everything in terms of what the audience gets",
+      "Keep it conversational - your intro should feel natural, not rehearsed"
+    ],
+    "examples": [
+      {
+        "title": "SaaS Growth Expert",
+        "content": "I've helped 200+ SaaS founders break through the million-dollar ceiling. My mission is to make sustainable growth accessible to every ambitious entrepreneur."
+      },
+      {
+        "title": "Business Coach",
+        "content": "I've guided executives through $50M+ in successful exits. My mission is to help leaders build businesses that create freedom, not chains."
+      },
+      {
+        "title": "Author & Speaker",
+        "content": "I've shared the stage with Tony Robbins and written for Forbes. My mission is to give every leader the communication tools they need to inspire action."
+      },
+      {
+        "title": "Nonprofit Leader",
+        "content": "I've helped organizations raise over $100M in funding. My mission is to ensure great causes never struggle for resources."
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,

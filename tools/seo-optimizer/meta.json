@@ -42,6 +42,27 @@
   "landingContent": {
     "heroTagline": "Optimize Your Content for Search Engines",
     "heroSubtitle": "Generate compelling meta titles, descriptions, and keyword strategies that improve rankings and drive organic traffic.",
+    "formula": "[PRIMARY KEYWORD] + [COMPELLING TITLE] + [BENEFIT-DRIVEN META] + [NATURAL INTEGRATION] = SEO-Optimized Content",
+    "tips": [
+      "Front-load keywords in titles - put the most important terms in the first 50 characters",
+      "Write for clicks, not just ranking - a higher CTR can improve rankings over time",
+      "Include a CTA in meta descriptions - tell searchers what they'll get or learn",
+      "Match search intent - understand if searchers want to learn, buy, or find something specific"
+    ],
+    "examples": [
+      {
+        "title": "Blog Post SEO",
+        "content": "Title: 'How to Start a Podcast in 2024: Complete Beginner's Guide' (60 chars)\nMeta: 'Learn how to start a podcast from scratch. Step-by-step guide covering equipment, hosting, and launch strategy. Start your show today.' (155 chars)"
+      },
+      {
+        "title": "Service Page SEO",
+        "content": "Title: 'Executive Coaching for Tech Leaders | [Brand Name]' (52 chars)\nMeta: 'Executive coaching designed for tech leaders. 1:1 programs that help CTOs and VPs lead with confidence. Book your discovery call today.' (148 chars)"
+      },
+      {
+        "title": "Product Page SEO",
+        "content": "Title: 'Podcast Guest Booking System | Automated Outreach Tool' (58 chars)\nMeta: 'Book 10x more podcast interviews with our automated outreach system. Templates, tracking, and follow-ups built in. Try free for 14 days.' (150 chars)"
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,

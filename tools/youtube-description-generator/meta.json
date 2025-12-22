@@ -42,6 +42,27 @@
   "landingContent": {
     "heroTagline": "YouTube Descriptions That Get More Views",
     "heroSubtitle": "Generate SEO-optimized video descriptions with timestamps, CTAs, and keywords that help your videos get discovered.",
+    "formula": "[HOOK + KEYWORDS] + [TIMESTAMPS] + [RESOURCES] + [CTAs] + [LINKS] = Optimized Description",
+    "tips": [
+      "Front-load keywords - the first 2-3 sentences appear in search results; make them count",
+      "Use timestamps for chapters - format as 0:00 - Introduction to enable YouTube's chapter feature",
+      "Include one primary CTA - subscribe, comment, or check links; pick your priority",
+      "Add relevant links - resources mentioned, social profiles, and related videos"
+    ],
+    "examples": [
+      {
+        "title": "Tutorial Video",
+        "content": "In this video, I show you exactly how to [specific outcome] in [timeframe]. Whether you're [beginner/intermediate], these [number] steps will help you [benefit].\n\n⏱️ TIMESTAMPS\n0:00 - Introduction\n1:23 - Step 1...\n\n🔗 RESOURCES\n[Links mentioned]"
+      },
+      {
+        "title": "Interview/Podcast",
+        "content": "[Guest name] joins me to discuss [topic]. We cover [key point 1], [key point 2], and [key point 3].\n\n👤 ABOUT [GUEST]\n[Brief bio + links]\n\n⏱️ TIMESTAMPS\n0:00 - Who is [Guest]?\n..."
+      },
+      {
+        "title": "Vlog/Story",
+        "content": "[Hook that creates curiosity]. In this video, I take you through [experience] and share [insight or lesson].\n\n📌 KEY MOMENTS\n0:00 - [Teaser]\n2:30 - [Highlight]\n\n🔔 Subscribe for more [content type]"
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,

@@ -42,6 +42,27 @@
   "landingContent": {
     "heroTagline": "Tell Your Story in a Way That Connects",
     "heroSubtitle": "Create a compelling brand narrative that explains your 'why' and builds emotional connections with your audience.",
+    "formula": "[CHALLENGE/ORIGIN] → [TRANSFORMATION] → [MISSION/PURPOSE] = Compelling Brand Story",
+    "tips": [
+      "Start with tension - every great story begins with a challenge or turning point",
+      "Show vulnerability - authenticity builds connection more than perfection",
+      "Connect to your audience - your story should resonate with their journey too",
+      "End with purpose - clarify why you do what you do and who you serve"
+    ],
+    "examples": [
+      {
+        "title": "Consultant Origin",
+        "content": "I spent 15 years in corporate, watching talented leaders burn out. After my own wake-up call, I left to help executives build sustainable success without sacrificing everything else."
+      },
+      {
+        "title": "Founder Journey",
+        "content": "When my startup failed in 2015, I lost everything except the lessons. Now I help first-time founders avoid the mistakes that cost me millions."
+      },
+      {
+        "title": "Career Pivot",
+        "content": "As a former journalist, I saw countless experts with powerful messages struggle to get media attention. Now I help thought leaders become the sources journalists want to quote."
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,

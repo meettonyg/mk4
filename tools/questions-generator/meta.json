@@ -42,6 +42,27 @@
   "landingContent": {
     "heroTagline": "Prepare for Every Interview with Confidence",
     "heroSubtitle": "Generate thoughtful interview questions and compelling answers tailored to your expertise and interview context.",
+    "formula": "Balance specific questions that demonstrate expertise with story-based questions that engage the audience.",
+    "tips": [
+      "Frame questions for stories - listeners connect with narratives, not lectures",
+      "Show range and depth - mix strategic big-picture questions with tactical details",
+      "Include transformation questions - let guests describe before/after scenarios",
+      "Prepare for the unexpected - practice pivoting any question to your key messages"
+    ],
+    "examples": [
+      {
+        "title": "Origin Questions",
+        "content": "What led you to develop this approach? • How did you discover this common mistake? • What was the turning point in your career?"
+      },
+      {
+        "title": "Process Questions",
+        "content": "Can you walk us through your step-by-step approach? • What does your process look like from start to finish? • How do you typically begin working with a new client?"
+      },
+      {
+        "title": "Results Questions",
+        "content": "What kind of results have your clients seen? • How does success look different after implementation? • What's the most surprising outcome you've witnessed?"
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,

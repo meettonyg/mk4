@@ -42,6 +42,27 @@
   "landingContent": {
     "heroTagline": "Know Your Audience Inside and Out",
     "heroSubtitle": "Generate detailed personas that reveal your ideal clients' pain points, desires, and the exact language that moves them to action.",
+    "formula": "[DEMOGRAPHIC] + [PSYCHOGRAPHIC] + [PAIN POINTS] + [DESIRED OUTCOMES] = Complete Persona",
+    "tips": [
+      "Be specific - 'busy executives' is too vague; 'VP of Sales at B2B SaaS companies' is actionable",
+      "Include emotional drivers - what keeps them up at night? What would make them feel successful?",
+      "Map the journey - understand where they are now and where they want to be",
+      "Use their language - capture the exact words they use to describe their challenges"
+    ],
+    "examples": [
+      {
+        "title": "Overwhelmed Entrepreneur",
+        "content": "Sarah, 38, owns a marketing agency. Works 60+ hours/week but revenue plateaued at $500K. Fears burnout. Wants systems that let her scale without sacrificing family time."
+      },
+      {
+        "title": "Ambitious Sales Leader",
+        "content": "Marcus, 42, VP of Sales at a SaaS startup. Team of 12 underperforming. Pressure from board. Wants proven playbooks to hit aggressive growth targets."
+      },
+      {
+        "title": "First-Time Author",
+        "content": "Jennifer, 45, consultant with 20 years experience. Wants to write her first book. Overwhelmed by the process. Needs a clear roadmap from idea to bestseller."
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,

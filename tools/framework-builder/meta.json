@@ -42,6 +42,27 @@
   "landingContent": {
     "heroTagline": "Turn Your Expertise Into a Proprietary Framework",
     "heroSubtitle": "Develop a branded methodology that differentiates you, establishes thought leadership, and creates intellectual property.",
+    "formula": "[MEMORABLE NAME] + [3-5 STEPS] + [CLEAR OUTCOMES] = Proprietary Framework",
+    "tips": [
+      "Make it memorable - use acronyms, alliteration, or metaphors (SMART goals, The 5 C's)",
+      "Keep it simple - 3-5 steps is ideal; enough depth to be valuable, simple enough to remember",
+      "Define outcomes - each step should have a clear deliverable or transformation",
+      "Make it teachable - a great framework can be explained in 60 seconds"
+    ],
+    "examples": [
+      {
+        "title": "The SCALE Method",
+        "content": "Strategy → Capacity → Automation → Leadership → Exit. A 5-step framework for building a sellable business."
+      },
+      {
+        "title": "The 3P Framework",
+        "content": "Position → Promote → Profit. A simple system for monetizing your expertise through speaking."
+      },
+      {
+        "title": "The Authority Ladder",
+        "content": "Visibility → Credibility → Authority → Legacy. The progression every thought leader follows to lasting influence."
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,

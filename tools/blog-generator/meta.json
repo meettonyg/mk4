@@ -42,6 +42,27 @@
   "landingContent": {
     "heroTagline": "Create Blog Content That Establishes Authority",
     "heroSubtitle": "Generate well-structured blog posts and articles that showcase your expertise and engage your target audience.",
+    "formula": "[HOOK] + [PROBLEM] + [SOLUTION STEPS] + [EXAMPLES] + [CTA] = Engaging Blog Post",
+    "tips": [
+      "Hook them in the first line - you have 3 seconds to earn their attention",
+      "Use subheadings generously - most readers scan before they commit to reading",
+      "Include one clear takeaway - every post should answer 'so what?' for the reader",
+      "End with a specific CTA - don't let readers leave without knowing their next step"
+    ],
+    "examples": [
+      {
+        "title": "How-To Post",
+        "content": "Title: '5 Steps to Landing Your First Podcast Interview' — Hook: 'I landed 47 podcast interviews in 6 months with zero connections in the industry. Here's the exact system.'"
+      },
+      {
+        "title": "Thought Leadership Post",
+        "content": "Title: 'Why Most Business Advice Is Wrong' — Hook: 'The productivity advice that built my first business nearly destroyed my second one.'"
+      },
+      {
+        "title": "Case Study Post",
+        "content": "Title: 'How We Grew From $0 to $1M in 12 Months' — Hook: 'Everyone said we needed funding. We proved them wrong with $500 and a simple framework.'"
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,

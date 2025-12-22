@@ -42,6 +42,27 @@
   "landingContent": {
     "heroTagline": "Create Social Posts That Stop the Scroll",
     "heroSubtitle": "Generate platform-optimized social media content that engages your audience and grows your following.",
+    "formula": "[HOOK] + [VALUE/STORY] + [INSIGHT] + [CTA] = Engaging Social Post",
+    "tips": [
+      "Lead with the hook - the first line determines if anyone reads the rest",
+      "One idea per post - don't try to cover everything; depth beats breadth",
+      "Write for scanning - use line breaks, short sentences, and white space",
+      "End with engagement - ask a question or invite a specific response"
+    ],
+    "examples": [
+      {
+        "title": "LinkedIn Hook",
+        "content": "I got fired 3 times before I was 30.\n\nEach time, I thought my career was over.\n\nEach time, I was wrong.\n\nHere's what I learned about resilience that nobody talks about:"
+      },
+      {
+        "title": "Twitter Thread Opener",
+        "content": "I spent $50,000 on courses before I learned this:\n\nThe best business advice is free.\n\nHere are 10 lessons that cost me nothing but changed everything 🧵"
+      },
+      {
+        "title": "Instagram Caption",
+        "content": "They told me I was 'too young' to be taken seriously.\n\nSo I built proof instead of asking for permission.\n\n3 years later, Fortune 500 companies ask for my advice.\n\nAge is a number. Results are everything."
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,

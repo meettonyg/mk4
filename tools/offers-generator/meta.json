@@ -42,6 +42,27 @@
   "landingContent": {
     "heroTagline": "Articulate Your Value with Compelling Offers",
     "heroSubtitle": "Generate professional service descriptions and product offerings that clearly communicate your value and drive conversions.",
+    "formula": "[FREE OFFER] → [LOW-TICKET OFFER] → [PREMIUM OFFER] = Complete Value Ladder",
+    "tips": [
+      "Lead with value - focus on transformation, not transaction",
+      "Create natural progression - each offer should lead to the next",
+      "Make it podcast-specific - offers for listeners should feel exclusive",
+      "Include clear next steps - remove all friction from taking action"
+    ],
+    "examples": [
+      {
+        "title": "Lead Generation",
+        "content": "Free: '7-Day Lead Gen Challenge' eBook • Low: $47 Templates Bundle • Premium: $2,500 Done-For-You Funnel Setup"
+      },
+      {
+        "title": "Consulting",
+        "content": "Free: Strategy Assessment Call • Low: $97/mo Group Coaching • Premium: $5,000 VIP Strategy Day"
+      },
+      {
+        "title": "Coaching",
+        "content": "Free: 'Mindset Mastery' PDF Guide • Low: $197 Self-Paced Course • Premium: $10,000 1:1 Coaching Package"
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,

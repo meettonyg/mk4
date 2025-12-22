@@ -42,6 +42,27 @@
   "landingContent": {
     "heroTagline": "Show Notes That Turn Browsers Into Listeners",
     "heroSubtitle": "Generate comprehensive podcast show notes with summaries, timestamps, and key takeaways that help listeners find and engage with your episodes.",
+    "formula": "[EPISODE SUMMARY] + [GUEST BIO] + [KEY TAKEAWAYS] + [TIMESTAMPS] + [RESOURCES] = Complete Show Notes",
+    "tips": [
+      "Write for scanners - most people skim; use bullet points and clear headers",
+      "Hook with the outcome - lead with what listeners will learn or gain, not just the topic",
+      "Include quotable moments - pull out the best one-liners for social sharing",
+      "SEO matters - search engines can't index audio; your notes are how episodes get found"
+    ],
+    "examples": [
+      {
+        "title": "Interview Episode",
+        "content": "SUMMARY: [Guest] shares how they [achieved outcome]. We discuss [topic 1], [topic 2], and why most people [common mistake].\n\nKEY TAKEAWAYS:\n• [Insight 1]\n• [Insight 2]\n• [Insight 3]\n\nABOUT [GUEST]: [Bio + links]"
+      },
+      {
+        "title": "Solo Episode",
+        "content": "SUMMARY: In this episode, I break down my [framework/process] for [outcome]. You'll learn the [number] steps to [benefit], even if [common objection].\n\n3 THINGS YOU'LL LEARN:\n1. [Takeaway 1]\n2. [Takeaway 2]\n3. [Takeaway 3]"
+      },
+      {
+        "title": "Roundup Episode",
+        "content": "SUMMARY: I've compiled the best advice from [X] guests on [topic]. These are the patterns that separate [successful outcome] from [failure].\n\nFEATURED GUESTS:\n• [Guest 1] on [their topic]\n• [Guest 2] on [their topic]"
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,

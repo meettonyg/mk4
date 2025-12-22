@@ -42,6 +42,31 @@
   "landingContent": {
     "heroTagline": "Craft Taglines That Stick in People's Minds",
     "heroSubtitle": "Generate memorable headlines, slogans, and value propositions that instantly communicate your unique value.",
+    "formula": "[WHO you help] + [WHAT you do] + [HOW you're unique]",
+    "tips": [
+      "Keep it short - the best taglines are under 10 words",
+      "Focus on transformation, not features - what changes for your client?",
+      "Avoid jargon - use language your ideal audience immediately understands",
+      "Make it memorable - use rhythm, alliteration, or unexpected phrasing"
+    ],
+    "examples": [
+      {
+        "title": "Problem-Focused",
+        "content": "Profit Without Chaos • Ending Marketing Overwhelm • Scaling Without Sacrifice"
+      },
+      {
+        "title": "Solution-Focused",
+        "content": "The Scaling Framework • Systems That Stick • Growth Made Simple"
+      },
+      {
+        "title": "Outcome-Focused",
+        "content": "Freedom Through Systems • Million-Dollar Results • Revenue on Repeat"
+      },
+      {
+        "title": "Authority-Focused",
+        "content": "The Growth Expert • Trusted by 500+ CEOs • The Go-To Strategy Partner"
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,

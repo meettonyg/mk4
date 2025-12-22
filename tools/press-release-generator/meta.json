@@ -42,6 +42,27 @@
   "landingContent": {
     "heroTagline": "Create Press Releases Journalists Actually Read",
     "heroSubtitle": "Generate professional, AP-style press releases that are ready for media distribution and news coverage.",
+    "formula": "[HEADLINE] + [DATELINE + LEAD] + [SUPPORTING DETAILS] + [QUOTES] + [BOILERPLATE] = AP-Style Press Release",
+    "tips": [
+      "Lead with the news - put the most important information in the first paragraph",
+      "Write for journalists - they're busy; make it easy to copy and paste your quotes",
+      "Include a strong quote - this is often what gets used; make it quotable",
+      "Keep it under 500 words - longer releases rarely get read completely"
+    ],
+    "examples": [
+      {
+        "title": "Product Launch",
+        "content": "HEADLINE: [Company] Launches [Product] to Help [Audience] Achieve [Outcome] — LEAD: [City, Date] — [Company] today announced the launch of [Product], a new solution that helps [audience] [achieve specific outcome]."
+      },
+      {
+        "title": "Partnership Announcement",
+        "content": "HEADLINE: [Company A] Partners with [Company B] to Expand [Service/Market] — QUOTE: 'This partnership brings together [Company A's strength] with [Company B's strength] to deliver unprecedented value to [target audience].'"
+      },
+      {
+        "title": "Award/Recognition",
+        "content": "HEADLINE: [Company] Named to [List/Award] for [Achievement] — LEAD: [Company], a leader in [industry], has been recognized by [organization] for [specific achievement]."
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,

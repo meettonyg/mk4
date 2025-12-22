@@ -42,6 +42,27 @@
   "landingContent": {
     "heroTagline": "Show Your Expertise Through Powerful Stories",
     "heroSubtitle": "Create credibility stories that demonstrate your authority and build trust with potential clients through proven results.",
+    "formula": "[SITUATION] → [ACTION] → [RESULT] = Credibility Story",
+    "tips": [
+      "Lead with the client's challenge - make the listener see themselves in the story",
+      "Be specific - vague results feel fabricated; specific numbers build trust",
+      "Show, don't tell - let the outcomes demonstrate your expertise",
+      "Keep it humble - frame success as the client's win, not your brilliance"
+    ],
+    "examples": [
+      {
+        "title": "Results-Based",
+        "content": "A SaaS founder came to me stuck at $800K ARR for two years. Within 6 months of implementing our growth system, they crossed $2M and hired their first executive team."
+      },
+      {
+        "title": "Transformation-Based",
+        "content": "I worked with an executive who was brilliant but invisible. After our authority positioning program, she landed a TEDx talk, a book deal, and three board seats."
+      },
+      {
+        "title": "Recognition-Based",
+        "content": "When Forbes featured our methodology, they called it 'the most practical framework for scaling expertise into a seven-figure business.'"
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,

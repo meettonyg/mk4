@@ -43,6 +43,27 @@
   "landingContent": {
     "heroTagline": "Generate Speaking Topics That Captivate Your Audience",
     "heroSubtitle": "Create compelling podcast episodes, keynotes, and presentations with AI-powered topic suggestions tailored to your expertise.",
+    "formula": "Provide solutions that focus on one concept per topic while remaining general enough to expand upon.",
+    "tips": [
+      "Focus on value for listeners - great topics provide actionable solutions, not promotion",
+      "One concept per topic - each topic should focus on a single idea, like a blog post",
+      "Tailor to the audience - adjust topics to align with each podcast's specific listeners",
+      "Lead with transformation - frame topics around the change your audience will experience"
+    ],
+    "examples": [
+      {
+        "title": "Marketing Podcast",
+        "content": "The 3-step framework for landing high-profile podcast interviews • How to craft a compelling story that makes you memorable • Converting podcast appearances into high-ticket clients"
+      },
+      {
+        "title": "Business Growth Podcast",
+        "content": "The 5 most common mistakes when scaling SaaS businesses • Building a team that can operate without your daily involvement • Creating systems that allow for sustainable growth"
+      },
+      {
+        "title": "Author/Creator Podcast",
+        "content": "Turning your expertise into a bestselling book • Building an audience that eagerly awaits your content • Leveraging your book to open doors to speaking and media"
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,

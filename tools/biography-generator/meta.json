@@ -39,11 +39,30 @@
     ],
     "canonicalPath": "/tools/biography-generator/"
   },
-  "landing": {
-    "hero": {
-      "title": "Create Professional Biographies That Make an Impact",
-      "subtitle": "Generate polished, compelling bios for speaker profiles, media kits, and professional pages with AI-powered precision."
-    },
+  "landingContent": {
+    "heroTagline": "Create Professional Biographies That Make an Impact",
+    "heroSubtitle": "Generate polished, compelling bios for speaker profiles, media kits, and professional pages with AI-powered precision.",
+    "formula": "I help [WHO] achieve [RESULT] when [WHEN] through [HOW]. I've [WHERE]. My mission is to [WHY].",
+    "tips": [
+      "Start with your Authority Hook - clearly identify WHO you help and WHAT results you deliver",
+      "Include specific, quantifiable achievements rather than vague claims",
+      "Connect your work to a larger purpose or mission",
+      "Short bio (50-75 words) for social; Medium (100-150) for speaker intros; Long (200-300) for detailed profiles"
+    ],
+    "examples": [
+      {
+        "title": "Business Coach",
+        "content": "I help ambitious entrepreneurs build scalable businesses without burning out. Through my proven systems, I've guided over 200 business owners to achieve 6-figure growth while working fewer hours. My mission is to prove that business success and personal fulfillment aren't mutually exclusive."
+      },
+      {
+        "title": "Marketing Consultant",
+        "content": "I help B2B companies generate qualified leads through strategic digital marketing. I've helped over 150 companies achieve an average 300% increase in lead generation within 90 days. My mission is to democratize effective marketing strategies for businesses of all sizes."
+      },
+      {
+        "title": "Author & Speaker",
+        "content": "I help thought leaders transform their expertise into bestselling books and powerful speaking opportunities. As the author of three Amazon bestsellers, I've helped over 500 experts become published authors. My mission is to amplify voices that can make a positive impact."
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,

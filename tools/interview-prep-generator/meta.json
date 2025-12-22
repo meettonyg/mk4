@@ -42,6 +42,27 @@
   "landingContent": {
     "heroTagline": "Walk Into Every Interview Fully Prepared",
     "heroSubtitle": "Generate comprehensive interview guides with anticipated questions, strategic answers, and key messages that ensure you shine.",
+    "formula": "[CONTEXT] + [KEY MESSAGES] + [ANTICIPATED QUESTIONS] + [BRIDGE PHRASES] = Complete Interview Prep",
+    "tips": [
+      "Know your 3 key messages - everything you say should lead back to these core points",
+      "Prepare bridge phrases - learn to pivot from any question back to your messages",
+      "Practice out loud - knowing your answers intellectually is different from delivering them naturally",
+      "Research the host - understanding their style helps you adapt your delivery"
+    ],
+    "examples": [
+      {
+        "title": "Podcast Interview Prep",
+        "content": "Key Messages: 1) Systems beat willpower 2) Start before you're ready 3) Progress over perfection. Bridge: 'What I've found is...' and 'The real insight here is...'"
+      },
+      {
+        "title": "Press Interview Prep",
+        "content": "Anticipated tough question: 'Isn't this just repackaged advice?' Answer: 'Great question. What makes this different is the framework - it's been tested with 500+ clients across industries.'"
+      },
+      {
+        "title": "Panel Discussion Prep",
+        "content": "Opening statement: '20 years ago, I made the same mistake every first-time founder makes. Today, I help them skip that painful lesson.'"
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,

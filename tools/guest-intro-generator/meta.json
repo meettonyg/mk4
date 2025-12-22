@@ -42,6 +42,27 @@
   "landingContent": {
     "heroTagline": "Make Every Introduction Memorable",
     "heroSubtitle": "Generate polished introductions that podcast hosts and event MCs can read to welcome you perfectly.",
+    "formula": "[Opening Hook] + [Guest Credentials] + [Relevance to Audience] + [Warm Welcome]",
+    "tips": [
+      "Start with an engaging hook - a question, statistic, or statement that captures attention",
+      "Establish credibility - highlight the most compelling credentials relevant to the topic",
+      "Connect to the audience - clarify why the guest and subject matter matter to listeners",
+      "End with a warm welcome - close with enthusiasm that transitions smoothly into conversation"
+    ],
+    "examples": [
+      {
+        "title": "Podcast Guest Intro",
+        "content": "Have you ever wondered why some businesses scale effortlessly while others stay stuck? Today's guest has cracked the code. Sarah Chen has helped over 200 SaaS founders reach $1M ARR, and she's here to share the exact framework she uses. Please welcome Sarah Chen!"
+      },
+      {
+        "title": "Keynote Speaker Intro",
+        "content": "In a world where 80% of businesses fail within five years, our next speaker has built three successful exits. James Rivera is the author of 'Scale Smart' and has been featured in Forbes, Inc, and Entrepreneur. He's here to share the three decisions that make or break every business."
+      },
+      {
+        "title": "Panel Introduction",
+        "content": "Our next panelist brings a unique perspective to today's discussion. Dr. Maya Patel has spent 15 years researching consumer behavior and advises Fortune 500 companies on market positioning. Welcome, Dr. Patel!"
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,

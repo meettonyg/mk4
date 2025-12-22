@@ -42,6 +42,28 @@
   "landingContent": {
     "heroTagline": "Deliver Your Value in 30 Seconds Flat",
     "heroSubtitle": "Create a compelling elevator pitch that captures attention and opens doors to new opportunities.",
+    "formula": "[Hook] → [Problem You Solve] → [Your Unique Solution] → [Proof/Credibility] → [Call to Action]",
+    "tips": [
+      "Start with a hook that grabs attention - a surprising stat, question, or bold statement",
+      "Clearly articulate the problem you solve - make them feel the pain",
+      "Highlight your unique approach - what makes you different?",
+      "Include credibility markers - numbers, clients, or results",
+      "End with a clear call to action or conversation opener"
+    ],
+    "examples": [
+      {
+        "title": "30-Second Pitch",
+        "content": "You know how most entrepreneurs struggle to get consistent leads? I help business owners generate a predictable pipeline of qualified prospects using AI-powered marketing systems. My clients typically see a 300% increase in leads within 90 days. Would love to hear what's working for you."
+      },
+      {
+        "title": "60-Second Pitch",
+        "content": "Every day, talented coaches watch their competitors fill programs while they struggle with inconsistent revenue. I've spent 10 years developing a system that helps coaches land high-ticket clients through strategic podcast guesting. Last month alone, my clients collectively generated over $500K in new business. Curious what that could look like for you?"
+      },
+      {
+        "title": "Problem-Focused Hook",
+        "content": "Most founders spend 80% of their time on activities that generate zero revenue. I help them flip that ratio so they can scale without burning out."
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,

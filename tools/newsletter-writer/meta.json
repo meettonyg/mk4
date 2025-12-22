@@ -42,6 +42,27 @@
   "landingContent": {
     "heroTagline": "Create Newsletters Your Audience Actually Opens",
     "heroSubtitle": "Generate engaging email newsletters that build relationships, drive engagement, and keep subscribers coming back.",
+    "formula": "[HOOK SUBJECT] + [PERSONAL INTRO] + [MAIN VALUE] + [TAKEAWAYS] + [CTA] = Engaging Newsletter",
+    "tips": [
+      "Write the subject line last - it's easier to summarize once you know the content",
+      "Open with personality - show you're human, not a faceless brand; share a quick personal note",
+      "One main idea - the best newsletters are focused; save other ideas for next week",
+      "Make it scannable - use headers, bullets, and bold text so readers can skim"
+    ],
+    "examples": [
+      {
+        "title": "Weekly Insight Newsletter",
+        "content": "Subject: The 2-minute habit that changed my mornings\n\n[Personal story] → [Key insight] → [3 practical tips] → [CTA: Reply and tell me your morning routine]"
+      },
+      {
+        "title": "Curated Links Newsletter",
+        "content": "Subject: 5 things worth your attention this week\n\n[Quick intro] → [Link 1 with your take] → [Link 2 with your take] → ... → [CTA: Share your favorite find]"
+      },
+      {
+        "title": "Product Update Newsletter",
+        "content": "Subject: We built the feature you asked for\n\n[Why we built it] → [How it helps you] → [Simple explanation] → [CTA: Try it now]"
+      }
+    ],
     "howItWorks": [
       {
         "step": 1,
