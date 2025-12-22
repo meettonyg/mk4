@@ -28,11 +28,14 @@ The AI Generators help you create professional content for your media kit in sec
 
 ### As Free Tools (Public Pages)
 
-Some AI generators are available as free tools on public pages. Visit:
+All AI generators are available as free tools on public pages. Visit:
 
-- `/free-tools/biography-generator`
-- `/free-tools/topic-generator`
-- `/free-tools/question-generator`
+- `/tools/` - Tools directory (lists all 25 tools by category)
+- `/tools/biography-generator/` - Biography Generator
+- `/tools/topics-generator/` - Topics Generator
+- `/tools/questions-generator/` - Questions Generator
+
+See the [Tools Directory Shortcode](#tools-directory-shortcode) section for setup instructions.
 
 ---
 
@@ -278,6 +281,104 @@ Common reasons:
 - **Documentation**: [docs.guestify.com](https://docs.guestify.com)
 - **Support**: support@guestify.com
 - **Feature Requests**: [feedback.guestify.com](https://feedback.guestify.com)
+
+---
+
+## Tools Directory Shortcode
+
+Use the `[gmkb_tools_directory]` shortcode to display a categorized listing of all 25 AI tools.
+
+### Basic Usage
+
+```
+[gmkb_tools_directory]
+```
+
+This displays all tools organized by category (Message Builder, Value Builder, Strategy, Content, Social & Email) with links to `/tools/[tool-slug]/`.
+
+### Shortcode Options
+
+| Attribute | Default | Description |
+|-----------|---------|-------------|
+| `base_url` | `/tools/` | Base URL for tool links |
+| `layout` | `grid` | Layout style: `grid` or `list` |
+| `columns` | `3` | Number of columns (1-4) for grid layout |
+| `show_descriptions` | `true` | Show tool descriptions |
+| `category` | (all) | Filter to specific category |
+| `class` | | Additional CSS classes |
+
+### Examples
+
+**Two-column grid:**
+```
+[gmkb_tools_directory columns="2"]
+```
+
+**List layout:**
+```
+[gmkb_tools_directory layout="list"]
+```
+
+**Single category only:**
+```
+[gmkb_tools_directory category="message-builder"]
+```
+
+**No descriptions (compact):**
+```
+[gmkb_tools_directory show_descriptions="false" columns="4"]
+```
+
+### Available Categories
+
+- `message-builder` - Biography, Topics, Questions, Tagline, Guest Intro, Offers
+- `value-builder` - Elevator Pitch, Sound Bite, Authority Hook, Impact Intro, Persona
+- `strategy` - Brand Story, Signature Story, Credibility Story, Framework, Interview Prep
+- `content` - Blog, Content Repurpose, Press Release
+- `social-email` - Social Post, Email, Newsletter, YouTube Description, Podcast Notes, SEO Optimizer
+
+### WordPress Page Setup
+
+1. **Create the directory page:**
+   - Go to WordPress Admin → Pages → Add New
+   - Title: "Free AI Tools" (or your preferred title)
+   - Slug: `tools`
+   - Content: `[gmkb_tools_directory]`
+   - Publish
+
+2. **Create individual tool pages:**
+   - Create child pages under `/tools/` for each tool
+   - Example: `/tools/topics-generator/` with content `[gmkb_topics]`
+
+### All Tool Shortcodes
+
+| Tool | Shortcode | Recommended Slug |
+|------|-----------|------------------|
+| Biography Generator | `[gmkb_biography]` | `biography-generator` |
+| Topics Generator | `[gmkb_topics]` | `topics-generator` |
+| Questions Generator | `[gmkb_questions]` | `questions-generator` |
+| Tagline Generator | `[gmkb_tagline]` | `tagline-generator` |
+| Guest Intro Generator | `[gmkb_guest_intro]` | `guest-intro-generator` |
+| Offers Generator | `[gmkb_offers]` | `offers-generator` |
+| Elevator Pitch | `[gmkb_elevator_pitch]` | `elevator-pitch-generator` |
+| Sound Bite | `[gmkb_sound_bite]` | `sound-bite-generator` |
+| Authority Hook | `[gmkb_authority_hook]` | `authority-hook-builder` |
+| Impact Intro | `[gmkb_impact_intro]` | `impact-intro-builder` |
+| Persona | `[gmkb_persona]` | `persona-generator` |
+| Brand Story | `[gmkb_brand_story]` | `brand-story-generator` |
+| Signature Story | `[gmkb_signature_story]` | `signature-story-generator` |
+| Credibility Story | `[gmkb_credibility_story]` | `credibility-story-generator` |
+| Framework | `[gmkb_framework]` | `framework-builder` |
+| Interview Prep | `[gmkb_interview_prep]` | `interview-prep-generator` |
+| Blog | `[gmkb_blog]` | `blog-generator` |
+| Content Repurpose | `[gmkb_content_repurpose]` | `content-repurposer` |
+| Press Release | `[gmkb_press_release]` | `press-release-generator` |
+| Social Post | `[gmkb_social_post]` | `social-post-generator` |
+| Email Writer | `[gmkb_email]` | `email-writer` |
+| Newsletter | `[gmkb_newsletter]` | `newsletter-writer` |
+| YouTube Description | `[gmkb_youtube_description]` | `youtube-description-generator` |
+| Podcast Notes | `[gmkb_podcast_notes]` | `podcast-show-notes-generator` |
+| SEO Optimizer | `[gmkb_seo_optimizer]` | `seo-optimizer` |
 
 ---
 
