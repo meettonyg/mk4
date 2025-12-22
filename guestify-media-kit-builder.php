@@ -336,6 +336,12 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-tool-landi
     require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-tool-landing-shortcode.php';
 }
 
+// Generic Tool Shortcode: Embeds any tool by slug
+// Usage: [gmkb_tool tool="topics-generator"]
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-tool-shortcode.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-tool-shortcode.php';
+}
+
 // Virtual Tool Pages: Auto-generated pages at /tools/ and /tools/{slug}/
 // No manual page creation required - URLs are handled via rewrite rules
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/pages/class-gmkb-tool-pages.php')) {
