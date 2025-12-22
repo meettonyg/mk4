@@ -67,41 +67,66 @@ import SeoOptimizerGenerator from '@tools/seo-optimizer/SeoOptimizerGenerator.vu
 
 /**
  * Component registry for data-gmkb-tool attribute values
+ * Includes both short names (legacy) and full slugs (new architecture)
  */
 const TOOL_COMPONENTS = {
-    // Original tools
+    // Original tools - short names (legacy) + full slugs
     'biography': BiographyGenerator,
+    'biography-generator': BiographyGenerator,
     'topics': TopicsGenerator,
+    'topics-generator': TopicsGenerator,
     'questions': QuestionsGenerator,
+    'questions-generator': QuestionsGenerator,
     'tagline': TaglineGenerator,
+    'tagline-generator': TaglineGenerator,
     'guest-intro': GuestIntroGenerator,
+    'guest-intro-generator': GuestIntroGenerator,
     'authority-hook': AuthorityHookBuilder,
+    'authority-hook-builder': AuthorityHookBuilder,
     'offers': OffersGenerator,
+    'offers-generator': OffersGenerator,
 
     // Value Builder tools
     'elevator-pitch': ElevatorPitchGenerator,
+    'elevator-pitch-generator': ElevatorPitchGenerator,
     'sound-bite': SoundBiteGenerator,
+    'sound-bite-generator': SoundBiteGenerator,
     'persona': PersonaGenerator,
+    'persona-generator': PersonaGenerator,
     'impact-intro': ImpactIntroBuilder,
+    'impact-intro-builder': ImpactIntroBuilder,
 
     // Strategy tools
     'brand-story': BrandStoryGenerator,
+    'brand-story-generator': BrandStoryGenerator,
     'signature-story': SignatureStoryGenerator,
+    'signature-story-generator': SignatureStoryGenerator,
     'credibility-story': CredibilityStoryGenerator,
+    'credibility-story-generator': CredibilityStoryGenerator,
     'framework': FrameworkGenerator,
+    'framework-builder': FrameworkGenerator,
     'interview-prep': InterviewPrepGenerator,
+    'interview-prep-generator': InterviewPrepGenerator,
 
     // Content tools
     'blog': BlogGenerator,
+    'blog-generator': BlogGenerator,
     'content-repurpose': ContentRepurposerGenerator,
+    'content-repurposer': ContentRepurposerGenerator,
     'press-release': PressReleaseGenerator,
+    'press-release-generator': PressReleaseGenerator,
 
     // Social/Email tools
     'social-post': SocialPostGenerator,
+    'social-post-generator': SocialPostGenerator,
     'email': EmailWriterGenerator,
+    'email-writer': EmailWriterGenerator,
     'newsletter': NewsletterGenerator,
+    'newsletter-writer': NewsletterGenerator,
     'youtube-description': YoutubeDescriptionGenerator,
+    'youtube-description-generator': YoutubeDescriptionGenerator,
     'podcast-notes': PodcastNotesGenerator,
+    'podcast-notes-generator': PodcastNotesGenerator,
     'seo-optimizer': SeoOptimizerGenerator,
 };
 
@@ -113,11 +138,13 @@ const mountedApps = new Map();
 /**
  * Initialize a single SEO tool instance
  *
- * @param {HTMLElement} container - The container element with data-gmkb-tool
+ * @param {HTMLElement} container - The container element with data-gmkb-tool or data-tool
+ * @param {string} [toolTypeOverride] - Optional tool type to use instead of data attribute
  * @returns {Object|null} Vue app instance or null if initialization failed
  */
-function initializeTool(container) {
-    const toolType = container.dataset.gmkbTool;
+function initializeTool(container, toolTypeOverride = null) {
+    // Support both data-gmkb-tool and data-tool attributes
+    const toolType = toolTypeOverride || container.dataset.gmkbTool || container.dataset.tool;
 
     // Validate tool type
     const Component = TOOL_COMPONENTS[toolType];
@@ -185,7 +212,8 @@ function initializeTool(container) {
  * @returns {number} Number of tools initialized
  */
 function initializeAll() {
-    const containers = document.querySelectorAll('[data-gmkb-tool]');
+    // Support both attribute formats
+    const containers = document.querySelectorAll('[data-gmkb-tool], [data-tool]');
     let count = 0;
 
     containers.forEach((container) => {
@@ -196,6 +224,18 @@ function initializeAll() {
 
     console.log(`[GMKBSeoTools] Initialized ${count} tool(s)`);
     return count;
+}
+
+/**
+ * Mount a tool to a specific element (alias for shortcode compatibility)
+ *
+ * @param {HTMLElement} container - The container element
+ * @param {string} toolType - The tool type/slug
+ * @param {Object} [config] - Optional configuration (unused, for API compatibility)
+ * @returns {Object|null} Vue app instance
+ */
+function mountTool(container, toolType, config = {}) {
+    return initializeTool(container, toolType);
 }
 
 /**
@@ -228,6 +268,7 @@ function destroyAll() {
 window.GMKBSeoTools = {
     init: initializeTool,
     initAll: initializeAll,
+    mountTool: mountTool,  // Alias for shortcode compatibility
     destroy: destroyTool,
     destroyAll: destroyAll,
     version: '1.0.0',
