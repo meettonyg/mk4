@@ -1,0 +1,109 @@
+{
+  "name": "Guest Intro Generator",
+  "slug": "guest-intro-generator",
+  "shortDescription": "Create introductions for podcast hosts or event MCs to read when introducing you.",
+  "longDescription": "The Guest Intro Generator creates polished introductions that hosts can read verbatim when welcoming you to their show or event. From brief podcast intros to extended keynote introductions, this tool ensures you make a memorable first impression every time.",
+  "category": "message-builder",
+  "icon": "MicrophoneIcon",
+  "componentName": "GuestIntroGenerator",
+  "useCases": [
+    "Prepare podcast guest introductions",
+    "Create speaker introductions for events",
+    "Write webinar host scripts",
+    "Develop panel moderator talking points",
+    "Build media kit introduction sections"
+  ],
+  "keyBenefits": [
+    "Make memorable first impressions",
+    "Ready-to-read format",
+    "Multiple length options",
+    "Tone matching for any show"
+  ],
+  "targetAudience": [
+    "Podcast guests",
+    "Keynote speakers",
+    "Webinar presenters",
+    "Panel participants",
+    "Interview subjects"
+  ],
+  "seoMeta": {
+    "title": "Free AI Guest Intro Generator | Create Speaker Introductions",
+    "description": "Generate professional guest introductions for podcast hosts and event MCs with our free AI Guest Intro Generator. Make memorable first impressions.",
+    "keywords": [
+      "guest intro generator",
+      "speaker introduction",
+      "podcast guest intro",
+      "event MC script",
+      "host introduction",
+      "speaker bio intro"
+    ],
+    "canonicalPath": "/tools/guest-intro-generator/"
+  },
+  "landingContent": {
+    "heroTagline": "Make Every Introduction Memorable",
+    "heroSubtitle": "Generate polished introductions that podcast hosts and event MCs can read to welcome you perfectly.",
+    "howItWorks": [
+      {
+        "step": 1,
+        "title": "Add Your Details",
+        "description": "Enter your name, title, achievements, and discussion topic."
+      },
+      {
+        "step": 2,
+        "title": "Set the Tone",
+        "description": "Choose energetic, professional, or casual to match the show."
+      },
+      {
+        "step": 3,
+        "title": "Copy & Share",
+        "description": "Copy your intro and send it to your host before the show."
+      }
+    ],
+    "features": [
+      {
+        "title": "Length Options",
+        "description": "Brief (30 sec), standard (1 min), or extended (2 min) introductions.",
+        "icon": "ClockIcon"
+      },
+      {
+        "title": "Tone Matching",
+        "description": "Match the energy and style of any show or event.",
+        "icon": "MusicalNoteIcon"
+      },
+      {
+        "title": "Ready to Read",
+        "description": "Formatted for hosts to read verbatim - no editing needed.",
+        "icon": "DocumentCheckIcon"
+      },
+      {
+        "title": "Achievement Highlights",
+        "description": "Naturally weave in your credentials and accomplishments.",
+        "icon": "StarIcon"
+      }
+    ],
+    "faq": [
+      {
+        "question": "What length should I choose?",
+        "answer": "Brief (30 sec) for fast-paced podcasts, standard (1 min) for most shows, and extended (2 min) for keynotes and formal events."
+      },
+      {
+        "question": "How do I match the show's tone?",
+        "answer": "Listen to a few episodes to gauge the energy. Use energetic for upbeat shows, professional for business podcasts, and casual for conversational formats."
+      },
+      {
+        "question": "Should I include my discussion topic?",
+        "answer": "Yes! Including your topic helps the host transition smoothly from your intro into the conversation."
+      },
+      {
+        "question": "When should I send my intro to the host?",
+        "answer": "Send your intro at least 24 hours before the recording, along with any other materials like photos or links."
+      }
+    ],
+    "relatedToolSlugs": [
+      "biography-generator",
+      "topics-generator",
+      "questions-generator",
+      "podcast-notes-generator"
+    ]
+  }
+}

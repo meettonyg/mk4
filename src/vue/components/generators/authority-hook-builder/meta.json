@@ -1,0 +1,109 @@
+{
+  "name": "Authority Hook Builder",
+  "slug": "authority-hook-builder",
+  "shortDescription": "Build your \"Authority Hook\" - a framework for positioning yourself as an expert using the 6 W's.",
+  "longDescription": "The Authority Hook Builder uses the proven 6 W's framework (Who, What, When, How, Where, Why) to create a powerful positioning statement that establishes your expertise. This structured approach ensures you communicate your unique value proposition clearly and memorably.",
+  "category": "value-builder",
+  "icon": "TrophyIcon",
+  "componentName": "AuthorityHookBuilder",
+  "useCases": [
+    "Create expert positioning statements",
+    "Develop niche authority messaging",
+    "Build speaker positioning",
+    "Craft consultant differentiators",
+    "Design thought leader frameworks"
+  ],
+  "keyBenefits": [
+    "Clear expert positioning",
+    "Structured framework",
+    "Memorable format",
+    "Differentiated messaging"
+  ],
+  "targetAudience": [
+    "Consultants and coaches",
+    "Industry experts",
+    "Speakers and trainers",
+    "Authors and thought leaders",
+    "Niche specialists"
+  ],
+  "seoMeta": {
+    "title": "Free AI Authority Hook Builder | Position Yourself as an Expert",
+    "description": "Build your Authority Hook using the 6 W's framework with our free AI tool. Create expert positioning statements that differentiate you.",
+    "keywords": [
+      "authority hook",
+      "expert positioning",
+      "thought leader",
+      "personal branding",
+      "positioning statement",
+      "6 W's framework"
+    ],
+    "canonicalPath": "/tools/authority-hook-builder/"
+  },
+  "landingContent": {
+    "heroTagline": "Position Yourself as the Go-To Expert",
+    "heroSubtitle": "Build your Authority Hook using the proven 6 W's framework to clearly communicate your unique expertise and value.",
+    "howItWorks": [
+      {
+        "step": 1,
+        "title": "Answer the 6 W's",
+        "description": "Fill in Who, What, When, How, Where, and Why."
+      },
+      {
+        "step": 2,
+        "title": "Generate Your Hook",
+        "description": "Watch your answers transform into a powerful statement."
+      },
+      {
+        "step": 3,
+        "title": "Apply Everywhere",
+        "description": "Use your hook in bios, pitches, and introductions."
+      }
+    ],
+    "features": [
+      {
+        "title": "6 W's Framework",
+        "description": "Structured approach that covers all positioning essentials.",
+        "icon": "Squares2X2Icon"
+      },
+      {
+        "title": "One Statement",
+        "description": "Combine all elements into one powerful authority statement.",
+        "icon": "DocumentTextIcon"
+      },
+      {
+        "title": "Apply to Bio",
+        "description": "Easily transfer your hook to your biography.",
+        "icon": "UserCircleIcon"
+      },
+      {
+        "title": "Apply to Tagline",
+        "description": "Condense your hook into a punchy tagline.",
+        "icon": "SparklesIcon"
+      }
+    ],
+    "faq": [
+      {
+        "question": "What are the 6 W's?",
+        "answer": "WHO (who you help), WHAT (results you deliver), WHEN (in what situations), HOW (your unique method), WHERE (context), and WHY (why it matters)."
+      },
+      {
+        "question": "How specific should I be?",
+        "answer": "Very specific. 'Busy entrepreneurs' is better than 'business owners.' 'First 3 years' is better than 'when starting out.'"
+      },
+      {
+        "question": "Can I use this in my bio?",
+        "answer": "Absolutely! Your authority hook is the foundation of your bio, tagline, and all positioning content."
+      },
+      {
+        "question": "Should I have one hook or multiple?",
+        "answer": "Start with one core hook. You can create variations for different audiences once your main positioning is solid."
+      }
+    ],
+    "relatedToolSlugs": [
+      "biography-generator",
+      "elevator-pitch-generator",
+      "tagline-generator",
+      "impact-intro-builder"
+    ]
+  }
+}

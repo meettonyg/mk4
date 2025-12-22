@@ -1,0 +1,109 @@
+{
+  "name": "Credibility Story Generator",
+  "slug": "credibility-story-generator",
+  "shortDescription": "Create stories that establish your authority and build trust with your audience.",
+  "longDescription": "The Credibility Story Generator helps you craft narratives that demonstrate your expertise through experience, results, and recognition. Build trust with potential clients by showing, not just telling, why you're the right choice.",
+  "category": "strategy",
+  "icon": "ShieldCheckIcon",
+  "componentName": "CredibilityStoryGenerator",
+  "useCases": [
+    "Build trust in sales conversations",
+    "Create case study narratives",
+    "Develop testimonial stories",
+    "Craft media interview examples",
+    "Design proposal introductions"
+  ],
+  "keyBenefits": [
+    "Builds instant trust",
+    "Shows proven results",
+    "Establishes authority",
+    "Overcomes skepticism"
+  ],
+  "targetAudience": [
+    "Sales professionals",
+    "Consultants",
+    "Coaches and trainers",
+    "Agency owners",
+    "B2B service providers"
+  ],
+  "seoMeta": {
+    "title": "Free AI Credibility Story Generator | Build Trust Through Stories",
+    "description": "Generate credibility stories that establish authority and build trust with our free AI Credibility Story Generator.",
+    "keywords": [
+      "credibility story",
+      "trust building",
+      "case study",
+      "authority story",
+      "social proof",
+      "client story"
+    ],
+    "canonicalPath": "/tools/credibility-story-generator/"
+  },
+  "landingContent": {
+    "heroTagline": "Show Your Expertise Through Powerful Stories",
+    "heroSubtitle": "Create credibility stories that demonstrate your authority and build trust with potential clients through proven results.",
+    "howItWorks": [
+      {
+        "step": 1,
+        "title": "Choose Your Proof",
+        "description": "Select the type of credibility (results, recognition, experience)."
+      },
+      {
+        "step": 2,
+        "title": "Add Details",
+        "description": "Include specifics, numbers, and outcomes."
+      },
+      {
+        "step": 3,
+        "title": "Get Your Story",
+        "description": "Receive a polished credibility narrative."
+      }
+    ],
+    "features": [
+      {
+        "title": "Multiple Types",
+        "description": "Results-based, recognition-based, or experience-based stories.",
+        "icon": "Squares2X2Icon"
+      },
+      {
+        "title": "Specific Details",
+        "description": "Includes numbers and specifics that build credibility.",
+        "icon": "CalculatorIcon"
+      },
+      {
+        "title": "Humble Delivery",
+        "description": "Shows authority without sounding boastful.",
+        "icon": "HeartIcon"
+      },
+      {
+        "title": "Conversation Ready",
+        "description": "Formatted for natural delivery in sales and interviews.",
+        "icon": "ChatBubbleLeftRightIcon"
+      }
+    ],
+    "faq": [
+      {
+        "question": "What types of credibility stories work best?",
+        "answer": "Results stories (client outcomes) are most powerful, followed by recognition (awards, press) and experience (years, volume of work)."
+      },
+      {
+        "question": "How do I share results without being salesy?",
+        "answer": "Frame it as a story about the client's journey and success, not about how great you are. Let the results speak for themselves."
+      },
+      {
+        "question": "What if I don't have impressive numbers?",
+        "answer": "Focus on transformation and qualitative outcomes. 'From overwhelmed to confident' is just as powerful as revenue numbers."
+      },
+      {
+        "question": "When should I share credibility stories?",
+        "answer": "When you sense skepticism, when asked 'why should I work with you?', and as social proof in proposals and sales pages."
+      }
+    ],
+    "relatedToolSlugs": [
+      "brand-story-generator",
+      "signature-story-generator",
+      "authority-hook-builder",
+      "biography-generator"
+    ]
+  }
+}

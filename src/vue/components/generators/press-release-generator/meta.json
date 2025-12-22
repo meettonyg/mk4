@@ -1,0 +1,109 @@
+{
+  "name": "Press Release Generator",
+  "slug": "press-release-generator",
+  "shortDescription": "Create professional press releases for announcements and media outreach.",
+  "longDescription": "The Press Release Generator helps you create properly formatted press releases that journalists actually want to read. From product launches to company news, generate media-ready announcements that follow AP style guidelines.",
+  "category": "content",
+  "icon": "NewspaperIcon",
+  "componentName": "PressReleaseGenerator",
+  "useCases": [
+    "Announce product launches",
+    "Share company news",
+    "Promote events",
+    "Highlight awards and recognition",
+    "Announce partnerships"
+  ],
+  "keyBenefits": [
+    "AP style format",
+    "Media-ready copy",
+    "Proper structure",
+    "Quote integration"
+  ],
+  "targetAudience": [
+    "PR professionals",
+    "Marketing teams",
+    "Small business owners",
+    "Startups",
+    "Event organizers"
+  ],
+  "seoMeta": {
+    "title": "Free AI Press Release Generator | Create Media-Ready Announcements",
+    "description": "Generate professional press releases for media outreach with our free AI Press Release Generator. AP style format included.",
+    "keywords": [
+      "press release generator",
+      "PR writer",
+      "news release",
+      "media announcement",
+      "press release template",
+      "AP style press release"
+    ],
+    "canonicalPath": "/tools/press-release-generator/"
+  },
+  "landingContent": {
+    "heroTagline": "Create Press Releases Journalists Actually Read",
+    "heroSubtitle": "Generate professional, AP-style press releases that are ready for media distribution and news coverage.",
+    "howItWorks": [
+      {
+        "step": 1,
+        "title": "Enter Your News",
+        "description": "Describe your announcement and key details."
+      },
+      {
+        "step": 2,
+        "title": "Add Quotes",
+        "description": "Include quotes from key stakeholders."
+      },
+      {
+        "step": 3,
+        "title": "Generate & Distribute",
+        "description": "Get a formatted press release ready to send."
+      }
+    ],
+    "features": [
+      {
+        "title": "AP Style",
+        "description": "Follows Associated Press style guidelines.",
+        "icon": "CheckBadgeIcon"
+      },
+      {
+        "title": "Proper Structure",
+        "description": "Headline, dateline, lead, body, and boilerplate.",
+        "icon": "DocumentDuplicateIcon"
+      },
+      {
+        "title": "Quote Formatting",
+        "description": "Professionally formatted executive quotes.",
+        "icon": "ChatBubbleBottomCenterTextIcon"
+      },
+      {
+        "title": "Contact Ready",
+        "description": "Includes media contact section.",
+        "icon": "PhoneIcon"
+      }
+    ],
+    "faq": [
+      {
+        "question": "What makes a good press release?",
+        "answer": "Newsworthy angle, clear headline, strong lead paragraph, relevant quotes, and a compelling call to action. Keep it under 500 words."
+      },
+      {
+        "question": "How do I write a good headline?",
+        "answer": "State the news clearly, include your company name, and use active verbs. Avoid jargon and marketing speak."
+      },
+      {
+        "question": "What should I include in the boilerplate?",
+        "answer": "A 2-3 sentence company description with key facts: what you do, when founded, notable achievements, and website."
+      },
+      {
+        "question": "Where do I distribute press releases?",
+        "answer": "Direct outreach to relevant journalists, PR newswires (PRWeb, Business Wire), and your own newsroom page."
+      }
+    ],
+    "relatedToolSlugs": [
+      "blog-generator",
+      "social-post-generator",
+      "email-writer",
+      "biography-generator"
+    ]
+  }
+}
