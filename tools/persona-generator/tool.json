@@ -1,0 +1,14 @@
+{
+  "id": "persona-generator",
+  "name": "Persona Generator",
+  "version": "2.0.0",
+  "category": "strategy",
+  "icon": "UserIcon",
+  "component": "PersonaGenerator.vue",
+  "prompts": "prompts.php",
+  "supports": {
+    "standalone": true,
+    "builder": true,
+    "modal": true
+  }
+}

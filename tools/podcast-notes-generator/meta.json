@@ -1,0 +1,109 @@
+{
+  "name": "Podcast Show Notes Generator",
+  "slug": "podcast-notes-generator",
+  "shortDescription": "Create professional show notes for podcast episodes that drive listens.",
+  "longDescription": "The Podcast Show Notes Generator helps you create comprehensive show notes that attract listeners and improve discoverability. Generate summaries, timestamps, key takeaways, and resource links for every episode.",
+  "category": "social-email",
+  "icon": "MicrophoneIcon",
+  "componentName": "PodcastNotesGenerator",
+  "useCases": [
+    "Write episode summaries",
+    "Create listener guides",
+    "Build episode pages",
+    "Generate promotional copy",
+    "Archive episode content"
+  ],
+  "keyBenefits": [
+    "Better discoverability",
+    "Professional presentation",
+    "Listener resources",
+    "Content repurposing"
+  ],
+  "targetAudience": [
+    "Podcast hosts",
+    "Podcast producers",
+    "Content teams",
+    "Interview shows",
+    "Educational podcasts"
+  ],
+  "seoMeta": {
+    "title": "Free AI Podcast Show Notes Generator | Create Episode Summaries",
+    "description": "Generate professional podcast show notes with summaries, timestamps, and key takeaways using our free AI Podcast Show Notes Generator.",
+    "keywords": [
+      "podcast show notes",
+      "show notes generator",
+      "episode summary",
+      "podcast SEO",
+      "episode notes",
+      "podcast description"
+    ],
+    "canonicalPath": "/tools/podcast-notes-generator/"
+  },
+  "landingContent": {
+    "heroTagline": "Show Notes That Turn Browsers Into Listeners",
+    "heroSubtitle": "Generate comprehensive podcast show notes with summaries, timestamps, and key takeaways that help listeners find and engage with your episodes.",
+    "howItWorks": [
+      {
+        "step": 1,
+        "title": "Add Episode Details",
+        "description": "Enter title, topic, and main discussion points."
+      },
+      {
+        "step": 2,
+        "title": "Include Guest Info",
+        "description": "Add guest bio and relevant links."
+      },
+      {
+        "step": 3,
+        "title": "Generate Notes",
+        "description": "Get formatted show notes for your episode page."
+      }
+    ],
+    "features": [
+      {
+        "title": "Episode Summary",
+        "description": "Compelling description that hooks potential listeners.",
+        "icon": "DocumentTextIcon"
+      },
+      {
+        "title": "Key Takeaways",
+        "description": "Bullet points of the main lessons and insights.",
+        "icon": "LightBulbIcon"
+      },
+      {
+        "title": "Timestamp Markers",
+        "description": "Chapter markers for easy navigation.",
+        "icon": "ClockIcon"
+      },
+      {
+        "title": "Resource Links",
+        "description": "Organized section for mentioned resources.",
+        "icon": "LinkIcon"
+      }
+    ],
+    "faq": [
+      {
+        "question": "What should show notes include?",
+        "answer": "Episode summary, guest bio, key takeaways, timestamps, mentioned resources, and calls-to-action (subscribe, review)."
+      },
+      {
+        "question": "How long should show notes be?",
+        "answer": "300-500 words for the summary, plus timestamps and resources. Enough for SEO and value, not overwhelming."
+      },
+      {
+        "question": "Should I include timestamps?",
+        "answer": "Yes! Timestamps help listeners jump to sections they care about and improve engagement metrics."
+      },
+      {
+        "question": "How do show notes help SEO?",
+        "answer": "Search engines can't index audio. Written show notes make your content discoverable and help rank for relevant keywords."
+      }
+    ],
+    "relatedToolSlugs": [
+      "youtube-description-generator",
+      "content-repurposer",
+      "guest-intro-generator",
+      "topics-generator"
+    ]
+  }
+}
