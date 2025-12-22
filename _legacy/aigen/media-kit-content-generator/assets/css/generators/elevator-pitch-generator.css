@@ -1,0 +1,360 @@
+/**
+ * Elevator Pitch Generator Styles
+ * Color Scheme: Green gradient (#11998e to #38ef7d) - Growth & Success
+ */
+
+.elevator-pitch-generator__container {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  border-radius: var(--mkcg-radius, 8px);
+  padding: var(--mkcg-space-lg, 30px);
+  margin-bottom: var(--mkcg-space-lg, 30px);
+  box-shadow: 0 4px 15px rgba(17, 153, 142, 0.2);
+}
+
+.elevator-pitch-generator__header {
+  text-align: center;
+  margin-bottom: var(--mkcg-space-xl, 40px);
+  color: #ffffff;
+}
+
+.elevator-pitch-generator__title {
+  font-size: var(--mkcg-font-size-xl, 24px);
+  font-weight: 700;
+  margin-bottom: var(--mkcg-space-sm, 12px);
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.elevator-pitch-generator__subtitle {
+  font-size: var(--mkcg-font-size-md, 16px);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.elevator-pitch-generator__content {
+  background: #ffffff;
+  border-radius: var(--mkcg-radius, 8px);
+  padding: var(--mkcg-space-lg, 30px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.elevator-pitch-generator__panel-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--mkcg-space-lg, 30px);
+  margin-top: var(--mkcg-space-lg, 30px);
+}
+
+@media (max-width: 768px) {
+  .elevator-pitch-generator__panel-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.elevator-pitch-generator__section {
+  margin-bottom: var(--mkcg-space-xl, 40px);
+  padding-bottom: var(--mkcg-space-lg, 30px);
+  border-bottom: 1px solid #e9ecef;
+}
+
+.elevator-pitch-generator__section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.elevator-pitch-generator__section-title {
+  font-size: var(--mkcg-font-size-lg, 18px);
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: var(--mkcg-space-md, 20px);
+  display: flex;
+  align-items: center;
+}
+
+.elevator-pitch-generator__section-title::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 20px;
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  margin-right: var(--mkcg-space-sm, 12px);
+  border-radius: 2px;
+}
+
+.elevator-pitch-generator__field {
+  margin-bottom: var(--mkcg-space-md, 20px);
+}
+
+.elevator-pitch-generator__label {
+  display: block;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: var(--mkcg-space-xs, 8px);
+  font-size: 14px;
+}
+
+.elevator-pitch-generator__input,
+.elevator-pitch-generator__textarea,
+.elevator-pitch-generator__select {
+  width: 100%;
+  padding: var(--mkcg-space-sm, 12px);
+  border: 2px solid #e9ecef;
+  border-radius: var(--mkcg-radius, 8px);
+  font-size: var(--mkcg-font-size-md, 16px);
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.elevator-pitch-generator__input:focus,
+.elevator-pitch-generator__textarea:focus,
+.elevator-pitch-generator__select:focus {
+  outline: none;
+  border-color: #11998e;
+  box-shadow: 0 0 0 3px rgba(17, 153, 142, 0.1);
+}
+
+.elevator-pitch-generator__textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.elevator-pitch-generator__field-hint {
+  font-size: 12px;
+  color: #6c757d;
+  margin-top: var(--mkcg-space-xs, 8px);
+  font-style: italic;
+}
+
+.elevator-pitch-generator__settings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--mkcg-space-md, 20px);
+}
+
+.elevator-pitch-generator__button {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  color: #ffffff;
+  border: none;
+  padding: var(--mkcg-space-sm, 12px) var(--mkcg-space-lg, 30px);
+  border-radius: var(--mkcg-radius, 8px);
+  font-size: var(--mkcg-font-size-md, 16px);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(17, 153, 142, 0.3);
+}
+
+.elevator-pitch-generator__button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(17, 153, 142, 0.4);
+}
+
+.elevator-pitch-generator__button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.elevator-pitch-generator__button--outline {
+  background: transparent;
+  color: #11998e;
+  border: 2px solid #11998e;
+  box-shadow: none;
+}
+
+.elevator-pitch-generator__button--outline:hover {
+  background: #11998e;
+  color: #ffffff;
+}
+
+.elevator-pitch-card {
+  background: #ffffff;
+  border: 2px solid #e9ecef;
+  border-radius: var(--mkcg-radius, 8px);
+  padding: var(--mkcg-space-md, 20px);
+  margin-bottom: var(--mkcg-space-md, 20px);
+  transition: all 0.3s ease;
+}
+
+.elevator-pitch-card:hover {
+  border-color: #11998e;
+  box-shadow: 0 4px 15px rgba(17, 153, 142, 0.15);
+}
+
+.elevator-pitch-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--mkcg-space-sm, 12px);
+  padding-bottom: var(--mkcg-space-sm, 12px);
+  border-bottom: 1px solid #e9ecef;
+}
+
+.elevator-pitch-card__title {
+  font-size: var(--mkcg-font-size-lg, 18px);
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.elevator-pitch-card__word-count {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  color: #ffffff;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.elevator-pitch-card__body {
+  margin-bottom: var(--mkcg-space-md, 20px);
+}
+
+.elevator-pitch-card__text {
+  color: #495057;
+  line-height: 1.8;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.elevator-pitch-card__footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.elevator-pitch-card__copy-btn {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  color: #ffffff;
+  border: none;
+  padding: var(--mkcg-space-xs, 8px) var(--mkcg-space-md, 20px);
+  border-radius: var(--mkcg-radius, 8px);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.elevator-pitch-card__copy-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(17, 153, 142, 0.3);
+}
+
+.elevator-pitch-notifications {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  max-width: 400px;
+}
+
+.elevator-pitch-notification {
+  background: #ffffff;
+  border-radius: var(--mkcg-radius, 8px);
+  padding: var(--mkcg-space-md, 20px);
+  margin-bottom: var(--mkcg-space-sm, 12px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #11998e;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.elevator-pitch-notification--success {
+  border-left-color: var(--mkcg-success, #34c759);
+}
+
+.elevator-pitch-notification--error {
+  border-left-color: var(--mkcg-error, #ff3b30);
+}
+
+.elevator-pitch-loader {
+  display: none;
+  text-align: center;
+  padding: var(--mkcg-space-xl, 40px);
+}
+
+.elevator-pitch-loader__spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #11998e;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto var(--mkcg-space-md, 20px);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.elevator-pitch-results-section {
+  margin-top: var(--mkcg-space-xl, 40px);
+  padding-top: var(--mkcg-space-xl, 40px);
+  border-top: 2px solid #e9ecef;
+}
+
+.elevator-pitch-generator__guidance {
+  background: #f8f9fa;
+  border-radius: var(--mkcg-radius, 8px);
+  padding: var(--mkcg-space-md, 20px);
+}
+
+.elevator-pitch-generator__guidance-title {
+  font-size: var(--mkcg-font-size-md, 16px);
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: var(--mkcg-space-sm, 12px);
+}
+
+.elevator-pitch-generator__guidance-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.elevator-pitch-generator__guidance-item {
+  padding: var(--mkcg-space-xs, 8px) 0;
+  color: #495057;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.elevator-pitch-generator__guidance-item::before {
+  content: '→';
+  color: #11998e;
+  font-weight: bold;
+  margin-right: var(--mkcg-space-xs, 8px);
+}
+
+.elevator-pitch-generator__builder {
+  margin-top: var(--mkcg-space-md, 20px);
+  padding: var(--mkcg-space-md, 20px);
+  background: #f8f9fa;
+  border-radius: var(--mkcg-radius, 8px);
+  border: 2px solid #e9ecef;
+}
+
+.elevator-pitch-generator__builder--hidden {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .elevator-pitch-generator__container {
+    padding: var(--mkcg-space-md, 20px);
+  }
+
+  .elevator-pitch-notifications {
+    max-width: calc(100% - 40px);
+    left: 20px;
+  }
+}

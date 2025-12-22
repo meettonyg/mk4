@@ -1,0 +1,18 @@
+fix: Biography Generator Impact Intro display and validation issues
+
+Root-level fixes applied:
+1. Fixed Impact Intro validation to require either Authority Hook OR Impact Intro (not both)
+2. Fixed Impact Intro display format to include proper prefixes ("I've" and "My mission is to")
+3. Added event listeners to capture updates from centralized Impact Intro Builder
+4. Added Authority Hook event listener for consistency
+5. Added debug function to help diagnose Impact Intro state issues
+6. Created documentation for troubleshooting Impact Intro display problems
+
+Technical changes:
+- Modified validateFormData() to use OR logic instead of AND
+- Updated updateImpactIntro() to build proper format with prefixes
+- Updated collectFormData() to use consistent Impact Intro format
+- Added 'impact-intro-updated' and 'authority-hook-updated' event listeners
+- Added debugImpactIntro() debug function
+
+This ensures Biography Generator works when either Authority Hook OR Impact Intro is completed, and displays Impact Intro correctly when values are entered.

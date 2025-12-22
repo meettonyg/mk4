@@ -1,0 +1,304 @@
+/* Essential Business Stories Suite - Teal/Cyan gradient (#00b4d8 to #0077b6) */
+.business-stories-generator__container {
+  background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
+  border-radius: 8px;
+  padding: 30px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 15px rgba(0, 180, 216, 0.2);
+}
+
+.business-stories-generator__header {
+  text-align: center;
+  margin-bottom: 40px;
+  color: #ffffff;
+}
+
+.business-stories-generator__title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.business-stories-generator__subtitle {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 0;
+}
+
+.business-stories-generator__content {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 30px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.business-stories-generator__panel-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 30px;
+  margin-top: 30px;
+}
+
+@media (max-width: 768px) {
+  .business-stories-generator__panel-layout { grid-template-columns: 1fr; }
+}
+
+.business-stories-generator__section {
+  margin-bottom: 40px;
+  padding-bottom: 30px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.business-stories-generator__section:last-child {
+  border-bottom: none;
+}
+
+.business-stories-generator__section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 20px;
+}
+
+.business-stories-generator__section-title::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 20px;
+  background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
+  margin-right: 12px;
+  border-radius: 2px;
+}
+
+.business-stories-generator__field {
+  margin-bottom: 20px;
+}
+
+.business-stories-generator__label {
+  display: block;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.business-stories-generator__input,
+.business-stories-generator__textarea,
+.business-stories-generator__select {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.business-stories-generator__input:focus,
+.business-stories-generator__textarea:focus,
+.business-stories-generator__select:focus {
+  outline: none;
+  border-color: #00b4d8;
+  box-shadow: 0 0 0 3px rgba(0, 180, 216, 0.1);
+}
+
+.business-stories-generator__textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.business-stories-generator__button {
+  background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
+  color: #ffffff;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 180, 216, 0.3);
+}
+
+.business-stories-generator__button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 180, 216, 0.4);
+}
+
+.business-stories-generator__button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.business-stories-generator__button--outline {
+  background: transparent;
+  color: #00b4d8;
+  border: 2px solid #00b4d8;
+  box-shadow: none;
+}
+
+.business-stories-generator__button--outline:hover {
+  background: #00b4d8;
+  color: #ffffff;
+}
+
+.business-story-card {
+  background: #ffffff;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+}
+
+.business-story-card:hover {
+  border-color: #00b4d8;
+  box-shadow: 0 4px 15px rgba(0, 180, 216, 0.15);
+}
+
+.business-story-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #f8f9fa;
+}
+
+.business-story-card__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 4px 0;
+}
+
+.business-story-card__subtitle {
+  font-size: 13px;
+  color: #00b4d8;
+  margin: 0;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.business-story-card__copy-btn {
+  background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
+  color: #ffffff;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.business-story-card__copy-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 180, 216, 0.3);
+}
+
+.business-story-card__body {
+  color: #495057;
+  line-height: 1.8;
+}
+
+.business-story-card__text {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 15px;
+}
+
+.business-stories-notifications {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  max-width: 400px;
+}
+
+.business-stories-notification {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #00b4d8;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(400px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.business-stories-notification--success { border-left-color: #34c759; }
+.business-stories-notification--error { border-left-color: #ff3b30; }
+
+.business-stories-loader {
+  display: none;
+  text-align: center;
+  padding: 40px;
+}
+
+.business-stories-loader__spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #00b4d8;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.business-stories-loader__text {
+  color: #6c757d;
+  font-size: 16px;
+}
+
+.business-stories-results-section {
+  margin-top: 40px;
+  padding-top: 40px;
+  border-top: 2px solid #e9ecef;
+}
+
+.business-stories-generator__builder {
+  margin-top: 20px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+}
+
+.business-stories-generator__builder--hidden {
+  display: none;
+}
+
+.business-stories-results-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-top: 20px;
+}
+
+@media (max-width: 968px) {
+  .business-stories-results-grid { grid-template-columns: 1fr; }
+}
+
+.business-story-type-label {
+  display: inline-block;
+  background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
+  color: #ffffff;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-right: 10px;
+}

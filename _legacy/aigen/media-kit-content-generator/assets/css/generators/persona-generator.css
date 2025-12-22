@@ -1,0 +1,563 @@
+/**
+ * Persona Generator Styles
+ * Following unified generator architecture with BEM methodology
+ * Color Scheme: Blue/Cyan gradient (#4facfe to #00f2fe) - Professional & Innovative
+ *
+ * @package Media_Kit_Content_Generator
+ * @version 1.0
+ */
+
+/* ============================================================================
+   Persona Generator Specific Styles
+   ============================================================================ */
+
+.persona-generator__container {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  border-radius: var(--mkcg-radius, 8px);
+  padding: var(--mkcg-space-lg, 30px);
+  margin-bottom: var(--mkcg-space-lg, 30px);
+  box-shadow: 0 4px 15px rgba(79, 172, 254, 0.2);
+}
+
+.persona-generator__header {
+  text-align: center;
+  margin-bottom: var(--mkcg-space-xl, 40px);
+  color: #ffffff;
+}
+
+.persona-generator__title {
+  font-size: var(--mkcg-font-size-xl, 24px);
+  font-weight: 700;
+  margin-bottom: var(--mkcg-space-sm, 12px);
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.persona-generator__subtitle {
+  font-size: var(--mkcg-font-size-md, 16px);
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 400;
+}
+
+/* ============================================================================
+   Content Layout
+   ============================================================================ */
+
+.persona-generator__content {
+  background: #ffffff;
+  border-radius: var(--mkcg-radius, 8px);
+  padding: var(--mkcg-space-lg, 30px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.persona-generator__panel-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--mkcg-space-lg, 30px);
+  margin-top: var(--mkcg-space-lg, 30px);
+}
+
+@media (max-width: 768px) {
+  .persona-generator__panel-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.persona-generator__panel--left {
+  /* Main content area */
+}
+
+.persona-generator__panel--right {
+  /* Guidance sidebar */
+  background: #f8f9fa;
+  border-radius: var(--mkcg-radius, 8px);
+  padding: var(--mkcg-space-md, 20px);
+}
+
+/* ============================================================================
+   Form Sections
+   ============================================================================ */
+
+.persona-generator__section {
+  margin-bottom: var(--mkcg-space-xl, 40px);
+  padding-bottom: var(--mkcg-space-lg, 30px);
+  border-bottom: 1px solid #e9ecef;
+}
+
+.persona-generator__section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.persona-generator__section-title {
+  font-size: var(--mkcg-font-size-lg, 18px);
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: var(--mkcg-space-md, 20px);
+  display: flex;
+  align-items: center;
+}
+
+.persona-generator__section-title::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 20px;
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  margin-right: var(--mkcg-space-sm, 12px);
+  border-radius: 2px;
+}
+
+/* ============================================================================
+   Form Fields
+   ============================================================================ */
+
+.persona-generator__field {
+  margin-bottom: var(--mkcg-space-md, 20px);
+}
+
+.persona-generator__label {
+  display: block;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: var(--mkcg-space-xs, 8px);
+  font-size: 14px;
+}
+
+.persona-generator__input,
+.persona-generator__textarea,
+.persona-generator__select {
+  width: 100%;
+  padding: var(--mkcg-space-sm, 12px);
+  border: 2px solid #e9ecef;
+  border-radius: var(--mkcg-radius, 8px);
+  font-size: var(--mkcg-font-size-md, 16px);
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.persona-generator__input:focus,
+.persona-generator__textarea:focus,
+.persona-generator__select:focus {
+  outline: none;
+  border-color: #4facfe;
+  box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+}
+
+.persona-generator__textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.persona-generator__field-hint {
+  font-size: 12px;
+  color: #6c757d;
+  margin-top: var(--mkcg-space-xs, 8px);
+  font-style: italic;
+}
+
+/* ============================================================================
+   Settings Controls
+   ============================================================================ */
+
+.persona-generator__settings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--mkcg-space-md, 20px);
+}
+
+.persona-generator__setting {
+  /* Individual setting field */
+}
+
+/* ============================================================================
+   Buttons
+   ============================================================================ */
+
+.persona-generator__button {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: #ffffff;
+  border: none;
+  padding: var(--mkcg-space-sm, 12px) var(--mkcg-space-lg, 30px);
+  border-radius: var(--mkcg-radius, 8px);
+  font-size: var(--mkcg-font-size-md, 16px);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+}
+
+.persona-generator__button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
+}
+
+.persona-generator__button:active {
+  transform: translateY(0);
+}
+
+.persona-generator__button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.persona-generator__button--outline {
+  background: transparent;
+  color: #4facfe;
+  border: 2px solid #4facfe;
+  box-shadow: none;
+}
+
+.persona-generator__button--outline:hover {
+  background: #4facfe;
+  color: #ffffff;
+}
+
+.persona-generator__button--secondary {
+  background: #6c757d;
+  box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+}
+
+.persona-generator__button--secondary:hover {
+  background: #5a6268;
+  box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+}
+
+/* ============================================================================
+   Persona Options Display
+   ============================================================================ */
+
+.persona-options-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--mkcg-space-md, 20px);
+  margin-top: var(--mkcg-space-lg, 30px);
+}
+
+.persona-option {
+  background: #ffffff;
+  border: 2px solid #e9ecef;
+  border-radius: var(--mkcg-radius, 8px);
+  padding: var(--mkcg-space-md, 20px);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.persona-option:hover {
+  border-color: #4facfe;
+  box-shadow: 0 4px 15px rgba(79, 172, 254, 0.15);
+  transform: translateY(-2px);
+}
+
+.persona-option--selected {
+  border-color: #4facfe;
+  background: linear-gradient(135deg, rgba(79, 172, 254, 0.05) 0%, rgba(0, 242, 254, 0.05) 100%);
+}
+
+.persona-option--selected::before {
+  content: '✓';
+  position: absolute;
+  top: var(--mkcg-space-sm, 12px);
+  right: var(--mkcg-space-sm, 12px);
+  width: 24px;
+  height: 24px;
+  background: #4facfe;
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.persona-option__header {
+  margin-bottom: var(--mkcg-space-sm, 12px);
+}
+
+.persona-option__title {
+  font-size: var(--mkcg-font-size-lg, 18px);
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.persona-option__body {
+  margin-bottom: var(--mkcg-space-md, 20px);
+}
+
+.persona-option__description {
+  color: #495057;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.persona-option__footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--mkcg-space-md, 20px);
+  padding-top: var(--mkcg-space-sm, 12px);
+  border-top: 1px solid #e9ecef;
+}
+
+.persona-option__select-btn {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: #ffffff;
+  border: none;
+  padding: var(--mkcg-space-xs, 8px) var(--mkcg-space-md, 20px);
+  border-radius: var(--mkcg-radius, 8px);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.persona-option__select-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(79, 172, 254, 0.3);
+}
+
+/* ============================================================================
+   Selected Persona Display
+   ============================================================================ */
+
+.selected-persona {
+  background: linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(0, 242, 254, 0.1) 100%);
+  border: 2px solid #4facfe;
+  border-radius: var(--mkcg-radius, 8px);
+  padding: var(--mkcg-space-lg, 30px);
+  margin-top: var(--mkcg-space-lg, 30px);
+  position: relative;
+}
+
+.selected-persona__badge {
+  position: absolute;
+  top: -12px;
+  left: var(--mkcg-space-md, 20px);
+  background: #4facfe;
+  color: #ffffff;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.selected-persona__title {
+  font-size: var(--mkcg-font-size-xl, 24px);
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: var(--mkcg-space-sm, 12px);
+}
+
+.selected-persona__description {
+  color: #495057;
+  line-height: 1.8;
+  font-size: var(--mkcg-font-size-md, 16px);
+}
+
+/* ============================================================================
+   Notifications
+   ============================================================================ */
+
+.persona-notifications {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  max-width: 400px;
+}
+
+.persona-notification {
+  background: #ffffff;
+  border-radius: var(--mkcg-radius, 8px);
+  padding: var(--mkcg-space-md, 20px);
+  margin-bottom: var(--mkcg-space-sm, 12px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #4facfe;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.persona-notification--success {
+  border-left-color: var(--mkcg-success, #34c759);
+}
+
+.persona-notification--error {
+  border-left-color: var(--mkcg-error, #ff3b30);
+}
+
+.persona-notification--info {
+  border-left-color: #4facfe;
+}
+
+/* ============================================================================
+   Loading States
+   ============================================================================ */
+
+.persona-loader {
+  display: none;
+  text-align: center;
+  padding: var(--mkcg-space-xl, 40px);
+}
+
+.persona-loader__spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #4facfe;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto var(--mkcg-space-md, 20px);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.persona-loader__text {
+  color: #6c757d;
+  font-size: var(--mkcg-font-size-md, 16px);
+}
+
+/* ============================================================================
+   Guidance Panel
+   ============================================================================ */
+
+.persona-generator__guidance {
+  background: #f8f9fa;
+  border-radius: var(--mkcg-radius, 8px);
+  padding: var(--mkcg-space-md, 20px);
+}
+
+.persona-generator__guidance-title {
+  font-size: var(--mkcg-font-size-md, 16px);
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: var(--mkcg-space-sm, 12px);
+}
+
+.persona-generator__guidance-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.persona-generator__guidance-item {
+  padding: var(--mkcg-space-xs, 8px) 0;
+  color: #495057;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.persona-generator__guidance-item::before {
+  content: '→';
+  color: #4facfe;
+  font-weight: bold;
+  margin-right: var(--mkcg-space-xs, 8px);
+}
+
+/* ============================================================================
+   Results Section
+   ============================================================================ */
+
+.persona-results-section {
+  margin-top: var(--mkcg-space-xl, 40px);
+  padding-top: var(--mkcg-space-xl, 40px);
+  border-top: 2px solid #e9ecef;
+}
+
+.persona-results__header {
+  text-align: center;
+  margin-bottom: var(--mkcg-space-lg, 30px);
+}
+
+.persona-results__title {
+  font-size: var(--mkcg-font-size-xl, 24px);
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: var(--mkcg-space-xs, 8px);
+}
+
+.persona-results__subtitle {
+  color: #6c757d;
+  font-size: var(--mkcg-font-size-md, 16px);
+}
+
+/* ============================================================================
+   Service Integration (Authority Hook & Impact Intro)
+   ============================================================================ */
+
+.persona-generator__authority-hook,
+.persona-generator__impact-intro {
+  margin-bottom: var(--mkcg-space-lg, 30px);
+}
+
+.persona-generator__service-toggle {
+  background: transparent;
+  color: #4facfe;
+  border: 2px solid #4facfe;
+  padding: var(--mkcg-space-xs, 8px) var(--mkcg-space-md, 20px);
+  border-radius: var(--mkcg-radius, 8px);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.persona-generator__service-toggle:hover {
+  background: #4facfe;
+  color: #ffffff;
+}
+
+.persona-generator__builder {
+  margin-top: var(--mkcg-space-md, 20px);
+  padding: var(--mkcg-space-md, 20px);
+  background: #f8f9fa;
+  border-radius: var(--mkcg-radius, 8px);
+  border: 2px solid #e9ecef;
+}
+
+.persona-generator__builder--hidden {
+  display: none;
+}
+
+/* ============================================================================
+   Responsive Adjustments
+   ============================================================================ */
+
+@media (max-width: 992px) {
+  .persona-options-container {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .persona-generator__container {
+    padding: var(--mkcg-space-md, 20px);
+  }
+
+  .persona-generator__settings {
+    grid-template-columns: 1fr;
+  }
+
+  .persona-notifications {
+    max-width: calc(100% - 40px);
+    left: 20px;
+  }
+}
