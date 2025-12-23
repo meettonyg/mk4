@@ -391,10 +391,13 @@ get_footer();
      * Render directory page
      */
     private function render_directory() {
+        // IMMEDIATE DEBUG - shows even if discovery fails
+        echo '<!-- ROUTER DEBUG: render_directory called at ' . date('H:i:s') . ' -->';
+
         $discovery = $this->get_discovery();
 
         if (!$discovery) {
-            echo '<div class="gmkb-error">Tool discovery not available.</div>';
+            echo '<div class="gmkb-error" style="padding:2rem;background:red;color:white;">Tool discovery not available.</div>';
             return;
         }
 
@@ -406,17 +409,10 @@ get_footer();
                 <header class="gmkb-directory-header">
                     <h1>Free AI Tools for Speakers & Authors</h1>
                     <p>Professional content generation tools to build your brand and grow your audience.</p>
+                    <p style="background:#fef3c7;padding:1rem;border-radius:8px;margin-top:1rem;">
+                        <strong>DEBUG:</strong> <?php echo count($all_tools); ?> tools found in <?php echo count($grouped); ?> categories
+                    </p>
                 </header>
-
-                <!-- ALWAYS show debug for now -->
-                <div class="gmkb-debug" style="padding: 1rem; background: #d1fae5; border: 1px solid #10b981; border-radius: 8px; margin-bottom: 2rem;">
-                    <strong>Debug:</strong><br>
-                    Tools found: <?php echo count($all_tools); ?><br>
-                    Categories: <?php echo count($grouped); ?><br>
-                    <?php foreach ($grouped as $cat_slug => $cat_data): ?>
-                        <?php echo esc_html($cat_slug); ?>: <?php echo count($cat_data['tools'] ?? []); ?> tools<br>
-                    <?php endforeach; ?>
-                </div>
 
                 <?php foreach ($grouped as $category_slug => $category): ?>
                     <?php if (!empty($category['tools'])): ?>
