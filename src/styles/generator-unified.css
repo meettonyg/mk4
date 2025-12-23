@@ -1,0 +1,632 @@
+/**
+ * ============================================================================
+ * GENERATOR UNIFIED CSS - Vue Component Design System
+ * ============================================================================
+ *
+ * Ported from legacy mkcg-unified-styles.css for Vue AI tools
+ * Uses .gmkb-generator-root wrapper to prevent CSS bleeding
+ *
+ * Architecture: BEM + Design Tokens
+ * ============================================================================
+ */
+
+/* ============================================================================
+   1. ROOT VARIABLES & DESIGN TOKENS
+   ============================================================================ */
+
+:root {
+  /* Brand Colors */
+  --mkcg-primary: #1a9bdc;
+  --mkcg-primary-light: #4db8e8;
+  --mkcg-primary-dark: #0d8ecf;
+  --mkcg-secondary: #f87f34;
+  --mkcg-secondary-light: #fa9a5a;
+  --mkcg-secondary-dark: #e67424;
+
+  /* Status Colors */
+  --mkcg-success: #34c759;
+  --mkcg-warning: #ff9500;
+  --mkcg-error: #ff3b30;
+  --mkcg-info: #007aff;
+
+  /* Text Colors */
+  --mkcg-text-primary: #2c3e50;
+  --mkcg-text-secondary: #5a6d7e;
+  --mkcg-text-tertiary: #8a9ba8;
+  --mkcg-text-light: #95a5a6;
+  --mkcg-text-white: #ffffff;
+
+  /* Background Colors */
+  --mkcg-bg-primary: #ffffff;
+  --mkcg-bg-secondary: #f9fafb;
+  --mkcg-bg-tertiary: #f5f7fa;
+  --mkcg-bg-quaternary: #edf2f7;
+  --mkcg-bg-overlay: rgba(0, 0, 0, 0.5);
+
+  /* Border Colors */
+  --mkcg-border-light: #e9ecef;
+  --mkcg-border-medium: #dce1e5;
+  --mkcg-border-dark: #cbd6e2;
+  --mkcg-border-focus: var(--mkcg-primary);
+
+  /* Spacing System (8px base unit) */
+  --mkcg-space-xs: 8px;
+  --mkcg-space-sm: 12px;
+  --mkcg-space-md: 20px;
+  --mkcg-space-lg: 30px;
+  --mkcg-space-xl: 40px;
+  --mkcg-space-xxl: 60px;
+
+  /* Typography */
+  --mkcg-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --mkcg-font-size-xs: 12px;
+  --mkcg-font-size-sm: 14px;
+  --mkcg-font-size-md: 16px;
+  --mkcg-font-size-lg: 18px;
+  --mkcg-font-size-xl: 24px;
+  --mkcg-font-size-xxl: 32px;
+
+  --mkcg-font-weight-normal: 400;
+  --mkcg-font-weight-medium: 500;
+  --mkcg-font-weight-semibold: 600;
+  --mkcg-font-weight-bold: 700;
+
+  --mkcg-line-height-tight: 1.2;
+  --mkcg-line-height-normal: 1.5;
+  --mkcg-line-height-relaxed: 1.6;
+
+  /* Design Elements */
+  --mkcg-radius: 8px;
+  --mkcg-radius-sm: 4px;
+  --mkcg-radius-lg: 12px;
+  --mkcg-radius-xl: 16px;
+
+  /* Shadows */
+  --mkcg-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --mkcg-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --mkcg-shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --mkcg-shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.15);
+
+  /* Transitions */
+  --mkcg-transition-fast: 0.15s ease;
+  --mkcg-transition-normal: 0.25s ease;
+}
+
+/* Dark Mode Support */
+[data-theme="dark"] .gmkb-generator-root,
+.gmkb-generator-root.theme-dark {
+  --mkcg-primary: #4db8e8;
+  --mkcg-text-primary: #f8fafc;
+  --mkcg-text-secondary: #cbd5e1;
+  --mkcg-text-tertiary: #94a3b8;
+  --mkcg-bg-primary: #0f172a;
+  --mkcg-bg-secondary: #1e293b;
+  --mkcg-bg-tertiary: #334155;
+  --mkcg-border-light: #334155;
+  --mkcg-border-medium: #475569;
+}
+
+/* ============================================================================
+   2. ROOT WRAPPER - CSS Isolation
+   ============================================================================ */
+
+.gmkb-generator-root {
+  font-family: var(--mkcg-font-family);
+  color: var(--mkcg-text-primary);
+  line-height: var(--mkcg-line-height-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.gmkb-generator-root *,
+.gmkb-generator-root *::before,
+.gmkb-generator-root *::after {
+  box-sizing: border-box;
+}
+
+/* ============================================================================
+   3. BASE GENERATOR CLASSES
+   ============================================================================ */
+
+/* Generator Container - Base layout wrapper */
+.gmkb-generator-root .generator__container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--mkcg-space-md);
+}
+
+/* Generator Header */
+.gmkb-generator-root .generator__header {
+  text-align: center;
+  padding: var(--mkcg-space-lg) 0;
+  margin-bottom: var(--mkcg-space-sm);
+}
+
+.gmkb-generator-root .generator__title {
+  font-size: var(--mkcg-font-size-xxl);
+  font-weight: var(--mkcg-font-weight-bold);
+  color: var(--mkcg-text-primary);
+  margin: 0;
+  line-height: var(--mkcg-line-height-tight);
+}
+
+.gmkb-generator-root .generator__subtitle {
+  font-size: var(--mkcg-font-size-lg);
+  color: var(--mkcg-text-secondary);
+  margin: var(--mkcg-space-xs) 0 0 0;
+  line-height: var(--mkcg-line-height-relaxed);
+}
+
+/* Generator Content - Main layout grid */
+.gmkb-generator-root .generator__content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mkcg-space-lg);
+  margin-bottom: var(--mkcg-space-xl);
+}
+
+/* Generator Panels */
+.gmkb-generator-root .generator__panel {
+  flex: 1;
+  min-width: 300px;
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+.gmkb-generator-root .generator__panel--left {
+  /* Left panel for form content */
+}
+
+.gmkb-generator-root .generator__panel--right {
+  background-color: var(--mkcg-bg-secondary);
+  padding: var(--mkcg-space-lg);
+  border-radius: var(--mkcg-radius);
+  border: 1px solid var(--mkcg-border-light);
+  box-shadow: var(--mkcg-shadow-sm);
+}
+
+/* Generator Results Container */
+.gmkb-generator-root .generator__results {
+  margin-top: var(--mkcg-space-md);
+  padding: var(--mkcg-space-md);
+  background-color: var(--mkcg-bg-secondary);
+  border-radius: var(--mkcg-radius);
+  border: 1px solid var(--mkcg-border-light);
+}
+
+/* ============================================================================
+   4. AUTHORITY HOOK COMPONENT
+   ============================================================================ */
+
+.gmkb-generator-root .generator__authority-hook {
+  background-color: var(--mkcg-bg-secondary);
+  border: 1px solid var(--mkcg-border-light);
+  border-radius: var(--mkcg-radius);
+  padding: var(--mkcg-space-md);
+  margin-bottom: var(--mkcg-space-lg);
+  box-shadow: var(--mkcg-shadow-sm);
+}
+
+.gmkb-generator-root .generator__authority-hook-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--mkcg-space-sm);
+}
+
+.gmkb-generator-root .generator__authority-hook-icon {
+  color: var(--mkcg-primary);
+  margin-right: var(--mkcg-space-xs);
+  font-size: var(--mkcg-font-size-lg);
+}
+
+.gmkb-generator-root .generator__authority-hook-title {
+  margin: 0;
+  flex-grow: 1;
+  font-size: var(--mkcg-font-size-lg);
+  color: var(--mkcg-text-primary);
+  font-weight: var(--mkcg-font-weight-semibold);
+}
+
+.gmkb-generator-root .generator__authority-hook-content {
+  margin-bottom: var(--mkcg-space-md);
+  color: var(--mkcg-primary);
+  font-weight: var(--mkcg-font-weight-medium);
+  font-size: var(--mkcg-font-size-md);
+  line-height: var(--mkcg-line-height-relaxed);
+}
+
+.gmkb-generator-root .generator__authority-hook-actions {
+  display: flex;
+  gap: var(--mkcg-space-xs);
+  flex-wrap: wrap;
+}
+
+/* Badge Component */
+.gmkb-generator-root .generator__badge {
+  background-color: #e1f5fe;
+  color: #0288d1;
+  padding: 4px var(--mkcg-space-xs);
+  border-radius: var(--mkcg-radius-sm);
+  font-size: var(--mkcg-font-size-xs);
+  font-weight: var(--mkcg-font-weight-bold);
+}
+
+/* ============================================================================
+   5. BUTTON STYLES
+   ============================================================================ */
+
+.gmkb-generator-root .generator__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--mkcg-space-xs) var(--mkcg-space-md);
+  border: none;
+  border-radius: var(--mkcg-radius-sm);
+  cursor: pointer;
+  font-weight: var(--mkcg-font-weight-medium);
+  font-size: var(--mkcg-font-size-sm);
+  text-decoration: none;
+  transition: var(--mkcg-transition-fast);
+  min-height: 40px;
+  font-family: inherit;
+  gap: var(--mkcg-space-xs);
+}
+
+.gmkb-generator-root .generator__button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.gmkb-generator-root .generator__button--primary {
+  background-color: var(--mkcg-primary);
+  color: var(--mkcg-text-white);
+}
+
+.gmkb-generator-root .generator__button--primary:hover {
+  background-color: var(--mkcg-primary-dark);
+}
+
+.gmkb-generator-root .generator__button--secondary {
+  background-color: var(--mkcg-secondary);
+  color: var(--mkcg-text-white);
+}
+
+.gmkb-generator-root .generator__button--secondary:hover {
+  background-color: var(--mkcg-secondary-dark);
+}
+
+.gmkb-generator-root .generator__button--outline {
+  background: var(--mkcg-bg-primary);
+  color: var(--mkcg-primary);
+  border: 1px solid var(--mkcg-primary);
+}
+
+.gmkb-generator-root .generator__button--outline:hover {
+  background-color: #f0f8ff;
+}
+
+/* Call to Action Button */
+.gmkb-generator-root .generator__button--call-to-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--mkcg-secondary) 0%, var(--mkcg-secondary-dark) 100%);
+  color: var(--mkcg-text-white);
+  border: none;
+  padding: var(--mkcg-space-sm) var(--mkcg-space-lg);
+  border-radius: var(--mkcg-radius);
+  font-size: var(--mkcg-font-size-md);
+  font-weight: var(--mkcg-font-weight-semibold);
+  cursor: pointer;
+  transition: var(--mkcg-transition-fast);
+  box-shadow: var(--mkcg-shadow-md);
+  font-family: inherit;
+  gap: var(--mkcg-space-xs);
+  min-height: 48px;
+}
+
+.gmkb-generator-root .generator__button--call-to-action:hover {
+  background: linear-gradient(135deg, var(--mkcg-secondary-dark) 0%, #a04000 100%);
+  transform: translateY(-1px);
+  box-shadow: var(--mkcg-shadow-lg);
+}
+
+.gmkb-generator-root .generator__button--call-to-action:disabled {
+  background: var(--mkcg-text-light);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Button States */
+.gmkb-generator-root .generator__button--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.gmkb-generator-root .generator__button--loading {
+  position: relative;
+  color: transparent;
+}
+
+.gmkb-generator-root .generator__button--loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 50%;
+  left: 50%;
+  margin-left: -8px;
+  margin-top: -8px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: generator-spin 1s linear infinite;
+}
+
+@keyframes generator-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ============================================================================
+   6. FORM COMPONENTS
+   ============================================================================ */
+
+.gmkb-generator-root .generator__field {
+  margin-bottom: var(--mkcg-space-md);
+}
+
+.gmkb-generator-root .generator__field-label {
+  display: block;
+  font-size: var(--mkcg-font-size-md);
+  margin: 0 0 var(--mkcg-space-sm) 0;
+  color: var(--mkcg-text-primary);
+  font-weight: var(--mkcg-font-weight-medium);
+}
+
+.gmkb-generator-root .generator__field-input {
+  width: 100%;
+  padding: var(--mkcg-space-sm);
+  border: 1px solid var(--mkcg-border-medium);
+  border-radius: var(--mkcg-radius-sm);
+  font-size: var(--mkcg-font-size-md);
+  font-family: inherit;
+  transition: var(--mkcg-transition-fast);
+  background-color: var(--mkcg-bg-primary);
+}
+
+.gmkb-generator-root .generator__field-input:focus {
+  border-color: var(--mkcg-border-focus);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(26, 155, 220, 0.2);
+}
+
+.gmkb-generator-root .generator__field-input::placeholder {
+  color: var(--mkcg-text-light);
+}
+
+.gmkb-generator-root .generator__field-helper {
+  font-size: var(--mkcg-font-size-sm);
+  color: var(--mkcg-text-secondary);
+  margin: var(--mkcg-space-xs) 0 0 0;
+  line-height: var(--mkcg-line-height-relaxed);
+}
+
+/* Textarea */
+.gmkb-generator-root .generator__field-textarea {
+  min-height: 100px;
+  resize: vertical;
+  line-height: var(--mkcg-line-height-relaxed);
+}
+
+/* ============================================================================
+   7. GUIDANCE PANEL (Right Panel)
+   ============================================================================ */
+
+.gmkb-generator-root .generator__guidance-header {
+  font-size: var(--mkcg-font-size-xl);
+  color: var(--mkcg-text-primary);
+  margin: 0 0 var(--mkcg-space-sm) 0;
+  font-weight: var(--mkcg-font-weight-semibold);
+  line-height: var(--mkcg-line-height-tight);
+}
+
+.gmkb-generator-root .generator__guidance-subtitle {
+  color: var(--mkcg-text-secondary);
+  margin-bottom: var(--mkcg-space-lg);
+  font-size: var(--mkcg-font-size-md);
+  line-height: var(--mkcg-line-height-relaxed);
+}
+
+/* Formula Box */
+.gmkb-generator-root .generator__formula-box {
+  background-color: var(--mkcg-bg-primary);
+  border: 1px solid var(--mkcg-border-light);
+  border-radius: var(--mkcg-radius);
+  padding: var(--mkcg-space-md);
+  margin-bottom: var(--mkcg-space-lg);
+  font-size: var(--mkcg-font-size-md);
+  line-height: var(--mkcg-line-height-relaxed);
+  color: var(--mkcg-text-primary);
+}
+
+.gmkb-generator-root .generator__formula-label {
+  display: inline-block;
+  background-color: var(--mkcg-bg-tertiary);
+  color: var(--mkcg-text-secondary);
+  padding: 3px var(--mkcg-space-xs);
+  border-radius: var(--mkcg-radius-sm);
+  font-size: var(--mkcg-font-size-xs);
+  font-weight: var(--mkcg-font-weight-bold);
+  margin-bottom: var(--mkcg-space-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.gmkb-generator-root .generator__highlight {
+  color: var(--mkcg-primary);
+  font-weight: var(--mkcg-font-weight-semibold);
+}
+
+/* Process Steps */
+.gmkb-generator-root .generator__process-step {
+  display: flex;
+  margin-bottom: var(--mkcg-space-lg);
+}
+
+.gmkb-generator-root .generator__process-icon {
+  flex: 0 0 40px;
+  color: var(--mkcg-primary);
+  margin-right: var(--mkcg-space-sm);
+  margin-top: 5px;
+}
+
+.gmkb-generator-root .generator__process-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.gmkb-generator-root .generator__process-content {
+  flex: 1;
+}
+
+.gmkb-generator-root .generator__process-title {
+  font-size: var(--mkcg-font-size-md);
+  margin: 0 0 var(--mkcg-space-xs) 0;
+  color: var(--mkcg-text-primary);
+  font-weight: var(--mkcg-font-weight-semibold);
+}
+
+.gmkb-generator-root .generator__process-description {
+  color: var(--mkcg-text-secondary);
+  font-size: var(--mkcg-font-size-sm);
+  line-height: var(--mkcg-line-height-relaxed);
+  margin: 0;
+}
+
+/* Example Cards */
+.gmkb-generator-root .generator__examples-header {
+  margin: var(--mkcg-space-lg) 0 var(--mkcg-space-sm);
+  font-size: var(--mkcg-font-size-md);
+  color: var(--mkcg-text-primary);
+  font-weight: var(--mkcg-font-weight-semibold);
+}
+
+.gmkb-generator-root .generator__example-card {
+  background-color: var(--mkcg-bg-primary);
+  border: 1px solid var(--mkcg-border-light);
+  border-radius: var(--mkcg-radius);
+  padding: var(--mkcg-space-sm);
+  margin-bottom: var(--mkcg-space-sm);
+}
+
+.gmkb-generator-root .generator__example-card strong {
+  display: block;
+  margin-bottom: var(--mkcg-space-xs);
+  color: var(--mkcg-text-primary);
+  font-weight: var(--mkcg-font-weight-semibold);
+}
+
+.gmkb-generator-root .generator__example-card p {
+  margin: var(--mkcg-space-xs) 0;
+  color: var(--mkcg-text-secondary);
+  font-size: var(--mkcg-font-size-sm);
+  line-height: var(--mkcg-line-height-normal);
+}
+
+/* ============================================================================
+   8. INTRO TEXT
+   ============================================================================ */
+
+.gmkb-generator-root .generator__intro {
+  color: var(--mkcg-text-secondary);
+  font-size: var(--mkcg-font-size-md);
+  line-height: var(--mkcg-line-height-relaxed);
+  margin-bottom: var(--mkcg-space-lg);
+}
+
+/* ============================================================================
+   9. LOADING STATE
+   ============================================================================ */
+
+.gmkb-generator-root .generator__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--mkcg-space-md);
+  color: var(--mkcg-text-secondary);
+  font-size: var(--mkcg-font-size-sm);
+}
+
+.gmkb-generator-root .generator__loading svg {
+  margin-right: var(--mkcg-space-xs);
+  animation: generator-spin 1.5s linear infinite;
+}
+
+/* ============================================================================
+   10. RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .gmkb-generator-root .generator__content {
+    flex-direction: column;
+  }
+
+  .gmkb-generator-root .generator__panel {
+    min-width: 100%;
+  }
+
+  .gmkb-generator-root .generator__title {
+    font-size: var(--mkcg-font-size-xl);
+  }
+
+  .gmkb-generator-root .generator__subtitle {
+    font-size: var(--mkcg-font-size-md);
+  }
+
+  .gmkb-generator-root .generator__panel--right {
+    padding: var(--mkcg-space-md);
+  }
+}
+
+/* ============================================================================
+   11. UTILITY CLASSES
+   ============================================================================ */
+
+.gmkb-generator-root .generator__hidden {
+  display: none !important;
+}
+
+.gmkb-generator-root .generator__flex {
+  display: flex !important;
+}
+
+.gmkb-generator-root .generator__flex-col {
+  flex-direction: column !important;
+}
+
+.gmkb-generator-root .generator__items-center {
+  align-items: center !important;
+}
+
+.gmkb-generator-root .generator__justify-between {
+  justify-content: space-between !important;
+}
+
+.gmkb-generator-root .generator__gap-sm {
+  gap: var(--mkcg-space-sm) !important;
+}
+
+.gmkb-generator-root .generator__gap-md {
+  gap: var(--mkcg-space-md) !important;
+}
+
+.gmkb-generator-root .generator__mt-md {
+  margin-top: var(--mkcg-space-md) !important;
+}
+
+.gmkb-generator-root .generator__mb-lg {
+  margin-bottom: var(--mkcg-space-lg) !important;
+}

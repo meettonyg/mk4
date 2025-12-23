@@ -110,6 +110,7 @@ error_log('MKCG Topics Template: Rendering with post_id=' . $post_id . ', has_da
 <div class="generator__container topics-generator" data-generator="topics">
     <div class="generator__header">
         <h1 class="generator__title">Create Your Interview Topics</h1>
+        <p class="generator__subtitle">Generate 5 compelling podcast interview topics based on your authority hook</p>
     </div>
     
     <div class="generator__content">

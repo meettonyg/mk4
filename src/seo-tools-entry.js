@@ -6,19 +6,27 @@
  *
  * Features:
  * - Auto-mounts to elements with [data-gmkb-tool] attribute
+ * - Tool directory page [data-gmkb-page-type="directory"]
+ * - Individual tool pages [data-gmkb-page-type="tool"]
  * - Self-contained Pinia store (no external Vue app dependency)
  * - CSS isolation via scoped wrapper class
  * - IP-based rate limiting (no WordPress auth required)
  *
  * Usage in WordPress:
  * ```php
- * // Shortcode handler outputs:
- * <div data-gmkb-tool="biography" data-nonce="<?php echo $nonce; ?>"></div>
+ * // Individual tool widget:
+ * <div data-gmkb-tool="biography"></div>
+ *
+ * // Tool directory page:
+ * <div data-gmkb-page-type="directory" data-gmkb-base-url="/tools/"></div>
+ *
+ * // Individual tool page:
+ * <div data-gmkb-page-type="tool" data-gmkb-tool-slug="biography"></div>
  * ```
  *
  * @package GMKB
  * @subpackage SEO Tools
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2.2.0
  */
 
@@ -29,6 +37,7 @@ import { createPinia } from 'pinia';
 import './styles/ai-standalone.css';
 import './styles/ai-shared.css';
 
+<<<<<<< HEAD
 // Import generator components from /tools/ directory (standalone mode only)
 // Message Builder tools
 import BiographyGenerator from '@tools/biography-generator/BiographyGenerator.vue';
@@ -64,6 +73,51 @@ import NewsletterGenerator from '@tools/newsletter-writer/NewsletterGenerator.vu
 import YoutubeDescriptionGenerator from '@tools/youtube-description-generator/YoutubeDescriptionGenerator.vue';
 import PodcastNotesGenerator from '@tools/podcast-notes-generator/PodcastNotesGenerator.vue';
 import SeoOptimizerGenerator from '@tools/seo-optimizer/SeoOptimizerGenerator.vue';
+=======
+// Import unified generator CSS for two-panel layout
+import './styles/generator-unified.css';
+
+// Import generator components from /tools/ (root level)
+// Message Builder tools
+import BiographyGenerator from '../tools/biography/Generator.vue';
+import TopicsGenerator from '../tools/topics/Generator.vue';
+import QuestionsGenerator from '../tools/questions/Generator.vue';
+import TaglineGenerator from '../tools/tagline/Generator.vue';
+import GuestIntroGenerator from '../tools/guest-intro/Generator.vue';
+import AuthorityHookBuilder from '../tools/authority-hook/Generator.vue';
+import OffersGenerator from '../tools/offers/Generator.vue';
+
+// Value Builder tools
+import ElevatorPitchGenerator from '../tools/elevator-pitch/Generator.vue';
+import SoundBiteGenerator from '../tools/sound-bite/Generator.vue';
+import PersonaGenerator from '../tools/persona/Generator.vue';
+import ImpactIntroBuilder from '../tools/impact-intro/Generator.vue';
+
+// Strategy tools
+import BrandStoryGenerator from '../tools/brand-story/Generator.vue';
+import SignatureStoryGenerator from '../tools/signature-story/Generator.vue';
+import CredibilityStoryGenerator from '../tools/credibility-story/Generator.vue';
+import FrameworkGenerator from '../tools/framework/Generator.vue';
+import InterviewPrepGenerator from '../tools/interview-prep/Generator.vue';
+
+// Content tools
+import BlogGenerator from '../tools/blog/Generator.vue';
+import ContentRepurposerGenerator from '../tools/content-repurpose/Generator.vue';
+import PressReleaseGenerator from '../tools/press-release/Generator.vue';
+
+// Social/Email tools
+import SocialPostGenerator from '../tools/social-post/Generator.vue';
+import EmailWriterGenerator from '../tools/email/Generator.vue';
+import NewsletterGenerator from '../tools/newsletter/Generator.vue';
+import YoutubeDescriptionGenerator from '../tools/youtube-description/Generator.vue';
+import PodcastNotesGenerator from '../tools/podcast-notes/Generator.vue';
+import SeoOptimizerGenerator from '../tools/seo-optimizer/Generator.vue';
+
+// Page-level components
+import ToolDirectoryPage from '../tools/ToolDirectoryPage.vue';
+import DynamicToolPage from '../tools/DynamicToolPage.vue';
+import ToolLandingPage from '../tools/ToolLandingPage.vue';
+>>>>>>> claude/fix-ai-tools-design-e7eoL
 
 /**
  * Component registry for data-gmkb-tool attribute values
@@ -207,22 +261,146 @@ function initializeTool(container, toolTypeOverride = null) {
 }
 
 /**
+ * Initialize the tool directory page
+ *
+ * @param {HTMLElement} container - The container element with data-gmkb-page-type="directory"
+ * @returns {Object|null} Vue app instance or null if initialization failed
+ */
+function initializeDirectory(container) {
+    // Check if already mounted
+    if (mountedApps.has(container)) {
+        console.warn(`[GMKBSeoTools] Directory already mounted on element`);
+        return mountedApps.get(container);
+    }
+
+    // Get base URL from data attribute
+    const baseUrl = container.dataset.gmkbBaseUrl || '/tools/';
+
+    // Create Vue app with ToolDirectoryPage
+    const app = createApp({
+        name: 'GMKBToolDirectory',
+        render() {
+            return h('div', { class: 'gmkb-standalone-scope' }, [
+                h(ToolDirectoryPage, {
+                    baseUrl: baseUrl,
+                }),
+            ]);
+        },
+    });
+
+    // Create and install Pinia store
+    const pinia = createPinia();
+    app.use(pinia);
+
+    // Mount the app
+    app.mount(container);
+
+    // Store reference for cleanup
+    mountedApps.set(container, app);
+
+    console.log(`[GMKBSeoTools] Mounted tool directory`);
+
+    return app;
+}
+
+/**
+ * Initialize a dynamic tool page
+ *
+ * @param {HTMLElement} container - The container element with data-gmkb-page-type="tool"
+ * @returns {Object|null} Vue app instance or null if initialization failed
+ */
+function initializeToolPage(container) {
+    // Check if already mounted
+    if (mountedApps.has(container)) {
+        console.warn(`[GMKBSeoTools] Tool page already mounted on element`);
+        return mountedApps.get(container);
+    }
+
+    // Get tool slug and mode from data attributes
+    const toolSlug = container.dataset.gmkbToolSlug || '';
+    const directoryUrl = container.dataset.gmkbDirectoryUrl || '/tools/';
+    const mode = container.dataset.gmkbMode || 'landing'; // 'landing' or 'use'
+
+    // Store nonce globally for API calls
+    if (!window.gmkbSeoTools) {
+        const nonce = window.gmkbPublicNonce || (window.gmkbPublicData && window.gmkbPublicData.publicNonce) || '';
+        window.gmkbSeoTools = { nonce };
+    }
+
+    // Choose component based on mode
+    const PageComponent = mode === 'use' ? DynamicToolPage : ToolLandingPage;
+
+    // Create Vue app with appropriate page component
+    const app = createApp({
+        name: mode === 'use' ? 'GMKBDynamicToolPage' : 'GMKBToolLandingPage',
+        render() {
+            return h('div', { class: 'gmkb-standalone-scope' }, [
+                h(PageComponent, {
+                    toolSlug: toolSlug,
+                    directoryUrl: directoryUrl,
+                }),
+            ]);
+        },
+    });
+
+    // Create and install Pinia store
+    const pinia = createPinia();
+    app.use(pinia);
+
+    // Mount the app
+    app.mount(container);
+
+    // Store reference for cleanup
+    mountedApps.set(container, app);
+
+    console.log(`[GMKBSeoTools] Mounted dynamic tool page: ${toolSlug || '(auto-detect)'}`);
+
+    return app;
+}
+
+/**
  * Initialize all SEO tools on the page
+ *
+ * Handles three types of containers:
+ * - [data-gmkb-tool] - Individual tool widgets
+ * - [data-gmkb-page-type="directory"] - Tool directory page
+ * - [data-gmkb-page-type="tool"] - Dynamic tool page
  *
  * @returns {number} Number of tools initialized
  */
 function initializeAll() {
+<<<<<<< HEAD
     // Support both attribute formats
     const containers = document.querySelectorAll('[data-gmkb-tool], [data-tool]');
+=======
+>>>>>>> claude/fix-ai-tools-design-e7eoL
     let count = 0;
 
-    containers.forEach((container) => {
+    // Initialize individual tool widgets
+    const toolContainers = document.querySelectorAll('[data-gmkb-tool]');
+    toolContainers.forEach((container) => {
         if (initializeTool(container)) {
             count++;
         }
     });
 
-    console.log(`[GMKBSeoTools] Initialized ${count} tool(s)`);
+    // Initialize directory pages
+    const directoryContainers = document.querySelectorAll('[data-gmkb-page-type="directory"]');
+    directoryContainers.forEach((container) => {
+        if (initializeDirectory(container)) {
+            count++;
+        }
+    });
+
+    // Initialize dynamic tool pages
+    const toolPageContainers = document.querySelectorAll('[data-gmkb-page-type="tool"]');
+    toolPageContainers.forEach((container) => {
+        if (initializeToolPage(container)) {
+            count++;
+        }
+    });
+
+    console.log(`[GMKBSeoTools] Initialized ${count} component(s)`);
     return count;
 }
 
@@ -267,11 +445,13 @@ function destroyAll() {
 // Export API for external use
 window.GMKBSeoTools = {
     init: initializeTool,
+    initDirectory: initializeDirectory,
+    initToolPage: initializeToolPage,
     initAll: initializeAll,
     mountTool: mountTool,  // Alias for shortcode compatibility
     destroy: destroyTool,
     destroyAll: destroyAll,
-    version: '1.0.0',
+    version: '2.0.0',
 };
 
 // Auto-initialize on DOM ready
@@ -283,7 +463,7 @@ if (document.readyState === 'loading') {
 }
 
 // Support dynamic content (e.g., AJAX-loaded elements)
-// Observe for new elements with data-gmkb-tool
+// Observe for new elements with gmkb data attributes
 const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
         mutation.addedNodes.forEach((node) => {
@@ -292,9 +472,26 @@ const observer = new MutationObserver((mutations) => {
                 if (node.hasAttribute && node.hasAttribute('data-gmkb-tool')) {
                     initializeTool(node);
                 }
-                // Check children of added node
-                const children = node.querySelectorAll ? node.querySelectorAll('[data-gmkb-tool]') : [];
-                children.forEach(initializeTool);
+                // Check if the added node is a directory page
+                if (node.hasAttribute && node.getAttribute('data-gmkb-page-type') === 'directory') {
+                    initializeDirectory(node);
+                }
+                // Check if the added node is a tool page
+                if (node.hasAttribute && node.getAttribute('data-gmkb-page-type') === 'tool') {
+                    initializeToolPage(node);
+                }
+
+                // Check children of added node for all types
+                if (node.querySelectorAll) {
+                    const toolChildren = node.querySelectorAll('[data-gmkb-tool]');
+                    toolChildren.forEach(initializeTool);
+
+                    const directoryChildren = node.querySelectorAll('[data-gmkb-page-type="directory"]');
+                    directoryChildren.forEach(initializeDirectory);
+
+                    const toolPageChildren = node.querySelectorAll('[data-gmkb-page-type="tool"]');
+                    toolPageChildren.forEach(initializeToolPage);
+                }
             }
         });
     });
@@ -308,6 +505,8 @@ observer.observe(document.body, {
 
 export {
     initializeTool,
+    initializeDirectory,
+    initializeToolPage,
     initializeAll,
     destroyTool,
     destroyAll,

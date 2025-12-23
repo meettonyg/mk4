@@ -56,8 +56,13 @@
 import { ref, watch } from 'vue';
 import { useMediaKitStore } from '@stores/mediaKit';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
+<<<<<<< HEAD
 import { AiModal } from '@/vue/components/ai';
 import BiographyGenerator from '@tools/biography-generator/BiographyGenerator.vue';
+=======
+import AiModal from '../../src/vue/components/ai/AiModal.vue';
+import BiographyGenerator from '../../tools/biography/Generator.vue';
+>>>>>>> claude/fix-ai-tools-design-e7eoL
 
 const props = defineProps({
   componentId: {

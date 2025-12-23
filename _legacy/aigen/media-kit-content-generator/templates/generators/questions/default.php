@@ -208,6 +208,7 @@ error_log('MKCG Questions Template: Rendering with post_id=' . $post_id . ', has
 
     <div class="generator__header">
         <h1 class="generator__title">Create Your Interview Questions</h1>
+        <p class="generator__subtitle">Create engaging interview questions that showcase your expertise</p>
     </div>
     
     <div class="generator__content">
