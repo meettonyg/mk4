@@ -237,7 +237,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { useAIGeneration } from '../../../composables/useAIGeneration';
+import { useAIGenerator } from '../../../composables/useAIGenerator';
 
 // Compact widget components (integrated mode)
 import AiWidgetFrame from './AiWidgetFrame.vue';
@@ -276,7 +276,7 @@ const {
   generatedContent,
   generate,
   copyToClipboard
-} = useAIGeneration('framework');
+} = useAIGenerator('framework');
 
 // Local state
 const problem = ref('');

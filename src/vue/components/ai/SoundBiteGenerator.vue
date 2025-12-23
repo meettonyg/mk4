@@ -236,7 +236,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { useAISoundBite } from '../../../composables/useAISoundBite';
+import { useAIGenerator } from '../../../composables/useAIGenerator';
 
 // Compact widget components (integrated mode)
 import AiWidgetFrame from './AiWidgetFrame.vue';
@@ -271,12 +271,33 @@ const {
   error,
   usageRemaining,
   resetTime,
-  soundBites,
+  generatedContent,
   hasContent,
-  generate,
-  copyToClipboard,
-  copySingleToClipboard
-} = useAISoundBite();
+  generate: generateContent,
+  copyToClipboard
+} = useAIGenerator('sound_bite');
+
+// Computed to get sound bites array from generated content
+const soundBites = computed(() => {
+  if (!generatedContent.value) return [];
+  if (Array.isArray(generatedContent.value)) return generatedContent.value;
+  if (typeof generatedContent.value === 'string') {
+    // Split by newlines if it's a string
+    return generatedContent.value.split('\n').filter(line => line.trim());
+  }
+  return [generatedContent.value];
+});
+
+// Copy single sound bite to clipboard
+const copySingleToClipboard = async (text) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (err) {
+    console.error('Failed to copy:', err);
+    return false;
+  }
+};
 
 // Local state
 const topic = ref('');
@@ -346,7 +367,7 @@ const contextLabel = computed(() => {
 const handleGenerate = async () => {
   try {
     const generatorContext = props.mode === 'integrated' ? 'builder' : 'public';
-    await generate({
+    await generateContent({
       topic: topic.value,
       expertise: expertise.value,
       context: context.value
