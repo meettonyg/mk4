@@ -40,45 +40,45 @@ import './styles/ai-shared.css';
 // Import unified generator CSS for two-panel layout
 import './styles/generator-unified.css';
 
-// Import generator components (standalone mode only)
-// Original tools
-import BiographyGenerator from './vue/components/ai/BiographyGenerator.vue';
-import TopicsGenerator from './vue/components/ai/TopicsGenerator.vue';
-import QuestionsGenerator from './vue/components/ai/QuestionsGenerator.vue';
-import TaglineGenerator from './vue/components/ai/TaglineGenerator.vue';
-import GuestIntroGenerator from './vue/components/ai/GuestIntroGenerator.vue';
-import AuthorityHookBuilder from './vue/components/ai/AuthorityHookBuilder.vue';
-import OffersGenerator from './vue/components/ai/OffersGenerator.vue';
+// Import generator components from the new tools directory
+// Message Builder tools
+import BiographyGenerator from './vue/tools/biography/Generator.vue';
+import TopicsGenerator from './vue/tools/topics/Generator.vue';
+import QuestionsGenerator from './vue/tools/questions/Generator.vue';
+import TaglineGenerator from './vue/tools/tagline/Generator.vue';
+import GuestIntroGenerator from './vue/tools/guest-intro/Generator.vue';
+import AuthorityHookBuilder from './vue/tools/authority-hook/Generator.vue';
+import OffersGenerator from './vue/tools/offers/Generator.vue';
 
 // Value Builder tools
-import ElevatorPitchGenerator from './vue/components/ai/ElevatorPitchGenerator.vue';
-import SoundBiteGenerator from './vue/components/ai/SoundBiteGenerator.vue';
-import PersonaGenerator from './vue/components/ai/PersonaGenerator.vue';
-import ImpactIntroBuilder from './vue/components/ai/ImpactIntroBuilder.vue';
+import ElevatorPitchGenerator from './vue/tools/elevator-pitch/Generator.vue';
+import SoundBiteGenerator from './vue/tools/sound-bite/Generator.vue';
+import PersonaGenerator from './vue/tools/persona/Generator.vue';
+import ImpactIntroBuilder from './vue/tools/impact-intro/Generator.vue';
 
 // Strategy tools
-import BrandStoryGenerator from './vue/components/ai/BrandStoryGenerator.vue';
-import SignatureStoryGenerator from './vue/components/ai/SignatureStoryGenerator.vue';
-import CredibilityStoryGenerator from './vue/components/ai/CredibilityStoryGenerator.vue';
-import FrameworkGenerator from './vue/components/ai/FrameworkGenerator.vue';
-import InterviewPrepGenerator from './vue/components/ai/InterviewPrepGenerator.vue';
+import BrandStoryGenerator from './vue/tools/brand-story/Generator.vue';
+import SignatureStoryGenerator from './vue/tools/signature-story/Generator.vue';
+import CredibilityStoryGenerator from './vue/tools/credibility-story/Generator.vue';
+import FrameworkGenerator from './vue/tools/framework/Generator.vue';
+import InterviewPrepGenerator from './vue/tools/interview-prep/Generator.vue';
 
 // Content tools
-import BlogGenerator from './vue/components/ai/BlogGenerator.vue';
-import ContentRepurposerGenerator from './vue/components/ai/ContentRepurposerGenerator.vue';
-import PressReleaseGenerator from './vue/components/ai/PressReleaseGenerator.vue';
+import BlogGenerator from './vue/tools/blog/Generator.vue';
+import ContentRepurposerGenerator from './vue/tools/content-repurpose/Generator.vue';
+import PressReleaseGenerator from './vue/tools/press-release/Generator.vue';
 
 // Social/Email tools
-import SocialPostGenerator from './vue/components/ai/SocialPostGenerator.vue';
-import EmailWriterGenerator from './vue/components/ai/EmailWriterGenerator.vue';
-import NewsletterGenerator from './vue/components/ai/NewsletterGenerator.vue';
-import YoutubeDescriptionGenerator from './vue/components/ai/YoutubeDescriptionGenerator.vue';
-import PodcastNotesGenerator from './vue/components/ai/PodcastNotesGenerator.vue';
-import SeoOptimizerGenerator from './vue/components/ai/SeoOptimizerGenerator.vue';
+import SocialPostGenerator from './vue/tools/social-post/Generator.vue';
+import EmailWriterGenerator from './vue/tools/email/Generator.vue';
+import NewsletterGenerator from './vue/tools/newsletter/Generator.vue';
+import YoutubeDescriptionGenerator from './vue/tools/youtube-description/Generator.vue';
+import PodcastNotesGenerator from './vue/tools/podcast-notes/Generator.vue';
+import SeoOptimizerGenerator from './vue/tools/seo-optimizer/Generator.vue';
 
-// Page-level components for directory and dynamic tool pages
-import ToolDirectoryPage from './vue/components/ai-tools/ToolDirectoryPage.vue';
-import DynamicToolPage from './vue/components/ai-tools/DynamicToolPage.vue';
+// Page-level components
+import ToolDirectoryPage from './vue/tools/ToolDirectoryPage.vue';
+import DynamicToolPage from './vue/tools/DynamicToolPage.vue';
 
 /**
  * Component registry for data-gmkb-tool attribute values
