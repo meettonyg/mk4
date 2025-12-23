@@ -244,9 +244,10 @@ error_log('MKCG Offers Template: Rendering with post_id=' . $post_id . ', has_da
 ?>
 
 <div class="generator__container offers-generator" data-generator="offers">
-    
+
         <div class="generator__header">
             <h1 class="generator__title">Generate Offers with AI <span class="generator__badge">BETA</span></h1>
+            <p class="generator__subtitle">Create compelling offers that convert podcast listeners into clients</p>
         </div>
         
         <div class="generator__content">
