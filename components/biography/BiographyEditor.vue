@@ -56,7 +56,8 @@
 import { ref, watch } from 'vue';
 import { useMediaKitStore } from '@stores/mediaKit';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
-import { AiModal, BiographyGenerator } from '@/vue/components/ai';
+import AiModal from '../../src/vue/components/ai/AiModal.vue';
+import BiographyGenerator from '../../tools/biography/Generator.vue';
 
 const props = defineProps({
   componentId: {

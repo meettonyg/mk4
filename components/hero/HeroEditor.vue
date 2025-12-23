@@ -139,7 +139,8 @@
 import { ref, watch } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
 import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
-import { AiModal, TaglineGenerator } from '../../src/vue/components/ai';
+import AiModal from '../../src/vue/components/ai/AiModal.vue';
+import TaglineGenerator from '../../tools/tagline/Generator.vue';
 // PHASE 5: Profile branding integration
 import ProfileImagePicker from '../../src/vue/components/shared/ProfileImagePicker.vue';
 
