@@ -1,5 +1,167 @@
 <template>
+  <!-- Standalone Mode: Full two-panel layout -->
+  <GeneratorLayout
+    v-if="mode === 'standalone'"
+    title="Speaking Topics Generator"
+    subtitle="Generate compelling interview and speaking topics that showcase your expertise"
+    intro-text="Generate 5 compelling speaking and interview topics based on your expertise and authority hook. Each topic will be designed to position you as a thought leader, showcase your unique perspective, and attract the right audiences for podcasts, interviews, and speaking engagements."
+    generator-type="topics"
+    :has-results="hasTopics"
+    :is-loading="isGenerating"
+  >
+    <!-- Left Panel: Form -->
+    <template #left>
+      <!-- Profile Selector (standalone mode only) -->
+      <div v-if="showProfileSelector" class="generator__section">
+        <ProfileSelector
+          v-model="selectedProfileId"
+          mode="dropdown"
+          label="Save to Profile"
+          placeholder="Select a profile to save topics to..."
+          :show-current-profile="true"
+          @select="handleProfileSelect"
+        />
+      </div>
+
+      <!-- Expertise Section -->
+      <div class="generator__section">
+        <h3 class="generator__section-title">Your Expertise</h3>
+
+        <div class="generator__field">
+          <label class="generator__field-label generator__field-label--required">Your Expertise</label>
+          <textarea
+            v-model="expertise"
+            class="generator__field-input generator__field-textarea"
+            placeholder="e.g., Leadership development, executive coaching, organizational psychology..."
+            rows="3"
+          ></textarea>
+          <p class="generator__field-helper">
+            Describe your areas of expertise and unique methodologies.
+          </p>
+        </div>
+
+        <div class="generator__field">
+          <label class="generator__field-label">Authority Hook (Optional)</label>
+          <textarea
+            v-model="authorityHookText"
+            class="generator__field-input generator__field-textarea"
+            placeholder="e.g., I help busy executives achieve work-life balance..."
+            rows="2"
+          ></textarea>
+          <p class="generator__field-helper">
+            Add your positioning statement for more targeted topics.
+          </p>
+        </div>
+      </div>
+
+      <!-- Generate Button -->
+      <div class="generator__actions">
+        <button
+          type="button"
+          class="generator__button generator__button--call-to-action"
+          :class="{ 'generator__button--loading': isGenerating }"
+          :disabled="!canGenerate || isGenerating"
+          @click="handleGenerate"
+        >
+          <svg v-if="!isGenerating" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+          {{ isGenerating ? 'Generating...' : 'Generate 5 Topics with AI' }}
+        </button>
+      </div>
+
+      <!-- Error Display -->
+      <div v-if="error" class="generator__error">
+        <p>{{ error }}</p>
+        <button type="button" class="generator__button generator__button--outline" @click="handleGenerate">
+          Try Again
+        </button>
+      </div>
+    </template>
+
+    <!-- Right Panel: Guidance -->
+    <template #right>
+      <GuidancePanel
+        title="Crafting Irresistible Speaking Topics"
+        subtitle="Great speaking topics position you as a thought leader and attract the right opportunities for podcasts, interviews, and conferences."
+        :formula="topicsFormula"
+        :process-steps="processSteps"
+        :examples="examples"
+        examples-title="Example Topic Ideas:"
+      />
+    </template>
+
+    <!-- Results -->
+    <template #results>
+      <div class="topics-generator__results">
+        <div class="topics-generator__results-header">
+          <h3>Your Generated Topics</h3>
+          <p>5 compelling topics ready for your next interview or speaking engagement</p>
+        </div>
+
+        <!-- Topics Cards -->
+        <div class="topics-generator__cards">
+          <div
+            v-for="(topic, index) in topics"
+            :key="index"
+            class="topics-generator__card"
+            :class="{ 'topics-generator__card--selected': selectedTopicIndex === index }"
+            @click="handleSelectTopic(index)"
+          >
+            <div class="topics-generator__card-number">{{ index + 1 }}</div>
+            <p class="topics-generator__card-text">{{ topic }}</p>
+          </div>
+        </div>
+
+        <!-- Save Actions -->
+        <div v-if="showSaveToProfile" class="topics-generator__actions">
+          <button
+            type="button"
+            class="generator__button generator__button--primary"
+            :disabled="!canSaveToProfile || isSaving"
+            @click="handleSaveToProfile"
+          >
+            <span v-if="isSaving" class="generator__button-spinner"></span>
+            <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            {{ isSaving ? 'Saving...' : 'Save to Profile' }}
+          </button>
+
+          <button
+            type="button"
+            class="generator__button generator__button--outline"
+            @click="handleCopy"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            Copy All Topics
+          </button>
+
+          <span v-if="!selectedProfileId" class="generator__field-helper">
+            Select a profile above to enable saving
+          </span>
+          <span v-if="saveSuccess" class="topics-generator__success">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Saved successfully!
+          </span>
+          <span v-if="saveError" class="topics-generator__error-msg">
+            {{ saveError }}
+          </span>
+        </div>
+      </div>
+    </template>
+  </GeneratorLayout>
+
+  <!-- Integrated Mode: Compact widget -->
   <AiWidgetFrame
+    v-else
     title="Speaking Topics Generator"
     description="Generate compelling interview and speaking topics that showcase your expertise."
     :mode="mode"
@@ -114,10 +276,15 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useAITopics } from '../../../composables/useAITopics';
 import { useAuthorityHook } from '../../../composables/useAuthorityHook';
 import { useProfileContext } from '../../../composables/useProfileContext';
+
+// Compact widget components (integrated mode)
 import AiWidgetFrame from './AiWidgetFrame.vue';
 import AiGenerateButton from './AiGenerateButton.vue';
 import AiResultsDisplay from './AiResultsDisplay.vue';
 import ProfileSelector from '../shared/ProfileSelector.vue';
+
+// Full layout components (standalone mode)
+import { GeneratorLayout, GuidancePanel } from '../ai-tools/_shared';
 
 const props = defineProps({
   /**
@@ -177,6 +344,43 @@ const authorityHookText = ref('');
 const selectedTopicIndex = ref(-1);
 const selectedProfileId = ref(props.profileId || null);
 const saveSuccess = ref(false);
+
+/**
+ * Topics formula for guidance panel
+ */
+const topicsFormula = '<span class="generator__highlight">[EXPERTISE]</span> + <span class="generator__highlight">[AUDIENCE NEEDS]</span> + <span class="generator__highlight">[UNIQUE ANGLE]</span> = Compelling Topic';
+
+/**
+ * Process steps for guidance panel
+ */
+const processSteps = [
+  {
+    title: 'Why Topic Selection Matters',
+    description: 'Your speaking topics serve as conversation starters that open doors to podcasts, interviews, and speaking engagements. The right topics position you as the go-to expert in your field, attract your ideal audience, and create opportunities to share your message on larger platforms.'
+  },
+  {
+    title: 'What Makes Topics Irresistible',
+    description: 'The best speaking topics are specific, outcome-focused, and timely. They address urgent problems your audience faces, promise clear solutions or insights, and showcase your unique perspective or methodology. They should spark curiosity while demonstrating your authority.'
+  },
+  {
+    title: 'How to Use Your Generated Topics',
+    description: 'Use these topics when pitching yourself for podcast interviews, applying for speaking opportunities, or creating content themes. Customize each topic based on the audience and platform, and be ready to expand on why you\'re uniquely qualified to speak on each subject.'
+  }
+];
+
+/**
+ * Example topics for guidance panel
+ */
+const examples = [
+  {
+    title: 'Leadership Topic Example:',
+    description: '"The 3 Critical Mistakes New Executives Make (And How to Avoid Them)" - This topic is specific, addresses a pain point, promises actionable insights, and positions the speaker as an experienced guide.'
+  },
+  {
+    title: 'Marketing Topic Example:',
+    description: '"How to Generate 100 Qualified Leads in 30 Days Without Paid Ads" - This topic is results-focused, has a clear timeframe, addresses a common challenge, and hints at a unique methodology.'
+  }
+];
 
 /**
  * Show profile selector in standalone mode when not in builder
@@ -339,14 +543,139 @@ watch(contextProfileId, (newVal) => {
 </script>
 
 <style scoped>
-/* Profile Selector Section */
+/* Standalone Mode Styles */
+.generator__section {
+  margin-bottom: var(--mkcg-space-lg, 30px);
+}
+
+.generator__section-title {
+  font-size: var(--mkcg-font-size-lg, 18px);
+  font-weight: var(--mkcg-font-weight-semibold, 600);
+  color: var(--mkcg-text-primary, #2c3e50);
+  margin: 0 0 var(--mkcg-space-md, 20px) 0;
+}
+
+.generator__actions {
+  margin-top: var(--mkcg-space-lg, 30px);
+  text-align: center;
+}
+
+.generator__error {
+  margin-top: var(--mkcg-space-md, 20px);
+  padding: var(--mkcg-space-md, 20px);
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--mkcg-radius, 8px);
+  text-align: center;
+}
+
+.generator__error p {
+  color: #991b1b;
+  margin: 0 0 var(--mkcg-space-sm, 12px) 0;
+}
+
+/* Topics Results */
+.topics-generator__results {
+  padding: var(--mkcg-space-md, 20px);
+}
+
+.topics-generator__results-header {
+  margin-bottom: var(--mkcg-space-md, 20px);
+}
+
+.topics-generator__results-header h3 {
+  margin: 0 0 var(--mkcg-space-xs, 8px) 0;
+  font-size: var(--mkcg-font-size-lg, 18px);
+  color: var(--mkcg-text-primary, #2c3e50);
+}
+
+.topics-generator__results-header p {
+  margin: 0;
+  color: var(--mkcg-text-secondary, #5a6d7e);
+  font-size: var(--mkcg-font-size-sm, 14px);
+}
+
+.topics-generator__cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mkcg-space-sm, 12px);
+  margin-bottom: var(--mkcg-space-md, 20px);
+}
+
+.topics-generator__card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mkcg-space-md, 20px);
+  padding: var(--mkcg-space-md, 20px);
+  background: var(--mkcg-bg-primary, #ffffff);
+  border: 2px solid var(--mkcg-border-light, #e9ecef);
+  border-radius: var(--mkcg-radius, 8px);
+  cursor: pointer;
+  transition: var(--mkcg-transition-fast, 0.15s ease);
+}
+
+.topics-generator__card:hover {
+  border-color: var(--mkcg-primary, #1a9bdc);
+  box-shadow: 0 2px 8px rgba(26, 155, 220, 0.1);
+}
+
+.topics-generator__card--selected {
+  border-color: var(--mkcg-primary, #1a9bdc);
+  background: rgba(26, 155, 220, 0.05);
+}
+
+.topics-generator__card-number {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--mkcg-primary, #1a9bdc);
+  color: white;
+  font-weight: var(--mkcg-font-weight-bold, 700);
+  font-size: var(--mkcg-font-size-sm, 14px);
+  border-radius: 50%;
+}
+
+.topics-generator__card-text {
+  flex: 1;
+  margin: 0;
+  color: var(--mkcg-text-primary, #2c3e50);
+  line-height: var(--mkcg-line-height-relaxed, 1.6);
+}
+
+.topics-generator__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--mkcg-space-sm, 12px);
+  margin-top: var(--mkcg-space-md, 20px);
+  padding-top: var(--mkcg-space-md, 20px);
+  border-top: 1px solid var(--mkcg-border-light, #e9ecef);
+  flex-wrap: wrap;
+}
+
+.topics-generator__success {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #10b981;
+}
+
+.topics-generator__error-msg {
+  font-size: 13px;
+  color: #dc2626;
+}
+
+/* Integrated Mode Styles (kept from original) */
 .gmkb-ai-profile-selector {
   margin-bottom: 20px;
   padding-bottom: 20px;
   border-bottom: 1px solid #e2e8f0;
 }
 
-/* Save Actions */
 .gmkb-ai-save-actions {
   display: flex;
   align-items: center;

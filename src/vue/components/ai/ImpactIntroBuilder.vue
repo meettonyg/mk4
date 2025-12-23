@@ -1,5 +1,199 @@
 <template>
+  <!-- Standalone Mode: Full two-panel layout -->
+  <GeneratorLayout
+    v-if="mode === 'standalone'"
+    title="Impact Intro Builder"
+    subtitle="Build your credentials and achievements for powerful guest introductions"
+    intro-text="Create a compelling impact introduction by collecting your credentials, qualifications, achievements, and recognition. Your impact intro establishes immediate credibility and showcases your authority when being introduced as a podcast guest or speaker."
+    generator-type="impact-intro"
+    :has-results="hasMinimumData"
+    :is-loading="false"
+  >
+    <!-- Left Panel: Form -->
+    <template #left>
+      <!-- Credentials Section -->
+      <div class="generator__section">
+        <h3 class="generator__section-title">Credentials & Qualifications</h3>
+        <p class="generator__field-helper">
+          Add degrees, certifications, titles, and professional qualifications.
+        </p>
+
+        <!-- Existing Credentials Tags -->
+        <div v-if="credentials.length > 0" class="generator__tags">
+          <div
+            v-for="(credential, index) in credentials"
+            :key="`cred-${index}`"
+            class="generator__tag"
+          >
+            <span>{{ credential }}</span>
+            <button
+              type="button"
+              class="generator__tag-remove"
+              @click="removeCredential(index)"
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+
+        <!-- Add Credential Input -->
+        <div class="generator__tag-input">
+          <input
+            v-model="newCredential"
+            type="text"
+            class="generator__field-input"
+            placeholder="e.g., PhD, MBA, ICF Certified Coach..."
+            @keydown.enter.prevent="handleAddCredential"
+          />
+          <button
+            type="button"
+            class="generator__button generator__button--outline"
+            :disabled="!newCredential.trim()"
+            @click="handleAddCredential"
+          >
+            Add
+          </button>
+        </div>
+
+        <!-- Credential Suggestions -->
+        <div class="generator__suggestions">
+          <span class="generator__suggestions-label">Quick add:</span>
+          <button
+            v-for="type in CREDENTIAL_TYPES"
+            :key="type.value"
+            type="button"
+            class="generator__suggestion"
+            @click="showCredentialExamples(type)"
+          >
+            {{ type.label }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Achievements Section -->
+      <div class="generator__section">
+        <h3 class="generator__section-title">Achievements & Recognition</h3>
+        <p class="generator__field-helper">
+          Add awards, publications, speaking engagements, and notable achievements.
+        </p>
+
+        <!-- Existing Achievements Tags -->
+        <div v-if="achievements.length > 0" class="generator__tags">
+          <div
+            v-for="(achievement, index) in achievements"
+            :key="`ach-${index}`"
+            class="generator__tag"
+          >
+            <span>{{ achievement }}</span>
+            <button
+              type="button"
+              class="generator__tag-remove"
+              @click="removeAchievement(index)"
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+
+        <!-- Add Achievement Input -->
+        <div class="generator__tag-input">
+          <input
+            v-model="newAchievement"
+            type="text"
+            class="generator__field-input"
+            placeholder="e.g., TEDx Speaker, Forbes 30 Under 30..."
+            @keydown.enter.prevent="handleAddAchievement"
+          />
+          <button
+            type="button"
+            class="generator__button generator__button--outline"
+            :disabled="!newAchievement.trim()"
+            @click="handleAddAchievement"
+          >
+            Add
+          </button>
+        </div>
+      </div>
+
+      <!-- Summary Stats -->
+      <div class="generator__impact-stats">
+        <div class="generator__impact-stat">
+          <span class="generator__impact-stat-value">{{ credentials.length }}</span>
+          <span class="generator__impact-stat-label">Credentials</span>
+        </div>
+        <div class="generator__impact-stat">
+          <span class="generator__impact-stat-value">{{ achievements.length }}</span>
+          <span class="generator__impact-stat-label">Achievements</span>
+        </div>
+        <div class="generator__impact-stat">
+          <span class="generator__impact-stat-value">{{ totalItems }}</span>
+          <span class="generator__impact-stat-label">Total Items</span>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="generator__actions">
+        <button
+          v-if="totalItems > 0"
+          type="button"
+          class="generator__button generator__button--outline"
+          @click="handleReset"
+        >
+          Clear All
+        </button>
+        <button
+          type="button"
+          class="generator__button generator__button--call-to-action"
+          :disabled="!hasMinimumData"
+          @click="handleCopy"
+        >
+          Copy Summary
+        </button>
+      </div>
+    </template>
+
+    <!-- Right Panel: Guidance -->
+    <template #right>
+      <GuidancePanel
+        title="Building Your Impact Introduction"
+        subtitle="Your Impact Intro establishes immediate credibility by showcasing your credentials, achievements, and professional recognition."
+        :formula="impactIntroFormula"
+        :process-steps="processSteps"
+        :examples="examples"
+        examples-title="Example Impact Introductions:"
+      />
+    </template>
+
+    <!-- Results -->
+    <template #results>
+      <div v-if="hasMinimumData" class="generator__impact-preview">
+        <div class="generator__impact-preview-header">
+          <h3>Your Impact Summary</h3>
+          <p>Use this in your guest introduction</p>
+        </div>
+        <div class="generator__impact-preview-content">
+          <p>{{ impactSummary }}</p>
+        </div>
+        <div class="generator__impact-preview-footer">
+          <button
+            type="button"
+            class="generator__button generator__button--outline"
+            @click="handleCopy"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            Copy to Clipboard
+          </button>
+        </div>
+      </div>
+    </template>
+  </GeneratorLayout>
+
+  <!-- Integrated Mode: Compact widget -->
   <AiWidgetFrame
+    v-else
     title="Impact Intro Builder"
     description="Build your credentials and achievements for powerful guest introductions."
     :mode="mode"
@@ -214,6 +408,9 @@ import { ref, onMounted } from 'vue';
 import { useImpactIntro, CREDENTIAL_TYPES } from '../../../composables/useImpactIntro';
 import AiWidgetFrame from './AiWidgetFrame.vue';
 
+// Full layout components (standalone mode)
+import { GeneratorLayout, GuidancePanel } from '../ai-tools/_shared';
+
 const props = defineProps({
   /**
    * Mode: 'integrated' or 'standalone'
@@ -255,6 +452,43 @@ const {
 // Modal state
 const showExamplesModal = ref(false);
 const selectedType = ref(null);
+
+/**
+ * Impact intro formula for guidance panel
+ */
+const impactIntroFormula = 'I\'ve helped <span class="generator__highlight">[NUMBER]</span> <span class="generator__highlight">[WHO]</span> achieve <span class="generator__highlight">[SPECIFIC RESULT]</span> in <span class="generator__highlight">[TIMEFRAME]</span>';
+
+/**
+ * Process steps for guidance panel
+ */
+const processSteps = [
+  {
+    title: 'Why Impact Intros Matter',
+    description: 'Your impact introduction is the first thing a podcast host reads when introducing you as a guest. It establishes your credibility immediately by highlighting your most impressive credentials, achievements, and recognition. A strong impact intro sets the tone for the entire conversation and signals to the audience that you\'re an authority worth listening to.'
+  },
+  {
+    title: 'What Makes Them Compelling',
+    description: 'The most compelling impact intros combine three elements: specific credentials (degrees, certifications, titles), notable achievements (awards, publications, speaking), and quantifiable results (number of clients helped, years of experience, size of audience). Focus on quality over quantity - choose the credentials and achievements that are most relevant to your authority and most impressive to your target audience.'
+  },
+  {
+    title: 'Where to Use Impact Intros',
+    description: 'Use your impact intro in podcast guest applications, speaker bio submissions, media kit introductions, conference proposals, and any situation where someone else will be introducing you. Keep multiple versions with different combinations of credentials and achievements so you can customize based on the audience and context.'
+  }
+];
+
+/**
+ * Example impact intros for guidance panel
+ */
+const examples = [
+  {
+    title: 'Business Coach Impact Intro:',
+    description: 'Dr. Sarah Johnson holds a PhD in Organizational Psychology and is an ICF Master Certified Coach. She\'s a TEDx speaker, author of the bestselling book "Leading with Purpose," and has been featured in Forbes, Entrepreneur, and Inc. Magazine for her innovative approach to leadership development.'
+  },
+  {
+    title: 'Marketing Expert Impact Intro:',
+    description: 'Michael Chen is a certified Google Analytics expert and Facebook Blueprint certified professional. He\'s spoken at Social Media Marketing World, Content Marketing World, and has helped over 500 businesses increase their digital presence. His work has been featured in Marketing Week and The Drum.'
+  }
+];
 
 /**
  * Show examples modal for a credential type
@@ -337,6 +571,163 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* Standalone Mode Styles */
+.generator__section {
+  margin-bottom: var(--mkcg-space-lg, 30px);
+}
+
+.generator__section-title {
+  font-size: var(--mkcg-font-size-lg, 18px);
+  font-weight: var(--mkcg-font-weight-semibold, 600);
+  color: var(--mkcg-text-primary, #2c3e50);
+  margin: 0 0 var(--mkcg-space-sm, 12px) 0;
+}
+
+.generator__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mkcg-space-xs, 8px);
+  margin-bottom: var(--mkcg-space-sm, 12px);
+}
+
+.generator__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mkcg-space-xs, 8px);
+  padding: var(--mkcg-space-xs, 8px) var(--mkcg-space-sm, 12px);
+  background: var(--mkcg-bg-secondary, #f8f9fa);
+  border: 1px solid var(--mkcg-border-light, #e9ecef);
+  border-radius: var(--mkcg-radius-sm, 4px);
+  font-size: var(--mkcg-font-size-sm, 14px);
+  color: var(--mkcg-text-primary, #2c3e50);
+}
+
+.generator__tag-remove {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--mkcg-text-secondary, #5a6d7e);
+  cursor: pointer;
+  transition: color var(--mkcg-transition-fast, 0.15s ease);
+}
+
+.generator__tag-remove:hover {
+  color: var(--mkcg-danger, #dc3545);
+}
+
+.generator__tag-input {
+  display: flex;
+  gap: var(--mkcg-space-sm, 12px);
+  margin-bottom: var(--mkcg-space-sm, 12px);
+}
+
+.generator__tag-input input {
+  flex: 1;
+}
+
+.generator__suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mkcg-space-xs, 8px);
+}
+
+.generator__suggestions-label {
+  font-size: var(--mkcg-font-size-sm, 14px);
+  color: var(--mkcg-text-secondary, #5a6d7e);
+}
+
+.generator__suggestion {
+  padding: var(--mkcg-space-xs, 8px) var(--mkcg-space-sm, 12px);
+  font-size: var(--mkcg-font-size-sm, 14px);
+  font-family: inherit;
+  color: var(--mkcg-primary, #1a9bdc);
+  background: rgba(26, 155, 220, 0.1);
+  border: none;
+  border-radius: var(--mkcg-radius-sm, 4px);
+  cursor: pointer;
+  transition: all var(--mkcg-transition-fast, 0.15s ease);
+}
+
+.generator__suggestion:hover {
+  background: rgba(26, 155, 220, 0.2);
+}
+
+.generator__impact-stats {
+  display: flex;
+  gap: var(--mkcg-space-lg, 30px);
+  margin-top: var(--mkcg-space-md, 20px);
+  padding-top: var(--mkcg-space-md, 20px);
+  border-top: 1px solid var(--mkcg-border-light, #e9ecef);
+}
+
+.generator__impact-stat {
+  text-align: center;
+}
+
+.generator__impact-stat-value {
+  display: block;
+  font-size: var(--mkcg-font-size-2xl, 24px);
+  font-weight: var(--mkcg-font-weight-bold, 700);
+  color: var(--mkcg-primary, #1a9bdc);
+}
+
+.generator__impact-stat-label {
+  font-size: var(--mkcg-font-size-sm, 14px);
+  color: var(--mkcg-text-secondary, #5a6d7e);
+}
+
+.generator__actions {
+  margin-top: var(--mkcg-space-lg, 30px);
+  display: flex;
+  gap: var(--mkcg-space-sm, 12px);
+  justify-content: flex-end;
+}
+
+.generator__impact-preview {
+  padding: var(--mkcg-space-md, 20px);
+}
+
+.generator__impact-preview-header {
+  margin-bottom: var(--mkcg-space-md, 20px);
+}
+
+.generator__impact-preview-header h3 {
+  margin: 0 0 var(--mkcg-space-xs, 8px) 0;
+  font-size: var(--mkcg-font-size-lg, 18px);
+  color: var(--mkcg-text-primary, #2c3e50);
+}
+
+.generator__impact-preview-header p {
+  margin: 0;
+  color: var(--mkcg-text-secondary, #5a6d7e);
+  font-size: var(--mkcg-font-size-sm, 14px);
+}
+
+.generator__impact-preview-content {
+  padding: var(--mkcg-space-md, 20px);
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1px solid #34d399;
+  border-radius: var(--mkcg-radius, 8px);
+  margin-bottom: var(--mkcg-space-md, 20px);
+}
+
+.generator__impact-preview-content p {
+  margin: 0;
+  font-size: var(--mkcg-font-size-base, 15px);
+  line-height: var(--mkcg-line-height-relaxed, 1.6);
+  color: #065f46;
+}
+
+.generator__impact-preview-footer {
+  display: flex;
+  gap: var(--mkcg-space-sm, 12px);
+}
+
+/* Integrated Mode Styles (preserved from original) */
 .gmkb-ai-hint--above {
   margin-bottom: 8px;
   display: block;

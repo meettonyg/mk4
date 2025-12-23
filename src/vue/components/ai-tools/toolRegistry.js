@@ -96,7 +96,7 @@ export const TOOL_REGISTRY = {
     category: 'message-builder',
     icon: 'list',
     component: 'TopicsGenerator',
-    hasStandaloneLayout: false, // TODO: Update to true after implementing
+    hasStandaloneLayout: true,
     introText: 'Generate 5 compelling podcast interview topics based on your authority hook that will resonate with podcast hosts and their audiences.',
     guidance: {
       title: 'Creating Compelling Interview Topics',
@@ -124,7 +124,7 @@ export const TOOL_REGISTRY = {
     category: 'message-builder',
     icon: 'help-circle',
     component: 'QuestionsGenerator',
-    hasStandaloneLayout: false,
+    hasStandaloneLayout: true,
     introText: 'Create engaging interview questions for each topic that will guide compelling conversations.',
     guidance: {
       title: 'Crafting Great Interview Questions',
@@ -149,7 +149,7 @@ export const TOOL_REGISTRY = {
     category: 'message-builder',
     icon: 'tag',
     component: 'TaglineGenerator',
-    hasStandaloneLayout: false,
+    hasStandaloneLayout: true,
     introText: 'Create memorable taglines that capture your unique value and stick in people\'s minds.',
     guidance: {
       title: 'The Art of the Perfect Tagline',
@@ -177,7 +177,7 @@ export const TOOL_REGISTRY = {
     category: 'message-builder',
     icon: 'mic',
     component: 'GuestIntroGenerator',
-    hasStandaloneLayout: false,
+    hasStandaloneLayout: true,
     introText: 'Create professional introductions that podcast hosts can use to introduce you effectively.',
     guidance: {
       title: 'Creating the Perfect Guest Introduction',
@@ -197,7 +197,7 @@ export const TOOL_REGISTRY = {
     category: 'message-builder',
     icon: 'gift',
     component: 'OffersGenerator',
-    hasStandaloneLayout: false,
+    hasStandaloneLayout: true,
     introText: 'Create compelling offers that convert podcast listeners into leads and clients.',
     guidance: {
       title: 'Crafting Irresistible Offers',
@@ -220,7 +220,7 @@ export const TOOL_REGISTRY = {
     category: 'value-builder',
     icon: 'trending-up',
     component: 'ElevatorPitchGenerator',
-    hasStandaloneLayout: false,
+    hasStandaloneLayout: true,
     introText: 'Create a compelling 30-second pitch that captures attention and opens doors.',
     guidance: {
       title: 'The Perfect Elevator Pitch',
@@ -240,7 +240,7 @@ export const TOOL_REGISTRY = {
     category: 'value-builder',
     icon: 'volume-2',
     component: 'SoundBiteGenerator',
-    hasStandaloneLayout: false,
+    hasStandaloneLayout: true,
     introText: 'Create quotable moments that audiences remember and share.',
     guidance: {
       title: 'Creating Shareable Sound Bites',
@@ -260,7 +260,7 @@ export const TOOL_REGISTRY = {
     category: 'value-builder',
     icon: 'users',
     component: 'PersonaGenerator',
-    hasStandaloneLayout: false,
+    hasStandaloneLayout: true,
     introText: 'Define your ideal client avatar to create more targeted, effective messaging.',
     guidance: {
       title: 'Building Your Ideal Client Persona',
@@ -283,7 +283,7 @@ export const TOOL_REGISTRY = {
     category: 'strategy',
     icon: 'book-open',
     component: 'BrandStoryGenerator',
-    hasStandaloneLayout: false,
+    hasStandaloneLayout: true,
     introText: 'Create your compelling origin story that connects emotionally with your audience.',
     guidance: {
       title: 'Crafting Your Brand Story',
@@ -303,7 +303,7 @@ export const TOOL_REGISTRY = {
     category: 'strategy',
     icon: 'edit-3',
     component: 'SignatureStoryGenerator',
-    hasStandaloneLayout: false,
+    hasStandaloneLayout: true,
     introText: 'Create your go-to story that demonstrates expertise and builds credibility.',
     guidance: {
       title: 'Your Signature Story',
@@ -323,7 +323,7 @@ export const TOOL_REGISTRY = {
     category: 'strategy',
     icon: 'award',
     component: 'CredibilityStoryGenerator',
-    hasStandaloneLayout: false,
+    hasStandaloneLayout: true,
     introText: 'Create stories that establish your authority without bragging.',
     guidance: {
       title: 'Building Credibility Through Story',
@@ -343,7 +343,7 @@ export const TOOL_REGISTRY = {
     category: 'strategy',
     icon: 'grid',
     component: 'FrameworkGenerator',
-    hasStandaloneLayout: false,
+    hasStandaloneLayout: true,
     introText: 'Create proprietary frameworks that showcase your unique methodology.',
     guidance: {
       title: 'Creating Your Proprietary Framework',
@@ -363,7 +363,7 @@ export const TOOL_REGISTRY = {
     category: 'strategy',
     icon: 'clipboard',
     component: 'InterviewPrepGenerator',
-    hasStandaloneLayout: false,
+    hasStandaloneLayout: true,
     introText: 'Prepare comprehensive notes to shine in your next podcast interview.',
     guidance: {
       title: 'Interview Preparation',
@@ -386,7 +386,7 @@ export const TOOL_REGISTRY = {
     category: 'content',
     icon: 'file-text',
     component: 'BlogGenerator',
-    hasStandaloneLayout: false,
+    hasStandaloneLayout: true,
     introText: 'Create SEO-optimized blog posts that establish thought leadership.',
     guidance: {
       title: 'Writing Effective Blog Posts',
@@ -406,7 +406,7 @@ export const TOOL_REGISTRY = {
     category: 'content',
     icon: 'repeat',
     component: 'ContentRepurposerGenerator',
-    hasStandaloneLayout: false,
+    hasStandaloneLayout: true,
     introText: 'Transform one piece of content into multiple formats for maximum reach.',
     guidance: {
       title: 'Content Repurposing Strategy',
@@ -426,7 +426,7 @@ export const TOOL_REGISTRY = {
     category: 'content',
     icon: 'radio',
     component: 'PressReleaseGenerator',
-    hasStandaloneLayout: false,
+    hasStandaloneLayout: true,
     introText: 'Create professional press releases that get media attention.',
     guidance: {
       title: 'Writing Effective Press Releases',
@@ -449,7 +449,7 @@ export const TOOL_REGISTRY = {
     category: 'social-email',
     icon: 'share-2',
     component: 'SocialPostGenerator',
-    hasStandaloneLayout: false,
+    hasStandaloneLayout: true,
     introText: 'Create engaging social media posts optimized for each platform.',
     guidance: {
       title: 'Social Media Best Practices',
@@ -469,7 +469,7 @@ export const TOOL_REGISTRY = {
     category: 'social-email',
     icon: 'mail',
     component: 'EmailWriterGenerator',
-    hasStandaloneLayout: false,
+    hasStandaloneLayout: true,
     introText: 'Create effective emails that get opened, read, and acted upon.',
     guidance: {
       title: 'Email Writing Best Practices',
@@ -489,7 +489,7 @@ export const TOOL_REGISTRY = {
     category: 'social-email',
     icon: 'inbox',
     component: 'NewsletterGenerator',
-    hasStandaloneLayout: false,
+    hasStandaloneLayout: true,
     introText: 'Create newsletter content that keeps subscribers engaged and coming back.',
     guidance: {
       title: 'Newsletter Best Practices',
@@ -509,7 +509,7 @@ export const TOOL_REGISTRY = {
     category: 'social-email',
     icon: 'youtube',
     component: 'YoutubeDescriptionGenerator',
-    hasStandaloneLayout: false,
+    hasStandaloneLayout: true,
     introText: 'Create SEO-optimized video descriptions that help you get discovered.',
     guidance: {
       title: 'YouTube SEO Basics',
@@ -529,7 +529,7 @@ export const TOOL_REGISTRY = {
     category: 'social-email',
     icon: 'headphones',
     component: 'PodcastNotesGenerator',
-    hasStandaloneLayout: false,
+    hasStandaloneLayout: true,
     introText: 'Create comprehensive show notes that drive traffic and engagement.',
     guidance: {
       title: 'Show Notes Best Practices',
@@ -549,7 +549,7 @@ export const TOOL_REGISTRY = {
     category: 'social-email',
     icon: 'search',
     component: 'SeoOptimizerGenerator',
-    hasStandaloneLayout: false,
+    hasStandaloneLayout: true,
     introText: 'Optimize your content for search engines without sacrificing readability.',
     guidance: {
       title: 'SEO Optimization Guide',
