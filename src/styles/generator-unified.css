@@ -129,7 +129,9 @@
    ============================================================================ */
 
 /* Generator Container - Base layout wrapper */
-.gmkb-generator-root .generator__container {
+/* Support both nested (.gmkb-generator-root .generator__container) and combined (.gmkb-generator-root.generator__container) */
+.gmkb-generator-root .generator__container,
+.gmkb-generator-root.generator__container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 var(--mkcg-space-md);
