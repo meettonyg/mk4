@@ -1,5 +1,10 @@
 <template>
   <div class="generator__container gmkb-generator-root" :class="containerClass">
+    <!-- Profile Context Banner (for logged-in users) -->
+    <div v-if="$slots['profile-context']" class="generator__profile-context">
+      <slot name="profile-context"></slot>
+    </div>
+
     <!-- Header -->
     <div class="generator__header">
       <h1 class="generator__title">{{ title }}</h1>

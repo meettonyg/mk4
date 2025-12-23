@@ -190,11 +190,23 @@ class GMKB_Tool_Shortcode {
             }
 
             // Add global data for Vue
-            wp_localize_script('gmkb-standalone-tools', 'gmkbStandaloneTools', array(
+            $is_logged_in = is_user_logged_in();
+            $standalone_data = array(
                 'nonce' => wp_create_nonce('gmkb_public_ai'),
                 'apiBase' => rest_url('gmkb/v2'),
                 'ajaxUrl' => admin_url('admin-ajax.php'),
-            ));
+                'isLoggedIn' => $is_logged_in,
+            );
+
+            // For logged-in users, add profile context
+            if ($is_logged_in) {
+                $standalone_data['restNonce'] = wp_create_nonce('wp_rest');
+                $standalone_data['userId'] = get_current_user_id();
+                $standalone_data['profilesEndpoint'] = rest_url('gmkb/v2/profiles');
+                $standalone_data['profileEndpoint'] = rest_url('gmkb/v2/profile');
+            }
+
+            wp_localize_script('gmkb-standalone-tools', 'gmkbStandaloneTools', $standalone_data);
         }
 
         $this->enqueued = true;

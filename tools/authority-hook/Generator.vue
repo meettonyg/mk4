@@ -9,6 +9,14 @@
     :has-results="hasGeneratedHook"
     :is-loading="isGenerating"
   >
+    <!-- Profile Context Banner (for logged-in users) -->
+    <template #profile-context>
+      <ProfileContextBanner
+        @profile-loaded="handleProfileLoaded"
+        @profile-cleared="handleProfileCleared"
+      />
+    </template>
+
     <!-- Left Panel: Form -->
     <template #left>
       <!-- Progress Indicator -->
@@ -116,8 +124,23 @@
         <!-- Actions -->
         <div class="authority-hook__actions">
           <button
+            v-if="hasSelectedProfile"
             type="button"
             class="generator__button generator__button--primary"
+            :disabled="isSaving"
+            @click="handleSaveToProfile"
+          >
+            <svg v-if="!isSaving" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            {{ isSaving ? 'Saving...' : 'Save to Profile' }}
+          </button>
+          <button
+            type="button"
+            class="generator__button"
+            :class="hasSelectedProfile ? 'generator__button--outline' : 'generator__button--primary'"
             @click="useGeneratedHook"
           >
             Use This Version
@@ -133,6 +156,15 @@
             </svg>
             Copy to Clipboard
           </button>
+        </div>
+
+        <!-- Save Success Notice -->
+        <div v-if="showSaveSuccess" class="authority-hook__save-notice">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          <span>Saved to your profile!</span>
         </div>
       </div>
     </template>
@@ -243,13 +275,22 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useAuthorityHook, AUTHORITY_HOOK_FIELDS } from '../../src/composables/useAuthorityHook';
 import { useAIGenerator } from '../../src/composables/useAIGenerator';
+import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 
 // Compact widget components (integrated mode)
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
 import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel } from '../_shared';
+import { GeneratorLayout, GuidancePanel, ProfileContextBanner } from '../_shared';
+
+// Profile context for standalone mode
+const {
+  isLoggedIn,
+  hasSelectedProfile,
+  selectedProfileId,
+  saveMultipleToProfile
+} = useStandaloneProfile();
 
 const props = defineProps({
   /**
@@ -307,6 +348,10 @@ const hookFields = ref({
   where: '',
   why: ''
 });
+
+// Save state for profile saving
+const isSaving = ref(false);
+const showSaveSuccess = ref(false);
 
 // Constants
 const totalFields = AUTHORITY_HOOK_FIELDS.length;
@@ -375,7 +420,9 @@ const handleFieldChange = (key, value) => {
  */
 const handleGenerate = async () => {
   try {
-    const context = props.mode === 'integrated' ? 'builder' : 'public';
+    // Use 'builder' context for logged-in users (higher rate limits)
+    // Use 'public' context for non-logged-in users
+    const context = props.mode === 'integrated' || isLoggedIn.value ? 'builder' : 'public';
     await generateAI(hookFields.value, context);
 
     emit('generated', {
@@ -430,6 +477,84 @@ const handleReset = () => {
     where: '',
     why: ''
   };
+};
+
+/**
+ * Handle profile data loaded (standalone mode with logged-in user)
+ * Pre-populates fields from the selected profile
+ * @param {object} profileData Full profile data object
+ */
+const handleProfileLoaded = (profileData) => {
+  if (!profileData) return;
+
+  // Pre-populate authority hook fields from profile
+  hookFields.value = {
+    who: profileData.hook_who || '',
+    what: profileData.hook_what || '',
+    when: profileData.hook_when || '',
+    how: profileData.hook_how || '',
+    where: profileData.hook_where || '',
+    why: profileData.hook_why || ''
+  };
+
+  // Sync to composable
+  who.value = hookFields.value.who;
+  what.value = hookFields.value.what;
+  when.value = hookFields.value.when;
+  how.value = hookFields.value.how;
+  where.value = hookFields.value.where;
+  why.value = hookFields.value.why;
+};
+
+/**
+ * Handle profile cleared (standalone mode)
+ * Resets fields to empty
+ */
+const handleProfileCleared = () => {
+  handleReset();
+};
+
+/**
+ * Save authority hook fields to the selected profile
+ * @returns {Promise<boolean>}
+ */
+const saveHookToProfile = async () => {
+  if (!hasSelectedProfile.value || !isLoggedIn.value) {
+    return false;
+  }
+
+  const fieldsToSave = {
+    hook_who: hookFields.value.who,
+    hook_what: hookFields.value.what,
+    hook_when: hookFields.value.when,
+    hook_how: hookFields.value.how,
+    hook_where: hookFields.value.where,
+    hook_why: hookFields.value.why
+  };
+
+  const success = await saveMultipleToProfile(fieldsToSave);
+  return success;
+};
+
+/**
+ * Handle save to profile button click
+ */
+const handleSaveToProfile = async () => {
+  isSaving.value = true;
+  showSaveSuccess.value = false;
+
+  try {
+    const success = await saveHookToProfile();
+    if (success) {
+      showSaveSuccess.value = true;
+      // Auto-hide after 3 seconds
+      setTimeout(() => {
+        showSaveSuccess.value = false;
+      }, 3000);
+    }
+  } finally {
+    isSaving.value = false;
+  }
 };
 
 /**
@@ -604,7 +729,33 @@ watch([who, what, when, how, where, why], () => {
 .authority-hook__actions {
   margin-top: var(--mkcg-space-md, 20px);
   display: flex;
+  flex-wrap: wrap;
   gap: var(--mkcg-space-sm, 12px);
+}
+
+.authority-hook__save-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: var(--mkcg-space-md, 16px);
+  padding: 12px 16px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: var(--mkcg-radius, 8px);
+  color: #065f46;
+  font-size: 14px;
+  font-weight: 500;
+  animation: fadeIn 0.3s ease;
+}
+
+.authority-hook__save-notice svg {
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Integrated Mode Styles (kept from original) */

@@ -127,8 +127,51 @@ class GMKB_Tool_Pages {
         // Body class
         add_filter('body_class', array($this, 'add_body_class'));
 
+        // Navigation type filter for theme integration
+        add_filter('guestify_is_app_page', array($this, 'filter_is_app_page'), 10, 1);
+        add_filter('gmkb_tool_page_navigation_type', array($this, 'get_navigation_type'), 10, 1);
+
         // Flush rewrite rules when needed
         add_action('admin_init', array($this, 'maybe_flush_rewrite_rules'));
+    }
+
+    /**
+     * Check if current page is a tool or directory page
+     *
+     * @return bool True if on a tool or directory page
+     */
+    private function is_tool_or_directory_page() {
+        return $this->current_tool || get_query_var($this->directory_var);
+    }
+
+    /**
+     * Filter whether current page should use app navigation
+     * For tool pages: show app nav only for logged-in users
+     *
+     * @param bool $is_app_page Current is_app_page value
+     * @return bool Modified value
+     */
+    public function filter_is_app_page($is_app_page) {
+        if ($this->is_tool_or_directory_page()) {
+            // Logged-in users get app navigation
+            // Public users get frontend navigation
+            return is_user_logged_in();
+        }
+
+        return $is_app_page;
+    }
+
+    /**
+     * Get the navigation type for current tool page
+     *
+     * @param string $default Default navigation type
+     * @return string 'app' or 'frontend'
+     */
+    public function get_navigation_type($default = 'frontend') {
+        if ($this->is_tool_or_directory_page()) {
+            return is_user_logged_in() ? 'app' : 'frontend';
+        }
+        return $default;
     }
 
     /**
@@ -207,11 +250,24 @@ class GMKB_Tool_Pages {
             }
 
             // Add global data for Vue components
-            wp_localize_script('gmkb-standalone-tools', 'gmkbStandaloneTools', array(
+            $is_logged_in = is_user_logged_in();
+            $standalone_data = array(
                 'nonce' => wp_create_nonce('gmkb_public_ai'),
                 'apiBase' => rest_url('gmkb/v2'),
                 'ajaxUrl' => admin_url('admin-ajax.php'),
-            ));
+                'isLoggedIn' => $is_logged_in,
+                'toolSlug' => $tool_slug,
+            );
+
+            // For logged-in users, add profile context
+            if ($is_logged_in) {
+                $standalone_data['restNonce'] = wp_create_nonce('wp_rest');
+                $standalone_data['userId'] = get_current_user_id();
+                $standalone_data['profilesEndpoint'] = rest_url('gmkb/v2/profiles');
+                $standalone_data['profileEndpoint'] = rest_url('gmkb/v2/profile');
+            }
+
+            wp_localize_script('gmkb-standalone-tools', 'gmkbStandaloneTools', $standalone_data);
         }
     }
 
@@ -1483,6 +1539,21 @@ get_footer();
     }
 
     /**
+     * Add login status classes to body
+     *
+     * @param array $classes Body classes array (passed by reference)
+     */
+    private function add_login_status_classes(&$classes) {
+        if (is_user_logged_in()) {
+            $classes[] = 'gmkb-user-logged-in';
+            $classes[] = 'gmkb-show-app-nav';
+        } else {
+            $classes[] = 'gmkb-user-logged-out';
+            $classes[] = 'gmkb-show-frontend-nav';
+        }
+    }
+
+    /**
      * Add body class for tool pages
      *
      * @param array $classes Body classes
@@ -1492,8 +1563,21 @@ get_footer();
         if ($this->current_tool) {
             $classes[] = 'gmkb-tool-page';
             $classes[] = 'gmkb-tool-' . $this->current_tool['id'];
+
+            $this->add_login_status_classes($classes);
+
+            // Check if this is the tool app view
+            $use_param = isset($_GET['use']) ? sanitize_text_field(wp_unslash($_GET['use'])) : null;
+            $is_tool_app = get_query_var('gmkb_tool_app') || ('1' === $use_param);
+            if ($is_tool_app) {
+                $classes[] = 'gmkb-tool-app-view';
+            } else {
+                $classes[] = 'gmkb-tool-landing-view';
+            }
         } elseif (get_query_var($this->directory_var)) {
             $classes[] = 'gmkb-tools-directory-page';
+
+            $this->add_login_status_classes($classes);
         }
         return $classes;
     }
