@@ -95,9 +95,88 @@ class GMKB_Tool_Pages_Shortcode {
         add_action('init', array($this, 'add_rewrite_rules'));
         add_filter('query_vars', array($this, 'add_query_vars'));
 
+        // Virtual page handling - intercept /tools/ URLs without needing a WP page
+        add_action('template_redirect', array($this, 'handle_virtual_pages'));
+
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('GMKB Tool Pages Shortcode: Registered directory and tool page shortcodes');
         }
+    }
+
+    /**
+     * Handle virtual tool pages without requiring WordPress pages
+     */
+    public function handle_virtual_pages() {
+        $uri = trim($_SERVER['REQUEST_URI'], '/');
+        $tools_slug = apply_filters('gmkb_tools_page_slug', 'tools');
+
+        // Check if we're on /tools/ or /tools/{slug}/
+        if (!preg_match('#^' . preg_quote($tools_slug, '#') . '(?:/([^/\?]+))?/?(?:\?.*)?$#', $uri, $matches)) {
+            return;
+        }
+
+        $tool_slug = isset($matches[1]) ? $matches[1] : null;
+
+        // Validate tool slug if present
+        if ($tool_slug && !in_array($tool_slug, $this->valid_slugs)) {
+            return; // Let WordPress handle 404
+        }
+
+        // Enqueue assets
+        $this->enqueue_assets();
+
+        // Render virtual page
+        $this->render_virtual_page($tool_slug);
+        exit;
+    }
+
+    /**
+     * Render a virtual tool page
+     *
+     * @param string|null $tool_slug Tool slug or null for directory
+     */
+    private function render_virtual_page($tool_slug = null) {
+        $is_directory = empty($tool_slug);
+        $page_title = $is_directory ? 'AI Content Tools' : $this->get_tool_name($tool_slug);
+        $site_name = get_bloginfo('name');
+
+        ?><!DOCTYPE html>
+<html <?php language_attributes(); ?>>
+<head>
+    <meta charset="<?php bloginfo('charset'); ?>">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><?php echo esc_html($page_title . ' - ' . $site_name); ?></title>
+    <?php wp_head(); ?>
+</head>
+<body <?php body_class('gmkb-virtual-page gmkb-tools-page'); ?>>
+    <?php
+    // Try to include theme header if it exists
+    if (function_exists('get_header')) {
+        get_header();
+    }
+    ?>
+
+    <main class="gmkb-tools-main">
+        <?php
+        if ($is_directory) {
+            echo $this->render_directory(array());
+        } else {
+            echo $this->render_tool_page(array('slug' => $tool_slug));
+        }
+        ?>
+    </main>
+
+    <?php
+    // Try to include theme footer if it exists
+    if (function_exists('get_footer')) {
+        get_footer();
+    }
+
+    wp_footer();
+    ?>
+</body>
+</html>
+        <?php
     }
 
     /**
