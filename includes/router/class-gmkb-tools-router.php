@@ -904,5 +904,9 @@ function gmkb_tools_router() {
     return GMKB_Tools_Router::instance();
 }
 
-// Initialize on plugins_loaded with high priority
+// Initialize IMMEDIATELY when file is loaded - don't wait for any hooks
+// This ensures we catch the route before anything else can redirect
+gmkb_tools_router();
+
+// Also register on plugins_loaded as backup
 add_action('plugins_loaded', 'gmkb_tools_router', 1);
