@@ -659,11 +659,20 @@ get_footer();
     /**
      * Filter is_app_page for navigation
      *
+     * FIX: Return FALSE for directory page to prevent theme redirect to /app/tools/
+     * The theme intercepts "app pages" and tries to enforce /app/ URL structure.
+     * For directory, we want frontend nav. For individual tools, app nav for logged-in users.
+     *
      * @param bool $is_app_page Current value
      * @return bool Modified value
      */
     public function filter_is_app_page($is_app_page) {
         if ($this->route) {
+            // Directory page should NOT be an app page - prevents theme redirect
+            if ($this->route['type'] === 'directory') {
+                return false;
+            }
+            // Individual tool pages: app nav for logged-in users
             return is_user_logged_in();
         }
         return $is_app_page;
