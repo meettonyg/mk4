@@ -17,16 +17,3 @@ export { default as GeneratorLayout } from './GeneratorLayout.vue';
 export { default as GuidancePanel } from './GuidancePanel.vue';
 export { default as AuthorityHookSection } from './AuthorityHookSection.vue';
 
-// Re-export existing shared components from the ai/ folder
-// These are used by both embedded widgets and standalone tools
-export {
-  AiToneSelector,
-  AiLengthSelector,
-  AiPovSelector,
-  AiGenerateButton,
-  AiResultsDisplay,
-  AiErrorMessage,
-  AiUsageMeter,
-  AuthorityHookBuilder,
-  ImpactIntroBuilder
-} from '../ai/index.js';
