@@ -19,7 +19,7 @@
  *
  * @package GMKB
  * @subpackage Pages
- * @version 1.0.0
+ * @version 1.2.0
  * @since 2.3.0
  */
 
@@ -110,6 +110,9 @@ class GMKB_Tool_Pages {
         add_action('init', array($this, 'register_rewrite_rules'));
         add_filter('query_vars', array($this, 'register_query_vars'));
 
+        // Prevent WordPress from treating virtual pages as 404s
+        add_action('template_redirect', array($this, 'prevent_canonical_redirect'), 0);
+
         // Template handling
         add_filter('template_include', array($this, 'load_template'));
 
@@ -186,6 +189,35 @@ class GMKB_Tool_Pages {
             $new_url = home_url('/' . $this->base_path . '/' . $tool_slug . '/tool/');
             wp_redirect($new_url, 301);
             exit;
+        }
+    }
+
+    /**
+     * Prevent WordPress canonical redirect for virtual tool pages
+     *
+     * WordPress treats virtual pages as 404s by default and attempts to redirect
+     * them via redirect_canonical(). This method runs early on template_redirect
+     * to mark our virtual pages as valid before WordPress processes them.
+     */
+    public function prevent_canonical_redirect() {
+        global $wp_query;
+
+        $tool_slug = get_query_var($this->query_var);
+        $is_directory = get_query_var($this->directory_var);
+
+        // Check if this is one of our virtual pages
+        if (!empty($tool_slug) || !empty($is_directory)) {
+            // Mark as not a 404
+            $wp_query->is_404 = false;
+            $wp_query->is_home = false;
+            $wp_query->is_page = true;
+
+            // Set proper HTTP status
+            status_header(200);
+
+            // Remove the canonical redirect action to prevent WordPress
+            // from redirecting our virtual pages
+            remove_action('template_redirect', 'redirect_canonical');
         }
     }
 
@@ -1607,7 +1639,7 @@ get_footer();
      */
     public function maybe_flush_rewrite_rules() {
         $version_key = 'gmkb_tool_pages_version';
-        $current_version = '1.1.0'; // Bumped to force rewrite rules flush
+        $current_version = '1.2.0'; // Bumped to force rewrite rules flush (added prevent_canonical_redirect)
 
         if (get_option($version_key) !== $current_version) {
             flush_rewrite_rules();
@@ -1621,7 +1653,7 @@ get_footer();
     public function flush_rewrite_rules() {
         $this->register_rewrite_rules();
         flush_rewrite_rules();
-        update_option('gmkb_tool_pages_version', '1.1.0');
+        update_option('gmkb_tool_pages_version', '1.2.0');
     }
 
     /**
