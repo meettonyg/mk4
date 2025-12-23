@@ -20,6 +20,11 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// Debug: Log when this file is loaded
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('GMKB Tool Pages Shortcode FILE LOADED at ' . current_action());
+}
+
 class GMKB_Tool_Pages_Shortcode {
 
     /**
@@ -95,11 +100,162 @@ class GMKB_Tool_Pages_Shortcode {
         add_action('init', array($this, 'add_rewrite_rules'));
         add_filter('query_vars', array($this, 'add_query_vars'));
 
-        // Virtual page handling - use parse_request to intercept BEFORE WordPress 404s
+        // PRIORITY HOOKS FOR VIRTUAL PAGES (multiple layers for reliability):
+        // 0. init with priority 0 - earliest WordPress hook where we have full access
+        add_action('init', array($this, 'handle_virtual_pages_init'), 0);
+
+        // 1. wp_loaded - fires after WordPress is fully loaded
+        add_action('wp_loaded', array($this, 'handle_virtual_pages_early'), 1);
+
+        // 2. parse_request - fires during query parsing
         add_action('parse_request', array($this, 'handle_virtual_pages'), 1);
+
+        // 3. Prevent canonical redirect for /tools/ URLs
+        add_filter('redirect_canonical', array($this, 'prevent_tools_redirect'), 10, 2);
+
+        // 4. template_redirect - final fallback for 404s
+        add_action('template_redirect', array($this, 'handle_virtual_pages_fallback'), 1);
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('GMKB Tool Pages Shortcode: Registered directory and tool page shortcodes');
+        }
+    }
+
+    /**
+     * Init handler for virtual pages - fires at init hook priority 0
+     * This is the earliest WordPress hook with full functionality
+     */
+    public function handle_virtual_pages_init() {
+        // Only run on frontend
+        if (is_admin()) {
+            return;
+        }
+
+        $uri = trim($_SERVER['REQUEST_URI'], '/');
+        $uri = strtok($uri, '?');
+        $uri = trim($uri, '/');
+
+        $tools_slug = apply_filters('gmkb_tools_page_slug', 'tools');
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB Virtual Pages Init: init hook fired (priority 0)');
+            error_log('GMKB Virtual Pages Init: URI = "' . $uri . '"');
+        }
+
+        // Check if this is a /tools/ URL
+        if (!preg_match('#^' . preg_quote($tools_slug, '#') . '(/|$)#', $uri)) {
+            return;
+        }
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB Virtual Pages Init: This is a /tools/ URL, will handle it');
+        }
+
+        // Check for /tools/{slug}/use/ (2-panel tool page)
+        if (preg_match('#^' . preg_quote($tools_slug, '#') . '/([^/\?]+)/use/?(?:\?.*)?$#', $uri, $matches)) {
+            $tool_slug = $matches[1];
+            if (in_array($tool_slug, $this->valid_slugs)) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB Virtual Pages Init: Matched /tools/' . $tool_slug . '/use/');
+                }
+                $this->enqueue_assets();
+                $this->render_virtual_page($tool_slug, 'use');
+                exit;
+            }
+            return;
+        }
+
+        // Check for /tools/{slug}/ (landing page)
+        if (preg_match('#^' . preg_quote($tools_slug, '#') . '/([^/\?]+)/?(?:\?.*)?$#', $uri, $matches)) {
+            $tool_slug = $matches[1];
+            if (in_array($tool_slug, $this->valid_slugs)) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB Virtual Pages Init: Matched /tools/' . $tool_slug . '/');
+                }
+                $this->enqueue_assets();
+                $this->render_virtual_page($tool_slug, 'landing');
+                exit;
+            }
+            return;
+        }
+
+        // Check for /tools/ (directory)
+        if (preg_match('#^' . preg_quote($tools_slug, '#') . '/?(?:\?.*)?$#', $uri)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB Virtual Pages Init: Matched /tools/ directory');
+            }
+            $this->enqueue_assets();
+            $this->render_virtual_page(null, 'directory');
+            exit;
+        }
+    }
+
+    /**
+     * Early handler for virtual pages - fires at wp_loaded (before main WP query)
+     * This is our first chance to intercept /tools/ URLs
+     */
+    public function handle_virtual_pages_early() {
+        // Only run on frontend
+        if (is_admin()) {
+            return;
+        }
+
+        $uri = trim($_SERVER['REQUEST_URI'], '/');
+        $uri = strtok($uri, '?');
+        $uri = trim($uri, '/');
+
+        $tools_slug = apply_filters('gmkb_tools_page_slug', 'tools');
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB Virtual Pages Early: wp_loaded hook fired');
+            error_log('GMKB Virtual Pages Early: URI = "' . $uri . '"');
+        }
+
+        // Check if this is a /tools/ URL
+        if (!preg_match('#^' . preg_quote($tools_slug, '#') . '(/|$)#', $uri)) {
+            return;
+        }
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB Virtual Pages Early: This is a /tools/ URL, will handle it');
+        }
+
+        // Check for /tools/{slug}/use/ (2-panel tool page)
+        if (preg_match('#^' . preg_quote($tools_slug, '#') . '/([^/\?]+)/use/?(?:\?.*)?$#', $uri, $matches)) {
+            $tool_slug = $matches[1];
+            if (in_array($tool_slug, $this->valid_slugs)) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB Virtual Pages Early: Matched /tools/' . $tool_slug . '/use/');
+                }
+                $this->enqueue_assets();
+                $this->render_virtual_page($tool_slug, 'use');
+                exit;
+            }
+            return;
+        }
+
+        // Check for /tools/{slug}/ (landing page)
+        if (preg_match('#^' . preg_quote($tools_slug, '#') . '/([^/\?]+)/?(?:\?.*)?$#', $uri, $matches)) {
+            $tool_slug = $matches[1];
+            if (in_array($tool_slug, $this->valid_slugs)) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB Virtual Pages Early: Matched /tools/' . $tool_slug . '/');
+                }
+                $this->enqueue_assets();
+                $this->render_virtual_page($tool_slug, 'landing');
+                exit;
+            }
+            return;
+        }
+
+        // Check for /tools/ (directory)
+        if (preg_match('#^' . preg_quote($tools_slug, '#') . '/?(?:\?.*)?$#', $uri)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB Virtual Pages Early: Matched /tools/ directory');
+            }
+            $this->enqueue_assets();
+            $this->render_virtual_page(null, 'directory');
+            exit;
         }
     }
 
@@ -112,6 +268,11 @@ class GMKB_Tool_Pages_Shortcode {
         // Remove query string for matching
         $uri = strtok($uri, '?');
         $uri = trim($uri, '/');
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB Virtual Pages: parse_request hook fired');
+            error_log('GMKB Virtual Pages: URI = "' . $uri . '"');
+        }
 
         $tools_slug = apply_filters('gmkb_tools_page_slug', 'tools');
 
@@ -139,6 +300,93 @@ class GMKB_Tool_Pages_Shortcode {
 
         // Check for /tools/ (directory)
         if (preg_match('#^' . preg_quote($tools_slug, '#') . '/?(?:\?.*)?$#', $uri)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB Virtual Pages: Matched /tools/ directory');
+            }
+            $this->enqueue_assets();
+            $this->render_virtual_page(null, 'directory');
+            exit;
+        }
+    }
+
+    /**
+     * Prevent WordPress canonical redirect for /tools/ URLs
+     *
+     * @param string $redirect_url The redirect URL
+     * @param string $requested_url The requested URL
+     * @return string|false The redirect URL or false to cancel redirect
+     */
+    public function prevent_tools_redirect($redirect_url, $requested_url) {
+        $uri = trim($_SERVER['REQUEST_URI'], '/');
+        $uri = strtok($uri, '?');
+        $uri = trim($uri, '/');
+
+        $tools_slug = apply_filters('gmkb_tools_page_slug', 'tools');
+
+        // Cancel redirect for any /tools/ URL
+        if (preg_match('#^' . preg_quote($tools_slug, '#') . '(/|$)#', $uri)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB Virtual Pages: Preventing canonical redirect for ' . $uri);
+            }
+            return false;
+        }
+
+        return $redirect_url;
+    }
+
+    /**
+     * Fallback handler for virtual pages at template_redirect
+     * This catches any requests that weren't handled by parse_request
+     */
+    public function handle_virtual_pages_fallback() {
+        // Check if we're on a 404 page for /tools/ URLs
+        if (!is_404()) {
+            return;
+        }
+
+        $uri = trim($_SERVER['REQUEST_URI'], '/');
+        $uri = strtok($uri, '?');
+        $uri = trim($uri, '/');
+
+        $tools_slug = apply_filters('gmkb_tools_page_slug', 'tools');
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB Virtual Pages Fallback: Checking 404 for URI = "' . $uri . '"');
+        }
+
+        // Check for /tools/{slug}/use/ (2-panel tool page)
+        if (preg_match('#^' . preg_quote($tools_slug, '#') . '/([^/\?]+)/use/?(?:\?.*)?$#', $uri, $matches)) {
+            $tool_slug = $matches[1];
+            if (in_array($tool_slug, $this->valid_slugs)) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB Virtual Pages Fallback: Matched /tools/' . $tool_slug . '/use/');
+                }
+                $this->enqueue_assets();
+                $this->render_virtual_page($tool_slug, 'use');
+                exit;
+            }
+            return;
+        }
+
+        // Check for /tools/{slug}/ (landing page)
+        if (preg_match('#^' . preg_quote($tools_slug, '#') . '/([^/\?]+)/?(?:\?.*)?$#', $uri, $matches)) {
+            $tool_slug = $matches[1];
+            if (in_array($tool_slug, $this->valid_slugs)) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB Virtual Pages Fallback: Matched /tools/' . $tool_slug . '/');
+                }
+                $this->enqueue_assets();
+                $this->render_virtual_page($tool_slug, 'landing');
+                exit;
+            }
+            return;
+        }
+
+        // Check for /tools/ (directory)
+        if (preg_match('#^' . preg_quote($tools_slug, '#') . '/?(?:\?.*)?$#', $uri)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB Virtual Pages Fallback: Matched /tools/ directory');
+            }
             $this->enqueue_assets();
             $this->render_virtual_page(null, 'directory');
             exit;
