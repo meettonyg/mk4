@@ -408,15 +408,15 @@ get_footer();
                     <p>Professional content generation tools to build your brand and grow your audience.</p>
                 </header>
 
-                <?php if (empty($all_tools)): ?>
-                <div class="gmkb-debug" style="padding: 1rem; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; margin-bottom: 2rem;">
-                    <strong>Debug:</strong> No tools discovered.<br>
-                    GMKB_PLUGIN_DIR: <?php echo esc_html(defined('GMKB_PLUGIN_DIR') ? GMKB_PLUGIN_DIR : 'NOT DEFINED'); ?><br>
-                    Tools path: <?php echo esc_html(GMKB_PLUGIN_DIR . 'tools/'); ?><br>
-                    Path exists: <?php echo is_dir(GMKB_PLUGIN_DIR . 'tools/') ? 'YES' : 'NO'; ?><br>
-                    Discovery loaded: <?php echo $discovery ? 'YES' : 'NO'; ?>
+                <!-- ALWAYS show debug for now -->
+                <div class="gmkb-debug" style="padding: 1rem; background: #d1fae5; border: 1px solid #10b981; border-radius: 8px; margin-bottom: 2rem;">
+                    <strong>Debug:</strong><br>
+                    Tools found: <?php echo count($all_tools); ?><br>
+                    Categories: <?php echo count($grouped); ?><br>
+                    <?php foreach ($grouped as $cat_slug => $cat_data): ?>
+                        <?php echo esc_html($cat_slug); ?>: <?php echo count($cat_data['tools'] ?? []); ?> tools<br>
+                    <?php endforeach; ?>
                 </div>
-                <?php endif; ?>
 
                 <?php foreach ($grouped as $category_slug => $category): ?>
                     <?php if (!empty($category['tools'])): ?>
