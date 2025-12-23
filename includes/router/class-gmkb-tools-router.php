@@ -399,6 +399,7 @@ get_footer();
         }
 
         $grouped = $discovery->get_tools_grouped_by_category();
+        $all_tools = $discovery->get_all_tools();
         ?>
         <div class="gmkb-tools-directory">
             <div class="gmkb-container">
@@ -406,6 +407,13 @@ get_footer();
                     <h1>Free AI Tools for Speakers & Authors</h1>
                     <p>Professional content generation tools to build your brand and grow your audience.</p>
                 </header>
+
+                <?php if (empty($all_tools)): ?>
+                <div class="gmkb-debug" style="padding: 1rem; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; margin-bottom: 2rem;">
+                    <strong>Debug:</strong> No tools discovered.
+                    Tools path: <?php echo esc_html(GMKB_PLUGIN_DIR . 'tools/'); ?>
+                </div>
+                <?php endif; ?>
 
                 <?php foreach ($grouped as $category_slug => $category): ?>
                     <?php if (!empty($category['tools'])): ?>
