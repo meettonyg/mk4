@@ -113,13 +113,8 @@
 import { ref, watch } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
 import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
-<<<<<<< HEAD
 import { AiModal } from '../../src/vue/components/ai';
-import QuestionsGenerator from '@tools/questions-generator/QuestionsGenerator.vue';
-=======
-import AiModal from '../../src/vue/components/ai/AiModal.vue';
-import QuestionsGenerator from '../../tools/questions/Generator.vue';
->>>>>>> claude/fix-ai-tools-design-e7eoL
+import QuestionsGenerator from '../../tools/questions-generator/QuestionsGenerator.vue';
 
 const props = defineProps({
   componentId: {

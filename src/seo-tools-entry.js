@@ -37,43 +37,6 @@ import { createPinia } from 'pinia';
 import './styles/ai-standalone.css';
 import './styles/ai-shared.css';
 
-<<<<<<< HEAD
-// Import generator components from /tools/ directory (standalone mode only)
-// Message Builder tools
-import BiographyGenerator from '@tools/biography-generator/BiographyGenerator.vue';
-import TopicsGenerator from '@tools/topics-generator/TopicsGenerator.vue';
-import QuestionsGenerator from '@tools/questions-generator/QuestionsGenerator.vue';
-import TaglineGenerator from '@tools/tagline-generator/TaglineGenerator.vue';
-import GuestIntroGenerator from '@tools/guest-intro-generator/GuestIntroGenerator.vue';
-import AuthorityHookBuilder from '@tools/authority-hook-builder/AuthorityHookBuilder.vue';
-import OffersGenerator from '@tools/offers-generator/OffersGenerator.vue';
-
-// Value Builder tools
-import ElevatorPitchGenerator from '@tools/elevator-pitch-generator/ElevatorPitchGenerator.vue';
-import SoundBiteGenerator from '@tools/sound-bite-generator/SoundBiteGenerator.vue';
-import PersonaGenerator from '@tools/persona-generator/PersonaGenerator.vue';
-import ImpactIntroBuilder from '@tools/impact-intro-builder/ImpactIntroBuilder.vue';
-
-// Strategy tools
-import BrandStoryGenerator from '@tools/brand-story-generator/BrandStoryGenerator.vue';
-import SignatureStoryGenerator from '@tools/signature-story-generator/SignatureStoryGenerator.vue';
-import CredibilityStoryGenerator from '@tools/credibility-story-generator/CredibilityStoryGenerator.vue';
-import FrameworkGenerator from '@tools/framework-builder/FrameworkGenerator.vue';
-import InterviewPrepGenerator from '@tools/interview-prep-generator/InterviewPrepGenerator.vue';
-
-// Content tools
-import BlogGenerator from '@tools/blog-generator/BlogGenerator.vue';
-import ContentRepurposerGenerator from '@tools/content-repurposer/ContentRepurposerGenerator.vue';
-import PressReleaseGenerator from '@tools/press-release-generator/PressReleaseGenerator.vue';
-
-// Social/Email tools
-import SocialPostGenerator from '@tools/social-post-generator/SocialPostGenerator.vue';
-import EmailWriterGenerator from '@tools/email-writer/EmailWriterGenerator.vue';
-import NewsletterGenerator from '@tools/newsletter-writer/NewsletterGenerator.vue';
-import YoutubeDescriptionGenerator from '@tools/youtube-description-generator/YoutubeDescriptionGenerator.vue';
-import PodcastNotesGenerator from '@tools/podcast-notes-generator/PodcastNotesGenerator.vue';
-import SeoOptimizerGenerator from '@tools/seo-optimizer/SeoOptimizerGenerator.vue';
-=======
 // Import unified generator CSS for two-panel layout
 import './styles/generator-unified.css';
 
@@ -117,7 +80,6 @@ import SeoOptimizerGenerator from '../tools/seo-optimizer/Generator.vue';
 import ToolDirectoryPage from '../tools/ToolDirectoryPage.vue';
 import DynamicToolPage from '../tools/DynamicToolPage.vue';
 import ToolLandingPage from '../tools/ToolLandingPage.vue';
->>>>>>> claude/fix-ai-tools-design-e7eoL
 
 /**
  * Component registry for data-gmkb-tool attribute values
@@ -369,11 +331,6 @@ function initializeToolPage(container) {
  * @returns {number} Number of tools initialized
  */
 function initializeAll() {
-<<<<<<< HEAD
-    // Support both attribute formats
-    const containers = document.querySelectorAll('[data-gmkb-tool], [data-tool]');
-=======
->>>>>>> claude/fix-ai-tools-design-e7eoL
     let count = 0;
 
     // Initialize individual tool widgets
