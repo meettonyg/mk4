@@ -127,8 +127,43 @@ class GMKB_Tool_Pages {
         // Body class
         add_filter('body_class', array($this, 'add_body_class'));
 
+        // Navigation type filter for theme integration
+        add_filter('guestify_is_app_page', array($this, 'filter_is_app_page'), 10, 1);
+        add_filter('gmkb_tool_page_navigation_type', array($this, 'get_navigation_type'), 10, 1);
+
         // Flush rewrite rules when needed
         add_action('admin_init', array($this, 'maybe_flush_rewrite_rules'));
+    }
+
+    /**
+     * Filter whether current page should use app navigation
+     * For tool pages: show app nav only for logged-in users
+     *
+     * @param bool $is_app_page Current is_app_page value
+     * @return bool Modified value
+     */
+    public function filter_is_app_page($is_app_page) {
+        // If we're on a tool page, override based on login status
+        if ($this->current_tool || get_query_var($this->directory_var)) {
+            // Logged-in users get app navigation
+            // Public users get frontend navigation
+            return is_user_logged_in();
+        }
+
+        return $is_app_page;
+    }
+
+    /**
+     * Get the navigation type for current tool page
+     *
+     * @param string $default Default navigation type
+     * @return string 'app' or 'frontend'
+     */
+    public function get_navigation_type($default = 'frontend') {
+        if ($this->current_tool || get_query_var($this->directory_var)) {
+            return is_user_logged_in() ? 'app' : 'frontend';
+        }
+        return $default;
     }
 
     /**
@@ -1504,8 +1539,35 @@ get_footer();
         if ($this->current_tool) {
             $classes[] = 'gmkb-tool-page';
             $classes[] = 'gmkb-tool-' . $this->current_tool['id'];
+
+            // Add login status classes for theme navigation logic
+            if (is_user_logged_in()) {
+                $classes[] = 'gmkb-user-logged-in';
+                $classes[] = 'gmkb-show-app-nav';
+            } else {
+                $classes[] = 'gmkb-user-logged-out';
+                $classes[] = 'gmkb-show-frontend-nav';
+            }
+
+            // Check if this is the tool app view
+            $use_param = isset($_GET['use']) ? sanitize_text_field(wp_unslash($_GET['use'])) : null;
+            $is_tool_app = get_query_var('gmkb_tool_app') || ('1' === $use_param);
+            if ($is_tool_app) {
+                $classes[] = 'gmkb-tool-app-view';
+            } else {
+                $classes[] = 'gmkb-tool-landing-view';
+            }
         } elseif (get_query_var($this->directory_var)) {
             $classes[] = 'gmkb-tools-directory-page';
+
+            // Add login status classes for directory page too
+            if (is_user_logged_in()) {
+                $classes[] = 'gmkb-user-logged-in';
+                $classes[] = 'gmkb-show-app-nav';
+            } else {
+                $classes[] = 'gmkb-user-logged-out';
+                $classes[] = 'gmkb-show-frontend-nav';
+            }
         }
         return $classes;
     }
