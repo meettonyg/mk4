@@ -19,7 +19,7 @@
  *
  * @package GMKB
  * @subpackage Pages
- * @version 1.2.0
+ * @version 1.3.0
  * @since 2.3.0
  */
 
@@ -109,6 +109,9 @@ class GMKB_Tool_Pages {
         // Rewrite rules
         add_action('init', array($this, 'register_rewrite_rules'));
         add_filter('query_vars', array($this, 'register_query_vars'));
+
+        // Fallback URL parsing - runs early to set query vars even if rewrite rules aren't flushed
+        add_action('parse_request', array($this, 'parse_tool_request'), 1);
 
         // Prevent WordPress from treating virtual pages as 404s
         add_action('template_redirect', array($this, 'prevent_canonical_redirect'), 0);
@@ -340,6 +343,59 @@ class GMKB_Tool_Pages {
         $vars[] = $this->directory_var;
         $vars[] = 'gmkb_tool_app';
         return $vars;
+    }
+
+    /**
+     * Parse tool request from URL - fallback when rewrite rules aren't flushed
+     *
+     * This method provides a safety net that ensures our virtual pages work
+     * even if WordPress rewrite rules haven't been properly flushed. It parses
+     * the URL directly and sets query vars manually if they match our patterns.
+     *
+     * @param WP $wp WordPress request object
+     */
+    public function parse_tool_request($wp) {
+        // Get the request path
+        $request_path = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
+
+        // Parse URL to get just the path
+        $parsed = wp_parse_url($request_path);
+        $path = isset($parsed['path']) ? $parsed['path'] : '';
+
+        // Remove leading/trailing slashes and get path segments
+        $path = trim($path, '/');
+
+        // Check if path starts with our base path (tools)
+        if (empty($path) || strpos($path, $this->base_path) !== 0) {
+            return;
+        }
+
+        // Remove site subdirectory if WordPress is in a subdirectory
+        $home_path = trim(wp_parse_url(home_url(), PHP_URL_PATH) ?: '', '/');
+        if (!empty($home_path) && strpos($path, $home_path) === 0) {
+            $path = substr($path, strlen($home_path));
+            $path = ltrim($path, '/');
+        }
+
+        // Now check our patterns
+        // Pattern: tools/{slug}/tool/
+        if (preg_match('#^' . preg_quote($this->base_path, '#') . '/([^/]+)/tool/?$#', $path, $matches)) {
+            $wp->query_vars[$this->query_var] = sanitize_text_field($matches[1]);
+            $wp->query_vars['gmkb_tool_app'] = '1';
+            return;
+        }
+
+        // Pattern: tools/{slug}/
+        if (preg_match('#^' . preg_quote($this->base_path, '#') . '/([^/]+)/?$#', $path, $matches)) {
+            $wp->query_vars[$this->query_var] = sanitize_text_field($matches[1]);
+            return;
+        }
+
+        // Pattern: tools/
+        if (preg_match('#^' . preg_quote($this->base_path, '#') . '/?$#', $path)) {
+            $wp->query_vars[$this->directory_var] = '1';
+            return;
+        }
     }
 
     /**
@@ -1639,7 +1695,7 @@ get_footer();
      */
     public function maybe_flush_rewrite_rules() {
         $version_key = 'gmkb_tool_pages_version';
-        $current_version = '1.2.0'; // Bumped to force rewrite rules flush (added prevent_canonical_redirect)
+        $current_version = '1.3.0'; // Bumped: added parse_tool_request fallback for URL detection
 
         if (get_option($version_key) !== $current_version) {
             flush_rewrite_rules();
@@ -1653,7 +1709,7 @@ get_footer();
     public function flush_rewrite_rules() {
         $this->register_rewrite_rules();
         flush_rewrite_rules();
-        update_option('gmkb_tool_pages_version', '1.2.0');
+        update_option('gmkb_tool_pages_version', '1.3.0');
     }
 
     /**
