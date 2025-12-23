@@ -96,7 +96,7 @@ const props = defineProps({
 
 const toolConfig = computed(() => getToolBySlug(props.toolSlug));
 
-const useToolUrl = computed(() => `/tools/${props.toolSlug}/?use=1`);
+const useToolUrl = computed(() => `/tools/${props.toolSlug}/use/`);
 
 const benefits = computed(() => {
   // Default benefits - can be customized per tool in the future
