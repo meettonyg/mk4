@@ -95,8 +95,8 @@ class GMKB_Tool_Pages_Shortcode {
         add_action('init', array($this, 'add_rewrite_rules'));
         add_filter('query_vars', array($this, 'add_query_vars'));
 
-        // Virtual page handling - intercept /tools/ URLs without needing a WP page
-        add_action('template_redirect', array($this, 'handle_virtual_pages'));
+        // Virtual page handling - use parse_request to intercept BEFORE WordPress 404s
+        add_action('parse_request', array($this, 'handle_virtual_pages'), 1);
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('GMKB Tool Pages Shortcode: Registered directory and tool page shortcodes');
@@ -106,8 +106,13 @@ class GMKB_Tool_Pages_Shortcode {
     /**
      * Handle virtual tool pages without requiring WordPress pages
      */
-    public function handle_virtual_pages() {
+    public function handle_virtual_pages($wp) {
         $uri = trim($_SERVER['REQUEST_URI'], '/');
+
+        // Remove query string for matching
+        $uri = strtok($uri, '?');
+        $uri = trim($uri, '/');
+
         $tools_slug = apply_filters('gmkb_tools_page_slug', 'tools');
 
         // Check for /tools/{slug}/use/ (2-panel tool page)
