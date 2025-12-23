@@ -410,8 +410,11 @@ get_footer();
 
                 <?php if (empty($all_tools)): ?>
                 <div class="gmkb-debug" style="padding: 1rem; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; margin-bottom: 2rem;">
-                    <strong>Debug:</strong> No tools discovered.
-                    Tools path: <?php echo esc_html(GMKB_PLUGIN_DIR . 'tools/'); ?>
+                    <strong>Debug:</strong> No tools discovered.<br>
+                    GMKB_PLUGIN_DIR: <?php echo esc_html(defined('GMKB_PLUGIN_DIR') ? GMKB_PLUGIN_DIR : 'NOT DEFINED'); ?><br>
+                    Tools path: <?php echo esc_html(GMKB_PLUGIN_DIR . 'tools/'); ?><br>
+                    Path exists: <?php echo is_dir(GMKB_PLUGIN_DIR . 'tools/') ? 'YES' : 'NO'; ?><br>
+                    Discovery loaded: <?php echo $discovery ? 'YES' : 'NO'; ?>
                 </div>
                 <?php endif; ?>
 
