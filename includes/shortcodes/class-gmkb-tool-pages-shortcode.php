@@ -95,9 +95,104 @@ class GMKB_Tool_Pages_Shortcode {
         add_action('init', array($this, 'add_rewrite_rules'));
         add_filter('query_vars', array($this, 'add_query_vars'));
 
+        // Virtual page handling - intercept /tools/ URLs without needing a WP page
+        add_action('template_redirect', array($this, 'handle_virtual_pages'));
+
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('GMKB Tool Pages Shortcode: Registered directory and tool page shortcodes');
         }
+    }
+
+    /**
+     * Handle virtual tool pages without requiring WordPress pages
+     */
+    public function handle_virtual_pages() {
+        $uri = trim($_SERVER['REQUEST_URI'], '/');
+        $tools_slug = apply_filters('gmkb_tools_page_slug', 'tools');
+
+        // Check for /tools/{slug}/use/ (2-panel tool page)
+        if (preg_match('#^' . preg_quote($tools_slug, '#') . '/([^/\?]+)/use/?(?:\?.*)?$#', $uri, $matches)) {
+            $tool_slug = $matches[1];
+            if (in_array($tool_slug, $this->valid_slugs)) {
+                $this->enqueue_assets();
+                $this->render_virtual_page($tool_slug, 'use');
+                exit;
+            }
+            return;
+        }
+
+        // Check for /tools/{slug}/ (landing page)
+        if (preg_match('#^' . preg_quote($tools_slug, '#') . '/([^/\?]+)/?(?:\?.*)?$#', $uri, $matches)) {
+            $tool_slug = $matches[1];
+            if (in_array($tool_slug, $this->valid_slugs)) {
+                $this->enqueue_assets();
+                $this->render_virtual_page($tool_slug, 'landing');
+                exit;
+            }
+            return;
+        }
+
+        // Check for /tools/ (directory)
+        if (preg_match('#^' . preg_quote($tools_slug, '#') . '/?(?:\?.*)?$#', $uri)) {
+            $this->enqueue_assets();
+            $this->render_virtual_page(null, 'directory');
+            exit;
+        }
+    }
+
+    /**
+     * Render a virtual tool page
+     *
+     * @param string|null $tool_slug Tool slug or null for directory
+     * @param string $mode 'directory', 'landing', or 'use'
+     */
+    private function render_virtual_page($tool_slug = null, $mode = 'directory') {
+        if ($mode === 'directory') {
+            $page_title = 'AI Content Tools';
+        } elseif ($mode === 'landing') {
+            $page_title = $this->get_tool_name($tool_slug);
+        } else {
+            $page_title = $this->get_tool_name($tool_slug) . ' - Use Tool';
+        }
+        $site_name = get_bloginfo('name');
+
+        ?><!DOCTYPE html>
+<html <?php language_attributes(); ?>>
+<head>
+    <meta charset="<?php bloginfo('charset'); ?>">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><?php echo esc_html($page_title . ' - ' . $site_name); ?></title>
+    <?php wp_head(); ?>
+</head>
+<body <?php body_class('gmkb-virtual-page gmkb-tools-page'); ?>>
+    <?php
+    // Try to include theme header if it exists
+    if (function_exists('get_header')) {
+        get_header();
+    }
+    ?>
+
+    <main class="gmkb-tools-main">
+        <?php
+        if ($mode === 'directory') {
+            echo $this->render_directory(array());
+        } else {
+            echo $this->render_tool_page(array('slug' => $tool_slug, 'mode' => $mode));
+        }
+        ?>
+    </main>
+
+    <?php
+    // Try to include theme footer if it exists
+    if (function_exists('get_footer')) {
+        get_footer();
+    }
+
+    wp_footer();
+    ?>
+</body>
+</html>
+        <?php
     }
 
     /**
@@ -173,7 +268,8 @@ class GMKB_Tool_Pages_Shortcode {
             'slug' => '',
             'class' => '',
             'theme' => 'light',
-            'directory_url' => '/tools/'
+            'directory_url' => '/tools/',
+            'mode' => '' // 'landing' or 'use' - if empty, auto-detect from URL
         ), $atts, 'gmkb_tool_page');
 
         // Auto-detect slug from URL if not provided
@@ -214,13 +310,24 @@ class GMKB_Tool_Pages_Shortcode {
         // If no slug, render directory
         $page_type = empty($slug) ? 'directory' : 'tool';
 
+        // Determine mode: 'use' (2-panel tool) or 'landing' (marketing page)
+        // Use mode from atts if provided, otherwise detect from URL
+        if (!empty($atts['mode'])) {
+            $mode = $atts['mode'];
+        } else {
+            // Check if URL ends with /use/
+            $uri = trim($_SERVER['REQUEST_URI'], '/');
+            $mode = preg_match('#/use/?$#', $uri) ? 'use' : 'landing';
+        }
+
         $html = sprintf(
-            '<div id="%s" class="%s" data-gmkb-page-type="%s" data-gmkb-tool-slug="%s" data-gmkb-directory-url="%s"></div>',
+            '<div id="%s" class="%s" data-gmkb-page-type="%s" data-gmkb-tool-slug="%s" data-gmkb-directory-url="%s" data-gmkb-mode="%s"></div>',
             esc_attr($unique_id),
             esc_attr(implode(' ', $classes)),
             esc_attr($page_type),
             esc_attr($slug),
-            esc_attr($atts['directory_url'])
+            esc_attr($atts['directory_url']),
+            esc_attr($mode)
         );
 
         // Noscript fallback
