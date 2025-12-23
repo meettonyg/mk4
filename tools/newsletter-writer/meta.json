@@ -1,0 +1,130 @@
+{
+  "name": "Newsletter Writer",
+  "slug": "newsletter-writer",
+  "shortDescription": "Create engaging email newsletters that build audience relationships.",
+  "longDescription": "The Newsletter Writer helps you create compelling email newsletters that engage subscribers and build loyal audiences. From welcome sequences to weekly updates to promotional campaigns, generate newsletters that get opened and clicked.",
+  "category": "social-email",
+  "icon": "InboxStackIcon",
+  "componentName": "NewsletterGenerator",
+  "useCases": [
+    "Write weekly newsletters",
+    "Create welcome sequences",
+    "Build product launch emails",
+    "Develop nurture campaigns",
+    "Generate promotional content"
+  ],
+  "keyBenefits": [
+    "Higher open rates",
+    "Better engagement",
+    "Consistent publishing",
+    "Subscriber retention"
+  ],
+  "targetAudience": [
+    "Newsletter creators",
+    "Content creators",
+    "Marketing teams",
+    "Business owners",
+    "Coaches and consultants"
+  ],
+  "seoMeta": {
+    "title": "Free AI Newsletter Writer | Create Engaging Email Newsletters",
+    "description": "Generate engaging email newsletters that build audience relationships with our free AI Newsletter Writer.",
+    "keywords": [
+      "newsletter writer",
+      "email newsletter",
+      "newsletter generator",
+      "email marketing",
+      "subscriber content",
+      "email campaigns"
+    ],
+    "canonicalPath": "/tools/newsletter-writer/"
+  },
+  "landingContent": {
+    "heroTagline": "Create Newsletters Your Audience Actually Opens",
+    "heroSubtitle": "Generate engaging email newsletters that build relationships, drive engagement, and keep subscribers coming back.",
+    "formula": "[HOOK SUBJECT] + [PERSONAL INTRO] + [MAIN VALUE] + [TAKEAWAYS] + [CTA] = Engaging Newsletter",
+    "tips": [
+      "Write the subject line last - it's easier to summarize once you know the content",
+      "Open with personality - show you're human, not a faceless brand; share a quick personal note",
+      "One main idea - the best newsletters are focused; save other ideas for next week",
+      "Make it scannable - use headers, bullets, and bold text so readers can skim"
+    ],
+    "examples": [
+      {
+        "title": "Weekly Insight Newsletter",
+        "content": "Subject: The 2-minute habit that changed my mornings\n\n[Personal story] → [Key insight] → [3 practical tips] → [CTA: Reply and tell me your morning routine]"
+      },
+      {
+        "title": "Curated Links Newsletter",
+        "content": "Subject: 5 things worth your attention this week\n\n[Quick intro] → [Link 1 with your take] → [Link 2 with your take] → ... → [CTA: Share your favorite find]"
+      },
+      {
+        "title": "Product Update Newsletter",
+        "content": "Subject: We built the feature you asked for\n\n[Why we built it] → [How it helps you] → [Simple explanation] → [CTA: Try it now]"
+      }
+    ],
+    "howItWorks": [
+      {
+        "step": 1,
+        "title": "Choose Your Format",
+        "description": "Select newsletter type and structure."
+      },
+      {
+        "step": 2,
+        "title": "Add Your Content",
+        "description": "Include main topic and key takeaways."
+      },
+      {
+        "step": 3,
+        "title": "Generate & Send",
+        "description": "Get a formatted newsletter ready to publish."
+      }
+    ],
+    "features": [
+      {
+        "title": "Multiple Formats",
+        "description": "Curated links, thought pieces, updates, and promos.",
+        "icon": "Squares2X2Icon"
+      },
+      {
+        "title": "Strong Hooks",
+        "description": "Opening lines that pull readers in.",
+        "icon": "SparklesIcon"
+      },
+      {
+        "title": "Clear Structure",
+        "description": "Easy-to-scan sections and formatting.",
+        "icon": "QueueListIcon"
+      },
+      {
+        "title": "Engaging CTAs",
+        "description": "Actions that drive clicks and responses.",
+        "icon": "CursorArrowRaysIcon"
+      }
+    ],
+    "faq": [
+      {
+        "question": "How long should my newsletter be?",
+        "answer": "5-10 minute read is ideal. Keep it valuable and scannable. Quality over quantity always wins."
+      },
+      {
+        "question": "How often should I send newsletters?",
+        "answer": "Weekly is the sweet spot for most. Consistency matters more than frequency. Pick a schedule you can maintain."
+      },
+      {
+        "question": "What structure works best?",
+        "answer": "Hook intro → Main content → Takeaways → CTA. Use headers and bullet points for scannability."
+      },
+      {
+        "question": "How do I grow my subscriber list?",
+        "answer": "Create a compelling lead magnet, optimize signup forms, promote on social, and make your existing newsletters shareable."
+      }
+    ],
+    "relatedToolSlugs": [
+      "email-writer",
+      "blog-generator",
+      "content-repurposer",
+      "social-post-generator"
+    ]
+  }
+}

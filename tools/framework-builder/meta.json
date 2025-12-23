@@ -1,0 +1,130 @@
+{
+  "name": "Framework Builder",
+  "slug": "framework-builder",
+  "shortDescription": "Create proprietary frameworks and methodologies that position you as a thought leader.",
+  "longDescription": "The Framework Builder helps you develop and articulate your unique methodology or process. Turn your approach into a branded, teachable framework that differentiates you and establishes intellectual property.",
+  "category": "strategy",
+  "icon": "CubeTransparentIcon",
+  "componentName": "FrameworkGenerator",
+  "useCases": [
+    "Create proprietary methodologies",
+    "Develop training frameworks",
+    "Build coaching programs",
+    "Design consulting processes",
+    "Establish thought leadership"
+  ],
+  "keyBenefits": [
+    "Intellectual property",
+    "Premium positioning",
+    "Teachable methodology",
+    "Clear differentiation"
+  ],
+  "targetAudience": [
+    "Consultants and coaches",
+    "Trainers and educators",
+    "Thought leaders",
+    "Course creators",
+    "Business authors"
+  ],
+  "seoMeta": {
+    "title": "Free AI Framework Builder | Create Proprietary Methodologies",
+    "description": "Develop proprietary frameworks and methodologies that establish thought leadership with our free AI Framework Builder.",
+    "keywords": [
+      "framework builder",
+      "methodology creator",
+      "proprietary process",
+      "thought leadership",
+      "coaching framework",
+      "consulting methodology"
+    ],
+    "canonicalPath": "/tools/framework-builder/"
+  },
+  "landingContent": {
+    "heroTagline": "Turn Your Expertise Into a Proprietary Framework",
+    "heroSubtitle": "Develop a branded methodology that differentiates you, establishes thought leadership, and creates intellectual property.",
+    "formula": "[MEMORABLE NAME] + [3-5 STEPS] + [CLEAR OUTCOMES] = Proprietary Framework",
+    "tips": [
+      "Make it memorable - use acronyms, alliteration, or metaphors (SMART goals, The 5 C's)",
+      "Keep it simple - 3-5 steps is ideal; enough depth to be valuable, simple enough to remember",
+      "Define outcomes - each step should have a clear deliverable or transformation",
+      "Make it teachable - a great framework can be explained in 60 seconds"
+    ],
+    "examples": [
+      {
+        "title": "The SCALE Method",
+        "content": "Strategy → Capacity → Automation → Leadership → Exit. A 5-step framework for building a sellable business."
+      },
+      {
+        "title": "The 3P Framework",
+        "content": "Position → Promote → Profit. A simple system for monetizing your expertise through speaking."
+      },
+      {
+        "title": "The Authority Ladder",
+        "content": "Visibility → Credibility → Authority → Legacy. The progression every thought leader follows to lasting influence."
+      }
+    ],
+    "howItWorks": [
+      {
+        "step": 1,
+        "title": "Describe Your Process",
+        "description": "Explain how you achieve results for clients."
+      },
+      {
+        "step": 2,
+        "title": "Identify Key Steps",
+        "description": "Break down your approach into phases or stages."
+      },
+      {
+        "step": 3,
+        "title": "Get Your Framework",
+        "description": "Receive a structured, nameable methodology."
+      }
+    ],
+    "features": [
+      {
+        "title": "Naming Suggestions",
+        "description": "Get catchy, memorable names for your framework.",
+        "icon": "TagIcon"
+      },
+      {
+        "title": "Step Breakdown",
+        "description": "Clear phases with descriptions and outcomes.",
+        "icon": "ListBulletIcon"
+      },
+      {
+        "title": "Visual Structure",
+        "description": "Formatted for easy diagram creation.",
+        "icon": "PresentationChartLineIcon"
+      },
+      {
+        "title": "Teaching Ready",
+        "description": "Designed to be explained and taught to others.",
+        "icon": "AcademicCapIcon"
+      }
+    ],
+    "faq": [
+      {
+        "question": "How many steps should my framework have?",
+        "answer": "3-5 steps is ideal. Enough to show depth, but simple enough to remember. Acronyms (like SMART goals) are powerful."
+      },
+      {
+        "question": "How do I name my framework?",
+        "answer": "Use an acronym, alliteration, or metaphor. 'The 5C Framework' or 'The Success Ladder' are memorable and ownable."
+      },
+      {
+        "question": "Can I trademark my framework?",
+        "answer": "Yes, unique framework names can be trademarked. Consult a trademark attorney for specific guidance."
+      },
+      {
+        "question": "How do I use my framework?",
+        "answer": "Reference it in sales conversations, structure programs around it, and teach it in content. It becomes your signature approach."
+      }
+    ],
+    "relatedToolSlugs": [
+      "authority-hook-builder",
+      "signature-story-generator",
+      "interview-prep-generator",
+      "topics-generator"
+    ]
+  }
+}

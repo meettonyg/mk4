@@ -1,0 +1,134 @@
+{
+  "name": "Tagline Generator",
+  "slug": "tagline-generator",
+  "shortDescription": "Create compelling headlines, taglines, and value propositions that capture attention.",
+  "longDescription": "The Tagline Generator helps you craft memorable headlines and value propositions that instantly communicate your unique value. Whether you need a punchy tagline for your brand, a compelling headline for your media kit, or a powerful value proposition, this tool delivers results that resonate.",
+  "category": "message-builder",
+  "icon": "SparklesIcon",
+  "componentName": "TaglineGenerator",
+  "useCases": [
+    "Create brand taglines and slogans",
+    "Write media kit headlines",
+    "Develop value propositions",
+    "Craft social media bios",
+    "Design presentation titles"
+  ],
+  "keyBenefits": [
+    "Memorable messaging instantly",
+    "Multiple style options",
+    "Benefit-focused language",
+    "Generate multiple options"
+  ],
+  "targetAudience": [
+    "Personal brands",
+    "Speakers and consultants",
+    "Small business owners",
+    "Coaches and creators",
+    "Marketing professionals"
+  ],
+  "seoMeta": {
+    "title": "Free AI Tagline Generator | Create Compelling Headlines & Value Props",
+    "description": "Generate memorable taglines, headlines, and value propositions with our free AI Tagline Generator. Create messaging that captures attention instantly.",
+    "keywords": [
+      "tagline generator",
+      "slogan generator",
+      "headline generator",
+      "value proposition generator",
+      "brand tagline",
+      "AI copywriting"
+    ],
+    "canonicalPath": "/tools/tagline-generator/"
+  },
+  "landingContent": {
+    "heroTagline": "Craft Taglines That Stick in People's Minds",
+    "heroSubtitle": "Generate memorable headlines, slogans, and value propositions that instantly communicate your unique value.",
+    "formula": "[WHO you help] + [WHAT you do] + [HOW you're unique]",
+    "tips": [
+      "Keep it short - the best taglines are under 10 words",
+      "Focus on transformation, not features - what changes for your client?",
+      "Avoid jargon - use language your ideal audience immediately understands",
+      "Make it memorable - use rhythm, alliteration, or unexpected phrasing"
+    ],
+    "examples": [
+      {
+        "title": "Problem-Focused",
+        "content": "Profit Without Chaos • Ending Marketing Overwhelm • Scaling Without Sacrifice"
+      },
+      {
+        "title": "Solution-Focused",
+        "content": "The Scaling Framework • Systems That Stick • Growth Made Simple"
+      },
+      {
+        "title": "Outcome-Focused",
+        "content": "Freedom Through Systems • Million-Dollar Results • Revenue on Repeat"
+      },
+      {
+        "title": "Authority-Focused",
+        "content": "The Growth Expert • Trusted by 500+ CEOs • The Go-To Strategy Partner"
+      }
+    ],
+    "howItWorks": [
+      {
+        "step": 1,
+        "title": "Describe Your Offering",
+        "description": "Enter what you do and who you help."
+      },
+      {
+        "step": 2,
+        "title": "Choose Your Style",
+        "description": "Select benefit-focused, action-oriented, question, or statement style."
+      },
+      {
+        "step": 3,
+        "title": "Pick Your Favorite",
+        "description": "Review multiple options and choose the one that resonates."
+      }
+    ],
+    "features": [
+      {
+        "title": "Multiple Styles",
+        "description": "Choose from benefit-focused, action-oriented, question, or statement formats.",
+        "icon": "SwatchIcon"
+      },
+      {
+        "title": "Bulk Generation",
+        "description": "Generate 3, 5, or 10 options at once to find the perfect fit.",
+        "icon": "RectangleStackIcon"
+      },
+      {
+        "title": "Audience Focus",
+        "description": "Taglines crafted with your target audience in mind.",
+        "icon": "UserGroupIcon"
+      },
+      {
+        "title": "Transformation-Driven",
+        "description": "Messaging that emphasizes the results you deliver.",
+        "icon": "ArrowTrendingUpIcon"
+      }
+    ],
+    "faq": [
+      {
+        "question": "What makes a good tagline?",
+        "answer": "A good tagline is short (under 10 words), memorable, and focuses on the transformation or benefit you provide rather than what you do."
+      },
+      {
+        "question": "Which style should I choose?",
+        "answer": "Benefit-focused works for most uses. Use action-oriented for calls-to-action, questions to engage curiosity, and statements for authority positioning."
+      },
+      {
+        "question": "How many options should I generate?",
+        "answer": "Generate at least 5 options. More choices help you find the perfect fit and may inspire variations you hadn't considered."
+      },
+      {
+        "question": "Can I combine elements from different taglines?",
+        "answer": "Absolutely! Use the generated options as inspiration and mix elements to create your perfect tagline."
+      }
+    ],
+    "relatedToolSlugs": [
+      "biography-generator",
+      "elevator-pitch-generator",
+      "authority-hook-builder",
+      "brand-story-generator"
+    ]
+  }
+}

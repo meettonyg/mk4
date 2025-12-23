@@ -325,6 +325,29 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-free-tools
     require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-free-tools-shortcode.php';
 }
 
+// Tool Metadata: Provides server-side access to meta.json tool configurations for SEO
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-tool-metadata.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-tool-metadata.php';
+}
+
+// Tool Landing Page Shortcode: Full SEO landing pages with Vue components
+// Usage: [gmkb_tool_landing tool="topics-generator"]
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-tool-landing-shortcode.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-tool-landing-shortcode.php';
+}
+
+// Generic Tool Shortcode: Embeds any tool by slug
+// Usage: [gmkb_tool tool="topics-generator"]
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-tool-shortcode.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-tool-shortcode.php';
+}
+
+// Virtual Tool Pages: Auto-generated pages at /tools/ and /tools/{slug}/
+// No manual page creation required - URLs are handled via rewrite rules
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/pages/class-gmkb-tool-pages.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/pages/class-gmkb-tool-pages.php';
+}
+
 // Offers Shortcode - Display offers on any page
 // Usage: [gmkb_offers] or [gmkb_offers profile_id="123" layout="grid" columns="3"]
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/offers-shortcode.php')) {

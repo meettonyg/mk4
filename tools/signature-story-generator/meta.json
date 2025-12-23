@@ -1,0 +1,130 @@
+{
+  "name": "Signature Story Generator",
+  "slug": "signature-story-generator",
+  "shortDescription": "Create a go-to story that illustrates your expertise and methodology.",
+  "longDescription": "The Signature Story Generator helps you develop a memorable story that demonstrates your unique approach and expertise. This story becomes your go-to illustration in presentations, interviews, and sales conversations.",
+  "category": "strategy",
+  "icon": "PencilSquareIcon",
+  "componentName": "SignatureStoryGenerator",
+  "useCases": [
+    "Create presentation stories",
+    "Develop sales conversation pieces",
+    "Build keynote moments",
+    "Craft podcast anecdotes",
+    "Design training examples"
+  ],
+  "keyBenefits": [
+    "Memorable illustration",
+    "Demonstrates expertise",
+    "Reusable across contexts",
+    "Builds credibility"
+  ],
+  "targetAudience": [
+    "Speakers and trainers",
+    "Sales professionals",
+    "Coaches and consultants",
+    "Authors",
+    "Thought leaders"
+  ],
+  "seoMeta": {
+    "title": "Free AI Signature Story Generator | Create Memorable Expert Stories",
+    "description": "Generate your signature story that demonstrates expertise and methodology with our free AI Signature Story Generator.",
+    "keywords": [
+      "signature story",
+      "keynote story",
+      "presentation story",
+      "case study story",
+      "expert story",
+      "teaching story"
+    ],
+    "canonicalPath": "/tools/signature-story-generator/"
+  },
+  "landingContent": {
+    "heroTagline": "Create Your Go-To Story That Sells",
+    "heroSubtitle": "Develop a memorable signature story that demonstrates your expertise and makes your methodology unforgettable.",
+    "formula": "[SITUATION] → [COMPLICATION] → [TURNING POINT] → [RESOLUTION] → [LESSON] = Signature Story",
+    "tips": [
+      "Start in the middle of the action - skip the setup and drop the listener into the tension",
+      "Include specific details - names, numbers, and sensory details make stories believable",
+      "Show the moment of change - what was the insight or decision that changed everything?",
+      "End with a universal lesson - make sure the takeaway applies to your listener's situation too"
+    ],
+    "examples": [
+      {
+        "title": "Client Transformation Story",
+        "content": "When I met Sarah, she was working 80-hour weeks and her business was plateaued at $400K. Six months later, she was working 40 hours and had crossed $1M. The difference? We eliminated 80% of what she thought was essential."
+      },
+      {
+        "title": "Personal Origin Story",
+        "content": "I was sitting in a hospital bed, realizing I'd sacrificed my health for success. That moment changed everything. Now I help executives build wealth without burning out."
+      },
+      {
+        "title": "Methodology Discovery Story",
+        "content": "After my third failed product launch, I finally saw the pattern. I'd been building what I wanted, not what they needed. That insight became the core of my Customer-First Framework."
+      }
+    ],
+    "howItWorks": [
+      {
+        "step": 1,
+        "title": "Share the Situation",
+        "description": "Describe the challenge or starting point."
+      },
+      {
+        "step": 2,
+        "title": "Explain Your Approach",
+        "description": "Detail what you did differently."
+      },
+      {
+        "step": 3,
+        "title": "Reveal the Result",
+        "description": "Share the transformation and outcome."
+      }
+    ],
+    "features": [
+      {
+        "title": "Story Structure",
+        "description": "Follows the proven Situation-Approach-Result format.",
+        "icon": "QueueListIcon"
+      },
+      {
+        "title": "Emotional Hooks",
+        "description": "Includes moments that resonate and stick.",
+        "icon": "HeartIcon"
+      },
+      {
+        "title": "Clear Lesson",
+        "description": "Ends with an applicable takeaway.",
+        "icon": "AcademicCapIcon"
+      },
+      {
+        "title": "Flexible Length",
+        "description": "Versions for 30-second and 3-minute delivery.",
+        "icon": "ClockIcon"
+      }
+    ],
+    "faq": [
+      {
+        "question": "What makes a good signature story?",
+        "answer": "A good signature story has relatable characters, specific details, emotional stakes, and a clear demonstration of your unique approach."
+      },
+      {
+        "question": "Should I use a client story or my own?",
+        "answer": "Both work. Client stories demonstrate results, while personal stories show your journey. Have one of each ready."
+      },
+      {
+        "question": "How do I tell it naturally?",
+        "answer": "Practice until you know the beats, not the exact words. The story should feel like you're sharing with a friend, not reciting."
+      },
+      {
+        "question": "When should I use my signature story?",
+        "answer": "In keynotes, podcast interviews, sales conversations, and whenever you need to illustrate your methodology or expertise."
+      }
+    ],
+    "relatedToolSlugs": [
+      "brand-story-generator",
+      "credibility-story-generator",
+      "framework-builder",
+      "sound-bite-generator"
+    ]
+  }
+}

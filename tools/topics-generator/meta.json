@@ -1,0 +1,131 @@
+{
+  "name": "Topics Generator",
+  "slug": "topics-generator",
+  "shortDescription": "Generate compelling speaking topics and podcast episode ideas tailored to your expertise.",
+  "longDescription": "The Topics Generator helps speakers, podcast hosts, and thought leaders create engaging topics that resonate with their target audience. Whether you need keynote ideas, podcast episode concepts, or workshop themes, this AI-powered tool generates relevant, actionable topics based on your expertise and audience.",
+  "category": "message-builder",
+  "icon": "ChatBubbleBottomCenterTextIcon",
+  "componentName": "TopicsGenerator",
+  "useCases": [
+    "Generate podcast episode ideas based on your expertise",
+    "Create keynote presentation topics for conferences",
+    "Develop workshop themes for training sessions",
+    "Plan content calendar with engaging topic ideas",
+    "Pitch speaking topics to event organizers"
+  ],
+  "keyBenefits": [
+    "Save hours brainstorming topic ideas",
+    "Get audience-focused suggestions",
+    "Generate multiple options in seconds",
+    "Customize for any speaking context"
+  ],
+  "targetAudience": [
+    "Podcast hosts and guests",
+    "Keynote speakers",
+    "Workshop facilitators",
+    "Content creators",
+    "Thought leaders"
+  ],
+  "seoMeta": {
+    "title": "Free AI Topics Generator | Create Speaking Topics & Podcast Ideas",
+    "description": "Generate compelling speaking topics, podcast episode ideas, and presentation themes with our free AI Topics Generator. Get audience-focused topic suggestions in seconds.",
+    "keywords": [
+      "topics generator",
+      "speaking topics",
+      "podcast episode ideas",
+      "presentation topics",
+      "keynote ideas",
+      "AI topic generator",
+      "content ideas generator"
+    ],
+    "canonicalPath": "/tools/topics-generator/"
+  },
+  "landingContent": {
+    "heroTagline": "Generate Speaking Topics That Captivate Your Audience",
+    "heroSubtitle": "Create compelling podcast episodes, keynotes, and presentations with AI-powered topic suggestions tailored to your expertise.",
+    "formula": "Provide solutions that focus on one concept per topic while remaining general enough to expand upon.",
+    "tips": [
+      "Focus on value for listeners - great topics provide actionable solutions, not promotion",
+      "One concept per topic - each topic should focus on a single idea, like a blog post",
+      "Tailor to the audience - adjust topics to align with each podcast's specific listeners",
+      "Lead with transformation - frame topics around the change your audience will experience"
+    ],
+    "examples": [
+      {
+        "title": "Marketing Podcast",
+        "content": "The 3-step framework for landing high-profile podcast interviews • How to craft a compelling story that makes you memorable • Converting podcast appearances into high-ticket clients"
+      },
+      {
+        "title": "Business Growth Podcast",
+        "content": "The 5 most common mistakes when scaling SaaS businesses • Building a team that can operate without your daily involvement • Creating systems that allow for sustainable growth"
+      },
+      {
+        "title": "Author/Creator Podcast",
+        "content": "Turning your expertise into a bestselling book • Building an audience that eagerly awaits your content • Leveraging your book to open doors to speaking and media"
+      }
+    ],
+    "howItWorks": [
+      {
+        "step": 1,
+        "title": "Enter Your Expertise",
+        "description": "Tell us about your area of expertise and the audience you want to reach."
+      },
+      {
+        "step": 2,
+        "title": "Set Your Preferences",
+        "description": "Choose the number of topics and format (titles only or with descriptions)."
+      },
+      {
+        "step": 3,
+        "title": "Generate & Select",
+        "description": "Review AI-generated topics and select the ones that resonate most."
+      }
+    ],
+    "features": [
+      {
+        "title": "Audience-Focused Topics",
+        "description": "Topics tailored to your specific target audience for maximum engagement.",
+        "icon": "UserGroupIcon"
+      },
+      {
+        "title": "Multiple Formats",
+        "description": "Generate titles only or complete with talking point descriptions.",
+        "icon": "DocumentTextIcon"
+      },
+      {
+        "title": "Instant Generation",
+        "description": "Get 3-10 unique topic ideas in seconds, not hours.",
+        "icon": "BoltIcon"
+      },
+      {
+        "title": "Context-Aware",
+        "description": "Optimized for podcasts, keynotes, workshops, or any speaking format.",
+        "icon": "AdjustmentsHorizontalIcon"
+      }
+    ],
+    "faq": [
+      {
+        "question": "How many topics can I generate at once?",
+        "answer": "You can generate 3, 5, or 10 topics at a time. We recommend generating more than you need so you can pick the best ones."
+      },
+      {
+        "question": "Can I get topic descriptions or just titles?",
+        "answer": "You can choose either format. 'Titles only' gives you quick ideas, while 'Titles with descriptions' provides detailed talking points for each topic."
+      },
+      {
+        "question": "Is the generated content unique?",
+        "answer": "Yes, each generation is unique based on your specific inputs. However, we recommend personalizing topics to match your voice and expertise."
+      },
+      {
+        "question": "Can I use these topics commercially?",
+        "answer": "Absolutely! All generated content is yours to use for podcasts, speaking engagements, content marketing, or any other purpose."
+      }
+    ],
+    "relatedToolSlugs": [
+      "questions-generator",
+      "guest-intro-generator",
+      "interview-prep-generator",
+      "podcast-notes-generator"
+    ]
+  }
+}

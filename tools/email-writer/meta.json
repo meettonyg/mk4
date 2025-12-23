@@ -1,0 +1,130 @@
+{
+  "name": "Email Writer",
+  "slug": "email-writer",
+  "shortDescription": "Write professional emails for outreach, follow-ups, and business communication.",
+  "longDescription": "The Email Writer helps you craft professional emails that get responses. From cold outreach to warm follow-ups to partnership proposals, generate persuasive emails that achieve your communication goals.",
+  "category": "social-email",
+  "icon": "EnvelopeIcon",
+  "componentName": "EmailWriterGenerator",
+  "useCases": [
+    "Write cold outreach emails",
+    "Create follow-up sequences",
+    "Draft partnership proposals",
+    "Compose thank you notes",
+    "Write introduction emails"
+  ],
+  "keyBenefits": [
+    "Higher response rates",
+    "Professional tone",
+    "Clear structure",
+    "Time savings"
+  ],
+  "targetAudience": [
+    "Sales professionals",
+    "Business developers",
+    "Networkers",
+    "Consultants",
+    "Entrepreneurs"
+  ],
+  "seoMeta": {
+    "title": "Free AI Email Writer | Create Professional Business Emails",
+    "description": "Write professional emails that get responses with our free AI Email Writer. Perfect for outreach, follow-ups, and proposals.",
+    "keywords": [
+      "email writer",
+      "email generator",
+      "cold email",
+      "business email",
+      "outreach email",
+      "professional email"
+    ],
+    "canonicalPath": "/tools/email-writer/"
+  },
+  "landingContent": {
+    "heroTagline": "Write Emails That Get Responses",
+    "heroSubtitle": "Generate professional, persuasive emails that achieve your communication goals and build relationships.",
+    "formula": "[PERSONALIZED HOOK] + [VALUE PROPOSITION] + [CLEAR ASK] + [EASY CTA] = Response-Worthy Email",
+    "tips": [
+      "Personalize the first line - reference something specific to the recipient to show you did your research",
+      "Lead with value - explain what's in it for them before asking for anything",
+      "One clear ask - don't confuse recipients with multiple requests; pick your priority",
+      "Make responding easy - suggest specific times, yes/no questions, or simple next steps"
+    ],
+    "examples": [
+      {
+        "title": "Cold Outreach",
+        "content": "Subject: Quick question about [their recent post]\n\nHi [Name], I saw your post about [topic] - the point about [specific insight] really resonated. I help [target audience] with [outcome]. Would a 15-minute call next week make sense?"
+      },
+      {
+        "title": "Follow-Up",
+        "content": "Subject: Following up\n\nHi [Name], wanted to bump this to the top of your inbox. I know you're busy - would a quick reply with 'not now' or 'let's talk' help me know where we stand?"
+      },
+      {
+        "title": "Partnership Proposal",
+        "content": "Subject: Collaboration idea for [their project]\n\nHi [Name], I've been following [their work] and have an idea that could [benefit]. I'd love to share a 2-minute proposal. Would that be worth your time?"
+      }
+    ],
+    "howItWorks": [
+      {
+        "step": 1,
+        "title": "Define Your Goal",
+        "description": "Choose email type and desired outcome."
+      },
+      {
+        "step": 2,
+        "title": "Add Context",
+        "description": "Include recipient details and key points."
+      },
+      {
+        "step": 3,
+        "title": "Generate & Send",
+        "description": "Get a polished email ready to send."
+      }
+    ],
+    "features": [
+      {
+        "title": "Multiple Templates",
+        "description": "Outreach, follow-up, thank you, proposal, and more.",
+        "icon": "RectangleStackIcon"
+      },
+      {
+        "title": "Subject Lines",
+        "description": "Compelling subjects that get opened.",
+        "icon": "EnvelopeOpenIcon"
+      },
+      {
+        "title": "Clear CTA",
+        "description": "Action-oriented closes that drive responses.",
+        "icon": "CursorArrowRaysIcon"
+      },
+      {
+        "title": "Tone Options",
+        "description": "Professional, friendly, or casual styles.",
+        "icon": "SwatchIcon"
+      }
+    ],
+    "faq": [
+      {
+        "question": "How long should my email be?",
+        "answer": "Keep cold emails under 150 words. For relationship emails, focus on being as concise as the message allows."
+      },
+      {
+        "question": "How do I write a good subject line?",
+        "answer": "Be specific, create curiosity, and avoid spam triggers. Personalization with the recipient's name or company helps."
+      },
+      {
+        "question": "When should I follow up?",
+        "answer": "Wait 3-5 business days for first follow-up, then 5-7 days for subsequent ones. Most responses come after the second email."
+      },
+      {
+        "question": "How do I personalize at scale?",
+        "answer": "Research one specific detail per recipient - recent post, company news, or mutual connection. One personal touch makes all the difference."
+      }
+    ],
+    "relatedToolSlugs": [
+      "newsletter-writer",
+      "offers-generator",
+      "elevator-pitch-generator",
+      "biography-generator"
+    ]
+  }
+}

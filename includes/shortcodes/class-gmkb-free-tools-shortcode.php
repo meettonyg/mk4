@@ -5,44 +5,20 @@
  * Part of the Unified AI Generator Architecture ("Modular Widgets")
  * Provides shortcode for embedding AI tools on public pages (standalone mode).
  *
- * Generic Usage: [gmkb_free_tool type="biography" title="Free Bio Generator"]
+ * Tools are dynamically discovered from the /tools/ directory via GMKB_Tool_Discovery.
  *
- * Individual Shortcodes (25 tools):
+ * Usage:
  *
- * MESSAGE BUILDER:
- * - [gmkb_biography] - AI Biography Generator
- * - [gmkb_topics] - AI Topics Generator
- * - [gmkb_questions] - AI Questions Generator
- * - [gmkb_tagline] - AI Tagline Generator
- * - [gmkb_guest_intro] - AI Guest Intro Generator
- * - [gmkb_offers] - AI Offers Generator
+ * Generic: [gmkb_free_tool type="biography" title="Free Bio Generator"]
+ * Directory: [gmkb_tools_directory]
  *
- * VALUE BUILDER:
- * - [gmkb_elevator_pitch] - Elevator Pitch Generator
- * - [gmkb_sound_bite] - Sound Bite Generator
- * - [gmkb_authority_hook] - Authority Hook Builder
- * - [gmkb_impact_intro] - Impact Intro Builder
- * - [gmkb_persona] - Ideal Client Persona Generator
+ * Shortcode names are auto-generated from tool IDs by removing suffixes:
+ * - biography-generator -> [gmkb_biography]
+ * - content-repurposer -> [gmkb_content]
+ * - seo-optimizer -> [gmkb_seo]
  *
- * STRATEGY:
- * - [gmkb_brand_story] - Brand Story Generator
- * - [gmkb_signature_story] - Signature Story Generator
- * - [gmkb_credibility_story] - Credibility Story Generator
- * - [gmkb_framework] - Framework Builder
- * - [gmkb_interview_prep] - Interview Prep Generator
- *
- * CONTENT:
- * - [gmkb_blog] - Blog Post Generator
- * - [gmkb_content_repurpose] - Content Repurposer
- * - [gmkb_press_release] - Press Release Generator
- *
- * SOCIAL/EMAIL:
- * - [gmkb_social_post] - Social Post Generator
- * - [gmkb_email] - Email Writer
- * - [gmkb_newsletter] - Newsletter Writer
- * - [gmkb_youtube_description] - YouTube Description Generator
- * - [gmkb_podcast_notes] - Podcast Show Notes Generator
- * - [gmkb_seo_optimizer] - SEO Content Optimizer
+ * Note: For the most reliable tool embedding, use [gmkb_tool tool="..."] from
+ * class-gmkb-tool-shortcode.php with explicit tool slugs.
  *
  * All shortcodes accept these attributes:
  * - title: Custom widget title
@@ -55,7 +31,7 @@
  *
  * @package GMKB
  * @subpackage Shortcodes
- * @version 2.0.0
+ * @version 2.1.0
  * @since 2.2.0
  */
 
@@ -78,40 +54,59 @@ class GMKB_Free_Tools_Shortcode {
     private $enqueued = false;
 
     /**
-     * Valid tool types
+     * Tool Discovery service
+     * @var GMKB_Tool_Discovery
+     */
+    private $tool_discovery = null;
+
+    /**
+     * Icon service
+     * @var GMKB_Icon_Service
+     */
+    private $icon_service = null;
+
+    /**
+     * Valid tool types (built dynamically from Tool Discovery)
      * @var array
      */
-    private $valid_types = array(
-        // Message Builder
-        'biography',
-        'topics',
-        'questions',
-        'tagline',
-        'guest-intro',
-        'offers',
-        // Value Builder
-        'elevator-pitch',
-        'sound-bite',
-        'authority-hook',
-        'impact-intro',
-        'persona',
-        // Strategy
-        'brand-story',
-        'signature-story',
-        'credibility-story',
-        'framework',
-        'interview-prep',
-        // Content
-        'blog',
-        'content-repurpose',
-        'press-release',
-        // Social/Email
-        'social-post',
-        'email',
-        'newsletter',
-        'youtube-description',
-        'podcast-notes',
-        'seo-optimizer'
+    private $valid_types = null;
+
+    /**
+     * Tools organized by category (built dynamically from Tool Discovery)
+     * @var array
+     */
+    private $tools_by_category = null;
+
+
+    /**
+     * Icon mapping from HeroIcons to Feather icons for directory display
+     * @var array
+     */
+    private $icon_map = array(
+        'UserCircleIcon' => 'user',
+        'ChatBubbleLeftRightIcon' => 'list',
+        'QuestionMarkCircleIcon' => 'help-circle',
+        'TagIcon' => 'tag',
+        'MicrophoneIcon' => 'mic',
+        'CubeIcon' => 'package',
+        'RocketLaunchIcon' => 'trending-up',
+        'SpeakerWaveIcon' => 'volume-2',
+        'BoltIcon' => 'zap',
+        'SparklesIcon' => 'target',
+        'UsersIcon' => 'users',
+        'BookOpenIcon' => 'book-open',
+        'PencilSquareIcon' => 'edit-3',
+        'ShieldCheckIcon' => 'shield',
+        'Squares2X2Icon' => 'grid',
+        'ClipboardDocumentListIcon' => 'clipboard',
+        'DocumentTextIcon' => 'edit',
+        'ArrowPathIcon' => 'refresh-cw',
+        'NewspaperIcon' => 'send',
+        'ShareIcon' => 'share',
+        'EnvelopeIcon' => 'mail',
+        'InboxIcon' => 'inbox',
+        'PlayCircleIcon' => 'youtube',
+        'MagnifyingGlassIcon' => 'search',
     );
 
     /**
@@ -130,18 +125,119 @@ class GMKB_Free_Tools_Shortcode {
      * Constructor
      */
     private function __construct() {
+        // Load services
+        $this->load_tool_discovery();
+        $this->load_icon_service();
+
+        // Build tools data from discovery
+        $this->build_tools_data();
+
         // Register the generic shortcode
         add_shortcode('gmkb_free_tool', array($this, 'render'));
 
+        // Register the tools directory shortcode
+        add_shortcode('gmkb_tools_directory', array($this, 'render_directory'));
+
         // Register individual shortcodes dynamically for each tool type
-        foreach ($this->valid_types as $type) {
-            $shortcode_tag = 'gmkb_' . str_replace('-', '_', $type);
-            add_shortcode($shortcode_tag, array($this, 'render_from_tag'));
+        if ($this->valid_types) {
+            foreach ($this->valid_types as $type) {
+                $shortcode_tag = 'gmkb_' . str_replace('-', '_', $type);
+                add_shortcode($shortcode_tag, array($this, 'render_from_tag'));
+            }
         }
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB Free Tools Shortcode: Registered ' . (count($this->valid_types) + 1) . ' shortcodes');
+            $type_count = $this->valid_types ? count($this->valid_types) : 0;
+            error_log('GMKB Free Tools Shortcode: Registered ' . ($type_count + 2) . ' shortcodes');
         }
+    }
+
+    /**
+     * Load Tool Discovery service
+     */
+    private function load_tool_discovery() {
+        $discovery_path = GMKB_PLUGIN_DIR . 'includes/services/class-gmkb-tool-discovery.php';
+
+        if (file_exists($discovery_path)) {
+            require_once $discovery_path;
+            $this->tool_discovery = GMKB_Tool_Discovery::instance();
+        }
+    }
+
+    /**
+     * Load Icon service
+     */
+    private function load_icon_service() {
+        $icon_path = GMKB_PLUGIN_DIR . 'includes/services/class-gmkb-icon-service.php';
+
+        if (file_exists($icon_path)) {
+            require_once $icon_path;
+            $this->icon_service = GMKB_Icon_Service::instance();
+        }
+    }
+
+    /**
+     * Build tools data from Tool Discovery service
+     */
+    private function build_tools_data() {
+        if (!$this->tool_discovery) {
+            // Fallback to empty arrays if discovery not available
+            $this->valid_types = array();
+            $this->tools_by_category = array();
+            return;
+        }
+
+        $this->valid_types = array();
+        $this->tools_by_category = array();
+
+        // Get categories from discovery
+        $categories = $this->tool_discovery->get_all_categories();
+
+        // Get all tools grouped by category
+        $grouped = $this->tool_discovery->get_tools_grouped_by_category();
+
+        foreach ($grouped as $category_slug => $category_data) {
+            // Build category structure (icon comes from Tool Discovery)
+            $this->tools_by_category[$category_slug] = array(
+                'label' => $category_data['name'],
+                'description' => $category_data['description'],
+                'icon' => isset($category_data['icon']) ? $category_data['icon'] : 'folder',
+                'tools' => array(),
+            );
+
+            // Process tools in this category
+            foreach ($category_data['tools'] as $tool) {
+                // Get metadata for richer display info
+                $metadata = $this->tool_discovery->get_tool_metadata($tool['id']);
+
+                // Derive short type from tool ID (e.g., biography-generator -> biography)
+                $short_type = str_replace('-generator', '', $tool['id']);
+                $short_type = str_replace('-builder', '', $short_type);
+                $short_type = str_replace('-writer', '', $short_type);
+                $short_type = str_replace('-repurposer', '', $short_type);
+                $short_type = str_replace('-optimizer', '', $short_type);
+
+                // Add to valid types
+                $this->valid_types[] = $short_type;
+
+                // Map icon to feather icon format
+                $tool_icon = isset($tool['icon']) ? $tool['icon'] : 'file';
+                if (isset($this->icon_map[$tool_icon])) {
+                    $tool_icon = $this->icon_map[$tool_icon];
+                }
+
+                // Build tool entry
+                $this->tools_by_category[$category_slug]['tools'][$short_type] = array(
+                    'title' => $metadata ? $metadata['name'] : $tool['name'],
+                    'description' => $metadata ? $metadata['shortDescription'] : '',
+                    'icon' => $tool_icon,
+                    'slug' => $tool['id'],
+                );
+            }
+        }
+
+        // Remove duplicates from valid_types
+        $this->valid_types = array_unique($this->valid_types);
     }
 
     /**
@@ -247,6 +343,342 @@ class GMKB_Free_Tools_Shortcode {
         $html .= '</noscript>';
 
         return $html;
+    }
+
+    /**
+     * Render the tools directory shortcode
+     *
+     * Usage: [gmkb_tools_directory]
+     * Options:
+     *   - base_url: Base URL for tool links (default: /tools/)
+     *   - layout: 'grid' or 'list' (default: grid)
+     *   - show_descriptions: 'true' or 'false' (default: true)
+     *   - category: Filter to specific category (default: all)
+     *   - columns: Number of columns for grid (default: 3)
+     *
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
+    public function render_directory($atts) {
+        $atts = shortcode_atts(array(
+            'base_url' => '/tools/',
+            'layout' => 'grid',
+            'show_descriptions' => 'true',
+            'category' => '',
+            'columns' => '3',
+            'class' => ''
+        ), $atts, 'gmkb_tools_directory');
+
+        // Ensure base_url has trailing slash
+        $base_url = trailingslashit($atts['base_url']);
+        $show_descriptions = $atts['show_descriptions'] === 'true';
+        $columns = intval($atts['columns']);
+        if ($columns < 1 || $columns > 4) {
+            $columns = 3;
+        }
+
+        // Enqueue directory styles
+        $this->enqueue_directory_styles();
+
+        // Build CSS classes
+        $container_classes = array(
+            'gmkb-tools-directory',
+            'gmkb-tools-directory--' . esc_attr($atts['layout']),
+            'gmkb-tools-directory--cols-' . $columns
+        );
+        if (!empty($atts['class'])) {
+            $container_classes[] = esc_attr($atts['class']);
+        }
+
+        $html = '<div class="' . esc_attr(implode(' ', $container_classes)) . '">';
+
+        // Filter categories if specified
+        $categories = $this->tools_by_category;
+        if (!empty($atts['category']) && isset($categories[$atts['category']])) {
+            $categories = array($atts['category'] => $categories[$atts['category']]);
+        }
+
+        foreach ($categories as $category_key => $category) {
+            $html .= '<div class="gmkb-tools-category" id="tools-' . esc_attr($category_key) . '">';
+
+            // Category header
+            $html .= '<div class="gmkb-tools-category__header">';
+            $html .= '<h2 class="gmkb-tools-category__title">' . esc_html($category['label']) . '</h2>';
+            if ($show_descriptions && !empty($category['description'])) {
+                $html .= '<p class="gmkb-tools-category__description">' . esc_html($category['description']) . '</p>';
+            }
+            $html .= '</div>';
+
+            // Tools grid/list
+            $html .= '<div class="gmkb-tools-category__tools">';
+
+            foreach ($category['tools'] as $tool_key => $tool) {
+                $tool_url = home_url($base_url . $tool['slug'] . '/');
+
+                $html .= '<a href="' . esc_url($tool_url) . '" class="gmkb-tool-card">';
+                $html .= '<div class="gmkb-tool-card__icon">';
+                $html .= $this->get_icon_svg($tool['icon']);
+                $html .= '</div>';
+                $html .= '<div class="gmkb-tool-card__content">';
+                $html .= '<h3 class="gmkb-tool-card__title">' . esc_html($tool['title']) . '</h3>';
+                if ($show_descriptions && !empty($tool['description'])) {
+                    $html .= '<p class="gmkb-tool-card__description">' . esc_html($tool['description']) . '</p>';
+                }
+                $html .= '</div>';
+                $html .= '<div class="gmkb-tool-card__arrow">';
+                $html .= $this->get_icon_svg('arrow-right');
+                $html .= '</div>';
+                $html .= '</a>';
+            }
+
+            $html .= '</div>'; // .gmkb-tools-category__tools
+            $html .= '</div>'; // .gmkb-tools-category
+        }
+
+        $html .= '</div>'; // .gmkb-tools-directory
+
+        return $html;
+    }
+
+    /**
+     * Get SVG icon markup
+     *
+     * Uses GMKB_Icon_Service to load icons from assets/icons/ directory.
+     *
+     * @param string $icon Icon name
+     * @return string SVG markup
+     */
+    private function get_icon_svg($icon) {
+        if ($this->icon_service) {
+            return $this->icon_service->get_icon($icon);
+        }
+
+        // Fallback if icon service not available
+        return '';
+    }
+
+    /**
+     * Enqueue directory-specific styles
+     */
+    private function enqueue_directory_styles() {
+        wp_enqueue_style(
+            'gmkb-tools-directory',
+            false // Inline styles
+        );
+
+        wp_add_inline_style('gmkb-tools-directory', $this->get_directory_styles());
+    }
+
+    /**
+     * Get CSS styles for the tools directory
+     *
+     * @return string CSS styles
+     */
+    private function get_directory_styles() {
+        return '
+/* Tools Directory Styles */
+.gmkb-tools-directory {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.gmkb-tools-category {
+    margin-bottom: 3rem;
+}
+
+.gmkb-tools-category__header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.gmkb-tools-category__title {
+    margin: 0 0 0.5rem;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.gmkb-tools-category__description {
+    margin: 0;
+    font-size: 1rem;
+    color: #6b7280;
+}
+
+/* Grid Layout */
+.gmkb-tools-directory--grid .gmkb-tools-category__tools {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.gmkb-tools-directory--cols-2 .gmkb-tools-category__tools {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.gmkb-tools-directory--cols-3 .gmkb-tools-category__tools {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.gmkb-tools-directory--cols-4 .gmkb-tools-category__tools {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 1024px) {
+    .gmkb-tools-directory--cols-4 .gmkb-tools-category__tools,
+    .gmkb-tools-directory--cols-3 .gmkb-tools-category__tools {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .gmkb-tools-directory--cols-4 .gmkb-tools-category__tools,
+    .gmkb-tools-directory--cols-3 .gmkb-tools-category__tools,
+    .gmkb-tools-directory--cols-2 .gmkb-tools-category__tools {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* List Layout */
+.gmkb-tools-directory--list .gmkb-tools-category__tools {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Tool Card */
+.gmkb-tool-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+}
+
+.gmkb-tool-card:hover {
+    border-color: #6366f1;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+    transform: translateY(-2px);
+}
+
+.gmkb-tool-card__icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    border-radius: 10px;
+    color: #fff;
+}
+
+.gmkb-tool-card__icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.gmkb-tool-card__content {
+    flex: 1;
+    min-width: 0;
+}
+
+.gmkb-tool-card__title {
+    margin: 0 0 0.25rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.gmkb-tool-card__description {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #6b7280;
+    line-height: 1.5;
+}
+
+.gmkb-tool-card__arrow {
+    flex-shrink: 0;
+    color: #9ca3af;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.gmkb-tool-card__arrow svg {
+    width: 20px;
+    height: 20px;
+}
+
+.gmkb-tool-card:hover .gmkb-tool-card__arrow {
+    color: #6366f1;
+    transform: translateX(4px);
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+    .gmkb-tools-directory {
+        background: #111827;
+    }
+
+    .gmkb-tools-category__header {
+        border-bottom-color: #374151;
+    }
+
+    .gmkb-tools-category__title {
+        color: #f9fafb;
+    }
+
+    .gmkb-tools-category__description {
+        color: #9ca3af;
+    }
+
+    .gmkb-tool-card {
+        background: #1f2937;
+        border-color: #374151;
+    }
+
+    .gmkb-tool-card:hover {
+        border-color: #6366f1;
+    }
+
+    .gmkb-tool-card__title {
+        color: #f9fafb;
+    }
+
+    .gmkb-tool-card__description {
+        color: #9ca3af;
+    }
+}
+';
+    }
+
+    /**
+     * Get all tools organized by category (public accessor)
+     *
+     * @return array Tools by category
+     */
+    public function get_tools_by_category() {
+        return $this->tools_by_category;
+    }
+
+    /**
+     * Get tool info by type
+     *
+     * @param string $type Tool type (e.g., 'biography', 'topics')
+     * @return array|null Tool info or null if not found
+     */
+    public function get_tool_info($type) {
+        foreach ($this->tools_by_category as $category) {
+            if (isset($category['tools'][$type])) {
+                return $category['tools'][$type];
+            }
+        }
+        return null;
     }
 
     /**

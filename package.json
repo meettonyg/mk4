@@ -41,6 +41,7 @@
     "migration:complete": "npm run build && npm run test:all && npm run perf:all"
   },
   "dependencies": {
+    "@heroicons/vue": "^2.2.0",
     "@vueuse/core": "^14.0.0",
     "pinia": "^2.1.0",
     "swiper": "^12.0.3",

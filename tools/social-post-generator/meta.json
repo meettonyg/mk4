@@ -1,0 +1,130 @@
+{
+  "name": "Social Post Generator",
+  "slug": "social-post-generator",
+  "shortDescription": "Create engaging social media posts optimized for each platform.",
+  "longDescription": "The Social Post Generator helps you create platform-optimized social media content that drives engagement. From LinkedIn thought leadership to Twitter threads to Instagram captions, generate posts that resonate with your audience.",
+  "category": "social-email",
+  "icon": "ShareIcon",
+  "componentName": "SocialPostGenerator",
+  "useCases": [
+    "Create LinkedIn thought leadership",
+    "Write Twitter/X threads",
+    "Craft Instagram captions",
+    "Generate Facebook posts",
+    "Build social content calendars"
+  ],
+  "keyBenefits": [
+    "Platform optimization",
+    "Engagement focus",
+    "Consistent posting",
+    "Time savings"
+  ],
+  "targetAudience": [
+    "Social media managers",
+    "Personal brands",
+    "Business owners",
+    "Content creators",
+    "Marketing teams"
+  ],
+  "seoMeta": {
+    "title": "Free AI Social Post Generator | Create Engaging Social Content",
+    "description": "Generate platform-optimized social media posts that drive engagement with our free AI Social Post Generator.",
+    "keywords": [
+      "social post generator",
+      "social media content",
+      "LinkedIn posts",
+      "Twitter posts",
+      "Instagram captions",
+      "social media marketing"
+    ],
+    "canonicalPath": "/tools/social-post-generator/"
+  },
+  "landingContent": {
+    "heroTagline": "Create Social Posts That Stop the Scroll",
+    "heroSubtitle": "Generate platform-optimized social media content that engages your audience and grows your following.",
+    "formula": "[HOOK] + [VALUE/STORY] + [INSIGHT] + [CTA] = Engaging Social Post",
+    "tips": [
+      "Lead with the hook - the first line determines if anyone reads the rest",
+      "One idea per post - don't try to cover everything; depth beats breadth",
+      "Write for scanning - use line breaks, short sentences, and white space",
+      "End with engagement - ask a question or invite a specific response"
+    ],
+    "examples": [
+      {
+        "title": "LinkedIn Hook",
+        "content": "I got fired 3 times before I was 30.\n\nEach time, I thought my career was over.\n\nEach time, I was wrong.\n\nHere's what I learned about resilience that nobody talks about:"
+      },
+      {
+        "title": "Twitter Thread Opener",
+        "content": "I spent $50,000 on courses before I learned this:\n\nThe best business advice is free.\n\nHere are 10 lessons that cost me nothing but changed everything 🧵"
+      },
+      {
+        "title": "Instagram Caption",
+        "content": "They told me I was 'too young' to be taken seriously.\n\nSo I built proof instead of asking for permission.\n\n3 years later, Fortune 500 companies ask for my advice.\n\nAge is a number. Results are everything."
+      }
+    ],
+    "howItWorks": [
+      {
+        "step": 1,
+        "title": "Choose Your Platform",
+        "description": "Select LinkedIn, Twitter, Instagram, or others."
+      },
+      {
+        "step": 2,
+        "title": "Enter Your Topic",
+        "description": "Share what you want to post about."
+      },
+      {
+        "step": 3,
+        "title": "Generate & Post",
+        "description": "Get ready-to-publish content."
+      }
+    ],
+    "features": [
+      {
+        "title": "Platform Optimized",
+        "description": "Formatted perfectly for each social network.",
+        "icon": "DevicePhoneMobileIcon"
+      },
+      {
+        "title": "Hook First",
+        "description": "Attention-grabbing opening lines.",
+        "icon": "SparklesIcon"
+      },
+      {
+        "title": "Hashtag Suggestions",
+        "description": "Relevant hashtags for discoverability.",
+        "icon": "HashtagIcon"
+      },
+      {
+        "title": "CTA Included",
+        "description": "Engagement-driving calls to action.",
+        "icon": "CursorArrowRaysIcon"
+      }
+    ],
+    "faq": [
+      {
+        "question": "Which platform should I focus on?",
+        "answer": "Focus on where your audience is. LinkedIn for B2B, Instagram for lifestyle, Twitter for tech and news, Facebook for communities."
+      },
+      {
+        "question": "How often should I post?",
+        "answer": "Consistency matters more than frequency. 3-5 times per week on most platforms is a good target for most professionals."
+      },
+      {
+        "question": "Should I use the same content across platforms?",
+        "answer": "Adapt the content for each platform. Same message, different format and tone. Use the Content Repurposer for this."
+      },
+      {
+        "question": "What makes a post go viral?",
+        "answer": "Strong hooks, emotional resonance, unique perspectives, and shareability. Focus on providing value, not chasing virality."
+      }
+    ],
+    "relatedToolSlugs": [
+      "content-repurposer",
+      "sound-bite-generator",
+      "newsletter-writer",
+      "youtube-description-generator"
+    ]
+  }
+}

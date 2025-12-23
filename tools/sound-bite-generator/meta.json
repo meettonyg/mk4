@@ -1,0 +1,134 @@
+{
+  "name": "Sound Bite Generator",
+  "slug": "sound-bite-generator",
+  "shortDescription": "Create quotable phrases and memorable one-liners perfect for media appearances.",
+  "longDescription": "The Sound Bite Generator helps you craft memorable, quotable phrases that journalists love to share and audiences remember. Perfect for press interviews, podcast appearances, and social media, these bite-sized gems make you eminently quotable.",
+  "category": "value-builder",
+  "icon": "BoltIcon",
+  "componentName": "SoundBiteGenerator",
+  "useCases": [
+    "Create quotable phrases for interviews",
+    "Develop signature sayings",
+    "Generate social media quotes",
+    "Build memorable keynote moments",
+    "Craft press-ready statements"
+  ],
+  "keyBenefits": [
+    "Instantly quotable",
+    "Memorable and shareable",
+    "Media-ready format",
+    "Brand-building phrases"
+  ],
+  "targetAudience": [
+    "Media personalities",
+    "Keynote speakers",
+    "Thought leaders",
+    "Authors and experts",
+    "Public figures"
+  ],
+  "seoMeta": {
+    "title": "Free AI Sound Bite Generator | Create Quotable Phrases",
+    "description": "Generate memorable sound bites and quotable phrases for media appearances with our free AI Sound Bite Generator. Become eminently quotable.",
+    "keywords": [
+      "sound bite generator",
+      "quotable phrases",
+      "media quotes",
+      "one-liners",
+      "signature sayings",
+      "press quotes"
+    ],
+    "canonicalPath": "/tools/sound-bite-generator/"
+  },
+  "landingContent": {
+    "heroTagline": "Become the Expert Everyone Quotes",
+    "heroSubtitle": "Generate memorable sound bites and quotable phrases that journalists share and audiences remember.",
+    "formula": "10-25 words + Tweet-worthy + Stands alone without context + Memorable and quotable",
+    "tips": [
+      "Keep it short - 10-25 words maximum for maximum impact",
+      "Make it shareable - write for Twitter, not for textbooks",
+      "Stand alone - each sound bite should work without explanation",
+      "Use vivid language - avoid generic platitudes and corporate speak"
+    ],
+    "examples": [
+      {
+        "title": "Network Value",
+        "content": "Your network isn't who you know. It's who knows what you're capable of."
+      },
+      {
+        "title": "Strategy vs Execution",
+        "content": "Strategy without execution is a daydream. Execution without strategy is a nightmare."
+      },
+      {
+        "title": "Action Over Ideas",
+        "content": "Most people don't lack ideas. They lack the courage to act on them."
+      },
+      {
+        "title": "Growth Mindset",
+        "content": "The best time to plant a tree was 20 years ago. The second best time is right now."
+      }
+    ],
+    "howItWorks": [
+      {
+        "step": 1,
+        "title": "Share Your Message",
+        "description": "Enter your key insight or perspective."
+      },
+      {
+        "step": 2,
+        "title": "Choose Your Style",
+        "description": "Select punchy, insightful, or provocative tone."
+      },
+      {
+        "step": 3,
+        "title": "Pick Your Best",
+        "description": "Review options and save your favorites."
+      }
+    ],
+    "features": [
+      {
+        "title": "Quote-Ready",
+        "description": "Formatted perfectly for journalists to use verbatim.",
+        "icon": "ChatBubbleBottomCenterTextIcon"
+      },
+      {
+        "title": "Memorable Structure",
+        "description": "Crafted using proven rhetorical techniques.",
+        "icon": "SparklesIcon"
+      },
+      {
+        "title": "Social Optimized",
+        "description": "Perfect length for tweets and social shares.",
+        "icon": "ShareIcon"
+      },
+      {
+        "title": "Multiple Styles",
+        "description": "From witty one-liners to powerful statements.",
+        "icon": "SwatchIcon"
+      }
+    ],
+    "faq": [
+      {
+        "question": "What makes a good sound bite?",
+        "answer": "Good sound bites are short (under 15 words), use vivid language, and express a clear point of view. They're easy to quote and hard to forget."
+      },
+      {
+        "question": "How do I use sound bites in interviews?",
+        "answer": "Prepare 3-5 sound bites before any interview. Work them naturally into your answers - they become the quotes that get shared."
+      },
+      {
+        "question": "Should I use them on social media?",
+        "answer": "Absolutely! Sound bites make perfect social posts. They're shareable, memorable, and establish your thought leadership."
+      },
+      {
+        "question": "How many should I have ready?",
+        "answer": "Build a collection of 10-15 signature phrases. Review and update them quarterly as your messaging evolves."
+      }
+    ],
+    "relatedToolSlugs": [
+      "tagline-generator",
+      "elevator-pitch-generator",
+      "authority-hook-builder",
+      "social-post-generator"
+    ]
+  }
+}

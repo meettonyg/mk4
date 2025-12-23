@@ -1,0 +1,130 @@
+{
+  "name": "Blog Generator",
+  "slug": "blog-generator",
+  "shortDescription": "Create engaging blog posts and articles that establish thought leadership.",
+  "longDescription": "The Blog Generator helps you create well-structured blog posts and articles that demonstrate your expertise and engage your audience. From outlines to full drafts, generate content that drives traffic and builds authority.",
+  "category": "content",
+  "icon": "DocumentTextIcon",
+  "componentName": "BlogGenerator",
+  "useCases": [
+    "Write thought leadership articles",
+    "Create company blog posts",
+    "Develop SEO content",
+    "Generate guest post drafts",
+    "Build content calendars"
+  ],
+  "keyBenefits": [
+    "Structured content",
+    "SEO-friendly format",
+    "Consistent publishing",
+    "Time savings"
+  ],
+  "targetAudience": [
+    "Content marketers",
+    "Thought leaders",
+    "Business owners",
+    "Consultants",
+    "Marketing teams"
+  ],
+  "seoMeta": {
+    "title": "Free AI Blog Generator | Create Engaging Blog Posts",
+    "description": "Generate well-structured blog posts and articles for thought leadership with our free AI Blog Generator.",
+    "keywords": [
+      "blog generator",
+      "article writer",
+      "content generator",
+      "blog post creator",
+      "AI writing",
+      "thought leadership content"
+    ],
+    "canonicalPath": "/tools/blog-generator/"
+  },
+  "landingContent": {
+    "heroTagline": "Create Blog Content That Establishes Authority",
+    "heroSubtitle": "Generate well-structured blog posts and articles that showcase your expertise and engage your target audience.",
+    "formula": "[HOOK] + [PROBLEM] + [SOLUTION STEPS] + [EXAMPLES] + [CTA] = Engaging Blog Post",
+    "tips": [
+      "Hook them in the first line - you have 3 seconds to earn their attention",
+      "Use subheadings generously - most readers scan before they commit to reading",
+      "Include one clear takeaway - every post should answer 'so what?' for the reader",
+      "End with a specific CTA - don't let readers leave without knowing their next step"
+    ],
+    "examples": [
+      {
+        "title": "How-To Post",
+        "content": "Title: '5 Steps to Landing Your First Podcast Interview' — Hook: 'I landed 47 podcast interviews in 6 months with zero connections in the industry. Here's the exact system.'"
+      },
+      {
+        "title": "Thought Leadership Post",
+        "content": "Title: 'Why Most Business Advice Is Wrong' — Hook: 'The productivity advice that built my first business nearly destroyed my second one.'"
+      },
+      {
+        "title": "Case Study Post",
+        "content": "Title: 'How We Grew From $0 to $1M in 12 Months' — Hook: 'Everyone said we needed funding. We proved them wrong with $500 and a simple framework.'"
+      }
+    ],
+    "howItWorks": [
+      {
+        "step": 1,
+        "title": "Choose Your Topic",
+        "description": "Enter your topic and target keywords."
+      },
+      {
+        "step": 2,
+        "title": "Set Parameters",
+        "description": "Select length, tone, and content type."
+      },
+      {
+        "step": 3,
+        "title": "Generate & Edit",
+        "description": "Review the draft and add your voice."
+      }
+    ],
+    "features": [
+      {
+        "title": "SEO Structure",
+        "description": "Proper headings, meta descriptions, and keyword placement.",
+        "icon": "MagnifyingGlassIcon"
+      },
+      {
+        "title": "Multiple Formats",
+        "description": "How-to guides, listicles, opinion pieces, and more.",
+        "icon": "Squares2X2Icon"
+      },
+      {
+        "title": "Outline First",
+        "description": "Option to generate outline before full draft.",
+        "icon": "ListBulletIcon"
+      },
+      {
+        "title": "Engaging Hooks",
+        "description": "Attention-grabbing introductions and conclusions.",
+        "icon": "SparklesIcon"
+      }
+    ],
+    "faq": [
+      {
+        "question": "How much should I edit the generated content?",
+        "answer": "Always add your personal insights, examples, and voice. Use the generated content as a strong foundation, not a final draft."
+      },
+      {
+        "question": "What length works best for blogs?",
+        "answer": "1,500-2,500 words for SEO. Shorter posts (800-1,200) work for quick insights. Match length to topic depth."
+      },
+      {
+        "question": "How do I make AI content sound like me?",
+        "answer": "Add personal stories, specific examples from your experience, and edit to match your natural writing style."
+      },
+      {
+        "question": "Can I use this for guest posts?",
+        "answer": "Yes! Generate a draft, then customize it for the specific publication's audience and style guidelines."
+      }
+    ],
+    "relatedToolSlugs": [
+      "content-repurposer",
+      "social-post-generator",
+      "seo-optimizer",
+      "topics-generator"
+    ]
+  }
+}

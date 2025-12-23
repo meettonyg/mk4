@@ -29,79 +29,104 @@ import { createPinia } from 'pinia';
 import './styles/ai-standalone.css';
 import './styles/ai-shared.css';
 
-// Import generator components (standalone mode only)
-// Original tools
-import BiographyGenerator from './vue/components/ai/BiographyGenerator.vue';
-import TopicsGenerator from './vue/components/ai/TopicsGenerator.vue';
-import QuestionsGenerator from './vue/components/ai/QuestionsGenerator.vue';
-import TaglineGenerator from './vue/components/ai/TaglineGenerator.vue';
-import GuestIntroGenerator from './vue/components/ai/GuestIntroGenerator.vue';
-import AuthorityHookBuilder from './vue/components/ai/AuthorityHookBuilder.vue';
-import OffersGenerator from './vue/components/ai/OffersGenerator.vue';
+// Import generator components from /tools/ directory (standalone mode only)
+// Message Builder tools
+import BiographyGenerator from '@tools/biography-generator/BiographyGenerator.vue';
+import TopicsGenerator from '@tools/topics-generator/TopicsGenerator.vue';
+import QuestionsGenerator from '@tools/questions-generator/QuestionsGenerator.vue';
+import TaglineGenerator from '@tools/tagline-generator/TaglineGenerator.vue';
+import GuestIntroGenerator from '@tools/guest-intro-generator/GuestIntroGenerator.vue';
+import AuthorityHookBuilder from '@tools/authority-hook-builder/AuthorityHookBuilder.vue';
+import OffersGenerator from '@tools/offers-generator/OffersGenerator.vue';
 
 // Value Builder tools
-import ElevatorPitchGenerator from './vue/components/ai/ElevatorPitchGenerator.vue';
-import SoundBiteGenerator from './vue/components/ai/SoundBiteGenerator.vue';
-import PersonaGenerator from './vue/components/ai/PersonaGenerator.vue';
-import ImpactIntroBuilder from './vue/components/ai/ImpactIntroBuilder.vue';
+import ElevatorPitchGenerator from '@tools/elevator-pitch-generator/ElevatorPitchGenerator.vue';
+import SoundBiteGenerator from '@tools/sound-bite-generator/SoundBiteGenerator.vue';
+import PersonaGenerator from '@tools/persona-generator/PersonaGenerator.vue';
+import ImpactIntroBuilder from '@tools/impact-intro-builder/ImpactIntroBuilder.vue';
 
 // Strategy tools
-import BrandStoryGenerator from './vue/components/ai/BrandStoryGenerator.vue';
-import SignatureStoryGenerator from './vue/components/ai/SignatureStoryGenerator.vue';
-import CredibilityStoryGenerator from './vue/components/ai/CredibilityStoryGenerator.vue';
-import FrameworkGenerator from './vue/components/ai/FrameworkGenerator.vue';
-import InterviewPrepGenerator from './vue/components/ai/InterviewPrepGenerator.vue';
+import BrandStoryGenerator from '@tools/brand-story-generator/BrandStoryGenerator.vue';
+import SignatureStoryGenerator from '@tools/signature-story-generator/SignatureStoryGenerator.vue';
+import CredibilityStoryGenerator from '@tools/credibility-story-generator/CredibilityStoryGenerator.vue';
+import FrameworkGenerator from '@tools/framework-builder/FrameworkGenerator.vue';
+import InterviewPrepGenerator from '@tools/interview-prep-generator/InterviewPrepGenerator.vue';
 
 // Content tools
-import BlogGenerator from './vue/components/ai/BlogGenerator.vue';
-import ContentRepurposerGenerator from './vue/components/ai/ContentRepurposerGenerator.vue';
-import PressReleaseGenerator from './vue/components/ai/PressReleaseGenerator.vue';
+import BlogGenerator from '@tools/blog-generator/BlogGenerator.vue';
+import ContentRepurposerGenerator from '@tools/content-repurposer/ContentRepurposerGenerator.vue';
+import PressReleaseGenerator from '@tools/press-release-generator/PressReleaseGenerator.vue';
 
 // Social/Email tools
-import SocialPostGenerator from './vue/components/ai/SocialPostGenerator.vue';
-import EmailWriterGenerator from './vue/components/ai/EmailWriterGenerator.vue';
-import NewsletterGenerator from './vue/components/ai/NewsletterGenerator.vue';
-import YoutubeDescriptionGenerator from './vue/components/ai/YoutubeDescriptionGenerator.vue';
-import PodcastNotesGenerator from './vue/components/ai/PodcastNotesGenerator.vue';
-import SeoOptimizerGenerator from './vue/components/ai/SeoOptimizerGenerator.vue';
+import SocialPostGenerator from '@tools/social-post-generator/SocialPostGenerator.vue';
+import EmailWriterGenerator from '@tools/email-writer/EmailWriterGenerator.vue';
+import NewsletterGenerator from '@tools/newsletter-writer/NewsletterGenerator.vue';
+import YoutubeDescriptionGenerator from '@tools/youtube-description-generator/YoutubeDescriptionGenerator.vue';
+import PodcastNotesGenerator from '@tools/podcast-notes-generator/PodcastNotesGenerator.vue';
+import SeoOptimizerGenerator from '@tools/seo-optimizer/SeoOptimizerGenerator.vue';
 
 /**
  * Component registry for data-gmkb-tool attribute values
+ * Includes both short names (legacy) and full slugs (new architecture)
  */
 const TOOL_COMPONENTS = {
-    // Original tools
+    // Original tools - short names (legacy) + full slugs
     'biography': BiographyGenerator,
+    'biography-generator': BiographyGenerator,
     'topics': TopicsGenerator,
+    'topics-generator': TopicsGenerator,
     'questions': QuestionsGenerator,
+    'questions-generator': QuestionsGenerator,
     'tagline': TaglineGenerator,
+    'tagline-generator': TaglineGenerator,
     'guest-intro': GuestIntroGenerator,
+    'guest-intro-generator': GuestIntroGenerator,
     'authority-hook': AuthorityHookBuilder,
+    'authority-hook-builder': AuthorityHookBuilder,
     'offers': OffersGenerator,
+    'offers-generator': OffersGenerator,
 
     // Value Builder tools
     'elevator-pitch': ElevatorPitchGenerator,
+    'elevator-pitch-generator': ElevatorPitchGenerator,
     'sound-bite': SoundBiteGenerator,
+    'sound-bite-generator': SoundBiteGenerator,
     'persona': PersonaGenerator,
+    'persona-generator': PersonaGenerator,
     'impact-intro': ImpactIntroBuilder,
+    'impact-intro-builder': ImpactIntroBuilder,
 
     // Strategy tools
     'brand-story': BrandStoryGenerator,
+    'brand-story-generator': BrandStoryGenerator,
     'signature-story': SignatureStoryGenerator,
+    'signature-story-generator': SignatureStoryGenerator,
     'credibility-story': CredibilityStoryGenerator,
+    'credibility-story-generator': CredibilityStoryGenerator,
     'framework': FrameworkGenerator,
+    'framework-builder': FrameworkGenerator,
     'interview-prep': InterviewPrepGenerator,
+    'interview-prep-generator': InterviewPrepGenerator,
 
     // Content tools
     'blog': BlogGenerator,
+    'blog-generator': BlogGenerator,
     'content-repurpose': ContentRepurposerGenerator,
+    'content-repurposer': ContentRepurposerGenerator,
     'press-release': PressReleaseGenerator,
+    'press-release-generator': PressReleaseGenerator,
 
     // Social/Email tools
     'social-post': SocialPostGenerator,
+    'social-post-generator': SocialPostGenerator,
     'email': EmailWriterGenerator,
+    'email-writer': EmailWriterGenerator,
     'newsletter': NewsletterGenerator,
+    'newsletter-writer': NewsletterGenerator,
     'youtube-description': YoutubeDescriptionGenerator,
+    'youtube-description-generator': YoutubeDescriptionGenerator,
     'podcast-notes': PodcastNotesGenerator,
+    'podcast-notes-generator': PodcastNotesGenerator,
     'seo-optimizer': SeoOptimizerGenerator,
 };
 
@@ -113,11 +138,13 @@ const mountedApps = new Map();
 /**
  * Initialize a single SEO tool instance
  *
- * @param {HTMLElement} container - The container element with data-gmkb-tool
+ * @param {HTMLElement} container - The container element with data-gmkb-tool or data-tool
+ * @param {string} [toolTypeOverride] - Optional tool type to use instead of data attribute
  * @returns {Object|null} Vue app instance or null if initialization failed
  */
-function initializeTool(container) {
-    const toolType = container.dataset.gmkbTool;
+function initializeTool(container, toolTypeOverride = null) {
+    // Support both data-gmkb-tool and data-tool attributes
+    const toolType = toolTypeOverride || container.dataset.gmkbTool || container.dataset.tool;
 
     // Validate tool type
     const Component = TOOL_COMPONENTS[toolType];
@@ -185,7 +212,8 @@ function initializeTool(container) {
  * @returns {number} Number of tools initialized
  */
 function initializeAll() {
-    const containers = document.querySelectorAll('[data-gmkb-tool]');
+    // Support both attribute formats
+    const containers = document.querySelectorAll('[data-gmkb-tool], [data-tool]');
     let count = 0;
 
     containers.forEach((container) => {
@@ -196,6 +224,18 @@ function initializeAll() {
 
     console.log(`[GMKBSeoTools] Initialized ${count} tool(s)`);
     return count;
+}
+
+/**
+ * Mount a tool to a specific element (alias for shortcode compatibility)
+ *
+ * @param {HTMLElement} container - The container element
+ * @param {string} toolType - The tool type/slug
+ * @param {Object} [config] - Optional configuration (unused, for API compatibility)
+ * @returns {Object|null} Vue app instance
+ */
+function mountTool(container, toolType, config = {}) {
+    return initializeTool(container, toolType);
 }
 
 /**
@@ -228,6 +268,7 @@ function destroyAll() {
 window.GMKBSeoTools = {
     init: initializeTool,
     initAll: initializeAll,
+    mountTool: mountTool,  // Alias for shortcode compatibility
     destroy: destroyTool,
     destroyAll: destroyAll,
     version: '1.0.0',

@@ -1,0 +1,130 @@
+{
+  "name": "Persona Generator",
+  "slug": "persona-generator",
+  "shortDescription": "Create detailed audience personas to better understand and reach your ideal clients.",
+  "longDescription": "The Persona Generator helps you build comprehensive profiles of your ideal audience members. Understand their pain points, desires, objections, and communication preferences to create content and messaging that truly resonates.",
+  "category": "value-builder",
+  "icon": "UserGroupIcon",
+  "componentName": "PersonaGenerator",
+  "useCases": [
+    "Define ideal client profiles",
+    "Understand audience pain points",
+    "Create targeted messaging",
+    "Develop marketing strategies",
+    "Improve content relevance"
+  ],
+  "keyBenefits": [
+    "Deep audience understanding",
+    "Targeted messaging",
+    "Better content creation",
+    "Improved conversions"
+  ],
+  "targetAudience": [
+    "Marketers and copywriters",
+    "Coaches and consultants",
+    "Course creators",
+    "Content creators",
+    "Business strategists"
+  ],
+  "seoMeta": {
+    "title": "Free AI Persona Generator | Create Detailed Audience Personas",
+    "description": "Generate detailed audience personas to understand your ideal clients with our free AI Persona Generator. Create targeted messaging that converts.",
+    "keywords": [
+      "persona generator",
+      "audience persona",
+      "ideal client profile",
+      "customer avatar",
+      "buyer persona",
+      "target audience"
+    ],
+    "canonicalPath": "/tools/persona-generator/"
+  },
+  "landingContent": {
+    "heroTagline": "Know Your Audience Inside and Out",
+    "heroSubtitle": "Generate detailed personas that reveal your ideal clients' pain points, desires, and the exact language that moves them to action.",
+    "formula": "[DEMOGRAPHIC] + [PSYCHOGRAPHIC] + [PAIN POINTS] + [DESIRED OUTCOMES] = Complete Persona",
+    "tips": [
+      "Be specific - 'busy executives' is too vague; 'VP of Sales at B2B SaaS companies' is actionable",
+      "Include emotional drivers - what keeps them up at night? What would make them feel successful?",
+      "Map the journey - understand where they are now and where they want to be",
+      "Use their language - capture the exact words they use to describe their challenges"
+    ],
+    "examples": [
+      {
+        "title": "Overwhelmed Entrepreneur",
+        "content": "Sarah, 38, owns a marketing agency. Works 60+ hours/week but revenue plateaued at $500K. Fears burnout. Wants systems that let her scale without sacrificing family time."
+      },
+      {
+        "title": "Ambitious Sales Leader",
+        "content": "Marcus, 42, VP of Sales at a SaaS startup. Team of 12 underperforming. Pressure from board. Wants proven playbooks to hit aggressive growth targets."
+      },
+      {
+        "title": "First-Time Author",
+        "content": "Jennifer, 45, consultant with 20 years experience. Wants to write her first book. Overwhelmed by the process. Needs a clear roadmap from idea to bestseller."
+      }
+    ],
+    "howItWorks": [
+      {
+        "step": 1,
+        "title": "Describe Your Audience",
+        "description": "Enter who you serve and what problems you solve."
+      },
+      {
+        "step": 2,
+        "title": "Add Details",
+        "description": "Include industry, role, and any known characteristics."
+      },
+      {
+        "step": 3,
+        "title": "Get Your Persona",
+        "description": "Receive a comprehensive profile with actionable insights."
+      }
+    ],
+    "features": [
+      {
+        "title": "Pain Points",
+        "description": "Understand the problems keeping your audience up at night.",
+        "icon": "ExclamationTriangleIcon"
+      },
+      {
+        "title": "Desires & Goals",
+        "description": "Know what success looks like to your ideal clients.",
+        "icon": "StarIcon"
+      },
+      {
+        "title": "Objections",
+        "description": "Anticipate and address the reasons they hesitate.",
+        "icon": "HandRaisedIcon"
+      },
+      {
+        "title": "Language Patterns",
+        "description": "Learn the exact words your audience uses.",
+        "icon": "LanguageIcon"
+      }
+    ],
+    "faq": [
+      {
+        "question": "How detailed should my input be?",
+        "answer": "The more specific, the better. Include industry, role level, company size, and any demographic details you know."
+      },
+      {
+        "question": "How many personas do I need?",
+        "answer": "Start with your primary audience (80% of clients). Add 1-2 secondary personas if you serve distinct segments."
+      },
+      {
+        "question": "How do I use personas in my marketing?",
+        "answer": "Reference your persona when writing copy, creating content, or planning campaigns. Ask 'Would this resonate with [persona name]?'"
+      },
+      {
+        "question": "How often should I update personas?",
+        "answer": "Review quarterly and update when you notice shifts in who's buying or what they care about."
+      }
+    ],
+    "relatedToolSlugs": [
+      "authority-hook-builder",
+      "brand-story-generator",
+      "topics-generator",
+      "email-writer"
+    ]
+  }
+}

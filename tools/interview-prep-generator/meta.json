@@ -1,0 +1,130 @@
+{
+  "name": "Interview Prep Generator",
+  "slug": "interview-prep-generator",
+  "shortDescription": "Prepare comprehensive interview guides with questions, answers, and key messages.",
+  "longDescription": "The Interview Prep Generator creates complete preparation guides for your media appearances. Get anticipated questions, suggested answers, key messages, and strategic talking points all in one comprehensive document.",
+  "category": "strategy",
+  "icon": "ClipboardDocumentListIcon",
+  "componentName": "InterviewPrepGenerator",
+  "useCases": [
+    "Prepare for podcast interviews",
+    "Get ready for press appearances",
+    "Plan conference talks",
+    "Prep for panel discussions",
+    "Structure media training"
+  ],
+  "keyBenefits": [
+    "Complete preparation",
+    "Consistent messaging",
+    "Confidence building",
+    "Strategic delivery"
+  ],
+  "targetAudience": [
+    "Podcast guests",
+    "Media personalities",
+    "Executives",
+    "Authors on book tours",
+    "Experts and spokespersons"
+  ],
+  "seoMeta": {
+    "title": "Free AI Interview Prep Generator | Complete Media Preparation",
+    "description": "Generate comprehensive interview preparation guides for podcasts and media appearances with our free AI Interview Prep Generator.",
+    "keywords": [
+      "interview prep",
+      "media preparation",
+      "podcast prep",
+      "interview coaching",
+      "talking points",
+      "media training"
+    ],
+    "canonicalPath": "/tools/interview-prep-generator/"
+  },
+  "landingContent": {
+    "heroTagline": "Walk Into Every Interview Fully Prepared",
+    "heroSubtitle": "Generate comprehensive interview guides with anticipated questions, strategic answers, and key messages that ensure you shine.",
+    "formula": "[CONTEXT] + [KEY MESSAGES] + [ANTICIPATED QUESTIONS] + [BRIDGE PHRASES] = Complete Interview Prep",
+    "tips": [
+      "Know your 3 key messages - everything you say should lead back to these core points",
+      "Prepare bridge phrases - learn to pivot from any question back to your messages",
+      "Practice out loud - knowing your answers intellectually is different from delivering them naturally",
+      "Research the host - understanding their style helps you adapt your delivery"
+    ],
+    "examples": [
+      {
+        "title": "Podcast Interview Prep",
+        "content": "Key Messages: 1) Systems beat willpower 2) Start before you're ready 3) Progress over perfection. Bridge: 'What I've found is...' and 'The real insight here is...'"
+      },
+      {
+        "title": "Press Interview Prep",
+        "content": "Anticipated tough question: 'Isn't this just repackaged advice?' Answer: 'Great question. What makes this different is the framework - it's been tested with 500+ clients across industries.'"
+      },
+      {
+        "title": "Panel Discussion Prep",
+        "content": "Opening statement: '20 years ago, I made the same mistake every first-time founder makes. Today, I help them skip that painful lesson.'"
+      }
+    ],
+    "howItWorks": [
+      {
+        "step": 1,
+        "title": "Set the Context",
+        "description": "Enter the show, topic, and your key messages."
+      },
+      {
+        "step": 2,
+        "title": "Define Your Goals",
+        "description": "Specify what you want to achieve from the interview."
+      },
+      {
+        "step": 3,
+        "title": "Get Your Prep Guide",
+        "description": "Receive a complete preparation document."
+      }
+    ],
+    "features": [
+      {
+        "title": "Anticipated Questions",
+        "description": "Likely questions based on topic and context.",
+        "icon": "QuestionMarkCircleIcon"
+      },
+      {
+        "title": "Strategic Answers",
+        "description": "Suggested responses that advance your goals.",
+        "icon": "ChatBubbleLeftRightIcon"
+      },
+      {
+        "title": "Key Messages",
+        "description": "Core points to weave into your answers.",
+        "icon": "KeyIcon"
+      },
+      {
+        "title": "Bridge Phrases",
+        "description": "Transitions to steer conversation toward your messages.",
+        "icon": "ArrowsRightLeftIcon"
+      }
+    ],
+    "faq": [
+      {
+        "question": "How should I prepare with this guide?",
+        "answer": "Review the questions and answers, internalize your key messages, then practice saying them naturally. Don't memorize word-for-word."
+      },
+      {
+        "question": "What are bridge phrases?",
+        "answer": "Phrases like 'What's really important is...' or 'The key point here is...' that help you transition to your prepared messages."
+      },
+      {
+        "question": "How many key messages should I have?",
+        "answer": "Aim for 3 key messages. More than that is hard to work in naturally. Make them memorable and repeatable."
+      },
+      {
+        "question": "Should I send this to the host?",
+        "answer": "No, this is your private prep. Share a guest intro and suggested questions instead. Keep your strategic preparation private."
+      }
+    ],
+    "relatedToolSlugs": [
+      "questions-generator",
+      "topics-generator",
+      "guest-intro-generator",
+      "sound-bite-generator"
+    ]
+  }
+}

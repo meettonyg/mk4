@@ -124,7 +124,8 @@
 import { ref, watch } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
 import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
-import { AiModal, TopicsGenerator } from '../../src/vue/components/ai';
+import { AiModal } from '../../src/vue/components/ai';
+import TopicsGenerator from '@tools/topics-generator/TopicsGenerator.vue';
 
 const props = defineProps({
   componentId: {

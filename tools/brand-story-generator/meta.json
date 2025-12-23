@@ -1,0 +1,130 @@
+{
+  "name": "Brand Story Generator",
+  "slug": "brand-story-generator",
+  "shortDescription": "Create a compelling brand narrative that connects with your audience emotionally.",
+  "longDescription": "The Brand Story Generator helps you craft a narrative that explains why you do what you do, building emotional connections with your audience. Transform your journey into a story that resonates, inspires trust, and differentiates you from competitors.",
+  "category": "strategy",
+  "icon": "BookOpenIcon",
+  "componentName": "BrandStoryGenerator",
+  "useCases": [
+    "Create About page content",
+    "Develop brand origin stories",
+    "Build emotional connections",
+    "Write founder narratives",
+    "Craft mission statements"
+  ],
+  "keyBenefits": [
+    "Emotional connection",
+    "Clear brand purpose",
+    "Memorable narrative",
+    "Trust building"
+  ],
+  "targetAudience": [
+    "Brand builders",
+    "Entrepreneurs",
+    "Marketing teams",
+    "Personal brands",
+    "Startups and founders"
+  ],
+  "seoMeta": {
+    "title": "Free AI Brand Story Generator | Create Compelling Brand Narratives",
+    "description": "Generate compelling brand stories that connect emotionally with your audience using our free AI Brand Story Generator.",
+    "keywords": [
+      "brand story generator",
+      "brand narrative",
+      "origin story",
+      "about page",
+      "company story",
+      "founder story"
+    ],
+    "canonicalPath": "/tools/brand-story-generator/"
+  },
+  "landingContent": {
+    "heroTagline": "Tell Your Story in a Way That Connects",
+    "heroSubtitle": "Create a compelling brand narrative that explains your 'why' and builds emotional connections with your audience.",
+    "formula": "[CHALLENGE/ORIGIN] → [TRANSFORMATION] → [MISSION/PURPOSE] = Compelling Brand Story",
+    "tips": [
+      "Start with tension - every great story begins with a challenge or turning point",
+      "Show vulnerability - authenticity builds connection more than perfection",
+      "Connect to your audience - your story should resonate with their journey too",
+      "End with purpose - clarify why you do what you do and who you serve"
+    ],
+    "examples": [
+      {
+        "title": "Consultant Origin",
+        "content": "I spent 15 years in corporate, watching talented leaders burn out. After my own wake-up call, I left to help executives build sustainable success without sacrificing everything else."
+      },
+      {
+        "title": "Founder Journey",
+        "content": "When my startup failed in 2015, I lost everything except the lessons. Now I help first-time founders avoid the mistakes that cost me millions."
+      },
+      {
+        "title": "Career Pivot",
+        "content": "As a former journalist, I saw countless experts with powerful messages struggle to get media attention. Now I help thought leaders become the sources journalists want to quote."
+      }
+    ],
+    "howItWorks": [
+      {
+        "step": 1,
+        "title": "Share Your Journey",
+        "description": "Enter your origin story and key moments."
+      },
+      {
+        "step": 2,
+        "title": "Define Your Purpose",
+        "description": "Explain why you do what you do."
+      },
+      {
+        "step": 3,
+        "title": "Generate Your Story",
+        "description": "Get a polished narrative ready to share."
+      }
+    ],
+    "features": [
+      {
+        "title": "Story Arc",
+        "description": "Follows proven narrative structure for maximum impact.",
+        "icon": "ArrowPathIcon"
+      },
+      {
+        "title": "Purpose-Driven",
+        "description": "Centers your 'why' as the heart of your brand.",
+        "icon": "HeartIcon"
+      },
+      {
+        "title": "Audience Connection",
+        "description": "Written to resonate with your target audience.",
+        "icon": "UsersIcon"
+      },
+      {
+        "title": "Authentic Voice",
+        "description": "Maintains your genuine voice and personality.",
+        "icon": "FingerPrintIcon"
+      }
+    ],
+    "faq": [
+      {
+        "question": "What makes a good brand story?",
+        "answer": "A good brand story has a clear beginning (challenge/origin), middle (journey/transformation), and end (purpose/mission) that connects to your audience's needs."
+      },
+      {
+        "question": "How personal should I get?",
+        "answer": "Be authentic but strategic. Share enough to build connection without oversharing. Focus on moments relevant to your audience."
+      },
+      {
+        "question": "Where should I use my brand story?",
+        "answer": "Your About page, media kit, speaking introductions, and anywhere you need to explain why you do what you do."
+      },
+      {
+        "question": "How long should my brand story be?",
+        "answer": "Have multiple versions: a one-liner, a paragraph version, and a full page narrative for your website."
+      }
+    ],
+    "relatedToolSlugs": [
+      "signature-story-generator",
+      "credibility-story-generator",
+      "biography-generator",
+      "authority-hook-builder"
+    ]
+  }
+}
