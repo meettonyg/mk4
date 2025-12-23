@@ -15,7 +15,12 @@
 // Shared Components
 export * from './_shared/index.js';
 
-// Biography Tool
+// Tool Registry & Dynamic Pages
+export { default as TOOL_REGISTRY, getToolBySlug, getAllTools, getToolsByCategory, TOOL_CATEGORIES } from './toolRegistry.js';
+export { default as ToolDirectoryPage } from './ToolDirectoryPage.vue';
+export { default as DynamicToolPage } from './DynamicToolPage.vue';
+
+// Biography Tool (structured folder)
 export * from './biography/index.js';
 
 // Future tools will be exported here:
