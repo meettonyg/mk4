@@ -3,11 +3,12 @@
  * GMKB Tool Pages
  *
  * Creates virtual pages for AI tools without requiring WordPress page creation.
- * Registers rewrite rules for /tools/ and /tools/{slug}/ URLs.
+ * Registers rewrite rules for /tools/, /tools/{slug}/, and /tools/{slug}/tool/ URLs.
  *
  * URLs:
- * - /tools/                    → Tools directory page
- * - /tools/biography-generator/ → Individual tool landing page
+ * - /tools/                         → Tools directory page
+ * - /tools/biography-generator/     → Individual tool landing page (SEO)
+ * - /tools/biography-generator/tool/ → Interactive tool app
  *
  * SEO Features:
  * - Dynamic title tags from meta.json
@@ -112,6 +113,9 @@ class GMKB_Tool_Pages {
         // Template handling
         add_filter('template_include', array($this, 'load_template'));
 
+        // Backward compatibility redirect for ?use=1 to /tool/
+        add_action('template_redirect', array($this, 'redirect_legacy_use_param'));
+
         // Enqueue scripts early for tool pages
         add_action('wp_enqueue_scripts', array($this, 'enqueue_tool_assets'));
 
@@ -128,6 +132,21 @@ class GMKB_Tool_Pages {
     }
 
     /**
+     * Redirect legacy ?use=1 URLs to new /tool/ URLs
+     */
+    public function redirect_legacy_use_param() {
+        $tool_slug = get_query_var($this->query_var);
+        $use_param = isset($_GET['use']) ? sanitize_text_field(wp_unslash($_GET['use'])) : null;
+
+        // Only redirect if we have a tool slug and ?use=1 (not already on /tool/)
+        if (!empty($tool_slug) && '1' === $use_param && !get_query_var('gmkb_tool_app')) {
+            $new_url = home_url('/' . $this->base_path . '/' . $tool_slug . '/tool/');
+            wp_redirect($new_url, 301);
+            exit;
+        }
+    }
+
+    /**
      * Enqueue tool assets for virtual pages
      * Must be called during wp_enqueue_scripts hook (before content rendering)
      */
@@ -140,8 +159,10 @@ class GMKB_Tool_Pages {
             return;
         }
 
-        // Only enqueue scripts on the tool app page (with ?use=1)
-        if (!isset($_GET['use']) || $_GET['use'] !== '1') {
+        // Only enqueue scripts on the tool app page (/tool/ or legacy ?use=1)
+        $use_param = isset($_GET['use']) ? sanitize_text_field(wp_unslash($_GET['use'])) : null;
+        $is_tool_app = get_query_var('gmkb_tool_app') || ('1' === $use_param);
+        if (!$is_tool_app) {
             return;
         }
 
@@ -198,7 +219,14 @@ class GMKB_Tool_Pages {
      * Register rewrite rules
      */
     public function register_rewrite_rules() {
-        // Individual tool pages: /tools/{slug}/
+        // Tool app page: /tools/{slug}/tool/
+        add_rewrite_rule(
+            '^' . $this->base_path . '/([^/]+)/tool/?$',
+            'index.php?' . $this->query_var . '=$matches[1]&gmkb_tool_app=1',
+            'top'
+        );
+
+        // Individual tool landing pages: /tools/{slug}/
         add_rewrite_rule(
             '^' . $this->base_path . '/([^/]+)/?$',
             'index.php?' . $this->query_var . '=$matches[1]',
@@ -222,6 +250,7 @@ class GMKB_Tool_Pages {
     public function register_query_vars($vars) {
         $vars[] = $this->query_var;
         $vars[] = $this->directory_var;
+        $vars[] = 'gmkb_tool_app';
         return $vars;
     }
 
@@ -418,7 +447,7 @@ get_footer();
 
     /**
      * Render the tool page content
-     * Detects ?use=1 for tool app vs landing page
+     * Detects /tool/ path or legacy ?use=1 for tool app vs landing page
      */
     public function render_tool_page() {
         if (!$this->current_tool || !$this->current_meta) {
@@ -426,8 +455,10 @@ get_footer();
             return;
         }
 
-        // Check if this is the tool app view
-        if (isset($_GET['use']) && $_GET['use'] === '1') {
+        // Check if this is the tool app view (/tool/ or legacy ?use=1)
+        $use_param = isset($_GET['use']) ? sanitize_text_field(wp_unslash($_GET['use'])) : null;
+        $is_tool_app = get_query_var('gmkb_tool_app') || ('1' === $use_param);
+        if ($is_tool_app) {
             $this->render_tool_app_page();
             return;
         }
@@ -736,7 +767,7 @@ get_footer();
         $landing = isset($meta['landingContent']) ? $meta['landingContent'] : array();
 
         // CTA URL - links to the tool app page
-        $cta_url = home_url('/' . $this->base_path . '/' . $tool['id'] . '/?use=1');
+        $cta_url = home_url('/' . $this->base_path . '/' . $tool['id'] . '/tool/');
         $cta_text = $landing['ctaText'] ?? 'Try ' . esc_html($meta['name']) . ' Free';
 
         ?>
