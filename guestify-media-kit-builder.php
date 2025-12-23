@@ -325,6 +325,12 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-free-tools
     require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-free-tools-shortcode.php';
 }
 
+// AI INTEGRATION: Tool Pages Shortcodes for directory and dynamic tool pages
+// Usage: [gmkb_tool_directory] or [gmkb_tool_page slug="biography"]
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-tool-pages-shortcode.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-tool-pages-shortcode.php';
+}
+
 // Offers Shortcode - Display offers on any page
 // Usage: [gmkb_offers] or [gmkb_offers profile_id="123" layout="grid" columns="3"]
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/offers-shortcode.php')) {
