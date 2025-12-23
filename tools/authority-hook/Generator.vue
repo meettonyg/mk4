@@ -487,8 +487,6 @@ const handleReset = () => {
 const handleProfileLoaded = (profileData) => {
   if (!profileData) return;
 
-  console.log('[AuthorityHookBuilder] Pre-populating from profile:', profileData._post?.id);
-
   // Pre-populate authority hook fields from profile
   hookFields.value = {
     who: profileData.hook_who || '',
@@ -513,7 +511,6 @@ const handleProfileLoaded = (profileData) => {
  * Resets fields to empty
  */
 const handleProfileCleared = () => {
-  console.log('[AuthorityHookBuilder] Profile cleared, resetting fields');
   handleReset();
 };
 
@@ -536,9 +533,6 @@ const saveHookToProfile = async () => {
   };
 
   const success = await saveMultipleToProfile(fieldsToSave);
-  if (success) {
-    console.log('[AuthorityHookBuilder] Saved hook fields to profile');
-  }
   return success;
 };
 

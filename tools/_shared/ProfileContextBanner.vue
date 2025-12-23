@@ -115,7 +115,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, watch } from 'vue';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 
 const emit = defineEmits(['profile-selected', 'profile-cleared', 'profile-loaded']);

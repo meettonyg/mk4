@@ -10,7 +10,11 @@
  * @since 2.4.0
  */
 
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+
+// Constants for profile data limits
+const MAX_TOPICS = 5;
+const MAX_QUESTIONS = 25;
 
 /**
  * Get standalone tools config from window
@@ -82,11 +86,9 @@ export function useStandaloneProfile() {
         await selectProfile(profiles.value[0].id);
       }
 
-      console.log('[useStandaloneProfile] Loaded profiles:', profiles.value.length);
       return profiles.value;
 
     } catch (err) {
-      console.error('[useStandaloneProfile] Error loading profiles:', err);
       error.value = err.message;
       return [];
     } finally {
@@ -125,11 +127,9 @@ export function useStandaloneProfile() {
       const data = await response.json();
       profileData.value = data.data || data;
 
-      console.log('[useStandaloneProfile] Loaded profile data:', profileId);
       return profileData.value;
 
     } catch (err) {
-      console.error('[useStandaloneProfile] Error loading profile:', err);
       error.value = err.message;
       return null;
     } finally {
@@ -224,7 +224,7 @@ export function useStandaloneProfile() {
     }
 
     const topics = [];
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= MAX_TOPICS; i++) {
       const topic = profileData.value[`topic_${i}`];
       if (topic) {
         topics.push(topic);
@@ -243,7 +243,7 @@ export function useStandaloneProfile() {
     }
 
     const questions = [];
-    for (let i = 1; i <= 25; i++) {
+    for (let i = 1; i <= MAX_QUESTIONS; i++) {
       const question = profileData.value[`question_${i}`];
       if (question) {
         questions.push(question);
@@ -260,7 +260,6 @@ export function useStandaloneProfile() {
    */
   const saveToProfile = async (field, value) => {
     if (!selectedProfileId.value || !isLoggedIn.value) {
-      console.warn('[useStandaloneProfile] Cannot save - no profile selected or not logged in');
       return false;
     }
 
@@ -285,11 +284,9 @@ export function useStandaloneProfile() {
         profileData.value[field] = value;
       }
 
-      console.log('[useStandaloneProfile] Saved field:', field);
       return true;
 
     } catch (err) {
-      console.error('[useStandaloneProfile] Error saving:', err);
       return false;
     }
   };
@@ -301,7 +298,6 @@ export function useStandaloneProfile() {
    */
   const saveMultipleToProfile = async (fields) => {
     if (!selectedProfileId.value || !isLoggedIn.value) {
-      console.warn('[useStandaloneProfile] Cannot save - no profile selected or not logged in');
       return false;
     }
 
@@ -326,11 +322,9 @@ export function useStandaloneProfile() {
         Object.assign(profileData.value, fields);
       }
 
-      console.log('[useStandaloneProfile] Saved fields:', Object.keys(fields));
       return true;
 
     } catch (err) {
-      console.error('[useStandaloneProfile] Error saving:', err);
       return false;
     }
   };

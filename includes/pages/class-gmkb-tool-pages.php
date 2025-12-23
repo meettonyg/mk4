@@ -136,6 +136,15 @@ class GMKB_Tool_Pages {
     }
 
     /**
+     * Check if current page is a tool or directory page
+     *
+     * @return bool True if on a tool or directory page
+     */
+    private function is_tool_or_directory_page() {
+        return $this->current_tool || get_query_var($this->directory_var);
+    }
+
+    /**
      * Filter whether current page should use app navigation
      * For tool pages: show app nav only for logged-in users
      *
@@ -143,8 +152,7 @@ class GMKB_Tool_Pages {
      * @return bool Modified value
      */
     public function filter_is_app_page($is_app_page) {
-        // If we're on a tool page, override based on login status
-        if ($this->current_tool || get_query_var($this->directory_var)) {
+        if ($this->is_tool_or_directory_page()) {
             // Logged-in users get app navigation
             // Public users get frontend navigation
             return is_user_logged_in();
@@ -160,7 +168,7 @@ class GMKB_Tool_Pages {
      * @return string 'app' or 'frontend'
      */
     public function get_navigation_type($default = 'frontend') {
-        if ($this->current_tool || get_query_var($this->directory_var)) {
+        if ($this->is_tool_or_directory_page()) {
             return is_user_logged_in() ? 'app' : 'frontend';
         }
         return $default;
@@ -242,16 +250,17 @@ class GMKB_Tool_Pages {
             }
 
             // Add global data for Vue components
+            $is_logged_in = is_user_logged_in();
             $standalone_data = array(
                 'nonce' => wp_create_nonce('gmkb_public_ai'),
                 'apiBase' => rest_url('gmkb/v2'),
                 'ajaxUrl' => admin_url('admin-ajax.php'),
-                'isLoggedIn' => is_user_logged_in(),
+                'isLoggedIn' => $is_logged_in,
                 'toolSlug' => $tool_slug,
             );
 
             // For logged-in users, add profile context
-            if (is_user_logged_in()) {
+            if ($is_logged_in) {
                 $standalone_data['restNonce'] = wp_create_nonce('wp_rest');
                 $standalone_data['userId'] = get_current_user_id();
                 $standalone_data['profilesEndpoint'] = rest_url('gmkb/v2/profiles');
@@ -1530,6 +1539,21 @@ get_footer();
     }
 
     /**
+     * Add login status classes to body
+     *
+     * @param array $classes Body classes array (passed by reference)
+     */
+    private function add_login_status_classes(&$classes) {
+        if (is_user_logged_in()) {
+            $classes[] = 'gmkb-user-logged-in';
+            $classes[] = 'gmkb-show-app-nav';
+        } else {
+            $classes[] = 'gmkb-user-logged-out';
+            $classes[] = 'gmkb-show-frontend-nav';
+        }
+    }
+
+    /**
      * Add body class for tool pages
      *
      * @param array $classes Body classes
@@ -1540,14 +1564,7 @@ get_footer();
             $classes[] = 'gmkb-tool-page';
             $classes[] = 'gmkb-tool-' . $this->current_tool['id'];
 
-            // Add login status classes for theme navigation logic
-            if (is_user_logged_in()) {
-                $classes[] = 'gmkb-user-logged-in';
-                $classes[] = 'gmkb-show-app-nav';
-            } else {
-                $classes[] = 'gmkb-user-logged-out';
-                $classes[] = 'gmkb-show-frontend-nav';
-            }
+            $this->add_login_status_classes($classes);
 
             // Check if this is the tool app view
             $use_param = isset($_GET['use']) ? sanitize_text_field(wp_unslash($_GET['use'])) : null;
@@ -1560,14 +1577,7 @@ get_footer();
         } elseif (get_query_var($this->directory_var)) {
             $classes[] = 'gmkb-tools-directory-page';
 
-            // Add login status classes for directory page too
-            if (is_user_logged_in()) {
-                $classes[] = 'gmkb-user-logged-in';
-                $classes[] = 'gmkb-show-app-nav';
-            } else {
-                $classes[] = 'gmkb-user-logged-out';
-                $classes[] = 'gmkb-show-frontend-nav';
-            }
+            $this->add_login_status_classes($classes);
         }
         return $classes;
     }
