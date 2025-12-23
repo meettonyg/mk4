@@ -35,7 +35,7 @@ class GMKB_Tool_Pages_Shortcode {
     private $enqueued = false;
 
     /**
-     * Valid tool slugs (matches toolRegistry.js)
+     * Valid tool slugs (matches /tools/ directory structure)
      * @var array
      */
     private $valid_slugs = array(
