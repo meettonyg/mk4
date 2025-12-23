@@ -136,9 +136,10 @@ class GMKB_Tool_Pages {
      */
     public function redirect_legacy_use_param() {
         $tool_slug = get_query_var($this->query_var);
+        $use_param = isset($_GET['use']) ? sanitize_text_field(wp_unslash($_GET['use'])) : null;
 
         // Only redirect if we have a tool slug and ?use=1 (not already on /tool/)
-        if (!empty($tool_slug) && isset($_GET['use']) && $_GET['use'] === '1' && !get_query_var('gmkb_tool_app')) {
+        if (!empty($tool_slug) && '1' === $use_param && !get_query_var('gmkb_tool_app')) {
             $new_url = home_url('/' . $this->base_path . '/' . $tool_slug . '/tool/');
             wp_redirect($new_url, 301);
             exit;
@@ -159,7 +160,8 @@ class GMKB_Tool_Pages {
         }
 
         // Only enqueue scripts on the tool app page (/tool/ or legacy ?use=1)
-        $is_tool_app = get_query_var('gmkb_tool_app') || (isset($_GET['use']) && $_GET['use'] === '1');
+        $use_param = isset($_GET['use']) ? sanitize_text_field(wp_unslash($_GET['use'])) : null;
+        $is_tool_app = get_query_var('gmkb_tool_app') || ('1' === $use_param);
         if (!$is_tool_app) {
             return;
         }
@@ -454,7 +456,8 @@ get_footer();
         }
 
         // Check if this is the tool app view (/tool/ or legacy ?use=1)
-        $is_tool_app = get_query_var('gmkb_tool_app') || (isset($_GET['use']) && $_GET['use'] === '1');
+        $use_param = isset($_GET['use']) ? sanitize_text_field(wp_unslash($_GET['use'])) : null;
+        $is_tool_app = get_query_var('gmkb_tool_app') || ('1' === $use_param);
         if ($is_tool_app) {
             $this->render_tool_app_page();
             return;
