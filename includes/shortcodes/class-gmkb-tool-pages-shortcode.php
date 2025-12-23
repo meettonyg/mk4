@@ -293,13 +293,17 @@ class GMKB_Tool_Pages_Shortcode {
         // If no slug, render directory
         $page_type = empty($slug) ? 'directory' : 'tool';
 
+        // Determine mode: 'use' (2-panel tool) or 'landing' (marketing page)
+        $mode = isset($_GET['use']) ? 'use' : 'landing';
+
         $html = sprintf(
-            '<div id="%s" class="%s" data-gmkb-page-type="%s" data-gmkb-tool-slug="%s" data-gmkb-directory-url="%s"></div>',
+            '<div id="%s" class="%s" data-gmkb-page-type="%s" data-gmkb-tool-slug="%s" data-gmkb-directory-url="%s" data-gmkb-mode="%s"></div>',
             esc_attr($unique_id),
             esc_attr(implode(' ', $classes)),
             esc_attr($page_type),
             esc_attr($slug),
-            esc_attr($atts['directory_url'])
+            esc_attr($atts['directory_url']),
+            esc_attr($mode)
         );
 
         // Noscript fallback

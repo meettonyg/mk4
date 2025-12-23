@@ -79,6 +79,7 @@ import SeoOptimizerGenerator from '../tools/seo-optimizer/Generator.vue';
 // Page-level components
 import ToolDirectoryPage from '../tools/ToolDirectoryPage.vue';
 import DynamicToolPage from '../tools/DynamicToolPage.vue';
+import ToolLandingPage from '../tools/ToolLandingPage.vue';
 
 /**
  * Component registry for data-gmkb-tool attribute values
@@ -250,9 +251,10 @@ function initializeToolPage(container) {
         return mountedApps.get(container);
     }
 
-    // Get tool slug from data attribute
+    // Get tool slug and mode from data attributes
     const toolSlug = container.dataset.gmkbToolSlug || '';
     const directoryUrl = container.dataset.gmkbDirectoryUrl || '/tools/';
+    const mode = container.dataset.gmkbMode || 'landing'; // 'landing' or 'use'
 
     // Store nonce globally for API calls
     if (!window.gmkbSeoTools) {
@@ -260,12 +262,15 @@ function initializeToolPage(container) {
         window.gmkbSeoTools = { nonce };
     }
 
-    // Create Vue app with DynamicToolPage
+    // Choose component based on mode
+    const PageComponent = mode === 'use' ? DynamicToolPage : ToolLandingPage;
+
+    // Create Vue app with appropriate page component
     const app = createApp({
-        name: 'GMKBDynamicToolPage',
+        name: mode === 'use' ? 'GMKBDynamicToolPage' : 'GMKBToolLandingPage',
         render() {
             return h('div', { class: 'gmkb-standalone-scope' }, [
-                h(DynamicToolPage, {
+                h(PageComponent, {
                     toolSlug: toolSlug,
                     directoryUrl: directoryUrl,
                 }),
