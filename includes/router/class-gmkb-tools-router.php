@@ -66,12 +66,23 @@ class GMKB_Tools_Router {
 
         // If this is a tools route, hook in very early
         if ($this->route) {
+            // CRITICAL: Block ALL redirects as early as possible
+            // Theme or other plugins may try to redirect /tools/ to /app/tools/
+            add_action('init', array($this, 'block_early_redirects'), 1);
+            add_action('wp_loaded', array($this, 'block_early_redirects'), 1);
+            add_action('parse_request', array($this, 'block_early_redirects'), 1);
+
+            // Block canonical redirects via filter
+            add_filter('redirect_canonical', '__return_false', 999);
+            add_filter('wp_redirect', array($this, 'block_tools_redirect'), 1, 2);
+            add_filter('wp_redirect_status', array($this, 'block_tools_redirect_status'), 1);
+
+            // Prevent 404 status and redirects at template_redirect
+            add_action('template_redirect', array($this, 'prevent_redirects'), -999);
+            add_action('wp', array($this, 'fix_query_flags'), 1);
+
             // Hook into template_include to serve our templates
             add_filter('template_include', array($this, 'serve_template'), 999);
-
-            // Prevent 404 status
-            add_action('wp', array($this, 'fix_query_flags'), 1);
-            add_action('template_redirect', array($this, 'prevent_redirects'), 0);
 
             // Set up SEO
             add_action('wp_head', array($this, 'output_seo_tags'), 1);
@@ -87,6 +98,56 @@ class GMKB_Tools_Router {
             // Navigation filters
             add_filter('guestify_is_app_page', array($this, 'filter_is_app_page'));
         }
+    }
+
+    /**
+     * Block early redirects from theme or other plugins
+     */
+    public function block_early_redirects() {
+        // Remove common redirect actions
+        remove_action('template_redirect', 'redirect_canonical');
+        remove_action('template_redirect', 'wp_old_slug_redirect');
+
+        // Set global flag to indicate we're handling this route
+        if (!defined('GMKB_HANDLING_TOOLS_ROUTE')) {
+            define('GMKB_HANDLING_TOOLS_ROUTE', true);
+        }
+    }
+
+    /**
+     * Block wp_redirect calls that try to redirect away from /tools/
+     *
+     * @param string $location Redirect location
+     * @param int $status HTTP status code
+     * @return string|false Location or false to block
+     */
+    public function block_tools_redirect($location, $status = 302) {
+        // Block any redirect when we're on a tools route
+        if ($this->route) {
+            // Allow redirects within /tools/
+            if (strpos($location, '/' . $this->base_path . '/') !== false ||
+                strpos($location, '/' . $this->base_path) === strlen($location) - strlen('/' . $this->base_path)) {
+                return $location;
+            }
+            // Block redirects to other locations (like /app/tools/)
+            return false;
+        }
+        return $location;
+    }
+
+    /**
+     * Block redirect status when blocking redirects
+     *
+     * @param int $status HTTP status code
+     * @return int Status code
+     */
+    public function block_tools_redirect_status($status) {
+        // If we blocked the redirect location, this won't matter
+        // but return 200 just in case
+        if ($this->route) {
+            return 200;
+        }
+        return $status;
     }
 
     /**
