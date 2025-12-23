@@ -207,11 +207,23 @@ class GMKB_Tool_Pages {
             }
 
             // Add global data for Vue components
-            wp_localize_script('gmkb-standalone-tools', 'gmkbStandaloneTools', array(
+            $standalone_data = array(
                 'nonce' => wp_create_nonce('gmkb_public_ai'),
                 'apiBase' => rest_url('gmkb/v2'),
                 'ajaxUrl' => admin_url('admin-ajax.php'),
-            ));
+                'isLoggedIn' => is_user_logged_in(),
+                'toolSlug' => $tool_slug,
+            );
+
+            // For logged-in users, add profile context
+            if (is_user_logged_in()) {
+                $standalone_data['restNonce'] = wp_create_nonce('wp_rest');
+                $standalone_data['userId'] = get_current_user_id();
+                $standalone_data['profilesEndpoint'] = rest_url('gmkb/v2/profiles');
+                $standalone_data['profileEndpoint'] = rest_url('gmkb/v2/profile');
+            }
+
+            wp_localize_script('gmkb-standalone-tools', 'gmkbStandaloneTools', $standalone_data);
         }
     }
 
