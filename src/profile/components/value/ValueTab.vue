@@ -209,9 +209,9 @@ const {
 } = useOffers();
 
 // URL constants
-const OFFER_GENERATOR_BASE_URL = '/app/offers-generator/';
-const TOPICS_GENERATOR_BASE_URL = '/app/topics-generator/';
-const QUESTIONS_GENERATOR_BASE_URL = '/app/questions-generator/';
+const OFFER_GENERATOR_BASE_URL = '/tools/offers-generator/';
+const TOPICS_GENERATOR_BASE_URL = '/tools/topics-generator/';
+const QUESTIONS_GENERATOR_BASE_URL = '/tools/questions-generator/';
 
 // Generate dynamic URLs with entry parameter
 const buildToolUrl = (baseUrl) => {

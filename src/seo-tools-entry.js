@@ -73,6 +73,11 @@ import YoutubeDescriptionGenerator from '@tools/youtube-description-generator/Yo
 import PodcastNotesGenerator from '@tools/podcast-notes-generator/PodcastNotesGenerator.vue';
 import SeoOptimizerGenerator from '@tools/seo-optimizer/SeoOptimizerGenerator.vue';
 
+// Page components for directory and tool pages
+import ToolDirectoryPage from '@tools/ToolDirectoryPage.vue';
+import ToolLandingPage from '@tools/ToolLandingPage.vue';
+import DynamicToolPage from '@tools/DynamicToolPage.vue';
+
 /**
  * Component registry for data-gmkb-tool attribute values
  * Includes both short names (legacy) and full slugs (new architecture)

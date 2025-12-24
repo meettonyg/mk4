@@ -218,11 +218,11 @@ import { AiSparkleIcon } from '../icons';
 const store = useProfileStore();
 
 // URL constants
-const BIOGRAPHY_GENERATOR_BASE_URL = '/app/biography-generator/';
-const GUEST_INTRO_GENERATOR_BASE_URL = '/app/guest-intro-generator/';
-const TAGLINE_GENERATOR_BASE_URL = '/app/tagline-generator/';
-const AUTHORITY_HOOK_BUILDER_BASE_URL = '/app/authority-hook-builder/';
-const IMPACT_INTRO_BUILDER_BASE_URL = '/app/impact-intro-builder/';
+const BIOGRAPHY_GENERATOR_BASE_URL = '/tools/biography-generator/';
+const GUEST_INTRO_GENERATOR_BASE_URL = '/tools/guest-intro-generator/';
+const TAGLINE_GENERATOR_BASE_URL = '/tools/tagline-generator/';
+const AUTHORITY_HOOK_BUILDER_BASE_URL = '/tools/authority-hook-builder/';
+const IMPACT_INTRO_BUILDER_BASE_URL = '/tools/impact-intro-builder/';
 
 // Generate dynamic URLs with entry parameter
 const buildToolUrl = (baseUrl) => {
