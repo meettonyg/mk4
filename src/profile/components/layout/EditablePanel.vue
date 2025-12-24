@@ -7,7 +7,14 @@
                 @click="toggleEdit"
                 :title="isEditing ? 'Cancel editing' : 'Edit'"
             >
-                {{ isEditing ? '✘' : '✎' }}
+                <svg v-if="!isEditing" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                    <path d="m15 5 4 4"/>
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 6 6 18"/>
+                    <path d="m6 6 12 12"/>
+                </svg>
             </button>
         </div>
 
@@ -119,11 +126,21 @@ const handleCancel = () => {
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 16px;
     color: #64748b;
-    padding: 4px 8px;
-    border-radius: 4px;
-    transition: all 0.2s;
+    padding: 6px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    opacity: 0;
+    transform: translateX(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.panel-header:hover .edit-button,
+.panel.editing .edit-button {
+    opacity: 1;
+    transform: translateX(0);
 }
 
 .edit-button:hover {
@@ -132,6 +149,11 @@ const handleCancel = () => {
 }
 
 .panel.editing .edit-button {
+    color: #ef4444;
+}
+
+.panel.editing .edit-button:hover {
+    background: #fef2f2;
     color: #dc2626;
 }
 

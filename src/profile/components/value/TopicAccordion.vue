@@ -13,7 +13,14 @@
                     @click.stop="handleEditClick"
                     :title="isEditing ? 'Cancel' : 'Edit'"
                 >
-                    {{ isEditing ? '✘' : '✎' }}
+                    <svg v-if="!isEditing" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                        <path d="m15 5 4 4"/>
+                    </svg>
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6 6 18"/>
+                        <path d="m6 6 12 12"/>
+                    </svg>
                 </button>
                 <span class="topic-toggle">
                     <svg
@@ -59,7 +66,11 @@
                         class="button secondary-button sm-button"
                         @click="$emit('edit', topic.id)"
                     >
-                        ✎ Edit Topic & Questions
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+                            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                            <path d="m15 5 4 4"/>
+                        </svg>
+                        Edit Topic & Questions
                     </button>
                 </div>
             </template>
@@ -244,11 +255,21 @@ const updateQuestion = (index, value) => {
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 14px;
     color: #64748b;
-    padding: 4px 8px;
-    border-radius: 4px;
-    transition: all 0.2s;
+    padding: 6px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    opacity: 0;
+    transform: translateX(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.topic-header:hover .edit-button,
+.topic-container.editing .edit-button {
+    opacity: 1;
+    transform: translateX(0);
 }
 
 .edit-button:hover {
@@ -257,6 +278,11 @@ const updateQuestion = (index, value) => {
 }
 
 .topic-container.editing .edit-button {
+    color: #ef4444;
+}
+
+.topic-container.editing .edit-button:hover {
+    background: #fef2f2;
     color: #dc2626;
 }
 

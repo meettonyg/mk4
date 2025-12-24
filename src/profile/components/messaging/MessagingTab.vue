@@ -18,15 +18,20 @@
                             <div v-if="store.fields.biography" v-html="store.fields.biography"></div>
                             <div v-else class="empty-text">
                                 <p>
-                                    <span class="info-icon">ℹ</span>
+                                    <span class="info-icon">i</span>
                                     Your biography demonstrates your value to podcast hosts through your expertise,
                                     stories and results that you share.
                                 </p>
-                                <p>
-                                    <a :href="biographyGeneratorUrl" target="_blank">
-                                        🤖 Create your Podcast Biography with AI
-                                    </a>
-                                </p>
+                                <a :href="biographyGeneratorUrl" target="_blank" class="ai-link">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
+                                        <path d="M20 3v4"/>
+                                        <path d="M22 5h-4"/>
+                                        <path d="M4 17v2"/>
+                                        <path d="M5 18H3"/>
+                                    </svg>
+                                    Create your Podcast Biography with AI
+                                </a>
                             </div>
                         </div>
                     </template>
@@ -61,15 +66,20 @@
                             <div v-if="store.fields.podcast_intro" v-html="store.fields.podcast_intro"></div>
                             <div v-else class="empty-text">
                                 <p>
-                                    <span class="info-icon">ℹ</span>
+                                    <span class="info-icon">i</span>
                                     Click edit to add your Podcast Intro to make it easy for hosts
                                     to book and introduce you on their show.
                                 </p>
-                                <p>
-                                    <a href="/app/message-builder/message-builder-ai/#intro" target="_blank">
-                                        🤖 Create your Podcast Intro with AI
-                                    </a>
-                                </p>
+                                <a href="/app/message-builder/message-builder-ai/#intro" target="_blank" class="ai-link">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
+                                        <path d="M20 3v4"/>
+                                        <path d="M22 5h-4"/>
+                                        <path d="M4 17v2"/>
+                                        <path d="M5 18H3"/>
+                                    </svg>
+                                    Create your Podcast Intro with AI
+                                </a>
                             </div>
                         </div>
                     </template>
@@ -134,7 +144,19 @@
                     <template #display>
                         <div class="text-area">
                             <div v-if="store.fields.authority_hook" v-html="store.fields.authority_hook"></div>
-                            <p v-else class="empty-text">No authority hook defined</p>
+                            <div v-else class="empty-text">
+                                <p>No authority hook defined</p>
+                                <a href="/app/message-builder/message-builder-ai/#authority" target="_blank" class="ai-link">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
+                                        <path d="M20 3v4"/>
+                                        <path d="M22 5h-4"/>
+                                        <path d="M4 17v2"/>
+                                        <path d="M5 18H3"/>
+                                    </svg>
+                                    Create your Authority Hook with AI
+                                </a>
+                            </div>
                         </div>
                     </template>
 
@@ -164,7 +186,19 @@
                     <template #display>
                         <div class="text-area">
                             <div v-if="store.fields.impact_intro" v-html="store.fields.impact_intro"></div>
-                            <p v-else class="empty-text">No impact intro defined</p>
+                            <div v-else class="empty-text">
+                                <p>No impact intro defined</p>
+                                <a href="/app/message-builder/message-builder-ai/#impact" target="_blank" class="ai-link">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
+                                        <path d="M20 3v4"/>
+                                        <path d="M22 5h-4"/>
+                                        <path d="M4 17v2"/>
+                                        <path d="M5 18H3"/>
+                                    </svg>
+                                    Create your Impact Intro with AI
+                                </a>
+                            </div>
                         </div>
                     </template>
 
@@ -313,7 +347,48 @@ const saveSection = async (sectionId) => {
 }
 
 .info-icon {
-    margin-right: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 600;
+    font-style: normal;
+    margin-right: 6px;
+}
+
+/* AI Link styling */
+.ai-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: linear-gradient(135deg, #f0f9ff 0%, #faf5ff 100%);
+    border: 1px solid #e0e7ff;
+    border-radius: 8px;
+    color: #6366f1;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    margin-top: 4px;
+}
+
+.ai-link:hover {
+    background: linear-gradient(135deg, #e0f2fe 0%, #f3e8ff 100%);
+    border-color: #c7d2fe;
+    color: #4f46e5;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+    text-decoration: none;
+}
+
+.ai-link svg {
+    flex-shrink: 0;
 }
 
 /* Form elements */
