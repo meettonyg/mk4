@@ -513,54 +513,162 @@ get_footer();
         $landing = $meta['landingContent'] ?? array();
         $cta_url = home_url('/' . $this->base_path . '/' . $tool['id'] . '/tool/');
         $cta_text = $landing['ctaText'] ?? 'Try ' . esc_html($meta['name']) . ' Free';
+        $icon = $tool['icon'] ?? 'SparklesIcon';
         ?>
         <div class="gmkb-tool-landing">
-            <div class="gmkb-container">
-                <section class="gmkb-hero">
-                    <span class="gmkb-category-badge"><?php echo esc_html($this->get_category_label($meta['category'] ?? '')); ?></span>
-                    <h1><?php echo esc_html($landing['heroTagline'] ?? $meta['name']); ?></h1>
-                    <p class="gmkb-hero-subtitle"><?php echo esc_html($landing['heroSubtitle'] ?? $meta['shortDescription'] ?? ''); ?></p>
-                    <a href="<?php echo esc_url($cta_url); ?>" class="gmkb-btn gmkb-btn-primary gmkb-btn-lg">
-                        <?php echo esc_html($cta_text); ?>
+            <!-- Hero Section -->
+            <section class="gmkb-landing-hero">
+                <div class="gmkb-container">
+                    <a href="<?php echo esc_url(home_url('/' . $this->base_path . '/')); ?>" class="gmkb-back-link">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                        All Tools
                     </a>
-                </section>
+                    <div class="gmkb-hero-content">
+                        <div class="gmkb-hero-icon"><?php echo $this->get_tool_icon($icon); ?></div>
+                        <span class="gmkb-category-badge"><?php echo esc_html($this->get_category_label($meta['category'] ?? '')); ?></span>
+                        <h1><?php echo esc_html($landing['heroTagline'] ?? $meta['name']); ?></h1>
+                        <p class="gmkb-hero-subtitle"><?php echo esc_html($landing['heroSubtitle'] ?? $meta['shortDescription'] ?? ''); ?></p>
+                        <?php if (!empty($meta['keyBenefits'])): ?>
+                        <div class="gmkb-hero-benefits">
+                            <?php foreach (array_slice($meta['keyBenefits'], 0, 4) as $benefit): ?>
+                            <span class="gmkb-hero-benefit">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <?php echo esc_html($benefit); ?>
+                            </span>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </section>
 
-                <?php if (!empty($meta['keyBenefits'])): ?>
-                <section class="gmkb-benefits">
-                    <div class="gmkb-benefits-grid">
-                        <?php foreach ($meta['keyBenefits'] as $benefit): ?>
-                        <div class="gmkb-benefit">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                            <span><?php echo esc_html($benefit); ?></span>
+            <!-- Two Panel Section -->
+            <section class="gmkb-two-panel">
+                <div class="gmkb-container">
+                    <div class="gmkb-panel-layout">
+                        <!-- Left Panel: Tool CTA -->
+                        <div class="gmkb-panel-left">
+                            <div class="gmkb-tool-cta-card">
+                                <h2>Try <?php echo esc_html($meta['name']); ?></h2>
+                                <p><?php echo esc_html($meta['shortDescription'] ?? ''); ?></p>
+
+                                <?php if (!empty($landing['howItWorks'])): ?>
+                                <div class="gmkb-mini-steps">
+                                    <?php foreach ($landing['howItWorks'] as $step): ?>
+                                    <div class="gmkb-mini-step">
+                                        <span class="gmkb-step-num"><?php echo esc_html($step['step']); ?></span>
+                                        <div>
+                                            <strong><?php echo esc_html($step['title']); ?></strong>
+                                            <p><?php echo esc_html($step['description']); ?></p>
+                                        </div>
+                                    </div>
+                                    <?php endforeach; ?>
+                                </div>
+                                <?php endif; ?>
+
+                                <a href="<?php echo esc_url($cta_url); ?>" class="gmkb-btn gmkb-btn-primary gmkb-btn-lg gmkb-btn-full">
+                                    <?php echo esc_html($cta_text); ?>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                </a>
+                                <p class="gmkb-free-note">✨ Free to use • No signup required</p>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Formula, Examples, Tips -->
+                        <div class="gmkb-panel-right">
+                            <?php if (!empty($landing['formula'])): ?>
+                            <div class="gmkb-info-card gmkb-formula-card">
+                                <div class="gmkb-card-header">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+                                    <h3>The Formula</h3>
+                                </div>
+                                <div class="gmkb-formula-text">
+                                    <?php echo esc_html($landing['formula']); ?>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+
+                            <?php if (!empty($landing['examples'])): ?>
+                            <div class="gmkb-info-card gmkb-examples-card">
+                                <div class="gmkb-card-header">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+                                    <h3>Examples</h3>
+                                </div>
+                                <div class="gmkb-examples-list">
+                                    <?php foreach ($landing['examples'] as $example): ?>
+                                    <div class="gmkb-example">
+                                        <h4><?php echo esc_html($example['title']); ?></h4>
+                                        <p><?php echo esc_html($example['content']); ?></p>
+                                    </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+
+                            <?php if (!empty($landing['tips'])): ?>
+                            <div class="gmkb-info-card gmkb-tips-card">
+                                <div class="gmkb-card-header">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18"/></svg>
+                                    <h3>Pro Tips</h3>
+                                </div>
+                                <ul class="gmkb-tips-list">
+                                    <?php foreach ($landing['tips'] as $tip): ?>
+                                    <li><?php echo esc_html($tip); ?></li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <?php if (!empty($landing['features'])): ?>
+            <!-- Features Grid -->
+            <section class="gmkb-features-section">
+                <div class="gmkb-container">
+                    <h2>Features</h2>
+                    <div class="gmkb-features-grid">
+                        <?php foreach ($landing['features'] as $feature): ?>
+                        <div class="gmkb-feature-card">
+                            <div class="gmkb-feature-icon"><?php echo $this->get_tool_icon($feature['icon'] ?? 'SparklesIcon'); ?></div>
+                            <h3><?php echo esc_html($feature['title']); ?></h3>
+                            <p><?php echo esc_html($feature['description']); ?></p>
                         </div>
                         <?php endforeach; ?>
                     </div>
-                </section>
-                <?php endif; ?>
+                </div>
+            </section>
+            <?php endif; ?>
 
-                <?php if (!empty($landing['howItWorks'])): ?>
-                <section class="gmkb-how-it-works">
-                    <h2>How It Works</h2>
-                    <div class="gmkb-steps">
-                        <?php foreach ($landing['howItWorks'] as $step): ?>
-                        <div class="gmkb-step">
-                            <div class="gmkb-step-num"><?php echo esc_html($step['step']); ?></div>
-                            <h3><?php echo esc_html($step['title']); ?></h3>
-                            <p><?php echo esc_html($step['description']); ?></p>
-                        </div>
+            <?php if (!empty($landing['faq'])): ?>
+            <!-- FAQ Section -->
+            <section class="gmkb-faq-section">
+                <div class="gmkb-container">
+                    <h2>Frequently Asked Questions</h2>
+                    <div class="gmkb-faq-list">
+                        <?php foreach ($landing['faq'] as $faq): ?>
+                        <details class="gmkb-faq-item">
+                            <summary><?php echo esc_html($faq['question']); ?></summary>
+                            <p><?php echo esc_html($faq['answer']); ?></p>
+                        </details>
                         <?php endforeach; ?>
                     </div>
-                </section>
-                <?php endif; ?>
+                </div>
+            </section>
+            <?php endif; ?>
 
-                <section class="gmkb-bottom-cta">
-                    <h2>Ready to Get Started?</h2>
-                    <p>Create your <?php echo esc_html(strtolower($meta['name'])); ?> in seconds with our free AI-powered tool.</p>
+            <!-- Bottom CTA -->
+            <section class="gmkb-bottom-cta">
+                <div class="gmkb-container">
+                    <h2>Ready to Create Your <?php echo esc_html($meta['name']); ?>?</h2>
+                    <p>Get started in seconds with our free AI-powered tool.</p>
                     <a href="<?php echo esc_url($cta_url); ?>" class="gmkb-btn gmkb-btn-primary gmkb-btn-lg">
                         <?php echo esc_html($cta_text); ?>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                     </a>
-                </section>
-            </div>
+                </div>
+            </section>
         </div>
         <?php
         $this->output_landing_styles();
@@ -980,29 +1088,381 @@ get_footer();
     private function output_landing_styles() {
         ?>
         <style>
-        .gmkb-tool-landing { max-width: 900px; margin: 0 auto; padding: 2rem 1rem; }
-        .gmkb-hero { text-align: center; padding: 4rem 0 3rem; }
-        .gmkb-category-badge { display: inline-block; padding: 0.25rem 0.75rem; background: #eff6ff; color: #3b82f6; border-radius: 9999px; font-size: 0.875rem; margin-bottom: 1rem; }
-        .gmkb-hero h1 { font-size: 2.75rem; font-weight: 800; margin: 0 0 1rem; line-height: 1.2; }
-        .gmkb-hero-subtitle { font-size: 1.25rem; color: #6b7280; margin: 0 0 2rem; }
-        .gmkb-btn { display: inline-flex; align-items: center; font-weight: 600; border-radius: 8px; text-decoration: none; transition: all 0.2s; }
+        /* Landing Page Container */
+        .gmkb-tool-landing { }
+        .gmkb-tool-landing .gmkb-container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
+
+        /* Back Link */
+        .gmkb-tool-landing .gmkb-back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 0.875rem;
+            margin-bottom: 1.5rem;
+            transition: color 0.2s;
+        }
+        .gmkb-tool-landing .gmkb-back-link:hover { color: #3b82f6; }
+
+        /* Hero Section */
+        .gmkb-landing-hero {
+            background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+            padding: 2rem 0 3rem;
+        }
+        .gmkb-hero-content { text-align: center; max-width: 800px; margin: 0 auto; }
+        .gmkb-hero-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+        }
+        .gmkb-hero-icon svg { width: 32px; height: 32px; color: white; }
+        .gmkb-category-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: white;
+            color: #3b82f6;
+            border-radius: 9999px;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            border: 1px solid #dbeafe;
+        }
+        .gmkb-hero-content h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin: 0 0 1rem;
+            line-height: 1.2;
+            color: #111827;
+        }
+        .gmkb-hero-subtitle {
+            font-size: 1.125rem;
+            color: #6b7280;
+            margin: 0 0 1.5rem;
+            line-height: 1.6;
+        }
+        .gmkb-hero-benefits {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem 1.5rem;
+        }
+        .gmkb-hero-benefit {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            font-size: 0.875rem;
+            color: #374151;
+        }
+        .gmkb-hero-benefit svg { width: 18px; height: 18px; color: #10b981; }
+
+        /* Two Panel Layout */
+        .gmkb-two-panel { padding: 3rem 0; }
+        .gmkb-panel-layout {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        /* Left Panel - CTA Card */
+        .gmkb-panel-left { position: sticky; top: 2rem; }
+        .gmkb-tool-cta-card {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 1px solid #e5e7eb;
+        }
+        .gmkb-tool-cta-card h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0 0 0.5rem;
+            color: #111827;
+        }
+        .gmkb-tool-cta-card > p {
+            color: #6b7280;
+            font-size: 0.9375rem;
+            margin: 0 0 1.5rem;
+        }
+        .gmkb-mini-steps { margin-bottom: 1.5rem; }
+        .gmkb-mini-step {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .gmkb-mini-step:last-child { margin-bottom: 0; }
+        .gmkb-step-num {
+            width: 28px;
+            height: 28px;
+            background: #eff6ff;
+            color: #3b82f6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .gmkb-mini-step strong {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 0.125rem;
+        }
+        .gmkb-mini-step p {
+            font-size: 0.8125rem;
+            color: #6b7280;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        /* Buttons */
+        .gmkb-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            border-radius: 10px;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
         .gmkb-btn-primary { background: #3b82f6; color: white; }
-        .gmkb-btn-primary:hover { background: #2563eb; color: white; }
-        .gmkb-btn-lg { padding: 1rem 2rem; font-size: 1.125rem; }
-        .gmkb-benefits { padding: 2rem; background: #f9fafb; border-radius: 12px; margin-bottom: 2rem; }
-        .gmkb-benefits-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem 2.5rem; }
-        .gmkb-benefit { display: flex; align-items: center; gap: 0.5rem; }
-        .gmkb-benefit svg { width: 20px; height: 20px; color: #10b981; }
-        .gmkb-how-it-works { padding: 3rem 0; border-top: 1px solid #e5e7eb; }
-        .gmkb-how-it-works h2 { text-align: center; margin: 0 0 2rem; }
-        .gmkb-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; }
-        .gmkb-step { text-align: center; }
-        .gmkb-step-num { width: 48px; height: 48px; background: #3b82f6; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700; margin: 0 auto 1rem; }
-        .gmkb-step h3 { font-size: 1.125rem; margin: 0 0 0.5rem; }
-        .gmkb-step p { color: #6b7280; margin: 0; }
-        .gmkb-bottom-cta { padding: 4rem; text-align: center; background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%); border-radius: 16px; margin-top: 2rem; }
-        .gmkb-bottom-cta h2 { font-size: 2rem; margin: 0 0 0.75rem; }
-        .gmkb-bottom-cta p { color: #6b7280; margin: 0 0 1.5rem; font-size: 1.125rem; }
+        .gmkb-btn-primary:hover { background: #2563eb; color: white; transform: translateY(-1px); }
+        .gmkb-btn-lg { padding: 1rem 1.5rem; font-size: 1rem; }
+        .gmkb-btn-full { width: 100%; }
+        .gmkb-free-note {
+            text-align: center;
+            font-size: 0.8125rem;
+            color: #6b7280;
+            margin: 1rem 0 0;
+        }
+
+        /* Right Panel - Info Cards */
+        .gmkb-panel-right { display: flex; flex-direction: column; gap: 1.5rem; }
+        .gmkb-info-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid #e5e7eb;
+        }
+        .gmkb-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .gmkb-card-header svg { width: 20px; height: 20px; color: #3b82f6; }
+        .gmkb-card-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0;
+            color: #111827;
+        }
+
+        /* Formula Card */
+        .gmkb-formula-card { background: #fffbeb; border-color: #fef3c7; }
+        .gmkb-formula-card .gmkb-card-header { border-color: #fde68a; }
+        .gmkb-formula-card .gmkb-card-header svg { color: #f59e0b; }
+        .gmkb-formula-text {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #92400e;
+            line-height: 1.6;
+            font-style: italic;
+        }
+
+        /* Examples Card */
+        .gmkb-examples-list { display: flex; flex-direction: column; gap: 1rem; }
+        .gmkb-example {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        .gmkb-example h4 {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: #3b82f6;
+            margin: 0 0 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+        .gmkb-example p {
+            font-size: 0.875rem;
+            color: #374151;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        /* Tips Card */
+        .gmkb-tips-card .gmkb-tips-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .gmkb-tips-card .gmkb-tips-list li {
+            padding: 0.625rem 0 0.625rem 1.75rem;
+            position: relative;
+            font-size: 0.875rem;
+            color: #374151;
+            line-height: 1.5;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .gmkb-tips-card .gmkb-tips-list li:last-child { border-bottom: none; }
+        .gmkb-tips-card .gmkb-tips-list li::before {
+            content: "💡";
+            position: absolute;
+            left: 0;
+        }
+
+        /* Features Section */
+        .gmkb-features-section {
+            background: #f9fafb;
+            padding: 4rem 0;
+        }
+        .gmkb-features-section h2 {
+            text-align: center;
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin: 0 0 2rem;
+            color: #111827;
+        }
+        .gmkb-features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+        .gmkb-feature-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid #e5e7eb;
+            text-align: center;
+        }
+        .gmkb-feature-icon {
+            width: 48px;
+            height: 48px;
+            background: #eff6ff;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+        }
+        .gmkb-feature-icon svg { width: 24px; height: 24px; color: #3b82f6; }
+        .gmkb-feature-card h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0 0 0.5rem;
+            color: #111827;
+        }
+        .gmkb-feature-card p {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        /* FAQ Section */
+        .gmkb-faq-section {
+            padding: 4rem 0;
+        }
+        .gmkb-faq-section h2 {
+            text-align: center;
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin: 0 0 2rem;
+            color: #111827;
+        }
+        .gmkb-faq-list {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .gmkb-faq-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+        .gmkb-faq-item summary {
+            padding: 1.25rem 1.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #111827;
+        }
+        .gmkb-faq-item summary::-webkit-details-marker { display: none; }
+        .gmkb-faq-item summary::after {
+            content: "+";
+            font-size: 1.25rem;
+            color: #6b7280;
+        }
+        .gmkb-faq-item[open] summary::after { content: "−"; }
+        .gmkb-faq-item[open] summary { border-bottom: 1px solid #e5e7eb; }
+        .gmkb-faq-item p {
+            padding: 1.25rem 1.5rem;
+            margin: 0;
+            color: #6b7280;
+            line-height: 1.6;
+            background: #f9fafb;
+        }
+
+        /* Bottom CTA */
+        .gmkb-bottom-cta {
+            padding: 4rem 2rem;
+            text-align: center;
+            background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+        }
+        .gmkb-bottom-cta h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin: 0 0 0.75rem;
+            color: #111827;
+        }
+        .gmkb-bottom-cta p {
+            color: #6b7280;
+            margin: 0 0 1.5rem;
+            font-size: 1.125rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .gmkb-panel-layout {
+                grid-template-columns: 1fr;
+            }
+            .gmkb-panel-left {
+                position: static;
+                order: 2;
+            }
+            .gmkb-panel-right { order: 1; }
+            .gmkb-hero-content h1 { font-size: 2rem; }
+        }
+        @media (max-width: 640px) {
+            .gmkb-landing-hero { padding: 1.5rem 0 2rem; }
+            .gmkb-hero-icon { width: 48px; height: 48px; }
+            .gmkb-hero-icon svg { width: 24px; height: 24px; }
+            .gmkb-hero-content h1 { font-size: 1.5rem; }
+            .gmkb-hero-subtitle { font-size: 1rem; }
+            .gmkb-hero-benefits { flex-direction: column; align-items: center; }
+            .gmkb-two-panel { padding: 2rem 0; }
+            .gmkb-tool-cta-card { padding: 1.5rem; }
+            .gmkb-features-section, .gmkb-faq-section { padding: 3rem 0; }
+            .gmkb-bottom-cta { padding: 3rem 1rem; }
+        }
         </style>
         <?php
     }
