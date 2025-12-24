@@ -113,6 +113,14 @@ class GMKB_Tool_Discovery {
 
         $this->tools_cache = [];
 
+        // DEBUG: Store discovery info
+        $this->debug_info = array(
+            'tools_path' => $this->tools_path,
+            'path_exists' => is_dir($this->tools_path),
+            'dirs_found' => 0,
+            'tools_with_json' => 0,
+        );
+
         // Check if tools directory exists
         if (!is_dir($this->tools_path)) {
             return $this->tools_cache;
@@ -120,6 +128,7 @@ class GMKB_Tool_Discovery {
 
         // Scan for tool directories (skip _shared and hidden folders)
         $dirs = glob($this->tools_path . '*', GLOB_ONLYDIR);
+        $this->debug_info['dirs_found'] = count($dirs);
 
         foreach ($dirs as $dir) {
             $dir_name = basename($dir);
@@ -132,6 +141,7 @@ class GMKB_Tool_Discovery {
             $tool_json = $dir . '/tool.json';
 
             if (file_exists($tool_json)) {
+                $this->debug_info['tools_with_json']++;
                 $json_content = file_get_contents($tool_json);
                 $tool_config = json_decode($json_content, true);
 
@@ -160,6 +170,16 @@ class GMKB_Tool_Discovery {
      */
     public function get_all_tools() {
         return array_values($this->discover_tools());
+    }
+
+    /**
+     * Get debug info about tool discovery
+     *
+     * @return array Debug information
+     */
+    public function get_debug_info() {
+        $this->discover_tools(); // Ensure discovery has run
+        return isset($this->debug_info) ? $this->debug_info : array();
     }
 
     /**

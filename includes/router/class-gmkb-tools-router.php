@@ -403,15 +403,22 @@ get_footer();
 
         $grouped = $discovery->get_tools_grouped_by_category();
         $all_tools = $discovery->get_all_tools();
+        $debug = method_exists($discovery, 'get_debug_info') ? $discovery->get_debug_info() : array();
         ?>
         <div class="gmkb-tools-directory">
             <div class="gmkb-container">
                 <header class="gmkb-directory-header">
                     <h1>Free AI Tools for Speakers & Authors</h1>
                     <p>Professional content generation tools to build your brand and grow your audience.</p>
-                    <p style="background:#fef3c7;padding:1rem;border-radius:8px;margin-top:1rem;">
-                        <strong>DEBUG:</strong> <?php echo count($all_tools); ?> tools found in <?php echo count($grouped); ?> categories
-                    </p>
+                    <div style="background:#fef3c7;padding:1rem;border-radius:8px;margin-top:1rem;text-align:left;font-size:12px;font-family:monospace;">
+                        <strong>DEBUG:</strong><br>
+                        Tools found: <?php echo count($all_tools); ?><br>
+                        Categories: <?php echo count($grouped); ?><br>
+                        Path: <?php echo esc_html($debug['tools_path'] ?? 'N/A'); ?><br>
+                        Path exists: <?php echo ($debug['path_exists'] ?? false) ? 'YES' : 'NO'; ?><br>
+                        Dirs found: <?php echo $debug['dirs_found'] ?? 0; ?><br>
+                        With tool.json: <?php echo $debug['tools_with_json'] ?? 0; ?>
+                    </div>
                 </header>
 
                 <?php foreach ($grouped as $category_slug => $category): ?>
