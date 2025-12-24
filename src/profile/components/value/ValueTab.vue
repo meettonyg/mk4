@@ -78,15 +78,6 @@
                         <div v-else class="empty-offers">
                             <p class="empty-text">No offers linked yet. Click edit to add offers.</p>
                         </div>
-
-                        <div class="cta-container">
-                            <h3 class="cta-title">Ready to convert listeners?</h3>
-                            <p class="cta-description">Create compelling offers that turn listeners into leads</p>
-                            <a :href="offerGeneratorUrl" target="_blank" class="ai-cta-button">
-                                <AiSparkleIcon :size="16" />
-                                Create Offers with AI
-                            </a>
-                        </div>
                     </template>
 
                     <template #edit>
@@ -694,28 +685,6 @@ const saveOffersSection = async () => {
     margin: 12px 0 0;
     font-size: 12px;
     color: #6b7280;
-}
-
-/* CTA Container */
-.cta-container {
-    margin-top: 20px;
-    padding: 20px;
-    text-align: center;
-    background-color: #f8fafc;
-    border-radius: 8px;
-}
-
-.cta-title {
-    font-size: 16px;
-    font-weight: 600;
-    margin: 0 0 8px 0;
-    color: #0f172a;
-}
-
-.cta-description {
-    font-size: 14px;
-    color: #64748b;
-    margin: 0 0 16px 0;
 }
 
 .button {
