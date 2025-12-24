@@ -134,7 +134,14 @@
                     <template #display>
                         <div class="text-area">
                             <div v-if="store.fields.authority_hook" v-html="store.fields.authority_hook"></div>
-                            <p v-else class="empty-text">No authority hook defined</p>
+                            <div v-else class="empty-text">
+                                <p>No authority hook defined</p>
+                                <p>
+                                    <a :href="authorityHookBuilderUrl" target="_blank">
+                                        🤖 Create your Authority Hook with AI
+                                    </a>
+                                </p>
+                            </div>
                         </div>
                     </template>
 
@@ -164,7 +171,14 @@
                     <template #display>
                         <div class="text-area">
                             <div v-if="store.fields.impact_intro" v-html="store.fields.impact_intro"></div>
-                            <p v-else class="empty-text">No impact intro defined</p>
+                            <div v-else class="empty-text">
+                                <p>No impact intro defined</p>
+                                <p>
+                                    <a :href="impactIntroBuilderUrl" target="_blank">
+                                        🤖 Create your Impact Intro with AI
+                                    </a>
+                                </p>
+                            </div>
                         </div>
                     </template>
 
@@ -192,8 +206,10 @@ import EditablePanel from '../layout/EditablePanel.vue';
 
 const store = useProfileStore();
 
-// URL constants
+// URL constants for AI tools
 const BIOGRAPHY_GENERATOR_BASE_URL = '/app/biography-generator/';
+const AUTHORITY_HOOK_BUILDER_URL = '/tools/authority-hook-builder/tool/';
+const IMPACT_INTRO_BUILDER_URL = '/tools/impact-intro-builder/tool/';
 
 // Generate dynamic URLs with entry parameter
 const biographyGeneratorUrl = computed(() => {
@@ -202,6 +218,14 @@ const biographyGeneratorUrl = computed(() => {
         return `${BIOGRAPHY_GENERATOR_BASE_URL}?frm_action=edit&entry=${entry}`;
     }
     return BIOGRAPHY_GENERATOR_BASE_URL;
+});
+
+const authorityHookBuilderUrl = computed(() => {
+    return AUTHORITY_HOOK_BUILDER_URL;
+});
+
+const impactIntroBuilderUrl = computed(() => {
+    return IMPACT_INTRO_BUILDER_URL;
 });
 
 // Edit state
