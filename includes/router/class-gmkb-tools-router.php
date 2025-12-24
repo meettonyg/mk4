@@ -636,7 +636,8 @@ get_footer();
                     <!-- Left Panel: Tool Form -->
                     <div class="gmkb-app-main">
                         <div class="gmkb-tool-form-wrapper">
-                            <?php echo do_shortcode('[gmkb_tool tool="' . esc_attr($tool['id']) . '" show_title="false"]'); ?>
+                            <!-- Direct data attribute for Vue auto-mounting -->
+                            <div data-gmkb-tool="<?php echo esc_attr($tool['id']); ?>" class="gmkb-tool-mount"></div>
                         </div>
                     </div>
 
@@ -733,10 +734,13 @@ get_footer();
                 );
             }
 
-            // Localize script data
+            // Localize script data - provide both variable names for compatibility
             $is_logged_in = is_user_logged_in();
+            $public_nonce = wp_create_nonce('gmkb_public_ai');
+
             $data = array(
-                'nonce' => wp_create_nonce('gmkb_public_ai'),
+                'nonce' => $public_nonce,
+                'publicNonce' => $public_nonce,
                 'apiBase' => rest_url('gmkb/v2'),
                 'ajaxUrl' => admin_url('admin-ajax.php'),
                 'isLoggedIn' => $is_logged_in,
@@ -750,7 +754,12 @@ get_footer();
                 $data['profileEndpoint'] = rest_url('gmkb/v2/profile');
             }
 
+            // Provide multiple variable names for bundle compatibility
             wp_localize_script('gmkb-standalone-tools', 'gmkbStandaloneTools', $data);
+            wp_localize_script('gmkb-standalone-tools', 'gmkbPublicData', $data);
+
+            // Add inline script to set gmkbPublicNonce for bundle auto-initialization
+            wp_add_inline_script('gmkb-standalone-tools', 'window.gmkbPublicNonce = "' . esc_js($public_nonce) . '";', 'before');
         }
     }
 
