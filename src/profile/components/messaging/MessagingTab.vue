@@ -104,6 +104,12 @@
                     @save="saveSection"
                     @cancel="cancelEditing"
                 >
+                    <template #header-action>
+                        <a :href="taglineGeneratorUrl" target="_blank" class="header-ai-link" title="Generate with AI">
+                            <AiSparkleIcon :size="14" />
+                        </a>
+                    </template>
+
                     <template #display>
                         <div class="text-area">
                             <p>{{ store.fields.tagline || '—' }}</p>
@@ -214,6 +220,7 @@ const store = useProfileStore();
 // URL constants
 const BIOGRAPHY_GENERATOR_BASE_URL = '/app/biography-generator/';
 const GUEST_INTRO_GENERATOR_BASE_URL = '/app/guest-intro-generator/';
+const TAGLINE_GENERATOR_BASE_URL = '/app/tagline-generator/';
 const AUTHORITY_HOOK_BUILDER_BASE_URL = '/app/authority-hook-builder/';
 const IMPACT_INTRO_BUILDER_BASE_URL = '/app/impact-intro-builder/';
 
@@ -228,6 +235,7 @@ const buildToolUrl = (baseUrl) => {
 
 const biographyGeneratorUrl = computed(() => buildToolUrl(BIOGRAPHY_GENERATOR_BASE_URL));
 const guestIntroGeneratorUrl = computed(() => buildToolUrl(GUEST_INTRO_GENERATOR_BASE_URL));
+const taglineGeneratorUrl = computed(() => buildToolUrl(TAGLINE_GENERATOR_BASE_URL));
 const authorityHookBuilderUrl = computed(() => buildToolUrl(AUTHORITY_HOOK_BUILDER_BASE_URL));
 const impactIntroBuilderUrl = computed(() => buildToolUrl(IMPACT_INTRO_BUILDER_BASE_URL));
 

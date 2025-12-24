@@ -6,6 +6,14 @@
                 <div class="panel">
                     <div class="panel-header">
                         <h2 class="panel-title">Topics & Questions</h2>
+                        <div class="header-actions">
+                            <a :href="topicsGeneratorUrl" target="_blank" class="header-ai-link" title="Generate Topics with AI">
+                                <AiSparkleIcon :size="14" />
+                            </a>
+                            <a :href="questionsGeneratorUrl" target="_blank" class="header-ai-link" title="Generate Questions with AI">
+                                <AiSparkleIcon :size="14" />
+                            </a>
+                        </div>
                     </div>
                     <div class="panel-content">
                         <p class="topics-intro">
@@ -202,15 +210,21 @@ const {
 
 // URL constants
 const OFFER_GENERATOR_BASE_URL = '/app/offers-generator/';
+const TOPICS_GENERATOR_BASE_URL = '/app/topics-generator/';
+const QUESTIONS_GENERATOR_BASE_URL = '/app/questions-generator/';
 
-// Generate offer generator URL with entry parameter
-const offerGeneratorUrl = computed(() => {
+// Generate dynamic URLs with entry parameter
+const buildToolUrl = (baseUrl) => {
     const entry = store.postData?.slug;
     if (entry) {
-        return `${OFFER_GENERATOR_BASE_URL}?frm_action=edit&entry=${entry}`;
+        return `${baseUrl}?frm_action=edit&entry=${entry}`;
     }
-    return OFFER_GENERATOR_BASE_URL;
-});
+    return baseUrl;
+};
+
+const offerGeneratorUrl = computed(() => buildToolUrl(OFFER_GENERATOR_BASE_URL));
+const topicsGeneratorUrl = computed(() => buildToolUrl(TOPICS_GENERATOR_BASE_URL));
+const questionsGeneratorUrl = computed(() => buildToolUrl(QUESTIONS_GENERATOR_BASE_URL));
 
 // Edit state
 const editingTopic = ref(null);
@@ -449,6 +463,9 @@ const saveOffersSection = async () => {
 .panel-header {
     padding: 16px 20px;
     border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .panel-title {
@@ -456,6 +473,12 @@ const saveOffersSection = async () => {
     font-weight: 600;
     margin: 0;
     color: #0f172a;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .panel-content {
