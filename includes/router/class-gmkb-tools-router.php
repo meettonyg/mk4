@@ -611,7 +611,6 @@ get_footer();
             return;
         }
 
-        $landing = $meta['landingContent'] ?? array();
         $icon = $tool['icon'] ?? 'SparklesIcon';
         ?>
         <div class="gmkb-tool-app">
@@ -631,64 +630,9 @@ get_footer();
                     </div>
                 </header>
 
-                <!-- Two Panel Layout -->
-                <div class="gmkb-app-layout">
-                    <!-- Left Panel: Tool Form -->
-                    <div class="gmkb-app-main">
-                        <div class="gmkb-tool-form-wrapper">
-                            <!-- Direct data attribute for Vue auto-mounting -->
-                            <div data-gmkb-tool="<?php echo esc_attr($tool['id']); ?>" class="gmkb-tool-mount"></div>
-                        </div>
-                    </div>
-
-                    <!-- Right Panel: Guidance -->
-                    <aside class="gmkb-app-sidebar">
-                        <h2 class="gmkb-guidance-header">Crafting Your <?php echo esc_html($meta['name']); ?></h2>
-                        <p class="gmkb-guidance-subtitle"><?php echo esc_html($meta['shortDescription'] ?? ''); ?></p>
-
-                        <?php if (!empty($landing['formula'])): ?>
-                        <div class="gmkb-formula-box">
-                            <span class="gmkb-formula-label">FORMULA</span>
-                            <?php echo $this->format_formula($landing['formula']); ?>
-                        </div>
-                        <?php endif; ?>
-
-                        <?php if (!empty($landing['howItWorks'])): ?>
-                        <?php foreach ($landing['howItWorks'] as $step): ?>
-                        <div class="gmkb-process-step">
-                            <div class="gmkb-process-icon">
-                                <?php echo $this->get_step_icon($step['step']); ?>
-                            </div>
-                            <div class="gmkb-process-content">
-                                <h3 class="gmkb-process-title"><?php echo esc_html($step['title']); ?></h3>
-                                <p class="gmkb-process-description"><?php echo esc_html($step['description']); ?></p>
-                            </div>
-                        </div>
-                        <?php endforeach; ?>
-                        <?php endif; ?>
-
-                        <?php if (!empty($landing['examples'])): ?>
-                        <h3 class="gmkb-examples-header">Examples:</h3>
-                        <?php foreach ($landing['examples'] as $example): ?>
-                        <div class="gmkb-example-card">
-                            <strong><?php echo esc_html($example['title']); ?>:</strong>
-                            <p><?php echo esc_html($example['content']); ?></p>
-                        </div>
-                        <?php endforeach; ?>
-                        <?php endif; ?>
-
-                        <?php if (!empty($landing['tips'])): ?>
-                        <h3 class="gmkb-examples-header">Pro Tips:</h3>
-                        <div class="gmkb-tips-box">
-                            <?php foreach ($landing['tips'] as $tip): ?>
-                            <div class="gmkb-tip-item">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="gmkb-tip-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18"/></svg>
-                                <span><?php echo esc_html($tip); ?></span>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
-                        <?php endif; ?>
-                    </aside>
+                <!-- Vue Component Mount Point - Component handles its own layout -->
+                <div class="gmkb-tool-wrapper">
+                    <div data-gmkb-tool="<?php echo esc_attr($tool['id']); ?>" class="gmkb-tool-mount"></div>
                 </div>
             </div>
         </div>
@@ -1133,207 +1077,17 @@ get_footer();
             font-size: 0.9375rem;
         }
 
-        /* Two Panel Layout */
-        .gmkb-app-layout {
-            display: grid;
-            grid-template-columns: 1fr 420px;
-            gap: 2.5rem;
-            align-items: start;
-        }
-
-        /* Left Panel - Tool Form */
-        .gmkb-app-main { }
-        .gmkb-tool-form-wrapper {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            border: 1px solid #e5e7eb;
-            padding: 1.5rem;
-        }
-
-        /* Right Panel - Guidance Sidebar */
-        .gmkb-app-sidebar {
-            position: sticky;
-            top: 2rem;
-            background: #f8fafc;
-            border-radius: 16px;
-            padding: 1.75rem;
-            border: 1px solid #e2e8f0;
-        }
-
-        /* Guidance Header */
-        .gmkb-guidance-header {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: #1e293b;
-            margin: 0 0 0.5rem;
-            line-height: 1.3;
-        }
-        .gmkb-guidance-subtitle {
-            color: #64748b;
-            font-size: 0.9375rem;
-            line-height: 1.5;
-            margin: 0 0 1.5rem;
-        }
-
-        /* Formula Box */
-        .gmkb-formula-box {
-            background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
-            border: 1px solid #fde047;
-            border-radius: 12px;
-            padding: 1.25rem;
-            margin-bottom: 1.5rem;
-            font-size: 0.9375rem;
-            line-height: 1.6;
-            color: #713f12;
-        }
-        .gmkb-formula-label {
-            display: inline-block;
-            background: #eab308;
-            color: white;
-            font-size: 0.6875rem;
-            font-weight: 700;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            margin-bottom: 0.75rem;
-            letter-spacing: 0.05em;
-        }
-        .gmkb-highlight {
-            background: rgba(234, 179, 8, 0.3);
-            padding: 0.125rem 0.25rem;
-            border-radius: 4px;
-            font-weight: 600;
-        }
-
-        /* Process Steps */
-        .gmkb-process-step {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.25rem;
-            padding-bottom: 1.25rem;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        .gmkb-process-step:last-of-type {
-            margin-bottom: 1.5rem;
-        }
-        .gmkb-process-icon {
-            width: 44px;
-            height: 44px;
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-        .gmkb-process-icon svg {
-            width: 22px;
-            height: 22px;
-            color: white;
-        }
-        .gmkb-process-content {
-            flex: 1;
-        }
-        .gmkb-process-title {
-            font-size: 0.9375rem;
-            font-weight: 600;
-            color: #1e293b;
-            margin: 0 0 0.375rem;
-        }
-        .gmkb-process-description {
-            font-size: 0.8125rem;
-            color: #64748b;
-            line-height: 1.5;
-            margin: 0;
-        }
-
-        /* Examples Header */
-        .gmkb-examples-header {
-            font-size: 0.9375rem;
-            font-weight: 600;
-            color: #1e293b;
-            margin: 0 0 0.875rem;
-        }
-
-        /* Example Cards */
-        .gmkb-example-card {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
-        }
-        .gmkb-example-card:last-of-type {
-            margin-bottom: 1.5rem;
-        }
-        .gmkb-example-card strong {
-            display: block;
-            font-size: 0.8125rem;
-            font-weight: 600;
-            color: #3b82f6;
-            margin-bottom: 0.375rem;
-        }
-        .gmkb-example-card p {
-            font-size: 0.8125rem;
-            color: #475569;
-            line-height: 1.5;
-            margin: 0;
-        }
-
-        /* Tips Box */
-        .gmkb-tips-box {
-            background: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            border-radius: 10px;
-            padding: 1rem;
-        }
-        .gmkb-tip-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.625rem;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid #dcfce7;
-        }
-        .gmkb-tip-item:last-child {
-            border-bottom: none;
-            padding-bottom: 0;
-        }
-        .gmkb-tip-item:first-child {
-            padding-top: 0;
-        }
-        .gmkb-tip-icon {
-            width: 16px;
-            height: 16px;
-            color: #22c55e;
-            flex-shrink: 0;
-            margin-top: 0.125rem;
-        }
-        .gmkb-tip-item span {
-            font-size: 0.8125rem;
-            color: #166534;
-            line-height: 1.45;
+        /* Tool Wrapper - Vue component handles its own layout */
+        .gmkb-tool-wrapper {
+            /* Let Vue component control the layout */
         }
 
         /* Responsive */
-        @media (max-width: 1100px) {
-            .gmkb-app-layout {
-                grid-template-columns: 1fr;
-            }
-            .gmkb-app-sidebar {
-                position: static;
-            }
-        }
         @media (max-width: 640px) {
             .gmkb-header-title { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
             .gmkb-header-icon { width: 40px; height: 40px; }
             .gmkb-header-icon svg { width: 20px; height: 20px; }
             .gmkb-header-title h1 { font-size: 1.25rem; }
-            .gmkb-tool-form-wrapper { padding: 1rem; }
-            .gmkb-app-sidebar { padding: 1.25rem; }
-            .gmkb-guidance-header { font-size: 1.125rem; }
-            .gmkb-process-step { flex-direction: column; gap: 0.75rem; }
-            .gmkb-process-icon { width: 36px; height: 36px; }
-            .gmkb-process-icon svg { width: 18px; height: 18px; }
         }
         </style>
         <?php
