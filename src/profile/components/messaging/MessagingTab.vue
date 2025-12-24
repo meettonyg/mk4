@@ -70,7 +70,7 @@
                                     Click edit to add your Podcast Intro to make it easy for hosts
                                     to book and introduce you on their show.
                                 </p>
-                                <a href="/app/message-builder/message-builder-ai/#intro" target="_blank" class="ai-link">
+                                <a :href="guestIntroGeneratorUrl" target="_blank" class="ai-link">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
                                         <path d="M20 3v4"/>
@@ -146,7 +146,7 @@
                             <div v-if="store.fields.authority_hook" v-html="store.fields.authority_hook"></div>
                             <div v-else class="empty-text">
                                 <p>No authority hook defined</p>
-                                <a href="/app/message-builder/message-builder-ai/#authority" target="_blank" class="ai-link">
+                                <a :href="authorityHookBuilderUrl" target="_blank" class="ai-link">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
                                         <path d="M20 3v4"/>
@@ -188,7 +188,7 @@
                             <div v-if="store.fields.impact_intro" v-html="store.fields.impact_intro"></div>
                             <div v-else class="empty-text">
                                 <p>No impact intro defined</p>
-                                <a href="/app/message-builder/message-builder-ai/#impact" target="_blank" class="ai-link">
+                                <a :href="impactIntroBuilderUrl" target="_blank" class="ai-link">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
                                         <path d="M20 3v4"/>
@@ -228,15 +228,23 @@ const store = useProfileStore();
 
 // URL constants
 const BIOGRAPHY_GENERATOR_BASE_URL = '/app/biography-generator/';
+const GUEST_INTRO_GENERATOR_BASE_URL = '/app/guest-intro-generator/';
+const AUTHORITY_HOOK_BUILDER_BASE_URL = '/app/authority-hook-builder/';
+const IMPACT_INTRO_BUILDER_BASE_URL = '/app/impact-intro-builder/';
 
 // Generate dynamic URLs with entry parameter
-const biographyGeneratorUrl = computed(() => {
+const buildToolUrl = (baseUrl) => {
     const entry = store.postData?.slug;
     if (entry) {
-        return `${BIOGRAPHY_GENERATOR_BASE_URL}?frm_action=edit&entry=${entry}`;
+        return `${baseUrl}?frm_action=edit&entry=${entry}`;
     }
-    return BIOGRAPHY_GENERATOR_BASE_URL;
-});
+    return baseUrl;
+};
+
+const biographyGeneratorUrl = computed(() => buildToolUrl(BIOGRAPHY_GENERATOR_BASE_URL));
+const guestIntroGeneratorUrl = computed(() => buildToolUrl(GUEST_INTRO_GENERATOR_BASE_URL));
+const authorityHookBuilderUrl = computed(() => buildToolUrl(AUTHORITY_HOOK_BUILDER_BASE_URL));
+const impactIntroBuilderUrl = computed(() => buildToolUrl(IMPACT_INTRO_BUILDER_BASE_URL));
 
 // Edit state
 const editingSection = ref(null);

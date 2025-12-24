@@ -215,7 +215,7 @@ const {
 } = useOffers();
 
 // URL constants
-const OFFER_GENERATOR_BASE_URL = '/app/offer-generator/';
+const OFFER_GENERATOR_BASE_URL = '/app/offers-generator/';
 
 // Generate offer generator URL with entry parameter
 const offerGeneratorUrl = computed(() => {
