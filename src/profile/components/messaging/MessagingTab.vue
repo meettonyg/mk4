@@ -236,8 +236,12 @@ const formatWithLineBreaks = (text) => {
     if (!text) return '';
     // If text already has HTML tags (like <p>), return as-is
     if (/<[^>]+>/.test(text)) return text;
-    // Otherwise, convert newlines to <br> tags
-    return text.replace(/\n/g, '<br>');
+    // Convert double newlines to paragraph breaks, single newlines to <br>
+    const paragraphs = text
+        .split(/\n\n+/)
+        .map(para => para.trim().replace(/\n/g, '<br>'))
+        .filter(para => para);
+    return '<p>' + paragraphs.join('</p><p>') + '</p>';
 };
 
 // Edit state
@@ -370,7 +374,15 @@ const saveSection = async (sectionId) => {
 
 /* Preserve line breaks in text content */
 .preserve-lines {
-    white-space: pre-wrap;
+    line-height: 1.6;
+}
+
+.preserve-lines p {
+    margin: 0 0 1em 0;
+}
+
+.preserve-lines p:last-child {
+    margin-bottom: 0;
 }
 
 /* Info icon and AI link styles are in profile.css */
