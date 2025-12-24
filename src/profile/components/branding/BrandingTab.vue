@@ -90,7 +90,7 @@
                         </div>
                     </template>
                     <div v-else class="empty-text">
-                        <i class="info-icon fas fa-info-circle"></i>
+                        <span class="info-icon">i</span>
                         Personalize your one sheet with your own unique branding.
                     </div>
                 </div>
@@ -252,7 +252,7 @@
                         </div>
                     </template>
                     <div v-else class="empty-text">
-                        <i class="info-icon fas fa-info-circle"></i>
+                        <span class="info-icon">i</span>
                         Personalize your one sheet with a logo carousel
                     </div>
                 </div>
@@ -277,7 +277,7 @@
             </div>
             <div class="panel-content">
                 <p class="layout-info">
-                    <i class="info-icon fas fa-info-circle"></i>
+                    <span class="info-icon">i</span>
                     <a :href="layoutSelectorUrl" target="_blank">
                         Personalize your one sheet with your own unique layout.
                     </a>
@@ -713,7 +713,18 @@ const removeGalleryItem = (fieldName, index) => {
 }
 
 .info-icon {
-    margin-right: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 600;
+    font-style: normal;
+    margin-right: 6px;
 }
 
 /* Edit note */

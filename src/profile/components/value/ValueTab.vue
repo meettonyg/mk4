@@ -76,7 +76,14 @@
                         <div class="cta-container">
                             <h3 class="cta-title">Ready to convert listeners?</h3>
                             <p class="cta-description">Create compelling offers that turn listeners into leads</p>
-                            <a :href="offerGeneratorUrl" target="_blank" class="button primary-button">
+                            <a :href="offerGeneratorUrl" target="_blank" class="ai-cta-button">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
+                                    <path d="M20 3v4"/>
+                                    <path d="M22 5h-4"/>
+                                    <path d="M4 17v2"/>
+                                    <path d="M5 18H3"/>
+                                </svg>
                                 Create Offers with AI
                             </a>
                         </div>
@@ -92,7 +99,14 @@
 
                             <div v-else-if="availableOffers.length === 0" class="empty-state">
                                 <p>No offers found. Create offers first using the AI offer generator.</p>
-                                <a :href="offerGeneratorUrl" target="_blank" class="create-link">
+                                <a :href="offerGeneratorUrl" target="_blank" class="ai-link">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
+                                        <path d="M20 3v4"/>
+                                        <path d="M22 5h-4"/>
+                                        <path d="M4 17v2"/>
+                                        <path d="M5 18H3"/>
+                                    </svg>
                                     Create Offers with AI
                                 </a>
                             </div>
@@ -576,19 +590,61 @@ const saveOffersSection = async () => {
     color: #6b7280;
 }
 
-.create-link {
-    display: inline-block;
-    padding: 8px 16px;
-    background: #14b8a6;
-    color: #fff;
-    text-decoration: none;
-    border-radius: 6px;
-    font-size: 14px;
+/* AI Link styling */
+.ai-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: linear-gradient(135deg, #f0f9ff 0%, #faf5ff 100%);
+    border: 1px solid #e0e7ff;
+    border-radius: 8px;
+    color: #6366f1;
+    font-size: 13px;
     font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
 }
 
-.create-link:hover {
-    background: #0d9488;
+.ai-link:hover {
+    background: linear-gradient(135deg, #e0f2fe 0%, #f3e8ff 100%);
+    border-color: #c7d2fe;
+    color: #4f46e5;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+    text-decoration: none;
+}
+
+.ai-link svg {
+    flex-shrink: 0;
+}
+
+/* AI CTA Button styling */
+.ai-cta-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+}
+
+.ai-cta-button:hover {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    text-decoration: none;
+}
+
+.ai-cta-button svg {
+    flex-shrink: 0;
 }
 
 /* Search box */

@@ -75,7 +75,7 @@
                         <div class="text-area">
                             <p v-if="store.fields.why_book_you" v-html="store.fields.why_book_you"></p>
                             <p v-else class="empty-text">
-                                <i class="info-icon fas fa-info-circle"></i>
+                                <span class="info-icon">i</span>
                                 Click the edit button to share what makes you unique
                             </p>
                         </div>
@@ -787,7 +787,18 @@ const truncateText = (text, maxLength) => {
 }
 
 .info-icon {
-    margin-right: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 600;
+    font-style: normal;
+    margin-right: 6px;
 }
 
 /* Links list */
