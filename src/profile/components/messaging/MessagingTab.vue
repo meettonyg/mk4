@@ -13,19 +13,21 @@
                     @save="saveSection"
                     @cancel="cancelEditing"
                 >
+                    <template #header-action>
+                        <a :href="biographyGeneratorUrl" target="_blank" class="header-ai-link" title="Generate with AI">
+                            <AiSparkleIcon :size="14" />
+                        </a>
+                    </template>
+
                     <template #display>
                         <div class="text-area">
-                            <div v-if="store.fields.biography" v-html="store.fields.biography"></div>
+                            <div v-if="store.fields.biography" class="preserve-lines" v-html="formatWithLineBreaks(store.fields.biography)"></div>
                             <div v-else class="empty-text">
                                 <p>
                                     <span class="info-icon">i</span>
                                     Your biography demonstrates your value to podcast hosts through your expertise,
                                     stories and results that you share.
                                 </p>
-                                <a :href="biographyGeneratorUrl" target="_blank" class="ai-link">
-                                    <AiSparkleIcon :size="16" />
-                                    Create your Podcast Biography with AI
-                                </a>
                             </div>
                         </div>
                     </template>
@@ -55,19 +57,21 @@
                     @save="saveSection"
                     @cancel="cancelEditing"
                 >
+                    <template #header-action>
+                        <a :href="guestIntroGeneratorUrl" target="_blank" class="header-ai-link" title="Generate with AI">
+                            <AiSparkleIcon :size="14" />
+                        </a>
+                    </template>
+
                     <template #display>
                         <div class="text-area">
-                            <div v-if="store.fields.podcast_intro" v-html="store.fields.podcast_intro"></div>
+                            <div v-if="store.fields.podcast_intro" class="preserve-lines" v-html="formatWithLineBreaks(store.fields.podcast_intro)"></div>
                             <div v-else class="empty-text">
                                 <p>
                                     <span class="info-icon">i</span>
                                     Click edit to add your Podcast Intro to make it easy for hosts
                                     to book and introduce you on their show.
                                 </p>
-                                <a :href="guestIntroGeneratorUrl" target="_blank" class="ai-link">
-                                    <AiSparkleIcon :size="16" />
-                                    Create your Podcast Intro with AI
-                                </a>
                             </div>
                         </div>
                     </template>
@@ -129,15 +133,17 @@
                     @save="saveSection"
                     @cancel="cancelEditing"
                 >
+                    <template #header-action>
+                        <a :href="authorityHookBuilderUrl" target="_blank" class="header-ai-link" title="Generate with AI">
+                            <AiSparkleIcon :size="14" />
+                        </a>
+                    </template>
+
                     <template #display>
                         <div class="text-area">
-                            <div v-if="store.fields.authority_hook" v-html="store.fields.authority_hook"></div>
+                            <div v-if="store.fields.authority_hook" class="preserve-lines" v-html="formatWithLineBreaks(store.fields.authority_hook)"></div>
                             <div v-else class="empty-text">
                                 <p>No authority hook defined</p>
-                                <a :href="authorityHookBuilderUrl" target="_blank" class="ai-link">
-                                    <AiSparkleIcon :size="16" />
-                                    Create your Authority Hook with AI
-                                </a>
                             </div>
                         </div>
                     </template>
@@ -165,15 +171,17 @@
                     @save="saveSection"
                     @cancel="cancelEditing"
                 >
+                    <template #header-action>
+                        <a :href="impactIntroBuilderUrl" target="_blank" class="header-ai-link" title="Generate with AI">
+                            <AiSparkleIcon :size="14" />
+                        </a>
+                    </template>
+
                     <template #display>
                         <div class="text-area">
-                            <div v-if="store.fields.impact_intro" v-html="store.fields.impact_intro"></div>
+                            <div v-if="store.fields.impact_intro" class="preserve-lines" v-html="formatWithLineBreaks(store.fields.impact_intro)"></div>
                             <div v-else class="empty-text">
                                 <p>No impact intro defined</p>
-                                <a :href="impactIntroBuilderUrl" target="_blank" class="ai-link">
-                                    <AiSparkleIcon :size="16" />
-                                    Create your Impact Intro with AI
-                                </a>
                             </div>
                         </div>
                     </template>
@@ -222,6 +230,15 @@ const biographyGeneratorUrl = computed(() => buildToolUrl(BIOGRAPHY_GENERATOR_BA
 const guestIntroGeneratorUrl = computed(() => buildToolUrl(GUEST_INTRO_GENERATOR_BASE_URL));
 const authorityHookBuilderUrl = computed(() => buildToolUrl(AUTHORITY_HOOK_BUILDER_BASE_URL));
 const impactIntroBuilderUrl = computed(() => buildToolUrl(IMPACT_INTRO_BUILDER_BASE_URL));
+
+// Helper to preserve line breaks in text
+const formatWithLineBreaks = (text) => {
+    if (!text) return '';
+    // If text already has HTML tags (like <p>), return as-is
+    if (/<[^>]+>/.test(text)) return text;
+    // Otherwise, convert newlines to <br> tags
+    return text.replace(/\n/g, '<br>');
+};
 
 // Edit state
 const editingSection = ref(null);
@@ -329,6 +346,31 @@ const saveSection = async (sectionId) => {
 
 .empty-text a:hover {
     text-decoration: underline;
+}
+
+/* Header AI link */
+.header-ai-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    color: #8b5cf6;
+    background: linear-gradient(135deg, #f5f3ff 0%, #fdf4ff 100%);
+    border: 1px solid #e9d5ff;
+    transition: all 0.2s ease;
+}
+
+.header-ai-link:hover {
+    background: linear-gradient(135deg, #ede9fe 0%, #fae8ff 100%);
+    border-color: #d8b4fe;
+    transform: scale(1.05);
+}
+
+/* Preserve line breaks in text content */
+.preserve-lines {
+    white-space: pre-wrap;
 }
 
 /* Info icon and AI link styles are in profile.css */

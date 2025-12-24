@@ -2,20 +2,24 @@
     <div class="panel" :class="{ editing: isEditing }">
         <div class="panel-header">
             <h2 class="panel-title">{{ title }}</h2>
-            <button
-                class="edit-button"
-                @click="toggleEdit"
-                :title="isEditing ? 'Cancel editing' : 'Edit'"
-            >
-                <CloseIcon v-if="isEditing" :size="16" />
-                <EditIcon v-else :size="16" />
-            </button>
+            <div class="header-actions">
+                <slot name="header-action" />
+            </div>
         </div>
 
         <div class="panel-content">
             <!-- Display Mode -->
-            <div v-if="!isEditing" class="display-content">
-                <slot name="display" />
+            <div v-if="!isEditing" class="display-content" @click="handleContentClick">
+                <div class="content-wrapper">
+                    <slot name="display" />
+                    <button
+                        class="edit-button-inline"
+                        @click.stop="toggleEdit"
+                        title="Edit"
+                    >
+                        <EditIcon :size="14" />
+                    </button>
+                </div>
             </div>
 
             <!-- Edit Mode -->
@@ -45,8 +49,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
-import { EditIcon, CloseIcon } from '../icons';
+import { EditIcon } from '../icons';
 
 const props = defineProps({
     title: {
@@ -70,10 +73,13 @@ const props = defineProps({
 const emit = defineEmits(['edit', 'save', 'cancel']);
 
 const toggleEdit = () => {
-    if (props.isEditing) {
-        emit('cancel');
-    } else {
-        emit('edit', props.sectionId);
+    emit('edit', props.sectionId);
+};
+
+const handleContentClick = (e) => {
+    // Allow clicking on content area to edit (but not links)
+    if (e.target.tagName !== 'A') {
+        // Don't auto-edit on content click - only via icon
     }
 };
 
@@ -103,61 +109,72 @@ const handleCancel = () => {
 }
 
 .panel-header {
-    padding: 16px 20px;
+    padding: 12px 20px;
     border-bottom: 1px solid #f1f5f9;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    background: #f8fafc;
 }
 
 .panel-title {
-    font-size: 16px;
+    font-size: 12px;
     font-weight: 600;
     margin: 0;
-    color: #0f172a;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.edit-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #64748b;
-    padding: 6px;
-    border-radius: 6px;
-    transition: all 0.2s ease;
-    opacity: 0;
-    transform: translateX(8px);
+.header-actions {
     display: flex;
     align-items: center;
-    justify-content: center;
-}
-
-.panel-header:hover .edit-button,
-.panel.editing .edit-button {
-    opacity: 1;
-    transform: translateX(0);
-}
-
-.edit-button:hover {
-    background: #f1f5f9;
-    color: #0f172a;
-}
-
-.panel.editing .edit-button {
-    color: #ef4444;
-}
-
-.panel.editing .edit-button:hover {
-    background: #fef2f2;
-    color: #dc2626;
+    gap: 8px;
 }
 
 .panel-content {
-    padding: 20px;
+    padding: 16px 20px;
 }
 
 .display-content {
-    min-height: 40px;
+    min-height: 24px;
+    cursor: default;
+}
+
+.content-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.content-wrapper > :first-child {
+    flex: 1;
+    min-width: 0;
+}
+
+.edit-button-inline {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+    opacity: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.display-content:hover .edit-button-inline {
+    opacity: 1;
+}
+
+.edit-button-inline:hover {
+    background: #f1f5f9;
+    color: #0284c7;
 }
 
 .edit-content {

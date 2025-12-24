@@ -41,6 +41,12 @@
                     @save="saveOffersSection"
                     @cancel="cancelOffersEditing"
                 >
+                    <template #header-action>
+                        <a :href="offerGeneratorUrl" target="_blank" class="header-ai-link" title="Generate with AI">
+                            <AiSparkleIcon :size="14" />
+                        </a>
+                    </template>
+
                     <template #display>
                         <!-- Loading state -->
                         <div v-if="isLoadingLinkedOffers" class="loading-state">
@@ -580,6 +586,26 @@ const saveOffersSection = async () => {
 }
 
 /* AI link and AI CTA button styles are in profile.css */
+
+/* Header AI link */
+.header-ai-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    color: #8b5cf6;
+    background: linear-gradient(135deg, #f5f3ff 0%, #fdf4ff 100%);
+    border: 1px solid #e9d5ff;
+    transition: all 0.2s ease;
+}
+
+.header-ai-link:hover {
+    background: linear-gradient(135deg, #ede9fe 0%, #fae8ff 100%);
+    border-color: #d8b4fe;
+    transform: scale(1.05);
+}
 
 /* Search box */
 .search-box {
