@@ -739,6 +739,7 @@ const truncateText = (text, maxLength) => {
     display: flex;
     flex-direction: column;
     gap: 20px;
+    min-width: 0; /* Prevent content from overflowing grid cell */
 }
 
 /* Text areas */
