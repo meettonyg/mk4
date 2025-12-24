@@ -786,20 +786,7 @@ const truncateText = (text, maxLength) => {
     font-size: 14px;
 }
 
-.info-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: #e2e8f0;
-    color: #64748b;
-    font-size: 11px;
-    font-weight: 600;
-    font-style: normal;
-    margin-right: 6px;
-}
+/* Info icon styles are in profile.css */
 
 /* Links list */
 .links-list {

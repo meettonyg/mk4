@@ -7,14 +7,8 @@
                 @click="toggleEdit"
                 :title="isEditing ? 'Cancel editing' : 'Edit'"
             >
-                <svg v-if="!isEditing" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-                    <path d="m15 5 4 4"/>
-                </svg>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 6 6 18"/>
-                    <path d="m6 6 12 12"/>
-                </svg>
+                <CloseIcon v-if="isEditing" :size="16" />
+                <EditIcon v-else :size="16" />
             </button>
         </div>
 
@@ -52,6 +46,7 @@
 
 <script setup>
 import { ref, watch } from 'vue';
+import { EditIcon, CloseIcon } from '../icons';
 
 const props = defineProps({
     title: {
