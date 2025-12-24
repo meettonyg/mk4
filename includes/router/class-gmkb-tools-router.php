@@ -498,6 +498,38 @@ get_footer();
     }
 
     /**
+     * Format formula text with highlighted placeholders
+     *
+     * @param string $formula The formula text
+     * @return string HTML with highlighted placeholders
+     */
+    private function format_formula($formula) {
+        // Replace [PLACEHOLDER] patterns with highlighted spans
+        $formatted = preg_replace(
+            '/\[([^\]]+)\]/',
+            '<span class="gmkb-highlight">[$1]</span>',
+            esc_html($formula)
+        );
+        return $formatted;
+    }
+
+    /**
+     * Get SVG icon for a process step
+     *
+     * @param int|string $step_num Step number
+     * @return string SVG markup
+     */
+    private function get_step_icon($step_num) {
+        $icons = array(
+            1 => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>',
+            2 => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>',
+            3 => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>',
+            4 => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>',
+        );
+        return $icons[(int)$step_num] ?? $icons[1];
+    }
+
+    /**
      * Render tool landing page
      */
     private function render_tool_landing() {
@@ -608,68 +640,51 @@ get_footer();
                         </div>
                     </div>
 
-                    <!-- Right Panel: Formula, Examples, Tips -->
+                    <!-- Right Panel: Guidance -->
                     <aside class="gmkb-app-sidebar">
+                        <h2 class="gmkb-guidance-header">Crafting Your <?php echo esc_html($meta['name']); ?></h2>
+                        <p class="gmkb-guidance-subtitle"><?php echo esc_html($meta['shortDescription'] ?? ''); ?></p>
+
                         <?php if (!empty($landing['formula'])): ?>
-                        <div class="gmkb-sidebar-card gmkb-formula-card">
-                            <div class="gmkb-card-header">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
-                                <h3>The Formula</h3>
-                            </div>
-                            <div class="gmkb-formula-text">
-                                <?php echo esc_html($landing['formula']); ?>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-
-                        <?php if (!empty($landing['examples'])): ?>
-                        <div class="gmkb-sidebar-card gmkb-examples-card">
-                            <div class="gmkb-card-header">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
-                                <h3>Examples</h3>
-                            </div>
-                            <div class="gmkb-examples-list">
-                                <?php foreach ($landing['examples'] as $example): ?>
-                                <div class="gmkb-example">
-                                    <h4><?php echo esc_html($example['title']); ?></h4>
-                                    <p><?php echo esc_html($example['content']); ?></p>
-                                </div>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-
-                        <?php if (!empty($landing['tips'])): ?>
-                        <div class="gmkb-sidebar-card gmkb-tips-card">
-                            <div class="gmkb-card-header">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18"/></svg>
-                                <h3>Pro Tips</h3>
-                            </div>
-                            <ul class="gmkb-tips-list">
-                                <?php foreach ($landing['tips'] as $tip): ?>
-                                <li><?php echo esc_html($tip); ?></li>
-                                <?php endforeach; ?>
-                            </ul>
+                        <div class="gmkb-formula-box">
+                            <span class="gmkb-formula-label">FORMULA</span>
+                            <?php echo $this->format_formula($landing['formula']); ?>
                         </div>
                         <?php endif; ?>
 
                         <?php if (!empty($landing['howItWorks'])): ?>
-                        <div class="gmkb-sidebar-card">
-                            <div class="gmkb-card-header">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"/></svg>
-                                <h3>How It Works</h3>
+                        <?php foreach ($landing['howItWorks'] as $step): ?>
+                        <div class="gmkb-process-step">
+                            <div class="gmkb-process-icon">
+                                <?php echo $this->get_step_icon($step['step']); ?>
                             </div>
-                            <div class="gmkb-steps-list">
-                                <?php foreach ($landing['howItWorks'] as $step): ?>
-                                <div class="gmkb-step-item">
-                                    <span class="gmkb-step-num"><?php echo esc_html($step['step']); ?></span>
-                                    <div>
-                                        <strong><?php echo esc_html($step['title']); ?></strong>
-                                        <p><?php echo esc_html($step['description']); ?></p>
-                                    </div>
-                                </div>
-                                <?php endforeach; ?>
+                            <div class="gmkb-process-content">
+                                <h3 class="gmkb-process-title"><?php echo esc_html($step['title']); ?></h3>
+                                <p class="gmkb-process-description"><?php echo esc_html($step['description']); ?></p>
                             </div>
+                        </div>
+                        <?php endforeach; ?>
+                        <?php endif; ?>
+
+                        <?php if (!empty($landing['examples'])): ?>
+                        <h3 class="gmkb-examples-header">Examples:</h3>
+                        <?php foreach ($landing['examples'] as $example): ?>
+                        <div class="gmkb-example-card">
+                            <strong><?php echo esc_html($example['title']); ?>:</strong>
+                            <p><?php echo esc_html($example['content']); ?></p>
+                        </div>
+                        <?php endforeach; ?>
+                        <?php endif; ?>
+
+                        <?php if (!empty($landing['tips'])): ?>
+                        <h3 class="gmkb-examples-header">Pro Tips:</h3>
+                        <div class="gmkb-tips-box">
+                            <?php foreach ($landing['tips'] as $tip): ?>
+                            <div class="gmkb-tip-item">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="gmkb-tip-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18"/></svg>
+                                <span><?php echo esc_html($tip); ?></span>
+                            </div>
+                            <?php endforeach; ?>
                         </div>
                         <?php endif; ?>
                     </aside>
@@ -1112,8 +1127,8 @@ get_footer();
         /* Two Panel Layout */
         .gmkb-app-layout {
             display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: 2rem;
+            grid-template-columns: 1fr 420px;
+            gap: 2.5rem;
             align-items: start;
         }
 
@@ -1127,125 +1142,167 @@ get_footer();
             padding: 1.5rem;
         }
 
-        /* Right Panel - Sidebar */
+        /* Right Panel - Guidance Sidebar */
         .gmkb-app-sidebar {
             position: sticky;
             top: 2rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 1.75rem;
+            border: 1px solid #e2e8f0;
         }
 
-        /* Sidebar Cards */
-        .gmkb-sidebar-card {
-            background: white;
+        /* Guidance Header */
+        .gmkb-guidance-header {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0 0 0.5rem;
+            line-height: 1.3;
+        }
+        .gmkb-guidance-subtitle {
+            color: #64748b;
+            font-size: 0.9375rem;
+            line-height: 1.5;
+            margin: 0 0 1.5rem;
+        }
+
+        /* Formula Box */
+        .gmkb-formula-box {
+            background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+            border: 1px solid #fde047;
             border-radius: 12px;
             padding: 1.25rem;
-            border: 1px solid #e5e7eb;
-        }
-        .gmkb-card-header {
-            display: flex;
-            align-items: center;
-            gap: 0.625rem;
-            margin-bottom: 0.875rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 1px solid #f3f4f6;
-        }
-        .gmkb-card-header svg { width: 18px; height: 18px; color: #3b82f6; flex-shrink: 0; }
-        .gmkb-card-header h3 {
+            margin-bottom: 1.5rem;
             font-size: 0.9375rem;
+            line-height: 1.6;
+            color: #713f12;
+        }
+        .gmkb-formula-label {
+            display: inline-block;
+            background: #eab308;
+            color: white;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            margin-bottom: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+        .gmkb-highlight {
+            background: rgba(234, 179, 8, 0.3);
+            padding: 0.125rem 0.25rem;
+            border-radius: 4px;
             font-weight: 600;
-            margin: 0;
-            color: #111827;
         }
 
-        /* Formula Card */
-        .gmkb-formula-card { background: #fffbeb; border-color: #fef3c7; }
-        .gmkb-formula-card .gmkb-card-header { border-color: #fde68a; }
-        .gmkb-formula-card .gmkb-card-header svg { color: #f59e0b; }
-        .gmkb-formula-text {
-            font-size: 0.9375rem;
-            font-weight: 500;
-            color: #92400e;
-            line-height: 1.5;
-            font-style: italic;
-        }
-
-        /* Examples Card */
-        .gmkb-examples-list { display: flex; flex-direction: column; gap: 0.75rem; }
-        .gmkb-example {
-            background: #f9fafb;
-            border-radius: 8px;
-            padding: 0.875rem;
-        }
-        .gmkb-example h4 {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #3b82f6;
-            margin: 0 0 0.375rem;
-            text-transform: uppercase;
-            letter-spacing: 0.025em;
-        }
-        .gmkb-example p {
-            font-size: 0.8125rem;
-            color: #374151;
-            margin: 0;
-            line-height: 1.45;
-        }
-
-        /* Tips Card */
-        .gmkb-tips-card .gmkb-tips-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        .gmkb-tips-card .gmkb-tips-list li {
-            padding: 0.5rem 0 0.5rem 1.5rem;
-            position: relative;
-            font-size: 0.8125rem;
-            color: #374151;
-            line-height: 1.45;
-            border-bottom: 1px solid #f3f4f6;
-        }
-        .gmkb-tips-card .gmkb-tips-list li:last-child { border-bottom: none; padding-bottom: 0; }
-        .gmkb-tips-card .gmkb-tips-list li::before {
-            content: "💡";
-            position: absolute;
-            left: 0;
-            font-size: 0.75rem;
-        }
-
-        /* Steps List */
-        .gmkb-steps-list { display: flex; flex-direction: column; gap: 0.75rem; }
-        .gmkb-step-item {
+        /* Process Steps */
+        .gmkb-process-step {
             display: flex;
-            gap: 0.75rem;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            padding-bottom: 1.25rem;
+            border-bottom: 1px solid #e2e8f0;
         }
-        .gmkb-step-num {
-            width: 24px;
-            height: 24px;
-            background: #eff6ff;
-            color: #3b82f6;
-            border-radius: 50%;
+        .gmkb-process-step:last-of-type {
+            margin-bottom: 1.5rem;
+        }
+        .gmkb-process-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.75rem;
-            font-weight: 600;
             flex-shrink: 0;
         }
-        .gmkb-step-item strong {
+        .gmkb-process-icon svg {
+            width: 22px;
+            height: 22px;
+            color: white;
+        }
+        .gmkb-process-content {
+            flex: 1;
+        }
+        .gmkb-process-title {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 0 0 0.375rem;
+        }
+        .gmkb-process-description {
+            font-size: 0.8125rem;
+            color: #64748b;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        /* Examples Header */
+        .gmkb-examples-header {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 0 0 0.875rem;
+        }
+
+        /* Example Cards */
+        .gmkb-example-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+        .gmkb-example-card:last-of-type {
+            margin-bottom: 1.5rem;
+        }
+        .gmkb-example-card strong {
             display: block;
             font-size: 0.8125rem;
             font-weight: 600;
-            color: #111827;
-            margin-bottom: 0.125rem;
+            color: #3b82f6;
+            margin-bottom: 0.375rem;
         }
-        .gmkb-step-item p {
-            font-size: 0.75rem;
-            color: #6b7280;
+        .gmkb-example-card p {
+            font-size: 0.8125rem;
+            color: #475569;
+            line-height: 1.5;
             margin: 0;
-            line-height: 1.4;
+        }
+
+        /* Tips Box */
+        .gmkb-tips-box {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 10px;
+            padding: 1rem;
+        }
+        .gmkb-tip-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.625rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #dcfce7;
+        }
+        .gmkb-tip-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        .gmkb-tip-item:first-child {
+            padding-top: 0;
+        }
+        .gmkb-tip-icon {
+            width: 16px;
+            height: 16px;
+            color: #22c55e;
+            flex-shrink: 0;
+            margin-top: 0.125rem;
+        }
+        .gmkb-tip-item span {
+            font-size: 0.8125rem;
+            color: #166534;
+            line-height: 1.45;
         }
 
         /* Responsive */
@@ -1255,11 +1312,6 @@ get_footer();
             }
             .gmkb-app-sidebar {
                 position: static;
-                flex-direction: row;
-                flex-wrap: wrap;
-            }
-            .gmkb-sidebar-card {
-                flex: 1 1 300px;
             }
         }
         @media (max-width: 640px) {
@@ -1268,8 +1320,11 @@ get_footer();
             .gmkb-header-icon svg { width: 20px; height: 20px; }
             .gmkb-header-title h1 { font-size: 1.25rem; }
             .gmkb-tool-form-wrapper { padding: 1rem; }
-            .gmkb-app-sidebar { flex-direction: column; }
-            .gmkb-sidebar-card { flex: 1 1 100%; }
+            .gmkb-app-sidebar { padding: 1.25rem; }
+            .gmkb-guidance-header { font-size: 1.125rem; }
+            .gmkb-process-step { flex-direction: column; gap: 0.75rem; }
+            .gmkb-process-icon { width: 36px; height: 36px; }
+            .gmkb-process-icon svg { width: 18px; height: 18px; }
         }
         </style>
         <?php
