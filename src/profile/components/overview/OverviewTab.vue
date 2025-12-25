@@ -289,6 +289,79 @@
                         </div>
                     </template>
                 </EditablePanel>
+
+                <!-- Contact Info Panel -->
+                <EditablePanel
+                    title="Contact Info"
+                    section-id="contact"
+                    :is-editing="editingSection === 'contact'"
+                    :is-saving="isSaving"
+                    @edit="startEditing"
+                    @save="saveSection"
+                    @cancel="cancelEditing"
+                >
+                    <template #display>
+                        <div class="contact-grid">
+                            <div class="contact-item">
+                                <span class="contact-label">Name:</span>
+                                <span class="contact-value">{{ store.fullName }}</span>
+                            </div>
+                            <div class="contact-item" v-if="store.fields.company">
+                                <span class="contact-label">Company:</span>
+                                <span class="contact-value">{{ store.fields.company }}</span>
+                            </div>
+                            <div class="contact-item" v-if="store.fields.phone">
+                                <span class="contact-label">Phone:</span>
+                                <span class="contact-value">{{ store.fields.phone }}</span>
+                            </div>
+                            <div class="contact-item" v-if="store.fields.email">
+                                <span class="contact-label">Email:</span>
+                                <span class="contact-value">{{ store.fields.email }}</span>
+                            </div>
+                            <div class="contact-item" v-if="store.fields.phonetic">
+                                <span class="contact-label">Phonetic:</span>
+                                <span class="contact-value">{{ store.fields.phonetic }}</span>
+                            </div>
+                            <div class="contact-item" v-if="store.fields.skype">
+                                <span class="contact-label">Skype:</span>
+                                <span class="contact-value">{{ store.fields.skype }}</span>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template #edit>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">First Name</label>
+                                <input type="text" class="form-input" v-model="editFields.first_name" />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Last Name</label>
+                                <input type="text" class="form-input" v-model="editFields.last_name" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Phonetic Spelling</label>
+                            <input type="text" class="form-input" v-model="editFields.phonetic" placeholder="How to pronounce your name" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Company/Organization</label>
+                            <input type="text" class="form-input" v-model="editFields.company" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Phone</label>
+                            <input type="tel" class="form-input" v-model="editFields.phone" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-input" v-model="editFields.email" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Skype</label>
+                            <input type="text" class="form-input" v-model="editFields.skype" />
+                        </div>
+                    </template>
+                </EditablePanel>
             </div>
 
             <!-- Sidebar -->
@@ -327,14 +400,6 @@
                                 No links added yet
                             </li>
                         </ul>
-
-                        <div class="cta-container">
-                            <h3 class="cta-title">Ready to reach out to podcasts?</h3>
-                            <p class="cta-description">Start pitching your expertise to podcast hosts</p>
-                            <a href="/app/interview/board/" target="_blank" class="button primary-button">
-                                View Podcasts to Pitch
-                            </a>
-                        </div>
                     </template>
 
                     <template #edit>
@@ -377,76 +442,14 @@
                     </template>
                 </EditablePanel>
 
-                <!-- Contact Info Panel -->
-                <EditablePanel
-                    title="Contact Info"
-                    section-id="contact"
-                    :is-editing="editingSection === 'contact'"
-                    :is-saving="isSaving"
-                    @edit="startEditing"
-                    @save="saveSection"
-                    @cancel="cancelEditing"
-                >
-                    <template #display>
-                        <div class="contact-item">
-                            <span class="contact-label">Name:</span>
-                            <span class="contact-value">{{ store.fullName }}</span>
-                        </div>
-                        <div class="contact-item" v-if="store.fields.phonetic">
-                            <span class="contact-label">Phonetic:</span>
-                            <span class="contact-value">{{ store.fields.phonetic }}</span>
-                        </div>
-                        <div class="contact-item" v-if="store.fields.company">
-                            <span class="contact-label">Company:</span>
-                            <span class="contact-value">{{ store.fields.company }}</span>
-                        </div>
-                        <div class="contact-item" v-if="store.fields.phone">
-                            <span class="contact-label">Phone:</span>
-                            <span class="contact-value">{{ store.fields.phone }}</span>
-                        </div>
-                        <div class="contact-item" v-if="store.fields.email">
-                            <span class="contact-label">Email:</span>
-                            <span class="contact-value">{{ store.fields.email }}</span>
-                        </div>
-                        <div class="contact-item" v-if="store.fields.skype">
-                            <span class="contact-label">Skype:</span>
-                            <span class="contact-value">{{ store.fields.skype }}</span>
-                        </div>
-                    </template>
-
-                    <template #edit>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">First Name</label>
-                                <input type="text" class="form-input" v-model="editFields.first_name" />
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Last Name</label>
-                                <input type="text" class="form-input" v-model="editFields.last_name" />
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Phonetic Spelling</label>
-                            <input type="text" class="form-input" v-model="editFields.phonetic" placeholder="How to pronounce your name" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Company/Organization</label>
-                            <input type="text" class="form-input" v-model="editFields.company" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Phone</label>
-                            <input type="tel" class="form-input" v-model="editFields.phone" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Email</label>
-                            <input type="email" class="form-input" v-model="editFields.email" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Skype</label>
-                            <input type="text" class="form-input" v-model="editFields.skype" />
-                        </div>
-                    </template>
-                </EditablePanel>
+                <!-- Podcast Pitch CTA -->
+                <div class="cta-panel">
+                    <h3 class="cta-title">Ready to reach out to podcasts?</h3>
+                    <p class="cta-description">Start pitching your expertise to podcast hosts</p>
+                    <a href="/app/interview/board/" target="_blank" class="button primary-button">
+                        View Podcasts to Pitch
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -823,24 +826,41 @@ const truncateText = (text, maxLength) => {
     text-decoration: underline;
 }
 
+/* Contact grid for horizontal layout */
+.contact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px 24px;
+}
+
 /* Contact items */
 .contact-item {
     display: flex;
     align-items: center;
-    padding: 8px 0;
+    padding: 4px 0;
 }
 
 .contact-label {
     font-size: 14px;
     font-weight: 500;
     color: #0f172a;
-    width: 100px;
+    margin-right: 8px;
     flex-shrink: 0;
 }
 
 .contact-value {
     font-size: 14px;
     color: #334155;
+}
+
+/* CTA Panel in sidebar */
+.cta-panel {
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    padding: 20px;
+    text-align: center;
 }
 
 /* Interviews */
