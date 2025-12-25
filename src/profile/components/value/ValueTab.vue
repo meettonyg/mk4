@@ -6,6 +6,14 @@
                 <div class="panel">
                     <div class="panel-header">
                         <h2 class="panel-title">Topics & Questions</h2>
+                        <div class="header-actions">
+                            <a :href="topicsGeneratorUrl" target="_blank" class="header-ai-link" title="Generate Topics with AI">
+                                <AiSparkleIcon :size="14" />
+                            </a>
+                            <a :href="questionsGeneratorUrl" target="_blank" class="header-ai-link" title="Generate Questions with AI">
+                                <AiSparkleIcon :size="14" />
+                            </a>
+                        </div>
                     </div>
                     <div class="panel-content">
                         <p class="topics-intro">
@@ -41,6 +49,12 @@
                     @save="saveOffersSection"
                     @cancel="cancelOffersEditing"
                 >
+                    <template #header-action>
+                        <a :href="offerGeneratorUrl" target="_blank" class="header-ai-link" title="Generate with AI">
+                            <AiSparkleIcon :size="14" />
+                        </a>
+                    </template>
+
                     <template #display>
                         <!-- Loading state -->
                         <div v-if="isLoadingLinkedOffers" class="loading-state">
@@ -72,14 +86,6 @@
                         <div v-else class="empty-offers">
                             <p class="empty-text">No offers linked yet. Click edit to add offers.</p>
                         </div>
-
-                        <div class="cta-container">
-                            <h3 class="cta-title">Ready to convert listeners?</h3>
-                            <p class="cta-description">Create compelling offers that turn listeners into leads</p>
-                            <a :href="offerGeneratorUrl" target="_blank" class="button primary-button">
-                                Create Offers with AI
-                            </a>
-                        </div>
                     </template>
 
                     <template #edit>
@@ -92,7 +98,8 @@
 
                             <div v-else-if="availableOffers.length === 0" class="empty-state">
                                 <p>No offers found. Create offers first using the AI offer generator.</p>
-                                <a :href="offerGeneratorUrl" target="_blank" class="create-link">
+                                <a :href="offerGeneratorUrl" target="_blank" class="ai-link">
+                                    <AiSparkleIcon :size="16" />
                                     Create Offers with AI
                                 </a>
                             </div>
@@ -190,6 +197,7 @@ import { useProfileStore } from '../../stores/profile.js';
 import { useOffers } from '../../../composables/useOffers.js';
 import EditablePanel from '../layout/EditablePanel.vue';
 import TopicAccordion from './TopicAccordion.vue';
+import { AiSparkleIcon } from '../icons';
 
 const store = useProfileStore();
 const {
@@ -201,16 +209,22 @@ const {
 } = useOffers();
 
 // URL constants
-const OFFER_GENERATOR_BASE_URL = '/app/offer-generator/';
+const OFFER_GENERATOR_BASE_URL = '/tools/offers-generator/';
+const TOPICS_GENERATOR_BASE_URL = '/tools/topics-generator/';
+const QUESTIONS_GENERATOR_BASE_URL = '/tools/questions-generator/';
 
-// Generate offer generator URL with entry parameter
-const offerGeneratorUrl = computed(() => {
+// Generate dynamic URLs with entry parameter
+const buildToolUrl = (baseUrl) => {
     const entry = store.postData?.slug;
     if (entry) {
-        return `${OFFER_GENERATOR_BASE_URL}?frm_action=edit&entry=${entry}`;
+        return `${baseUrl}?frm_action=edit&entry=${entry}`;
     }
-    return OFFER_GENERATOR_BASE_URL;
-});
+    return baseUrl;
+};
+
+const offerGeneratorUrl = computed(() => buildToolUrl(OFFER_GENERATOR_BASE_URL));
+const topicsGeneratorUrl = computed(() => buildToolUrl(TOPICS_GENERATOR_BASE_URL));
+const questionsGeneratorUrl = computed(() => buildToolUrl(QUESTIONS_GENERATOR_BASE_URL));
 
 // Edit state
 const editingTopic = ref(null);
@@ -449,6 +463,9 @@ const saveOffersSection = async () => {
 .panel-header {
     padding: 16px 20px;
     border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .panel-title {
@@ -456,6 +473,12 @@ const saveOffersSection = async () => {
     font-weight: 600;
     margin: 0;
     color: #0f172a;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .panel-content {
@@ -576,19 +599,26 @@ const saveOffersSection = async () => {
     color: #6b7280;
 }
 
-.create-link {
-    display: inline-block;
-    padding: 8px 16px;
-    background: #14b8a6;
-    color: #fff;
-    text-decoration: none;
+/* AI link and AI CTA button styles are in profile.css */
+
+/* Header AI link */
+.header-ai-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
     border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
+    color: #8b5cf6;
+    background: linear-gradient(135deg, #f5f3ff 0%, #fdf4ff 100%);
+    border: 1px solid #e9d5ff;
+    transition: all 0.2s ease;
 }
 
-.create-link:hover {
-    background: #0d9488;
+.header-ai-link:hover {
+    background: linear-gradient(135deg, #ede9fe 0%, #fae8ff 100%);
+    border-color: #d8b4fe;
+    transform: scale(1.05);
 }
 
 /* Search box */
@@ -678,28 +708,6 @@ const saveOffersSection = async () => {
     margin: 12px 0 0;
     font-size: 12px;
     color: #6b7280;
-}
-
-/* CTA Container */
-.cta-container {
-    margin-top: 20px;
-    padding: 20px;
-    text-align: center;
-    background-color: #f8fafc;
-    border-radius: 8px;
-}
-
-.cta-title {
-    font-size: 16px;
-    font-weight: 600;
-    margin: 0 0 8px 0;
-    color: #0f172a;
-}
-
-.cta-description {
-    font-size: 14px;
-    color: #64748b;
-    margin: 0 0 16px 0;
 }
 
 .button {

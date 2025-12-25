@@ -325,7 +325,6 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-free-tools
     require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-free-tools-shortcode.php';
 }
 
-<<<<<<< HEAD
 // Tool Metadata: Provides server-side access to meta.json tool configurations for SEO
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-tool-metadata.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-tool-metadata.php';
@@ -347,12 +346,6 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-tool-short
 // No manual page creation required - URLs are handled via rewrite rules
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/pages/class-gmkb-tool-pages.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/pages/class-gmkb-tool-pages.php';
-=======
-// AI INTEGRATION: Tool Pages Shortcodes for directory and dynamic tool pages
-// Usage: [gmkb_tool_directory] or [gmkb_tool_page slug="biography"]
-if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-tool-pages-shortcode.php')) {
-    require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-tool-pages-shortcode.php';
->>>>>>> claude/fix-ai-tools-design-e7eoL
 }
 
 // Offers Shortcode - Display offers on any page

@@ -13,19 +13,20 @@
                     @save="saveSection"
                     @cancel="cancelEditing"
                 >
+                    <template #header-action>
+                        <a :href="biographyGeneratorUrl" target="_blank" class="header-ai-link" title="Generate with AI">
+                            <AiSparkleIcon :size="14" />
+                        </a>
+                    </template>
+
                     <template #display>
                         <div class="text-area">
-                            <div v-if="store.fields.biography" v-html="store.fields.biography"></div>
+                            <div v-if="store.fields.biography" class="preserve-lines" v-html="formatWithLineBreaks(store.fields.biography)"></div>
                             <div v-else class="empty-text">
                                 <p>
-                                    <span class="info-icon">ℹ</span>
+                                    <span class="info-icon">i</span>
                                     Your biography demonstrates your value to podcast hosts through your expertise,
                                     stories and results that you share.
-                                </p>
-                                <p>
-                                    <a :href="biographyGeneratorUrl" target="_blank">
-                                        🤖 Create your Podcast Biography with AI
-                                    </a>
                                 </p>
                             </div>
                         </div>
@@ -56,19 +57,20 @@
                     @save="saveSection"
                     @cancel="cancelEditing"
                 >
+                    <template #header-action>
+                        <a :href="guestIntroGeneratorUrl" target="_blank" class="header-ai-link" title="Generate with AI">
+                            <AiSparkleIcon :size="14" />
+                        </a>
+                    </template>
+
                     <template #display>
                         <div class="text-area">
-                            <div v-if="store.fields.podcast_intro" v-html="store.fields.podcast_intro"></div>
+                            <div v-if="store.fields.podcast_intro" class="preserve-lines" v-html="formatWithLineBreaks(store.fields.podcast_intro)"></div>
                             <div v-else class="empty-text">
                                 <p>
-                                    <span class="info-icon">ℹ</span>
+                                    <span class="info-icon">i</span>
                                     Click edit to add your Podcast Intro to make it easy for hosts
                                     to book and introduce you on their show.
-                                </p>
-                                <p>
-                                    <a href="/app/message-builder/message-builder-ai/#intro" target="_blank">
-                                        🤖 Create your Podcast Intro with AI
-                                    </a>
                                 </p>
                             </div>
                         </div>
@@ -102,6 +104,12 @@
                     @save="saveSection"
                     @cancel="cancelEditing"
                 >
+                    <template #header-action>
+                        <a :href="taglineGeneratorUrl" target="_blank" class="header-ai-link" title="Generate with AI">
+                            <AiSparkleIcon :size="14" />
+                        </a>
+                    </template>
+
                     <template #display>
                         <div class="text-area">
                             <p>{{ store.fields.tagline || '—' }}</p>
@@ -131,10 +139,18 @@
                     @save="saveSection"
                     @cancel="cancelEditing"
                 >
+                    <template #header-action>
+                        <a :href="authorityHookBuilderUrl" target="_blank" class="header-ai-link" title="Generate with AI">
+                            <AiSparkleIcon :size="14" />
+                        </a>
+                    </template>
+
                     <template #display>
                         <div class="text-area">
-                            <div v-if="store.fields.authority_hook" v-html="store.fields.authority_hook"></div>
-                            <p v-else class="empty-text">No authority hook defined</p>
+                            <div v-if="store.fields.authority_hook" class="preserve-lines" v-html="formatWithLineBreaks(store.fields.authority_hook)"></div>
+                            <div v-else class="empty-text">
+                                <p>No authority hook defined</p>
+                            </div>
                         </div>
                     </template>
 
@@ -161,10 +177,18 @@
                     @save="saveSection"
                     @cancel="cancelEditing"
                 >
+                    <template #header-action>
+                        <a :href="impactIntroBuilderUrl" target="_blank" class="header-ai-link" title="Generate with AI">
+                            <AiSparkleIcon :size="14" />
+                        </a>
+                    </template>
+
                     <template #display>
                         <div class="text-area">
-                            <div v-if="store.fields.impact_intro" v-html="store.fields.impact_intro"></div>
-                            <p v-else class="empty-text">No impact intro defined</p>
+                            <div v-if="store.fields.impact_intro" class="preserve-lines" v-html="formatWithLineBreaks(store.fields.impact_intro)"></div>
+                            <div v-else class="empty-text">
+                                <p>No impact intro defined</p>
+                            </div>
                         </div>
                     </template>
 
@@ -189,20 +213,44 @@
 import { ref, reactive, computed } from 'vue';
 import { useProfileStore } from '../../stores/profile.js';
 import EditablePanel from '../layout/EditablePanel.vue';
+import { AiSparkleIcon } from '../icons';
 
 const store = useProfileStore();
 
 // URL constants
-const BIOGRAPHY_GENERATOR_BASE_URL = '/app/biography-generator/';
+const BIOGRAPHY_GENERATOR_BASE_URL = '/tools/biography-generator/';
+const GUEST_INTRO_GENERATOR_BASE_URL = '/tools/guest-intro-generator/';
+const TAGLINE_GENERATOR_BASE_URL = '/tools/tagline-generator/';
+const AUTHORITY_HOOK_BUILDER_BASE_URL = '/tools/authority-hook-builder/';
+const IMPACT_INTRO_BUILDER_BASE_URL = '/tools/impact-intro-builder/';
 
 // Generate dynamic URLs with entry parameter
-const biographyGeneratorUrl = computed(() => {
+const buildToolUrl = (baseUrl) => {
     const entry = store.postData?.slug;
     if (entry) {
-        return `${BIOGRAPHY_GENERATOR_BASE_URL}?frm_action=edit&entry=${entry}`;
+        return `${baseUrl}?frm_action=edit&entry=${entry}`;
     }
-    return BIOGRAPHY_GENERATOR_BASE_URL;
-});
+    return baseUrl;
+};
+
+const biographyGeneratorUrl = computed(() => buildToolUrl(BIOGRAPHY_GENERATOR_BASE_URL));
+const guestIntroGeneratorUrl = computed(() => buildToolUrl(GUEST_INTRO_GENERATOR_BASE_URL));
+const taglineGeneratorUrl = computed(() => buildToolUrl(TAGLINE_GENERATOR_BASE_URL));
+const authorityHookBuilderUrl = computed(() => buildToolUrl(AUTHORITY_HOOK_BUILDER_BASE_URL));
+const impactIntroBuilderUrl = computed(() => buildToolUrl(IMPACT_INTRO_BUILDER_BASE_URL));
+
+// Helper to preserve line breaks in text
+const formatWithLineBreaks = (text) => {
+    if (!text) return '';
+    // If text already has HTML tags (like <p>), return as-is
+    if (/<[^>]+>/.test(text)) return text;
+    // Convert double newlines to paragraph breaks, single newlines to <br>
+    const paragraphs = text
+        .split(/\n\n+/)
+        .map(para => para.trim().replace(/\n/g, '<br>'))
+        .filter(para => para);
+    return '<p>' + paragraphs.join('</p><p>') + '</p>';
+};
 
 // Edit state
 const editingSection = ref(null);
@@ -312,9 +360,40 @@ const saveSection = async (sectionId) => {
     text-decoration: underline;
 }
 
-.info-icon {
-    margin-right: 4px;
+/* Header AI link */
+.header-ai-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    color: #8b5cf6;
+    background: linear-gradient(135deg, #f5f3ff 0%, #fdf4ff 100%);
+    border: 1px solid #e9d5ff;
+    transition: all 0.2s ease;
 }
+
+.header-ai-link:hover {
+    background: linear-gradient(135deg, #ede9fe 0%, #fae8ff 100%);
+    border-color: #d8b4fe;
+    transform: scale(1.05);
+}
+
+/* Preserve line breaks in text content */
+.preserve-lines {
+    line-height: 1.6;
+}
+
+.preserve-lines p {
+    margin: 0 0 1em 0;
+}
+
+.preserve-lines p:last-child {
+    margin-bottom: 0;
+}
+
+/* Info icon and AI link styles are in profile.css */
 
 /* Form elements */
 .form-group {

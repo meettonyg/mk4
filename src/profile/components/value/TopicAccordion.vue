@@ -13,7 +13,8 @@
                     @click.stop="handleEditClick"
                     :title="isEditing ? 'Cancel' : 'Edit'"
                 >
-                    {{ isEditing ? '✘' : '✎' }}
+                    <CloseIcon v-if="isEditing" :size="14" />
+                    <EditIcon v-else :size="14" />
                 </button>
                 <span class="topic-toggle">
                     <svg
@@ -59,7 +60,8 @@
                         class="button secondary-button sm-button"
                         @click="$emit('edit', topic.id)"
                     >
-                        ✎ Edit Topic & Questions
+                        <EditIcon :size="12" style="margin-right: 6px;" />
+                        Edit Topic & Questions
                     </button>
                 </div>
             </template>
@@ -121,6 +123,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
+import { EditIcon, CloseIcon } from '../icons';
 
 const props = defineProps({
     topic: {
@@ -244,11 +247,21 @@ const updateQuestion = (index, value) => {
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 14px;
     color: #64748b;
-    padding: 4px 8px;
-    border-radius: 4px;
-    transition: all 0.2s;
+    padding: 6px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    opacity: 0;
+    transform: translateX(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.topic-header:hover .edit-button,
+.topic-container.editing .edit-button {
+    opacity: 1;
+    transform: translateX(0);
 }
 
 .edit-button:hover {
@@ -257,6 +270,11 @@ const updateQuestion = (index, value) => {
 }
 
 .topic-container.editing .edit-button {
+    color: #ef4444;
+}
+
+.topic-container.editing .edit-button:hover {
+    background: #fef2f2;
     color: #dc2626;
 }
 
