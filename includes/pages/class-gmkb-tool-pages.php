@@ -42,10 +42,10 @@ class GMKB_Tool_Pages {
     private $discovery = null;
 
     /**
-     * Base URL paths for tools (supports multiple paths)
-     * @var array
+     * Base URL path for tools
+     * @var string
      */
-    private $base_paths = array('tools', 'app/tools');
+    private $base_path = 'tools';
 
     /**
      * Query var for tool slug
@@ -272,31 +272,29 @@ class GMKB_Tool_Pages {
     }
 
     /**
-     * Register rewrite rules for all supported base paths
+     * Register rewrite rules for tools pages
      */
     public function register_rewrite_rules() {
-        foreach ($this->base_paths as $base_path) {
-            // Tool app page: /tools/{slug}/tool/
-            add_rewrite_rule(
-                '^' . $base_path . '/([^/]+)/tool/?$',
-                'index.php?' . $this->query_var . '=$matches[1]&gmkb_tool_app=1',
-                'top'
-            );
+        // Tool app page: /tools/{slug}/tool/
+        add_rewrite_rule(
+            '^' . $this->base_path . '/([^/]+)/tool/?$',
+            'index.php?' . $this->query_var . '=$matches[1]&gmkb_tool_app=1',
+            'top'
+        );
 
-            // Individual tool landing pages: /tools/{slug}/
-            add_rewrite_rule(
-                '^' . $base_path . '/([^/]+)/?$',
-                'index.php?' . $this->query_var . '=$matches[1]',
-                'top'
-            );
+        // Individual tool landing pages: /tools/{slug}/
+        add_rewrite_rule(
+            '^' . $this->base_path . '/([^/]+)/?$',
+            'index.php?' . $this->query_var . '=$matches[1]',
+            'top'
+        );
 
-            // Tools directory: /tools/
-            add_rewrite_rule(
-                '^' . $base_path . '/?$',
-                'index.php?' . $this->directory_var . '=1',
-                'top'
-            );
-        }
+        // Tools directory: /tools/
+        add_rewrite_rule(
+            '^' . $this->base_path . '/?$',
+            'index.php?' . $this->directory_var . '=1',
+            'top'
+        );
     }
 
     /**
@@ -1609,7 +1607,7 @@ get_footer();
      */
     public function maybe_flush_rewrite_rules() {
         $version_key = 'gmkb_tool_pages_version';
-        $current_version = '1.0.2'; // Bumped to add /app/tools/ support
+        $current_version = '1.0.3'; // Cleaned up to use only /tools/ path
 
         if (get_option($version_key) !== $current_version) {
             flush_rewrite_rules();
@@ -1623,7 +1621,7 @@ get_footer();
     public function flush_rewrite_rules() {
         $this->register_rewrite_rules();
         flush_rewrite_rules();
-        update_option('gmkb_tool_pages_version', '1.0.2');
+        update_option('gmkb_tool_pages_version', '1.0.3');
     }
 
     /**
@@ -1645,37 +1643,12 @@ get_footer();
     }
 
     /**
-     * Get tools base path (auto-detects from current URL)
+     * Get tools base path
      *
      * @return string Base path
      */
     public function get_base_path() {
-        return $this->detect_current_base_path();
-    }
-
-    /**
-     * Detect the current base path from the URL
-     *
-     * @return string Base path (e.g., 'tools' or 'app/tools')
-     */
-    private function detect_current_base_path() {
-        $uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
-        $path = trim(parse_url($uri, PHP_URL_PATH), '/');
-
-        // Check each base path, longest first (app/tools before tools)
-        $sorted_paths = $this->base_paths;
-        usort($sorted_paths, function($a, $b) {
-            return strlen($b) - strlen($a);
-        });
-
-        foreach ($sorted_paths as $base_path) {
-            if (strpos($path, $base_path) === 0) {
-                return $base_path;
-            }
-        }
-
-        // Default to first base path
-        return $this->base_paths[0];
+        return $this->base_path;
     }
 }
 

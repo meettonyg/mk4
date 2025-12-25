@@ -120,7 +120,7 @@ class GMKB_Tool_Pages_Shortcode {
     }
 
     /**
-     * Check if current request is a /tools/ or /app/tools/ URL
+     * Check if current request is a /tools/ URL
      *
      * @return array|false Array with 'type', 'slug', and 'base_path' keys, or false if not a tools URL
      */
@@ -129,32 +129,27 @@ class GMKB_Tool_Pages_Shortcode {
         $uri = strtok($uri, '?');
         $uri = trim($uri, '/');
 
-        // Support both /tools/ and /app/tools/ paths
-        $tools_paths = apply_filters('gmkb_tools_page_slugs', array('tools', 'app/tools'));
+        $tools_slug = 'tools';
 
-        foreach ($tools_paths as $tools_slug) {
-            // Check for /tools/{slug}/use/ (2-panel tool page)
-            if (preg_match('#^' . preg_quote($tools_slug, '#') . '/([^/\?]+)/use/?$#', $uri, $matches)) {
-                $tool_slug = $matches[1];
-                if (in_array($tool_slug, $this->valid_slugs)) {
-                    return array('type' => 'use', 'slug' => $tool_slug, 'base_path' => '/' . $tools_slug . '/');
-                }
-                continue;
+        // Check for /tools/{slug}/use/ (2-panel tool page)
+        if (preg_match('#^' . preg_quote($tools_slug, '#') . '/([^/\?]+)/use/?$#', $uri, $matches)) {
+            $tool_slug = $matches[1];
+            if (in_array($tool_slug, $this->valid_slugs)) {
+                return array('type' => 'use', 'slug' => $tool_slug, 'base_path' => '/' . $tools_slug . '/');
             }
+        }
 
-            // Check for /tools/{slug}/ (landing page)
-            if (preg_match('#^' . preg_quote($tools_slug, '#') . '/([^/\?]+)/?$#', $uri, $matches)) {
-                $tool_slug = $matches[1];
-                if (in_array($tool_slug, $this->valid_slugs)) {
-                    return array('type' => 'landing', 'slug' => $tool_slug, 'base_path' => '/' . $tools_slug . '/');
-                }
-                continue;
+        // Check for /tools/{slug}/ (landing page)
+        if (preg_match('#^' . preg_quote($tools_slug, '#') . '/([^/\?]+)/?$#', $uri, $matches)) {
+            $tool_slug = $matches[1];
+            if (in_array($tool_slug, $this->valid_slugs)) {
+                return array('type' => 'landing', 'slug' => $tool_slug, 'base_path' => '/' . $tools_slug . '/');
             }
+        }
 
-            // Check for /tools/ (directory)
-            if (preg_match('#^' . preg_quote($tools_slug, '#') . '/?$#', $uri)) {
-                return array('type' => 'directory', 'slug' => null, 'base_path' => '/' . $tools_slug . '/');
-            }
+        // Check for /tools/ (directory)
+        if (preg_match('#^' . preg_quote($tools_slug, '#') . '/?$#', $uri)) {
+            return array('type' => 'directory', 'slug' => null, 'base_path' => '/' . $tools_slug . '/');
         }
 
         return false;
@@ -433,24 +428,11 @@ class GMKB_Tool_Pages_Shortcode {
     }
 
     /**
-     * Detect the base URL for tools from current URL
+     * Get the base URL for tools
      *
-     * @return string Base URL (e.g., '/tools/' or '/app/tools/')
+     * @return string Base URL ('/tools/')
      */
     private function detect_base_url() {
-        $path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
-
-        // Check for /app/tools/ pattern first (more specific)
-        if (strpos($path, 'app/tools') === 0) {
-            return '/app/tools/';
-        }
-
-        // Check for /tools/ pattern
-        if (strpos($path, 'tools') === 0) {
-            return '/tools/';
-        }
-
-        // Default to /tools/
         return '/tools/';
     }
 
