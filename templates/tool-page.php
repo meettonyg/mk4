@@ -17,12 +17,32 @@ if (class_exists('GMKB_Tool_Pages')) {
     $pages = GMKB_Tool_Pages::instance();
     $pages->render_tool_page();
 } else {
-    // Fallback if class not loaded
+    // Fallback if class not loaded - indicates plugin configuration issue
     ?>
-    <div class="gmkb-tool-page" style="max-width: 1200px; margin: 0 auto; padding: 2rem 1rem;">
-        <div class="gmkb-error" style="text-align: center; padding: 40px;">
-            <h2>Tool Not Available</h2>
-            <p>This tool is currently loading. If this message persists, please refresh the page.</p>
+    <style>
+        .gmkb-tool-page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        .gmkb-tool-page .gmkb-error {
+            text-align: center;
+            padding: 40px;
+        }
+        .gmkb-tool-page .gmkb-error a {
+            display: inline-block;
+            margin-top: 1rem;
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        .gmkb-tool-page .gmkb-error a:hover {
+            text-decoration: underline;
+        }
+    </style>
+    <div class="gmkb-tool-page">
+        <div class="gmkb-error">
+            <h2>Tool Unavailable</h2>
+            <p>This tool is currently unavailable due to a configuration issue. Please contact support if this problem persists.</p>
             <a href="<?php echo esc_url(home_url('/tools/')); ?>">← Back to Tools</a>
         </div>
     </div>

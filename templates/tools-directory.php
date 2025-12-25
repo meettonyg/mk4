@@ -17,12 +17,23 @@ if (class_exists('GMKB_Tool_Pages')) {
     $pages = GMKB_Tool_Pages::instance();
     $pages->render_directory_page();
 } else {
-    // Fallback if class not loaded
+    // Fallback if class not loaded - indicates plugin configuration issue
     ?>
-    <div class="gmkb-tools-directory-page" style="max-width: 1200px; margin: 0 auto; padding: 2rem 1rem;">
-        <div class="gmkb-error" style="text-align: center; padding: 40px;">
-            <h2>Tools Directory</h2>
-            <p>The tools directory is loading. If this message persists, please refresh the page.</p>
+    <style>
+        .gmkb-tools-directory-page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        .gmkb-tools-directory-page .gmkb-error {
+            text-align: center;
+            padding: 40px;
+        }
+    </style>
+    <div class="gmkb-tools-directory-page">
+        <div class="gmkb-error">
+            <h2>Tools Directory Unavailable</h2>
+            <p>The tools directory is currently unavailable due to a configuration issue. Please contact support if this problem persists.</p>
         </div>
     </div>
     <?php
