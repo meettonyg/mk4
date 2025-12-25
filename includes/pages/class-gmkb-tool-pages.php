@@ -1607,7 +1607,7 @@ get_footer();
      */
     public function maybe_flush_rewrite_rules() {
         $version_key = 'gmkb_tool_pages_version';
-        $current_version = '1.0.0';
+        $current_version = '1.0.1'; // Bumped to force rewrite flush
 
         if (get_option($version_key) !== $current_version) {
             flush_rewrite_rules();
@@ -1621,7 +1621,7 @@ get_footer();
     public function flush_rewrite_rules() {
         $this->register_rewrite_rules();
         flush_rewrite_rules();
-        update_option('gmkb_tool_pages_version', '1.0.0');
+        update_option('gmkb_tool_pages_version', '1.0.1');
     }
 
     /**
