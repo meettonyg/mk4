@@ -42,10 +42,10 @@ class GMKB_Tool_Pages {
     private $discovery = null;
 
     /**
-     * Base URL path for tools
-     * @var string
+     * Base URL paths for tools (supports multiple paths)
+     * @var array
      */
-    private $base_path = 'tools';
+    private $base_paths = array('tools', 'app/tools');
 
     /**
      * Query var for tool slug
@@ -183,7 +183,7 @@ class GMKB_Tool_Pages {
 
         // Only redirect if we have a tool slug and ?use=1 (not already on /tool/)
         if (!empty($tool_slug) && '1' === $use_param && !get_query_var('gmkb_tool_app')) {
-            $new_url = home_url('/' . $this->base_path . '/' . $tool_slug . '/tool/');
+            $new_url = home_url('/' . $this->get_base_path() . '/' . $tool_slug . '/tool/');
             wp_redirect($new_url, 301);
             exit;
         }
@@ -272,29 +272,31 @@ class GMKB_Tool_Pages {
     }
 
     /**
-     * Register rewrite rules
+     * Register rewrite rules for all supported base paths
      */
     public function register_rewrite_rules() {
-        // Tool app page: /tools/{slug}/tool/
-        add_rewrite_rule(
-            '^' . $this->base_path . '/([^/]+)/tool/?$',
-            'index.php?' . $this->query_var . '=$matches[1]&gmkb_tool_app=1',
-            'top'
-        );
+        foreach ($this->base_paths as $base_path) {
+            // Tool app page: /tools/{slug}/tool/
+            add_rewrite_rule(
+                '^' . $base_path . '/([^/]+)/tool/?$',
+                'index.php?' . $this->query_var . '=$matches[1]&gmkb_tool_app=1',
+                'top'
+            );
 
-        // Individual tool landing pages: /tools/{slug}/
-        add_rewrite_rule(
-            '^' . $this->base_path . '/([^/]+)/?$',
-            'index.php?' . $this->query_var . '=$matches[1]',
-            'top'
-        );
+            // Individual tool landing pages: /tools/{slug}/
+            add_rewrite_rule(
+                '^' . $base_path . '/([^/]+)/?$',
+                'index.php?' . $this->query_var . '=$matches[1]',
+                'top'
+            );
 
-        // Tools directory: /tools/
-        add_rewrite_rule(
-            '^' . $this->base_path . '/?$',
-            'index.php?' . $this->directory_var . '=1',
-            'top'
-        );
+            // Tools directory: /tools/
+            add_rewrite_rule(
+                '^' . $base_path . '/?$',
+                'index.php?' . $this->directory_var . '=1',
+                'top'
+            );
+        }
     }
 
     /**
@@ -540,7 +542,7 @@ get_footer();
         <div class="gmkb-tool-app">
             <div class="gmkb-tool-app__header">
                 <div class="gmkb-container">
-                    <a href="<?php echo esc_url(home_url('/' . $this->base_path . '/' . $tool['id'] . '/')); ?>" class="gmkb-tool-app__back">
+                    <a href="<?php echo esc_url(home_url('/' . $this->get_base_path() . '/' . $tool['id'] . '/')); ?>" class="gmkb-tool-app__back">
                         ← Back to Overview
                     </a>
                     <h1 class="gmkb-tool-app__title"><?php echo esc_html($meta['name']); ?></h1>
@@ -823,7 +825,7 @@ get_footer();
         $landing = isset($meta['landingContent']) ? $meta['landingContent'] : array();
 
         // CTA URL - links to the tool app page
-        $cta_url = home_url('/' . $this->base_path . '/' . $tool['id'] . '/tool/');
+        $cta_url = home_url('/' . $this->get_base_path() . '/' . $tool['id'] . '/tool/');
         $cta_text = $landing['ctaText'] ?? 'Try ' . esc_html($meta['name']) . ' Free';
 
         ?>
@@ -972,7 +974,7 @@ get_footer();
                             $related_meta = $this->discovery->get_tool_metadata($related_slug);
                             if ($related && $related_meta):
                         ?>
-                            <a href="<?php echo esc_url(home_url('/' . $this->base_path . '/' . $related_slug . '/')); ?>"
+                            <a href="<?php echo esc_url(home_url('/' . $this->get_base_path() . '/' . $related_slug . '/')); ?>"
                                class="gmkb-related-tool">
                                 <h3><?php echo esc_html($related_meta['name']); ?></h3>
                                 <p><?php echo esc_html($related_meta['shortDescription']); ?></p>
@@ -1295,7 +1297,7 @@ get_footer();
                             <?php foreach ($category['tools'] as $tool):
                                 $meta = $this->discovery->get_tool_metadata($tool['id']);
                             ?>
-                                <a href="<?php echo esc_url(home_url('/' . $this->base_path . '/' . $tool['id'] . '/')); ?>"
+                                <a href="<?php echo esc_url(home_url('/' . $this->get_base_path() . '/' . $tool['id'] . '/')); ?>"
                                    class="gmkb-tool-card">
                                     <h3><?php echo esc_html($meta['name'] ?? $tool['name']); ?></h3>
                                     <p><?php echo esc_html($meta['shortDescription'] ?? ''); ?></p>
@@ -1402,7 +1404,7 @@ get_footer();
         $title = $seo['title'] ?? $meta['name'];
         $description = $seo['description'] ?? $meta['shortDescription'] ?? '';
         $keywords = isset($seo['keywords']) ? implode(', ', $seo['keywords']) : '';
-        $canonical = home_url('/' . $this->base_path . '/' . $tool['id'] . '/');
+        $canonical = home_url('/' . $this->get_base_path() . '/' . $tool['id'] . '/');
 
         // Basic meta tags
         echo '<meta name="description" content="' . esc_attr($description) . '">' . "\n";
@@ -1468,7 +1470,7 @@ get_footer();
     private function output_directory_seo_tags() {
         $title = 'Free AI Tools for Speakers & Authors';
         $description = 'Professional AI-powered content generation tools. Create bios, topics, taglines, and more for your speaking and authoring career.';
-        $canonical = home_url('/' . $this->base_path . '/');
+        $canonical = home_url('/' . $this->get_base_path() . '/');
 
         echo '<meta name="description" content="' . esc_attr($description) . '">' . "\n";
         echo '<link rel="canonical" href="' . esc_url($canonical) . '">' . "\n";
@@ -1492,7 +1494,7 @@ get_footer();
                     'item' => array(
                         '@type' => 'WebApplication',
                         'name' => $meta['name'] ?? $tool['name'],
-                        'url' => home_url('/' . $this->base_path . '/' . $tool['id'] . '/'),
+                        'url' => home_url('/' . $this->get_base_path() . '/' . $tool['id'] . '/'),
                     ),
                 );
             }
@@ -1607,7 +1609,7 @@ get_footer();
      */
     public function maybe_flush_rewrite_rules() {
         $version_key = 'gmkb_tool_pages_version';
-        $current_version = '1.0.1'; // Bumped to force rewrite flush
+        $current_version = '1.0.2'; // Bumped to add /app/tools/ support
 
         if (get_option($version_key) !== $current_version) {
             flush_rewrite_rules();
@@ -1621,7 +1623,7 @@ get_footer();
     public function flush_rewrite_rules() {
         $this->register_rewrite_rules();
         flush_rewrite_rules();
-        update_option('gmkb_tool_pages_version', '1.0.1');
+        update_option('gmkb_tool_pages_version', '1.0.2');
     }
 
     /**
@@ -1643,12 +1645,37 @@ get_footer();
     }
 
     /**
-     * Get tools base path
+     * Get tools base path (auto-detects from current URL)
      *
      * @return string Base path
      */
     public function get_base_path() {
-        return $this->base_path;
+        return $this->detect_current_base_path();
+    }
+
+    /**
+     * Detect the current base path from the URL
+     *
+     * @return string Base path (e.g., 'tools' or 'app/tools')
+     */
+    private function detect_current_base_path() {
+        $uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+        $path = trim(parse_url($uri, PHP_URL_PATH), '/');
+
+        // Check each base path, longest first (app/tools before tools)
+        $sorted_paths = $this->base_paths;
+        usort($sorted_paths, function($a, $b) {
+            return strlen($b) - strlen($a);
+        });
+
+        foreach ($sorted_paths as $base_path) {
+            if (strpos($path, $base_path) === 0) {
+                return $base_path;
+            }
+        }
+
+        // Default to first base path
+        return $this->base_paths[0];
     }
 }
 
