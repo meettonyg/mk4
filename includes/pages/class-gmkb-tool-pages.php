@@ -845,12 +845,14 @@ get_footer();
                     var container = document.getElementById(toolId + '-builder');
                     if (!container) return;
 
-                    // Find all input fields in the tool
-                    var inputs = container.querySelectorAll('input[type="text"], textarea');
+                    // Field order in the Vue component (matches AUTHORITY_HOOK_FIELDS order)
+                    var fieldOrder = ['who', 'what', 'when', 'how', 'where', 'why'];
 
-                    inputs.forEach(function(input) {
-                        // Try to match by placeholder text or label
-                        var fieldKey = detectFieldKey(input);
+                    // Find all input fields in the tool (in DOM order)
+                    var inputs = container.querySelectorAll('.gmkb-ai-hook-field input.gmkb-ai-input, .gmkb-ai-input');
+
+                    inputs.forEach(function(input, index) {
+                        var fieldKey = fieldOrder[index];
                         if (fieldKey && fieldData[fieldKey]) {
                             input.value = fieldData[fieldKey];
                             // Trigger input event to update Vue's reactivity
@@ -861,40 +863,6 @@ get_footer();
                     // Also store in currentData for save
                     currentData = { hook: fieldData };
                 }, 500);
-            }
-
-            // Detect which field an input corresponds to based on labels/placeholders
-            function detectFieldKey(input) {
-                var placeholder = (input.placeholder || '').toLowerCase();
-                var labelText = '';
-
-                // Try to find associated label
-                var label = input.closest('.gmkb-ai-hook-field, .gmkb-ai-field')?.querySelector('label');
-                if (label) {
-                    labelText = label.textContent.toLowerCase();
-                }
-
-                // Match by common patterns
-                if (labelText.includes('who') || placeholder.includes('entrepreneur') || placeholder.includes('professional')) {
-                    return 'who';
-                }
-                if (labelText.includes('what') || labelText.includes('achieve') || placeholder.includes('scale') || placeholder.includes('balance')) {
-                    return 'what';
-                }
-                if (labelText.includes('when') || placeholder.includes('stuck') || placeholder.includes('growth')) {
-                    return 'when';
-                }
-                if (labelText.includes('how') || placeholder.includes('framework') || placeholder.includes('coaching')) {
-                    return 'how';
-                }
-                if (labelText.includes('where') || placeholder.includes('business') || placeholder.includes('industry')) {
-                    return 'where';
-                }
-                if (labelText.includes('why') || placeholder.includes('deserves') || placeholder.includes('precious')) {
-                    return 'why';
-                }
-
-                return null;
             }
 
             // Handle profile change
