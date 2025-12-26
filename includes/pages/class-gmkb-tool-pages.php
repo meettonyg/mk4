@@ -804,10 +804,13 @@ get_footer();
                 });
             }
 
-            // Map profile field names back to tool field names
-            function mapProfileFieldsToTool(toolId, fields) {
-                var reverseMapping = {
-                    'authority-hook-builder': {
+            // Tool-specific configurations for field population
+            var toolConfigs = {
+                'authority-hook-builder': {
+                    selector: '.gmkb-ai-hook-fields .gmkb-ai-hook-field input.gmkb-ai-input',
+                    fieldOrder: ['who', 'what', 'when', 'how', 'where', 'why'],
+                    expectedCount: 6,
+                    profileMapping: {
                         'hook_who': 'who',
                         'hook_what': 'what',
                         'hook_when': 'when',
@@ -815,18 +818,103 @@ get_footer();
                         'hook_where': 'where',
                         'hook_why': 'why'
                     },
-                    'elevator-pitch-generator': {
-                        'elevator_pitch': 'pitch'
+                    saveMapping: {
+                        'who': 'hook_who',
+                        'what': 'hook_what',
+                        'when': 'hook_when',
+                        'how': 'hook_how',
+                        'where': 'hook_where',
+                        'why': 'hook_why',
+                        'polished': 'authority_hook_complete'
+                    }
+                },
+                'biography-generator': {
+                    selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea',
+                    fieldOrder: ['name', 'authorityHookText'],
+                    expectedCount: 2,
+                    profileMapping: {
+                        'first_name': 'name',
+                        'biography': 'authorityHookText',
+                        'hook_complete': 'authorityHookText'
                     },
-                    'tagline-generator': {
-                        'tagline': 'tagline'
-                    },
-                    'biography-generator': {
+                    saveMapping: {
+                        'content': 'biography',
                         'biography': 'biography'
                     }
-                };
+                },
+                'tagline-generator': {
+                    selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea',
+                    fieldOrder: ['name', 'authorityHookText'],
+                    expectedCount: 2,
+                    profileMapping: {
+                        'first_name': 'name',
+                        'hook_complete': 'authorityHookText'
+                    },
+                    saveMapping: {
+                        'selected': 'tagline',
+                        'tagline': 'tagline'
+                    }
+                },
+                'elevator-pitch-generator': {
+                    selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea, .gmkb-ai-form-group select.gmkb-ai-select',
+                    fieldOrder: ['name', 'authorityHook', 'audience', 'duration'],
+                    expectedCount: 4,
+                    profileMapping: {
+                        'first_name': 'name',
+                        'hook_complete': 'authorityHook',
+                        'target_audience': 'audience'
+                    },
+                    saveMapping: {
+                        'content': 'elevator_pitch',
+                        'pitch': 'elevator_pitch'
+                    }
+                },
+                'topics-generator': {
+                    selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea',
+                    fieldOrder: ['name', 'authorityHookText', 'audienceType'],
+                    expectedCount: 2,
+                    profileMapping: {
+                        'first_name': 'name',
+                        'hook_complete': 'authorityHookText'
+                    },
+                    saveMapping: {}
+                },
+                'questions-generator': {
+                    selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea',
+                    fieldOrder: ['name', 'authorityHookText'],
+                    expectedCount: 2,
+                    profileMapping: {
+                        'first_name': 'name',
+                        'hook_complete': 'authorityHookText'
+                    },
+                    saveMapping: {}
+                },
+                'guest-intro-generator': {
+                    selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea',
+                    fieldOrder: ['name', 'authorityHookText'],
+                    expectedCount: 2,
+                    profileMapping: {
+                        'first_name': 'name',
+                        'hook_complete': 'authorityHookText'
+                    },
+                    saveMapping: {
+                        'content': 'guest_intro'
+                    }
+                }
+            };
 
-                var mapping = reverseMapping[toolId] || {};
+            // Get config for current tool, with fallback
+            var config = toolConfigs[toolId] || {
+                selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea',
+                fieldOrder: [],
+                expectedCount: 0,
+                profileMapping: {},
+                saveMapping: {}
+            };
+
+            // Map profile field names back to tool field names
+            function mapProfileFieldsToTool(toolId, fields) {
+                var mapping = config.profileMapping || {};
                 var result = {};
 
                 for (var profileField in fields) {
@@ -840,7 +928,12 @@ get_footer();
 
             // Populate Vue component input fields
             function populateToolFields(fieldData) {
-                // Wait for Vue component to be fully rendered
+                if (!config.selector || config.expectedCount === 0) {
+                    console.log('[GMKB] No field configuration for tool:', toolId);
+                    currentData = { hook: fieldData };
+                    return;
+                }
+
                 var attempts = 0;
                 var maxAttempts = 10;
 
@@ -854,20 +947,17 @@ get_footer();
                         return;
                     }
 
-                    // Field order in the Vue component (matches AUTHORITY_HOOK_FIELDS array order)
-                    var fieldOrder = ['who', 'what', 'when', 'how', 'where', 'why'];
+                    // Find all input fields using tool-specific selector
+                    var inputs = container.querySelectorAll(config.selector);
 
-                    // Find all input fields within hook field containers (more specific selector)
-                    var inputs = container.querySelectorAll('.gmkb-ai-hook-fields .gmkb-ai-hook-field input.gmkb-ai-input');
-
-                    // If we don't have all 6 inputs yet, Vue may not be ready
-                    if (inputs.length < 6 && attempts < maxAttempts) {
+                    // If we don't have expected inputs yet, Vue may not be ready
+                    if (inputs.length < config.expectedCount && attempts < maxAttempts) {
                         setTimeout(tryPopulate, 200);
                         return;
                     }
 
                     inputs.forEach(function(input, index) {
-                        var fieldKey = fieldOrder[index];
+                        var fieldKey = config.fieldOrder[index];
                         if (fieldKey && fieldData[fieldKey]) {
                             input.value = fieldData[fieldKey];
                             // Trigger input event to update Vue's reactivity
@@ -875,7 +965,7 @@ get_footer();
                         }
                     });
 
-                    // Also store in currentData for save
+                    // Store in currentData for save
                     currentData = { hook: fieldData };
                 }
 
@@ -947,28 +1037,7 @@ get_footer();
             // Map tool-specific data to profile field names
             function mapToolDataToFields(toolId, data) {
                 var fields = {};
-                var toolMappings = {
-                    'authority-hook-builder': {
-                        'who': 'hook_who',
-                        'what': 'hook_what',
-                        'when': 'hook_when',
-                        'how': 'hook_how',
-                        'where': 'hook_where',
-                        'why': 'hook_why',
-                        'polished': 'authority_hook_complete'
-                    },
-                    'elevator-pitch-generator': {
-                        'pitch': 'elevator_pitch'
-                    },
-                    'tagline-generator': {
-                        'tagline': 'tagline'
-                    },
-                    'biography-generator': {
-                        'biography': 'biography'
-                    }
-                };
-
-                var mapping = toolMappings[toolId] || {};
+                var mapping = config.saveMapping || {};
 
                 // Handle nested data structures
                 var hookData = data.hook || data.original || data;
