@@ -756,7 +756,9 @@ get_footer();
                     headers: { 'X-WP-Nonce': nonce }
                 })
                 .then(function(r) { return r.json(); })
-                .then(function(profiles) {
+                .then(function(response) {
+                    // API returns { success: true, profiles: [...] }
+                    var profiles = response.profiles || response || [];
                     profileSelect.innerHTML = '';
                     if (!profiles || profiles.length === 0) {
                         profileSelect.innerHTML = '<option value="">No profiles found</option>';
