@@ -1,7 +1,7 @@
 <template>
   <AiWidgetFrame
     title="Authority Hook Builder"
-    description="Create a powerful positioning statement using the 6W framework."
+    description="Create a powerful positioning statement using the 4W framework."
     :mode="mode"
     :is-loading="isGenerating"
     :has-results="hasGeneratedHook"
@@ -15,7 +15,7 @@
     @copy="handleCopy"
     @retry="handleGenerate"
   >
-    <!-- 6W Framework Fields -->
+    <!-- 4W Framework Fields -->
     <div class="gmkb-ai-form">
       <!-- Progress Indicator -->
       <div class="gmkb-ai-hook-progress">
@@ -125,14 +125,12 @@ const props = defineProps({
 
 const emit = defineEmits(['applied', 'generated', 'change']);
 
-// Use composables
+// Use composables (4W Framework: who, what, when, how)
 const {
   who,
   what,
   when,
   how,
-  where,
-  why,
   authorityHookSummary,
   isValid,
   completionPercentage,
@@ -152,14 +150,12 @@ const {
   copyToClipboard
 } = useAIGenerator('authority_hook');
 
-// Local reactive state that mirrors the composable
+// Local reactive state that mirrors the composable (4W Framework)
 const hookFields = ref({
   who: '',
   what: '',
   when: '',
-  how: '',
-  where: '',
-  why: ''
+  how: ''
 });
 
 // Constants
@@ -243,9 +239,7 @@ const handleReset = () => {
     who: '',
     what: '',
     when: '',
-    how: '',
-    where: '',
-    why: ''
+    how: ''
   };
 };
 
@@ -258,23 +252,19 @@ onMounted(() => {
     who: who.value,
     what: what.value,
     when: when.value,
-    how: how.value,
-    where: where.value,
-    why: why.value
+    how: how.value
   };
 });
 
 /**
- * Watch for composable changes and sync to local state
+ * Watch for composable changes and sync to local state (4W Framework)
  */
-watch([who, what, when, how, where, why], () => {
+watch([who, what, when, how], () => {
   hookFields.value = {
     who: who.value,
     what: what.value,
     when: when.value,
-    how: how.value,
-    where: where.value,
-    why: why.value
+    how: how.value
   };
 });
 </script>

@@ -232,13 +232,13 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useMediaKitStore } from '../../../stores/mediaKit';
-import BiographyGenerator from '@tools/biography-generator/BiographyGenerator.vue';
-import TopicsGenerator from '@tools/topics-generator/TopicsGenerator.vue';
-import QuestionsGenerator from '@tools/questions-generator/QuestionsGenerator.vue';
-import GuestIntroGenerator from '@tools/guest-intro-generator/GuestIntroGenerator.vue';
-import TaglineGenerator from '@tools/tagline-generator/TaglineGenerator.vue';
-import AuthorityHookBuilder from '@tools/authority-hook-builder/AuthorityHookBuilder.vue';
-import ImpactIntroBuilder from '@tools/impact-intro-builder/ImpactIntroBuilder.vue';
+import BiographyGenerator from '@tools/biography/Generator.vue';
+import TopicsGenerator from '@tools/topics/Generator.vue';
+import QuestionsGenerator from '@tools/questions/Generator.vue';
+import GuestIntroGenerator from '@tools/guest-intro/Generator.vue';
+import TaglineGenerator from '@tools/tagline/Generator.vue';
+import AuthorityHookBuilder from '@tools/authority-hook/Generator.vue';
+import ImpactIntroBuilder from '@tools/impact-intro/Generator.vue';
 
 const props = defineProps({
   /**

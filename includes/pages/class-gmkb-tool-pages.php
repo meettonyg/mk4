@@ -809,26 +809,22 @@ get_footer();
             var simpleGeneratorSelector = '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea, .gmkb-ai-form-group select.gmkb-ai-select';
 
             var toolConfigs = {
-                // ===== AUTHORITY HOOK (Custom Component) =====
+                // ===== AUTHORITY HOOK (Custom Component - 4W Framework) =====
                 'authority-hook-builder': {
                     selector: '.gmkb-ai-hook-fields .gmkb-ai-hook-field input.gmkb-ai-input',
-                    fieldOrder: ['who', 'what', 'when', 'how', 'where', 'why'],
-                    expectedCount: 6,
+                    fieldOrder: ['who', 'what', 'when', 'how'],
+                    expectedCount: 4,
                     profileMapping: {
                         'hook_who': 'who',
                         'hook_what': 'what',
                         'hook_when': 'when',
-                        'hook_how': 'how',
-                        'hook_where': 'where',
-                        'hook_why': 'why'
+                        'hook_how': 'how'
                     },
                     saveMapping: {
                         'who': 'hook_who',
                         'what': 'hook_what',
                         'when': 'hook_when',
                         'how': 'hook_how',
-                        'where': 'hook_where',
-                        'why': 'hook_why',
                         'polished': 'authority_hook_complete'
                     }
                 },

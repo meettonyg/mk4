@@ -12,7 +12,7 @@ export const meta = {
   slug: 'authority-hook',
   name: 'Authority Hook Builder',
   title: 'Authority Hook Builder',
-  description: 'Build a powerful positioning statement using the 6W framework that clearly communicates who you serve and what transformation you provide.',
+  description: 'Build a powerful positioning statement using the 4W framework (Who, What, When, How) that clearly communicates who you serve and what transformation you provide.',
   category: 'message-builder',
   icon: 'zap'
 };
