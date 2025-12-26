@@ -525,7 +525,7 @@ get_footer();
 
     /**
      * Render the tool app page with 2-column layout
-     * This is the actual interactive tool
+     * Uses the legacy generator design system for consistent styling
      */
     private function render_tool_app_page() {
         $tool = $this->current_tool;
@@ -533,285 +533,116 @@ get_footer();
         $landing = isset($meta['landingContent']) ? $meta['landingContent'] : array();
 
         // Get guidance content from meta.json
-        $guidance = $landing['guidance'] ?? array();
         $examples = $landing['examples'] ?? array();
         $tips = $landing['tips'] ?? array();
         ?>
-        <div class="gmkb-tool-app">
-            <div class="gmkb-tool-app__header">
-                <div class="gmkb-container">
-                    <a href="<?php echo esc_url(home_url('/' . $this->get_base_path() . '/' . $tool['id'] . '/')); ?>" class="gmkb-tool-app__back">
-                        ← Back to Overview
-                    </a>
-                    <h1 class="gmkb-tool-app__title"><?php echo esc_html($meta['name']); ?></h1>
-                    <p class="gmkb-tool-app__description"><?php echo esc_html($meta['shortDescription']); ?></p>
-                </div>
+        <div class="gmkb-generator-root generator__container" data-generator="<?php echo esc_attr($tool['id']); ?>">
+            <div class="generator__header">
+                <h1 class="generator__title"><?php echo esc_html($meta['name']); ?></h1>
             </div>
 
-            <div class="gmkb-tool-app__content">
-                <!-- Left Panel: Tool Widget -->
-                <div class="gmkb-tool-app__panel gmkb-tool-app__panel--left">
-                    <div class="gmkb-tool-app__widget">
-                        <?php echo do_shortcode('[gmkb_tool tool="' . esc_attr($tool['id']) . '"]'); ?>
+            <div class="generator__content">
+                <!-- LEFT PANEL: Tool Form -->
+                <div class="generator__panel generator__panel--left">
+                    <!-- Introduction Text -->
+                    <p class="generator__intro">
+                        <?php echo esc_html($meta['shortDescription']); ?>
+                    </p>
+
+                    <!-- Tool Builder Widget -->
+                    <div class="generator__builder" id="<?php echo esc_attr($tool['id']); ?>-builder" data-component="<?php echo esc_attr($tool['id']); ?>">
+                        <?php echo do_shortcode('[gmkb_tool tool="' . esc_attr($tool['id']) . '" show_title="false"]'); ?>
                     </div>
                 </div>
 
-                <!-- Right Panel: Guidance -->
-                <div class="gmkb-tool-app__panel gmkb-tool-app__panel--right">
-                    <!-- Formula -->
+                <!-- RIGHT PANEL: Guidance -->
+                <div class="generator__panel generator__panel--right">
+                    <h2 class="generator__guidance-header">How to Create Your <?php echo esc_html($meta['name']); ?></h2>
+                    <p class="generator__guidance-subtitle">
+                        <?php echo esc_html($meta['shortDescription']); ?>
+                    </p>
+
+                    <!-- Formula Box -->
                     <?php if (!empty($landing['formula'])): ?>
-                    <div class="gmkb-tool-app__section gmkb-tool-app__section--formula">
-                        <h3>The Formula</h3>
-                        <div class="gmkb-tool-app__formula">
-                            <?php echo esc_html($landing['formula']); ?>
-                        </div>
+                    <div class="generator__formula-box">
+                        <span class="generator__formula-label">FORMULA</span>
+                        <?php echo wp_kses_post($this->format_formula($landing['formula'])); ?>
                     </div>
                     <?php endif; ?>
 
-                    <!-- How It Works -->
+                    <!-- How It Works / Process Steps -->
                     <?php if (!empty($landing['howItWorks'])): ?>
-                    <div class="gmkb-tool-app__section">
-                        <h3>How It Works</h3>
-                        <div class="gmkb-tool-app__steps">
-                            <?php foreach ($landing['howItWorks'] as $step): ?>
-                            <div class="gmkb-tool-app__step">
-                                <span class="gmkb-tool-app__step-num"><?php echo esc_html($step['step']); ?></span>
-                                <div class="gmkb-tool-app__step-content">
-                                    <strong><?php echo esc_html($step['title']); ?></strong>
-                                    <p><?php echo esc_html($step['description']); ?></p>
-                                </div>
-                            </div>
-                            <?php endforeach; ?>
+                    <?php foreach ($landing['howItWorks'] as $step): ?>
+                    <div class="generator__process-step">
+                        <div class="generator__process-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                        </div>
+                        <div class="generator__process-content">
+                            <h3 class="generator__process-title"><?php echo esc_html($step['title']); ?></h3>
+                            <p class="generator__process-description">
+                                <?php echo esc_html($step['description']); ?>
+                            </p>
                         </div>
                     </div>
-                    <?php endif; ?>
-
-                    <!-- Tips -->
-                    <?php if (!empty($tips)): ?>
-                    <div class="gmkb-tool-app__section">
-                        <h3>Pro Tips</h3>
-                        <ul class="gmkb-tool-app__tips">
-                            <?php foreach ($tips as $tip): ?>
-                            <li><?php echo esc_html($tip); ?></li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
+                    <?php endforeach; ?>
                     <?php endif; ?>
 
                     <!-- Examples -->
                     <?php if (!empty($examples)): ?>
-                    <div class="gmkb-tool-app__section">
-                        <h3>Examples</h3>
-                        <div class="gmkb-tool-app__examples">
-                            <?php foreach ($examples as $example): ?>
-                            <div class="gmkb-tool-app__example">
-                                <?php if (isset($example['title'])): ?>
-                                <h4><?php echo esc_html($example['title']); ?></h4>
-                                <?php endif; ?>
-                                <p><?php echo esc_html($example['content'] ?? $example); ?></p>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
+                    <h3 class="generator__examples-header">Examples:</h3>
+                    <?php foreach ($examples as $example): ?>
+                    <div class="generator__example-card">
+                        <?php if (is_array($example) && isset($example['content'])): ?>
+                        <p><?php echo esc_html($example['content']); ?></p>
+                        <?php else: ?>
+                        <p><?php echo esc_html(is_string($example) ? $example : ''); ?></p>
+                        <?php endif; ?>
                     </div>
+                    <?php endforeach; ?>
                     <?php endif; ?>
 
-                    <!-- Key Benefits -->
-                    <?php if (!empty($meta['keyBenefits'])): ?>
-                    <div class="gmkb-tool-app__section">
-                        <h3>Benefits</h3>
-                        <ul class="gmkb-tool-app__benefits">
-                            <?php foreach ($meta['keyBenefits'] as $benefit): ?>
-                            <li>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
-                                <?php echo esc_html($benefit); ?>
-                            </li>
-                            <?php endforeach; ?>
-                        </ul>
+                    <!-- Tips -->
+                    <?php if (!empty($tips)): ?>
+                    <div class="generator__process-step">
+                        <div class="generator__process-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                        </div>
+                        <div class="generator__process-content">
+                            <h3 class="generator__process-title">Pro Tips</h3>
+                            <ul class="generator__tips-list">
+                                <?php foreach ($tips as $tip): ?>
+                                <li><?php echo esc_html($tip); ?></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
                     </div>
                     <?php endif; ?>
                 </div>
             </div>
         </div>
-
-        <style>
-            .gmkb-tool-app {
-                max-width: 1400px;
-                margin: 0 auto;
-                padding: 0 1rem 2rem;
-            }
-            .gmkb-tool-app__header {
-                padding: 2rem 0;
-                border-bottom: 1px solid #e5e7eb;
-                margin-bottom: 2rem;
-            }
-            .gmkb-tool-app__back {
-                display: inline-flex;
-                align-items: center;
-                color: #6b7280;
-                text-decoration: none;
-                font-size: 0.875rem;
-                margin-bottom: 0.5rem;
-            }
-            .gmkb-tool-app__back:hover {
-                color: #3b82f6;
-            }
-            .gmkb-tool-app__title {
-                font-size: 1.75rem;
-                font-weight: 700;
-                margin: 0 0 0.5rem;
-                color: #111827;
-            }
-            .gmkb-tool-app__description {
-                color: #6b7280;
-                margin: 0;
-            }
-            .gmkb-tool-app__content {
-                display: grid;
-                grid-template-columns: 1fr 380px;
-                gap: 2rem;
-                align-items: start;
-            }
-            .gmkb-tool-app__panel--left {
-                background: white;
-                border-radius: 12px;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                padding: 1.5rem;
-            }
-            .gmkb-tool-app__panel--right {
-                position: sticky;
-                top: 2rem;
-            }
-            .gmkb-tool-app__section {
-                background: #f9fafb;
-                border-radius: 12px;
-                padding: 1.5rem;
-                margin-bottom: 1rem;
-            }
-            .gmkb-tool-app__section h3 {
-                font-size: 1rem;
-                font-weight: 600;
-                margin: 0 0 1rem;
-                color: #374151;
-            }
-            .gmkb-tool-app__section--formula {
-                background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
-                border: 1px solid #bfdbfe;
-            }
-            .gmkb-tool-app__formula {
-                font-size: 1.125rem;
-                font-weight: 500;
-                color: #1e40af;
-                padding: 1rem;
-                background: white;
-                border-radius: 8px;
-                text-align: center;
-                font-family: Georgia, serif;
-                font-style: italic;
-            }
-            .gmkb-tool-app__steps {
-                display: flex;
-                flex-direction: column;
-                gap: 1rem;
-            }
-            .gmkb-tool-app__step {
-                display: flex;
-                gap: 0.75rem;
-            }
-            .gmkb-tool-app__step-num {
-                width: 24px;
-                height: 24px;
-                background: #3b82f6;
-                color: white;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 0.75rem;
-                font-weight: 600;
-                flex-shrink: 0;
-            }
-            .gmkb-tool-app__step-content strong {
-                display: block;
-                font-size: 0.875rem;
-                margin-bottom: 0.25rem;
-            }
-            .gmkb-tool-app__step-content p {
-                font-size: 0.8125rem;
-                color: #6b7280;
-                margin: 0;
-            }
-            .gmkb-tool-app__tips,
-            .gmkb-tool-app__benefits {
-                list-style: none;
-                padding: 0;
-                margin: 0;
-            }
-            .gmkb-tool-app__tips li {
-                padding: 0.5rem 0;
-                padding-left: 1.5rem;
-                position: relative;
-                font-size: 0.875rem;
-                color: #374151;
-            }
-            .gmkb-tool-app__tips li::before {
-                content: "💡";
-                position: absolute;
-                left: 0;
-            }
-            .gmkb-tool-app__benefits li {
-                display: flex;
-                align-items: flex-start;
-                gap: 0.5rem;
-                padding: 0.5rem 0;
-                font-size: 0.875rem;
-                color: #374151;
-            }
-            .gmkb-tool-app__benefits svg {
-                width: 16px;
-                height: 16px;
-                color: #10b981;
-                flex-shrink: 0;
-                margin-top: 2px;
-            }
-            .gmkb-tool-app__example {
-                padding: 1rem;
-                background: white;
-                border-radius: 8px;
-                margin-bottom: 0.75rem;
-            }
-            .gmkb-tool-app__example:last-child {
-                margin-bottom: 0;
-            }
-            .gmkb-tool-app__example h4 {
-                font-size: 0.8125rem;
-                font-weight: 600;
-                color: #6b7280;
-                margin: 0 0 0.5rem;
-            }
-            .gmkb-tool-app__example p {
-                font-size: 0.875rem;
-                color: #374151;
-                margin: 0;
-                font-style: italic;
-            }
-            @media (max-width: 1024px) {
-                .gmkb-tool-app__content {
-                    grid-template-columns: 1fr;
-                }
-                .gmkb-tool-app__panel--right {
-                    position: static;
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                    gap: 1rem;
-                }
-                .gmkb-tool-app__section {
-                    margin-bottom: 0;
-                }
-            }
-        </style>
         <?php
+    }
+
+    /**
+     * Format formula text with highlights for placeholders like [WHO], [WHAT], etc.
+     *
+     * @param string $formula The formula text
+     * @return string HTML formatted formula
+     */
+    private function format_formula($formula) {
+        // Replace [PLACEHOLDER] patterns with highlighted spans
+        return preg_replace(
+            '/\[([A-Z]+)\]/',
+            '<span class="generator__highlight">[$1]</span>',
+            esc_html($formula)
+        );
     }
 
     /**
