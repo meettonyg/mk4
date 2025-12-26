@@ -16,39 +16,47 @@ import { useAIStore } from '../stores/ai';
 
 /**
  * Authority Hook field definitions
+ * Note: This must be an array (not object) for Vue v-for iteration to work correctly
+ * Each field needs an explicit 'key' property to bind to hookFields[field.key]
  */
-export const AUTHORITY_HOOK_FIELDS = {
-  who: {
+export const AUTHORITY_HOOK_FIELDS = [
+  {
+    key: 'who',
     label: 'WHO do you help?',
     placeholder: 'e.g., entrepreneurs, busy professionals, creative teams',
     description: 'Your target audience - be specific about who you serve'
   },
-  what: {
+  {
+    key: 'what',
     label: 'WHAT do you help them achieve?',
     placeholder: 'e.g., scale their business, find work-life balance, innovate faster',
     description: 'The transformation or outcome you deliver'
   },
-  when: {
+  {
+    key: 'when',
     label: 'WHEN do they need help?',
     placeholder: 'e.g., when they\'re stuck, during rapid growth, at career transitions',
     description: 'The situation or timing when they seek you out'
   },
-  how: {
+  {
+    key: 'how',
     label: 'HOW do you help them?',
     placeholder: 'e.g., through my proven framework, via 1:1 coaching, with strategic workshops',
     description: 'Your unique method, process, or approach'
   },
-  where: {
+  {
+    key: 'where',
     label: 'WHERE does this apply?',
     placeholder: 'e.g., in their business, in their personal life, in their industry',
     description: 'The context or area where your help is applied'
   },
-  why: {
+  {
+    key: 'why',
     label: 'WHY does this matter?',
     placeholder: 'e.g., because everyone deserves success, because time is precious',
     description: 'The deeper purpose or meaning behind your work'
   }
-};
+];
 
 /**
  * Authority Hook composable
@@ -242,6 +250,7 @@ export function useAuthorityHook() {
 
     // Methods
     setField,
+    updateField: setField, // Alias for backwards compatibility with Vue components
     setAll,
     reset,
     loadFromPodsData,

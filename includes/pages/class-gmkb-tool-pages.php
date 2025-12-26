@@ -840,16 +840,31 @@ get_footer();
 
             // Populate Vue component input fields
             function populateToolFields(fieldData) {
-                // Wait a bit for Vue component to be fully rendered
-                setTimeout(function() {
-                    var container = document.getElementById(toolId + '-builder');
-                    if (!container) return;
+                // Wait for Vue component to be fully rendered
+                var attempts = 0;
+                var maxAttempts = 10;
 
-                    // Field order in the Vue component (matches AUTHORITY_HOOK_FIELDS order)
+                function tryPopulate() {
+                    attempts++;
+                    var container = document.getElementById(toolId + '-builder');
+                    if (!container) {
+                        if (attempts < maxAttempts) {
+                            setTimeout(tryPopulate, 200);
+                        }
+                        return;
+                    }
+
+                    // Field order in the Vue component (matches AUTHORITY_HOOK_FIELDS array order)
                     var fieldOrder = ['who', 'what', 'when', 'how', 'where', 'why'];
 
-                    // Find all input fields in the tool (in DOM order)
-                    var inputs = container.querySelectorAll('.gmkb-ai-hook-field input.gmkb-ai-input, .gmkb-ai-input');
+                    // Find all input fields within hook field containers (more specific selector)
+                    var inputs = container.querySelectorAll('.gmkb-ai-hook-fields .gmkb-ai-hook-field input.gmkb-ai-input');
+
+                    // If we don't have all 6 inputs yet, Vue may not be ready
+                    if (inputs.length < 6 && attempts < maxAttempts) {
+                        setTimeout(tryPopulate, 200);
+                        return;
+                    }
 
                     inputs.forEach(function(input, index) {
                         var fieldKey = fieldOrder[index];
@@ -862,7 +877,10 @@ get_footer();
 
                     // Also store in currentData for save
                     currentData = { hook: fieldData };
-                }, 500);
+                }
+
+                // Start attempting to populate after initial delay
+                setTimeout(tryPopulate, 300);
             }
 
             // Handle profile change
