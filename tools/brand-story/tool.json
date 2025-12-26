@@ -1,0 +1,14 @@
+{
+  "id": "brand-story-generator",
+  "name": "Brand Story Generator",
+  "version": "2.0.0",
+  "category": "strategy",
+  "icon": "BookOpenIcon",
+  "component": "Widget.vue",
+  "prompts": "prompts.php",
+  "supports": {
+    "standalone": true,
+    "builder": true,
+    "modal": true
+  }
+}

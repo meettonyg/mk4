@@ -1,0 +1,14 @@
+{
+  "id": "blog-generator",
+  "name": "Blog Generator",
+  "version": "2.0.0",
+  "category": "content",
+  "icon": "DocumentTextIcon",
+  "component": "Widget.vue",
+  "prompts": "prompts.php",
+  "supports": {
+    "standalone": true,
+    "builder": true,
+    "modal": true
+  }
+}

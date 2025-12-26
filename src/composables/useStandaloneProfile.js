@@ -157,21 +157,19 @@ export function useStandaloneProfile() {
   };
 
   /**
-   * Get authority hook data from profile
+   * Get authority hook data from profile (4W Framework)
    * @returns {object} Authority hook fields
    */
   const getAuthorityHookData = computed(() => {
     if (!profileData.value) {
-      return { who: '', what: '', when: '', how: '', where: '', why: '' };
+      return { who: '', what: '', when: '', how: '' };
     }
 
     return {
       who: profileData.value.hook_who || '',
       what: profileData.value.hook_what || '',
       when: profileData.value.hook_when || '',
-      how: profileData.value.hook_how || '',
-      where: profileData.value.hook_where || '',
-      why: profileData.value.hook_why || ''
+      how: profileData.value.hook_how || ''
     };
   });
 

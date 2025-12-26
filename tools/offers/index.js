@@ -1,12 +1,18 @@
+// Full-page standalone generator
 export { default as Generator } from './Generator.vue';
-export { default } from './Generator.vue';
+
+// Embeddable widget component
+export { default as Widget } from './Widget.vue';
+
+// Default export is the widget (for shortcode/embedding use)
+export { default } from './Widget.vue';
 
 export const meta = {
   id: 'offers',
   slug: 'offers',
   name: 'Offers Generator',
-  title: 'Service Packages Generator',
-  description: 'Generate three tiered service packages that communicate clear value and outcomes to appeal to different client needs.',
+  title: 'Offers Generator',
+  description: 'Generate compelling service packages and pricing tiers.',
   category: 'message-builder',
-  icon: 'gift'
+  icon: 'package'
 };

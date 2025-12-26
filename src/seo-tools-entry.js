@@ -37,41 +37,41 @@ import { createPinia } from 'pinia';
 import './styles/ai-standalone.css';
 import './styles/ai-shared.css';
 
-// Import generator components from /tools/ directory (standalone mode only)
+// Import generator components from consolidated /tools/ directories
 // Message Builder tools
-import BiographyGenerator from '@tools/biography-generator/BiographyGenerator.vue';
-import TopicsGenerator from '@tools/topics-generator/TopicsGenerator.vue';
-import QuestionsGenerator from '@tools/questions-generator/QuestionsGenerator.vue';
-import TaglineGenerator from '@tools/tagline-generator/TaglineGenerator.vue';
-import GuestIntroGenerator from '@tools/guest-intro-generator/GuestIntroGenerator.vue';
-import AuthorityHookBuilder from '@tools/authority-hook-builder/AuthorityHookBuilder.vue';
-import OffersGenerator from '@tools/offers-generator/OffersGenerator.vue';
+import BiographyWidget from '@tools/biography/Widget.vue';
+import TopicsWidget from '@tools/topics/Widget.vue';
+import QuestionsWidget from '@tools/questions/Widget.vue';
+import TaglineWidget from '@tools/tagline/Widget.vue';
+import GuestIntroWidget from '@tools/guest-intro/Widget.vue';
+import AuthorityHookWidget from '@tools/authority-hook/Widget.vue';
+import OffersWidget from '@tools/offers/Widget.vue';
 
 // Value Builder tools
-import ElevatorPitchGenerator from '@tools/elevator-pitch-generator/ElevatorPitchGenerator.vue';
-import SoundBiteGenerator from '@tools/sound-bite-generator/SoundBiteGenerator.vue';
-import PersonaGenerator from '@tools/persona-generator/PersonaGenerator.vue';
-import ImpactIntroBuilder from '@tools/impact-intro-builder/ImpactIntroBuilder.vue';
+import ElevatorPitchWidget from '@tools/elevator-pitch/Widget.vue';
+import SoundBiteWidget from '@tools/sound-bite/Widget.vue';
+import PersonaWidget from '@tools/persona/Widget.vue';
+import ImpactIntroWidget from '@tools/impact-intro/Widget.vue';
 
 // Strategy tools
-import BrandStoryGenerator from '@tools/brand-story-generator/BrandStoryGenerator.vue';
-import SignatureStoryGenerator from '@tools/signature-story-generator/SignatureStoryGenerator.vue';
-import CredibilityStoryGenerator from '@tools/credibility-story-generator/CredibilityStoryGenerator.vue';
-import FrameworkGenerator from '@tools/framework-builder/FrameworkGenerator.vue';
-import InterviewPrepGenerator from '@tools/interview-prep-generator/InterviewPrepGenerator.vue';
+import BrandStoryWidget from '@tools/brand-story/Widget.vue';
+import SignatureStoryWidget from '@tools/signature-story/Widget.vue';
+import CredibilityStoryWidget from '@tools/credibility-story/Widget.vue';
+import FrameworkWidget from '@tools/framework/Widget.vue';
+import InterviewPrepWidget from '@tools/interview-prep/Widget.vue';
 
 // Content tools
-import BlogGenerator from '@tools/blog-generator/BlogGenerator.vue';
-import ContentRepurposerGenerator from '@tools/content-repurposer/ContentRepurposerGenerator.vue';
-import PressReleaseGenerator from '@tools/press-release-generator/PressReleaseGenerator.vue';
+import BlogWidget from '@tools/blog/Widget.vue';
+import ContentRepurposerWidget from '@tools/content-repurpose/Widget.vue';
+import PressReleaseWidget from '@tools/press-release/Widget.vue';
 
 // Social/Email tools
-import SocialPostGenerator from '@tools/social-post-generator/SocialPostGenerator.vue';
-import EmailWriterGenerator from '@tools/email-writer/EmailWriterGenerator.vue';
-import NewsletterGenerator from '@tools/newsletter-writer/NewsletterGenerator.vue';
-import YoutubeDescriptionGenerator from '@tools/youtube-description-generator/YoutubeDescriptionGenerator.vue';
-import PodcastNotesGenerator from '@tools/podcast-notes-generator/PodcastNotesGenerator.vue';
-import SeoOptimizerGenerator from '@tools/seo-optimizer/SeoOptimizerGenerator.vue';
+import SocialPostWidget from '@tools/social-post/Widget.vue';
+import EmailWidget from '@tools/email/Widget.vue';
+import NewsletterWidget from '@tools/newsletter/Widget.vue';
+import YoutubeDescriptionWidget from '@tools/youtube-description/Widget.vue';
+import PodcastNotesWidget from '@tools/podcast-notes/Widget.vue';
+import SeoOptimizerWidget from '@tools/seo-optimizer/Widget.vue';
 
 // Page components for directory and tool pages
 import ToolDirectoryPage from '@tools/ToolDirectoryPage.vue';
@@ -80,67 +80,67 @@ import DynamicToolPage from '@tools/DynamicToolPage.vue';
 
 /**
  * Component registry for data-gmkb-tool attribute values
- * Includes both short names (legacy) and full slugs (new architecture)
+ * Supports both short names and legacy full slugs for backwards compatibility
  */
 const TOOL_COMPONENTS = {
-    // Original tools - short names (legacy) + full slugs
-    'biography': BiographyGenerator,
-    'biography-generator': BiographyGenerator,
-    'topics': TopicsGenerator,
-    'topics-generator': TopicsGenerator,
-    'questions': QuestionsGenerator,
-    'questions-generator': QuestionsGenerator,
-    'tagline': TaglineGenerator,
-    'tagline-generator': TaglineGenerator,
-    'guest-intro': GuestIntroGenerator,
-    'guest-intro-generator': GuestIntroGenerator,
-    'authority-hook': AuthorityHookBuilder,
-    'authority-hook-builder': AuthorityHookBuilder,
-    'offers': OffersGenerator,
-    'offers-generator': OffersGenerator,
+    // Message Builder tools
+    'biography': BiographyWidget,
+    'biography-generator': BiographyWidget,
+    'topics': TopicsWidget,
+    'topics-generator': TopicsWidget,
+    'questions': QuestionsWidget,
+    'questions-generator': QuestionsWidget,
+    'tagline': TaglineWidget,
+    'tagline-generator': TaglineWidget,
+    'guest-intro': GuestIntroWidget,
+    'guest-intro-generator': GuestIntroWidget,
+    'authority-hook': AuthorityHookWidget,
+    'authority-hook-builder': AuthorityHookWidget,
+    'offers': OffersWidget,
+    'offers-generator': OffersWidget,
 
     // Value Builder tools
-    'elevator-pitch': ElevatorPitchGenerator,
-    'elevator-pitch-generator': ElevatorPitchGenerator,
-    'sound-bite': SoundBiteGenerator,
-    'sound-bite-generator': SoundBiteGenerator,
-    'persona': PersonaGenerator,
-    'persona-generator': PersonaGenerator,
-    'impact-intro': ImpactIntroBuilder,
-    'impact-intro-builder': ImpactIntroBuilder,
+    'elevator-pitch': ElevatorPitchWidget,
+    'elevator-pitch-generator': ElevatorPitchWidget,
+    'sound-bite': SoundBiteWidget,
+    'sound-bite-generator': SoundBiteWidget,
+    'persona': PersonaWidget,
+    'persona-generator': PersonaWidget,
+    'impact-intro': ImpactIntroWidget,
+    'impact-intro-builder': ImpactIntroWidget,
 
     // Strategy tools
-    'brand-story': BrandStoryGenerator,
-    'brand-story-generator': BrandStoryGenerator,
-    'signature-story': SignatureStoryGenerator,
-    'signature-story-generator': SignatureStoryGenerator,
-    'credibility-story': CredibilityStoryGenerator,
-    'credibility-story-generator': CredibilityStoryGenerator,
-    'framework': FrameworkGenerator,
-    'framework-builder': FrameworkGenerator,
-    'interview-prep': InterviewPrepGenerator,
-    'interview-prep-generator': InterviewPrepGenerator,
+    'brand-story': BrandStoryWidget,
+    'brand-story-generator': BrandStoryWidget,
+    'signature-story': SignatureStoryWidget,
+    'signature-story-generator': SignatureStoryWidget,
+    'credibility-story': CredibilityStoryWidget,
+    'credibility-story-generator': CredibilityStoryWidget,
+    'framework': FrameworkWidget,
+    'framework-builder': FrameworkWidget,
+    'interview-prep': InterviewPrepWidget,
+    'interview-prep-generator': InterviewPrepWidget,
 
     // Content tools
-    'blog': BlogGenerator,
-    'blog-generator': BlogGenerator,
-    'content-repurpose': ContentRepurposerGenerator,
-    'content-repurposer': ContentRepurposerGenerator,
-    'press-release': PressReleaseGenerator,
-    'press-release-generator': PressReleaseGenerator,
+    'blog': BlogWidget,
+    'blog-generator': BlogWidget,
+    'content-repurpose': ContentRepurposerWidget,
+    'content-repurposer': ContentRepurposerWidget,
+    'press-release': PressReleaseWidget,
+    'press-release-generator': PressReleaseWidget,
 
     // Social/Email tools
-    'social-post': SocialPostGenerator,
-    'social-post-generator': SocialPostGenerator,
-    'email': EmailWriterGenerator,
-    'email-writer': EmailWriterGenerator,
-    'newsletter': NewsletterGenerator,
-    'newsletter-writer': NewsletterGenerator,
-    'youtube-description': YoutubeDescriptionGenerator,
-    'youtube-description-generator': YoutubeDescriptionGenerator,
-    'podcast-notes': PodcastNotesGenerator,
-    'podcast-notes-generator': PodcastNotesGenerator,
-    'seo-optimizer': SeoOptimizerGenerator,
+    'social-post': SocialPostWidget,
+    'social-post-generator': SocialPostWidget,
+    'email': EmailWidget,
+    'email-writer': EmailWidget,
+    'newsletter': NewsletterWidget,
+    'newsletter-writer': NewsletterWidget,
+    'youtube-description': YoutubeDescriptionWidget,
+    'youtube-description-generator': YoutubeDescriptionWidget,
+    'podcast-notes': PodcastNotesWidget,
+    'podcast-notes-generator': PodcastNotesWidget,
+    'seo-optimizer': SeoOptimizerWidget,
 };
 
 /**
