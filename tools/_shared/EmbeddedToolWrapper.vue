@@ -119,7 +119,7 @@
                 :href="tool.requiresAccount ? '#' : tool.url"
                 class="related-tool-card"
                 :class="{ locked: tool.requiresAccount }"
-                @click="tool.requiresAccount ? handleToolGate($event, tool) : null"
+                @click="onToolClick($event, tool)"
               >
                 <div class="tool-card-icon">{{ tool.icon }}</div>
                 <div class="tool-card-content">
@@ -378,7 +378,6 @@ function handleGenerate() {
   // Check if logged in user - no limits
   if (props.isLoggedIn) {
     emit('generate');
-    hasGenerated.value = true;
     return;
   }
 
@@ -389,9 +388,8 @@ function handleGenerate() {
     return;
   }
 
-  // Emit generate event
+  // Emit generate event - hasGenerated will be set by the watcher when complete
   emit('generate');
-  hasGenerated.value = true;
   incrementGenerationCount();
 
   // Show soft gate after 2nd generation (before they hit limit)
@@ -399,7 +397,7 @@ function handleGenerate() {
     setTimeout(() => {
       showSoftGate.value = true;
       emit('gate-shown', { reason: 'engagement_prompt' });
-    }, 2000); // Show after content renders
+    }, 3000); // Show after generation completes
   }
 }
 
@@ -417,12 +415,16 @@ function handleSaveClick() {
   }
 }
 
-function handleToolGate(event, tool) {
-  event.preventDefault();
-  if (!props.isLoggedIn) {
-    const redirectUrl = encodeURIComponent(tool.url);
-    window.location.href = `${props.registerUrl}?redirect=${redirectUrl}&source=related_tool&tool=${tool.slug}`;
+function onToolClick(event, tool) {
+  // Only intercept if tool requires account
+  if (tool.requiresAccount) {
+    event.preventDefault();
+    if (!props.isLoggedIn) {
+      const redirectUrl = encodeURIComponent(tool.url);
+      window.location.href = `${props.registerUrl}?redirect=${redirectUrl}&source=related_tool&tool=${tool.slug}`;
+    }
   }
+  // If doesn't require account, let the default link behavior work
 }
 
 function handleGateSignup() {
