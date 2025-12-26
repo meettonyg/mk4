@@ -805,7 +805,11 @@ get_footer();
             }
 
             // Tool-specific configurations for field population
+            // Selector for SimpleGenerator tools: inputs, textareas, and selects in form groups
+            var simpleGeneratorSelector = '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea, .gmkb-ai-form-group select.gmkb-ai-select';
+
             var toolConfigs = {
+                // ===== AUTHORITY HOOK (Custom Component) =====
                 'authority-hook-builder': {
                     selector: '.gmkb-ai-hook-fields .gmkb-ai-hook-field input.gmkb-ai-input',
                     fieldOrder: ['who', 'what', 'when', 'how', 'where', 'why'],
@@ -828,6 +832,8 @@ get_footer();
                         'polished': 'authority_hook_complete'
                     }
                 },
+
+                // ===== BIOGRAPHY (Custom Component) =====
                 'biography-generator': {
                     selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea',
                     fieldOrder: ['name', 'authorityHookText'],
@@ -842,6 +848,8 @@ get_footer();
                         'biography': 'biography'
                     }
                 },
+
+                // ===== TAGLINE (Custom Component) =====
                 'tagline-generator': {
                     selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea',
                     fieldOrder: ['name', 'authorityHookText'],
@@ -855,8 +863,10 @@ get_footer();
                         'tagline': 'tagline'
                     }
                 },
+
+                // ===== ELEVATOR PITCH (SimpleGenerator) =====
                 'elevator-pitch-generator': {
-                    selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea, .gmkb-ai-form-group select.gmkb-ai-select',
+                    selector: simpleGeneratorSelector,
                     fieldOrder: ['name', 'authorityHook', 'audience', 'duration'],
                     expectedCount: 4,
                     profileMapping: {
@@ -869,9 +879,11 @@ get_footer();
                         'pitch': 'elevator_pitch'
                     }
                 },
+
+                // ===== TOPICS (Custom Component) =====
                 'topics-generator': {
                     selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea',
-                    fieldOrder: ['name', 'authorityHookText', 'audienceType'],
+                    fieldOrder: ['name', 'authorityHookText'],
                     expectedCount: 2,
                     profileMapping: {
                         'first_name': 'name',
@@ -879,6 +891,8 @@ get_footer();
                     },
                     saveMapping: {}
                 },
+
+                // ===== QUESTIONS (Custom Component) =====
                 'questions-generator': {
                     selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea',
                     fieldOrder: ['name', 'authorityHookText'],
@@ -889,6 +903,8 @@ get_footer();
                     },
                     saveMapping: {}
                 },
+
+                // ===== GUEST INTRO (Custom Component) =====
                 'guest-intro-generator': {
                     selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea',
                     fieldOrder: ['name', 'authorityHookText'],
@@ -900,6 +916,194 @@ get_footer();
                     saveMapping: {
                         'content': 'guest_intro'
                     }
+                },
+
+                // ===== OFFERS (Custom Component) =====
+                'offers-generator': {
+                    selector: '.gmkb-ai-form-group textarea.gmkb-ai-textarea',
+                    fieldOrder: ['services', 'authorityHookText'],
+                    expectedCount: 2,
+                    profileMapping: {
+                        'services': 'services',
+                        'hook_complete': 'authorityHookText'
+                    },
+                    saveMapping: {}
+                },
+
+                // ===== IMPACT INTRO (Custom Component - Tag-based) =====
+                'impact-intro-builder': {
+                    selector: '.gmkb-ai-tag-input input.gmkb-ai-input',
+                    fieldOrder: ['newCredential', 'newAchievement'],
+                    expectedCount: 2,
+                    profileMapping: {},
+                    saveMapping: {}
+                },
+
+                // ===== SOUND BITE (SimpleGenerator) =====
+                'sound-bite-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['topic', 'expertise', 'context'],
+                    expectedCount: 3,
+                    profileMapping: {
+                        'hook_complete': 'expertise'
+                    },
+                    saveMapping: {}
+                },
+
+                // ===== PERSONA (SimpleGenerator) =====
+                'persona-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['services', 'industry', 'currentClients'],
+                    expectedCount: 3,
+                    profileMapping: {
+                        'services': 'services',
+                        'industry': 'industry'
+                    },
+                    saveMapping: {}
+                },
+
+                // ===== BRAND STORY (SimpleGenerator) =====
+                'brand-story-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['background', 'transformation', 'mission'],
+                    expectedCount: 3,
+                    profileMapping: {
+                        'biography': 'background'
+                    },
+                    saveMapping: {
+                        'content': 'brand_story'
+                    }
+                },
+
+                // ===== SIGNATURE STORY (SimpleGenerator) =====
+                'signature-story-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['clientBackground', 'challenge', 'solution', 'results'],
+                    expectedCount: 4,
+                    profileMapping: {},
+                    saveMapping: {
+                        'content': 'signature_story'
+                    }
+                },
+
+                // ===== CREDIBILITY STORY (SimpleGenerator) =====
+                'credibility-story-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['expertise', 'experience', 'lesson'],
+                    expectedCount: 3,
+                    profileMapping: {
+                        'hook_complete': 'expertise'
+                    },
+                    saveMapping: {
+                        'content': 'credibility_story'
+                    }
+                },
+
+                // ===== FRAMEWORK (SimpleGenerator) =====
+                'framework-builder': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['problem', 'approach', 'outcome', 'steps'],
+                    expectedCount: 4,
+                    profileMapping: {},
+                    saveMapping: {}
+                },
+
+                // ===== INTERVIEW PREP (SimpleGenerator) =====
+                'interview-prep-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['showName', 'topics', 'keyMessages', 'callToAction'],
+                    expectedCount: 4,
+                    profileMapping: {},
+                    saveMapping: {}
+                },
+
+                // ===== BLOG (SimpleGenerator) =====
+                'blog-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['topic', 'keyPoints', 'audience', 'length'],
+                    expectedCount: 4,
+                    profileMapping: {
+                        'target_audience': 'audience'
+                    },
+                    saveMapping: {}
+                },
+
+                // ===== CONTENT REPURPOSER (SimpleGenerator) =====
+                'content-repurposer': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['originalContent', 'targetFormat'],
+                    expectedCount: 2,
+                    profileMapping: {},
+                    saveMapping: {}
+                },
+
+                // ===== PRESS RELEASE (SimpleGenerator) =====
+                'press-release-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['headline', 'announcement', 'quotes', 'companyInfo'],
+                    expectedCount: 4,
+                    profileMapping: {
+                        'biography': 'companyInfo'
+                    },
+                    saveMapping: {}
+                },
+
+                // ===== SOCIAL POST (SimpleGenerator) =====
+                'social-post-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['topic', 'platform', 'callToAction', 'hashtags'],
+                    expectedCount: 4,
+                    profileMapping: {},
+                    saveMapping: {}
+                },
+
+                // ===== EMAIL WRITER (SimpleGenerator) =====
+                'email-writer': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['purpose', 'recipient', 'context', 'aboutYou'],
+                    expectedCount: 4,
+                    profileMapping: {
+                        'hook_complete': 'aboutYou'
+                    },
+                    saveMapping: {}
+                },
+
+                // ===== NEWSLETTER (SimpleGenerator) =====
+                'newsletter-writer': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['topic', 'keyPoints', 'callToAction', 'style'],
+                    expectedCount: 4,
+                    profileMapping: {},
+                    saveMapping: {}
+                },
+
+                // ===== YOUTUBE DESCRIPTION (SimpleGenerator) =====
+                'youtube-description-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['videoTitle', 'videoContent', 'timestamps', 'links'],
+                    expectedCount: 4,
+                    profileMapping: {},
+                    saveMapping: {}
+                },
+
+                // ===== PODCAST NOTES (SimpleGenerator) =====
+                'podcast-notes-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['episodeTitle', 'guestName', 'topicsCovered', 'keyTakeaways', 'resources'],
+                    expectedCount: 5,
+                    profileMapping: {
+                        'first_name': 'guestName'
+                    },
+                    saveMapping: {}
+                },
+
+                // ===== SEO OPTIMIZER (SimpleGenerator) =====
+                'seo-optimizer': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['content', 'targetKeyword', 'outputType'],
+                    expectedCount: 3,
+                    profileMapping: {},
+                    saveMapping: {}
                 }
             };
 
