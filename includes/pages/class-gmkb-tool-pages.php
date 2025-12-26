@@ -793,18 +793,108 @@ get_footer();
                 .then(function(profile) {
                     // Pre-populate the tool with existing data if available
                     if (profile && profile.fields) {
-                        var toolContainer = document.getElementById(toolId + '-builder');
-                        if (toolContainer) {
-                            toolContainer.dispatchEvent(new CustomEvent('gmkb:load', {
-                                detail: { profile: profile, fields: profile.fields },
-                                bubbles: true
-                            }));
-                        }
+                        // Map profile fields back to tool field names
+                        var fieldData = mapProfileFieldsToTool(toolId, profile.fields);
+                        // Pre-populate the Vue component inputs
+                        populateToolFields(fieldData);
                     }
                 })
                 .catch(function(err) {
                     console.error('Failed to load profile data:', err);
                 });
+            }
+
+            // Map profile field names back to tool field names
+            function mapProfileFieldsToTool(toolId, fields) {
+                var reverseMapping = {
+                    'authority-hook-builder': {
+                        'hook_who': 'who',
+                        'hook_what': 'what',
+                        'hook_when': 'when',
+                        'hook_how': 'how',
+                        'hook_where': 'where',
+                        'hook_why': 'why'
+                    },
+                    'elevator-pitch-generator': {
+                        'elevator_pitch': 'pitch'
+                    },
+                    'tagline-generator': {
+                        'tagline': 'tagline'
+                    },
+                    'biography-generator': {
+                        'biography': 'biography'
+                    }
+                };
+
+                var mapping = reverseMapping[toolId] || {};
+                var result = {};
+
+                for (var profileField in fields) {
+                    if (mapping[profileField]) {
+                        result[mapping[profileField]] = fields[profileField];
+                    }
+                }
+
+                return result;
+            }
+
+            // Populate Vue component input fields
+            function populateToolFields(fieldData) {
+                // Wait a bit for Vue component to be fully rendered
+                setTimeout(function() {
+                    var container = document.getElementById(toolId + '-builder');
+                    if (!container) return;
+
+                    // Find all input fields in the tool
+                    var inputs = container.querySelectorAll('input[type="text"], textarea');
+
+                    inputs.forEach(function(input) {
+                        // Try to match by placeholder text or label
+                        var fieldKey = detectFieldKey(input);
+                        if (fieldKey && fieldData[fieldKey]) {
+                            input.value = fieldData[fieldKey];
+                            // Trigger input event to update Vue's reactivity
+                            input.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                    });
+
+                    // Also store in currentData for save
+                    currentData = { hook: fieldData };
+                }, 500);
+            }
+
+            // Detect which field an input corresponds to based on labels/placeholders
+            function detectFieldKey(input) {
+                var placeholder = (input.placeholder || '').toLowerCase();
+                var labelText = '';
+
+                // Try to find associated label
+                var label = input.closest('.gmkb-ai-hook-field, .gmkb-ai-field')?.querySelector('label');
+                if (label) {
+                    labelText = label.textContent.toLowerCase();
+                }
+
+                // Match by common patterns
+                if (labelText.includes('who') || placeholder.includes('entrepreneur') || placeholder.includes('professional')) {
+                    return 'who';
+                }
+                if (labelText.includes('what') || labelText.includes('achieve') || placeholder.includes('scale') || placeholder.includes('balance')) {
+                    return 'what';
+                }
+                if (labelText.includes('when') || placeholder.includes('stuck') || placeholder.includes('growth')) {
+                    return 'when';
+                }
+                if (labelText.includes('how') || placeholder.includes('framework') || placeholder.includes('coaching')) {
+                    return 'how';
+                }
+                if (labelText.includes('where') || placeholder.includes('business') || placeholder.includes('industry')) {
+                    return 'where';
+                }
+                if (labelText.includes('why') || placeholder.includes('deserves') || placeholder.includes('precious')) {
+                    return 'why';
+                }
+
+                return null;
             }
 
             // Handle profile change
