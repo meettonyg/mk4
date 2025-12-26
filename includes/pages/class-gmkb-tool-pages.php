@@ -202,13 +202,6 @@ class GMKB_Tool_Pages {
             return;
         }
 
-        // Only enqueue scripts on the tool app page (/tool/ or legacy ?use=1)
-        $use_param = isset($_GET['use']) ? sanitize_text_field(wp_unslash($_GET['use'])) : null;
-        $is_tool_app = get_query_var('gmkb_tool_app') || ('1' === $use_param);
-        if (!$is_tool_app) {
-            return;
-        }
-
         // Verify tool exists
         if (!$this->discovery) {
             return;
@@ -216,6 +209,18 @@ class GMKB_Tool_Pages {
 
         $tool = $this->discovery->get_tool($tool_slug);
         if (!$tool) {
+            return;
+        }
+
+        // Check if this is a PLG landing page (has embedded tool)
+        $meta = $this->discovery->get_tool_metadata($tool_slug);
+        $landing = isset($meta['landingContent']) ? $meta['landingContent'] : array();
+        $is_plg_landing = !empty($landing['hero']) && !empty($landing['hero']['h1']);
+
+        // Only enqueue scripts on the tool app page (/tool/ or legacy ?use=1) OR PLG landing pages
+        $use_param = isset($_GET['use']) ? sanitize_text_field(wp_unslash($_GET['use'])) : null;
+        $is_tool_app = get_query_var('gmkb_tool_app') || ('1' === $use_param);
+        if (!$is_tool_app && !$is_plg_landing) {
             return;
         }
 
