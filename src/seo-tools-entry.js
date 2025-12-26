@@ -373,8 +373,8 @@ function initializeEmbeddedTool(container) {
         window.gmkbSeoTools = { nonce };
     }
 
-    // Check if user is logged in
-    const isLoggedIn = !!(window.gmkbUserData?.isLoggedIn);
+    // Check if user is logged in (check both possible sources)
+    const isLoggedIn = !!(window.gmkbStandaloneTools?.isLoggedIn || window.gmkbUserData?.isLoggedIn);
 
     // Build related tools array from meta.relatedToolSlugs
     const relatedTools = buildRelatedTools(meta.relatedToolSlugs || [], toolSlug);
