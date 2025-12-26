@@ -1822,7 +1822,14 @@ get_footer();
         $tool = $this->current_tool;
         $meta = $this->current_meta;
         $landing = isset($meta['landingContent']) ? $meta['landingContent'] : array();
-        $hero = isset($landing['hero']) ? $landing['hero'] : array();
+
+        // Use logged-in hero content if available and user is logged in
+        $is_logged_in = is_user_logged_in();
+        if ($is_logged_in && !empty($landing['heroLoggedIn'])) {
+            $hero = $landing['heroLoggedIn'];
+        } else {
+            $hero = isset($landing['hero']) ? $landing['hero'] : array();
+        }
 
         // Prepare data for Vue component
         $tool_slug = $tool['id'];

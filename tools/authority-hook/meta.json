@@ -50,6 +50,16 @@
         { "icon": "✓", "text": "Free forever" }
       ]
     },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "Authority Hook Generator",
+      "subhead": "Generate a positioning statement that establishes your expertise using the 6 W's framework.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
     "intents": [
       {
         "id": "authority",
