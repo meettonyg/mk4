@@ -549,6 +549,17 @@
   margin-bottom: var(--mkcg-space-lg);
 }
 
+.gmkb-generator-root .generator__tips-list {
+  margin: 0;
+  padding-left: var(--mkcg-space-md);
+  color: var(--mkcg-text-secondary);
+}
+
+.gmkb-generator-root .generator__tips-list li {
+  margin-bottom: var(--mkcg-space-xs);
+  line-height: var(--mkcg-line-height-relaxed);
+}
+
 /* ============================================================================
    9. LOADING STATE
    ============================================================================ */

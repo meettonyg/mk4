@@ -183,7 +183,7 @@ class GMKB_Tool_Pages {
 
         // Only redirect if we have a tool slug and ?use=1 (not already on /tool/)
         if (!empty($tool_slug) && '1' === $use_param && !get_query_var('gmkb_tool_app')) {
-            $new_url = home_url('/' . $this->base_path . '/' . $tool_slug . '/tool/');
+            $new_url = home_url('/' . $this->get_base_path() . '/' . $tool_slug . '/tool/');
             wp_redirect($new_url, 301);
             exit;
         }
@@ -272,7 +272,7 @@ class GMKB_Tool_Pages {
     }
 
     /**
-     * Register rewrite rules
+     * Register rewrite rules for tools pages
      */
     public function register_rewrite_rules() {
         // Tool app page: /tools/{slug}/tool/
@@ -525,7 +525,7 @@ get_footer();
 
     /**
      * Render the tool app page with 2-column layout
-     * This is the actual interactive tool
+     * Uses the legacy generator design system for consistent styling
      */
     private function render_tool_app_page() {
         $tool = $this->current_tool;
@@ -533,285 +533,461 @@ get_footer();
         $landing = isset($meta['landingContent']) ? $meta['landingContent'] : array();
 
         // Get guidance content from meta.json
-        $guidance = $landing['guidance'] ?? array();
         $examples = $landing['examples'] ?? array();
         $tips = $landing['tips'] ?? array();
+
+        // Check if user is logged in for profile features
+        $is_logged_in = is_user_logged_in();
         ?>
-        <div class="gmkb-tool-app">
-            <div class="gmkb-tool-app__header">
-                <div class="gmkb-container">
-                    <a href="<?php echo esc_url(home_url('/' . $this->base_path . '/' . $tool['id'] . '/')); ?>" class="gmkb-tool-app__back">
-                        ← Back to Overview
-                    </a>
-                    <h1 class="gmkb-tool-app__title"><?php echo esc_html($meta['name']); ?></h1>
-                    <p class="gmkb-tool-app__description"><?php echo esc_html($meta['shortDescription']); ?></p>
-                </div>
+        <div class="gmkb-generator-root generator__container" data-generator="<?php echo esc_attr($tool['id']); ?>">
+            <div class="generator__header">
+                <h1 class="generator__title"><?php echo esc_html($meta['name']); ?></h1>
             </div>
 
-            <div class="gmkb-tool-app__content">
-                <!-- Left Panel: Tool Widget -->
-                <div class="gmkb-tool-app__panel gmkb-tool-app__panel--left">
-                    <div class="gmkb-tool-app__widget">
-                        <?php echo do_shortcode('[gmkb_tool tool="' . esc_attr($tool['id']) . '"]'); ?>
+            <?php if ($is_logged_in): ?>
+            <!-- Profile Selection Bar for Logged-in Users -->
+            <div class="generator__profile-bar" id="gmkb-profile-bar">
+                <div class="generator__profile-selector">
+                    <label for="gmkb-profile-select">Saving to Profile:</label>
+                    <select id="gmkb-profile-select" class="generator__profile-dropdown">
+                        <option value="">Loading profiles...</option>
+                    </select>
+                </div>
+                <div class="generator__save-actions">
+                    <span id="gmkb-save-status" class="generator__save-status"></span>
+                    <button type="button" id="gmkb-save-btn" class="generator__button--call-to-action" disabled>
+                        💾 Save to Profile
+                    </button>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <div class="generator__content">
+                <!-- LEFT PANEL: Tool Form -->
+                <div class="generator__panel generator__panel--left">
+                    <!-- Introduction Text -->
+                    <p class="generator__intro">
+                        <?php echo esc_html($meta['shortDescription']); ?>
+                    </p>
+
+                    <!-- Tool Builder Widget -->
+                    <div class="generator__builder" id="<?php echo esc_attr($tool['id']); ?>-builder" data-component="<?php echo esc_attr($tool['id']); ?>">
+                        <?php echo do_shortcode('[gmkb_tool tool="' . esc_attr($tool['id']) . '" show_title="false"]'); ?>
                     </div>
                 </div>
 
-                <!-- Right Panel: Guidance -->
-                <div class="gmkb-tool-app__panel gmkb-tool-app__panel--right">
-                    <!-- Formula -->
+                <!-- RIGHT PANEL: Guidance -->
+                <div class="generator__panel generator__panel--right">
+                    <h2 class="generator__guidance-header">How to Create Your <?php echo esc_html($meta['name']); ?></h2>
+                    <p class="generator__guidance-subtitle">
+                        <?php echo esc_html($meta['shortDescription']); ?>
+                    </p>
+
+                    <!-- Formula Box -->
                     <?php if (!empty($landing['formula'])): ?>
-                    <div class="gmkb-tool-app__section gmkb-tool-app__section--formula">
-                        <h3>The Formula</h3>
-                        <div class="gmkb-tool-app__formula">
-                            <?php echo esc_html($landing['formula']); ?>
-                        </div>
+                    <div class="generator__formula-box">
+                        <span class="generator__formula-label">FORMULA</span>
+                        <?php echo wp_kses_post($this->format_formula($landing['formula'])); ?>
                     </div>
                     <?php endif; ?>
 
-                    <!-- How It Works -->
+                    <!-- How It Works / Process Steps -->
                     <?php if (!empty($landing['howItWorks'])): ?>
-                    <div class="gmkb-tool-app__section">
-                        <h3>How It Works</h3>
-                        <div class="gmkb-tool-app__steps">
-                            <?php foreach ($landing['howItWorks'] as $step): ?>
-                            <div class="gmkb-tool-app__step">
-                                <span class="gmkb-tool-app__step-num"><?php echo esc_html($step['step']); ?></span>
-                                <div class="gmkb-tool-app__step-content">
-                                    <strong><?php echo esc_html($step['title']); ?></strong>
-                                    <p><?php echo esc_html($step['description']); ?></p>
-                                </div>
-                            </div>
-                            <?php endforeach; ?>
+                    <?php foreach ($landing['howItWorks'] as $step): ?>
+                    <div class="generator__process-step">
+                        <div class="generator__process-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                        </div>
+                        <div class="generator__process-content">
+                            <h3 class="generator__process-title"><?php echo esc_html($step['title']); ?></h3>
+                            <p class="generator__process-description">
+                                <?php echo esc_html($step['description']); ?>
+                            </p>
                         </div>
                     </div>
-                    <?php endif; ?>
-
-                    <!-- Tips -->
-                    <?php if (!empty($tips)): ?>
-                    <div class="gmkb-tool-app__section">
-                        <h3>Pro Tips</h3>
-                        <ul class="gmkb-tool-app__tips">
-                            <?php foreach ($tips as $tip): ?>
-                            <li><?php echo esc_html($tip); ?></li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
+                    <?php endforeach; ?>
                     <?php endif; ?>
 
                     <!-- Examples -->
                     <?php if (!empty($examples)): ?>
-                    <div class="gmkb-tool-app__section">
-                        <h3>Examples</h3>
-                        <div class="gmkb-tool-app__examples">
-                            <?php foreach ($examples as $example): ?>
-                            <div class="gmkb-tool-app__example">
-                                <?php if (isset($example['title'])): ?>
-                                <h4><?php echo esc_html($example['title']); ?></h4>
-                                <?php endif; ?>
-                                <p><?php echo esc_html($example['content'] ?? $example); ?></p>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
+                    <h3 class="generator__examples-header">Examples:</h3>
+                    <?php foreach ($examples as $example): ?>
+                    <div class="generator__example-card">
+                        <?php if (is_array($example) && isset($example['content'])): ?>
+                        <p><?php echo esc_html($example['content']); ?></p>
+                        <?php else: ?>
+                        <p><?php echo esc_html(is_string($example) ? $example : ''); ?></p>
+                        <?php endif; ?>
                     </div>
+                    <?php endforeach; ?>
                     <?php endif; ?>
 
-                    <!-- Key Benefits -->
-                    <?php if (!empty($meta['keyBenefits'])): ?>
-                    <div class="gmkb-tool-app__section">
-                        <h3>Benefits</h3>
-                        <ul class="gmkb-tool-app__benefits">
-                            <?php foreach ($meta['keyBenefits'] as $benefit): ?>
-                            <li>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
-                                <?php echo esc_html($benefit); ?>
-                            </li>
-                            <?php endforeach; ?>
-                        </ul>
+                    <!-- Tips -->
+                    <?php if (!empty($tips)): ?>
+                    <div class="generator__process-step">
+                        <div class="generator__process-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                        </div>
+                        <div class="generator__process-content">
+                            <h3 class="generator__process-title">Pro Tips</h3>
+                            <ul class="generator__tips-list">
+                                <?php foreach ($tips as $tip): ?>
+                                <li><?php echo esc_html($tip); ?></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
                     </div>
                     <?php endif; ?>
                 </div>
             </div>
         </div>
 
+        <?php if ($is_logged_in): ?>
+        <!-- Profile Bar Styles -->
         <style>
-            .gmkb-tool-app {
-                max-width: 1400px;
-                margin: 0 auto;
-                padding: 0 1rem 2rem;
-            }
-            .gmkb-tool-app__header {
-                padding: 2rem 0;
-                border-bottom: 1px solid #e5e7eb;
-                margin-bottom: 2rem;
-            }
-            .gmkb-tool-app__back {
-                display: inline-flex;
-                align-items: center;
-                color: #6b7280;
-                text-decoration: none;
-                font-size: 0.875rem;
-                margin-bottom: 0.5rem;
-            }
-            .gmkb-tool-app__back:hover {
-                color: #3b82f6;
-            }
-            .gmkb-tool-app__title {
-                font-size: 1.75rem;
-                font-weight: 700;
-                margin: 0 0 0.5rem;
-                color: #111827;
-            }
-            .gmkb-tool-app__description {
-                color: #6b7280;
-                margin: 0;
-            }
-            .gmkb-tool-app__content {
-                display: grid;
-                grid-template-columns: 1fr 380px;
-                gap: 2rem;
-                align-items: start;
-            }
-            .gmkb-tool-app__panel--left {
-                background: white;
-                border-radius: 12px;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                padding: 1.5rem;
-            }
-            .gmkb-tool-app__panel--right {
-                position: sticky;
-                top: 2rem;
-            }
-            .gmkb-tool-app__section {
-                background: #f9fafb;
-                border-radius: 12px;
-                padding: 1.5rem;
-                margin-bottom: 1rem;
-            }
-            .gmkb-tool-app__section h3 {
-                font-size: 1rem;
-                font-weight: 600;
-                margin: 0 0 1rem;
-                color: #374151;
-            }
-            .gmkb-tool-app__section--formula {
-                background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
-                border: 1px solid #bfdbfe;
-            }
-            .gmkb-tool-app__formula {
-                font-size: 1.125rem;
-                font-weight: 500;
-                color: #1e40af;
-                padding: 1rem;
-                background: white;
-                border-radius: 8px;
-                text-align: center;
-                font-family: Georgia, serif;
-                font-style: italic;
-            }
-            .gmkb-tool-app__steps {
-                display: flex;
+        .generator__profile-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--mkcg-space-md, 16px);
+            margin-bottom: var(--mkcg-space-lg, 24px);
+            background: var(--mkcg-bg-secondary, #f9fafb);
+            border: 1px solid var(--mkcg-border-light, #e9ecef);
+            border-radius: var(--mkcg-radius, 8px);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .generator__profile-selector {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .generator__profile-selector label {
+            font-weight: 500;
+            color: var(--mkcg-text-secondary, #5a6d7e);
+            font-size: 14px;
+        }
+        .generator__profile-dropdown {
+            padding: 8px 32px 8px 12px;
+            font-size: 14px;
+            border: 1px solid var(--mkcg-border-medium, #dce1e5);
+            border-radius: var(--mkcg-radius-sm, 4px);
+            background: white;
+            min-width: 200px;
+            cursor: pointer;
+        }
+        .generator__profile-dropdown:focus {
+            outline: none;
+            border-color: var(--mkcg-primary, #1a9bdc);
+            box-shadow: 0 0 0 3px rgba(26, 155, 220, 0.15);
+        }
+        .generator__save-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .generator__save-status {
+            font-size: 13px;
+            color: var(--mkcg-text-secondary, #5a6d7e);
+        }
+        .generator__save-status.success {
+            color: var(--mkcg-success, #34c759);
+        }
+        .generator__save-status.error {
+            color: var(--mkcg-error, #ff3b30);
+        }
+        .generator__button--call-to-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            background: var(--mkcg-primary, #1a9bdc);
+            border: none;
+            border-radius: var(--mkcg-radius, 8px);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .generator__button--call-to-action:hover:not(:disabled) {
+            background: var(--mkcg-primary-dark, #0d8ecf);
+        }
+        .generator__button--call-to-action:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        @media (max-width: 640px) {
+            .generator__profile-bar {
                 flex-direction: column;
-                gap: 1rem;
+                align-items: stretch;
             }
-            .gmkb-tool-app__step {
-                display: flex;
-                gap: 0.75rem;
-            }
-            .gmkb-tool-app__step-num {
-                width: 24px;
-                height: 24px;
-                background: #3b82f6;
-                color: white;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
+            .generator__profile-selector,
+            .generator__save-actions {
                 justify-content: center;
-                font-size: 0.75rem;
-                font-weight: 600;
-                flex-shrink: 0;
             }
-            .gmkb-tool-app__step-content strong {
-                display: block;
-                font-size: 0.875rem;
-                margin-bottom: 0.25rem;
-            }
-            .gmkb-tool-app__step-content p {
-                font-size: 0.8125rem;
-                color: #6b7280;
-                margin: 0;
-            }
-            .gmkb-tool-app__tips,
-            .gmkb-tool-app__benefits {
-                list-style: none;
-                padding: 0;
-                margin: 0;
-            }
-            .gmkb-tool-app__tips li {
-                padding: 0.5rem 0;
-                padding-left: 1.5rem;
-                position: relative;
-                font-size: 0.875rem;
-                color: #374151;
-            }
-            .gmkb-tool-app__tips li::before {
-                content: "💡";
-                position: absolute;
-                left: 0;
-            }
-            .gmkb-tool-app__benefits li {
-                display: flex;
-                align-items: flex-start;
-                gap: 0.5rem;
-                padding: 0.5rem 0;
-                font-size: 0.875rem;
-                color: #374151;
-            }
-            .gmkb-tool-app__benefits svg {
-                width: 16px;
-                height: 16px;
-                color: #10b981;
-                flex-shrink: 0;
-                margin-top: 2px;
-            }
-            .gmkb-tool-app__example {
-                padding: 1rem;
-                background: white;
-                border-radius: 8px;
-                margin-bottom: 0.75rem;
-            }
-            .gmkb-tool-app__example:last-child {
-                margin-bottom: 0;
-            }
-            .gmkb-tool-app__example h4 {
-                font-size: 0.8125rem;
-                font-weight: 600;
-                color: #6b7280;
-                margin: 0 0 0.5rem;
-            }
-            .gmkb-tool-app__example p {
-                font-size: 0.875rem;
-                color: #374151;
-                margin: 0;
-                font-style: italic;
-            }
-            @media (max-width: 1024px) {
-                .gmkb-tool-app__content {
-                    grid-template-columns: 1fr;
-                }
-                .gmkb-tool-app__panel--right {
-                    position: static;
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                    gap: 1rem;
-                }
-                .gmkb-tool-app__section {
-                    margin-bottom: 0;
-                }
-            }
+        }
         </style>
-        <?php
+
+        <!-- Profile Management Script -->
+        <script>
+        (function() {
+            var toolId = '<?php echo esc_js($tool['id']); ?>';
+            var apiBase = '<?php echo esc_url(rest_url('gmkb/v2')); ?>';
+            var nonce = '<?php echo esc_js(wp_create_nonce('wp_rest')); ?>';
+
+            var profileSelect = document.getElementById('gmkb-profile-select');
+            var saveBtn = document.getElementById('gmkb-save-btn');
+            var saveStatus = document.getElementById('gmkb-save-status');
+
+            var currentData = {};
+            var selectedProfileId = null;
+
+            // Load user's profiles
+            function loadProfiles() {
+                fetch(apiBase + '/profiles', {
+                    headers: { 'X-WP-Nonce': nonce }
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(response) {
+                    // API returns { success: true, profiles: [...] }
+                    var profiles = response.profiles || response || [];
+                    profileSelect.innerHTML = '';
+                    if (!profiles || profiles.length === 0) {
+                        profileSelect.innerHTML = '<option value="">No profiles found</option>';
+                        return;
+                    }
+                    profiles.forEach(function(p) {
+                        var opt = document.createElement('option');
+                        opt.value = p.id;
+                        opt.textContent = p.title || p.name || 'Profile #' + p.id;
+                        profileSelect.appendChild(opt);
+                    });
+                    // Auto-select first profile
+                    if (profiles.length > 0) {
+                        selectedProfileId = profiles[0].id;
+                        profileSelect.value = selectedProfileId;
+                        saveBtn.disabled = false;
+                        loadProfileData(selectedProfileId);
+                    }
+                })
+                .catch(function(err) {
+                    console.error('Failed to load profiles:', err);
+                    profileSelect.innerHTML = '<option value="">Error loading profiles</option>';
+                });
+            }
+
+            // Load existing data from selected profile
+            function loadProfileData(profileId) {
+                fetch(apiBase + '/profile/' + profileId, {
+                    headers: { 'X-WP-Nonce': nonce }
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(profile) {
+                    // Pre-populate the tool with existing data if available
+                    if (profile && profile.fields) {
+                        // Map profile fields back to tool field names
+                        var fieldData = mapProfileFieldsToTool(toolId, profile.fields);
+                        // Pre-populate the Vue component inputs
+                        populateToolFields(fieldData);
+                    }
+                })
+                .catch(function(err) {
+                    console.error('Failed to load profile data:', err);
+                });
+            }
+
+            // Map profile field names back to tool field names
+            function mapProfileFieldsToTool(toolId, fields) {
+                var reverseMapping = {
+                    'authority-hook-builder': {
+                        'hook_who': 'who',
+                        'hook_what': 'what',
+                        'hook_when': 'when',
+                        'hook_how': 'how',
+                        'hook_where': 'where',
+                        'hook_why': 'why'
+                    },
+                    'elevator-pitch-generator': {
+                        'elevator_pitch': 'pitch'
+                    },
+                    'tagline-generator': {
+                        'tagline': 'tagline'
+                    },
+                    'biography-generator': {
+                        'biography': 'biography'
+                    }
+                };
+
+                var mapping = reverseMapping[toolId] || {};
+                var result = {};
+
+                for (var profileField in fields) {
+                    if (mapping[profileField]) {
+                        result[mapping[profileField]] = fields[profileField];
+                    }
+                }
+
+                return result;
+            }
+
+            // Populate Vue component input fields
+            function populateToolFields(fieldData) {
+                // Wait a bit for Vue component to be fully rendered
+                setTimeout(function() {
+                    var container = document.getElementById(toolId + '-builder');
+                    if (!container) return;
+
+                    // Field order in the Vue component (matches AUTHORITY_HOOK_FIELDS order)
+                    var fieldOrder = ['who', 'what', 'when', 'how', 'where', 'why'];
+
+                    // Find all input fields in the tool (in DOM order)
+                    var inputs = container.querySelectorAll('.gmkb-ai-hook-field input.gmkb-ai-input, .gmkb-ai-input');
+
+                    inputs.forEach(function(input, index) {
+                        var fieldKey = fieldOrder[index];
+                        if (fieldKey && fieldData[fieldKey]) {
+                            input.value = fieldData[fieldKey];
+                            // Trigger input event to update Vue's reactivity
+                            input.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                    });
+
+                    // Also store in currentData for save
+                    currentData = { hook: fieldData };
+                }, 500);
+            }
+
+            // Handle profile change
+            profileSelect.addEventListener('change', function() {
+                selectedProfileId = this.value;
+                saveBtn.disabled = !selectedProfileId;
+                if (selectedProfileId) {
+                    loadProfileData(selectedProfileId);
+                }
+            });
+
+            // Listen for tool data changes
+            document.addEventListener('gmkb:applied', function(e) {
+                currentData = e.detail || {};
+                showStatus('Changes detected', '');
+            });
+
+            document.addEventListener('gmkb:generated', function(e) {
+                currentData = e.detail || {};
+                showStatus('Content generated', '');
+            });
+
+            // Save to profile
+            saveBtn.addEventListener('click', function() {
+                if (!selectedProfileId || !currentData) return;
+
+                saveBtn.disabled = true;
+                showStatus('Saving...', '');
+
+                // Map tool data to profile fields based on tool type
+                var fieldsToSave = mapToolDataToFields(toolId, currentData);
+
+                fetch(apiBase + '/profile/' + selectedProfileId + '/fields', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-WP-Nonce': nonce
+                    },
+                    body: JSON.stringify({ fields: fieldsToSave })
+                })
+                .then(function(r) {
+                    if (!r.ok) throw new Error('Save failed');
+                    return r.json();
+                })
+                .then(function() {
+                    showStatus('✓ Saved successfully!', 'success');
+                    saveBtn.disabled = false;
+                })
+                .catch(function(err) {
+                    console.error('Save error:', err);
+                    showStatus('✗ Save failed', 'error');
+                    saveBtn.disabled = false;
+                });
+            });
+
+            function showStatus(msg, type) {
+                saveStatus.textContent = msg;
+                saveStatus.className = 'generator__save-status' + (type ? ' ' + type : '');
+                if (type === 'success') {
+                    setTimeout(function() { saveStatus.textContent = ''; }, 3000);
+                }
+            }
+
+            // Map tool-specific data to profile field names
+            function mapToolDataToFields(toolId, data) {
+                var fields = {};
+                var toolMappings = {
+                    'authority-hook-builder': {
+                        'who': 'hook_who',
+                        'what': 'hook_what',
+                        'when': 'hook_when',
+                        'how': 'hook_how',
+                        'where': 'hook_where',
+                        'why': 'hook_why',
+                        'polished': 'authority_hook_complete'
+                    },
+                    'elevator-pitch-generator': {
+                        'pitch': 'elevator_pitch'
+                    },
+                    'tagline-generator': {
+                        'tagline': 'tagline'
+                    },
+                    'biography-generator': {
+                        'biography': 'biography'
+                    }
+                };
+
+                var mapping = toolMappings[toolId] || {};
+
+                // Handle nested data structures
+                var hookData = data.hook || data.original || data;
+                for (var key in hookData) {
+                    if (mapping[key]) {
+                        fields[mapping[key]] = hookData[key];
+                    }
+                }
+
+                // Handle polished/generated content
+                if (data.polished && mapping['polished']) {
+                    fields[mapping['polished']] = data.polished;
+                }
+
+                return fields;
+            }
+
+            // Initialize
+            loadProfiles();
+        })();
+        </script>
+        <?php endif; ?><?php
+    }
+
+    /**
+     * Format formula text with highlights for placeholders like [WHO], [WHAT], etc.
+     *
+     * @param string $formula The formula text
+     * @return string HTML formatted formula
+     */
+    private function format_formula($formula) {
+        // Replace [PLACEHOLDER] patterns with highlighted spans
+        return preg_replace(
+            '/\[([A-Z]+)\]/',
+            '<span class="generator__highlight">[$1]</span>',
+            esc_html($formula)
+        );
     }
 
     /**
@@ -823,7 +999,7 @@ get_footer();
         $landing = isset($meta['landingContent']) ? $meta['landingContent'] : array();
 
         // CTA URL - links to the tool app page
-        $cta_url = home_url('/' . $this->base_path . '/' . $tool['id'] . '/tool/');
+        $cta_url = home_url('/' . $this->get_base_path() . '/' . $tool['id'] . '/tool/');
         $cta_text = $landing['ctaText'] ?? 'Try ' . esc_html($meta['name']) . ' Free';
 
         ?>
@@ -972,7 +1148,7 @@ get_footer();
                             $related_meta = $this->discovery->get_tool_metadata($related_slug);
                             if ($related && $related_meta):
                         ?>
-                            <a href="<?php echo esc_url(home_url('/' . $this->base_path . '/' . $related_slug . '/')); ?>"
+                            <a href="<?php echo esc_url(home_url('/' . $this->get_base_path() . '/' . $related_slug . '/')); ?>"
                                class="gmkb-related-tool">
                                 <h3><?php echo esc_html($related_meta['name']); ?></h3>
                                 <p><?php echo esc_html($related_meta['shortDescription']); ?></p>
@@ -1295,7 +1471,7 @@ get_footer();
                             <?php foreach ($category['tools'] as $tool):
                                 $meta = $this->discovery->get_tool_metadata($tool['id']);
                             ?>
-                                <a href="<?php echo esc_url(home_url('/' . $this->base_path . '/' . $tool['id'] . '/')); ?>"
+                                <a href="<?php echo esc_url(home_url('/' . $this->get_base_path() . '/' . $tool['id'] . '/')); ?>"
                                    class="gmkb-tool-card">
                                     <h3><?php echo esc_html($meta['name'] ?? $tool['name']); ?></h3>
                                     <p><?php echo esc_html($meta['shortDescription'] ?? ''); ?></p>
@@ -1402,7 +1578,7 @@ get_footer();
         $title = $seo['title'] ?? $meta['name'];
         $description = $seo['description'] ?? $meta['shortDescription'] ?? '';
         $keywords = isset($seo['keywords']) ? implode(', ', $seo['keywords']) : '';
-        $canonical = home_url('/' . $this->base_path . '/' . $tool['id'] . '/');
+        $canonical = home_url('/' . $this->get_base_path() . '/' . $tool['id'] . '/');
 
         // Basic meta tags
         echo '<meta name="description" content="' . esc_attr($description) . '">' . "\n";
@@ -1468,7 +1644,7 @@ get_footer();
     private function output_directory_seo_tags() {
         $title = 'Free AI Tools for Speakers & Authors';
         $description = 'Professional AI-powered content generation tools. Create bios, topics, taglines, and more for your speaking and authoring career.';
-        $canonical = home_url('/' . $this->base_path . '/');
+        $canonical = home_url('/' . $this->get_base_path() . '/');
 
         echo '<meta name="description" content="' . esc_attr($description) . '">' . "\n";
         echo '<link rel="canonical" href="' . esc_url($canonical) . '">' . "\n";
@@ -1492,7 +1668,7 @@ get_footer();
                     'item' => array(
                         '@type' => 'WebApplication',
                         'name' => $meta['name'] ?? $tool['name'],
-                        'url' => home_url('/' . $this->base_path . '/' . $tool['id'] . '/'),
+                        'url' => home_url('/' . $this->get_base_path() . '/' . $tool['id'] . '/'),
                     ),
                 );
             }
@@ -1607,7 +1783,7 @@ get_footer();
      */
     public function maybe_flush_rewrite_rules() {
         $version_key = 'gmkb_tool_pages_version';
-        $current_version = '1.0.0';
+        $current_version = '1.0.3'; // Cleaned up to use only /tools/ path
 
         if (get_option($version_key) !== $current_version) {
             flush_rewrite_rules();
@@ -1621,7 +1797,7 @@ get_footer();
     public function flush_rewrite_rules() {
         $this->register_rewrite_rules();
         flush_rewrite_rules();
-        update_option('gmkb_tool_pages_version', '1.0.0');
+        update_option('gmkb_tool_pages_version', '1.0.3');
     }
 
     /**
