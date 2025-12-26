@@ -38,15 +38,13 @@ export const useAIStore = defineStore('ai', {
 
     /**
      * Shared Authority Hook data (persists across generators)
-     * The "Who/What/When/How/Where/Why" framework
+     * The 4W Framework: "Who/What/When/How"
      */
     authorityHook: {
       who: '',
       what: '',
       when: '',
-      how: '',
-      where: '',
-      why: ''
+      how: ''
     },
 
     /**
@@ -85,18 +83,16 @@ export const useAIStore = defineStore('ai', {
 
   getters: {
     /**
-     * Get formatted authority hook as a readable sentence
+     * Get formatted authority hook as a readable sentence (4W Framework)
      */
     authorityHookSummary: (state) => {
-      const { who, what, when, how, where, why } = state.authorityHook;
+      const { who, what, when, how } = state.authorityHook;
       const parts = [];
 
       if (who) parts.push(`I help ${who}`);
       if (what) parts.push(what);
       if (when) parts.push(`when ${when}`);
       if (how) parts.push(`by ${how}`);
-      if (where) parts.push(`in ${where}`);
-      if (why) parts.push(`because ${why}`);
 
       return parts.length > 0 ? parts.join(' ') : '';
     },
@@ -243,16 +239,14 @@ export const useAIStore = defineStore('ai', {
     },
 
     /**
-     * Reset authority hook to defaults
+     * Reset authority hook to defaults (4W Framework)
      */
     resetAuthorityHook() {
       this.authorityHook = {
         who: '',
         what: '',
         when: '',
-        how: '',
-        where: '',
-        why: ''
+        how: ''
       };
       console.log('[AI Store] Authority hook reset');
     },

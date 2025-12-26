@@ -114,7 +114,7 @@ import { ref, watch } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
 import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 import { AiModal } from '../../src/vue/components/ai';
-import QuestionsGenerator from '@tools/questions-generator/QuestionsGenerator.vue';
+import QuestionsGenerator from '@tools/questions/Generator.vue';
 
 const props = defineProps({
   componentId: {

@@ -1,12 +1,18 @@
+// Full-page standalone generator
 export { default as Generator } from './Generator.vue';
-export { default } from './Generator.vue';
+
+// Embeddable widget component
+export { default as Widget } from './Widget.vue';
+
+// Default export is the widget (for shortcode/embedding use)
+export { default } from './Widget.vue';
 
 export const meta = {
   id: 'social-post',
   slug: 'social-post',
   name: 'Social Post Generator',
-  title: 'Social Media Post Generator',
-  description: 'Create engaging social media posts optimized for each platform.',
+  title: 'Social Post Generator',
+  description: 'Create engaging social media content for multiple platforms.',
   category: 'social-email',
-  icon: 'share-2'
+  icon: 'share'
 };

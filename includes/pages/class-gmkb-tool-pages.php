@@ -804,29 +804,390 @@ get_footer();
                 });
             }
 
-            // Map profile field names back to tool field names
-            function mapProfileFieldsToTool(toolId, fields) {
-                var reverseMapping = {
-                    'authority-hook-builder': {
+            // Tool-specific configurations for field population
+            // Selector for SimpleGenerator tools: inputs, textareas, and selects in form groups
+            var simpleGeneratorSelector = '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea, .gmkb-ai-form-group select.gmkb-ai-select';
+
+            var toolConfigs = {
+                // ===== AUTHORITY HOOK (Custom Component - 4W Framework) =====
+                'authority-hook-builder': {
+                    selector: '.gmkb-ai-hook-fields .gmkb-ai-hook-field input.gmkb-ai-input',
+                    fieldOrder: ['who', 'what', 'when', 'how'],
+                    expectedCount: 4,
+                    profileMapping: {
                         'hook_who': 'who',
                         'hook_what': 'what',
                         'hook_when': 'when',
-                        'hook_how': 'how',
-                        'hook_where': 'where',
-                        'hook_why': 'why'
+                        'hook_how': 'how'
                     },
-                    'elevator-pitch-generator': {
-                        'elevator_pitch': 'pitch'
+                    saveMapping: {
+                        'who': 'hook_who',
+                        'what': 'hook_what',
+                        'when': 'hook_when',
+                        'how': 'hook_how',
+                        'polished': 'authority_hook_complete'
+                    }
+                },
+
+                // ===== BIOGRAPHY (Custom Component - Legacy Match) =====
+                'biography-generator': {
+                    selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea, .gmkb-ai-form-group select.gmkb-ai-select',
+                    fieldOrder: ['name', 'title', 'organization', 'authorityHookText', 'impactIntroText', 'tone', 'pov', 'length', 'existing_bio', 'additional_notes'],
+                    expectedCount: 10,
+                    profileMapping: {
+                        'first_name': 'name',
+                        'guest_title': 'title',
+                        'guest_company': 'organization',
+                        'hook_complete': 'authorityHookText',
+                        'impact_intro_complete': 'impactIntroText',
+                        'biography_tone': 'tone',
+                        'biography_pov': 'pov',
+                        'biography': 'existing_bio'
                     },
-                    'tagline-generator': {
-                        'tagline': 'tagline'
-                    },
-                    'biography-generator': {
+                    saveMapping: {
+                        'content': 'biography',
                         'biography': 'biography'
                     }
-                };
+                },
 
-                var mapping = reverseMapping[toolId] || {};
+                // ===== TAGLINE (Custom Component - Legacy Match) =====
+                'tagline-generator': {
+                    selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea, .gmkb-ai-form-group select.gmkb-ai-select',
+                    fieldOrder: ['name', 'authorityHookText', 'impactIntroText', 'industry', 'unique_factors', 'existing_taglines', 'style', 'tone', 'length'],
+                    expectedCount: 9,
+                    profileMapping: {
+                        'first_name': 'name',
+                        'hook_complete': 'authorityHookText',
+                        'impact_intro_complete': 'impactIntroText',
+                        'guest_industry': 'industry',
+                        'tagline_style': 'style',
+                        'tagline_tone': 'tone',
+                        'tagline_length': 'length'
+                    },
+                    saveMapping: {
+                        'selected': 'tagline',
+                        'tagline': 'tagline'
+                    }
+                },
+
+                // ===== ELEVATOR PITCH (Legacy Match) =====
+                'elevator-pitch-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['name', 'title', 'organization', 'value_proposition', 'target_audience', 'unique_benefit', 'call_to_action', 'context', 'tone'],
+                    expectedCount: 9,
+                    profileMapping: {
+                        'first_name': 'name',
+                        'guest_title': 'title',
+                        'guest_company': 'organization',
+                        'hook_what': 'value_proposition',
+                        'hook_who': 'target_audience',
+                        'hook_how': 'unique_benefit'
+                    },
+                    saveMapping: {
+                        'content': 'elevator_pitch',
+                        'pitch': 'elevator_pitch'
+                    }
+                },
+
+                // ===== TOPICS (Custom Component - Legacy Match) =====
+                'topics-generator': {
+                    selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea',
+                    fieldOrder: ['name', 'authorityHookText', 'topic_1', 'topic_2', 'topic_3', 'topic_4', 'topic_5'],
+                    expectedCount: 7,
+                    profileMapping: {
+                        'first_name': 'name',
+                        'hook_complete': 'authorityHookText',
+                        'topic_1': 'topic_1',
+                        'topic_2': 'topic_2',
+                        'topic_3': 'topic_3',
+                        'topic_4': 'topic_4',
+                        'topic_5': 'topic_5'
+                    },
+                    saveMapping: {}
+                },
+
+                // ===== QUESTIONS (Custom Component - Legacy Match) =====
+                'questions-generator': {
+                    selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea',
+                    fieldOrder: ['name', 'authorityHookText', 'topic_1', 'topic_2', 'topic_3', 'topic_4', 'topic_5'],
+                    expectedCount: 7,
+                    profileMapping: {
+                        'first_name': 'name',
+                        'hook_complete': 'authorityHookText',
+                        'topic_1': 'topic_1',
+                        'topic_2': 'topic_2',
+                        'topic_3': 'topic_3',
+                        'topic_4': 'topic_4',
+                        'topic_5': 'topic_5'
+                    },
+                    saveMapping: {}
+                },
+
+                // ===== GUEST INTRO (Custom Component - Legacy Match) =====
+                'guest-intro-generator': {
+                    selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea, .gmkb-ai-form-group select.gmkb-ai-select',
+                    fieldOrder: ['name', 'authorityHookText', 'impactIntroText', 'guest_name', 'guest_title', 'guest_company', 'episode_title', 'episode_topic', 'intro_tone', 'intro_hook_style', 'custom_notes'],
+                    expectedCount: 11,
+                    profileMapping: {
+                        'first_name': 'name',
+                        'hook_complete': 'authorityHookText',
+                        'impact_intro_complete': 'impactIntroText',
+                        'guest_name': 'guest_name',
+                        'guest_title': 'guest_title',
+                        'guest_company': 'guest_company'
+                    },
+                    saveMapping: {
+                        'content': 'guest_intro'
+                    }
+                },
+
+                // ===== OFFERS (Custom Component - Legacy Match) =====
+                'offers-generator': {
+                    selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea, .gmkb-ai-form-group select.gmkb-ai-select',
+                    fieldOrder: ['services', 'authorityHookText', 'business_type', 'target_audience', 'price_range', 'delivery_method', 'offer_count'],
+                    expectedCount: 7,
+                    profileMapping: {
+                        'services': 'services',
+                        'hook_complete': 'authorityHookText',
+                        'offers_business_type': 'business_type',
+                        'offers_target_audience': 'target_audience',
+                        'offers_price_range': 'price_range',
+                        'offers_delivery_method': 'delivery_method'
+                    },
+                    saveMapping: {}
+                },
+
+                // ===== IMPACT INTRO (Custom Component - Legacy uses where/why) =====
+                'impact-intro-builder': {
+                    selector: '.gmkb-ai-tag-input input.gmkb-ai-input, .gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea',
+                    fieldOrder: ['where', 'why', 'newCredential', 'newAchievement'],
+                    expectedCount: 4,
+                    profileMapping: {
+                        'impact_where': 'where',
+                        'impact_why': 'why'
+                    },
+                    saveMapping: {
+                        'where': 'impact_where',
+                        'why': 'impact_why',
+                        'complete': 'impact_intro_complete'
+                    }
+                },
+
+                // ===== SOUND BITE (Legacy Match) =====
+                'sound-bite-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['name', 'title', 'style', 'tone', 'count', 'expertise', 'philosophies', 'perspectives'],
+                    expectedCount: 8,
+                    profileMapping: {
+                        'first_name': 'name',
+                        'guest_title': 'title',
+                        'hook_complete': 'expertise'
+                    },
+                    saveMapping: {}
+                },
+
+                // ===== PERSONA (Legacy Match) =====
+                'persona-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['name', 'title', 'organization', 'industry', 'unique_factors', 'additional_notes', 'style', 'focus', 'depth', 'authorityHookText', 'impactIntroText'],
+                    expectedCount: 11,
+                    profileMapping: {
+                        'first_name': 'name',
+                        'guest_title': 'title',
+                        'guest_company': 'organization',
+                        'guest_industry': 'industry',
+                        'hook_complete': 'authorityHookText',
+                        'impact_intro_complete': 'impactIntroText'
+                    },
+                    saveMapping: {}
+                },
+
+                // ===== BRAND STORY (Legacy Match) =====
+                'brand-story-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['name', 'title', 'tone', 'background', 'values', 'authorityHookText'],
+                    expectedCount: 6,
+                    profileMapping: {
+                        'first_name': 'name',
+                        'guest_title': 'title',
+                        'biography': 'background',
+                        'hook_complete': 'authorityHookText'
+                    },
+                    saveMapping: {
+                        'content': 'brand_story'
+                    }
+                },
+
+                // ===== SIGNATURE STORY (SimpleGenerator) =====
+                'signature-story-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['clientBackground', 'challenge', 'solution', 'results'],
+                    expectedCount: 4,
+                    profileMapping: {},
+                    saveMapping: {
+                        'content': 'signature_story'
+                    }
+                },
+
+                // ===== BUSINESS STORIES (Legacy Match) =====
+                'business-stories-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['name', 'title', 'industry', 'tone', 'target_customer', 'origin', 'competitors', 'results', 'approach', 'authorityHookText'],
+                    expectedCount: 10,
+                    profileMapping: {
+                        'first_name': 'name',
+                        'guest_title': 'title',
+                        'guest_industry': 'industry',
+                        'hook_complete': 'authorityHookText'
+                    },
+                    saveMapping: {
+                        'content': 'business_stories'
+                    }
+                },
+
+                // ===== CREDIBILITY STORY (Legacy Match) =====
+                'credibility-story-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['name', 'title', 'tone', 'vulnerability', 'breakthrough', 'challenge', 'mentors', 'journey', 'expertise', 'authorityHookText'],
+                    expectedCount: 10,
+                    profileMapping: {
+                        'first_name': 'name',
+                        'guest_title': 'title',
+                        'hook_complete': 'authorityHookText'
+                    },
+                    saveMapping: {
+                        'content': 'credibility_story'
+                    }
+                },
+
+                // ===== FRAMEWORK (Legacy Match) =====
+                'framework-builder': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['name', 'title', 'expertise_area', 'authorityHookText', 'framework_type', 'step_count'],
+                    expectedCount: 6,
+                    profileMapping: {
+                        'first_name': 'name',
+                        'guest_title': 'title',
+                        'hook_complete': 'authorityHookText'
+                    },
+                    saveMapping: {}
+                },
+
+                // ===== INTERVIEW PREP (Legacy Match) =====
+                'interview-prep-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['name', 'title', 'interview_type', 'question_difficulty', 'count', 'expertise', 'messages', 'audience'],
+                    expectedCount: 8,
+                    profileMapping: {
+                        'first_name': 'name',
+                        'guest_title': 'title',
+                        'hook_complete': 'expertise'
+                    },
+                    saveMapping: {}
+                },
+
+                // ===== BLOG (SimpleGenerator) =====
+                'blog-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['topic', 'keyPoints', 'audience', 'length'],
+                    expectedCount: 4,
+                    profileMapping: {
+                        'target_audience': 'audience'
+                    },
+                    saveMapping: {}
+                },
+
+                // ===== CONTENT REPURPOSER (SimpleGenerator) =====
+                'content-repurposer': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['originalContent', 'targetFormat'],
+                    expectedCount: 2,
+                    profileMapping: {},
+                    saveMapping: {}
+                },
+
+                // ===== PRESS RELEASE (SimpleGenerator) =====
+                'press-release-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['headline', 'announcement', 'quotes', 'companyInfo'],
+                    expectedCount: 4,
+                    profileMapping: {
+                        'biography': 'companyInfo'
+                    },
+                    saveMapping: {}
+                },
+
+                // ===== SOCIAL POST (SimpleGenerator) =====
+                'social-post-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['topic', 'platform', 'callToAction', 'hashtags'],
+                    expectedCount: 4,
+                    profileMapping: {},
+                    saveMapping: {}
+                },
+
+                // ===== EMAIL WRITER (SimpleGenerator) =====
+                'email-writer': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['purpose', 'recipient', 'context', 'aboutYou'],
+                    expectedCount: 4,
+                    profileMapping: {
+                        'hook_complete': 'aboutYou'
+                    },
+                    saveMapping: {}
+                },
+
+                // ===== NEWSLETTER (SimpleGenerator) =====
+                'newsletter-writer': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['topic', 'keyPoints', 'callToAction', 'style'],
+                    expectedCount: 4,
+                    profileMapping: {},
+                    saveMapping: {}
+                },
+
+                // ===== YOUTUBE DESCRIPTION (SimpleGenerator) =====
+                'youtube-description-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['videoTitle', 'videoContent', 'timestamps', 'links'],
+                    expectedCount: 4,
+                    profileMapping: {},
+                    saveMapping: {}
+                },
+
+                // ===== PODCAST NOTES (SimpleGenerator) =====
+                'podcast-notes-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['episodeTitle', 'guestName', 'topicsCovered', 'keyTakeaways', 'resources'],
+                    expectedCount: 5,
+                    profileMapping: {
+                        'first_name': 'guestName'
+                    },
+                    saveMapping: {}
+                },
+
+                // ===== SEO OPTIMIZER (SimpleGenerator) =====
+                'seo-optimizer': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['content', 'targetKeyword', 'outputType'],
+                    expectedCount: 3,
+                    profileMapping: {},
+                    saveMapping: {}
+                }
+            };
+
+            // Get config for current tool, with fallback
+            var config = toolConfigs[toolId] || {
+                selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea',
+                fieldOrder: [],
+                expectedCount: 0,
+                profileMapping: {},
+                saveMapping: {}
+            };
+
+            // Map profile field names back to tool field names
+            function mapProfileFieldsToTool(toolId, fields) {
+                var mapping = config.profileMapping || {};
                 var result = {};
 
                 for (var profileField in fields) {
@@ -840,19 +1201,36 @@ get_footer();
 
             // Populate Vue component input fields
             function populateToolFields(fieldData) {
-                // Wait a bit for Vue component to be fully rendered
-                setTimeout(function() {
+                if (!config.selector || config.expectedCount === 0) {
+                    console.log('[GMKB] No field configuration for tool:', toolId);
+                    currentData = { hook: fieldData };
+                    return;
+                }
+
+                var attempts = 0;
+                var maxAttempts = 10;
+
+                function tryPopulate() {
+                    attempts++;
                     var container = document.getElementById(toolId + '-builder');
-                    if (!container) return;
+                    if (!container) {
+                        if (attempts < maxAttempts) {
+                            setTimeout(tryPopulate, 200);
+                        }
+                        return;
+                    }
 
-                    // Field order in the Vue component (matches AUTHORITY_HOOK_FIELDS order)
-                    var fieldOrder = ['who', 'what', 'when', 'how', 'where', 'why'];
+                    // Find all input fields using tool-specific selector
+                    var inputs = container.querySelectorAll(config.selector);
 
-                    // Find all input fields in the tool (in DOM order)
-                    var inputs = container.querySelectorAll('.gmkb-ai-hook-field input.gmkb-ai-input, .gmkb-ai-input');
+                    // If we don't have expected inputs yet, Vue may not be ready
+                    if (inputs.length < config.expectedCount && attempts < maxAttempts) {
+                        setTimeout(tryPopulate, 200);
+                        return;
+                    }
 
                     inputs.forEach(function(input, index) {
-                        var fieldKey = fieldOrder[index];
+                        var fieldKey = config.fieldOrder[index];
                         if (fieldKey && fieldData[fieldKey]) {
                             input.value = fieldData[fieldKey];
                             // Trigger input event to update Vue's reactivity
@@ -860,9 +1238,12 @@ get_footer();
                         }
                     });
 
-                    // Also store in currentData for save
+                    // Store in currentData for save
                     currentData = { hook: fieldData };
-                }, 500);
+                }
+
+                // Start attempting to populate after initial delay
+                setTimeout(tryPopulate, 300);
             }
 
             // Handle profile change
@@ -929,28 +1310,7 @@ get_footer();
             // Map tool-specific data to profile field names
             function mapToolDataToFields(toolId, data) {
                 var fields = {};
-                var toolMappings = {
-                    'authority-hook-builder': {
-                        'who': 'hook_who',
-                        'what': 'hook_what',
-                        'when': 'hook_when',
-                        'how': 'hook_how',
-                        'where': 'hook_where',
-                        'why': 'hook_why',
-                        'polished': 'authority_hook_complete'
-                    },
-                    'elevator-pitch-generator': {
-                        'pitch': 'elevator_pitch'
-                    },
-                    'tagline-generator': {
-                        'tagline': 'tagline'
-                    },
-                    'biography-generator': {
-                        'biography': 'biography'
-                    }
-                };
-
-                var mapping = toolMappings[toolId] || {};
+                var mapping = config.saveMapping || {};
 
                 // Handle nested data structures
                 var hookData = data.hook || data.original || data;
