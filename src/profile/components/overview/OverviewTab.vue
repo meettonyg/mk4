@@ -306,6 +306,10 @@
                                 <span class="contact-label">Name:</span>
                                 <span class="contact-value">{{ store.fullName }}</span>
                             </div>
+                            <div class="contact-item" v-if="store.fields.guest_title">
+                                <span class="contact-label">Title:</span>
+                                <span class="contact-value">{{ store.fields.guest_title }}</span>
+                            </div>
                             <div class="contact-item" v-if="store.fields.company">
                                 <span class="contact-label">Company:</span>
                                 <span class="contact-value">{{ store.fields.company }}</span>
@@ -339,6 +343,10 @@
                                 <label class="form-label">Last Name</label>
                                 <input type="text" class="form-input" v-model="editFields.last_name" />
                             </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Professional Title</label>
+                            <input type="text" class="form-input" v-model="editFields.guest_title" placeholder="e.g. Leadership Coach, CEO, Author" />
                         </div>
                         <div class="form-group">
                             <label class="form-label">Phonetic Spelling</label>
@@ -627,7 +635,7 @@ const sectionFields = {
         'social_tiktok', 'website_primary', 'website_secondary',
     ],
     contact: [
-        'first_name', 'last_name', 'phonetic', 'company',
+        'first_name', 'last_name', 'guest_title', 'phonetic', 'company',
         'phone', 'email', 'skype',
     ],
 };
