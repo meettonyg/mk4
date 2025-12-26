@@ -1,5 +1,12 @@
 <template>
   <div class="gmkb-tool-embed">
+    <!-- Profile Context Banner (logged-in users) -->
+    <ProfileContextBanner
+      v-if="isLoggedIn"
+      @profile-loaded="handleProfileLoaded"
+      @profile-cleared="handleProfileCleared"
+    />
+
     <!-- Intent Tabs -->
     <div v-if="intents && intents.length > 0" class="gmkb-intent-tabs" role="tablist">
       <button
@@ -30,6 +37,8 @@
             :intent="currentIntent"
             :placeholders="currentIntent?.formPlaceholders || {}"
             :labels="currentIntent?.formLabels || {}"
+            :profileData="profileData"
+            :hasSelectedProfile="hasSelectedProfile"
           ></slot>
         </div>
 
@@ -47,8 +56,8 @@
           </button>
         </div>
 
-        <!-- Rate Limit / Progressive Friction -->
-        <p class="tool-context__limit-text">
+        <!-- Rate Limit / Progressive Friction (guests only) -->
+        <p v-if="!isLoggedIn" class="tool-context__limit-text">
           <span v-if="generationCount < 3">
             {{ remainingGenerations }} free generation{{ remainingGenerations !== 1 ? 's' : '' }} remaining today.
           </span>
@@ -57,6 +66,10 @@
           </span>
           <br />
           <strong>{{ upgradeText }}</strong>
+        </p>
+        <!-- Logged-in users get unlimited -->
+        <p v-else class="tool-context__limit-text tool-context__limit-text--unlimited">
+          <span>✓ Unlimited generations with your account</span>
         </p>
       </div>
 
@@ -134,7 +147,27 @@
             </div>
 
             <!-- Save CTA -->
-            <div class="save-cta-box">
+            <div v-if="isLoggedIn && hasSelectedProfile" class="save-cta-box save-cta-box--profile">
+              <div class="save-cta-text">
+                <strong>Save to {{ selectedProfile?.title || 'your profile' }}</strong>
+                <span>Updates your profile with this hook</span>
+              </div>
+              <button
+                class="btn-save-account"
+                :class="{ 'btn-save-account--saving': isSavingToProfile, 'btn-save-account--saved': savedToProfile }"
+                @click="handleSaveToProfile"
+                :disabled="isSavingToProfile"
+              >
+                {{ savedToProfile ? '✓ Saved!' : (isSavingToProfile ? 'Saving...' : 'Save to Profile') }}
+              </button>
+            </div>
+            <div v-else-if="isLoggedIn && !hasSelectedProfile" class="save-cta-box save-cta-box--select">
+              <div class="save-cta-text">
+                <strong>Select a profile above</strong>
+                <span>to save this hook to your account</span>
+              </div>
+            </div>
+            <div v-else class="save-cta-box">
               <div class="save-cta-text">
                 <strong>Keep this hook forever</strong>
                 <span>+ unlock your full messaging suite</span>
@@ -224,6 +257,18 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
+import ProfileContextBanner from './ProfileContextBanner.vue';
+import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
+
+// Profile management for logged-in users
+const {
+  isLoggedIn: profileIsLoggedIn,
+  profileData,
+  hasSelectedProfile,
+  selectedProfile,
+  getAuthorityHookData,
+  saveMultipleToProfile
+} = useStandaloneProfile();
 
 const props = defineProps({
   intents: {
@@ -353,7 +398,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['generate', 'save-click', 'intent-change', 'gate-shown', 'gate-signup']);
+const emit = defineEmits(['generate', 'save-click', 'intent-change', 'gate-shown', 'gate-signup', 'profile-loaded', 'profile-cleared', 'profile-saved']);
 
 // State
 const currentIntentId = ref(props.intents?.[0]?.id || null);
@@ -368,6 +413,10 @@ const canCloseGate = ref(false);
 const captureEmail = ref('');
 const emailSubmitted = ref(false);
 const exitIntentShown = ref(false);
+
+// Profile state (logged-in users)
+const isSavingToProfile = ref(false);
+const savedToProfile = ref(false);
 
 // Storage key for generation tracking
 const storageKey = computed(() => `gmkb_gen_count_${props.toolSlug}`);
@@ -584,6 +633,51 @@ async function copyToClipboard() {
     }, 2000);
   } catch (e) {
     console.error('Failed to copy:', e);
+  }
+}
+
+// Profile handlers (logged-in users)
+function handleProfileLoaded(data) {
+  emit('profile-loaded', data);
+  // Reset saved state when profile changes
+  savedToProfile.value = false;
+}
+
+function handleProfileCleared() {
+  emit('profile-cleared');
+  savedToProfile.value = false;
+}
+
+async function handleSaveToProfile() {
+  if (!hasSelectedProfile.value || isSavingToProfile.value) return;
+
+  isSavingToProfile.value = true;
+  savedToProfile.value = false;
+
+  try {
+    // Extract hook content from previewContent
+    // The parent component should emit the structured data, but we can save the raw hook too
+    const hookContent = props.previewContent || '';
+
+    // Save authority hook fields to profile
+    // For now we save the combined hook - parent can override with structured data
+    const success = await saveMultipleToProfile({
+      authority_hook: hookContent.replace(/<[^>]*>/g, ''), // Strip HTML
+    });
+
+    if (success) {
+      savedToProfile.value = true;
+      emit('profile-saved', { hook: hookContent });
+
+      // Reset saved indicator after 3 seconds
+      setTimeout(() => {
+        savedToProfile.value = false;
+      }, 3000);
+    }
+  } catch (e) {
+    console.error('[GMKBSeoTools] Failed to save to profile:', e);
+  } finally {
+    isSavingToProfile.value = false;
   }
 }
 
@@ -1056,6 +1150,42 @@ watch(() => props.isGenerating, (newVal, oldVal) => {
 .btn-save-account:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.2);
+}
+
+.btn-save-account:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-save-account--saving {
+  background: #f1f5f9;
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.btn-save-account--saved {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+/* Profile-specific save box */
+.save-cta-box--profile {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.save-cta-box--select {
+  background: var(--mkcg-bg-secondary, #f1f5f9);
+  border: 2px dashed var(--mkcg-border, #e2e8f0);
+}
+
+.save-cta-box--select .save-cta-text {
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+/* Unlimited generations text */
+.tool-context__limit-text--unlimited {
+  background: #dcfce7;
+  color: #16a34a;
 }
 
 /* Post-Generation Social Proof */
