@@ -535,11 +535,32 @@ get_footer();
         // Get guidance content from meta.json
         $examples = $landing['examples'] ?? array();
         $tips = $landing['tips'] ?? array();
+
+        // Check if user is logged in for profile features
+        $is_logged_in = is_user_logged_in();
         ?>
         <div class="gmkb-generator-root generator__container" data-generator="<?php echo esc_attr($tool['id']); ?>">
             <div class="generator__header">
                 <h1 class="generator__title"><?php echo esc_html($meta['name']); ?></h1>
             </div>
+
+            <?php if ($is_logged_in): ?>
+            <!-- Profile Selection Bar for Logged-in Users -->
+            <div class="generator__profile-bar" id="gmkb-profile-bar">
+                <div class="generator__profile-selector">
+                    <label for="gmkb-profile-select">Saving to Profile:</label>
+                    <select id="gmkb-profile-select" class="generator__profile-dropdown">
+                        <option value="">Loading profiles...</option>
+                    </select>
+                </div>
+                <div class="generator__save-actions">
+                    <span id="gmkb-save-status" class="generator__save-status"></span>
+                    <button type="button" id="gmkb-save-btn" class="generator__button--call-to-action" disabled>
+                        💾 Save to Profile
+                    </button>
+                </div>
+            </div>
+            <?php endif; ?>
 
             <div class="generator__content">
                 <!-- LEFT PANEL: Tool Form -->
@@ -627,7 +648,271 @@ get_footer();
                 </div>
             </div>
         </div>
-        <?php
+
+        <?php if ($is_logged_in): ?>
+        <!-- Profile Bar Styles -->
+        <style>
+        .generator__profile-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--mkcg-space-md, 16px);
+            margin-bottom: var(--mkcg-space-lg, 24px);
+            background: var(--mkcg-bg-secondary, #f9fafb);
+            border: 1px solid var(--mkcg-border-light, #e9ecef);
+            border-radius: var(--mkcg-radius, 8px);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .generator__profile-selector {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .generator__profile-selector label {
+            font-weight: 500;
+            color: var(--mkcg-text-secondary, #5a6d7e);
+            font-size: 14px;
+        }
+        .generator__profile-dropdown {
+            padding: 8px 32px 8px 12px;
+            font-size: 14px;
+            border: 1px solid var(--mkcg-border-medium, #dce1e5);
+            border-radius: var(--mkcg-radius-sm, 4px);
+            background: white;
+            min-width: 200px;
+            cursor: pointer;
+        }
+        .generator__profile-dropdown:focus {
+            outline: none;
+            border-color: var(--mkcg-primary, #1a9bdc);
+            box-shadow: 0 0 0 3px rgba(26, 155, 220, 0.15);
+        }
+        .generator__save-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .generator__save-status {
+            font-size: 13px;
+            color: var(--mkcg-text-secondary, #5a6d7e);
+        }
+        .generator__save-status.success {
+            color: var(--mkcg-success, #34c759);
+        }
+        .generator__save-status.error {
+            color: var(--mkcg-error, #ff3b30);
+        }
+        .generator__button--call-to-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            background: var(--mkcg-primary, #1a9bdc);
+            border: none;
+            border-radius: var(--mkcg-radius, 8px);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .generator__button--call-to-action:hover:not(:disabled) {
+            background: var(--mkcg-primary-dark, #0d8ecf);
+        }
+        .generator__button--call-to-action:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        @media (max-width: 640px) {
+            .generator__profile-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .generator__profile-selector,
+            .generator__save-actions {
+                justify-content: center;
+            }
+        }
+        </style>
+
+        <!-- Profile Management Script -->
+        <script>
+        (function() {
+            var toolId = '<?php echo esc_js($tool['id']); ?>';
+            var apiBase = '<?php echo esc_url(rest_url('gmkb/v2')); ?>';
+            var nonce = '<?php echo esc_js(wp_create_nonce('wp_rest')); ?>';
+
+            var profileSelect = document.getElementById('gmkb-profile-select');
+            var saveBtn = document.getElementById('gmkb-save-btn');
+            var saveStatus = document.getElementById('gmkb-save-status');
+
+            var currentData = {};
+            var selectedProfileId = null;
+
+            // Load user's profiles
+            function loadProfiles() {
+                fetch(apiBase + '/profiles', {
+                    headers: { 'X-WP-Nonce': nonce }
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(profiles) {
+                    profileSelect.innerHTML = '';
+                    if (!profiles || profiles.length === 0) {
+                        profileSelect.innerHTML = '<option value="">No profiles found</option>';
+                        return;
+                    }
+                    profiles.forEach(function(p) {
+                        var opt = document.createElement('option');
+                        opt.value = p.id;
+                        opt.textContent = p.title || p.name || 'Profile #' + p.id;
+                        profileSelect.appendChild(opt);
+                    });
+                    // Auto-select first profile
+                    if (profiles.length > 0) {
+                        selectedProfileId = profiles[0].id;
+                        profileSelect.value = selectedProfileId;
+                        saveBtn.disabled = false;
+                        loadProfileData(selectedProfileId);
+                    }
+                })
+                .catch(function(err) {
+                    console.error('Failed to load profiles:', err);
+                    profileSelect.innerHTML = '<option value="">Error loading profiles</option>';
+                });
+            }
+
+            // Load existing data from selected profile
+            function loadProfileData(profileId) {
+                fetch(apiBase + '/profile/' + profileId, {
+                    headers: { 'X-WP-Nonce': nonce }
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(profile) {
+                    // Pre-populate the tool with existing data if available
+                    if (profile && profile.fields) {
+                        var toolContainer = document.getElementById(toolId + '-builder');
+                        if (toolContainer) {
+                            toolContainer.dispatchEvent(new CustomEvent('gmkb:load', {
+                                detail: { profile: profile, fields: profile.fields },
+                                bubbles: true
+                            }));
+                        }
+                    }
+                })
+                .catch(function(err) {
+                    console.error('Failed to load profile data:', err);
+                });
+            }
+
+            // Handle profile change
+            profileSelect.addEventListener('change', function() {
+                selectedProfileId = this.value;
+                saveBtn.disabled = !selectedProfileId;
+                if (selectedProfileId) {
+                    loadProfileData(selectedProfileId);
+                }
+            });
+
+            // Listen for tool data changes
+            document.addEventListener('gmkb:applied', function(e) {
+                currentData = e.detail || {};
+                showStatus('Changes detected', '');
+            });
+
+            document.addEventListener('gmkb:generated', function(e) {
+                currentData = e.detail || {};
+                showStatus('Content generated', '');
+            });
+
+            // Save to profile
+            saveBtn.addEventListener('click', function() {
+                if (!selectedProfileId || !currentData) return;
+
+                saveBtn.disabled = true;
+                showStatus('Saving...', '');
+
+                // Map tool data to profile fields based on tool type
+                var fieldsToSave = mapToolDataToFields(toolId, currentData);
+
+                fetch(apiBase + '/profile/' + selectedProfileId + '/fields', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-WP-Nonce': nonce
+                    },
+                    body: JSON.stringify({ fields: fieldsToSave })
+                })
+                .then(function(r) {
+                    if (!r.ok) throw new Error('Save failed');
+                    return r.json();
+                })
+                .then(function() {
+                    showStatus('✓ Saved successfully!', 'success');
+                    saveBtn.disabled = false;
+                })
+                .catch(function(err) {
+                    console.error('Save error:', err);
+                    showStatus('✗ Save failed', 'error');
+                    saveBtn.disabled = false;
+                });
+            });
+
+            function showStatus(msg, type) {
+                saveStatus.textContent = msg;
+                saveStatus.className = 'generator__save-status' + (type ? ' ' + type : '');
+                if (type === 'success') {
+                    setTimeout(function() { saveStatus.textContent = ''; }, 3000);
+                }
+            }
+
+            // Map tool-specific data to profile field names
+            function mapToolDataToFields(toolId, data) {
+                var fields = {};
+                var toolMappings = {
+                    'authority-hook-builder': {
+                        'who': 'hook_who',
+                        'what': 'hook_what',
+                        'when': 'hook_when',
+                        'how': 'hook_how',
+                        'where': 'hook_where',
+                        'why': 'hook_why',
+                        'polished': 'authority_hook_complete'
+                    },
+                    'elevator-pitch-generator': {
+                        'pitch': 'elevator_pitch'
+                    },
+                    'tagline-generator': {
+                        'tagline': 'tagline'
+                    },
+                    'biography-generator': {
+                        'biography': 'biography'
+                    }
+                };
+
+                var mapping = toolMappings[toolId] || {};
+
+                // Handle nested data structures
+                var hookData = data.hook || data.original || data;
+                for (var key in hookData) {
+                    if (mapping[key]) {
+                        fields[mapping[key]] = hookData[key];
+                    }
+                }
+
+                // Handle polished/generated content
+                if (data.polished && mapping['polished']) {
+                    fields[mapping['polished']] = data.polished;
+                }
+
+                return fields;
+            }
+
+            // Initialize
+            loadProfiles();
+        })();
+        </script>
+        <?php endif; ?><?php
     }
 
     /**
