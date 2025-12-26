@@ -435,9 +435,8 @@ function initializeEmbeddedTool(container) {
                                 bubbles: true,
                             }));
                         },
-                        onChange: (data) => {
-                            // Update canGenerate based on field values
-                            this.canGenerate = !!(data.fields?.who?.trim() && data.fields?.what?.trim());
+                        'onUpdate:can-generate': (value) => {
+                            this.canGenerate = value;
                         },
                     }),
                     // Preview slot - show generated or live preview content

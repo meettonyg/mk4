@@ -15,13 +15,17 @@
     --mkcg-primary: #3b82f6;
     --mkcg-primary-hover: #2563eb;
     --mkcg-primary-light: #eff6ff;
+    --mkcg-border-light: #dbeafe;
+    --mkcg-border-lighter: #bfdbfe;
     --mkcg-bg-primary: #ffffff;
     --mkcg-bg-secondary: #f9fafb;
     --mkcg-text-primary: #0f172a;
     --mkcg-text-secondary: #64748b;
     --mkcg-text-light: #94a3b8;
+    --mkcg-text-lighter: #cbd5e1;
     --mkcg-border: #e2e8f0;
     --mkcg-success: #10b981;
+    --mkcg-warning: #fbbf24;
     --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --spacing-container: 20px;
     --section-padding-y: 80px;
@@ -65,8 +69,8 @@
 
 .gmkb-plg-section--highlight {
     background: var(--mkcg-primary-light);
-    border-top: 1px solid #dbeafe;
-    border-bottom: 1px solid #dbeafe;
+    border-top: 1px solid var(--mkcg-border-light);
+    border-bottom: 1px solid var(--mkcg-border-light);
 }
 
 .gmkb-plg-section--dark {
@@ -189,8 +193,8 @@
    ========================================= */
 .gmkb-plg-guidance-section {
     background: #eff6ff;
-    border-top: 1px solid #dbeafe;
-    border-bottom: 1px solid #dbeafe;
+    border-top: 1px solid var(--mkcg-border-light);
+    border-bottom: 1px solid var(--mkcg-border-light);
 }
 
 .gmkb-plg-guidance-layout {
@@ -216,7 +220,7 @@
 /* Formula Box */
 .gmkb-plg-formula-box {
     background: white;
-    border: 2px solid #bfdbfe;
+    border: 2px solid var(--mkcg-border-lighter);
     padding: 32px;
     border-radius: 12px;
     margin-bottom: 48px;
@@ -395,7 +399,7 @@
 .gmkb-plg-logos span {
     font-size: 20px;
     font-weight: 700;
-    color: #cbd5e1;
+    color: var(--mkcg-text-lighter);
     margin: 0 24px;
     display: inline-block;
 }
@@ -463,7 +467,7 @@
    6. SOCIAL PROOF
    ========================================= */
 .gmkb-plg-section--dark .gmkb-plg-stars {
-    color: #fbbf24;
+    color: var(--mkcg-warning);
     font-size: 24px;
     letter-spacing: 4px;
     margin-bottom: 24px;

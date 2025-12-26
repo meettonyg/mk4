@@ -2026,7 +2026,7 @@ get_footer();
 
         <?php
         // Enqueue the PLG CSS
-        $this->enqueue_plg_styles();
+        $this->output_plg_styles();
     }
 
     /**
@@ -2042,10 +2042,10 @@ get_footer();
     }
 
     /**
-     * Enqueue PLG landing page styles
-     * Outputs inline styles (can be moved to external CSS file in Phase 4)
+     * Output the <link> tag for PLG landing page styles.
+     * This is called directly during rendering as it's part of a virtual page.
      */
-    private function enqueue_plg_styles() {
+    private function output_plg_styles() {
         // Check if we already output the styles
         static $styles_output = false;
         if ($styles_output) {
@@ -2054,7 +2054,7 @@ get_footer();
         $styles_output = true;
 
         ?>
-        <link rel="stylesheet" href="<?php echo esc_url(plugins_url('assets/css/tool-landing-plg.css', dirname(dirname(__FILE__)))); ?>" />
+        <link rel="stylesheet" href="<?php echo esc_url(plugins_url('../../assets/css/tool-landing-plg.css', __FILE__)); ?>" />
         <?php
     }
 

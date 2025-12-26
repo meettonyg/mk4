@@ -356,7 +356,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['applied', 'generated', 'change', 'preview-update']);
+const emit = defineEmits(['applied', 'generated', 'change', 'preview-update', 'update:can-generate']);
 
 /**
  * Embedded mode field configuration
@@ -699,6 +699,15 @@ watch(
 const canGenerateEmbedded = computed(() => {
   return hookFields.value.who?.trim() && hookFields.value.what?.trim();
 });
+
+/**
+ * Emit can-generate status changes to parent (for embedded mode)
+ */
+watch(canGenerateEmbedded, (newValue) => {
+  if (props.mode === 'embedded') {
+    emit('update:can-generate', !!newValue);
+  }
+}, { immediate: true });
 </script>
 
 <style scoped>
