@@ -373,6 +373,15 @@ function initializeEmbeddedTool(container) {
         window.gmkbSeoTools = { nonce };
     }
 
+    // Check if user is logged in
+    const isLoggedIn = !!(window.gmkbUserData?.isLoggedIn);
+
+    // Build related tools array from meta.relatedToolSlugs
+    const relatedTools = buildRelatedTools(meta.relatedToolSlugs || [], toolSlug);
+
+    // Get testimonial from meta
+    const testimonial = meta.socialProof?.testimonial || null;
+
     // Create Vue app with EmbeddedToolWrapper containing the Generator
     const app = createApp({
         name: 'GMKBEmbeddedTool',
@@ -394,18 +403,30 @@ function initializeEmbeddedTool(container) {
             handleGenerate() {
                 // Trigger generate on the child generator component
                 if (this.$refs.generator && this.$refs.generator.handleGenerate) {
+                    this.isGenerating = true;
                     this.$refs.generator.handleGenerate();
                 }
             },
             handleSaveClick() {
-                // Emit event for registration prompt
+                // Emit event for analytics
                 container.dispatchEvent(new CustomEvent('gmkb:save-click', {
                     bubbles: true,
+                    detail: { tool: toolSlug }
                 }));
-                // Redirect to registration if not logged in
-                if (!window.gmkbUserData?.isLoggedIn) {
-                    window.location.href = '/register/?redirect=' + encodeURIComponent(window.location.href);
-                }
+            },
+            handleGateShown(data) {
+                // Track soft gate impression for analytics
+                container.dispatchEvent(new CustomEvent('gmkb:gate-shown', {
+                    bubbles: true,
+                    detail: { tool: toolSlug, ...data }
+                }));
+            },
+            handleGateSignup() {
+                // Track signup intent from gate
+                container.dispatchEvent(new CustomEvent('gmkb:gate-signup', {
+                    bubbles: true,
+                    detail: { tool: toolSlug }
+                }));
             },
         },
         render() {
@@ -418,9 +439,18 @@ function initializeEmbeddedTool(container) {
                     canGenerate: this.canGenerate,
                     generateButtonText: `Generate ${meta.name || 'Hook'}`,
                     previewContent: this.previewContent,
+                    // PLG conversion props
+                    toolSlug: toolSlug,
+                    isLoggedIn: isLoggedIn,
+                    relatedTools: relatedTools,
+                    testimonial: testimonial,
+                    registerUrl: '/register/',
+                    // Event handlers
                     onIntentChange: this.handleIntentChange,
                     onGenerate: this.handleGenerate,
                     onSaveClick: this.handleSaveClick,
+                    onGateShown: this.handleGateShown,
+                    onGateSignup: this.handleGateSignup,
                 }, {
                     // Form slot - render the generator in embedded mode
                     form: () => h(GeneratorComponent, {
@@ -464,6 +494,103 @@ function initializeEmbeddedTool(container) {
     console.log(`[GMKBSeoTools] Mounted embedded tool: ${toolSlug}`);
 
     return app;
+}
+
+/**
+ * Build related tools array from slugs for PLG expansion panel
+ *
+ * @param {string[]} slugs - Array of tool slugs
+ * @param {string} currentSlug - Current tool slug (to exclude)
+ * @returns {Array} Array of related tool objects
+ */
+function buildRelatedTools(slugs, currentSlug) {
+    // Tool metadata for building related tools cards
+    const toolMeta = {
+        'biography-generator': {
+            name: 'Biography Generator',
+            description: 'Turn your hook into a full professional bio',
+            icon: '📝',
+            url: '/tools/biography/',
+            requiresAccount: false
+        },
+        'biography': {
+            name: 'Biography Generator',
+            description: 'Turn your hook into a full professional bio',
+            icon: '📝',
+            url: '/tools/biography/',
+            requiresAccount: false
+        },
+        'elevator-pitch-generator': {
+            name: 'Elevator Pitch',
+            description: 'Expand your hook into a 30-second pitch',
+            icon: '🎯',
+            url: '/tools/elevator-pitch/',
+            requiresAccount: false
+        },
+        'elevator-pitch': {
+            name: 'Elevator Pitch',
+            description: 'Expand your hook into a 30-second pitch',
+            icon: '🎯',
+            url: '/tools/elevator-pitch/',
+            requiresAccount: false
+        },
+        'tagline-generator': {
+            name: 'Tagline Generator',
+            description: 'Condense your hook into a punchy tagline',
+            icon: '✨',
+            url: '/tools/tagline/',
+            requiresAccount: false
+        },
+        'tagline': {
+            name: 'Tagline Generator',
+            description: 'Condense your hook into a punchy tagline',
+            icon: '✨',
+            url: '/tools/tagline/',
+            requiresAccount: false
+        },
+        'impact-intro-builder': {
+            name: 'Impact Intro',
+            description: 'Create a compelling introduction statement',
+            icon: '💫',
+            url: '/tools/impact-intro/',
+            requiresAccount: false
+        },
+        'impact-intro': {
+            name: 'Impact Intro',
+            description: 'Create a compelling introduction statement',
+            icon: '💫',
+            url: '/tools/impact-intro/',
+            requiresAccount: false
+        },
+        'interview-prep-generator': {
+            name: 'Interview Prep',
+            description: 'Prepare talking points for podcast interviews',
+            icon: '🎙️',
+            url: '/tools/interview-prep/',
+            requiresAccount: true
+        },
+        'podcast-pitch': {
+            name: 'Podcast Pitch',
+            description: 'Use your hook to pitch podcast hosts',
+            icon: '📧',
+            url: '/dashboard/pitches/',
+            requiresAccount: true
+        }
+    };
+
+    return slugs
+        .filter(slug => slug !== currentSlug)
+        .slice(0, 3) // Max 3 related tools
+        .map(slug => ({
+            slug,
+            ...(toolMeta[slug] || {
+                name: slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                description: 'Continue building your messaging',
+                icon: '🔧',
+                url: `/tools/${slug}/`,
+                requiresAccount: false
+            })
+        }));
 }
 
 /**
