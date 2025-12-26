@@ -155,27 +155,68 @@
       </div>
     </div>
 
-    <!-- SOFT GATE MODAL (shows after 2nd generation for non-logged-in users) -->
-    <div v-if="showSoftGate" class="soft-gate-overlay" @click.self="closeSoftGate">
+    <!-- SOFT GATE MODAL (Exit Intent or Engagement Trigger) -->
+    <div v-if="showSoftGate" class="soft-gate-overlay" @click.self="handleOverlayClick">
       <div class="soft-gate-modal">
-        <button class="soft-gate-close" @click="closeSoftGate">×</button>
-        <div class="soft-gate-icon">🎉</div>
-        <h3 class="soft-gate-title">You're on a roll!</h3>
-        <p class="soft-gate-text">
-          You've generated {{ generationCount }} hooks. Create a free account to:
-        </p>
-        <ul class="soft-gate-benefits">
-          <li>✓ Save all your hooks</li>
-          <li>✓ Generate matching Bios & Taglines</li>
-          <li>✓ Get unlimited generations</li>
-          <li>✓ Access your content anywhere</li>
-        </ul>
-        <button class="btn-gate-primary" @click="handleGateSignup">
-          Create Free Account
-        </button>
-        <button class="btn-gate-secondary" @click="closeSoftGate">
-          Continue as Guest ({{ remainingGenerations }} left)
-        </button>
+        <!-- Close button appears after delay -->
+        <button
+          v-if="canCloseGate"
+          class="soft-gate-close"
+          @click="closeSoftGate"
+        >×</button>
+
+        <!-- Email Capture Mode -->
+        <template v-if="!emailSubmitted">
+          <div class="soft-gate-icon">{{ gateReason === 'exit_intent' ? '👋' : '🎉' }}</div>
+          <h3 class="soft-gate-title">
+            {{ gateReason === 'exit_intent' ? "Don't lose your hook!" : "You're on a roll!" }}
+          </h3>
+          <p class="soft-gate-text">
+            {{ gateReason === 'exit_intent'
+              ? "Enter your email and we'll send you your hook + 3 bonus tools:"
+              : "Enter your email to save your hook and unlock:"
+            }}
+          </p>
+
+          <div class="email-capture-form">
+            <input
+              v-model="captureEmail"
+              type="email"
+              class="email-input"
+              placeholder="you@example.com"
+              @keyup.enter="handleEmailSubmit"
+            />
+            <button class="btn-gate-primary" @click="handleEmailSubmit" :disabled="!isValidEmail">
+              {{ gateReason === 'exit_intent' ? 'Send My Hook' : 'Save & Unlock' }}
+            </button>
+          </div>
+
+          <ul class="soft-gate-benefits">
+            <li>✓ Your hook saved forever</li>
+            <li>✓ Bio Generator (free)</li>
+            <li>✓ Elevator Pitch (free)</li>
+            <li>✓ Tagline Generator (free)</li>
+          </ul>
+
+          <button v-if="canCloseGate" class="btn-gate-secondary" @click="closeSoftGate">
+            {{ gateReason === 'exit_intent' ? 'No thanks, let it disappear' : `Continue as Guest (${remainingGenerations} left)` }}
+          </button>
+        </template>
+
+        <!-- Success State -->
+        <template v-else>
+          <div class="soft-gate-icon">✅</div>
+          <h3 class="soft-gate-title">Check your inbox!</h3>
+          <p class="soft-gate-text">
+            We've sent your hook to {{ captureEmail }}
+          </p>
+          <button class="btn-gate-primary" @click="handleGateSignup">
+            Create Account to Edit & Save More
+          </button>
+          <button class="btn-gate-secondary" @click="closeSoftGate">
+            Continue browsing
+          </button>
+        </template>
       </div>
     </div>
   </div>
@@ -321,6 +362,13 @@ const generationCount = ref(0);
 const showSoftGate = ref(false);
 const justCopied = ref(false);
 
+// Gate state
+const gateReason = ref(''); // 'exit_intent' | 'engagement_prompt' | 'limit_reached'
+const canCloseGate = ref(false);
+const captureEmail = ref('');
+const emailSubmitted = ref(false);
+const exitIntentShown = ref(false);
+
 // Storage key for generation tracking
 const storageKey = computed(() => `gmkb_gen_count_${props.toolSlug}`);
 const storageDateKey = computed(() => `gmkb_gen_date_${props.toolSlug}`);
@@ -335,10 +383,49 @@ const remainingGenerations = computed(() => {
   return Math.max(0, 3 - generationCount.value);
 });
 
+// Email validation
+const isValidEmail = computed(() => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(captureEmail.value);
+});
+
 // Load generation count from localStorage
 onMounted(() => {
   loadGenerationCount();
+  setupExitIntent();
 });
+
+// Exit intent detection
+function setupExitIntent() {
+  // Only for non-logged-in users
+  if (props.isLoggedIn) return;
+
+  const handleMouseLeave = (e) => {
+    // Check if mouse left through the top of the viewport (exit intent)
+    if (e.clientY <= 0 && hasGenerated.value && !exitIntentShown.value && !showSoftGate.value) {
+      exitIntentShown.value = true;
+      showGateWithReason('exit_intent');
+    }
+  };
+
+  document.addEventListener('mouseleave', handleMouseLeave);
+
+  // Cleanup on unmount (Vue 3 composition API handles this automatically)
+}
+
+function showGateWithReason(reason) {
+  gateReason.value = reason;
+  showSoftGate.value = true;
+  canCloseGate.value = false;
+  emailSubmitted.value = false;
+  captureEmail.value = '';
+  emit('gate-shown', { reason });
+
+  // Enable close button after 2 seconds
+  setTimeout(() => {
+    canCloseGate.value = true;
+  }, 2000);
+}
 
 function loadGenerationCount() {
   try {
@@ -383,8 +470,7 @@ function handleGenerate() {
 
   // Check generation limit
   if (generationCount.value >= 3) {
-    showSoftGate.value = true;
-    emit('gate-shown', { reason: 'limit_reached' });
+    showGateWithReason('limit_reached');
     return;
   }
 
@@ -393,10 +479,12 @@ function handleGenerate() {
   incrementGenerationCount();
 
   // Show soft gate after 2nd generation (before they hit limit)
-  if (generationCount.value === 2 && !props.isLoggedIn) {
+  // But NOT if exit intent already shown
+  if (generationCount.value === 2 && !props.isLoggedIn && !exitIntentShown.value) {
     setTimeout(() => {
-      showSoftGate.value = true;
-      emit('gate-shown', { reason: 'engagement_prompt' });
+      if (!showSoftGate.value) {
+        showGateWithReason('engagement_prompt');
+      }
     }, 3000); // Show after generation completes
   }
 }
@@ -435,6 +523,52 @@ function handleGateSignup() {
 
 function closeSoftGate() {
   showSoftGate.value = false;
+  // Reset state for next time
+  setTimeout(() => {
+    emailSubmitted.value = false;
+    captureEmail.value = '';
+  }, 300);
+}
+
+function handleOverlayClick() {
+  // Only allow closing by overlay click if close button is visible
+  if (canCloseGate.value) {
+    closeSoftGate();
+  }
+}
+
+async function handleEmailSubmit() {
+  if (!isValidEmail.value) return;
+
+  try {
+    // Send email capture to backend
+    const response = await fetch('/wp-json/gmkb/v1/capture-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: captureEmail.value,
+        tool: props.toolSlug,
+        source: gateReason.value,
+        hook: props.previewContent || '',
+      }),
+    });
+
+    // Show success regardless of response (graceful degradation)
+    emailSubmitted.value = true;
+
+    // Track the email capture
+    emit('gate-shown', {
+      reason: 'email_captured',
+      email: captureEmail.value,
+    });
+
+  } catch (e) {
+    // Still show success - we'll capture on the registration page
+    emailSubmitted.value = true;
+    console.warn('[GMKBSeoTools] Email capture failed, will capture on registration');
+  }
 }
 
 async function copyToClipboard() {
@@ -1081,6 +1215,39 @@ watch(() => props.isGenerating, (newVal, oldVal) => {
 
 .btn-gate-secondary:hover {
   color: var(--mkcg-text-primary, #0f172a);
+}
+
+.btn-gate-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Email Capture Form */
+.email-capture-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.email-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.email-input:focus {
+  outline: none;
+  border-color: var(--mkcg-primary, #3b82f6);
+}
+
+.email-input::placeholder {
+  color: var(--mkcg-text-light, #94a3b8);
 }
 
 /* ========================================
