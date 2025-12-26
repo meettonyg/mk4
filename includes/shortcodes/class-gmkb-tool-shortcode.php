@@ -340,8 +340,10 @@ class GMKB_Tool_Shortcode {
                     window.GMKB.mountTool(mountPoint, data);
                 } else if (window.GMKBStandaloneTools && window.GMKBStandaloneTools.mount) {
                     window.GMKBStandaloneTools.mount(mountPoint, data.tool, data);
-                } else if (window.GMKBSeoTools && window.GMKBSeoTools.mountTool) {
-                    window.GMKBSeoTools.mountTool(mountPoint, data.tool);
+                } else if (window.GMKBSeoTools && window.GMKBSeoTools.initializeTool) {
+                    // Set tool type via data attribute for initializeTool
+                    mountPoint.setAttribute('data-tool', data.tool);
+                    window.GMKBSeoTools.initializeTool(mountPoint, data.tool);
                 } else {
                     // Fallback: set data attribute for later mounting
                     mountPoint.setAttribute('data-tool-config', JSON.stringify(data));
