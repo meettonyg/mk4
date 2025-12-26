@@ -829,15 +829,20 @@ get_footer();
                     }
                 },
 
-                // ===== BIOGRAPHY (Custom Component) =====
+                // ===== BIOGRAPHY (Custom Component - Legacy Match) =====
                 'biography-generator': {
-                    selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea',
-                    fieldOrder: ['name', 'authorityHookText'],
-                    expectedCount: 2,
+                    selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea, .gmkb-ai-form-group select.gmkb-ai-select',
+                    fieldOrder: ['name', 'title', 'organization', 'authorityHookText', 'impactIntroText', 'tone', 'pov', 'length', 'existing_bio', 'additional_notes'],
+                    expectedCount: 10,
                     profileMapping: {
                         'first_name': 'name',
-                        'biography': 'authorityHookText',
-                        'hook_complete': 'authorityHookText'
+                        'guest_title': 'title',
+                        'guest_company': 'organization',
+                        'hook_complete': 'authorityHookText',
+                        'impact_intro_complete': 'impactIntroText',
+                        'biography_tone': 'tone',
+                        'biography_pov': 'pov',
+                        'biography': 'existing_bio'
                     },
                     saveMapping: {
                         'content': 'biography',
@@ -845,14 +850,19 @@ get_footer();
                     }
                 },
 
-                // ===== TAGLINE (Custom Component) =====
+                // ===== TAGLINE (Custom Component - Legacy Match) =====
                 'tagline-generator': {
-                    selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea',
-                    fieldOrder: ['name', 'authorityHookText'],
-                    expectedCount: 2,
+                    selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea, .gmkb-ai-form-group select.gmkb-ai-select',
+                    fieldOrder: ['name', 'authorityHookText', 'impactIntroText', 'industry', 'unique_factors', 'existing_taglines', 'style', 'tone', 'length'],
+                    expectedCount: 9,
                     profileMapping: {
                         'first_name': 'name',
-                        'hook_complete': 'authorityHookText'
+                        'hook_complete': 'authorityHookText',
+                        'impact_intro_complete': 'impactIntroText',
+                        'guest_industry': 'industry',
+                        'tagline_style': 'style',
+                        'tagline_tone': 'tone',
+                        'tagline_length': 'length'
                     },
                     saveMapping: {
                         'selected': 'tagline',
@@ -860,15 +870,18 @@ get_footer();
                     }
                 },
 
-                // ===== ELEVATOR PITCH (SimpleGenerator) =====
+                // ===== ELEVATOR PITCH (Legacy Match) =====
                 'elevator-pitch-generator': {
                     selector: simpleGeneratorSelector,
-                    fieldOrder: ['name', 'authorityHook', 'audience', 'duration'],
-                    expectedCount: 4,
+                    fieldOrder: ['name', 'title', 'organization', 'value_proposition', 'target_audience', 'unique_benefit', 'call_to_action', 'context', 'tone'],
+                    expectedCount: 9,
                     profileMapping: {
                         'first_name': 'name',
-                        'hook_complete': 'authorityHook',
-                        'target_audience': 'audience'
+                        'guest_title': 'title',
+                        'guest_company': 'organization',
+                        'hook_what': 'value_proposition',
+                        'hook_who': 'target_audience',
+                        'hook_how': 'unique_benefit'
                     },
                     saveMapping: {
                         'content': 'elevator_pitch',
@@ -876,95 +889,129 @@ get_footer();
                     }
                 },
 
-                // ===== TOPICS (Custom Component) =====
+                // ===== TOPICS (Custom Component - Legacy Match) =====
                 'topics-generator': {
                     selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea',
-                    fieldOrder: ['name', 'authorityHookText'],
-                    expectedCount: 2,
+                    fieldOrder: ['name', 'authorityHookText', 'topic_1', 'topic_2', 'topic_3', 'topic_4', 'topic_5'],
+                    expectedCount: 7,
                     profileMapping: {
                         'first_name': 'name',
-                        'hook_complete': 'authorityHookText'
+                        'hook_complete': 'authorityHookText',
+                        'topic_1': 'topic_1',
+                        'topic_2': 'topic_2',
+                        'topic_3': 'topic_3',
+                        'topic_4': 'topic_4',
+                        'topic_5': 'topic_5'
                     },
                     saveMapping: {}
                 },
 
-                // ===== QUESTIONS (Custom Component) =====
+                // ===== QUESTIONS (Custom Component - Legacy Match) =====
                 'questions-generator': {
                     selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea',
-                    fieldOrder: ['name', 'authorityHookText'],
-                    expectedCount: 2,
+                    fieldOrder: ['name', 'authorityHookText', 'topic_1', 'topic_2', 'topic_3', 'topic_4', 'topic_5'],
+                    expectedCount: 7,
                     profileMapping: {
                         'first_name': 'name',
-                        'hook_complete': 'authorityHookText'
+                        'hook_complete': 'authorityHookText',
+                        'topic_1': 'topic_1',
+                        'topic_2': 'topic_2',
+                        'topic_3': 'topic_3',
+                        'topic_4': 'topic_4',
+                        'topic_5': 'topic_5'
                     },
                     saveMapping: {}
                 },
 
-                // ===== GUEST INTRO (Custom Component) =====
+                // ===== GUEST INTRO (Custom Component - Legacy Match) =====
                 'guest-intro-generator': {
-                    selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea',
-                    fieldOrder: ['name', 'authorityHookText'],
-                    expectedCount: 2,
+                    selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea, .gmkb-ai-form-group select.gmkb-ai-select',
+                    fieldOrder: ['name', 'authorityHookText', 'impactIntroText', 'guest_name', 'guest_title', 'guest_company', 'episode_title', 'episode_topic', 'intro_tone', 'intro_hook_style', 'custom_notes'],
+                    expectedCount: 11,
                     profileMapping: {
                         'first_name': 'name',
-                        'hook_complete': 'authorityHookText'
+                        'hook_complete': 'authorityHookText',
+                        'impact_intro_complete': 'impactIntroText',
+                        'guest_name': 'guest_name',
+                        'guest_title': 'guest_title',
+                        'guest_company': 'guest_company'
                     },
                     saveMapping: {
                         'content': 'guest_intro'
                     }
                 },
 
-                // ===== OFFERS (Custom Component) =====
+                // ===== OFFERS (Custom Component - Legacy Match) =====
                 'offers-generator': {
-                    selector: '.gmkb-ai-form-group textarea.gmkb-ai-textarea',
-                    fieldOrder: ['services', 'authorityHookText'],
-                    expectedCount: 2,
+                    selector: '.gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea, .gmkb-ai-form-group select.gmkb-ai-select',
+                    fieldOrder: ['services', 'authorityHookText', 'business_type', 'target_audience', 'price_range', 'delivery_method', 'offer_count'],
+                    expectedCount: 7,
                     profileMapping: {
                         'services': 'services',
-                        'hook_complete': 'authorityHookText'
+                        'hook_complete': 'authorityHookText',
+                        'offers_business_type': 'business_type',
+                        'offers_target_audience': 'target_audience',
+                        'offers_price_range': 'price_range',
+                        'offers_delivery_method': 'delivery_method'
                     },
                     saveMapping: {}
                 },
 
-                // ===== IMPACT INTRO (Custom Component - Tag-based) =====
+                // ===== IMPACT INTRO (Custom Component - Legacy uses where/why) =====
                 'impact-intro-builder': {
-                    selector: '.gmkb-ai-tag-input input.gmkb-ai-input',
-                    fieldOrder: ['newCredential', 'newAchievement'],
-                    expectedCount: 2,
-                    profileMapping: {},
-                    saveMapping: {}
+                    selector: '.gmkb-ai-tag-input input.gmkb-ai-input, .gmkb-ai-form-group input.gmkb-ai-input, .gmkb-ai-form-group textarea.gmkb-ai-textarea',
+                    fieldOrder: ['where', 'why', 'newCredential', 'newAchievement'],
+                    expectedCount: 4,
+                    profileMapping: {
+                        'impact_where': 'where',
+                        'impact_why': 'why'
+                    },
+                    saveMapping: {
+                        'where': 'impact_where',
+                        'why': 'impact_why',
+                        'complete': 'impact_intro_complete'
+                    }
                 },
 
-                // ===== SOUND BITE (SimpleGenerator) =====
+                // ===== SOUND BITE (Legacy Match) =====
                 'sound-bite-generator': {
                     selector: simpleGeneratorSelector,
-                    fieldOrder: ['topic', 'expertise', 'context'],
-                    expectedCount: 3,
+                    fieldOrder: ['name', 'title', 'style', 'tone', 'count', 'expertise', 'philosophies', 'perspectives'],
+                    expectedCount: 8,
                     profileMapping: {
+                        'first_name': 'name',
+                        'guest_title': 'title',
                         'hook_complete': 'expertise'
                     },
                     saveMapping: {}
                 },
 
-                // ===== PERSONA (SimpleGenerator) =====
+                // ===== PERSONA (Legacy Match) =====
                 'persona-generator': {
                     selector: simpleGeneratorSelector,
-                    fieldOrder: ['services', 'industry', 'currentClients'],
-                    expectedCount: 3,
+                    fieldOrder: ['name', 'title', 'organization', 'industry', 'unique_factors', 'additional_notes', 'style', 'focus', 'depth', 'authorityHookText', 'impactIntroText'],
+                    expectedCount: 11,
                     profileMapping: {
-                        'services': 'services',
-                        'industry': 'industry'
+                        'first_name': 'name',
+                        'guest_title': 'title',
+                        'guest_company': 'organization',
+                        'guest_industry': 'industry',
+                        'hook_complete': 'authorityHookText',
+                        'impact_intro_complete': 'impactIntroText'
                     },
                     saveMapping: {}
                 },
 
-                // ===== BRAND STORY (SimpleGenerator) =====
+                // ===== BRAND STORY (Legacy Match) =====
                 'brand-story-generator': {
                     selector: simpleGeneratorSelector,
-                    fieldOrder: ['background', 'transformation', 'mission'],
-                    expectedCount: 3,
+                    fieldOrder: ['name', 'title', 'tone', 'background', 'values', 'authorityHookText'],
+                    expectedCount: 6,
                     profileMapping: {
-                        'biography': 'background'
+                        'first_name': 'name',
+                        'guest_title': 'title',
+                        'biography': 'background',
+                        'hook_complete': 'authorityHookText'
                     },
                     saveMapping: {
                         'content': 'brand_story'
@@ -982,34 +1029,60 @@ get_footer();
                     }
                 },
 
-                // ===== CREDIBILITY STORY (SimpleGenerator) =====
+                // ===== BUSINESS STORIES (Legacy Match) =====
+                'business-stories-generator': {
+                    selector: simpleGeneratorSelector,
+                    fieldOrder: ['name', 'title', 'industry', 'tone', 'target_customer', 'origin', 'competitors', 'results', 'approach', 'authorityHookText'],
+                    expectedCount: 10,
+                    profileMapping: {
+                        'first_name': 'name',
+                        'guest_title': 'title',
+                        'guest_industry': 'industry',
+                        'hook_complete': 'authorityHookText'
+                    },
+                    saveMapping: {
+                        'content': 'business_stories'
+                    }
+                },
+
+                // ===== CREDIBILITY STORY (Legacy Match) =====
                 'credibility-story-generator': {
                     selector: simpleGeneratorSelector,
-                    fieldOrder: ['expertise', 'experience', 'lesson'],
-                    expectedCount: 3,
+                    fieldOrder: ['name', 'title', 'tone', 'vulnerability', 'breakthrough', 'challenge', 'mentors', 'journey', 'expertise', 'authorityHookText'],
+                    expectedCount: 10,
                     profileMapping: {
-                        'hook_complete': 'expertise'
+                        'first_name': 'name',
+                        'guest_title': 'title',
+                        'hook_complete': 'authorityHookText'
                     },
                     saveMapping: {
                         'content': 'credibility_story'
                     }
                 },
 
-                // ===== FRAMEWORK (SimpleGenerator) =====
+                // ===== FRAMEWORK (Legacy Match) =====
                 'framework-builder': {
                     selector: simpleGeneratorSelector,
-                    fieldOrder: ['problem', 'approach', 'outcome', 'steps'],
-                    expectedCount: 4,
-                    profileMapping: {},
+                    fieldOrder: ['name', 'title', 'expertise_area', 'authorityHookText', 'framework_type', 'step_count'],
+                    expectedCount: 6,
+                    profileMapping: {
+                        'first_name': 'name',
+                        'guest_title': 'title',
+                        'hook_complete': 'authorityHookText'
+                    },
                     saveMapping: {}
                 },
 
-                // ===== INTERVIEW PREP (SimpleGenerator) =====
+                // ===== INTERVIEW PREP (Legacy Match) =====
                 'interview-prep-generator': {
                     selector: simpleGeneratorSelector,
-                    fieldOrder: ['showName', 'topics', 'keyMessages', 'callToAction'],
-                    expectedCount: 4,
-                    profileMapping: {},
+                    fieldOrder: ['name', 'title', 'interview_type', 'question_difficulty', 'count', 'expertise', 'messages', 'audience'],
+                    expectedCount: 8,
+                    profileMapping: {
+                        'first_name': 'name',
+                        'guest_title': 'title',
+                        'hook_complete': 'expertise'
+                    },
                     saveMapping: {}
                 },
 
