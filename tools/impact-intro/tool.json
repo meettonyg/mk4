@@ -1,9 +1,9 @@
 {
-  "id": "seo-optimizer",
-  "name": "SEO Optimizer",
+  "id": "impact-intro-builder",
+  "name": "Impact Intro Builder",
   "version": "2.0.0",
-  "category": "content",
-  "icon": "MagnifyingGlassIcon",
+  "category": "value-builder",
+  "icon": "StarIcon",
   "component": "Widget.vue",
   "prompts": "prompts.php",
   "supports": {

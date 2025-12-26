@@ -1,9 +1,9 @@
 {
-  "id": "seo-optimizer",
-  "name": "SEO Optimizer",
+  "id": "social-post-generator",
+  "name": "Social Post Generator",
   "version": "2.0.0",
-  "category": "content",
-  "icon": "MagnifyingGlassIcon",
+  "category": "social-email",
+  "icon": "ShareIcon",
   "component": "Widget.vue",
   "prompts": "prompts.php",
   "supports": {

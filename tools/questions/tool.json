@@ -1,9 +1,9 @@
 {
-  "id": "seo-optimizer",
-  "name": "SEO Optimizer",
+  "id": "questions-generator",
+  "name": "Questions Generator",
   "version": "2.0.0",
-  "category": "content",
-  "icon": "MagnifyingGlassIcon",
+  "category": "message-builder",
+  "icon": "QuestionMarkCircleIcon",
   "component": "Widget.vue",
   "prompts": "prompts.php",
   "supports": {

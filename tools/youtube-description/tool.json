@@ -1,9 +1,9 @@
 {
-  "id": "seo-optimizer",
-  "name": "SEO Optimizer",
+  "id": "youtube-description-generator",
+  "name": "YouTube Description Generator",
   "version": "2.0.0",
-  "category": "content",
-  "icon": "MagnifyingGlassIcon",
+  "category": "social-email",
+  "icon": "PlayCircleIcon",
   "component": "Widget.vue",
   "prompts": "prompts.php",
   "supports": {

@@ -1,9 +1,9 @@
 {
-  "id": "seo-optimizer",
-  "name": "SEO Optimizer",
+  "id": "interview-prep-generator",
+  "name": "Interview Prep Generator",
   "version": "2.0.0",
-  "category": "content",
-  "icon": "MagnifyingGlassIcon",
+  "category": "strategy",
+  "icon": "ClipboardDocumentListIcon",
   "component": "Widget.vue",
   "prompts": "prompts.php",
   "supports": {

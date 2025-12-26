@@ -1,9 +1,9 @@
 {
-  "id": "seo-optimizer",
-  "name": "SEO Optimizer",
+  "id": "brand-story-generator",
+  "name": "Brand Story Generator",
   "version": "2.0.0",
-  "category": "content",
-  "icon": "MagnifyingGlassIcon",
+  "category": "strategy",
+  "icon": "BookOpenIcon",
   "component": "Widget.vue",
   "prompts": "prompts.php",
   "supports": {

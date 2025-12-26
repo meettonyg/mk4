@@ -1,9 +1,9 @@
 {
-  "id": "seo-optimizer",
-  "name": "SEO Optimizer",
+  "id": "topics-generator",
+  "name": "Topics Generator",
   "version": "2.0.0",
-  "category": "content",
-  "icon": "MagnifyingGlassIcon",
+  "category": "message-builder",
+  "icon": "ChatBubbleBottomCenterTextIcon",
   "component": "Widget.vue",
   "prompts": "prompts.php",
   "supports": {

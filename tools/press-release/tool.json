@@ -1,9 +1,9 @@
 {
-  "id": "seo-optimizer",
-  "name": "SEO Optimizer",
+  "id": "press-release-generator",
+  "name": "Press Release Generator",
   "version": "2.0.0",
   "category": "content",
-  "icon": "MagnifyingGlassIcon",
+  "icon": "NewspaperIcon",
   "component": "Widget.vue",
   "prompts": "prompts.php",
   "supports": {

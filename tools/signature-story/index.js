@@ -1,12 +1,18 @@
+// Full-page standalone generator
 export { default as Generator } from './Generator.vue';
-export { default } from './Generator.vue';
+
+// Embeddable widget component
+export { default as Widget } from './Widget.vue';
+
+// Default export is the widget (for shortcode/embedding use)
+export { default } from './Widget.vue';
 
 export const meta = {
   id: 'signature-story',
   slug: 'signature-story',
   name: 'Signature Story Generator',
   title: 'Signature Story Generator',
-  description: 'Craft a memorable signature story that showcases your unique expertise and approach.',
+  description: 'Craft a signature client success story that demonstrates your impact.',
   category: 'strategy',
-  icon: 'edit-3'
+  icon: 'bookmark'
 };

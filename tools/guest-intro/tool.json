@@ -1,9 +1,9 @@
 {
-  "id": "seo-optimizer",
-  "name": "SEO Optimizer",
+  "id": "guest-intro-generator",
+  "name": "Guest Intro Generator",
   "version": "2.0.0",
-  "category": "content",
-  "icon": "MagnifyingGlassIcon",
+  "category": "value-builder",
+  "icon": "MicrophoneIcon",
   "component": "Widget.vue",
   "prompts": "prompts.php",
   "supports": {

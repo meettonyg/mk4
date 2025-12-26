@@ -1,9 +1,9 @@
 {
-  "id": "seo-optimizer",
-  "name": "SEO Optimizer",
+  "id": "blog-generator",
+  "name": "Blog Generator",
   "version": "2.0.0",
   "category": "content",
-  "icon": "MagnifyingGlassIcon",
+  "icon": "DocumentTextIcon",
   "component": "Widget.vue",
   "prompts": "prompts.php",
   "supports": {

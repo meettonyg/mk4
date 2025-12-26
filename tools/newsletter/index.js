@@ -1,12 +1,18 @@
+// Full-page standalone generator
 export { default as Generator } from './Generator.vue';
-export { default } from './Generator.vue';
+
+// Embeddable widget component
+export { default as Widget } from './Widget.vue';
+
+// Default export is the widget (for shortcode/embedding use)
+export { default } from './Widget.vue';
 
 export const meta = {
   id: 'newsletter',
   slug: 'newsletter',
-  name: 'Newsletter Generator',
-  title: 'Newsletter Generator',
-  description: 'Create engaging newsletters that keep your audience informed and connected.',
+  name: 'Newsletter Writer',
+  title: 'Newsletter Writer',
+  description: 'Create engaging newsletter content that keeps your audience coming back.',
   category: 'social-email',
-  icon: 'inbox'
+  icon: 'newspaper'
 };

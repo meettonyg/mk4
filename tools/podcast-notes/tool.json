@@ -1,9 +1,9 @@
 {
-  "id": "seo-optimizer",
-  "name": "SEO Optimizer",
+  "id": "podcast-notes-generator",
+  "name": "Podcast Show Notes Generator",
   "version": "2.0.0",
-  "category": "content",
-  "icon": "MagnifyingGlassIcon",
+  "category": "social-email",
+  "icon": "MicrophoneIcon",
   "component": "Widget.vue",
   "prompts": "prompts.php",
   "supports": {

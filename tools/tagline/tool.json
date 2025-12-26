@@ -1,9 +1,9 @@
 {
-  "id": "seo-optimizer",
-  "name": "SEO Optimizer",
+  "id": "tagline-generator",
+  "name": "Tagline Generator",
   "version": "2.0.0",
-  "category": "content",
-  "icon": "MagnifyingGlassIcon",
+  "category": "message-builder",
+  "icon": "SparklesIcon",
   "component": "Widget.vue",
   "prompts": "prompts.php",
   "supports": {

@@ -1,9 +1,9 @@
 {
-  "id": "seo-optimizer",
-  "name": "SEO Optimizer",
+  "id": "offers-generator",
+  "name": "Offers Generator",
   "version": "2.0.0",
-  "category": "content",
-  "icon": "MagnifyingGlassIcon",
+  "category": "value-builder",
+  "icon": "GiftIcon",
   "component": "Widget.vue",
   "prompts": "prompts.php",
   "supports": {

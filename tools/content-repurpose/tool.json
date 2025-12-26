@@ -1,9 +1,9 @@
 {
-  "id": "seo-optimizer",
-  "name": "SEO Optimizer",
+  "id": "content-repurposer",
+  "name": "Content Repurposer",
   "version": "2.0.0",
   "category": "content",
-  "icon": "MagnifyingGlassIcon",
+  "icon": "ArrowPathIcon",
   "component": "Widget.vue",
   "prompts": "prompts.php",
   "supports": {

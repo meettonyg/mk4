@@ -1,9 +1,9 @@
 {
-  "id": "seo-optimizer",
-  "name": "SEO Optimizer",
+  "id": "sound-bite-generator",
+  "name": "Sound Bite Generator",
   "version": "2.0.0",
-  "category": "content",
-  "icon": "MagnifyingGlassIcon",
+  "category": "value-builder",
+  "icon": "MegaphoneIcon",
   "component": "Widget.vue",
   "prompts": "prompts.php",
   "supports": {

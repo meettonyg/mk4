@@ -1,9 +1,9 @@
 {
-  "id": "seo-optimizer",
-  "name": "SEO Optimizer",
+  "id": "email-writer",
+  "name": "Email Writer",
   "version": "2.0.0",
-  "category": "content",
-  "icon": "MagnifyingGlassIcon",
+  "category": "social-email",
+  "icon": "EnvelopeIcon",
   "component": "Widget.vue",
   "prompts": "prompts.php",
   "supports": {
