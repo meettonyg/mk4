@@ -41,7 +41,7 @@
             :key="profile.id"
             :value="profile.id"
           >
-            {{ profile.title || profile.name || `Profile #${profile.id}` }}
+            {{ getProfileDisplayName(profile) }}
           </option>
         </select>
 
@@ -138,6 +138,25 @@ const {
 // Local state
 const selectedId = ref(null);
 const showDataNotice = ref(true);
+
+/**
+ * Get display name for profile dropdown
+ * Shows tagline or ID to distinguish profiles with same name
+ */
+const getProfileDisplayName = (profile) => {
+  const name = profile.title || profile.name || `Profile #${profile.id}`;
+
+  // If tagline exists, append it
+  if (profile.tagline) {
+    const shortTagline = profile.tagline.length > 30
+      ? profile.tagline.substring(0, 30) + '...'
+      : profile.tagline;
+    return `${name} — ${shortTagline}`;
+  }
+
+  // Otherwise append ID to distinguish duplicates
+  return `${name} (#${profile.id})`;
+};
 
 /**
  * Handle profile selection change
