@@ -40,8 +40,64 @@
     "canonicalPath": "/tools/authority-hook-builder/"
   },
   "landingContent": {
-    "heroTagline": "Position Yourself as the Go-To Expert",
-    "heroSubtitle": "Build your Authority Hook using the proven 6 W's framework to clearly communicate your unique expertise and value.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free Authority Hook Generator",
+      "subhead": "Generate a positioning statement that establishes your expertise using the 6 W's framework.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 12,000+ experts" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "authority",
+        "label": "Build Authority",
+        "contextHeading": "Be recognized as the trusted voice",
+        "contextDescription": "Find high-authority shows, position yourself as an expert, and build host relationships—reaching the right audience with lasting influence.",
+        "formLabels": {
+          "who": "Who do you help? (Target Audience)",
+          "what": "What result do they get?"
+        },
+        "formPlaceholders": {
+          "who": "e.g. SaaS Founders",
+          "what": "e.g. Scale to $1M ARR"
+        }
+      },
+      {
+        "id": "revenue",
+        "label": "Grow Revenue",
+        "contextHeading": "Convert listeners into paying clients",
+        "contextDescription": "Turn podcast appearances into a reliable lead generation channel. Build trust with audiences who are ready to buy.",
+        "formLabels": {
+          "who": "Who is your ideal client?",
+          "what": "What transformation do you deliver?"
+        },
+        "formPlaceholders": {
+          "who": "e.g. Agency Owners",
+          "what": "e.g. Double their client base"
+        }
+      },
+      {
+        "id": "launch",
+        "label": "Launch & Promote",
+        "contextHeading": "Amplify your launch visibility",
+        "contextDescription": "Leverage podcast guesting to create buzz around your book, course, or product launch. Reach engaged audiences at scale.",
+        "formLabels": {
+          "who": "Who is your launch audience?",
+          "what": "What are you launching?"
+        },
+        "formPlaceholders": {
+          "who": "e.g. First-time Authors",
+          "what": "e.g. Bestseller book launch"
+        }
+      }
+    ],
+    "definition": {
+      "title": "What is an Authority Hook?",
+      "content": "An Authority Hook is a specialized positioning statement that instantly communicates your value. Unlike a generic bio, it uses the 6 W's framework to answer the listener's subconscious question: 'Why should I listen to you?'"
+    },
     "formula": "I help [WHO] achieve [WHAT] when [WHEN] through [HOW].",
     "tips": [
       "Be specific about WHO - 'busy entrepreneurs' beats 'business owners'",
@@ -116,10 +172,25 @@
         "answer": "Absolutely! Your authority hook is the foundation of your bio, tagline, and all positioning content."
       },
       {
-        "question": "Should I have one hook or multiple?",
-        "answer": "Start with one core hook. You can create variations for different audiences once your main positioning is solid."
+        "question": "Is this really free?",
+        "answer": "Yes, you can generate up to 3 hooks per day completely free without signing up."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "This tool helped me clarify my message in 5 minutes after struggling for 5 years.",
+        "author": "Sarah J.",
+        "role": "Business Coach",
+        "rating": "4.9"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just generate hooks. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["Spotify", "Apple Podcasts", "YouTube", "LinkedIn"],
     "relatedToolSlugs": [
       "biography-generator",
       "elevator-pitch-generator",

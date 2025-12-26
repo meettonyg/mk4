@@ -78,6 +78,10 @@ import ToolDirectoryPage from '@tools/ToolDirectoryPage.vue';
 import ToolLandingPage from '@tools/ToolLandingPage.vue';
 import DynamicToolPage from '@tools/DynamicToolPage.vue';
 
+// PLG Embedded tool components
+import { EmbeddedToolWrapper } from '@tools/_shared';
+import AuthorityHookGenerator from '@tools/authority-hook/Generator.vue';
+
 /**
  * Component registry for data-gmkb-tool attribute values
  * Supports both short names and legacy full slugs for backwards compatibility
@@ -141,6 +145,15 @@ const TOOL_COMPONENTS = {
     'podcast-notes': PodcastNotesWidget,
     'podcast-notes-generator': PodcastNotesWidget,
     'seo-optimizer': SeoOptimizerWidget,
+};
+
+/**
+ * Generator component registry for PLG embedded mode
+ * Maps tool slugs to their full Generator components (not widgets)
+ */
+const EMBEDDED_GENERATORS = {
+    'authority-hook': AuthorityHookGenerator,
+    'authority-hook-builder': AuthorityHookGenerator,
 };
 
 /**
@@ -318,12 +331,150 @@ function initializeToolPage(container) {
 }
 
 /**
+ * Initialize a PLG (Product-Led Growth) embedded tool
+ *
+ * This is used for the new VEED-style landing pages where the tool
+ * is embedded directly in the hero section with intent tabs.
+ *
+ * @param {HTMLElement} container - The container element with data-mode="embedded"
+ * @returns {Object|null} Vue app instance or null if initialization failed
+ */
+function initializeEmbeddedTool(container) {
+    // Check if already mounted
+    if (mountedApps.has(container)) {
+        console.warn(`[GMKBSeoTools] Embedded tool already mounted on element`);
+        return mountedApps.get(container);
+    }
+
+    // Get configuration from data attributes
+    const toolSlug = container.dataset.tool || '';
+    const mode = container.dataset.mode || 'embedded';
+
+    // Parse intents and meta from data attributes
+    let intents = [];
+    let meta = {};
+    try {
+        intents = JSON.parse(container.dataset.intents || '[]');
+        meta = JSON.parse(container.dataset.meta || '{}');
+    } catch (e) {
+        console.error('[GMKBSeoTools] Failed to parse embedded tool data:', e);
+    }
+
+    // Find the generator component for this tool
+    const GeneratorComponent = EMBEDDED_GENERATORS[toolSlug];
+    if (!GeneratorComponent) {
+        console.error(`[GMKBSeoTools] No embedded generator for tool: ${toolSlug}`);
+        return null;
+    }
+
+    // Store nonce globally for API calls
+    if (!window.gmkbSeoTools) {
+        const nonce = window.gmkbPublicNonce || (window.gmkbPublicData && window.gmkbPublicData.publicNonce) || '';
+        window.gmkbSeoTools = { nonce };
+    }
+
+    // Create Vue app with EmbeddedToolWrapper containing the Generator
+    const app = createApp({
+        name: 'GMKBEmbeddedTool',
+        data() {
+            return {
+                currentIntent: intents[0] || null,
+                previewContent: '',
+                isGenerating: false,
+                canGenerate: false,
+            };
+        },
+        methods: {
+            handleIntentChange(intent) {
+                this.currentIntent = intent;
+            },
+            handlePreviewUpdate({ previewHtml }) {
+                this.previewContent = previewHtml;
+            },
+            handleGenerate() {
+                // Trigger generate on the child generator component
+                if (this.$refs.generator && this.$refs.generator.handleGenerate) {
+                    this.$refs.generator.handleGenerate();
+                }
+            },
+            handleSaveClick() {
+                // Emit event for registration prompt
+                container.dispatchEvent(new CustomEvent('gmkb:save-click', {
+                    bubbles: true,
+                }));
+                // Redirect to registration if not logged in
+                if (!window.gmkbUserData?.isLoggedIn) {
+                    window.location.href = '/register/?redirect=' + encodeURIComponent(window.location.href);
+                }
+            },
+        },
+        render() {
+            return h('div', { class: 'gmkb-standalone-scope' }, [
+                h(EmbeddedToolWrapper, {
+                    intents: intents,
+                    defaultHeading: meta.hero?.contextHeading || 'Create your hook',
+                    defaultDescription: meta.hero?.contextDescription || '',
+                    isGenerating: this.isGenerating,
+                    canGenerate: this.canGenerate,
+                    generateButtonText: `Generate ${meta.name || 'Hook'}`,
+                    previewContent: this.previewContent,
+                    onIntentChange: this.handleIntentChange,
+                    onGenerate: this.handleGenerate,
+                    onSaveClick: this.handleSaveClick,
+                }, {
+                    // Form slot - render the generator in embedded mode
+                    form: () => h(GeneratorComponent, {
+                        ref: 'generator',
+                        mode: 'embedded',
+                        intent: this.currentIntent,
+                        onPreviewUpdate: this.handlePreviewUpdate,
+                        onGenerated: (data) => {
+                            this.isGenerating = false;
+                            container.dispatchEvent(new CustomEvent('gmkb:generated', {
+                                detail: data,
+                                bubbles: true,
+                            }));
+                        },
+                        onChange: (data) => {
+                            // Update canGenerate based on field values
+                            this.canGenerate = !!(data.fields?.who?.trim() && data.fields?.what?.trim());
+                        },
+                    }),
+                    // Preview slot - show generated or live preview content
+                    preview: () => this.previewContent
+                        ? h('p', {
+                            class: 'preview-hook',
+                            innerHTML: this.previewContent
+                        })
+                        : null,
+                }),
+            ]);
+        },
+    });
+
+    // Create and install Pinia store
+    const pinia = createPinia();
+    app.use(pinia);
+
+    // Mount the app
+    app.mount(container);
+
+    // Store reference for cleanup
+    mountedApps.set(container, app);
+
+    console.log(`[GMKBSeoTools] Mounted embedded tool: ${toolSlug}`);
+
+    return app;
+}
+
+/**
  * Initialize all SEO tools on the page
  *
- * Handles three types of containers:
+ * Handles four types of containers:
  * - [data-gmkb-tool] - Individual tool widgets
  * - [data-gmkb-page-type="directory"] - Tool directory page
  * - [data-gmkb-page-type="tool"] - Dynamic tool page
+ * - [data-mode="embedded"] - PLG embedded tools in landing pages
  *
  * @returns {number} Number of tools initialized
  */
@@ -350,6 +501,14 @@ function initializeAll() {
     const toolPageContainers = document.querySelectorAll('[data-gmkb-page-type="tool"]');
     toolPageContainers.forEach((container) => {
         if (initializeToolPage(container)) {
+            count++;
+        }
+    });
+
+    // Initialize PLG embedded tools
+    const embeddedContainers = document.querySelectorAll('[data-mode="embedded"]');
+    embeddedContainers.forEach((container) => {
+        if (initializeEmbeddedTool(container)) {
             count++;
         }
     });
@@ -401,11 +560,12 @@ window.GMKBSeoTools = {
     init: initializeTool,
     initDirectory: initializeDirectory,
     initToolPage: initializeToolPage,
+    initEmbedded: initializeEmbeddedTool,
     initAll: initializeAll,
     mountTool: mountTool,  // Alias for shortcode compatibility
     destroy: destroyTool,
     destroyAll: destroyAll,
-    version: '2.0.0',
+    version: '2.1.0',
 };
 
 // Auto-initialize on DOM ready
@@ -434,6 +594,10 @@ const observer = new MutationObserver((mutations) => {
                 if (node.hasAttribute && node.getAttribute('data-gmkb-page-type') === 'tool') {
                     initializeToolPage(node);
                 }
+                // Check if the added node is an embedded tool
+                if (node.hasAttribute && node.getAttribute('data-mode') === 'embedded') {
+                    initializeEmbeddedTool(node);
+                }
 
                 // Check children of added node for all types
                 if (node.querySelectorAll) {
@@ -445,6 +609,9 @@ const observer = new MutationObserver((mutations) => {
 
                     const toolPageChildren = node.querySelectorAll('[data-gmkb-page-type="tool"]');
                     toolPageChildren.forEach(initializeToolPage);
+
+                    const embeddedChildren = node.querySelectorAll('[data-mode="embedded"]');
+                    embeddedChildren.forEach(initializeEmbeddedTool);
                 }
             }
         });
@@ -461,6 +628,7 @@ export {
     initializeTool,
     initializeDirectory,
     initializeToolPage,
+    initializeEmbeddedTool,
     initializeAll,
     destroyTool,
     destroyAll,
