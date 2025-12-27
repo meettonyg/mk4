@@ -202,13 +202,6 @@ class GMKB_Tool_Pages {
             return;
         }
 
-        // Only enqueue scripts on the tool app page (/tool/ or legacy ?use=1)
-        $use_param = isset($_GET['use']) ? sanitize_text_field(wp_unslash($_GET['use'])) : null;
-        $is_tool_app = get_query_var('gmkb_tool_app') || ('1' === $use_param);
-        if (!$is_tool_app) {
-            return;
-        }
-
         // Verify tool exists
         if (!$this->discovery) {
             return;
@@ -216,6 +209,18 @@ class GMKB_Tool_Pages {
 
         $tool = $this->discovery->get_tool($tool_slug);
         if (!$tool) {
+            return;
+        }
+
+        // Check if this is a PLG landing page (has embedded tool)
+        $meta = $this->discovery->get_tool_metadata($tool_slug);
+        $landing = isset($meta['landingContent']) ? $meta['landingContent'] : array();
+        $is_plg_landing = !empty($landing['hero']) && !empty($landing['hero']['h1']);
+
+        // Only enqueue scripts on the tool app page (/tool/ or legacy ?use=1) OR PLG landing pages
+        $use_param = isset($_GET['use']) ? sanitize_text_field(wp_unslash($_GET['use'])) : null;
+        $is_tool_app = get_query_var('gmkb_tool_app') || ('1' === $use_param);
+        if (!$is_tool_app && !$is_plg_landing) {
             return;
         }
 
@@ -790,11 +795,13 @@ get_footer();
                     headers: { 'X-WP-Nonce': nonce }
                 })
                 .then(function(r) { return r.json(); })
-                .then(function(profile) {
+                .then(function(response) {
                     // Pre-populate the tool with existing data if available
-                    if (profile && profile.fields) {
+                    // API returns { success: true, data: { ...fields... } }
+                    var profileData = response.data || response.fields || response;
+                    if (profileData) {
                         // Map profile fields back to tool field names
-                        var fieldData = mapProfileFieldsToTool(toolId, profile.fields);
+                        var fieldData = mapProfileFieldsToTool(toolId, profileData);
                         // Pre-populate the Vue component inputs
                         populateToolFields(fieldData);
                     }
@@ -1358,6 +1365,13 @@ get_footer();
         $meta = $this->current_meta;
         $landing = isset($meta['landingContent']) ? $meta['landingContent'] : array();
 
+        // Check if this tool has PLG (Product-Led Growth) landing content
+        // PLG content is indicated by the presence of the 'hero' object with 'h1' field
+        if (!empty($landing['hero']) && !empty($landing['hero']['h1'])) {
+            $this->render_plg_landing_page();
+            return;
+        }
+
         // CTA URL - links to the tool app page
         $cta_url = home_url('/' . $this->get_base_path() . '/' . $tool['id'] . '/tool/');
         $cta_text = $landing['ctaText'] ?? 'Try ' . esc_html($meta['name']) . ' Free';
@@ -1797,6 +1811,264 @@ get_footer();
                 }
             }
         </style>
+        <?php
+    }
+
+    /**
+     * Render the PLG (Product-Led Growth) landing page with embedded tool
+     *
+     * This layout embeds the actual tool in the hero section for immediate engagement,
+     * following the VEED-style conversion-focused design.
+     */
+    private function render_plg_landing_page() {
+        $tool = $this->current_tool;
+        $meta = $this->current_meta;
+        $landing = isset($meta['landingContent']) ? $meta['landingContent'] : array();
+
+        // Use logged-in hero content if available and user is logged in
+        $is_logged_in = is_user_logged_in();
+        if ($is_logged_in && !empty($landing['heroLoggedIn'])) {
+            $hero = $landing['heroLoggedIn'];
+        } else {
+            $hero = isset($landing['hero']) ? $landing['hero'] : array();
+        }
+
+        // Prepare data for Vue component
+        $tool_slug = $tool['id'];
+        $intents = isset($landing['intents']) ? $landing['intents'] : array();
+
+        ?>
+        <div class="gmkb-plg-landing">
+            <!-- 1. HERO (OUTCOME ENGINE) -->
+            <section class="gmkb-plg-hero">
+                <div class="gmkb-plg-container">
+                    <?php if (!empty($hero['badge'])): ?>
+                    <div class="gmkb-plg-hero__badge"><?php echo esc_html($hero['badge']); ?></div>
+                    <?php endif; ?>
+
+                    <h1 class="gmkb-plg-hero__title"><?php echo esc_html($hero['h1'] ?? $meta['name']); ?></h1>
+
+                    <?php if (!empty($hero['subhead'])): ?>
+                    <p class="gmkb-plg-hero__subhead"><?php echo esc_html($hero['subhead']); ?></p>
+                    <?php endif; ?>
+
+                    <!-- Micro Proof Strip -->
+                    <?php if (!empty($hero['microProof'])): ?>
+                    <div class="gmkb-plg-trust-strip">
+                        <?php foreach ($hero['microProof'] as $proof): ?>
+                        <div class="gmkb-plg-trust-item">
+                            <span><?php echo esc_html($proof['icon'] ?? '✓'); ?></span>
+                            <?php echo esc_html($proof['text']); ?>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+
+                    <!-- EMBEDDED TOOL FRAME (Vue mount point) -->
+                    <div id="gmkb-tool-embed"
+                         class="gmkb-plg-tool-embed"
+                         data-tool="<?php echo esc_attr($tool_slug); ?>"
+                         data-mode="embedded"
+                         data-intents="<?php echo esc_attr(wp_json_encode($intents)); ?>"
+                         data-meta="<?php echo esc_attr(wp_json_encode($landing)); ?>">
+                        <!-- Vue app will mount here -->
+                        <noscript>
+                            <div class="gmkb-plg-noscript">
+                                <p>JavaScript is required to use this tool.</p>
+                                <a href="<?php echo esc_url(home_url('/' . $this->get_base_path() . '/' . $tool_slug . '/tool/')); ?>" class="gmkb-plg-btn">
+                                    Open Tool
+                                </a>
+                            </div>
+                        </noscript>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. DEFINITION (SEO) -->
+            <?php if (!empty($landing['definition'])): ?>
+            <section class="gmkb-plg-section gmkb-plg-section--light">
+                <div class="gmkb-plg-container gmkb-plg-max-w-3xl gmkb-plg-text-center">
+                    <h2 class="gmkb-plg-section-title"><?php echo esc_html($landing['definition']['title']); ?></h2>
+                    <p class="gmkb-plg-text-lg"><?php echo esc_html($landing['definition']['content']); ?></p>
+                </div>
+            </section>
+            <?php endif; ?>
+
+            <!-- 3. TUTORIAL / INTELLIGENCE LAYER -->
+            <section class="gmkb-plg-section gmkb-plg-guidance-section">
+                <div class="gmkb-plg-container">
+                    <div class="gmkb-plg-guidance-layout">
+                        <!-- Left Column: Formula & Steps -->
+                        <div class="gmkb-plg-guidance-content">
+                            <h2>How to Create Your <?php echo esc_html($meta['name']); ?></h2>
+                            <p class="intro"><?php echo esc_html($meta['shortDescription'] ?? ''); ?></p>
+
+                            <!-- FORMULA BOX -->
+                            <?php if (!empty($landing['formula'])): ?>
+                            <div class="gmkb-plg-formula-box">
+                                <span class="gmkb-plg-formula-label">FORMULA</span>
+                                <p class="gmkb-plg-formula-text"><?php echo $this->format_formula_with_highlights($landing['formula']); ?></p>
+                            </div>
+                            <?php endif; ?>
+
+                            <!-- PROCESS STEPS -->
+                            <?php if (!empty($landing['howItWorks'])): ?>
+                            <div class="gmkb-plg-process-list">
+                                <?php foreach ($landing['howItWorks'] as $step): ?>
+                                <div class="gmkb-plg-process-item">
+                                    <div class="gmkb-plg-process-icon"><?php echo esc_html($step['step']); ?></div>
+                                    <div>
+                                        <h3 class="gmkb-plg-process-title"><?php echo esc_html($step['title']); ?></h3>
+                                        <p class="gmkb-plg-process-desc"><?php echo esc_html($step['description']); ?></p>
+                                    </div>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Right Column: Pro Tips (Sidebar) -->
+                        <div class="gmkb-plg-guidance-sidebar">
+                            <?php if (!empty($landing['tips'])): ?>
+                            <div class="gmkb-plg-tips-card">
+                                <h3 class="gmkb-plg-card-header">💡 Pro Tips</h3>
+                                <ul class="gmkb-plg-tips-list">
+                                    <?php foreach ($landing['tips'] as $tip): ?>
+                                    <li><?php echo esc_html($tip); ?></li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
+                            <?php endif; ?>
+
+                            <!-- Back to Tool CTA -->
+                            <div class="gmkb-plg-back-to-tool">
+                                <p>Ready to try it?</p>
+                                <a href="#gmkb-tool-embed" class="gmkb-plg-btn-outline">
+                                    Generate Your Hook →
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. COMPATIBILITY STRIP -->
+            <?php if (!empty($landing['compatibility'])): ?>
+            <section class="gmkb-plg-compatibility">
+                <div class="gmkb-plg-container">
+                    <p class="gmkb-plg-compatibility-label">WORKS WITH MAJOR PLATFORMS:</p>
+                    <div class="gmkb-plg-logos">
+                        <?php foreach ($landing['compatibility'] as $platform): ?>
+                        <span><?php echo esc_html($platform); ?></span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </section>
+            <?php endif; ?>
+
+            <!-- 5. FAQ -->
+            <?php if (!empty($landing['faq'])): ?>
+            <section class="gmkb-plg-section gmkb-plg-section--light">
+                <div class="gmkb-plg-container gmkb-plg-max-w-3xl">
+                    <h2 class="gmkb-plg-section-title gmkb-plg-text-center">Frequently Asked Questions</h2>
+                    <div class="gmkb-plg-faq-list">
+                        <?php foreach ($landing['faq'] as $item): ?>
+                        <div class="gmkb-plg-faq-item">
+                            <h3 class="gmkb-plg-faq-question"><?php echo esc_html($item['question']); ?></h3>
+                            <p class="gmkb-plg-faq-answer"><?php echo esc_html($item['answer']); ?></p>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </section>
+            <?php endif; ?>
+
+            <!-- 6. RELATED TOOLS -->
+            <?php if (!empty($landing['relatedToolSlugs'])): ?>
+            <section class="gmkb-plg-section">
+                <div class="gmkb-plg-container">
+                    <h2 class="gmkb-plg-section-title gmkb-plg-text-center">Related Tools</h2>
+                    <div class="gmkb-plg-related-grid">
+                        <?php foreach ($landing['relatedToolSlugs'] as $related_slug):
+                            $related = $this->discovery->get_tool($related_slug);
+                            $related_meta = $this->discovery->get_tool_metadata($related_slug);
+                            if ($related && $related_meta):
+                        ?>
+                            <a href="<?php echo esc_url(home_url('/' . $this->get_base_path() . '/' . $related_slug . '/')); ?>"
+                               class="gmkb-plg-related-card">
+                                <?php echo esc_html($related_meta['name']); ?>
+                            </a>
+                        <?php endif; endforeach; ?>
+                    </div>
+                </div>
+            </section>
+            <?php endif; ?>
+
+            <!-- 7. SOCIAL PROOF -->
+            <?php if (!empty($landing['socialProof']['testimonial'])): ?>
+            <?php $testimonial = $landing['socialProof']['testimonial']; ?>
+            <section class="gmkb-plg-section gmkb-plg-section--dark">
+                <div class="gmkb-plg-container gmkb-plg-text-center">
+                    <div class="gmkb-plg-stars">★★★★★</div>
+                    <blockquote class="gmkb-plg-testimonial">
+                        "<?php echo esc_html($testimonial['quote']); ?>"
+                    </blockquote>
+                    <div class="gmkb-plg-testimonial-author">
+                        — <?php echo esc_html($testimonial['author']); ?><?php if (!empty($testimonial['role'])): ?>, <?php echo esc_html($testimonial['role']); ?><?php endif; ?>
+                        <?php if (!empty($testimonial['rating'])): ?>
+                        <span class="gmkb-plg-stat-badge"><?php echo esc_html($testimonial['rating']); ?>/5 Rating</span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </section>
+            <?php endif; ?>
+
+            <!-- 8. PLATFORM CTA -->
+            <?php if (!empty($landing['platformCta'])): ?>
+            <?php $cta = $landing['platformCta']; ?>
+            <section class="gmkb-plg-platform-cta">
+                <div class="gmkb-plg-container">
+                    <h2><?php echo esc_html($cta['heading']); ?></h2>
+                    <p><?php echo esc_html($cta['description']); ?></p>
+                    <a href="<?php echo esc_url($cta['buttonUrl'] ?? '/register/'); ?>" class="gmkb-plg-btn-white">
+                        <?php echo esc_html($cta['buttonText'] ?? 'Get Started Free'); ?>
+                    </a>
+                </div>
+            </section>
+            <?php endif; ?>
+        </div>
+
+        <?php
+        // Enqueue the PLG CSS
+        $this->output_plg_styles();
+    }
+
+    /**
+     * Format formula text with highlighted placeholders
+     * Converts [PLACEHOLDER] to styled spans
+     */
+    private function format_formula_with_highlights($formula) {
+        return preg_replace(
+            '/\[([^\]]+)\]/',
+            '<span class="gmkb-plg-highlight">[$1]</span>',
+            esc_html($formula)
+        );
+    }
+
+    /**
+     * Output the <link> tag for PLG landing page styles.
+     * This is called directly during rendering as it's part of a virtual page.
+     */
+    private function output_plg_styles() {
+        // Check if we already output the styles
+        static $styles_output = false;
+        if ($styles_output) {
+            return;
+        }
+        $styles_output = true;
+
+        ?>
+        <link rel="stylesheet" href="<?php echo esc_url(plugins_url('../../assets/css/tool-landing-plg.css', __FILE__)); ?>" />
         <?php
     }
 

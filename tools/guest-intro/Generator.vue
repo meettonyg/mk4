@@ -258,7 +258,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch, inject } from 'vue';
 import { useAIGuestIntro } from '../../src/composables/useAIGuestIntro';
 import { useImpactIntro } from '../../src/composables/useImpactIntro';
 
@@ -268,7 +268,7 @@ import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel } from '../_shared';
+import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
 
 const props = defineProps({
   /**
@@ -325,6 +325,39 @@ const name = ref(props.initialName);
 const biography = ref(props.initialBiography);
 const credentials = ref('');
 const tagline = ref('');
+
+// Inject profile data from EmbeddedToolWrapper (for embedded mode)
+const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+
+/**
+ * Populate form fields from profile data
+ */
+function populateFromProfile(profileData) {
+  if (!profileData) return;
+
+  // Populate name from first_name + last_name
+  const firstName = profileData.first_name || '';
+  const lastName = profileData.last_name || '';
+  const fullName = [firstName, lastName].filter(Boolean).join(' ');
+  if (fullName && !name.value) {
+    name.value = fullName;
+  }
+
+  // Populate biography from biography field
+  if (profileData.biography && !biography.value) {
+    biography.value = profileData.biography;
+  }
+
+  // Populate credentials from impact intro or certifications
+  if (profileData.credentials && !credentials.value) {
+    credentials.value = profileData.credentials;
+  }
+
+  // Populate tagline
+  if (profileData.tagline && !tagline.value) {
+    tagline.value = profileData.tagline;
+  }
+}
 
 /**
  * Introduction formula for guidance panel
@@ -417,6 +450,19 @@ onMounted(() => {
     credentials.value = credentialsSummary.value;
   }
 });
+
+/**
+ * Watch for injected profile data changes (embedded mode)
+ */
+watch(
+  injectedProfileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>

@@ -42,6 +42,12 @@ class GMKB_Tool_Discovery {
     private $prompts_cache = [];
 
     /**
+     * Map of directory names to tool IDs for slug resolution
+     * @var array
+     */
+    private $dir_to_id_map = [];
+
+    /**
      * Category configuration
      *
      * Note: This configuration is mirrored in ToolRegistry.js (CATEGORY_CONFIG).
@@ -146,6 +152,12 @@ class GMKB_Tool_Discovery {
                     $tool_config['_has_component'] = file_exists($dir . '/' . ($tool_config['component'] ?? 'Component.vue'));
 
                     $this->tools_cache[$tool_config['id']] = $tool_config;
+
+                    // Also map directory name to tool ID for slug resolution
+                    // This allows /tools/biography/ to find biography-generator
+                    if ($dir_name !== $tool_config['id']) {
+                        $this->dir_to_id_map[$dir_name] = $tool_config['id'];
+                    }
                 }
             }
         }
@@ -163,14 +175,30 @@ class GMKB_Tool_Discovery {
     }
 
     /**
-     * Get a tool by its ID
+     * Get a tool by its ID or directory slug
      *
-     * @param string $tool_id The tool ID (e.g., 'biography-generator')
+     * Supports both canonical tool IDs (e.g., 'biography-generator') and
+     * directory-based slugs (e.g., 'biography'). This allows URL routing
+     * via /tools/biography/ to work even when the tool.json ID differs.
+     *
+     * @param string $tool_id The tool ID or directory slug
      * @return array|null Tool configuration or null if not found
      */
     public function get_tool($tool_id) {
         $tools = $this->discover_tools();
-        return isset($tools[$tool_id]) ? $tools[$tool_id] : null;
+
+        // Direct ID lookup (e.g., 'biography-generator')
+        if (isset($tools[$tool_id])) {
+            return $tools[$tool_id];
+        }
+
+        // Directory name fallback (e.g., 'biography' → 'biography-generator')
+        if (isset($this->dir_to_id_map[$tool_id])) {
+            $canonical_id = $this->dir_to_id_map[$tool_id];
+            return isset($tools[$canonical_id]) ? $tools[$canonical_id] : null;
+        }
+
+        return null;
     }
 
     /**
@@ -279,9 +307,54 @@ class GMKB_Tool_Discovery {
     }
 
     /**
+     * Resolve a slug to its canonical tool ID
+     *
+     * Handles both canonical IDs and directory name aliases.
+     * Useful for redirecting from legacy slugs to canonical URLs.
+     *
+     * @param string $slug The tool slug or directory name
+     * @return string|null Canonical tool ID or null if not found
+     */
+    public function resolve_canonical_id($slug) {
+        $tools = $this->discover_tools();
+
+        // Already canonical
+        if (isset($tools[$slug])) {
+            return $slug;
+        }
+
+        // Resolve from directory name
+        if (isset($this->dir_to_id_map[$slug])) {
+            return $this->dir_to_id_map[$slug];
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if a slug is a directory alias (not the canonical ID)
+     *
+     * @param string $slug The slug to check
+     * @return bool True if this is an alias
+     */
+    public function is_directory_alias($slug) {
+        return isset($this->dir_to_id_map[$slug]);
+    }
+
+    /**
+     * Get the directory-to-ID mapping
+     *
+     * @return array Map of directory names to canonical tool IDs
+     */
+    public function get_directory_map() {
+        $this->discover_tools(); // Ensure map is populated
+        return $this->dir_to_id_map;
+    }
+
+    /**
      * Check if a tool exists
      *
-     * @param string $tool_id Tool ID
+     * @param string $tool_id Tool ID or directory slug
      * @return bool True if tool exists
      */
     public function tool_exists($tool_id) {
@@ -380,6 +453,7 @@ class GMKB_Tool_Discovery {
     public function clear_cache() {
         $this->tools_cache = null;
         $this->prompts_cache = [];
+        $this->dir_to_id_map = [];
     }
 
     /**

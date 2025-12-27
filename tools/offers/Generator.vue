@@ -263,7 +263,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, inject } from 'vue';
 import { useAIOffers, PACKAGE_TIERS } from '../../src/composables/useAIOffers';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 
@@ -272,7 +272,7 @@ import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
 import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel } from '../_shared';
+import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
 
 const props = defineProps({
   /**
@@ -311,6 +311,26 @@ const { authorityHookSummary, syncFromStore } = useAuthorityHook();
 // Local state
 const services = ref('');
 const authorityHookText = ref('');
+
+// Inject profile data from EmbeddedToolWrapper (for embedded mode)
+const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+
+/**
+ * Populate form fields from profile data
+ */
+function populateFromProfile(profileData) {
+  if (!profileData) return;
+
+  // Populate services from hook_what or services field
+  if (profileData.hook_what && !services.value) {
+    services.value = profileData.hook_what;
+  }
+
+  // Populate authority hook text
+  if (profileData.authority_hook && !authorityHookText.value) {
+    authorityHookText.value = profileData.authority_hook;
+  }
+}
 
 /**
  * Offers formula for guidance panel
@@ -410,6 +430,19 @@ watch(authorityHookSummary, (newVal) => {
     authorityHookText.value = newVal;
   }
 });
+
+/**
+ * Watch for injected profile data changes (embedded mode)
+ */
+watch(
+  injectedProfileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>

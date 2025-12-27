@@ -244,9 +244,17 @@ class GMKB_Profile_Repository implements GMKB_Profile_Repository_Interface {
         }
 
         // Save to post meta
+        // Note: update_post_meta returns false both on error AND when value is unchanged
+        // Check if the current value matches to distinguish these cases
+        $current_value = get_post_meta($id, $field, true);
         $result = update_post_meta($id, $field, $value);
 
         if ($result === false) {
+            // If current value matches what we tried to save, it's not an error
+            // (update_post_meta returns false when value is unchanged)
+            if ($current_value === $value || (empty($current_value) && empty($value))) {
+                return true; // No change needed, but not an error
+            }
             return new WP_Error('save_failed', "Failed to save {$field}");
         }
 

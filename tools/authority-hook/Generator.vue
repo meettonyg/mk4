@@ -172,7 +172,7 @@
 
   <!-- Integrated Mode: Compact widget -->
   <AiWidgetFrame
-    v-else
+    v-else-if="mode === 'integrated'"
     title="Authority Hook Builder"
     description="Create a powerful positioning statement using the 6W framework."
     :mode="mode"
@@ -269,10 +269,43 @@
       </div>
     </template>
   </AiWidgetFrame>
+
+  <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
+  <div v-else class="gmkb-embedded-form">
+    <!-- Simplified 2-field form for landing page -->
+    <div class="gmkb-embedded-fields">
+      <div
+        v-for="field in embeddedFields"
+        :key="field.key"
+        class="gmkb-embedded-field"
+      >
+        <label class="gmkb-embedded-label">{{ field.label }}</label>
+        <input
+          v-model="hookFields[field.key]"
+          type="text"
+          class="gmkb-embedded-input"
+          :placeholder="field.placeholder"
+          @input="handleFieldChange(field.key, $event.target.value)"
+        />
+      </div>
+    </div>
+
+    <!-- Results display for embedded mode -->
+    <div v-if="hasGeneratedHook" class="gmkb-embedded-result">
+      <div class="gmkb-embedded-result__content">
+        {{ generatedHook }}
+      </div>
+    </div>
+
+    <!-- Error display -->
+    <div v-if="error" class="gmkb-embedded-error">
+      {{ error }}
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, inject } from 'vue';
 import { useAuthorityHook, AUTHORITY_HOOK_FIELDS } from '../../src/composables/useAuthorityHook';
 import { useAIGenerator } from '../../src/composables/useAIGenerator';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
@@ -282,7 +315,7 @@ import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
 import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, ProfileContextBanner } from '../_shared';
+import { GeneratorLayout, GuidancePanel, ProfileContextBanner, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
 
 // Profile context for standalone mode
 const {
@@ -292,13 +325,21 @@ const {
   saveMultipleToProfile
 } = useStandaloneProfile();
 
+// Inject profile data from EmbeddedToolWrapper (for embedded mode)
+// This provides reactive updates when profile is selected from dropdown
+const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+
 const props = defineProps({
   /**
-   * Mode: 'integrated' or 'standalone'
+   * Mode: 'integrated', 'standalone', or 'embedded'
+   * - standalone: Full two-panel layout with guidance
+   * - integrated: Compact widget for embedding in other components
+   * - embedded: Landing page embed with simplified form
    */
   mode: {
     type: String,
-    default: 'standalone'
+    default: 'standalone',
+    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
   },
 
   /**
@@ -307,10 +348,70 @@ const props = defineProps({
   componentId: {
     type: String,
     default: null
+  },
+
+  /**
+   * Intent object for embedded mode
+   * Contains: { id, label, contextHeading, contextDescription, formPlaceholders, formLabels }
+   */
+  intent: {
+    type: Object,
+    default: null
+  },
+
+  /**
+   * Profile data for pre-population (embedded mode)
+   * Passed from EmbeddedToolWrapper via scoped slot
+   */
+  profileData: {
+    type: Object,
+    default: null
   }
 });
 
-const emit = defineEmits(['applied', 'generated', 'change']);
+const emit = defineEmits(['applied', 'generated', 'change', 'preview-update', 'update:can-generate']);
+
+/**
+ * Embedded mode field configuration
+ * In embedded mode, we show a simplified 2-field form (who, what)
+ */
+const embeddedFields = computed(() => {
+  const defaultLabels = {
+    who: 'Who do you help? (Target Audience)',
+    what: 'What result do they get?'
+  };
+  const defaultPlaceholders = {
+    who: 'e.g. SaaS Founders',
+    what: 'e.g. Scale to $1M ARR'
+  };
+
+  return [
+    {
+      key: 'who',
+      label: props.intent?.formLabels?.who || defaultLabels.who,
+      placeholder: props.intent?.formPlaceholders?.who || defaultPlaceholders.who
+    },
+    {
+      key: 'what',
+      label: props.intent?.formLabels?.what || defaultLabels.what,
+      placeholder: props.intent?.formPlaceholders?.what || defaultPlaceholders.what
+    }
+  ];
+});
+
+/**
+ * Generate preview text for embedded mode
+ */
+const embeddedPreviewText = computed(() => {
+  const whoVal = hookFields.value.who || '[WHO]';
+  const whatVal = hookFields.value.what || '[WHAT]';
+
+  if (!hookFields.value.who && !hookFields.value.what) {
+    return null; // Show default preview
+  }
+
+  return `"I help <strong>${whoVal}</strong> achieve <strong>${whatVal}</strong> in <strong>90 days</strong> without <strong>the usual pain points</strong>."`;
+});
 
 // Use composables
 const {
@@ -585,6 +686,94 @@ watch([who, what, when, how, where, why], () => {
     why: why.value
   };
 });
+
+/**
+ * Watch for field changes in embedded mode and emit preview updates
+ */
+watch(
+  () => [hookFields.value.who, hookFields.value.what],
+  () => {
+    if (props.mode === 'embedded') {
+      emit('preview-update', {
+        previewHtml: embeddedPreviewText.value,
+        fields: {
+          who: hookFields.value.who,
+          what: hookFields.value.what
+        }
+      });
+    }
+  },
+  { deep: true }
+);
+
+/**
+ * Populate form fields from profile data
+ */
+function populateFromProfile(profileData) {
+  if (!profileData) return;
+
+  // Pre-populate fields from profile data
+  hookFields.value = {
+    who: profileData.hook_who || hookFields.value.who || '',
+    what: profileData.hook_what || hookFields.value.what || '',
+    when: profileData.hook_when || hookFields.value.when || '',
+    how: profileData.hook_how || hookFields.value.how || '',
+    where: profileData.hook_where || hookFields.value.where || '',
+    why: profileData.hook_why || hookFields.value.why || ''
+  };
+
+  // Sync to composable
+  who.value = hookFields.value.who;
+  what.value = hookFields.value.what;
+  when.value = hookFields.value.when;
+  how.value = hookFields.value.how;
+  where.value = hookFields.value.where;
+  why.value = hookFields.value.why;
+}
+
+/**
+ * Watch for profileData prop changes (embedded mode with EmbeddedToolWrapper)
+ * Pre-populates form fields when profile data is provided
+ */
+watch(
+  () => props.profileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
+
+/**
+ * Watch for injected profile data from EmbeddedToolWrapper (embedded mode)
+ * This is the primary reactive source for profile changes in embedded mode
+ */
+watch(
+  injectedProfileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
+
+/**
+ * Check if embedded form has minimum required fields
+ */
+const canGenerateEmbedded = computed(() => {
+  return hookFields.value.who?.trim() && hookFields.value.what?.trim();
+});
+
+/**
+ * Emit can-generate status changes to parent (for embedded mode)
+ */
+watch(canGenerateEmbedded, (newValue) => {
+  if (props.mode === 'embedded') {
+    emit('update:can-generate', !!newValue);
+  }
+}, { immediate: true });
 </script>
 
 <style scoped>
@@ -845,5 +1034,76 @@ watch([who, what, when, how, where, why], () => {
 .gmkb-ai-hook-result__actions {
   margin-top: 12px;
   text-align: right;
+}
+
+/* Embedded Mode Styles (for landing page) */
+.gmkb-embedded-form {
+  width: 100%;
+}
+
+.gmkb-embedded-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.gmkb-embedded-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.gmkb-embedded-label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.gmkb-embedded-input {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  background: var(--mkcg-bg-secondary, #f9fafb);
+  box-sizing: border-box;
+  font-size: 15px;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.gmkb-embedded-input:focus {
+  outline: none;
+  border-color: var(--mkcg-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.gmkb-embedded-input::placeholder {
+  color: var(--mkcg-text-light, #94a3b8);
+}
+
+.gmkb-embedded-result {
+  margin-top: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid #86efac;
+  border-radius: 8px;
+}
+
+.gmkb-embedded-result__content {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #166534;
+  font-style: italic;
+}
+
+.gmkb-embedded-error {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 14px;
 }
 </style>
