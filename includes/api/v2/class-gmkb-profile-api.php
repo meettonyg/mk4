@@ -145,6 +145,34 @@ class GMKB_Profile_API {
             'callback' => [__CLASS__, 'export_profile'],
             'permission_callback' => [__CLASS__, 'check_read_permission'],
         ]);
+
+        // Get AEO Score (Answer Engine Optimization)
+        register_rest_route(self::NAMESPACE, '/profile/(?P<id>\d+)/aeo-score', [
+            'methods' => WP_REST_Server::READABLE,
+            'callback' => [__CLASS__, 'get_aeo_score'],
+            'permission_callback' => [__CLASS__, 'check_read_permission'],
+            'args' => [
+                'id' => [
+                    'validate_callback' => function($param) {
+                        return is_numeric($param);
+                    }
+                ],
+            ],
+        ]);
+
+        // Get/Update SEO Settings
+        register_rest_route(self::NAMESPACE, '/profile/(?P<id>\d+)/seo-settings', [
+            [
+                'methods' => WP_REST_Server::READABLE,
+                'callback' => [__CLASS__, 'get_seo_settings'],
+                'permission_callback' => [__CLASS__, 'check_read_permission'],
+            ],
+            [
+                'methods' => WP_REST_Server::EDITABLE,
+                'callback' => [__CLASS__, 'update_seo_settings'],
+                'permission_callback' => [__CLASS__, 'check_edit_permission'],
+            ],
+        ]);
     }
 
     // =========================================================================
@@ -424,6 +452,152 @@ class GMKB_Profile_API {
         return rest_ensure_response([
             'success' => true,
             'data' => $export,
+        ]);
+    }
+
+    /**
+     * Get AEO Score for a profile
+     *
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response|WP_Error
+     */
+    public static function get_aeo_score($request) {
+        $post_id = (int) $request->get_param('id');
+
+        // Check if AEO Optimizer class exists
+        if (!class_exists('GMKB_AEO_Optimizer')) {
+            $aeo_file = GUESTIFY_PLUGIN_DIR . 'includes/seo/class-aeo-optimizer.php';
+            if (file_exists($aeo_file)) {
+                require_once $aeo_file;
+            } else {
+                return new WP_Error('not_available', 'AEO optimizer not available', ['status' => 500]);
+            }
+        }
+
+        try {
+            $optimizer = new GMKB_AEO_Optimizer($post_id);
+            $score = $optimizer->calculate_score();
+
+            return rest_ensure_response($score);
+        } catch (Exception $e) {
+            return new WP_Error('calculation_error', $e->getMessage(), ['status' => 500]);
+        }
+    }
+
+    /**
+     * Get SEO settings for a profile
+     *
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response|WP_Error
+     */
+    public static function get_seo_settings($request) {
+        $post_id = (int) $request->get_param('id');
+
+        // Get SEO-related fields
+        $seo_fields = [
+            'seo_schema_enabled',
+            'seo_schema_types',
+            'seo_custom_title',
+            'seo_custom_description',
+            'seo_enabled_features',
+            'alumni_of',
+            'awards',
+            'member_of',
+            'certifications',
+        ];
+
+        $settings = [];
+        foreach ($seo_fields as $field) {
+            $value = get_post_meta($post_id, $field, true);
+            $settings[$field] = $value;
+        }
+
+        // Get schema preview if service is available
+        $schema_preview = null;
+        if (class_exists('GMKB_Profile_SEO_Service')) {
+            try {
+                $service = GMKB_Profile_SEO_Service::get_instance();
+                $schema_preview = $service->get_schema_preview($post_id);
+            } catch (Exception $e) {
+                // Ignore preview errors
+            }
+        }
+
+        // Check premium status
+        $is_premium = true; // Default to true for now
+        if (class_exists('GMKB_Premium_Features')) {
+            $is_premium = GMKB_Premium_Features::is_enabled_for_profile(
+                GMKB_Premium_Features::FEATURE_SCHEMA_SEO,
+                $post_id
+            );
+        }
+
+        return rest_ensure_response([
+            'success' => true,
+            'settings' => $settings,
+            'schema_preview' => $schema_preview,
+            'is_premium' => $is_premium,
+        ]);
+    }
+
+    /**
+     * Update SEO settings for a profile
+     *
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response|WP_Error
+     */
+    public static function update_seo_settings($request) {
+        $post_id = (int) $request->get_param('id');
+        $body = $request->get_json_params();
+
+        // Check premium status for SEO features
+        if (class_exists('GMKB_Premium_Features')) {
+            $is_premium = GMKB_Premium_Features::is_enabled_for_profile(
+                GMKB_Premium_Features::FEATURE_SCHEMA_SEO,
+                $post_id
+            );
+
+            if (!$is_premium) {
+                // Only allow authority fields for non-premium
+                $allowed_fields = ['alumni_of', 'awards', 'member_of', 'certifications'];
+                $body = array_intersect_key($body, array_flip($allowed_fields));
+            }
+        }
+
+        // Allowed SEO fields
+        $seo_fields = [
+            'seo_schema_enabled',
+            'seo_schema_types',
+            'seo_custom_title',
+            'seo_custom_description',
+            'seo_enabled_features',
+            'alumni_of',
+            'awards',
+            'member_of',
+            'certifications',
+        ];
+
+        $updated = [];
+        foreach ($seo_fields as $field) {
+            if (isset($body[$field])) {
+                $value = $body[$field];
+
+                // Sanitize based on field type
+                if (is_array($value)) {
+                    $value = array_map('sanitize_text_field', $value);
+                } else {
+                    $value = sanitize_text_field($value);
+                }
+
+                update_post_meta($post_id, $field, $value);
+                $updated[$field] = $value;
+            }
+        }
+
+        return rest_ensure_response([
+            'success' => true,
+            'updated' => $updated,
+            'message' => 'SEO settings updated successfully',
         ]);
     }
 }

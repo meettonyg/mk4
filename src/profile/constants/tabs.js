@@ -10,6 +10,7 @@ export const PROFILE_TABS = [
     { id: 'value', label: 'Value' },
     { id: 'messaging', label: 'Messaging' },
     { id: 'branding', label: 'Branding' },
+    { id: 'seo', label: 'SEO & Visibility' },
 ];
 
 export const PROFILE_TAB_IDS = PROFILE_TABS.map((tab) => tab.id);
