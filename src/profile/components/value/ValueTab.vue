@@ -144,6 +144,109 @@
                     </template>
                 </EditablePanel>
 
+                <!-- Authority Hook Panel -->
+                <EditablePanel
+                    title="Authority Hook (6 W's)"
+                    section-id="authority_hook"
+                    :is-editing="editingSection === 'authority_hook'"
+                    :is-saving="isSaving"
+                    @edit="startEditing"
+                    @save="saveSection"
+                    @cancel="cancelSectionEditing"
+                >
+                    <template #header-action>
+                        <a :href="authorityHookGeneratorUrl" target="_blank" class="header-ai-link" title="Generate with AI">
+                            <AiSparkleIcon :size="14" />
+                        </a>
+                    </template>
+
+                    <template #display>
+                        <div class="hook-fields">
+                            <div class="hook-field">
+                                <span class="hook-label">WHO (Target):</span>
+                                <span class="hook-value">{{ store.fields.hook_who || '—' }}</span>
+                            </div>
+                            <div class="hook-field">
+                                <span class="hook-label">WHAT (Result):</span>
+                                <span class="hook-value">{{ store.fields.hook_what || '—' }}</span>
+                            </div>
+                            <div class="hook-field">
+                                <span class="hook-label">WHEN (Situation):</span>
+                                <span class="hook-value">{{ store.fields.hook_when || '—' }}</span>
+                            </div>
+                            <div class="hook-field">
+                                <span class="hook-label">HOW (Method):</span>
+                                <span class="hook-value">{{ store.fields.hook_how || '—' }}</span>
+                            </div>
+                            <div class="hook-field">
+                                <span class="hook-label">WHERE (Context):</span>
+                                <span class="hook-value">{{ store.fields.hook_where || '—' }}</span>
+                            </div>
+                            <div class="hook-field">
+                                <span class="hook-label">WHY (Purpose):</span>
+                                <span class="hook-value">{{ store.fields.hook_why || '—' }}</span>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template #edit>
+                        <div class="form-group">
+                            <label class="form-label">WHO do you help?</label>
+                            <input
+                                type="text"
+                                class="form-input"
+                                v-model="editFields.hook_who"
+                                placeholder="e.g. SaaS founders, busy entrepreneurs..."
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">WHAT result do they get?</label>
+                            <input
+                                type="text"
+                                class="form-input"
+                                v-model="editFields.hook_what"
+                                placeholder="e.g. Scale to $1M ARR, double their client base..."
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">WHEN (in what situation)?</label>
+                            <input
+                                type="text"
+                                class="form-input"
+                                v-model="editFields.hook_when"
+                                placeholder="e.g. When stuck at a growth plateau..."
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">HOW (your unique method)?</label>
+                            <input
+                                type="text"
+                                class="form-input"
+                                v-model="editFields.hook_how"
+                                placeholder="e.g. Through AI-driven marketing systems..."
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">WHERE (context)?</label>
+                            <input
+                                type="text"
+                                class="form-input"
+                                v-model="editFields.hook_where"
+                                placeholder="e.g. On podcasts, at conferences..."
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">WHY (purpose)?</label>
+                            <input
+                                type="text"
+                                class="form-input"
+                                v-model="editFields.hook_why"
+                                placeholder="e.g. To help them achieve financial freedom..."
+                            />
+                        </div>
+                    </template>
+                </EditablePanel>
+
                 <!-- Brands Panel -->
                 <EditablePanel
                     title="Highlighted Brands and Voices"
@@ -212,6 +315,7 @@ const {
 const OFFER_GENERATOR_BASE_URL = '/tools/offers-generator/';
 const TOPICS_GENERATOR_BASE_URL = '/tools/topics-generator/';
 const QUESTIONS_GENERATOR_BASE_URL = '/tools/questions-generator/';
+const AUTHORITY_HOOK_GENERATOR_BASE_URL = '/tools/authority-hook-builder/';
 
 // Generate dynamic URLs with entry parameter
 const buildToolUrl = (baseUrl) => {
@@ -225,6 +329,7 @@ const buildToolUrl = (baseUrl) => {
 const offerGeneratorUrl = computed(() => buildToolUrl(OFFER_GENERATOR_BASE_URL));
 const topicsGeneratorUrl = computed(() => buildToolUrl(TOPICS_GENERATOR_BASE_URL));
 const questionsGeneratorUrl = computed(() => buildToolUrl(QUESTIONS_GENERATOR_BASE_URL));
+const authorityHookGeneratorUrl = computed(() => buildToolUrl(AUTHORITY_HOOK_GENERATOR_BASE_URL));
 
 // Edit state
 const editingTopic = ref(null);
@@ -242,6 +347,7 @@ const isLoadingLinkedOffers = ref(false);
 // Section field mappings
 const sectionFields = {
     brands: ['my_brands', 'other_brands'],
+    authority_hook: ['hook_who', 'hook_what', 'hook_when', 'hook_how', 'hook_where', 'hook_why'],
 };
 
 // Filtered available offers based on search
@@ -798,5 +904,38 @@ const saveOffersSection = async () => {
     outline: none;
     border-color: #14b8a6;
     box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+}
+
+/* Authority Hook fields */
+.hook-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.hook-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.hook-field:last-child {
+    border-bottom: none;
+}
+
+.hook-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.hook-value {
+    font-size: 14px;
+    color: #334155;
+    line-height: 1.5;
 }
 </style>
