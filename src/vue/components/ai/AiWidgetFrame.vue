@@ -225,9 +225,11 @@ const copyButtonText = ref('Copy to Clipboard');
 
 /**
  * Wrapper class based on mode
+ * - standalone: uses gmkb-standalone-scope (full CSS reset for public pages)
+ * - integrated: uses gmkb-integrated-scope (lighter styling for builder modal)
  */
 const wrapperClass = computed(() => {
-  return props.mode === 'standalone' ? 'gmkb-standalone-scope' : '';
+  return props.mode === 'standalone' ? 'gmkb-standalone-scope' : 'gmkb-integrated-scope';
 });
 
 /**
@@ -246,6 +248,11 @@ const handleCopy = async () => {
   }, 2000);
 };
 </script>
+
+<style>
+/* Import integrated mode styles (non-scoped for class-based styling) */
+@import '@/styles/ai-integrated.css';
+</style>
 
 <style scoped>
 /* Component-specific styles that enhance the shared styles */
