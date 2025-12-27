@@ -10,7 +10,7 @@
           @click="moveUp"
           :disabled="isFirst"
         >
-          <span>↑</span>
+          <i class="fa-solid fa-arrow-up"></i>
         </button>
 
         <button
@@ -19,7 +19,7 @@
           @click="moveDown"
           :disabled="isLast"
         >
-          <span>↓</span>
+          <i class="fa-solid fa-arrow-down"></i>
         </button>
 
         <div class="control-separator"></div>
@@ -29,7 +29,7 @@
           title="Edit"
           @click="edit"
         >
-          <span>✏️</span>
+          <i class="fa-solid fa-pen"></i>
         </button>
 
         <button
@@ -37,7 +37,7 @@
           title="Duplicate"
           @click="duplicate"
         >
-          <span>📋</span>
+          <i class="fa-solid fa-copy"></i>
         </button>
 
         <button
@@ -45,7 +45,7 @@
           title="Delete"
           @click="deleteComponent"
         >
-          <span>🗑️</span>
+          <i class="fa-solid fa-trash"></i>
         </button>
       </div>
     </div>
