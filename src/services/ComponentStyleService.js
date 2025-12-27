@@ -8,11 +8,9 @@ class ComponentStyleService {
   constructor() {
     // Map of componentId → <style> element
     this.styleElements = new Map();
-    
+
     // Map of componentId → current settings hash (for change detection)
     this.settingsCache = new Map();
-    
-    console.log('✅ ComponentStyleService initialized');
   }
 
   /**
@@ -32,22 +30,13 @@ class ComponentStyleService {
     }
 
     try {
-      console.log(`🎨 applySectionStyling CALLED for ${sectionId}`);
-      console.log('  Settings:', settings);
-
       // Generate CSS variables for section
       const css = this.generateSectionCSS(sectionId, settings);
 
-      console.log(`🎨 Generated section CSS for ${sectionId}:`);
-      console.log(css || '(empty CSS)');
-
       // Inject or update styles
       this.injectStyles(`section-${sectionId}`, css);
-
-      console.log(`✅ Applied section styles to ${sectionId}`);
     } catch (error) {
-      console.error(`❌ Failed to apply section styles to ${sectionId}:`, error);
-      console.error('  Error stack:', error.stack);
+      console.error(`Failed to apply section styles to ${sectionId}:`, error);
     }
   }
 
@@ -203,46 +192,21 @@ class ComponentStyleService {
    */
   applyStyling(componentId, settings) {
     if (!componentId || !settings) {
-      console.warn('⚠️ Invalid parameters for applyStyling:', { componentId, settings });
       return;
     }
 
     try {
-      // CRITICAL DEBUG: Log what we're working with
-      console.log(`🔍 applyStyling CALLED for ${componentId}`);
-      console.log('  Settings:', settings);
-      console.log('  Has style?', !!settings.style);
-      console.log('  Has advanced?', !!settings.advanced);
-      
       // Generate CSS
       const css = this.generateCSS(componentId, settings);
-      
-      // CRITICAL DEBUG: Log generated CSS
-      console.log(`🎨 Generated CSS for ${componentId}:`);
-      console.log(css || '(empty CSS)');
-      
+
       // Inject or update styles
       this.injectStyles(componentId, css);
-      
-      // CRITICAL DEBUG: Verify injection
-      const styleEl = this.styleElements.get(componentId);
-      console.log(`✅ Style element exists?`, !!styleEl);
-      if (styleEl) {
-        console.log('  Style element ID:', styleEl.id);
-        console.log('  Style element parent:', styleEl.parentNode?.nodeName);
-        console.log('  CSS content length:', styleEl.textContent?.length);
-      }
-      
-      // Cache settings hash for debugging
+
+      // Cache settings hash
       const settingsHash = JSON.stringify(settings);
       this.settingsCache.set(componentId, settingsHash);
-      
-      if (window.gmkbData?.debugMode) {
-        console.log(`🎨 Applied styles to component ${componentId}`);
-      }
     } catch (error) {
-      console.error(`❌ Failed to apply styles to ${componentId}:`, error);
-      console.error('  Error stack:', error.stack);
+      console.error(`Failed to apply styles to ${componentId}:`, error);
     }
   }
 
@@ -517,7 +481,6 @@ class ComponentStyleService {
    */
   watchComponent(componentId, store) {
     if (!store) {
-      console.warn('⚠️ Store not provided for watchComponent');
       return;
     }
 
@@ -536,33 +499,26 @@ class ComponentStyleService {
    */
   initializeAll(components) {
     if (!components || typeof components !== 'object') {
-      console.warn('⚠️ Invalid components object');
       return;
     }
 
-    let count = 0;
     Object.entries(components).forEach(([componentId, component]) => {
       if (component.settings) {
         this.applyStyling(componentId, component.settings);
-        count++;
       }
     });
-
-    console.log(`✅ Initialized ${count} component styles`);
   }
 
   /**
    * Clear all styles (for cleanup)
    */
   clearAll() {
-    this.styleElements.forEach((styleEl, componentId) => {
+    this.styleElements.forEach((styleEl) => {
       styleEl.remove();
     });
 
     this.styleElements.clear();
     this.settingsCache.clear();
-
-    console.log('🗑️ Cleared all component styles');
   }
 
   /**
@@ -573,35 +529,22 @@ class ComponentStyleService {
    */
   getAllCSS(components) {
     if (!components || typeof components !== 'object') {
-      console.warn('⚠️ Invalid components object for getAllCSS');
       return '';
     }
-
-    console.log('🎨 getAllCSS: Processing', Object.keys(components).length, 'components');
 
     const cssRules = [];
 
     Object.entries(components).forEach(([componentId, component]) => {
-      console.log(`🎨 Component ${componentId}:`, {
-        type: component.type,
-        hasSettings: !!component.settings,
-        hasStyle: !!component.settings?.style,
-        hasAdvanced: !!component.settings?.advanced,
-        backgroundColor: component.settings?.style?.background?.color
-      });
-
       if (component.settings) {
         const css = this.generateCSS(componentId, component.settings);
-        console.log(`🎨 Generated CSS for ${componentId}:`, css ? `${css.length} chars` : '(empty)');
         if (css) {
           cssRules.push(`/* Component: ${componentId} (${component.type || 'unknown'}) */`);
           cssRules.push(css);
-          cssRules.push(''); // Empty line for readability
+          cssRules.push('');
         }
       }
     });
 
-    console.log('🎨 getAllCSS: Total CSS rules:', cssRules.length);
     return cssRules.join('\n');
   }
 
