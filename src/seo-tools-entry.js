@@ -81,6 +81,30 @@ import DynamicToolPage from '@tools/DynamicToolPage.vue';
 // PLG Embedded tool components
 import { EmbeddedToolWrapper } from '@tools/_shared';
 import AuthorityHookGenerator from '@tools/authority-hook/Generator.vue';
+import BiographyGenerator from '@tools/biography/Generator.vue';
+import ElevatorPitchGenerator from '@tools/elevator-pitch/Generator.vue';
+import TaglineGenerator from '@tools/tagline/Generator.vue';
+import TopicsGenerator from '@tools/topics/Generator.vue';
+import QuestionsGenerator from '@tools/questions/Generator.vue';
+import GuestIntroGenerator from '@tools/guest-intro/Generator.vue';
+import OffersGenerator from '@tools/offers/Generator.vue';
+import ImpactIntroGenerator from '@tools/impact-intro/Generator.vue';
+import PersonaGenerator from '@tools/persona/Generator.vue';
+import SoundBiteGenerator from '@tools/sound-bite/Generator.vue';
+import BrandStoryGenerator from '@tools/brand-story/Generator.vue';
+import SignatureStoryGenerator from '@tools/signature-story/Generator.vue';
+import CredibilityStoryGenerator from '@tools/credibility-story/Generator.vue';
+import FrameworkGenerator from '@tools/framework/Generator.vue';
+import InterviewPrepGenerator from '@tools/interview-prep/Generator.vue';
+import BlogGenerator from '@tools/blog/Generator.vue';
+import ContentRepurposeGenerator from '@tools/content-repurpose/Generator.vue';
+import PressReleaseGenerator from '@tools/press-release/Generator.vue';
+import SocialPostGenerator from '@tools/social-post/Generator.vue';
+import EmailGenerator from '@tools/email/Generator.vue';
+import NewsletterGenerator from '@tools/newsletter/Generator.vue';
+import YoutubeDescriptionGenerator from '@tools/youtube-description/Generator.vue';
+import PodcastNotesGenerator from '@tools/podcast-notes/Generator.vue';
+import SeoOptimizerGenerator from '@tools/seo-optimizer/Generator.vue';
 
 /**
  * Component registry for data-gmkb-tool attribute values
@@ -152,8 +176,64 @@ const TOOL_COMPONENTS = {
  * Maps tool slugs to their full Generator components (not widgets)
  */
 const EMBEDDED_GENERATORS = {
+    // Message Builder tools
     'authority-hook': AuthorityHookGenerator,
     'authority-hook-builder': AuthorityHookGenerator,
+    'biography': BiographyGenerator,
+    'biography-generator': BiographyGenerator,
+    'topics': TopicsGenerator,
+    'topics-generator': TopicsGenerator,
+    'questions': QuestionsGenerator,
+    'questions-generator': QuestionsGenerator,
+    'tagline': TaglineGenerator,
+    'tagline-generator': TaglineGenerator,
+    'guest-intro': GuestIntroGenerator,
+    'guest-intro-generator': GuestIntroGenerator,
+    'offers': OffersGenerator,
+    'offers-generator': OffersGenerator,
+
+    // Value Builder tools
+    'elevator-pitch': ElevatorPitchGenerator,
+    'elevator-pitch-generator': ElevatorPitchGenerator,
+    'sound-bite': SoundBiteGenerator,
+    'sound-bite-generator': SoundBiteGenerator,
+    'persona': PersonaGenerator,
+    'persona-generator': PersonaGenerator,
+    'impact-intro': ImpactIntroGenerator,
+    'impact-intro-builder': ImpactIntroGenerator,
+
+    // Strategy tools
+    'brand-story': BrandStoryGenerator,
+    'brand-story-generator': BrandStoryGenerator,
+    'signature-story': SignatureStoryGenerator,
+    'signature-story-generator': SignatureStoryGenerator,
+    'credibility-story': CredibilityStoryGenerator,
+    'credibility-story-generator': CredibilityStoryGenerator,
+    'framework': FrameworkGenerator,
+    'framework-builder': FrameworkGenerator,
+    'interview-prep': InterviewPrepGenerator,
+    'interview-prep-generator': InterviewPrepGenerator,
+
+    // Content tools
+    'blog': BlogGenerator,
+    'blog-generator': BlogGenerator,
+    'content-repurpose': ContentRepurposeGenerator,
+    'content-repurposer': ContentRepurposeGenerator,
+    'press-release': PressReleaseGenerator,
+    'press-release-generator': PressReleaseGenerator,
+
+    // Social/Email tools
+    'social-post': SocialPostGenerator,
+    'social-post-generator': SocialPostGenerator,
+    'email': EmailGenerator,
+    'email-writer': EmailGenerator,
+    'newsletter': NewsletterGenerator,
+    'newsletter-writer': NewsletterGenerator,
+    'youtube-description': YoutubeDescriptionGenerator,
+    'youtube-description-generator': YoutubeDescriptionGenerator,
+    'podcast-notes': PodcastNotesGenerator,
+    'podcast-notes-generator': PodcastNotesGenerator,
+    'seo-optimizer': SeoOptimizerGenerator,
 };
 
 /**
