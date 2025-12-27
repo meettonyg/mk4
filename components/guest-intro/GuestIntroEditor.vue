@@ -24,16 +24,31 @@
         <section class="editor-section">
           <div class="section-header">
             <h4>Introduction Text</h4>
-            <button
-              type="button"
-              class="ai-generate-btn"
-              @click="showAiModal = true"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-              </svg>
-              Generate with AI
-            </button>
+            <div class="section-actions">
+              <button
+                v-if="hasProfileData"
+                type="button"
+                class="profile-load-btn"
+                @click="handleLoadFromProfile"
+                title="Load introduction from your profile"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                Load from Profile
+              </button>
+              <button
+                type="button"
+                class="ai-generate-btn"
+                @click="showAiModal = true"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+                Generate with AI
+              </button>
+            </div>
           </div>
 
           <div class="field-group">
@@ -84,12 +99,13 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, onMounted } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
 import BaseStylePanel from '../../src/vue/components/sidebar/editors/BaseStylePanel.vue';
 import BaseAdvancedPanel from '../../src/vue/components/sidebar/editors/BaseAdvancedPanel.vue';
 import { AiModal } from '../../src/vue/components/ai';
 import GuestIntroGenerator from '@tools/guest-intro/Generator.vue';
+import { useProfilePrePopulation } from '@composables/useProfilePrePopulation';
 
 const props = defineProps({
   componentId: {
@@ -109,10 +125,26 @@ const tabs = [
   { id: 'advanced', label: 'Advanced' }
 ];
 
+// Profile pre-population
+const {
+  hasProfileData,
+  getPrePopulatedData,
+  getProfileField
+} = useProfilePrePopulation('guest-intro');
+
 // Data from component JSON state (single source of truth)
 const localData = ref({
   introduction: ''
 });
+
+// Load data from profile
+const handleLoadFromProfile = () => {
+  const profileData = getPrePopulatedData();
+  if (profileData.introduction) {
+    localData.value.introduction = profileData.introduction;
+    updatePodsField();
+  }
+};
 
 // Load component data
 const loadComponentData = () => {
@@ -364,7 +396,7 @@ const handleAiApplied = (data) => {
   background: #94a3b8;
 }
 
-/* Section Header with AI Button */
+/* Section Header with Action Buttons */
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -374,6 +406,36 @@ const handleAiApplied = (data) => {
 
 .section-header h4 {
   margin: 0;
+}
+
+.section-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.profile-load-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.profile-load-btn:hover {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.profile-load-btn svg {
+  flex-shrink: 0;
 }
 
 .ai-generate-btn {

@@ -432,6 +432,94 @@ export class PodsDataIntegration {
   }
 
   /**
+   * Get pre-populated data for a NEW component being added
+   *
+   * Unlike enrichComponentData (which was used for loading existing components),
+   * this method is specifically for PRE-POPULATING new components from profile data.
+   *
+   * This is safe because:
+   * - It only affects NEW components being added to the builder
+   * - User can still edit/override the pre-populated values
+   * - It doesn't overwrite existing saved component data
+   *
+   * @param {string} componentType - The component type (e.g., 'biography', 'topics')
+   * @returns {Object} Pre-populated data object for the component
+   */
+  getPrePopulatedData(componentType) {
+    if (!componentType) {
+      console.warn('[PodsDataIntegration] getPrePopulatedData: No component type provided');
+      return {};
+    }
+
+    // Get fresh pods data from window (in case it was updated)
+    const podsData = this.getPodsDataSource();
+
+    if (!podsData || Object.keys(podsData).length === 0) {
+      console.log('[PodsDataIntegration] getPrePopulatedData: No pods data available');
+      return {};
+    }
+
+    // Get the component's config
+    const config = this.getComponentPodsConfig(componentType);
+
+    if (!config) {
+      console.log(`[PodsDataIntegration] getPrePopulatedData: No config for component type "${componentType}"`);
+      return {};
+    }
+
+    // Transform the pods data into component data format
+    const transformedData = this.transformPodsData(config, podsData);
+
+    console.log(`[PodsDataIntegration] Pre-populated data for "${componentType}":`, transformedData);
+
+    return transformedData;
+  }
+
+  /**
+   * Get all available profile data (for editors that need access to full profile)
+   *
+   * @returns {Object} Full profile/pods data
+   */
+  getProfileData() {
+    return this.getPodsDataSource();
+  }
+
+  /**
+   * Get specific field value from profile data
+   * Supports fallback field names (e.g., ['biography', 'guest_biography', 'bio'])
+   *
+   * @param {string|string[]} fieldNames - Field name or array of fallback field names
+   * @returns {*} The field value or null
+   */
+  getProfileField(fieldNames) {
+    const podsData = this.getPodsDataSource();
+
+    if (!podsData || Object.keys(podsData).length === 0) {
+      return null;
+    }
+
+    const fields = Array.isArray(fieldNames) ? fieldNames : [fieldNames];
+
+    for (const field of fields) {
+      if (podsData[field] !== undefined && podsData[field] !== null && podsData[field] !== '') {
+        return podsData[field];
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Check if a specific field has data in the profile
+   *
+   * @param {string|string[]} fieldNames - Field name or array of fallback field names
+   * @returns {boolean}
+   */
+  hasProfileField(fieldNames) {
+    return this.getProfileField(fieldNames) !== null;
+  }
+
+  /**
    * Check if Pods data is available
    */
   hasPodsData() {

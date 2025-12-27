@@ -39,16 +39,31 @@
         <section class="editor-section">
           <div class="section-header">
             <h4>Topics List</h4>
-            <button
-              type="button"
-              class="ai-generate-btn"
-              @click="showAiModal = true"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-              </svg>
-              Generate with AI
-            </button>
+            <div class="section-actions">
+              <button
+                v-if="hasProfileData"
+                type="button"
+                class="profile-load-btn"
+                @click="handleLoadFromProfile"
+                title="Load topics from your profile"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                Load from Profile
+              </button>
+              <button
+                type="button"
+                class="ai-generate-btn"
+                @click="showAiModal = true"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+                Generate with AI
+              </button>
+            </div>
           </div>
 
           <div class="topics-list">
@@ -121,11 +136,12 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
 import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 import { AiModal } from '../../src/vue/components/ai';
 import TopicsGenerator from '@tools/topics/Generator.vue';
+import { useProfilePrePopulation } from '@composables/useProfilePrePopulation';
 
 const props = defineProps({
   componentId: {
@@ -144,6 +160,13 @@ const activeTab = ref('content');
 // AI Modal state
 const showAiModal = ref(false);
 
+// Profile pre-population
+const {
+  hasProfileData,
+  getPrePopulatedData,
+  getProfileField
+} = useProfilePrePopulation('topics');
+
 // Local data state
 const localData = ref({
   title: 'Areas of Expertise',
@@ -152,6 +175,15 @@ const localData = ref({
   columns: '3',
   showIcons: false
 });
+
+// Load data from profile
+const handleLoadFromProfile = () => {
+  const profileData = getPrePopulatedData();
+  if (profileData.topics && Array.isArray(profileData.topics)) {
+    localData.value.topics = [...profileData.topics];
+    updateComponent();
+  }
+};
 
 // Load component data
 const loadComponentData = () => {
@@ -394,7 +426,7 @@ body.dark-mode .add-btn {
   color: #7dd3fc;
 }
 
-/* Section Header with AI Button */
+/* Section Header with Action Buttons */
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -404,6 +436,47 @@ body.dark-mode .add-btn {
 
 .section-header h4 {
   margin: 0;
+}
+
+.section-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.profile-load-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.profile-load-btn:hover {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.profile-load-btn svg {
+  flex-shrink: 0;
+}
+
+body.dark-mode .profile-load-btn {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+body.dark-mode .profile-load-btn:hover {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.35);
 }
 
 .ai-generate-btn {
