@@ -214,15 +214,25 @@ const deleteComponent = () => {
 .component-wrapper .component-controls .control-btn {
   width: 28px;
   height: 28px;
-  border: 1px solid #ccc; /* DEBUG: Make buttons visible */
-  background: #f8f8f8; /* DEBUG: Make buttons visible */
+  border: 1px solid #ccc;
+  background: #f8f8f8;
   border-radius: 4px;
-  display: flex !important; /* DEBUG: Force display */
+  display: flex !important;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
-  color: #333; /* DEBUG: Direct color instead of CSS variable */
+  color: #333;
+}
+
+/* Fix SVG icons */
+.component-wrapper .component-controls .control-btn svg {
+  width: 16px !important;
+  height: 16px !important;
+  display: block !important;
+  stroke: #333 !important;
+  stroke-width: 2px !important;
+  fill: none !important;
 }
 
 .component-wrapper .component-controls .control-btn:hover:not(:disabled) {
