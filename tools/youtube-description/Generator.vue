@@ -137,7 +137,7 @@
 
   <!-- Integrated Mode: Compact widget -->
   <AiWidgetFrame
-    v-else
+    v-else-if="mode === 'integrated'"
     title="YouTube Description Generator"
     description="Create SEO-optimized YouTube video descriptions."
     :mode="mode"
@@ -219,6 +219,44 @@
       />
     </template>
   </AiWidgetFrame>
+
+  <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
+  <div v-else class="gmkb-embedded-form">
+    <!-- Simplified 2-field form for landing page -->
+    <div class="gmkb-embedded-fields">
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.videoTitle || 'Video Title' }} *</label>
+        <input
+          v-model="videoTitle"
+          type="text"
+          class="gmkb-embedded-input"
+          :placeholder="currentIntent?.formPlaceholders?.videoTitle || 'e.g., How to Build a Personal Brand in 2024'"
+        />
+      </div>
+
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.videoContent || 'Video Content Summary' }}</label>
+        <textarea
+          v-model="videoContent"
+          class="gmkb-embedded-input gmkb-embedded-textarea"
+          :placeholder="currentIntent?.formPlaceholders?.videoContent || 'e.g., Main topics covered, key takeaways, call to action...'"
+          rows="3"
+        ></textarea>
+      </div>
+    </div>
+
+    <!-- Results display for embedded mode -->
+    <div v-if="hasContent" class="gmkb-embedded-result">
+      <div class="gmkb-embedded-result__content">
+        {{ generatedContent }}
+      </div>
+    </div>
+
+    <!-- Error display -->
+    <div v-if="error" class="gmkb-embedded-error">
+      {{ error }}
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -235,11 +273,15 @@ import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_s
 
 const props = defineProps({
   /**
-   * Mode: 'integrated' or 'standalone'
+   * Mode: 'integrated', 'standalone', or 'embedded'
+   * - standalone: Full two-panel layout with guidance
+   * - integrated: Compact widget for embedding in other components
+   * - embedded: Landing page embed with simplified form
    */
   mode: {
     type: String,
-    default: 'standalone'
+    default: 'standalone',
+    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
   },
 
   /**
@@ -248,10 +290,32 @@ const props = defineProps({
   componentId: {
     type: String,
     default: null
+  },
+
+  /**
+   * Intent object for embedded mode
+   * Contains: { id, label, contextHeading, contextDescription, formPlaceholders, formLabels }
+   */
+  intent: {
+    type: Object,
+    default: null
+  },
+
+  /**
+   * Profile data for pre-population (embedded mode)
+   * Passed from EmbeddedToolWrapper via scoped slot
+   */
+  profileData: {
+    type: Object,
+    default: null
   }
 });
 
-const emit = defineEmits(['applied', 'generated']);
+const emit = defineEmits(['applied', 'generated', 'preview-update', 'update:can-generate']);
+
+// Inject profile data from EmbeddedToolWrapper (for embedded mode)
+// This provides reactive updates when profile is selected from dropdown
+const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
 
 // Use composable for YouTube description generation
 const {
@@ -309,6 +373,55 @@ const examples = [
 ];
 
 /**
+ * Embedded mode field configuration
+ * In embedded mode, we show a simplified 2-field form (videoTitle, videoContent)
+ */
+const embeddedFields = computed(() => {
+  const defaultLabels = {
+    videoTitle: 'Video Title',
+    videoContent: 'What is your video about?'
+  };
+  const defaultPlaceholders = {
+    videoTitle: 'e.g. How to Build a Successful YouTube Channel',
+    videoContent: 'e.g. Tips and strategies for growing your YouTube audience'
+  };
+
+  return [
+    {
+      key: 'videoTitle',
+      type: 'text',
+      label: props.intent?.formLabels?.videoTitle || defaultLabels.videoTitle,
+      placeholder: props.intent?.formPlaceholders?.videoTitle || defaultPlaceholders.videoTitle
+    },
+    {
+      key: 'videoContent',
+      type: 'textarea',
+      label: props.intent?.formLabels?.videoContent || defaultLabels.videoContent,
+      placeholder: props.intent?.formPlaceholders?.videoContent || defaultPlaceholders.videoContent
+    }
+  ];
+});
+
+/**
+ * Current intent for embedded mode
+ */
+const currentIntent = computed(() => props.intent || null);
+
+/**
+ * Generate preview text for embedded mode
+ */
+const embeddedPreviewText = computed(() => {
+  const titleVal = videoTitle.value || '[VIDEO TITLE]';
+  const contentVal = videoContent.value || '[VIDEO CONTENT]';
+
+  if (!videoTitle.value && !videoContent.value) {
+    return null; // Show default preview
+  }
+
+  return `"<strong>${titleVal}</strong> - ${contentVal.substring(0, 100)}${contentVal.length > 100 ? '...' : ''}"`;
+});
+
+/**
  * Can generate check
  */
 const canGenerate = computed(() => {
@@ -352,6 +465,83 @@ const handleApply = () => {
     content: generatedContent.value
   });
 };
+
+/**
+ * Watch for field changes in embedded mode and emit preview updates
+ */
+watch(
+  () => [videoTitle.value, videoContent.value],
+  () => {
+    if (props.mode === 'embedded') {
+      emit('preview-update', {
+        previewHtml: embeddedPreviewText.value,
+        fields: {
+          videoTitle: videoTitle.value,
+          videoContent: videoContent.value
+        }
+      });
+    }
+  },
+  { deep: true }
+);
+
+/**
+ * Populate form fields from profile data
+ */
+function populateFromProfile(profileData) {
+  if (!profileData) return;
+
+  // Pre-populate fields from profile data
+  // Note: Adjust these field names based on actual profile schema
+  videoTitle.value = profileData.youtube_video_title || videoTitle.value || '';
+  videoContent.value = profileData.youtube_video_content || videoContent.value || '';
+  timestamps.value = profileData.youtube_timestamps || timestamps.value || 'yes';
+  links.value = profileData.youtube_links || links.value || '';
+}
+
+/**
+ * Watch for profileData prop changes (embedded mode with EmbeddedToolWrapper)
+ * Pre-populates form fields when profile data is provided
+ */
+watch(
+  () => props.profileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
+
+/**
+ * Watch for injected profile data from EmbeddedToolWrapper (embedded mode)
+ * This is the primary reactive source for profile changes in embedded mode
+ */
+watch(
+  injectedProfileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
+
+/**
+ * Check if embedded form has minimum required fields
+ */
+const canGenerateEmbedded = computed(() => {
+  return videoTitle.value?.trim() && videoContent.value?.trim();
+});
+
+/**
+ * Emit can-generate status changes to parent (for embedded mode)
+ */
+watch(canGenerateEmbedded, (newValue) => {
+  if (props.mode === 'embedded') {
+    emit('update:can-generate', !!newValue);
+  }
+}, { immediate: true });
 </script>
 
 <style scoped>
@@ -451,5 +641,78 @@ const handleApply = () => {
   outline: none;
   border-color: var(--gmkb-ai-primary, #6366f1);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Embedded Mode Styles (for landing page) */
+.gmkb-embedded-form {
+  width: 100%;
+}
+
+.gmkb-embedded-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.gmkb-embedded-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.gmkb-embedded-label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.gmkb-embedded-input {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  background: var(--mkcg-bg-secondary, #f9fafb);
+  box-sizing: border-box;
+  font-size: 15px;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  resize: vertical;
+}
+
+.gmkb-embedded-input:focus {
+  outline: none;
+  border-color: var(--mkcg-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.gmkb-embedded-input::placeholder {
+  color: var(--mkcg-text-light, #94a3b8);
+}
+
+.gmkb-embedded-result {
+  margin-top: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid #86efac;
+  border-radius: 8px;
+}
+
+.gmkb-embedded-result__content {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #166534;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.gmkb-embedded-error {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 14px;
 }
 </style>

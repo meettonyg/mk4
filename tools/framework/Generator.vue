@@ -150,7 +150,7 @@
 
   <!-- Integrated Mode: Compact widget -->
   <AiWidgetFrame
-    v-else
+    v-else-if="mode === 'integrated'"
     title="Framework Builder"
     description="Create a proprietary methodology or framework that showcases your unique approach."
     :mode="mode"
@@ -233,6 +233,46 @@
       />
     </template>
   </AiWidgetFrame>
+
+  <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
+  <div v-else class="gmkb-embedded-form">
+    <!-- Simplified form for landing page -->
+    <div class="gmkb-embedded-fields">
+      <div
+        v-for="field in embeddedFields"
+        :key="field.key"
+        class="gmkb-embedded-field"
+      >
+        <label class="gmkb-embedded-label">{{ field.label }}</label>
+        <textarea
+          v-if="field.type === 'textarea'"
+          v-model="field.model.value"
+          class="gmkb-embedded-input gmkb-embedded-textarea"
+          :placeholder="field.placeholder"
+          :rows="field.rows || 3"
+          @input="handleEmbeddedFieldChange(field.key, $event.target.value)"
+        ></textarea>
+        <input
+          v-else
+          v-model="field.model.value"
+          type="text"
+          class="gmkb-embedded-input"
+          :placeholder="field.placeholder"
+          @input="handleEmbeddedFieldChange(field.key, $event.target.value)"
+        />
+      </div>
+    </div>
+
+    <!-- Results display for embedded mode -->
+    <div v-if="generatedFramework" class="gmkb-embedded-result">
+      <div class="gmkb-embedded-result__content" v-html="generatedFramework"></div>
+    </div>
+
+    <!-- Error display -->
+    <div v-if="error" class="gmkb-embedded-error">
+      {{ error }}
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -247,13 +287,21 @@ import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
 // Full layout components (standalone mode)
 import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
 
+// Inject profile data from EmbeddedToolWrapper (for embedded mode)
+// This provides reactive updates when profile is selected from dropdown
+const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+
 const props = defineProps({
   /**
-   * Mode: 'integrated' or 'standalone'
+   * Mode: 'integrated', 'standalone', or 'embedded'
+   * - standalone: Full two-panel layout with guidance
+   * - integrated: Compact widget for embedding in other components
+   * - embedded: Landing page embed with simplified form
    */
   mode: {
     type: String,
-    default: 'standalone'
+    default: 'standalone',
+    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
   },
 
   /**
@@ -262,10 +310,28 @@ const props = defineProps({
   componentId: {
     type: String,
     default: null
+  },
+
+  /**
+   * Intent object for embedded mode
+   * Contains: { id, label, contextHeading, contextDescription, formPlaceholders, formLabels }
+   */
+  intent: {
+    type: Object,
+    default: null
+  },
+
+  /**
+   * Profile data for pre-population (embedded mode)
+   * Passed from EmbeddedToolWrapper via scoped slot
+   */
+  profileData: {
+    type: Object,
+    default: null
   }
 });
 
-const emit = defineEmits(['applied', 'generated']);
+const emit = defineEmits(['applied', 'generated', 'change', 'preview-update', 'update:can-generate']);
 
 // Use composables
 const {
@@ -389,6 +455,136 @@ const handleApply = () => {
     content: generatedContent.value
   });
 };
+
+/**
+ * Embedded mode field configuration
+ * In embedded mode, we show a simplified form (problem, approach)
+ */
+const embeddedFields = computed(() => {
+  const defaultLabels = {
+    problem: 'What problem does your framework solve?',
+    approach: 'What is your unique approach?'
+  };
+  const defaultPlaceholders = {
+    problem: 'e.g., Businesses struggle to maintain consistent brand messaging',
+    approach: 'e.g., I use a systematic process that aligns brand values'
+  };
+
+  return [
+    {
+      key: 'problem',
+      label: props.intent?.formLabels?.problem || defaultLabels.problem,
+      placeholder: props.intent?.formPlaceholders?.problem || defaultPlaceholders.problem,
+      type: 'textarea',
+      rows: 2,
+      model: problem
+    },
+    {
+      key: 'approach',
+      label: props.intent?.formLabels?.approach || defaultLabels.approach,
+      placeholder: props.intent?.formPlaceholders?.approach || defaultPlaceholders.approach,
+      type: 'textarea',
+      rows: 3,
+      model: approach
+    }
+  ];
+});
+
+/**
+ * Handle embedded field change
+ */
+const handleEmbeddedFieldChange = (key, value) => {
+  emit('change', { field: key, value });
+};
+
+/**
+ * Generate preview text for embedded mode
+ */
+const embeddedPreviewText = computed(() => {
+  const problemVal = problem.value || '[PROBLEM]';
+  const approachVal = approach.value || '[APPROACH]';
+
+  if (!problem.value && !approach.value) {
+    return null;
+  }
+
+  return `Framework to solve: <strong>${problemVal}</strong> using <strong>${approachVal}</strong>`;
+});
+
+/**
+ * Populate form fields from profile data
+ */
+function populateFromProfile(profileData) {
+  if (!profileData) return;
+
+  // Pre-populate fields from profile data
+  problem.value = profileData.framework_problem || problem.value || '';
+  approach.value = profileData.framework_approach || approach.value || '';
+  outcome.value = profileData.framework_outcome || outcome.value || '';
+}
+
+/**
+ * Watch for profileData prop changes (embedded mode with EmbeddedToolWrapper)
+ * Pre-populates form fields when profile data is provided
+ */
+watch(
+  () => props.profileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
+
+/**
+ * Watch for injected profile data from EmbeddedToolWrapper (embedded mode)
+ * This is the primary reactive source for profile changes in embedded mode
+ */
+watch(
+  injectedProfileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
+
+/**
+ * Watch for field changes in embedded mode and emit preview updates
+ */
+watch(
+  () => [problem.value, approach.value],
+  () => {
+    if (props.mode === 'embedded') {
+      emit('preview-update', {
+        previewHtml: embeddedPreviewText.value,
+        fields: {
+          problem: problem.value,
+          approach: approach.value
+        }
+      });
+    }
+  },
+  { deep: true }
+);
+
+/**
+ * Check if embedded form has minimum required fields
+ */
+const canGenerateEmbedded = computed(() => {
+  return problem.value?.trim() && approach.value?.trim();
+});
+
+/**
+ * Emit can-generate status changes to parent (for embedded mode)
+ */
+watch(canGenerateEmbedded, (newValue) => {
+  if (props.mode === 'embedded') {
+    emit('update:can-generate', !!newValue);
+  }
+}, { immediate: true });
 </script>
 
 <style scoped>
@@ -494,5 +690,106 @@ const handleApply = () => {
   margin-top: var(--mkcg-space-md, 20px);
   display: flex;
   gap: var(--mkcg-space-sm, 12px);
+}
+
+/* Embedded Mode Styles (for landing page) */
+.gmkb-embedded-form {
+  width: 100%;
+}
+
+.gmkb-embedded-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.gmkb-embedded-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.gmkb-embedded-label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.gmkb-embedded-input {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  background: var(--mkcg-bg-secondary, #f9fafb);
+  box-sizing: border-box;
+  font-size: 15px;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.gmkb-embedded-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.gmkb-embedded-input:focus {
+  outline: none;
+  border-color: var(--mkcg-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.gmkb-embedded-input::placeholder {
+  color: var(--mkcg-text-light, #94a3b8);
+}
+
+.gmkb-embedded-result {
+  margin-top: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid #86efac;
+  border-radius: 8px;
+}
+
+.gmkb-embedded-result__content {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #166534;
+}
+
+.gmkb-embedded-result__content :deep(h4) {
+  margin: 16px 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #15803d;
+}
+
+.gmkb-embedded-result__content :deep(p) {
+  margin: 8px 0;
+}
+
+.gmkb-embedded-result__content :deep(ul),
+.gmkb-embedded-result__content :deep(ol) {
+  margin: 8px 0;
+  padding-left: 24px;
+}
+
+.gmkb-embedded-result__content :deep(li) {
+  margin: 4px 0;
+}
+
+.gmkb-embedded-result__content :deep(strong) {
+  font-weight: 600;
+  color: #14532d;
+}
+
+.gmkb-embedded-error {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 14px;
 }
 </style>

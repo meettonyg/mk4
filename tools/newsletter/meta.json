@@ -40,8 +40,74 @@
     "canonicalPath": "/tools/newsletter-writer/"
   },
   "landingContent": {
-    "heroTagline": "Create Newsletters Your Audience Actually Opens",
-    "heroSubtitle": "Generate engaging email newsletters that build relationships, drive engagement, and keep subscribers coming back.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free Newsletter Writer",
+      "subhead": "Generate engaging email newsletters that build relationships, drive engagement, and keep subscribers coming back.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 6,000+ creators" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "Newsletter Writer",
+      "subhead": "Create newsletters your audience actually opens and reads.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "weekly",
+        "label": "Weekly Newsletter",
+        "contextHeading": "Build your weekly habit",
+        "contextDescription": "Create consistent weekly newsletters that subscribers look forward to receiving every week.",
+        "formLabels": {
+          "topic": "This week's main topic",
+          "takeaway": "Key takeaway for readers"
+        },
+        "formPlaceholders": {
+          "topic": "e.g. Productivity systems",
+          "takeaway": "e.g. The 2-minute rule"
+        }
+      },
+      {
+        "id": "welcome",
+        "label": "Welcome Email",
+        "contextHeading": "Make a great first impression",
+        "contextDescription": "Write welcome emails that set expectations and start building a relationship with new subscribers.",
+        "formLabels": {
+          "promise": "What subscribers will get",
+          "cta": "First action you want them to take"
+        },
+        "formPlaceholders": {
+          "promise": "e.g. Weekly marketing tips",
+          "cta": "e.g. Download the starter guide"
+        }
+      },
+      {
+        "id": "promo",
+        "label": "Promotional",
+        "contextHeading": "Sell without being salesy",
+        "contextDescription": "Create promotional emails that convert without alienating your audience.",
+        "formLabels": {
+          "offer": "What are you promoting?",
+          "benefit": "Main benefit for subscribers"
+        },
+        "formPlaceholders": {
+          "offer": "e.g. New online course",
+          "benefit": "e.g. Land 10 podcast interviews"
+        }
+      }
+    ],
+    "definition": {
+      "title": "What Makes a Great Newsletter?",
+      "content": "Great newsletters feel like a note from a smart friend. They have a compelling subject line, open with personality, deliver clear value, and end with a specific action. The best ones are consistent, scannable, and respect the reader's time."
+    },
     "formula": "[HOOK SUBJECT] + [PERSONAL INTRO] + [MAIN VALUE] + [TAKEAWAYS] + [CTA] = Engaging Newsletter",
     "tips": [
       "Write the subject line last - it's easier to summarize once you know the content",
@@ -120,6 +186,21 @@
         "answer": "Create a compelling lead magnet, optimize signup forms, promote on social, and make your existing newsletters shareable."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "My open rate went from 22% to 45% after restructuring my newsletters with this tool. The hook + value format works.",
+        "author": "Andrew C.",
+        "role": "Newsletter Creator",
+        "rating": "4.8"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just write newsletters. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["Substack", "ConvertKit", "Mailchimp", "Beehiiv"],
     "relatedToolSlugs": [
       "email-writer",
       "blog-generator",

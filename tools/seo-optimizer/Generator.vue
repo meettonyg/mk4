@@ -127,7 +127,7 @@
 
   <!-- Integrated Mode: Compact widget -->
   <AiWidgetFrame
-    v-else
+    v-else-if="mode === 'integrated'"
     title="SEO Content Optimizer"
     description="Optimize your content for search engines with keywords and meta descriptions."
     :mode="mode"
@@ -202,6 +202,46 @@
       />
     </template>
   </AiWidgetFrame>
+
+  <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
+  <div v-else class="gmkb-embedded-form">
+    <!-- Simplified form for landing page -->
+    <div class="gmkb-embedded-fields">
+      <div
+        v-for="field in embeddedFields"
+        :key="field.key"
+        class="gmkb-embedded-field"
+      >
+        <label class="gmkb-embedded-label">{{ field.label }}</label>
+        <textarea
+          v-if="field.key === 'content'"
+          v-model="formData[field.key]"
+          class="gmkb-embedded-input gmkb-embedded-textarea"
+          :placeholder="field.placeholder"
+          rows="4"
+          @input="handleEmbeddedFieldChange(field.key, $event.target.value)"
+        ></textarea>
+        <input
+          v-else
+          v-model="formData[field.key]"
+          type="text"
+          class="gmkb-embedded-input"
+          :placeholder="field.placeholder"
+          @input="handleEmbeddedFieldChange(field.key, $event.target.value)"
+        />
+      </div>
+    </div>
+
+    <!-- Results display for embedded mode -->
+    <div v-if="generatedContent" class="gmkb-embedded-result">
+      <div class="gmkb-embedded-result__content" v-html="formattedContent"></div>
+    </div>
+
+    <!-- Error display -->
+    <div v-if="error" class="gmkb-embedded-error">
+      {{ error }}
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -216,13 +256,21 @@ import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
 // Full layout components (standalone mode)
 import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
 
+// Inject profile data from EmbeddedToolWrapper (for embedded mode)
+// This provides reactive updates when profile is selected from dropdown
+const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+
 const props = defineProps({
   /**
-   * Mode: 'integrated' or 'standalone'
+   * Mode: 'integrated', 'standalone', or 'embedded'
+   * - standalone: Full two-panel layout with guidance
+   * - integrated: Compact widget for embedding in other components
+   * - embedded: Landing page embed with simplified form
    */
   mode: {
     type: String,
-    default: 'standalone'
+    default: 'standalone',
+    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
   },
 
   /**
@@ -231,10 +279,28 @@ const props = defineProps({
   componentId: {
     type: String,
     default: null
+  },
+
+  /**
+   * Intent object for embedded mode
+   * Contains: { id, label, contextHeading, contextDescription, formPlaceholders, formLabels }
+   */
+  intent: {
+    type: Object,
+    default: null
+  },
+
+  /**
+   * Profile data for pre-population (embedded mode)
+   * Passed from EmbeddedToolWrapper via scoped slot
+   */
+  profileData: {
+    type: Object,
+    default: null
   }
 });
 
-const emit = defineEmits(['applied', 'generated']);
+const emit = defineEmits(['applied', 'generated', 'change', 'preview-update', 'update:can-generate']);
 
 // Form data
 const formData = reactive({
@@ -297,6 +363,55 @@ const examples = [
  */
 const canGenerate = computed(() => {
   return formData.content.trim().length > 0 && formData.targetKeyword.trim().length > 0;
+});
+
+/**
+ * Embedded mode field configuration
+ * In embedded mode, we show a simplified 2-field form (content, targetKeyword)
+ */
+const embeddedFields = computed(() => {
+  const defaultLabels = {
+    content: 'Content to Optimize',
+    targetKeyword: 'Target Keyword'
+  };
+  const defaultPlaceholders = {
+    content: 'Paste your content here...',
+    targetKeyword: 'e.g., executive coaching services'
+  };
+
+  return [
+    {
+      key: 'content',
+      label: props.intent?.formLabels?.content || defaultLabels.content,
+      placeholder: props.intent?.formPlaceholders?.content || defaultPlaceholders.content
+    },
+    {
+      key: 'targetKeyword',
+      label: props.intent?.formLabels?.targetKeyword || defaultLabels.targetKeyword,
+      placeholder: props.intent?.formPlaceholders?.targetKeyword || defaultPlaceholders.targetKeyword
+    }
+  ];
+});
+
+/**
+ * Generate preview text for embedded mode
+ */
+const embeddedPreviewText = computed(() => {
+  const contentVal = formData.content || '[CONTENT]';
+  const keywordVal = formData.targetKeyword || '[KEYWORD]';
+
+  if (!formData.content && !formData.targetKeyword) {
+    return null; // Show default preview
+  }
+
+  return `Optimizing content for keyword: <strong>${keywordVal}</strong>`;
+});
+
+/**
+ * Check if embedded form has minimum required fields
+ */
+const canGenerateEmbedded = computed(() => {
+  return formData.content?.trim() && formData.targetKeyword?.trim();
 });
 
 /**
@@ -380,6 +495,82 @@ const handleApply = () => {
     outputType: formData.outputType
   });
 };
+
+/**
+ * Handle field change in embedded mode
+ */
+const handleEmbeddedFieldChange = (key, value) => {
+  emit('change', { field: key, value, formData });
+};
+
+/**
+ * Populate form fields from profile data
+ */
+function populateFromProfile(profileData) {
+  if (!profileData) return;
+
+  // Pre-populate fields from profile data
+  if (profileData.target_keyword) {
+    formData.targetKeyword = profileData.target_keyword;
+  }
+  // Note: SEO content is not typically stored in profile, but we can add it if needed
+}
+
+/**
+ * Watch for profileData prop changes (embedded mode with EmbeddedToolWrapper)
+ * Pre-populates form fields when profile data is provided
+ */
+watch(
+  () => props.profileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
+
+/**
+ * Watch for injected profile data from EmbeddedToolWrapper (embedded mode)
+ * This is the primary reactive source for profile changes in embedded mode
+ */
+watch(
+  injectedProfileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
+
+/**
+ * Watch for field changes in embedded mode and emit preview updates
+ */
+watch(
+  () => [formData.content, formData.targetKeyword],
+  () => {
+    if (props.mode === 'embedded') {
+      emit('preview-update', {
+        previewHtml: embeddedPreviewText.value,
+        fields: {
+          content: formData.content,
+          targetKeyword: formData.targetKeyword
+        }
+      });
+    }
+  },
+  { deep: true }
+);
+
+/**
+ * Emit can-generate status changes to parent (for embedded mode)
+ */
+watch(canGenerateEmbedded, (newValue) => {
+  if (props.mode === 'embedded') {
+    emit('update:can-generate', !!newValue);
+  }
+}, { immediate: true });
 </script>
 
 <style scoped>
@@ -496,5 +687,97 @@ const handleApply = () => {
   outline: none;
   border-color: var(--gmkb-ai-primary, #6366f1);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Embedded Mode Styles (for landing page) */
+.gmkb-embedded-form {
+  width: 100%;
+}
+
+.gmkb-embedded-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.gmkb-embedded-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.gmkb-embedded-label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.gmkb-embedded-input {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  background: var(--mkcg-bg-secondary, #f9fafb);
+  box-sizing: border-box;
+  font-size: 15px;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.gmkb-embedded-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.gmkb-embedded-input:focus {
+  outline: none;
+  border-color: var(--mkcg-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.gmkb-embedded-input::placeholder {
+  color: var(--mkcg-text-light, #94a3b8);
+}
+
+.gmkb-embedded-result {
+  margin-top: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid #86efac;
+  border-radius: 8px;
+}
+
+.gmkb-embedded-result__content {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #166534;
+}
+
+.gmkb-embedded-result__content :deep(h1),
+.gmkb-embedded-result__content :deep(h2),
+.gmkb-embedded-result__content :deep(h3) {
+  color: #166534;
+  margin-top: 12px;
+  margin-bottom: 8px;
+}
+
+.gmkb-embedded-result__content :deep(p) {
+  margin-bottom: 8px;
+}
+
+.gmkb-embedded-result__content :deep(strong) {
+  font-weight: 600;
+  color: #15803d;
+}
+
+.gmkb-embedded-error {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 14px;
 }
 </style>

@@ -40,8 +40,74 @@
     "canonicalPath": "/tools/tagline-generator/"
   },
   "landingContent": {
-    "heroTagline": "Craft Taglines That Stick in People's Minds",
-    "heroSubtitle": "Generate memorable headlines, slogans, and value propositions that instantly communicate your unique value.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free Tagline Generator",
+      "subhead": "Create compelling headlines, slogans, and value propositions that capture attention instantly.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 15,000+ brands" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "Tagline Generator",
+      "subhead": "Generate memorable taglines and value propositions that make your brand unforgettable.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "brand",
+        "label": "Brand Tagline",
+        "contextHeading": "Define your brand in one line",
+        "contextDescription": "Create a memorable tagline that captures your brand essence and sticks in people's minds long after they've heard it.",
+        "formLabels": {
+          "business": "What does your business do?",
+          "audience": "Who do you serve?"
+        },
+        "formPlaceholders": {
+          "business": "e.g. Help entrepreneurs scale",
+          "audience": "e.g. SaaS Founders"
+        }
+      },
+      {
+        "id": "headline",
+        "label": "Headline",
+        "contextHeading": "Stop the scroll with powerful headlines",
+        "contextDescription": "Generate attention-grabbing headlines for your website, landing pages, and marketing materials that convert visitors into customers.",
+        "formLabels": {
+          "offer": "What are you promoting?",
+          "benefit": "Key benefit for your audience"
+        },
+        "formPlaceholders": {
+          "offer": "e.g. Marketing Course",
+          "benefit": "e.g. 10x their leads"
+        }
+      },
+      {
+        "id": "valueprop",
+        "label": "Value Prop",
+        "contextHeading": "Communicate your unique value",
+        "contextDescription": "Develop a clear value proposition that differentiates you from competitors and resonates with your ideal customers.",
+        "formLabels": {
+          "solution": "What problem do you solve?",
+          "difference": "What makes you different?"
+        },
+        "formPlaceholders": {
+          "solution": "e.g. Lead generation struggles",
+          "difference": "e.g. AI-powered automation"
+        }
+      }
+    ],
+    "definition": {
+      "title": "What is a Tagline?",
+      "content": "A tagline is a short, memorable phrase that captures the essence of your brand, product, or message. The best taglines are under 10 words, focus on transformation rather than features, and use language your audience immediately understands."
+    },
     "formula": "[WHO you help] + [WHAT you do] + [HOW you're unique]",
     "tips": [
       "Keep it short - the best taglines are under 10 words",
@@ -124,6 +190,21 @@
         "answer": "Absolutely! Use the generated options as inspiration and mix elements to create your perfect tagline."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "Created my new brand tagline in 2 minutes. It perfectly captures what I do and clients comment on it all the time.",
+        "author": "Lisa M.",
+        "role": "Brand Strategist",
+        "rating": "4.9"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just generate taglines. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["LinkedIn", "Twitter/X", "Website", "Business Cards"],
     "relatedToolSlugs": [
       "biography-generator",
       "elevator-pitch-generator",

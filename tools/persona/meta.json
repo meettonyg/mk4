@@ -40,8 +40,74 @@
     "canonicalPath": "/tools/persona-generator/"
   },
   "landingContent": {
-    "heroTagline": "Know Your Audience Inside and Out",
-    "heroSubtitle": "Generate detailed personas that reveal your ideal clients' pain points, desires, and the exact language that moves them to action.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free Persona Generator",
+      "subhead": "Generate detailed personas that reveal your ideal clients' pain points, desires, and the exact language that moves them to action.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 9,000+ marketers" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "Persona Generator",
+      "subhead": "Know your audience inside and out with detailed personas that drive results.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "client",
+        "label": "Ideal Client",
+        "contextHeading": "Understand who you serve best",
+        "contextDescription": "Create a detailed profile of your ideal client including their challenges, desires, and what makes them take action.",
+        "formLabels": {
+          "service": "What service/product do you offer?",
+          "audience": "Who do you serve?"
+        },
+        "formPlaceholders": {
+          "service": "e.g. Business Coaching",
+          "audience": "e.g. Entrepreneurs scaling to 7 figures"
+        }
+      },
+      {
+        "id": "buyer",
+        "label": "Buyer Persona",
+        "contextHeading": "Map the buyer journey",
+        "contextDescription": "Develop a buyer persona that helps you understand how your ideal customer makes purchasing decisions.",
+        "formLabels": {
+          "product": "What are you selling?",
+          "industry": "Target industry"
+        },
+        "formPlaceholders": {
+          "product": "e.g. SaaS Marketing Platform",
+          "industry": "e.g. B2B Technology"
+        }
+      },
+      {
+        "id": "audience",
+        "label": "Content Audience",
+        "contextHeading": "Create content that resonates",
+        "contextDescription": "Build an audience persona that helps you create content they actually want to consume and share.",
+        "formLabels": {
+          "topic": "Your content topic",
+          "platform": "Primary platform"
+        },
+        "formPlaceholders": {
+          "topic": "e.g. Leadership Development",
+          "platform": "e.g. LinkedIn"
+        }
+      }
+    ],
+    "definition": {
+      "title": "What is a Customer Persona?",
+      "content": "A customer persona is a detailed profile of your ideal customer based on market research and real data. It includes demographics, psychographics, pain points, goals, objections, and communication preferences—everything you need to create messaging that resonates."
+    },
     "formula": "[DEMOGRAPHIC] + [PSYCHOGRAPHIC] + [PAIN POINTS] + [DESIRED OUTCOMES] = Complete Persona",
     "tips": [
       "Be specific - 'busy executives' is too vague; 'VP of Sales at B2B SaaS companies' is actionable",
@@ -120,6 +186,21 @@
         "answer": "Review quarterly and update when you notice shifts in who's buying or what they care about."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "Finally understood why my content wasn't landing. The persona revealed I was speaking to the wrong pain points entirely.",
+        "author": "Amanda W.",
+        "role": "Content Marketer",
+        "rating": "4.8"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just create personas. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["Marketing Strategy", "Content Creation", "Sales", "Product Development"],
     "relatedToolSlugs": [
       "authority-hook-builder",
       "brand-story-generator",

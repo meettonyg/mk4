@@ -40,8 +40,74 @@
     "canonicalPath": "/tools/biography-generator/"
   },
   "landingContent": {
-    "heroTagline": "Create Professional Biographies That Make an Impact",
-    "heroSubtitle": "Generate polished, compelling bios for speaker profiles, media kits, and professional pages with AI-powered precision.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free Biography Generator",
+      "subhead": "Create professional biographies for speaker profiles, media kits, and author pages in seconds.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 10,000+ professionals" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "Biography Generator",
+      "subhead": "Create professional biographies that showcase your expertise and achievements.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "speaker",
+        "label": "Speaker Bio",
+        "contextHeading": "Stand out to event organizers",
+        "contextDescription": "Create a compelling speaker bio that highlights your expertise and gets you booked for keynotes, panels, and podcasts.",
+        "formLabels": {
+          "name": "Your Name",
+          "expertise": "Your Area of Expertise"
+        },
+        "formPlaceholders": {
+          "name": "e.g. Jane Smith",
+          "expertise": "e.g. Leadership Development"
+        }
+      },
+      {
+        "id": "author",
+        "label": "Author Bio",
+        "contextHeading": "Build credibility as a thought leader",
+        "contextDescription": "Craft an author bio perfect for book jackets, articles, and publications that establishes your authority.",
+        "formLabels": {
+          "name": "Your Name",
+          "expertise": "Your Writing Focus"
+        },
+        "formPlaceholders": {
+          "name": "e.g. John Doe",
+          "expertise": "e.g. Business Strategy"
+        }
+      },
+      {
+        "id": "professional",
+        "label": "Professional Bio",
+        "contextHeading": "Make a lasting impression",
+        "contextDescription": "Create a polished professional bio for LinkedIn, company websites, and networking that opens doors.",
+        "formLabels": {
+          "name": "Your Name",
+          "role": "Your Role/Title"
+        },
+        "formPlaceholders": {
+          "name": "e.g. Sarah Johnson",
+          "role": "e.g. Marketing Director"
+        }
+      }
+    ],
+    "definition": {
+      "title": "What is a Professional Biography?",
+      "content": "A professional biography is a concise summary of your career, expertise, and achievements written to establish credibility with your target audience. Unlike a resume, a bio tells your story in a way that connects with readers and positions you as an authority in your field."
+    },
     "formula": "I help [WHO] achieve [RESULT] when [WHEN] through [HOW]. I've [WHERE]. My mission is to [WHY].",
     "tips": [
       "Start with your Authority Hook - clearly identify WHO you help and WHAT results you deliver",
@@ -120,6 +186,21 @@
         "answer": "Medium (100 words) works well for most speaking applications. Short bios are great for quick intros, while long bios suit detailed media kits."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "Finally, a bio that sounds like me but better. Got my first speaking gig within a week of updating my profile.",
+        "author": "Michael R.",
+        "role": "Business Coach",
+        "rating": "4.9"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just generate bios. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["LinkedIn", "Twitter/X", "Instagram", "Media Kits"],
     "relatedToolSlugs": [
       "tagline-generator",
       "guest-intro-generator",

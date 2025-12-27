@@ -40,8 +40,74 @@
     "canonicalPath": "/tools/brand-story-generator/"
   },
   "landingContent": {
-    "heroTagline": "Tell Your Story in a Way That Connects",
-    "heroSubtitle": "Create a compelling brand narrative that explains your 'why' and builds emotional connections with your audience.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free Brand Story Generator",
+      "subhead": "Create a compelling brand narrative that explains your 'why' and builds emotional connections with your audience.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 6,000+ brands" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "Brand Story Generator",
+      "subhead": "Tell your story in a way that connects and converts.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "origin",
+        "label": "Origin Story",
+        "contextHeading": "Share how it all began",
+        "contextDescription": "Create a compelling origin story that shows your journey from inspiration to impact and why you're uniquely positioned to help.",
+        "formLabels": {
+          "catalyst": "What inspired you to start?",
+          "mission": "What's your mission now?"
+        },
+        "formPlaceholders": {
+          "catalyst": "e.g. After burnout taught me the hard way...",
+          "mission": "e.g. Help leaders succeed without sacrificing health"
+        }
+      },
+      {
+        "id": "about",
+        "label": "About Page",
+        "contextHeading": "Turn visitors into believers",
+        "contextDescription": "Generate About page copy that builds trust and emotional connection with your audience.",
+        "formLabels": {
+          "journey": "Your journey",
+          "purpose": "Why you do this work"
+        },
+        "formPlaceholders": {
+          "journey": "e.g. 15 years in corporate, then started my own...",
+          "purpose": "e.g. Everyone deserves access to great coaching"
+        }
+      },
+      {
+        "id": "founder",
+        "label": "Founder Story",
+        "contextHeading": "Build credibility through your journey",
+        "contextDescription": "Create a founder narrative that establishes authority while remaining relatable and authentic.",
+        "formLabels": {
+          "background": "Your background",
+          "vision": "Your vision"
+        },
+        "formPlaceholders": {
+          "background": "e.g. Former Goldman Sachs, 3 exits...",
+          "vision": "e.g. Democratize startup success"
+        }
+      }
+    ],
+    "definition": {
+      "title": "What is a Brand Story?",
+      "content": "A brand story is a narrative that explains who you are, why you exist, and what you stand for. Unlike a bio that lists credentials, a brand story creates emotional connection by sharing your journey, challenges, and the purpose that drives your work."
+    },
     "formula": "[CHALLENGE/ORIGIN] → [TRANSFORMATION] → [MISSION/PURPOSE] = Compelling Brand Story",
     "tips": [
       "Start with tension - every great story begins with a challenge or turning point",
@@ -120,6 +186,21 @@
         "answer": "Have multiple versions: a one-liner, a paragraph version, and a full page narrative for your website."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "My About page was boring bullet points. Now it's a story that makes people reach out saying they feel like they know me.",
+        "author": "Christina M.",
+        "role": "Leadership Coach",
+        "rating": "4.9"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just tell your story. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["Website", "Media Kit", "LinkedIn", "Pitch Decks"],
     "relatedToolSlugs": [
       "signature-story-generator",
       "credibility-story-generator",

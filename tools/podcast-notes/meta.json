@@ -40,8 +40,74 @@
     "canonicalPath": "/tools/podcast-notes-generator/"
   },
   "landingContent": {
-    "heroTagline": "Show Notes That Turn Browsers Into Listeners",
-    "heroSubtitle": "Generate comprehensive podcast show notes with summaries, timestamps, and key takeaways that help listeners find and engage with your episodes.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free Podcast Show Notes Generator",
+      "subhead": "Generate comprehensive podcast show notes with summaries, timestamps, and key takeaways that help listeners find and engage with your episodes.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 5,000+ podcasters" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "Podcast Show Notes Generator",
+      "subhead": "Turn browsers into listeners with show notes that convert.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "interview",
+        "label": "Interview Episode",
+        "contextHeading": "Feature your guests professionally",
+        "contextDescription": "Create show notes that introduce your guest, highlight key insights, and give listeners reasons to tune in.",
+        "formLabels": {
+          "guest": "Who is your guest?",
+          "topics": "Main topics covered"
+        },
+        "formPlaceholders": {
+          "guest": "e.g. Marketing expert Jane Smith",
+          "topics": "e.g. Lead generation, content strategy"
+        }
+      },
+      {
+        "id": "solo",
+        "label": "Solo Episode",
+        "contextHeading": "Summarize your insights",
+        "contextDescription": "Generate show notes for solo episodes that clearly communicate your key takeaways and value.",
+        "formLabels": {
+          "topic": "Episode topic",
+          "takeaways": "Main lessons"
+        },
+        "formPlaceholders": {
+          "topic": "e.g. How to land your first podcast interview",
+          "takeaways": "e.g. Research, personalization, follow-up"
+        }
+      },
+      {
+        "id": "roundup",
+        "label": "Roundup/Best Of",
+        "contextHeading": "Curate your best moments",
+        "contextDescription": "Create show notes for compilation episodes that highlight the best insights from multiple guests or episodes.",
+        "formLabels": {
+          "theme": "Roundup theme",
+          "guests": "Featured guests/episodes"
+        },
+        "formPlaceholders": {
+          "theme": "e.g. Best advice on scaling",
+          "guests": "e.g. John Doe, Jane Smith, Bob Jones"
+        }
+      }
+    ],
+    "definition": {
+      "title": "Why Podcast Show Notes Matter",
+      "content": "Podcast show notes are how your episodes get discovered. Search engines can't index audio, so your written notes are the key to SEO. Good show notes also help listeners decide to press play and give them a reference during and after listening."
+    },
     "formula": "[EPISODE SUMMARY] + [GUEST BIO] + [KEY TAKEAWAYS] + [TIMESTAMPS] + [RESOURCES] = Complete Show Notes",
     "tips": [
       "Write for scanners - most people skim; use bullet points and clear headers",
@@ -120,6 +186,21 @@
         "answer": "Search engines can't index audio. Written show notes make your content discoverable and help rank for relevant keywords."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "My podcast downloads increased 30% after I started using proper show notes. SEO really works for podcasts.",
+        "author": "Jessica M.",
+        "role": "Podcast Host",
+        "rating": "4.9"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just write show notes. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["Spotify", "Apple Podcasts", "Transistor", "Buzzsprout"],
     "relatedToolSlugs": [
       "youtube-description-generator",
       "content-repurposer",

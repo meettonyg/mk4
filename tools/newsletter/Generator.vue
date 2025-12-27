@@ -149,7 +149,7 @@
 
   <!-- Integrated Mode: Compact widget -->
   <AiWidgetFrame
-    v-else
+    v-else-if="mode === 'integrated'"
     title="Newsletter Writer"
     description="Create engaging newsletters that nurture your audience."
     :mode="mode"
@@ -236,6 +236,42 @@
       />
     </template>
   </AiWidgetFrame>
+
+  <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
+  <div v-else class="gmkb-embedded-form">
+    <!-- Simplified form for landing page -->
+    <div class="gmkb-embedded-fields">
+      <div
+        v-for="field in embeddedFields"
+        :key="field.key"
+        class="gmkb-embedded-field"
+      >
+        <label class="gmkb-embedded-label">{{ field.label }}</label>
+        <component
+          :is="field.type === 'textarea' ? 'textarea' : 'input'"
+          v-model="formData[field.key]"
+          :type="field.type === 'textarea' ? undefined : 'text'"
+          class="gmkb-embedded-input"
+          :class="{ 'gmkb-embedded-textarea': field.type === 'textarea' }"
+          :placeholder="field.placeholder"
+          :rows="field.type === 'textarea' ? 3 : undefined"
+          @input="handleEmbeddedFieldChange(field.key, $event.target.value)"
+        />
+      </div>
+    </div>
+
+    <!-- Results display for embedded mode -->
+    <div v-if="hasContent" class="gmkb-embedded-result">
+      <div class="gmkb-embedded-result__content">
+        {{ generatedContent }}
+      </div>
+    </div>
+
+    <!-- Error display -->
+    <div v-if="error" class="gmkb-embedded-error">
+      {{ error }}
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -253,11 +289,15 @@ import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_s
 
 const props = defineProps({
   /**
-   * Mode: 'integrated' or 'standalone'
+   * Mode: 'integrated', 'standalone', or 'embedded'
+   * - standalone: Full two-panel layout with guidance
+   * - integrated: Compact widget for embedding in other components
+   * - embedded: Landing page embed with simplified form
    */
   mode: {
     type: String,
-    default: 'standalone'
+    default: 'standalone',
+    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
   },
 
   /**
@@ -266,10 +306,28 @@ const props = defineProps({
   componentId: {
     type: String,
     default: null
+  },
+
+  /**
+   * Intent object for embedded mode
+   * Contains: { id, label, contextHeading, contextDescription, formPlaceholders, formLabels }
+   */
+  intent: {
+    type: Object,
+    default: null
+  },
+
+  /**
+   * Profile data for pre-population (embedded mode)
+   * Passed from EmbeddedToolWrapper via scoped slot
+   */
+  profileData: {
+    type: Object,
+    default: null
   }
 });
 
-const emit = defineEmits(['applied', 'generated']);
+const emit = defineEmits(['applied', 'generated', 'change', 'preview-update', 'update:can-generate']);
 
 // Initialize form data
 const formData = reactive({
@@ -381,6 +439,143 @@ const handleApply = () => {
     style: formData.style
   });
 };
+
+// Inject profile data from EmbeddedToolWrapper (for embedded mode)
+// This provides reactive updates when profile is selected from dropdown
+const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+
+/**
+ * Embedded mode field configuration
+ * In embedded mode, we show a simplified form (topic, key points)
+ */
+const embeddedFields = computed(() => {
+  const defaultLabels = {
+    topic: 'Main Topic',
+    keyPoints: 'Key Points/Updates'
+  };
+  const defaultPlaceholders = {
+    topic: 'What is this newsletter about?',
+    keyPoints: 'What do you want to share with your readers?'
+  };
+
+  return [
+    {
+      key: 'topic',
+      type: 'input',
+      label: props.intent?.formLabels?.topic || defaultLabels.topic,
+      placeholder: props.intent?.formPlaceholders?.topic || defaultPlaceholders.topic
+    },
+    {
+      key: 'keyPoints',
+      type: 'textarea',
+      label: props.intent?.formLabels?.keyPoints || defaultLabels.keyPoints,
+      placeholder: props.intent?.formPlaceholders?.keyPoints || defaultPlaceholders.keyPoints
+    }
+  ];
+});
+
+/**
+ * Generate preview text for embedded mode
+ */
+const embeddedPreviewText = computed(() => {
+  const topicVal = formData.topic || '[TOPIC]';
+  const keyPointsVal = formData.keyPoints || '[KEY POINTS]';
+
+  if (!formData.topic && !formData.keyPoints) {
+    return null; // Show default preview
+  }
+
+  return `Newsletter about <strong>${topicVal}</strong> covering <strong>${keyPointsVal}</strong>`;
+});
+
+/**
+ * Handle field change for embedded mode
+ */
+const handleEmbeddedFieldChange = (key, value) => {
+  emit('change', { field: key, value, formData });
+};
+
+/**
+ * Populate form fields from profile data
+ */
+function populateFromProfile(profileData) {
+  if (!profileData) return;
+
+  // Pre-populate fields from profile data
+  // Newsletter doesn't have specific profile fields, but we could use them if they exist
+  if (profileData.newsletter_topic) {
+    formData.topic = profileData.newsletter_topic;
+  }
+  if (profileData.newsletter_style) {
+    formData.style = profileData.newsletter_style;
+  }
+  if (profileData.newsletter_tone) {
+    formData.tone = profileData.newsletter_tone;
+  }
+}
+
+/**
+ * Watch for field changes in embedded mode and emit preview updates
+ */
+watch(
+  () => [formData.topic, formData.keyPoints],
+  () => {
+    if (props.mode === 'embedded') {
+      emit('preview-update', {
+        previewHtml: embeddedPreviewText.value,
+        fields: {
+          topic: formData.topic,
+          keyPoints: formData.keyPoints
+        }
+      });
+    }
+  },
+  { deep: true }
+);
+
+/**
+ * Watch for profileData prop changes (embedded mode with EmbeddedToolWrapper)
+ * Pre-populates form fields when profile data is provided
+ */
+watch(
+  () => props.profileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
+
+/**
+ * Watch for injected profile data from EmbeddedToolWrapper (embedded mode)
+ * This is the primary reactive source for profile changes in embedded mode
+ */
+watch(
+  injectedProfileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
+
+/**
+ * Check if embedded form has minimum required fields
+ */
+const canGenerateEmbedded = computed(() => {
+  return formData.topic?.trim() && formData.keyPoints?.trim();
+});
+
+/**
+ * Emit can-generate status changes to parent (for embedded mode)
+ */
+watch(canGenerateEmbedded, (newValue) => {
+  if (props.mode === 'embedded') {
+    emit('update:can-generate', !!newValue);
+  }
+}, { immediate: true });
 </script>
 
 <style scoped>
@@ -472,5 +667,81 @@ const handleApply = () => {
   outline: none;
   border-color: var(--gmkb-ai-primary, #6366f1);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Embedded Mode Styles (for landing page) */
+.gmkb-embedded-form {
+  width: 100%;
+}
+
+.gmkb-embedded-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.gmkb-embedded-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.gmkb-embedded-label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.gmkb-embedded-input {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  background: var(--mkcg-bg-secondary, #f9fafb);
+  box-sizing: border-box;
+  font-size: 15px;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.gmkb-embedded-textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.gmkb-embedded-input:focus {
+  outline: none;
+  border-color: var(--mkcg-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.gmkb-embedded-input::placeholder {
+  color: var(--mkcg-text-light, #94a3b8);
+}
+
+.gmkb-embedded-result {
+  margin-top: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid #86efac;
+  border-radius: 8px;
+}
+
+.gmkb-embedded-result__content {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #166534;
+  white-space: pre-wrap;
+}
+
+.gmkb-embedded-error {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 14px;
 }
 </style>

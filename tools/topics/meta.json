@@ -41,8 +41,74 @@
     "canonicalPath": "/tools/topics-generator/"
   },
   "landingContent": {
-    "heroTagline": "Generate Speaking Topics That Captivate Your Audience",
-    "heroSubtitle": "Create compelling podcast episodes, keynotes, and presentations with AI-powered topic suggestions tailored to your expertise.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free Topics Generator",
+      "subhead": "Generate compelling speaking topics and podcast episode ideas tailored to your expertise in seconds.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 8,000+ speakers" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "Topics Generator",
+      "subhead": "Generate speaking topics and podcast ideas that resonate with your audience.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "podcast",
+        "label": "Podcast Topics",
+        "contextHeading": "Create episodes your audience craves",
+        "contextDescription": "Generate podcast episode ideas that resonate with listeners and showcase your expertise on the topics that matter most.",
+        "formLabels": {
+          "expertise": "Your Area of Expertise",
+          "audience": "Who is Your Audience?"
+        },
+        "formPlaceholders": {
+          "expertise": "e.g. Digital Marketing",
+          "audience": "e.g. Small Business Owners"
+        }
+      },
+      {
+        "id": "keynote",
+        "label": "Keynote Topics",
+        "contextHeading": "Land more speaking opportunities",
+        "contextDescription": "Develop keynote topics that event organizers can't resist. Stand out from other speakers with unique, compelling themes.",
+        "formLabels": {
+          "expertise": "Your Speaking Focus",
+          "audience": "Conference Audience"
+        },
+        "formPlaceholders": {
+          "expertise": "e.g. Leadership Development",
+          "audience": "e.g. HR Professionals"
+        }
+      },
+      {
+        "id": "workshop",
+        "label": "Workshop Themes",
+        "contextHeading": "Design workshops that transform",
+        "contextDescription": "Create workshop themes that deliver real value and keep participants engaged from start to finish.",
+        "formLabels": {
+          "expertise": "Your Teaching Focus",
+          "audience": "Workshop Participants"
+        },
+        "formPlaceholders": {
+          "expertise": "e.g. Sales Training",
+          "audience": "e.g. B2B Sales Teams"
+        }
+      }
+    ],
+    "definition": {
+      "title": "What Makes a Great Speaking Topic?",
+      "content": "A great speaking topic combines your unique expertise with your audience's pressing needs. It's specific enough to deliver real value, yet broad enough to explore deeply. The best topics promise transformation—a clear before and after for your audience."
+    },
     "formula": "Provide solutions that focus on one concept per topic while remaining general enough to expand upon.",
     "tips": [
       "Focus on value for listeners - great topics provide actionable solutions, not promotion",
@@ -121,6 +187,21 @@
         "answer": "Absolutely! All generated content is yours to use for podcasts, speaking engagements, content marketing, or any other purpose."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "Generated 10 topic ideas in 30 seconds. Three of them got me booked on podcasts within the week.",
+        "author": "David K.",
+        "role": "Leadership Speaker",
+        "rating": "4.8"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just generate topics. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["Spotify", "Apple Podcasts", "YouTube", "LinkedIn"],
     "relatedToolSlugs": [
       "questions-generator",
       "guest-intro-generator",

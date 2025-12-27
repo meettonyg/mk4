@@ -40,8 +40,74 @@
     "canonicalPath": "/tools/guest-intro-generator/"
   },
   "landingContent": {
-    "heroTagline": "Make Every Introduction Memorable",
-    "heroSubtitle": "Generate polished introductions that podcast hosts and event MCs can read to welcome you perfectly.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free Guest Intro Generator",
+      "subhead": "Generate polished introductions that podcast hosts and event MCs can read to welcome you perfectly.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 6,000+ speakers" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "Guest Intro Generator",
+      "subhead": "Create introductions that make every appearance memorable from the first moment.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "podcast",
+        "label": "Podcast Intro",
+        "contextHeading": "Hook listeners from the start",
+        "contextDescription": "Create an introduction that captures attention and sets up a great conversation before you even speak.",
+        "formLabels": {
+          "name": "Your Name",
+          "topic": "Today's Topic"
+        },
+        "formPlaceholders": {
+          "name": "e.g. Sarah Chen",
+          "topic": "e.g. Scaling SaaS Companies"
+        }
+      },
+      {
+        "id": "keynote",
+        "label": "Keynote Intro",
+        "contextHeading": "Command the room before you speak",
+        "contextDescription": "Generate a powerful introduction that establishes your authority and builds anticipation for your keynote.",
+        "formLabels": {
+          "name": "Your Name",
+          "topic": "Keynote Topic"
+        },
+        "formPlaceholders": {
+          "name": "e.g. James Rivera",
+          "topic": "e.g. The Future of Leadership"
+        }
+      },
+      {
+        "id": "panel",
+        "label": "Panel Intro",
+        "contextHeading": "Stand out among experts",
+        "contextDescription": "Create a concise introduction that highlights your unique perspective for panel discussions.",
+        "formLabels": {
+          "name": "Your Name",
+          "expertise": "Your Expertise"
+        },
+        "formPlaceholders": {
+          "name": "e.g. Dr. Maya Patel",
+          "expertise": "e.g. Consumer Behavior Research"
+        }
+      }
+    ],
+    "definition": {
+      "title": "What is a Guest Introduction?",
+      "content": "A guest introduction is a brief, polished script that hosts read to welcome you to their show or event. The best introductions hook the audience, establish your credibility, and create anticipation—all before you say a word."
+    },
     "formula": "[Opening Hook] + [Guest Credentials] + [Relevance to Audience] + [Warm Welcome]",
     "tips": [
       "Start with an engaging hook - a question, statistic, or statement that captures attention",
@@ -120,6 +186,21 @@
         "answer": "Send your intro at least 24 hours before the recording, along with any other materials like photos or links."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "Every host loves getting a polished intro. It makes their job easier and makes me sound great from the start.",
+        "author": "Marcus J.",
+        "role": "Podcast Guest Expert",
+        "rating": "4.8"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just generate intros. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["Spotify", "Apple Podcasts", "YouTube", "Zoom"],
     "relatedToolSlugs": [
       "biography-generator",
       "topics-generator",

@@ -161,7 +161,7 @@
 
   <!-- Integrated Mode: Compact widget -->
   <AiWidgetFrame
-    v-else
+    v-else-if="mode === 'integrated'"
     title="Speaking Topics Generator"
     description="Generate compelling interview and speaking topics that showcase your expertise."
     :mode="mode"
@@ -269,6 +269,31 @@
       </div>
     </template>
   </AiWidgetFrame>
+
+  <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
+  <div v-else class="gmkb-embedded-form">
+    <div class="gmkb-embedded-fields">
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.expertise || 'Your Area of Expertise' }} *</label>
+        <textarea
+          v-model="expertise"
+          class="gmkb-embedded-input gmkb-embedded-textarea"
+          :placeholder="currentIntent?.formPlaceholders?.expertise || 'e.g., Leadership development, team building, executive coaching...'"
+          rows="3"
+        ></textarea>
+      </div>
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.background || 'Your Authority Hook (Optional)' }}</label>
+        <textarea
+          v-model="authorityHookText"
+          class="gmkb-embedded-input gmkb-embedded-textarea"
+          :placeholder="currentIntent?.formPlaceholders?.background || 'e.g., I help executives build high-performance teams...'"
+          rows="2"
+        ></textarea>
+      </div>
+    </div>
+    <div v-if="error" class="gmkb-embedded-error">{{ error }}</div>
+  </div>
 </template>
 
 <script setup>
@@ -292,7 +317,8 @@ const props = defineProps({
    */
   mode: {
     type: String,
-    default: 'standalone'
+    default: 'standalone',
+    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
   },
 
   /**
@@ -300,6 +326,22 @@ const props = defineProps({
    */
   componentId: {
     type: String,
+    default: null
+  },
+
+  /**
+   * Intent configuration (embedded mode)
+   */
+  intent: {
+    type: Object,
+    default: null
+  },
+
+  /**
+   * Profile data (embedded mode)
+   */
+  profileData: {
+    type: Object,
     default: null
   },
 
@@ -312,7 +354,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['applied', 'generated', 'saved']);
+const emit = defineEmits(['applied', 'generated', 'saved', 'preview-update', 'update:can-generate']);
 
 // Use composables
 const {
@@ -573,6 +615,56 @@ watch(
   },
   { immediate: true }
 );
+
+/**
+ * Current intent (embedded mode)
+ */
+const currentIntent = computed(() => props.intent || null);
+
+/**
+ * Embedded preview text
+ */
+const embeddedPreviewText = computed(() => {
+  if (!expertise.value) return null;
+  return `<strong>Podcast topics</strong> about <strong>${expertise.value}</strong>`;
+});
+
+/**
+ * Watch for profileData prop changes (embedded mode)
+ */
+watch(
+  () => props.profileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
+
+/**
+ * Watch expertise changes for preview updates (embedded mode)
+ */
+watch(
+  () => expertise.value,
+  () => {
+    if (props.mode === 'embedded') {
+      emit('preview-update', {
+        previewHtml: embeddedPreviewText.value,
+        fields: { expertise: expertise.value }
+      });
+    }
+  }
+);
+
+/**
+ * Watch canGenerate for validation updates (embedded mode)
+ */
+watch(canGenerate, (newValue) => {
+  if (props.mode === 'embedded') {
+    emit('update:can-generate', !!newValue);
+  }
+}, { immediate: true });
 </script>
 
 <style scoped>
@@ -775,4 +867,15 @@ watch(
   font-weight: 500;
   color: #10b981;
 }
+
+/* Embedded Mode Styles (for landing page) */
+.gmkb-embedded-form { width: 100%; }
+.gmkb-embedded-fields { display: flex; flex-direction: column; gap: 20px; }
+.gmkb-embedded-field { display: flex; flex-direction: column; }
+.gmkb-embedded-label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 8px; color: var(--mkcg-text-primary, #0f172a); }
+.gmkb-embedded-input { width: 100%; padding: 14px; border: 1px solid var(--mkcg-border, #e2e8f0); border-radius: 8px; background: var(--mkcg-bg-secondary, #f9fafb); box-sizing: border-box; font-size: 15px; font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s; }
+.gmkb-embedded-input:focus { outline: none; border-color: var(--mkcg-primary, #3b82f6); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+.gmkb-embedded-input::placeholder { color: var(--mkcg-text-light, #94a3b8); }
+.gmkb-embedded-textarea { resize: vertical; min-height: 80px; }
+.gmkb-embedded-error { margin-top: 16px; padding: 12px 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #991b1b; font-size: 14px; }
 </style>

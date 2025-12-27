@@ -40,8 +40,74 @@
     "canonicalPath": "/tools/signature-story-generator/"
   },
   "landingContent": {
-    "heroTagline": "Create Your Go-To Story That Sells",
-    "heroSubtitle": "Develop a memorable signature story that demonstrates your expertise and makes your methodology unforgettable.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free Signature Story Generator",
+      "subhead": "Develop a memorable signature story that demonstrates your expertise and makes your methodology unforgettable.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 5,000+ speakers" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "Signature Story Generator",
+      "subhead": "Create your go-to story that sells your expertise without selling.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "client",
+        "label": "Client Story",
+        "contextHeading": "Show transformation through results",
+        "contextDescription": "Create a client success story that demonstrates your methodology and the transformation you deliver.",
+        "formLabels": {
+          "challenge": "Client's initial challenge",
+          "result": "The transformation achieved"
+        },
+        "formPlaceholders": {
+          "challenge": "e.g. Working 80-hour weeks, plateaued at $400K",
+          "result": "e.g. 40-hour weeks, crossed $1M"
+        }
+      },
+      {
+        "id": "origin",
+        "label": "Origin Story",
+        "contextHeading": "Share your breakthrough moment",
+        "contextDescription": "Develop your personal origin story that shows how you discovered your unique approach.",
+        "formLabels": {
+          "moment": "Your breakthrough moment",
+          "lesson": "The lesson you learned"
+        },
+        "formPlaceholders": {
+          "moment": "e.g. Third failed product launch",
+          "lesson": "e.g. Build what they need, not what you want"
+        }
+      },
+      {
+        "id": "methodology",
+        "label": "Methodology Story",
+        "contextHeading": "Illustrate your framework in action",
+        "contextDescription": "Create a story that brings your methodology or framework to life through a real example.",
+        "formLabels": {
+          "framework": "Your methodology",
+          "example": "A real-world application"
+        },
+        "formPlaceholders": {
+          "framework": "e.g. The 3P System",
+          "example": "e.g. How a coach tripled revenue"
+        }
+      }
+    ],
+    "definition": {
+      "title": "What is a Signature Story?",
+      "content": "A signature story is your go-to illustration that demonstrates your expertise and methodology in action. It's the story you tell in every keynote, podcast, and sales conversation because it perfectly captures what you do and why it works."
+    },
     "formula": "[SITUATION] → [COMPLICATION] → [TURNING POINT] → [RESOLUTION] → [LESSON] = Signature Story",
     "tips": [
       "Start in the middle of the action - skip the setup and drop the listener into the tension",
@@ -120,6 +186,21 @@
         "answer": "In keynotes, podcast interviews, sales conversations, and whenever you need to illustrate your methodology or expertise."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "Used my signature story on three podcasts this month. Every host said it was the most memorable moment of the episode.",
+        "author": "Patricia L.",
+        "role": "Business Author",
+        "rating": "4.9"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just craft signature stories. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["Keynotes", "Podcasts", "Sales Calls", "Workshops"],
     "relatedToolSlugs": [
       "brand-story-generator",
       "credibility-story-generator",

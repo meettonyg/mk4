@@ -40,8 +40,74 @@
     "canonicalPath": "/tools/offers-generator/"
   },
   "landingContent": {
-    "heroTagline": "Articulate Your Value with Compelling Offers",
-    "heroSubtitle": "Generate professional service descriptions and product offerings that clearly communicate your value and drive conversions.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free Offers Generator",
+      "subhead": "Generate professional service descriptions and product offerings that clearly communicate your value and drive conversions.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 5,000+ entrepreneurs" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "Offers Generator",
+      "subhead": "Create compelling service offerings that convert prospects into paying clients.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "service",
+        "label": "Service Package",
+        "contextHeading": "Showcase your service value",
+        "contextDescription": "Create compelling descriptions for your consulting, coaching, or professional service packages that justify your pricing.",
+        "formLabels": {
+          "service": "What service do you offer?",
+          "audience": "Who is it for?"
+        },
+        "formPlaceholders": {
+          "service": "e.g. Business Strategy Consulting",
+          "audience": "e.g. Startup Founders"
+        }
+      },
+      {
+        "id": "product",
+        "label": "Product/Course",
+        "contextHeading": "Sell your digital products",
+        "contextDescription": "Generate descriptions for courses, templates, or digital products that highlight the transformation they deliver.",
+        "formLabels": {
+          "product": "What's your product?",
+          "outcome": "What outcome does it deliver?"
+        },
+        "formPlaceholders": {
+          "product": "e.g. Lead Generation Masterclass",
+          "outcome": "e.g. 10x qualified leads"
+        }
+      },
+      {
+        "id": "speaking",
+        "label": "Speaking Package",
+        "contextHeading": "Get booked at premium rates",
+        "contextDescription": "Create speaker fee packages that communicate your value and make it easy for event organizers to book you.",
+        "formLabels": {
+          "topic": "Your Speaking Topic",
+          "format": "Keynote, Workshop, or Both?"
+        },
+        "formPlaceholders": {
+          "topic": "e.g. Leadership in the AI Era",
+          "format": "e.g. 60-minute Keynote"
+        }
+      }
+    ],
+    "definition": {
+      "title": "What Makes a Compelling Offer?",
+      "content": "A compelling offer clearly communicates the transformation you deliver, not just what you do. It speaks to your ideal client's pain points, presents a clear path to their desired outcome, and removes friction from taking the next step."
+    },
     "formula": "[FREE OFFER] → [LOW-TICKET OFFER] → [PREMIUM OFFER] = Complete Value Ladder",
     "tips": [
       "Lead with value - focus on transformation, not transaction",
@@ -120,6 +186,21 @@
         "answer": "Yes! Generate separate descriptions for each tier and arrange them as a pricing table in your media kit."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "Doubled my consulting rates after rewriting my packages with this tool. Clients now see the value immediately.",
+        "author": "Rachel S.",
+        "role": "Business Consultant",
+        "rating": "4.9"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just create offers. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["Website", "Media Kit", "LinkedIn", "Proposals"],
     "relatedToolSlugs": [
       "elevator-pitch-generator",
       "tagline-generator",

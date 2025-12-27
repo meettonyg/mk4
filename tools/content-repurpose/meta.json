@@ -40,8 +40,74 @@
     "canonicalPath": "/tools/content-repurposer/"
   },
   "landingContent": {
-    "heroTagline": "Get 10x More From Every Piece of Content",
-    "heroSubtitle": "Transform your existing content into multiple formats optimized for different platforms and audiences.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free Content Repurposer",
+      "subhead": "Transform your existing content into multiple formats optimized for different platforms and audiences.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 7,000+ creators" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "Content Repurposer",
+      "subhead": "Get 10x more from every piece of content you create.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "social",
+        "label": "Blog → Social",
+        "contextHeading": "Turn one blog into a week of posts",
+        "contextDescription": "Transform your blog posts into multiple social media posts for LinkedIn, Twitter, and Instagram.",
+        "formLabels": {
+          "content": "Paste your blog content",
+          "platforms": "Target platforms"
+        },
+        "formPlaceholders": {
+          "content": "Paste your blog post here...",
+          "platforms": "e.g. LinkedIn, Twitter"
+        }
+      },
+      {
+        "id": "newsletter",
+        "label": "Podcast → Newsletter",
+        "contextHeading": "Convert episodes into emails",
+        "contextDescription": "Transform podcast transcripts into engaging email newsletters for your subscribers.",
+        "formLabels": {
+          "transcript": "Paste your transcript",
+          "keyPoints": "Key takeaways"
+        },
+        "formPlaceholders": {
+          "transcript": "Paste transcript or notes...",
+          "keyPoints": "e.g. 3 main lessons"
+        }
+      },
+      {
+        "id": "article",
+        "label": "Video → Article",
+        "contextHeading": "Written content from video",
+        "contextDescription": "Convert video scripts or transcripts into SEO-optimized blog articles.",
+        "formLabels": {
+          "script": "Video script or transcript",
+          "topic": "Main topic"
+        },
+        "formPlaceholders": {
+          "script": "Paste your video content...",
+          "topic": "e.g. Marketing Automation"
+        }
+      }
+    ],
+    "definition": {
+      "title": "What is Content Repurposing?",
+      "content": "Content repurposing is taking one piece of content and adapting it for multiple platforms and formats. It's not duplicating—it's transforming the same core message into format-native content that performs well on each platform."
+    },
     "formula": "[SOURCE CONTENT] → [EXTRACT KEY POINTS] → [ADAPT FOR PLATFORM] → [OPTIMIZE FORMAT] = Multiplied Content",
     "tips": [
       "Start with long-form - it's easier to break down than build up; podcasts and blogs make great source material",
@@ -120,6 +186,21 @@
         "answer": "Typically 5-10 pieces from a single blog post or podcast episode. Create a whole week of content from one piece."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "One podcast episode now gives me two weeks of social content. Game changer for my content strategy.",
+        "author": "Steve P.",
+        "role": "Podcaster & Coach",
+        "rating": "4.9"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just repurpose content. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["LinkedIn", "Twitter/X", "Instagram", "Email"],
     "relatedToolSlugs": [
       "blog-generator",
       "social-post-generator",
