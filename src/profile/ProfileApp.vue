@@ -30,6 +30,7 @@
             <ProfileHeader
                 :post-data="store.postData"
                 :full-name="store.fullName"
+                :professional-title="store.fields.guest_title"
                 :completeness="store.completeness"
                 @edit="handleEditProfile"
             />

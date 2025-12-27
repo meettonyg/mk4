@@ -12,6 +12,9 @@
                 </div>
                 <div class="profile-title-info">
                     <h1>{{ fullName }}</h1>
+                    <div v-if="professionalTitle" class="profile-title">
+                        {{ professionalTitle }}
+                    </div>
                     <div class="profile-date">
                         Created on {{ formattedDate }}
                     </div>
@@ -140,6 +143,10 @@ const props = defineProps({
     fullName: {
         type: String,
         default: 'Unnamed Profile',
+    },
+    professionalTitle: {
+        type: String,
+        default: '',
     },
     pitchesSent: {
         type: [Number, String],
@@ -281,6 +288,13 @@ const mediaKitBuilderUrl = computed(() => {
     font-weight: 600;
     margin: 0 0 4px 0;
     color: #0f172a;
+}
+
+.profile-title {
+    font-size: 16px;
+    color: #3b82f6;
+    font-weight: 500;
+    margin-bottom: 2px;
 }
 
 .profile-date {
