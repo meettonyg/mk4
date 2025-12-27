@@ -40,8 +40,74 @@
     "canonicalPath": "/tools/questions-generator/"
   },
   "landingContent": {
-    "heroTagline": "Prepare for Every Interview with Confidence",
-    "heroSubtitle": "Generate thoughtful interview questions and compelling answers tailored to your expertise and interview context.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free Interview Questions Generator",
+      "subhead": "Generate thoughtful interview questions and compelling answers tailored to your expertise and interview context.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 7,000+ guests" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "Interview Questions Generator",
+      "subhead": "Prepare for every interview with confidence using AI-generated questions and answers.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "podcast",
+        "label": "Podcast Interview",
+        "contextHeading": "Shine as a podcast guest",
+        "contextDescription": "Prepare questions and answers that help you deliver value, share your expertise, and leave a lasting impression on listeners.",
+        "formLabels": {
+          "expertise": "Your Area of Expertise",
+          "topic": "Interview Topic"
+        },
+        "formPlaceholders": {
+          "expertise": "e.g. Digital Marketing",
+          "topic": "e.g. Lead Generation Strategies"
+        }
+      },
+      {
+        "id": "press",
+        "label": "Press Interview",
+        "contextHeading": "Handle media with confidence",
+        "contextDescription": "Prepare for press interviews with questions that let you share your story and key messages professionally.",
+        "formLabels": {
+          "expertise": "Your Field",
+          "angle": "Story Angle"
+        },
+        "formPlaceholders": {
+          "expertise": "e.g. Startup Founder",
+          "angle": "e.g. Recent Funding Round"
+        }
+      },
+      {
+        "id": "panel",
+        "label": "Panel Discussion",
+        "contextHeading": "Stand out on any panel",
+        "contextDescription": "Prepare talking points and answers that help you contribute meaningfully while showcasing your unique perspective.",
+        "formLabels": {
+          "expertise": "Your Perspective",
+          "topic": "Panel Topic"
+        },
+        "formPlaceholders": {
+          "expertise": "e.g. Industry Veteran",
+          "topic": "e.g. Future of AI in Business"
+        }
+      }
+    ],
+    "definition": {
+      "title": "Why Prepare Interview Questions?",
+      "content": "The best interview guests don't wing it—they prepare. By anticipating questions and crafting thoughtful answers, you deliver more value, stay on message, and transform every appearance into an opportunity to build authority."
+    },
     "formula": "Balance specific questions that demonstrate expertise with story-based questions that engage the audience.",
     "tips": [
       "Frame questions for stories - listeners connect with narratives, not lectures",
@@ -120,6 +186,21 @@
         "answer": "Absolutely! Many speakers include a FAQ section in their media kit to help hosts prepare for interviews."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "Used this before my first big podcast. The host said I was one of the most prepared guests they'd ever had.",
+        "author": "Jennifer T.",
+        "role": "Author & Speaker",
+        "rating": "4.9"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just prepare questions. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["Spotify", "Apple Podcasts", "YouTube", "Zoom"],
     "relatedToolSlugs": [
       "topics-generator",
       "interview-prep-generator",

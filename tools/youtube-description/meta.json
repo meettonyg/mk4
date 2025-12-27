@@ -40,8 +40,74 @@
     "canonicalPath": "/tools/youtube-description-generator/"
   },
   "landingContent": {
-    "heroTagline": "YouTube Descriptions That Get More Views",
-    "heroSubtitle": "Generate SEO-optimized video descriptions with timestamps, CTAs, and keywords that help your videos get discovered.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free YouTube Description Generator",
+      "subhead": "Generate SEO-optimized video descriptions with timestamps, CTAs, and keywords that help your videos get discovered.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 8,000+ creators" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "YouTube Description Generator",
+      "subhead": "Create video descriptions that get more views and engagement.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "tutorial",
+        "label": "Tutorial Video",
+        "contextHeading": "Help viewers find your how-tos",
+        "contextDescription": "Create descriptions for tutorial and educational videos that rank in search and help viewers understand what they'll learn.",
+        "formLabels": {
+          "topic": "What does your video teach?",
+          "outcome": "What will viewers achieve?"
+        },
+        "formPlaceholders": {
+          "topic": "e.g. Setting up email automation",
+          "outcome": "e.g. Automated welcome sequences"
+        }
+      },
+      {
+        "id": "interview",
+        "label": "Interview/Podcast",
+        "contextHeading": "Showcase your guests",
+        "contextDescription": "Write descriptions for interview videos that introduce your guest and highlight key discussion topics.",
+        "formLabels": {
+          "guest": "Who is your guest?",
+          "topics": "Main topics covered"
+        },
+        "formPlaceholders": {
+          "guest": "e.g. Marketing expert Jane Doe",
+          "topics": "e.g. Lead generation, content strategy"
+        }
+      },
+      {
+        "id": "vlog",
+        "label": "Vlog/Story",
+        "contextHeading": "Hook viewers with your story",
+        "contextDescription": "Create engaging descriptions for vlogs and storytelling videos that create curiosity and encourage watching.",
+        "formLabels": {
+          "story": "What's the story?",
+          "hook": "Why should viewers watch?"
+        },
+        "formPlaceholders": {
+          "story": "e.g. My first speaking engagement",
+          "hook": "e.g. I almost quit before I started"
+        }
+      }
+    ],
+    "definition": {
+      "title": "Why YouTube Descriptions Matter",
+      "content": "YouTube descriptions help the algorithm understand your content and help viewers decide to watch. The first 2-3 sentences appear in search results, timestamps enable chapters, and proper structure drives engagement."
+    },
     "formula": "[HOOK + KEYWORDS] + [TIMESTAMPS] + [RESOURCES] + [CTAs] + [LINKS] = Optimized Description",
     "tips": [
       "Front-load keywords - the first 2-3 sentences appear in search results; make them count",
@@ -120,6 +186,21 @@
         "answer": "Ask for specific actions: subscribe, comment with answers, check links. One primary CTA per video works best."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "My video views increased 40% after optimizing descriptions with this tool. The timestamp chapters are a game changer.",
+        "author": "Ryan D.",
+        "role": "YouTube Creator",
+        "rating": "4.9"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just optimize videos. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["YouTube", "YouTube Shorts", "Vimeo", "Wistia"],
     "relatedToolSlugs": [
       "podcast-notes-generator",
       "content-repurposer",

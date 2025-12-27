@@ -40,8 +40,74 @@
     "canonicalPath": "/tools/sound-bite-generator/"
   },
   "landingContent": {
-    "heroTagline": "Become the Expert Everyone Quotes",
-    "heroSubtitle": "Generate memorable sound bites and quotable phrases that journalists share and audiences remember.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free Sound Bite Generator",
+      "subhead": "Generate memorable sound bites and quotable phrases that journalists share and audiences remember.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 8,000+ speakers" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "Sound Bite Generator",
+      "subhead": "Create quotable phrases that make you the expert everyone remembers.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "interview",
+        "label": "Interview Quotes",
+        "contextHeading": "Get quoted in the media",
+        "contextDescription": "Create memorable phrases that journalists love to share. These are the quotes that make it into articles and social media posts.",
+        "formLabels": {
+          "topic": "Your Topic or Message",
+          "perspective": "Your Unique Perspective"
+        },
+        "formPlaceholders": {
+          "topic": "e.g. Leadership in Remote Teams",
+          "perspective": "e.g. Trust beats surveillance"
+        }
+      },
+      {
+        "id": "keynote",
+        "label": "Keynote Moments",
+        "contextHeading": "Create mic-drop moments",
+        "contextDescription": "Generate powerful phrases that become the moments your audience tweets about and remembers long after your talk.",
+        "formLabels": {
+          "message": "Your Core Message",
+          "emotion": "Desired Emotional Impact"
+        },
+        "formPlaceholders": {
+          "message": "e.g. Innovation requires failure",
+          "emotion": "e.g. Inspiration"
+        }
+      },
+      {
+        "id": "social",
+        "label": "Social Quotes",
+        "contextHeading": "Build thought leadership",
+        "contextDescription": "Create quotable content perfect for Twitter, LinkedIn, and Instagram that establishes your authority and gets shared.",
+        "formLabels": {
+          "topic": "Your Topic",
+          "style": "Tone (Witty, Inspiring, Bold)"
+        },
+        "formPlaceholders": {
+          "topic": "e.g. Entrepreneurship",
+          "style": "e.g. Bold and Provocative"
+        }
+      }
+    ],
+    "definition": {
+      "title": "What is a Sound Bite?",
+      "content": "A sound bite is a short, memorable phrase that captures a key insight in a quotable format. The best sound bites are 10-25 words, stand alone without context, and express a clear point of view that's easy to share."
+    },
     "formula": "10-25 words + Tweet-worthy + Stands alone without context + Memorable and quotable",
     "tips": [
       "Keep it short - 10-25 words maximum for maximum impact",
@@ -124,6 +190,21 @@
         "answer": "Build a collection of 10-15 signature phrases. Review and update them quarterly as your messaging evolves."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "My Forbes quote came directly from a sound bite I generated here. Now it's all over LinkedIn.",
+        "author": "Kevin T.",
+        "role": "Tech Entrepreneur",
+        "rating": "5.0"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just generate quotes. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["Twitter/X", "LinkedIn", "Instagram", "Press"],
     "relatedToolSlugs": [
       "tagline-generator",
       "elevator-pitch-generator",

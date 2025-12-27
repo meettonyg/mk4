@@ -40,8 +40,74 @@
     "canonicalPath": "/tools/interview-prep-generator/"
   },
   "landingContent": {
-    "heroTagline": "Walk Into Every Interview Fully Prepared",
-    "heroSubtitle": "Generate comprehensive interview guides with anticipated questions, strategic answers, and key messages that ensure you shine.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free Interview Prep Generator",
+      "subhead": "Generate comprehensive interview guides with anticipated questions, strategic answers, and key messages that ensure you shine.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 5,000+ media guests" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "Interview Prep Generator",
+      "subhead": "Walk into every interview fully prepared and confident.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "podcast",
+        "label": "Podcast Interview",
+        "contextHeading": "Crush your podcast appearances",
+        "contextDescription": "Prepare for podcast interviews with anticipated questions, key messages, and talking points that showcase your expertise.",
+        "formLabels": {
+          "topic": "Interview topic",
+          "message": "Key message to convey"
+        },
+        "formPlaceholders": {
+          "topic": "e.g. Scaling SaaS Companies",
+          "message": "e.g. Systems beat willpower"
+        }
+      },
+      {
+        "id": "press",
+        "label": "Press Interview",
+        "contextHeading": "Handle media like a pro",
+        "contextDescription": "Prepare for press interviews with message control techniques, bridge phrases, and answers to tough questions.",
+        "formLabels": {
+          "topic": "News angle",
+          "concern": "Potential tough questions"
+        },
+        "formPlaceholders": {
+          "topic": "e.g. Company funding announcement",
+          "concern": "e.g. Competition, market timing"
+        }
+      },
+      {
+        "id": "panel",
+        "label": "Panel Discussion",
+        "contextHeading": "Stand out on any panel",
+        "contextDescription": "Prepare memorable sound bites and unique perspectives that make you the most quotable panelist.",
+        "formLabels": {
+          "topic": "Panel topic",
+          "perspective": "Your unique angle"
+        },
+        "formPlaceholders": {
+          "topic": "e.g. The Future of Work",
+          "perspective": "e.g. Remote-first experience"
+        }
+      }
+    ],
+    "definition": {
+      "title": "Why Prepare for Interviews?",
+      "content": "The best media guests don't wing it. They know their key messages, anticipate questions, and have practiced bridge phrases. Preparation isn't about scripting every word—it's about having frameworks that let you be confidently authentic."
+    },
     "formula": "[CONTEXT] + [KEY MESSAGES] + [ANTICIPATED QUESTIONS] + [BRIDGE PHRASES] = Complete Interview Prep",
     "tips": [
       "Know your 3 key messages - everything you say should lead back to these core points",
@@ -120,6 +186,21 @@
         "answer": "No, this is your private prep. Share a guest intro and suggested questions instead. Keep your strategic preparation private."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "Used this before every podcast last year. Hosts keep commenting on how prepared and polished I am.",
+        "author": "Maria S.",
+        "role": "Startup CEO",
+        "rating": "5.0"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just prepare for interviews. Track your pitches, manage bookings, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["Podcasts", "Press Interviews", "Panel Discussions", "Webinars"],
     "relatedToolSlugs": [
       "questions-generator",
       "topics-generator",

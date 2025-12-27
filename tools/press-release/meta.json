@@ -40,8 +40,74 @@
     "canonicalPath": "/tools/press-release-generator/"
   },
   "landingContent": {
-    "heroTagline": "Create Press Releases Journalists Actually Read",
-    "heroSubtitle": "Generate professional, AP-style press releases that are ready for media distribution and news coverage.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free Press Release Generator",
+      "subhead": "Create professional, AP-style press releases that are ready for media distribution and news coverage.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 4,000+ PR pros" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "Press Release Generator",
+      "subhead": "Create press releases journalists actually read and publish.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "launch",
+        "label": "Product Launch",
+        "contextHeading": "Announce with impact",
+        "contextDescription": "Create a press release that generates buzz for your product launch and gets media coverage.",
+        "formLabels": {
+          "product": "What are you launching?",
+          "benefit": "Key benefit for users"
+        },
+        "formPlaceholders": {
+          "product": "e.g. AI Marketing Platform",
+          "benefit": "e.g. Automates lead generation"
+        }
+      },
+      {
+        "id": "news",
+        "label": "Company News",
+        "contextHeading": "Share your milestone",
+        "contextDescription": "Announce funding, hiring, expansion, or other company milestones that journalists want to cover.",
+        "formLabels": {
+          "news": "What's your news?",
+          "impact": "Why it matters"
+        },
+        "formPlaceholders": {
+          "news": "e.g. Series A funding",
+          "impact": "e.g. Expanding to 10 new markets"
+        }
+      },
+      {
+        "id": "partnership",
+        "label": "Partnership",
+        "contextHeading": "Announce strategic alliances",
+        "contextDescription": "Create a professional announcement for partnerships, collaborations, and strategic alliances.",
+        "formLabels": {
+          "partner": "Who is your partner?",
+          "value": "What does this enable?"
+        },
+        "formPlaceholders": {
+          "partner": "e.g. Industry Leader X",
+          "value": "e.g. Expanded market access"
+        }
+      }
+    ],
+    "definition": {
+      "title": "What is a Press Release?",
+      "content": "A press release is an official statement delivered to media outlets announcing newsworthy information about your company. The best press releases follow AP style, lead with the news, include quotable quotes, and make it easy for journalists to write their story."
+    },
     "formula": "[HEADLINE] + [DATELINE + LEAD] + [SUPPORTING DETAILS] + [QUOTES] + [BOILERPLATE] = AP-Style Press Release",
     "tips": [
       "Lead with the news - put the most important information in the first paragraph",
@@ -120,6 +186,21 @@
         "answer": "Direct outreach to relevant journalists, PR newswires (PRWeb, Business Wire), and your own newsroom page."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "Got picked up by TechCrunch using a press release generated here. The AP formatting made all the difference.",
+        "author": "Jason W.",
+        "role": "Startup Founder",
+        "rating": "5.0"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just write press releases. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["PRWeb", "Business Wire", "Direct Outreach", "Newsroom"],
     "relatedToolSlugs": [
       "blog-generator",
       "social-post-generator",

@@ -40,8 +40,74 @@
     "canonicalPath": "/tools/email-writer/"
   },
   "landingContent": {
-    "heroTagline": "Write Emails That Get Responses",
-    "heroSubtitle": "Generate professional, persuasive emails that achieve your communication goals and build relationships.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free Email Writer",
+      "subhead": "Generate professional, persuasive emails that achieve your communication goals and get responses.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 9,000+ professionals" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "Email Writer",
+      "subhead": "Write emails that get opened, read, and responded to.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "outreach",
+        "label": "Cold Outreach",
+        "contextHeading": "Start conversations that convert",
+        "contextDescription": "Write cold outreach emails that get opened, read, and responded to by busy decision-makers.",
+        "formLabels": {
+          "recipient": "Who are you emailing?",
+          "goal": "What's your goal?"
+        },
+        "formPlaceholders": {
+          "recipient": "e.g. Podcast hosts",
+          "goal": "e.g. Book a guest appearance"
+        }
+      },
+      {
+        "id": "followup",
+        "label": "Follow-Up",
+        "contextHeading": "Stay top of mind professionally",
+        "contextDescription": "Create follow-up emails that get responses without being annoying or pushy.",
+        "formLabels": {
+          "context": "What was the original context?",
+          "ask": "What do you need?"
+        },
+        "formPlaceholders": {
+          "context": "e.g. Met at conference last week",
+          "ask": "e.g. Schedule a call"
+        }
+      },
+      {
+        "id": "proposal",
+        "label": "Proposal/Partnership",
+        "contextHeading": "Present opportunities professionally",
+        "contextDescription": "Draft partnership proposals and collaboration requests that get taken seriously.",
+        "formLabels": {
+          "opportunity": "What's the opportunity?",
+          "benefit": "What's in it for them?"
+        },
+        "formPlaceholders": {
+          "opportunity": "e.g. Joint webinar",
+          "benefit": "e.g. Exposure to 10K audience"
+        }
+      }
+    ],
+    "definition": {
+      "title": "What Makes Emails Get Responses?",
+      "content": "Response-worthy emails have a personalized hook, clear value proposition, one specific ask, and an easy way to respond. The best emails are short, scannable, and make the next step obvious."
+    },
     "formula": "[PERSONALIZED HOOK] + [VALUE PROPOSITION] + [CLEAR ASK] + [EASY CTA] = Response-Worthy Email",
     "tips": [
       "Personalize the first line - reference something specific to the recipient to show you did your research",
@@ -120,6 +186,21 @@
         "answer": "Research one specific detail per recipient - recent post, company news, or mutual connection. One personal touch makes all the difference."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "My cold email response rate went from 5% to 25% using these templates. The personalization framework is key.",
+        "author": "Tom B.",
+        "role": "Sales Director",
+        "rating": "4.9"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just write emails. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["Gmail", "Outlook", "HubSpot", "Mailchimp"],
     "relatedToolSlugs": [
       "newsletter-writer",
       "offers-generator",

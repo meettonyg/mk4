@@ -40,8 +40,74 @@
     "canonicalPath": "/tools/framework-builder/"
   },
   "landingContent": {
-    "heroTagline": "Turn Your Expertise Into a Proprietary Framework",
-    "heroSubtitle": "Develop a branded methodology that differentiates you, establishes thought leadership, and creates intellectual property.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free Framework Builder",
+      "subhead": "Develop a branded methodology that differentiates you, establishes thought leadership, and creates intellectual property.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 4,000+ experts" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "Framework Builder",
+      "subhead": "Turn your expertise into a proprietary framework that sets you apart.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "coaching",
+        "label": "Coaching Framework",
+        "contextHeading": "Systematize your coaching approach",
+        "contextDescription": "Create a structured coaching methodology that delivers consistent results and can be taught to others.",
+        "formLabels": {
+          "process": "Your coaching process",
+          "outcome": "Client transformation"
+        },
+        "formPlaceholders": {
+          "process": "e.g. How you take clients from stuck to scaling",
+          "outcome": "e.g. 6-figure business in 12 months"
+        }
+      },
+      {
+        "id": "consulting",
+        "label": "Consulting Method",
+        "contextHeading": "Package your expertise",
+        "contextDescription": "Develop a consulting methodology that justifies premium pricing and delivers predictable results.",
+        "formLabels": {
+          "approach": "Your approach",
+          "deliverable": "Key deliverables"
+        },
+        "formPlaceholders": {
+          "approach": "e.g. Strategic positioning process",
+          "deliverable": "e.g. Complete brand strategy"
+        }
+      },
+      {
+        "id": "training",
+        "label": "Training Program",
+        "contextHeading": "Create teachable systems",
+        "contextDescription": "Build a training framework that can be delivered consistently at scale.",
+        "formLabels": {
+          "skill": "What you teach",
+          "result": "Learner outcome"
+        },
+        "formPlaceholders": {
+          "skill": "e.g. Sales negotiation",
+          "result": "e.g. Close 30% more deals"
+        }
+      }
+    ],
+    "definition": {
+      "title": "What is a Proprietary Framework?",
+      "content": "A proprietary framework is your unique, branded methodology for achieving results. It takes your expertise and packages it into a memorable, teachable system that differentiates you from competitors and can become valuable intellectual property."
+    },
     "formula": "[MEMORABLE NAME] + [3-5 STEPS] + [CLEAR OUTCOMES] = Proprietary Framework",
     "tips": [
       "Make it memorable - use acronyms, alliteration, or metaphors (SMART goals, The 5 C's)",
@@ -120,6 +186,21 @@
         "answer": "Reference it in sales conversations, structure programs around it, and teach it in content. It becomes your signature approach."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "Named my framework 'The 4A Method' and now clients reference it when they refer me. It's become my calling card.",
+        "author": "Thomas S.",
+        "role": "Business Consultant",
+        "rating": "4.9"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just create frameworks. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["Courses", "Coaching Programs", "Books", "Keynotes"],
     "relatedToolSlugs": [
       "authority-hook-builder",
       "signature-story-generator",

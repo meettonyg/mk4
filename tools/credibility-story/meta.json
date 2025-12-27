@@ -40,8 +40,74 @@
     "canonicalPath": "/tools/credibility-story-generator/"
   },
   "landingContent": {
-    "heroTagline": "Show Your Expertise Through Powerful Stories",
-    "heroSubtitle": "Create credibility stories that demonstrate your authority and build trust with potential clients through proven results.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free Credibility Story Generator",
+      "subhead": "Create credibility stories that demonstrate your authority and build trust with potential clients through proven results.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 6,000+ professionals" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "Credibility Story Generator",
+      "subhead": "Show your expertise through powerful stories that build instant trust.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "results",
+        "label": "Results Story",
+        "contextHeading": "Let outcomes speak for you",
+        "contextDescription": "Create a story that demonstrates your expertise through specific client results and measurable outcomes.",
+        "formLabels": {
+          "client": "Client situation",
+          "outcome": "Results achieved"
+        },
+        "formPlaceholders": {
+          "client": "e.g. SaaS founder stuck at $800K ARR for 2 years",
+          "outcome": "e.g. Crossed $2M within 6 months"
+        }
+      },
+      {
+        "id": "recognition",
+        "label": "Recognition Story",
+        "contextHeading": "Leverage external validation",
+        "contextDescription": "Develop a story around press coverage, awards, or third-party recognition that establishes your authority.",
+        "formLabels": {
+          "recognition": "The recognition you received",
+          "context": "What it means"
+        },
+        "formPlaceholders": {
+          "recognition": "e.g. Featured in Forbes",
+          "context": "e.g. Called 'the most practical scaling framework'"
+        }
+      },
+      {
+        "id": "experience",
+        "label": "Experience Story",
+        "contextHeading": "Show depth through journey",
+        "contextDescription": "Create a story that demonstrates your expertise through years of experience and volume of work.",
+        "formLabels": {
+          "experience": "Your experience",
+          "insight": "Key insight gained"
+        },
+        "formPlaceholders": {
+          "experience": "e.g. 15 years training executives",
+          "insight": "e.g. The pattern behind every successful leader"
+        }
+      }
+    ],
+    "definition": {
+      "title": "What is a Credibility Story?",
+      "content": "A credibility story is a brief narrative that demonstrates your expertise through evidence rather than claims. Instead of saying 'I'm an expert,' you tell a story that shows your expertise in action through results, recognition, or experience."
+    },
     "formula": "[SITUATION] → [ACTION] → [RESULT] = Credibility Story",
     "tips": [
       "Lead with the client's challenge - make the listener see themselves in the story",
@@ -120,6 +186,21 @@
         "answer": "When you sense skepticism, when asked 'why should I work with you?', and as social proof in proposals and sales pages."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "Used a credibility story in a sales call yesterday. The prospect said 'that's exactly what I need' and signed the same day.",
+        "author": "Robert M.",
+        "role": "Sales Consultant",
+        "rating": "5.0"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just build credibility. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["Sales Calls", "Proposals", "Websites", "Podcasts"],
     "relatedToolSlugs": [
       "brand-story-generator",
       "signature-story-generator",

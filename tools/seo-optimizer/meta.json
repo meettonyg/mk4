@@ -40,8 +40,74 @@
     "canonicalPath": "/tools/seo-optimizer/"
   },
   "landingContent": {
-    "heroTagline": "Optimize Your Content for Search Engines",
-    "heroSubtitle": "Generate compelling meta titles, descriptions, and keyword strategies that improve rankings and drive organic traffic.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free SEO Optimizer",
+      "subhead": "Generate compelling meta titles, descriptions, and keyword strategies that improve rankings and drive organic traffic.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 8,000+ marketers" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "SEO Optimizer",
+      "subhead": "Optimize your content for search in seconds.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "blog",
+        "label": "Blog Post",
+        "contextHeading": "Rank your content higher",
+        "contextDescription": "Optimize your blog posts with compelling titles and meta descriptions that rank and get clicks.",
+        "formLabels": {
+          "content": "Your blog topic or title",
+          "keyword": "Target keyword"
+        },
+        "formPlaceholders": {
+          "content": "e.g. How to start a podcast in 2024",
+          "keyword": "e.g. start a podcast"
+        }
+      },
+      {
+        "id": "page",
+        "label": "Service Page",
+        "contextHeading": "Convert more visitors",
+        "contextDescription": "Optimize service and landing pages with SEO that attracts the right audience.",
+        "formLabels": {
+          "service": "What service do you offer?",
+          "audience": "Who is it for?"
+        },
+        "formPlaceholders": {
+          "service": "e.g. Executive coaching",
+          "audience": "e.g. Tech leaders"
+        }
+      },
+      {
+        "id": "product",
+        "label": "Product Page",
+        "contextHeading": "Get more product visibility",
+        "contextDescription": "Create SEO elements for product pages that rank and drive sales.",
+        "formLabels": {
+          "product": "Your product",
+          "benefit": "Main benefit"
+        },
+        "formPlaceholders": {
+          "product": "e.g. Podcast booking software",
+          "benefit": "e.g. Book more interviews"
+        }
+      }
+    ],
+    "definition": {
+      "title": "What is SEO Optimization?",
+      "content": "SEO optimization is the process of making your content more visible to search engines. This includes writing compelling title tags, meta descriptions, and strategically placing keywords—all designed to help your content rank higher and get more clicks."
+    },
     "formula": "[PRIMARY KEYWORD] + [COMPELLING TITLE] + [BENEFIT-DRIVEN META] + [NATURAL INTEGRATION] = SEO-Optimized Content",
     "tips": [
       "Front-load keywords in titles - put the most important terms in the first 50 characters",
@@ -120,6 +186,21 @@
         "answer": "It complements SEO tools by helping with on-page optimization. Use alongside tools like Ahrefs or Semrush for full SEO strategy."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "My organic traffic increased 60% after optimizing all my pages with this tool. The meta descriptions alone made a huge difference.",
+        "author": "Kevin L.",
+        "role": "Content Marketer",
+        "rating": "4.8"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just optimize for search. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["WordPress", "Webflow", "Shopify", "Squarespace"],
     "relatedToolSlugs": [
       "blog-generator",
       "content-repurposer",
