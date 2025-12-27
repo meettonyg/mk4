@@ -512,6 +512,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
 
         // PRE-RENDER ARCHITECTURE: Capture rendered HTML from preview
         // This HTML will be used directly on the frontend, eliminating need for PHP templates
+        // v2: Pre-render capture with debug logging
         const previewElement = document.getElementById('media-kit-preview');
         console.log('🔍 Pre-render: Looking for #media-kit-preview', {
           found: !!previewElement,
