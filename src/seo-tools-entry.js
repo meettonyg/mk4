@@ -453,10 +453,12 @@ function initializeEmbeddedTool(container) {
                     onGateSignup: this.handleGateSignup,
                 }, {
                     // Form slot - render the generator in embedded mode
-                    form: () => h(GeneratorComponent, {
+                    // Uses scoped slot to receive profileData from EmbeddedToolWrapper
+                    form: (slotProps) => h(GeneratorComponent, {
                         ref: 'generator',
                         mode: 'embedded',
                         intent: this.currentIntent,
+                        profileData: slotProps.profileData,
                         onPreviewUpdate: this.handlePreviewUpdate,
                         onGenerated: (data) => {
                             this.isGenerating = false;

@@ -353,6 +353,15 @@ const props = defineProps({
   intent: {
     type: Object,
     default: null
+  },
+
+  /**
+   * Profile data for pre-population (embedded mode)
+   * Passed from EmbeddedToolWrapper via scoped slot
+   */
+  profileData: {
+    type: Object,
+    default: null
   }
 });
 
@@ -691,6 +700,36 @@ watch(
     }
   },
   { deep: true }
+);
+
+/**
+ * Watch for profileData prop changes (embedded mode with EmbeddedToolWrapper)
+ * Pre-populates form fields when profile data is provided
+ */
+watch(
+  () => props.profileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      // Pre-populate fields from profile data
+      hookFields.value = {
+        who: newData.hook_who || hookFields.value.who || '',
+        what: newData.hook_what || hookFields.value.what || '',
+        when: newData.hook_when || hookFields.value.when || '',
+        how: newData.hook_how || hookFields.value.how || '',
+        where: newData.hook_where || hookFields.value.where || '',
+        why: newData.hook_why || hookFields.value.why || ''
+      };
+
+      // Sync to composable
+      who.value = hookFields.value.who;
+      what.value = hookFields.value.what;
+      when.value = hookFields.value.when;
+      how.value = hookFields.value.how;
+      where.value = hookFields.value.where;
+      why.value = hookFields.value.why;
+    }
+  },
+  { immediate: true }
 );
 
 /**
