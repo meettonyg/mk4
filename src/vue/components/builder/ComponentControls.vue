@@ -204,23 +204,25 @@ const deleteComponent = () => {
 }
 
 .component-wrapper .component-controls__actions {
-  display: flex;
+  display: flex !important; /* DEBUG: Force display */
   gap: 2px;
   align-items: center;
+  background: rgba(0,255,0,0.1); /* DEBUG: Green tint to see if rendering */
+  padding: 2px; /* DEBUG: Make visible */
 }
 
 .component-wrapper .component-controls .control-btn {
   width: 28px;
   height: 28px;
-  border: none;
-  background: transparent;
+  border: 1px solid #ccc; /* DEBUG: Make buttons visible */
+  background: #f8f8f8; /* DEBUG: Make buttons visible */
   border-radius: 4px;
-  display: flex;
+  display: flex !important; /* DEBUG: Force display */
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
-  color: var(--gmkb-color-text, #333);
+  color: #333; /* DEBUG: Direct color instead of CSS variable */
 }
 
 .component-wrapper .component-controls .control-btn:hover:not(:disabled) {
