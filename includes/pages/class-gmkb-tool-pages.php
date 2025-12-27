@@ -795,11 +795,13 @@ get_footer();
                     headers: { 'X-WP-Nonce': nonce }
                 })
                 .then(function(r) { return r.json(); })
-                .then(function(profile) {
+                .then(function(response) {
                     // Pre-populate the tool with existing data if available
-                    if (profile && profile.fields) {
+                    // API returns { success: true, data: { ...fields... } }
+                    var profileData = response.data || response.fields || response;
+                    if (profileData) {
                         // Map profile fields back to tool field names
-                        var fieldData = mapProfileFieldsToTool(toolId, profile.fields);
+                        var fieldData = mapProfileFieldsToTool(toolId, profileData);
                         // Pre-populate the Vue component inputs
                         populateToolFields(fieldData);
                     }
