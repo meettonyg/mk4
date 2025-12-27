@@ -1,8 +1,15 @@
 <template>
-  <div class="interviews-editor">
-    <!-- Interview Selection with Dropdown UI -->
-    <div class="editor-section">
-      <h4 class="editor-section-title">Select Interviews</h4>
+  <ComponentEditorTemplate
+    :component-id="componentId"
+    component-type="Interviews"
+    :show-typography="true"
+    @close="handleClose"
+  >
+    <template #content>
+      <div class="interviews-editor">
+        <!-- Interview Selection with Dropdown UI -->
+        <div class="editor-section">
+          <h4 class="editor-section-title">Select Interviews</h4>
 
       <div v-if="isLoadingInterviews" class="loading-state">
         <div class="spinner"></div>
@@ -179,20 +186,28 @@
         <span>Show Listen Button</span>
       </label>
     </div>
-  </div>
+      </div>
+    </template>
+  </ComponentEditorTemplate>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
 import { apiRequest } from '../../src/utils/api.js';
+import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 
 const props = defineProps({
   componentId: { type: String, required: true },
   data: { type: Object, default: () => ({}) }
 });
 
-const emit = defineEmits(['update']);
+const emit = defineEmits(['update', 'close']);
+
+// Handle close button
+const handleClose = () => {
+  emit('close');
+};
 const store = useMediaKitStore();
 
 // Check if editing a profile (guests post type) - interviews should sync with profile
