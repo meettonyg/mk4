@@ -54,6 +54,26 @@
                 Load from Profile
               </button>
               <button
+                v-if="canSaveToProfile"
+                type="button"
+                class="profile-save-btn"
+                :class="{ 'is-saving': isSaving }"
+                :disabled="isSaving || !localData.questions.length"
+                @click="handleSaveToProfile"
+                title="Save questions to your profile"
+              >
+                <svg v-if="!isSaving" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 6v6l4 2"/>
+                </svg>
+                {{ isSaving ? 'Saving...' : 'Save to Profile' }}
+              </button>
+              <button
                 type="button"
                 class="ai-generate-btn"
                 @click="showAiModal = true"
@@ -144,11 +164,14 @@ const store = useMediaKitStore();
 const activeTab = ref('content');
 const showAiModal = ref(false);
 
-// Profile pre-population
+// Profile pre-population and save
 const {
   hasProfileData,
   getPrePopulatedData,
-  getProfileField
+  getProfileField,
+  canSaveToProfile,
+  isSaving,
+  saveToProfile
 } = useProfilePrePopulation('questions');
 
 const localData = ref({
@@ -167,6 +190,23 @@ const handleLoadFromProfile = () => {
       answer: typeof q === 'object' ? q.answer || '' : ''
     }));
     updateComponent();
+  }
+};
+
+// Save data to profile
+const handleSaveToProfile = async () => {
+  const questionsToSave = localData.value.questions.filter(q => q.question && q.question.trim());
+  if (questionsToSave.length === 0) {
+    console.warn('[QuestionsEditor] No questions to save');
+    return;
+  }
+
+  const result = await saveToProfile({ questions: questionsToSave });
+
+  if (result.success) {
+    console.log('[QuestionsEditor] ✅ Questions saved to profile');
+  } else {
+    console.error('[QuestionsEditor] ❌ Failed to save questions:', result.errors);
   }
 };
 
@@ -259,6 +299,15 @@ body.dark-mode .add-btn { background: #0c4a6e; border-color: #0369a1; color: #7d
 .profile-load-btn svg { flex-shrink: 0; }
 body.dark-mode .profile-load-btn { color: #34d399; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.25); }
 body.dark-mode .profile-load-btn:hover { background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.35); }
+.profile-save-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 12px; font-weight: 500; color: #f59e0b; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+.profile-save-btn:hover:not(:disabled) { background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.3); }
+.profile-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.profile-save-btn.is-saving { opacity: 0.7; }
+.profile-save-btn svg { flex-shrink: 0; }
+.profile-save-btn svg.spin { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+body.dark-mode .profile-save-btn { color: #fbbf24; background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.25); }
+body.dark-mode .profile-save-btn:hover:not(:disabled) { background: rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.35); }
 .ai-generate-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 12px; font-weight: 500; color: #6366f1; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 6px; cursor: pointer; transition: all 0.2s; }
 .ai-generate-btn:hover { background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.3); }
 .ai-generate-btn svg { flex-shrink: 0; }

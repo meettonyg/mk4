@@ -39,6 +39,26 @@
                 Load from Profile
               </button>
               <button
+                v-if="canSaveToProfile"
+                type="button"
+                class="profile-save-btn"
+                :class="{ 'is-saving': isSaving }"
+                :disabled="isSaving || !localData.introduction"
+                @click="handleSaveToProfile"
+                title="Save introduction to your profile"
+              >
+                <svg v-if="!isSaving" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 6v6l4 2"/>
+                </svg>
+                {{ isSaving ? 'Saving...' : 'Save to Profile' }}
+              </button>
+              <button
                 type="button"
                 class="ai-generate-btn"
                 @click="showAiModal = true"
@@ -125,11 +145,14 @@ const tabs = [
   { id: 'advanced', label: 'Advanced' }
 ];
 
-// Profile pre-population
+// Profile pre-population and save
 const {
   hasProfileData,
   getPrePopulatedData,
-  getProfileField
+  getProfileField,
+  canSaveToProfile,
+  isSaving,
+  saveToProfile
 } = useProfilePrePopulation('guest-intro');
 
 // Data from component JSON state (single source of truth)
@@ -143,6 +166,22 @@ const handleLoadFromProfile = () => {
   if (profileData.introduction) {
     localData.value.introduction = profileData.introduction;
     updatePodsField();
+  }
+};
+
+// Save data to profile
+const handleSaveToProfile = async () => {
+  if (!localData.value.introduction || !localData.value.introduction.trim()) {
+    console.warn('[GuestIntroEditor] No introduction content to save');
+    return;
+  }
+
+  const result = await saveToProfile({ introduction: localData.value.introduction });
+
+  if (result.success) {
+    console.log('[GuestIntroEditor] ✅ Guest introduction saved to profile');
+  } else {
+    console.error('[GuestIntroEditor] ❌ Failed to save guest introduction:', result.errors);
   }
 };
 
@@ -436,6 +475,48 @@ const handleAiApplied = (data) => {
 
 .profile-load-btn svg {
   flex-shrink: 0;
+}
+
+.profile-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.profile-save-btn:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.profile-save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.profile-save-btn.is-saving {
+  opacity: 0.7;
+}
+
+.profile-save-btn svg {
+  flex-shrink: 0;
+}
+
+.profile-save-btn svg.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .ai-generate-btn {

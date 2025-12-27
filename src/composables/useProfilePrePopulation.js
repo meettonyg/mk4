@@ -33,6 +33,7 @@
 import { ref, computed, onMounted } from 'vue';
 import podsDataIntegration from '../core/PodsDataIntegration.js';
 import { useMediaKitStore } from '../stores/mediaKit.js';
+import aiSaveBridge from '../services/AISaveBridge.js';
 
 /**
  * Profile Pre-Population composable for component editors
@@ -40,10 +41,24 @@ import { useMediaKitStore } from '../stores/mediaKit.js';
  * @param {string} componentType - The component type (e.g., 'biography', 'topics')
  * @returns {object} Reactive state and methods for profile data access
  */
+// Map component types to AISaveBridge types
+const COMPONENT_TO_SAVE_TYPE = {
+  'biography': 'biography',
+  'topics': 'topics',
+  'questions': 'questions',
+  'guest-intro': 'guest_intro',
+  'hero': 'biography', // Hero uses biography fields
+  'tagline': 'tagline',
+  'authority-hook': 'authority_hook'
+};
+
 export function useProfilePrePopulation(componentType = null) {
   // Track if profile data is available
   const profileDataAvailable = ref(false);
   const isLoading = ref(false);
+  const isSaving = ref(false);
+  const saveError = ref(null);
+  const lastSaveResult = ref(null);
   const prePopulatedData = ref({});
 
   // Get the media kit store for accessing podsData
@@ -189,6 +204,110 @@ export function useProfilePrePopulation(componentType = null) {
     return component._prePopulated === true;
   };
 
+  /**
+   * Get the current profile/post ID
+   * The profile ID is the WordPress post ID of the guest/profile custom post
+   */
+  const getProfileId = () => {
+    // Try multiple sources for the profile ID
+    return window.gmkbData?.postId ||
+           window.gmkbData?.post_id ||
+           window.gmkbVueData?.postId ||
+           store?.postId ||
+           null;
+  };
+
+  /**
+   * Check if we can save to profile
+   * Returns true if we have a valid profile ID and the component type is supported
+   */
+  const canSaveToProfile = computed(() => {
+    const profileId = getProfileId();
+    const saveType = COMPONENT_TO_SAVE_TYPE[componentType];
+    return !!profileId && !!saveType;
+  });
+
+  /**
+   * Save component data back to the profile/custom post
+   *
+   * @param {object} data - The data to save (should match the component's data structure)
+   * @returns {Promise<{success: boolean, saved: object, errors: array}>}
+   *
+   * @example
+   * // In BiographyEditor
+   * await saveToProfile({ biography: localData.value.biography });
+   *
+   * // In TopicsEditor
+   * await saveToProfile({ topics: localData.value.topics });
+   */
+  const saveToProfile = async (data) => {
+    const profileId = getProfileId();
+
+    if (!profileId) {
+      const error = 'No profile ID available. Cannot save to profile.';
+      console.error('[useProfilePrePopulation]', error);
+      saveError.value = error;
+      return { success: false, saved: {}, errors: [error] };
+    }
+
+    const saveType = COMPONENT_TO_SAVE_TYPE[componentType];
+    if (!saveType) {
+      const error = `Component type "${componentType}" is not supported for saving to profile.`;
+      console.error('[useProfilePrePopulation]', error);
+      saveError.value = error;
+      return { success: false, saved: {}, errors: [error] };
+    }
+
+    isSaving.value = true;
+    saveError.value = null;
+
+    try {
+      // Transform data to match AISaveBridge expected format
+      let saveData = data;
+
+      // For some types, we need to transform the data
+      if (componentType === 'questions' && Array.isArray(data.questions)) {
+        // Questions editor uses { question, answer } format
+        // AISaveBridge expects array of questions (strings or objects with question property)
+        saveData = data.questions.map(q => q.question || q);
+      } else if (componentType === 'topics' && Array.isArray(data.topics)) {
+        // Topics are already in the right format (array of strings)
+        saveData = data.topics;
+      } else if (componentType === 'biography' && data.biography) {
+        // Biography can be a string or object with short/medium/long
+        saveData = data.biography;
+      } else if (componentType === 'guest-intro' && data.introduction) {
+        // Guest intro is a string
+        saveData = data.introduction;
+      }
+
+      console.log(`[useProfilePrePopulation] Saving ${componentType} to profile #${profileId}:`, saveData);
+
+      const result = await aiSaveBridge.saveToProfile(profileId, saveType, saveData);
+
+      lastSaveResult.value = result;
+
+      if (result.success) {
+        console.log(`[useProfilePrePopulation] ✅ Successfully saved ${componentType} to profile`);
+      } else {
+        saveError.value = result.errors.join(', ');
+      }
+
+      return result;
+
+    } catch (error) {
+      console.error('[useProfilePrePopulation] Save failed:', error);
+      saveError.value = error.message;
+      return {
+        success: false,
+        saved: {},
+        errors: [error.message]
+      };
+    } finally {
+      isSaving.value = false;
+    }
+  };
+
   // Initialize on mount if component type is provided
   onMounted(() => {
     if (componentType) {
@@ -200,7 +319,11 @@ export function useProfilePrePopulation(componentType = null) {
     // State
     hasProfileData,
     isLoading,
+    isSaving,
+    saveError,
+    lastSaveResult,
     prePopulatedData,
+    canSaveToProfile,
 
     // Methods
     initialize,
@@ -212,9 +335,12 @@ export function useProfilePrePopulation(componentType = null) {
     applyToComponent,
     getFieldMappings,
     isComponentPrePopulated,
+    getProfileId,
+    saveToProfile,
 
-    // Direct access to integration (for advanced use)
-    podsDataIntegration
+    // Direct access to services (for advanced use)
+    podsDataIntegration,
+    aiSaveBridge
   };
 }
 
