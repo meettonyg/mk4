@@ -152,7 +152,7 @@
 
   <!-- Integrated Mode: Compact widget -->
   <AiWidgetFrame
-    v-else
+    v-else-if="mode === 'integrated'"
     title="Guest Introduction Generator"
     description="Create a host-ready introduction that builds anticipation and establishes credibility."
     :mode="mode"
@@ -255,6 +255,31 @@
       </div>
     </template>
   </AiWidgetFrame>
+
+  <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
+  <div v-else class="gmkb-embedded-form">
+    <div class="gmkb-embedded-fields">
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.name || 'Guest Name' }} *</label>
+        <input
+          v-model="guestName"
+          type="text"
+          class="gmkb-embedded-input"
+          :placeholder="currentIntent?.formPlaceholders?.name || 'e.g., Jane Smith'"
+        />
+      </div>
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.topic || 'Topic / Authority Hook' }} *</label>
+        <textarea
+          v-model="authorityHookText"
+          class="gmkb-embedded-input gmkb-embedded-textarea"
+          :placeholder="currentIntent?.formPlaceholders?.topic || 'e.g., Leadership coach helping executives build high-performance teams...'"
+          rows="2"
+        ></textarea>
+      </div>
+    </div>
+    <div v-if="error" class="gmkb-embedded-error">{{ error }}</div>
+  </div>
 </template>
 
 <script setup>
@@ -272,11 +297,15 @@ import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_s
 
 const props = defineProps({
   /**
-   * Mode: 'integrated' or 'standalone'
+   * Mode: 'integrated', 'standalone', or 'embedded'
+   * - standalone: Full two-panel layout with guidance
+   * - integrated: Compact widget for embedding in other components
+   * - embedded: Landing page embed with simplified form
    */
   mode: {
     type: String,
-    default: 'standalone'
+    default: 'standalone',
+    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
   },
 
   /**
@@ -284,6 +313,24 @@ const props = defineProps({
    */
   componentId: {
     type: String,
+    default: null
+  },
+
+  /**
+   * Intent object for embedded mode
+   * Contains: { id, label, contextHeading, contextDescription, formPlaceholders, formLabels }
+   */
+  intent: {
+    type: Object,
+    default: null
+  },
+
+  /**
+   * Profile data for pre-population (embedded mode)
+   * Passed from EmbeddedToolWrapper via scoped slot
+   */
+  profileData: {
+    type: Object,
     default: null
   },
 
@@ -304,7 +351,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['applied', 'generated']);
+const emit = defineEmits(['applied', 'generated', 'preview-update', 'update:can-generate']);
 
 // Use composables
 const {
@@ -325,6 +372,10 @@ const name = ref(props.initialName);
 const biography = ref(props.initialBiography);
 const credentials = ref('');
 const tagline = ref('');
+
+// Embedded mode state (simplified field names)
+const guestName = ref('');
+const authorityHookText = ref('');
 
 // Inject profile data from EmbeddedToolWrapper (for embedded mode)
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
@@ -356,6 +407,19 @@ function populateFromProfile(profileData) {
   // Populate tagline
   if (profileData.tagline && !tagline.value) {
     tagline.value = profileData.tagline;
+  }
+
+  // Populate embedded mode fields
+  if (props.mode === 'embedded') {
+    if (fullName && !guestName.value) {
+      guestName.value = fullName;
+    }
+
+    // Populate authority hook text from profile authority hook or biography
+    const authorityHook = profileData.authority_hook || profileData.biography || '';
+    if (authorityHook && !authorityHookText.value) {
+      authorityHookText.value = authorityHook;
+    }
   }
 }
 
@@ -397,9 +461,33 @@ const examples = [
 ];
 
 /**
+ * Current intent (for embedded mode)
+ */
+const currentIntent = computed(() => {
+  return props.intent || null;
+});
+
+/**
+ * Generate preview text for embedded mode
+ */
+const embeddedPreviewText = computed(() => {
+  const nameVal = guestName.value || '[Guest Name]';
+  const topicVal = authorityHookText.value || '[Topic/Authority Hook]';
+
+  if (!guestName.value && !authorityHookText.value) {
+    return null; // Show default preview
+  }
+
+  return `"Introducing <strong>${nameVal}</strong>, ${topicVal}."`;
+});
+
+/**
  * Can generate check
  */
 const canGenerate = computed(() => {
+  if (props.mode === 'embedded') {
+    return guestName.value.trim() && authorityHookText.value.trim();
+  }
   return name.value.trim() && biography.value.trim();
 });
 
@@ -463,6 +551,47 @@ watch(
   },
   { immediate: true }
 );
+
+/**
+ * Watch for profileData prop changes (embedded mode with EmbeddedToolWrapper)
+ */
+watch(
+  () => props.profileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
+
+/**
+ * Watch for field changes in embedded mode and emit preview updates
+ */
+watch(
+  () => [guestName.value, authorityHookText.value],
+  () => {
+    if (props.mode === 'embedded') {
+      emit('preview-update', {
+        previewHtml: embeddedPreviewText.value,
+        fields: {
+          name: guestName.value,
+          topic: authorityHookText.value
+        }
+      });
+    }
+  },
+  { deep: true }
+);
+
+/**
+ * Emit can-generate status changes to parent (for embedded mode)
+ */
+watch(canGenerate, (newValue) => {
+  if (props.mode === 'embedded') {
+    emit('update:can-generate', !!newValue);
+  }
+}, { immediate: true });
 </script>
 
 <style scoped>
@@ -575,5 +704,66 @@ watch(
 .gmkb-ai-intro__tip-icon {
   flex-shrink: 0;
   margin-top: 1px;
+}
+
+/* Embedded Mode Styles (for landing page) */
+.gmkb-embedded-form {
+  width: 100%;
+}
+
+.gmkb-embedded-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.gmkb-embedded-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.gmkb-embedded-label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.gmkb-embedded-input {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  background: var(--mkcg-bg-secondary, #f9fafb);
+  box-sizing: border-box;
+  font-size: 15px;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.gmkb-embedded-input:focus {
+  outline: none;
+  border-color: var(--mkcg-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.gmkb-embedded-input::placeholder {
+  color: var(--mkcg-text-light, #94a3b8);
+}
+
+.gmkb-embedded-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.gmkb-embedded-error {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 14px;
 }
 </style>

@@ -40,8 +40,74 @@
     "canonicalPath": "/tools/blog-generator/"
   },
   "landingContent": {
-    "heroTagline": "Create Blog Content That Establishes Authority",
-    "heroSubtitle": "Generate well-structured blog posts and articles that showcase your expertise and engage your target audience.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free Blog Generator",
+      "subhead": "Generate well-structured blog posts and articles that showcase your expertise and engage your target audience.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 10,000+ writers" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "Blog Generator",
+      "subhead": "Create blog content that establishes your authority and drives traffic.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "howto",
+        "label": "How-To Guide",
+        "contextHeading": "Teach with step-by-step content",
+        "contextDescription": "Create actionable how-to guides that demonstrate your expertise and provide real value to readers.",
+        "formLabels": {
+          "topic": "What are you teaching?",
+          "audience": "Who is this for?"
+        },
+        "formPlaceholders": {
+          "topic": "e.g. How to land podcast interviews",
+          "audience": "e.g. Business coaches"
+        }
+      },
+      {
+        "id": "thought",
+        "label": "Thought Leadership",
+        "contextHeading": "Share your unique perspective",
+        "contextDescription": "Write opinion pieces and thought leadership content that positions you as an authority in your field.",
+        "formLabels": {
+          "topic": "Your topic or thesis",
+          "angle": "Your unique perspective"
+        },
+        "formPlaceholders": {
+          "topic": "e.g. Why traditional marketing is dead",
+          "angle": "e.g. Personal experience with a pivot"
+        }
+      },
+      {
+        "id": "listicle",
+        "label": "List Article",
+        "contextHeading": "Create scannable, shareable content",
+        "contextDescription": "Generate list-style articles that are easy to read, share, and rank for search engines.",
+        "formLabels": {
+          "topic": "What's your list about?",
+          "count": "How many items?"
+        },
+        "formPlaceholders": {
+          "topic": "e.g. Productivity tips for entrepreneurs",
+          "count": "e.g. 7 or 10"
+        }
+      }
+    ],
+    "definition": {
+      "title": "What Makes a Great Blog Post?",
+      "content": "A great blog post solves a specific problem for a specific audience. It has a compelling hook, delivers on its promise, uses clear structure, and ends with a next step for the reader."
+    },
     "formula": "[HOOK] + [PROBLEM] + [SOLUTION STEPS] + [EXAMPLES] + [CTA] = Engaging Blog Post",
     "tips": [
       "Hook them in the first line - you have 3 seconds to earn their attention",
@@ -120,6 +186,21 @@
         "answer": "Yes! Generate a draft, then customize it for the specific publication's audience and style guidelines."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "Cut my blog writing time by 70%. I use the generated outline and draft as my starting point every time.",
+        "author": "Linda H.",
+        "role": "Marketing Consultant",
+        "rating": "4.8"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just write blogs. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["WordPress", "Medium", "LinkedIn", "Substack"],
     "relatedToolSlugs": [
       "content-repurposer",
       "social-post-generator",

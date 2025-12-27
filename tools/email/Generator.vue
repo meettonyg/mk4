@@ -149,7 +149,7 @@
 
   <!-- Integrated Mode: Compact widget -->
   <AiWidgetFrame
-    v-else
+    v-else-if="mode === 'integrated'"
     title="Email Writer"
     description="Create professional emails for outreach, follow-ups, and more."
     :mode="mode"
@@ -241,6 +241,62 @@
       />
     </template>
   </AiWidgetFrame>
+
+  <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
+  <div v-else class="gmkb-embedded-form">
+    <!-- Simplified form for landing page -->
+    <div class="gmkb-embedded-fields">
+      <div
+        v-for="field in embeddedFields"
+        :key="field.key"
+        class="gmkb-embedded-field"
+      >
+        <label class="gmkb-embedded-label">{{ field.label }}</label>
+        <input
+          v-if="field.type === 'text'"
+          v-model="formData[field.key]"
+          type="text"
+          class="gmkb-embedded-input"
+          :placeholder="field.placeholder"
+          @input="handleEmbeddedFieldChange"
+        />
+        <textarea
+          v-else-if="field.type === 'textarea'"
+          v-model="formData[field.key]"
+          class="gmkb-embedded-input gmkb-embedded-textarea"
+          :placeholder="field.placeholder"
+          :rows="field.rows || 3"
+          @input="handleEmbeddedFieldChange"
+        ></textarea>
+        <select
+          v-else-if="field.type === 'select'"
+          v-model="formData[field.key]"
+          class="gmkb-embedded-input gmkb-embedded-select"
+          @change="handleEmbeddedFieldChange"
+        >
+          <option
+            v-for="option in field.options"
+            :key="option.value"
+            :value="option.value"
+          >
+            {{ option.label }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Results display for embedded mode -->
+    <div v-if="generatedContent" class="gmkb-embedded-result">
+      <div class="gmkb-embedded-result__content">
+        {{ generatedContent }}
+      </div>
+    </div>
+
+    <!-- Error display -->
+    <div v-if="error" class="gmkb-embedded-error">
+      {{ error }}
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -258,11 +314,15 @@ import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_s
 
 const props = defineProps({
   /**
-   * Mode: 'integrated' or 'standalone'
+   * Mode: 'integrated', 'standalone', or 'embedded'
+   * - standalone: Full two-panel layout with guidance
+   * - integrated: Compact widget for embedding in other components
+   * - embedded: Landing page embed with simplified form
    */
   mode: {
     type: String,
-    default: 'standalone'
+    default: 'standalone',
+    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
   },
 
   /**
@@ -271,10 +331,28 @@ const props = defineProps({
   componentId: {
     type: String,
     default: null
+  },
+
+  /**
+   * Intent object for embedded mode
+   * Contains: { id, label, contextHeading, contextDescription, formPlaceholders, formLabels }
+   */
+  intent: {
+    type: Object,
+    default: null
+  },
+
+  /**
+   * Profile data for pre-population (embedded mode)
+   * Passed from EmbeddedToolWrapper via scoped slot
+   */
+  profileData: {
+    type: Object,
+    default: null
   }
 });
 
-const emit = defineEmits(['applied', 'generated']);
+const emit = defineEmits(['applied', 'generated', 'change', 'preview-update', 'update:can-generate']);
 
 // Initialize form data
 const formData = reactive({
@@ -296,6 +374,79 @@ const {
   generate,
   copyToClipboard
 } = useAIGenerator('email');
+
+// Inject profile data from EmbeddedToolWrapper (for embedded mode)
+// This provides reactive updates when profile is selected from dropdown
+const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+
+/**
+ * Embedded mode field configuration
+ * In embedded mode, we show a simplified form based on the email purpose
+ */
+const embeddedFields = computed(() => {
+  const defaultLabels = {
+    purpose: 'Email Purpose',
+    recipient: 'Who are you writing to?',
+    context: 'What do you want to say?'
+  };
+  const defaultPlaceholders = {
+    purpose: 'Select email purpose',
+    recipient: 'e.g., podcast host, potential client',
+    context: 'What do they need to know? What are you asking for?'
+  };
+
+  return [
+    {
+      key: 'purpose',
+      type: 'select',
+      label: props.intent?.formLabels?.purpose || defaultLabels.purpose,
+      placeholder: props.intent?.formPlaceholders?.purpose || defaultPlaceholders.purpose,
+      options: [
+        { value: 'outreach', label: 'Cold Outreach' },
+        { value: 'followup', label: 'Follow-Up' },
+        { value: 'introduction', label: 'Self Introduction' },
+        { value: 'pitch', label: 'Pitch/Proposal' },
+        { value: 'thank_you', label: 'Thank You' },
+        { value: 'booking', label: 'Booking Request' }
+      ]
+    },
+    {
+      key: 'recipient',
+      type: 'text',
+      label: props.intent?.formLabels?.recipient || defaultLabels.recipient,
+      placeholder: props.intent?.formPlaceholders?.recipient || defaultPlaceholders.recipient
+    },
+    {
+      key: 'context',
+      type: 'textarea',
+      label: props.intent?.formLabels?.context || defaultLabels.context,
+      placeholder: props.intent?.formPlaceholders?.context || defaultPlaceholders.context,
+      rows: 3
+    }
+  ];
+});
+
+/**
+ * Generate preview text for embedded mode
+ */
+const embeddedPreviewText = computed(() => {
+  const recipientVal = formData.recipient || '[RECIPIENT]';
+  const contextVal = formData.context || '[YOUR MESSAGE]';
+  const purposeLabel = embeddedFields.value.find(f => f.key === 'purpose')?.options.find(o => o.value === formData.purpose)?.label || 'Email';
+
+  if (!formData.recipient && !formData.context) {
+    return null; // Show default preview
+  }
+
+  return `<strong>${purposeLabel}</strong> to <strong>${recipientVal}</strong>: "${contextVal}"`;
+});
+
+/**
+ * Check if embedded form has minimum required fields
+ */
+const canGenerateEmbedded = computed(() => {
+  return formData.recipient?.trim() && formData.context?.trim();
+});
 
 /**
  * Email formula for guidance panel
@@ -375,6 +526,83 @@ const handleApply = () => {
     content: generatedContent.value
   });
 };
+
+/**
+ * Handle embedded field change
+ */
+const handleEmbeddedFieldChange = () => {
+  emit('change', { formData: { ...formData } });
+};
+
+/**
+ * Populate form fields from profile data
+ */
+function populateFromProfile(profileData) {
+  if (!profileData) return;
+
+  // Pre-populate fields from profile data if available
+  // Email tool doesn't have specific profile fields, but we could use general info
+  if (profileData.bio) {
+    formData.aboutYou = profileData.bio;
+  }
+}
+
+/**
+ * Watch for profileData prop changes (embedded mode with EmbeddedToolWrapper)
+ * Pre-populates form fields when profile data is provided
+ */
+watch(
+  () => props.profileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
+
+/**
+ * Watch for injected profile data from EmbeddedToolWrapper (embedded mode)
+ * This is the primary reactive source for profile changes in embedded mode
+ */
+watch(
+  injectedProfileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
+
+/**
+ * Watch for field changes in embedded mode and emit preview updates
+ */
+watch(
+  () => [formData.recipient, formData.context, formData.purpose],
+  () => {
+    if (props.mode === 'embedded') {
+      emit('preview-update', {
+        previewHtml: embeddedPreviewText.value,
+        fields: {
+          purpose: formData.purpose,
+          recipient: formData.recipient,
+          context: formData.context
+        }
+      });
+    }
+  },
+  { deep: true }
+);
+
+/**
+ * Emit can-generate status changes to parent (for embedded mode)
+ */
+watch(canGenerateEmbedded, (newValue) => {
+  if (props.mode === 'embedded') {
+    emit('update:can-generate', !!newValue);
+  }
+}, { immediate: true });
 </script>
 
 <style scoped>
@@ -467,5 +695,91 @@ const handleApply = () => {
   outline: none;
   border-color: var(--gmkb-ai-primary, #6366f1);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Embedded Mode Styles (for landing page) */
+.gmkb-embedded-form {
+  width: 100%;
+}
+
+.gmkb-embedded-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.gmkb-embedded-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.gmkb-embedded-label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.gmkb-embedded-input {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  background: var(--mkcg-bg-secondary, #f9fafb);
+  box-sizing: border-box;
+  font-size: 15px;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.gmkb-embedded-input:focus {
+  outline: none;
+  border-color: var(--mkcg-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.gmkb-embedded-input::placeholder {
+  color: var(--mkcg-text-light, #94a3b8);
+}
+
+.gmkb-embedded-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.gmkb-embedded-select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+.gmkb-embedded-result {
+  margin-top: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid #86efac;
+  border-radius: 8px;
+}
+
+.gmkb-embedded-result__content {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #166534;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.gmkb-embedded-error {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 14px;
 }
 </style>

@@ -40,8 +40,74 @@
     "canonicalPath": "/tools/impact-intro-builder/"
   },
   "landingContent": {
-    "heroTagline": "Lead with Your Results, Not Your Resume",
-    "heroSubtitle": "Create powerful introductions that immediately communicate the transformation you deliver and the results you achieve.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free Impact Intro Builder",
+      "subhead": "Create powerful introductions that immediately communicate the transformation you deliver and the results you achieve.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 7,000+ professionals" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "Impact Intro Builder",
+      "subhead": "Lead with your results, not your resume. Make every introduction count.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "networking",
+        "label": "Networking Intro",
+        "contextHeading": "Start conversations with impact",
+        "contextDescription": "Create an introduction that leads with results and makes people want to know more about how you achieve them.",
+        "formLabels": {
+          "results": "Your biggest results",
+          "audience": "Who do you help?"
+        },
+        "formPlaceholders": {
+          "results": "e.g. Helped 200+ founders scale to $1M",
+          "audience": "e.g. SaaS Entrepreneurs"
+        }
+      },
+      {
+        "id": "profile",
+        "label": "Profile Headline",
+        "contextHeading": "Make your profile stand out",
+        "contextDescription": "Generate impact-focused headlines for LinkedIn, your website, or anywhere you need to make an immediate impression.",
+        "formLabels": {
+          "achievement": "Key achievement or impact",
+          "mission": "Your mission"
+        },
+        "formPlaceholders": {
+          "achievement": "e.g. Built 3 successful exits",
+          "mission": "e.g. Help executives build wealth without burnout"
+        }
+      },
+      {
+        "id": "speaking",
+        "label": "Speaking Opener",
+        "contextHeading": "Command attention from word one",
+        "contextDescription": "Create a powerful opening that establishes your credibility before you even start your presentation.",
+        "formLabels": {
+          "impact": "Your impact statement",
+          "topic": "What you're speaking about"
+        },
+        "formPlaceholders": {
+          "impact": "e.g. Trained 5,000+ leaders",
+          "topic": "e.g. Leadership in the AI Era"
+        }
+      }
+    ],
+    "definition": {
+      "title": "What is an Impact Intro?",
+      "content": "An impact intro is a brief statement that leads with the transformation you create rather than your title or credentials. It answers 'what have you accomplished?' before 'what do you do?' to immediately establish credibility and relevance."
+    },
     "formula": "I've [WHERE]. My mission is [WHY].",
     "tips": [
       "Lead with impact - start with the transformation you create, not your title",
@@ -124,6 +190,21 @@
         "answer": "Use it as your opening line in networking, the first sentence of your bio, and the headline of your LinkedIn profile."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "Changed my LinkedIn headline to an impact intro. Profile views up 400% in the first month.",
+        "author": "Daniel K.",
+        "role": "Executive Coach",
+        "rating": "4.9"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just create impact intros. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["LinkedIn", "Website", "Networking Events", "Presentations"],
     "relatedToolSlugs": [
       "elevator-pitch-generator",
       "authority-hook-builder",

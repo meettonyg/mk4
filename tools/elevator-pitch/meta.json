@@ -40,8 +40,74 @@
     "canonicalPath": "/tools/elevator-pitch-generator/"
   },
   "landingContent": {
-    "heroTagline": "Deliver Your Value in 30 Seconds Flat",
-    "heroSubtitle": "Create a compelling elevator pitch that captures attention and opens doors to new opportunities.",
+    "hero": {
+      "badge": "✨ Free AI Tool",
+      "h1": "Free Elevator Pitch Generator",
+      "subhead": "Create a compelling 30-second pitch that captures attention and opens doors to new opportunities.",
+      "microProof": [
+        { "icon": "✓", "text": "Used by 12,000+ professionals" },
+        { "icon": "✓", "text": "No signup required" },
+        { "icon": "✓", "text": "Free forever" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "✨ AI Tool",
+      "h1": "Elevator Pitch Generator",
+      "subhead": "Deliver your value in 30 seconds flat with a pitch that sticks.",
+      "microProof": [
+        { "icon": "✓", "text": "Unlimited generations" },
+        { "icon": "✓", "text": "Saves to profile" },
+        { "icon": "✓", "text": "Syncs across tools" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "networking",
+        "label": "Networking Event",
+        "contextHeading": "Make connections that count",
+        "contextDescription": "Create a conversational pitch perfect for networking events that sparks interest and opens doors to meaningful conversations.",
+        "formLabels": {
+          "role": "What do you do?",
+          "audience": "Who do you help?"
+        },
+        "formPlaceholders": {
+          "role": "e.g. Business Coach",
+          "audience": "e.g. SaaS Founders"
+        }
+      },
+      {
+        "id": "investor",
+        "label": "Investor Pitch",
+        "contextHeading": "Get investors interested fast",
+        "contextDescription": "Craft a pitch that quickly communicates your opportunity and gets investors asking for more details.",
+        "formLabels": {
+          "business": "What's your business?",
+          "traction": "Key traction or proof point"
+        },
+        "formPlaceholders": {
+          "business": "e.g. AI Marketing Platform",
+          "traction": "e.g. $500K ARR, 200 customers"
+        }
+      },
+      {
+        "id": "job",
+        "label": "Job Interview",
+        "contextHeading": "Stand out from other candidates",
+        "contextDescription": "Create a professional pitch that highlights your unique value and makes a memorable first impression.",
+        "formLabels": {
+          "expertise": "Your key expertise",
+          "impact": "Your biggest impact"
+        },
+        "formPlaceholders": {
+          "expertise": "e.g. Marketing Analytics",
+          "impact": "e.g. Grew revenue 300% at previous role"
+        }
+      }
+    ],
+    "definition": {
+      "title": "What is an Elevator Pitch?",
+      "content": "An elevator pitch is a brief, persuasive speech that communicates who you are, what you do, and why it matters—all within 30 seconds (about 75-90 words). The goal isn't to close the deal, but to earn interest for a longer conversation."
+    },
     "formula": "[Hook] → [Problem You Solve] → [Your Unique Solution] → [Proof/Credibility] → [Call to Action]",
     "tips": [
       "Start with a hook that grabs attention - a surprising stat, question, or bold statement",
@@ -121,6 +187,21 @@
         "answer": "Yes! Create variations for different audiences - what works at a tech conference differs from a general networking event."
       }
     ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "Used my new pitch at a conference last week. Got three meetings booked before the first session even started.",
+        "author": "James L.",
+        "role": "Startup Founder",
+        "rating": "4.9"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just perfect your pitch. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["LinkedIn", "Networking Events", "Conferences", "Cold Outreach"],
     "relatedToolSlugs": [
       "sound-bite-generator",
       "authority-hook-builder",
