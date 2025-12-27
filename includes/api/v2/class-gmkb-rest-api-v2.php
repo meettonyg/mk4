@@ -521,6 +521,58 @@ class GMKB_REST_API_V2 {
             // Theme is part of state - no separate save needed (already in $state_data above)
             // Theme validation was done during state data preparation
 
+            // PRE-RENDER ARCHITECTURE: Save rendered HTML for frontend display
+            // This eliminates the need for PHP template rendering on the frontend
+            $rendered_content = $body['rendered_content'] ?? '';
+            if (!empty($rendered_content)) {
+                // Sanitize HTML while preserving necessary elements
+                // Use wp_kses with a permissive allowed list for media kit content
+                $allowed_html = wp_kses_allowed_html('post');
+
+                // Add additional allowed elements for media kit components
+                $allowed_html['svg'] = array(
+                    'class' => true,
+                    'viewbox' => true,
+                    'xmlns' => true,
+                    'fill' => true,
+                    'stroke' => true,
+                    'width' => true,
+                    'height' => true,
+                    'style' => true,
+                );
+                $allowed_html['path'] = array(
+                    'd' => true,
+                    'fill' => true,
+                    'stroke' => true,
+                    'stroke-width' => true,
+                );
+                $allowed_html['circle'] = array(
+                    'cx' => true,
+                    'cy' => true,
+                    'r' => true,
+                    'fill' => true,
+                );
+
+                // Allow data attributes on all elements
+                foreach ($allowed_html as $tag => $attrs) {
+                    if (is_array($attrs)) {
+                        $allowed_html[$tag]['data-*'] = true;
+                        $allowed_html[$tag]['class'] = true;
+                        $allowed_html[$tag]['id'] = true;
+                        $allowed_html[$tag]['style'] = true;
+                    }
+                }
+
+                $sanitized_html = wp_kses($rendered_content, $allowed_html);
+                update_post_meta($post_id, 'gmkb_rendered_html', $sanitized_html);
+
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('📄 GMKB REST API v2: Pre-rendered HTML saved');
+                    error_log('  - Original size: ' . strlen($rendered_content) . ' bytes');
+                    error_log('  - Sanitized size: ' . strlen($sanitized_html) . ' bytes');
+                }
+            }
+
             // ROOT FIX: Clear cache after successful save
             $cache_key = 'gmkb_mediakit_' . $post_id;
             delete_transient($cache_key);

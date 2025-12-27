@@ -456,13 +456,38 @@ class GMKB_Frontend_Display {
             
             <?php
             // Inject theme customizations as inline CSS
+            // This enables dynamic theming even with pre-rendered HTML
             $this->render_theme_customizations($theme_customizations, $post_id);
             ?>
-            
-            <?php if (!empty($sections)): ?>
-                <?php $this->render_sections($sections, $components, $post_id, $atts); ?>
+
+            <?php
+            // PRE-RENDER ARCHITECTURE: Check for pre-rendered HTML first
+            // This eliminates the need for PHP template rendering, ensuring
+            // 100% consistency between builder preview and frontend display
+            $pre_rendered_html = get_post_meta($post_id, 'gmkb_rendered_html', true);
+
+            if (!empty($pre_rendered_html)):
+                // Use pre-rendered HTML directly - no PHP processing needed
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('[GMKB Frontend] Using pre-rendered HTML (' . strlen($pre_rendered_html) . ' bytes)');
+                }
+            ?>
+                <div class="gmkb-prerendered-content">
+                    <?php echo $pre_rendered_html; // Already sanitized on save ?>
+                </div>
             <?php else: ?>
-                <?php $this->render_components($ordered_components, $post_id, $atts); ?>
+                <?php
+                // FALLBACK: Legacy PHP rendering for older media kits
+                // This path will be used until the user re-saves in the builder
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('[GMKB Frontend] No pre-rendered HTML found, using legacy PHP rendering');
+                }
+                ?>
+                <?php if (!empty($sections)): ?>
+                    <?php $this->render_sections($sections, $components, $post_id, $atts); ?>
+                <?php else: ?>
+                    <?php $this->render_components($ordered_components, $post_id, $atts); ?>
+                <?php endif; ?>
             <?php endif; ?>
             
         </div>
@@ -479,8 +504,13 @@ class GMKB_Frontend_Display {
         console.group('✅ GMKB Frontend - Rendering Complete');
         console.log('Post ID:', <?php echo json_encode($post_id); ?>);
         console.log('Theme:', <?php echo json_encode($theme_id); ?>);
+        console.log('Render Mode:', <?php echo json_encode(!empty($pre_rendered_html) ? 'pre-rendered' : 'legacy-php'); ?>);
+        <?php if (!empty($pre_rendered_html)): ?>
+        console.log('Pre-rendered HTML Size:', <?php echo strlen($pre_rendered_html); ?>, 'bytes');
+        <?php else: ?>
         console.log('Sections:', <?php echo count($sections); ?>);
         console.log('Components:', <?php echo count($ordered_components ?? $components); ?>);
+        <?php endif; ?>
         console.log('Timestamp:', new Date().toISOString());
         console.groupEnd();
         

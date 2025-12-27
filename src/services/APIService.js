@@ -365,7 +365,9 @@ export class APIService {
         layout: sanitizedState.layout || [],
         globalSettings: sanitizedState.globalSettings || {},
         theme: sanitizedState.theme || 'professional_clean',
-        themeCustomizations: sanitizedState.themeCustomizations || {}
+        themeCustomizations: sanitizedState.themeCustomizations || {},
+        // PRE-RENDER ARCHITECTURE: Include rendered HTML for frontend display
+        rendered_content: sanitizedState.rendered_content || ''
       };
       
       // CRITICAL DEBUG: Log what theme is being saved

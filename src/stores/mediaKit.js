@@ -509,6 +509,42 @@ export const useMediaKitStore = defineStore('mediaKit', {
           globalSettings: this.globalSettings,
           layout: this.sections.map(s => s.section_id) // Add layout for compatibility
         };
+
+        // PRE-RENDER ARCHITECTURE: Capture rendered HTML from preview
+        // This HTML will be used directly on the frontend, eliminating need for PHP templates
+        const previewElement = document.getElementById('media-kit-preview');
+        if (previewElement) {
+          // Clone the preview to avoid capturing editor UI elements
+          const clone = previewElement.cloneNode(true);
+
+          // Remove builder-only elements (controls, placeholders, etc.)
+          clone.querySelectorAll('.component-controls, .section-controls, .drop-placeholder, .gmkb-section__header, .component-drop-zone > .drop-placeholder, [data-builder-only]').forEach(el => el.remove());
+
+          // Remove component wrapper hover/selection states
+          clone.querySelectorAll('.gmkb-component-wrapper').forEach(wrapper => {
+            wrapper.classList.remove('is-selected', 'is-hovered', 'is-editing');
+          });
+
+          // Remove empty drop zones but keep content
+          clone.querySelectorAll('.component-drop-zone').forEach(zone => {
+            // Replace zone with its children
+            const parent = zone.parentNode;
+            while (zone.firstChild) {
+              parent.insertBefore(zone.firstChild, zone);
+            }
+            zone.remove();
+          });
+
+          // Get clean HTML
+          state.rendered_content = clone.innerHTML;
+          console.log('📄 Pre-rendered HTML captured:', {
+            length: state.rendered_content.length,
+            preview: state.rendered_content.substring(0, 200) + '...'
+          });
+        } else {
+          console.warn('⚠️ Preview element not found, skipping pre-render');
+          state.rendered_content = '';
+        }
         
         // ═══════════════════════════════════════════════════════════════
         // COMPREHENSIVE DEBUG LOGGING
