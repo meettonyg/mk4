@@ -525,80 +525,30 @@ class GMKB_REST_API_V2 {
             // This eliminates the need for PHP template rendering on the frontend
             $rendered_content = $body['rendered_content'] ?? '';
             if (!empty($rendered_content)) {
-                // Sanitize HTML with specific allowed attributes per tag (principle of least privilege)
-                $allowed_html = wp_kses_allowed_html('post');
+                // Simple sanitization - remove dangerous tags only
+                // We trust the Vue-generated HTML but strip potentially dangerous elements
+                $sanitized_html = $rendered_content;
 
-                // SVG elements for icons
-                $allowed_html['svg'] = array(
-                    'class' => true,
-                    'viewbox' => true,
-                    'xmlns' => true,
-                    'fill' => true,
-                    'stroke' => true,
-                    'width' => true,
-                    'height' => true,
-                    'aria-hidden' => true,
-                );
-                $allowed_html['path'] = array(
-                    'd' => true,
-                    'fill' => true,
-                    'stroke' => true,
-                    'stroke-width' => true,
-                    'stroke-linecap' => true,
-                    'stroke-linejoin' => true,
-                );
-                $allowed_html['circle'] = array(
-                    'cx' => true,
-                    'cy' => true,
-                    'r' => true,
-                    'fill' => true,
-                );
-                $allowed_html['rect'] = array(
-                    'x' => true,
-                    'y' => true,
-                    'width' => true,
-                    'height' => true,
-                    'fill' => true,
-                    'rx' => true,
-                    'ry' => true,
-                );
-                $allowed_html['line'] = array(
-                    'x1' => true,
-                    'y1' => true,
-                    'x2' => true,
-                    'y2' => true,
-                    'stroke' => true,
-                );
-                $allowed_html['polyline'] = array(
-                    'points' => true,
-                    'fill' => true,
-                    'stroke' => true,
-                );
-                $allowed_html['polygon'] = array(
-                    'points' => true,
-                    'fill' => true,
-                );
+                // Remove script tags and their content
+                $sanitized_html = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $sanitized_html);
 
-                // Component-specific data attributes only on structural elements
-                $structural_tags = array('div', 'section', 'article', 'aside', 'header', 'footer', 'main', 'nav');
-                foreach ($structural_tags as $tag) {
-                    if (isset($allowed_html[$tag])) {
-                        $allowed_html[$tag]['data-component-id'] = true;
-                        $allowed_html[$tag]['data-component-type'] = true;
-                        $allowed_html[$tag]['data-section-id'] = true;
-                        $allowed_html[$tag]['data-section-type'] = true;
-                    }
-                }
+                // Remove onclick, onerror, onload and other event handlers
+                $sanitized_html = preg_replace('/\s+on\w+\s*=\s*["\'][^"\']*["\']/i', '', $sanitized_html);
+                $sanitized_html = preg_replace('/\s+on\w+\s*=\s*[^\s>]*/i', '', $sanitized_html);
 
-                // Allow style on specific display elements only
-                $styleable_tags = array('div', 'section', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6');
-                foreach ($styleable_tags as $tag) {
-                    if (isset($allowed_html[$tag])) {
-                        $allowed_html[$tag]['style'] = true;
-                    }
-                }
+                // Remove javascript: URLs
+                $sanitized_html = preg_replace('/href\s*=\s*["\']javascript:[^"\']*["\']/i', 'href="#"', $sanitized_html);
 
-                $sanitized_html = wp_kses($rendered_content, $allowed_html);
+                // Remove data: URLs in src (potential XSS vector)
+                $sanitized_html = preg_replace('/src\s*=\s*["\']data:[^"\']*["\']/i', 'src=""', $sanitized_html);
+
+                // Remove iframe tags
+                $sanitized_html = preg_replace('/<iframe\b[^>]*>(.*?)<\/iframe>/is', '', $sanitized_html);
+
+                // Remove object/embed tags
+                $sanitized_html = preg_replace('/<object\b[^>]*>(.*?)<\/object>/is', '', $sanitized_html);
+                $sanitized_html = preg_replace('/<embed\b[^>]*>/i', '', $sanitized_html);
+
                 update_post_meta($post_id, 'gmkb_rendered_html', $sanitized_html);
 
                 if (defined('WP_DEBUG') && WP_DEBUG) {

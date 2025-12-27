@@ -537,8 +537,14 @@ export const useMediaKitStore = defineStore('mediaKit', {
             wrapper.classList.remove('is-selected', 'is-hovered', 'is-editing');
           });
 
-          // Get clean HTML
-          state.rendered_content = clone.innerHTML;
+          // Get clean HTML and strip Vue comment nodes (<!---->) which can corrupt with wp_kses
+          let cleanHtml = clone.innerHTML;
+          // Remove Vue empty comment nodes
+          cleanHtml = cleanHtml.replace(/<!---->/g, '');
+          // Remove any other HTML comments
+          cleanHtml = cleanHtml.replace(/<!--[\s\S]*?-->/g, '');
+
+          state.rendered_content = cleanHtml;
           console.log('📄 Pre-rendered HTML captured:', {
             beforeLength,
             afterLength: state.rendered_content.length,
