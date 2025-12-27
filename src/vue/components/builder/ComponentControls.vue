@@ -1,5 +1,5 @@
 <template>
-  <div class="component-controls">
+  <div class="component-controls" data-builder-only>
     <div class="component-controls__bar">
       <span class="component-controls__label">{{ componentLabel }}</span>
       
