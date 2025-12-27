@@ -551,9 +551,28 @@ export const useMediaKitStore = defineStore('mediaKit', {
             strippedBytes: beforeLength - state.rendered_content.length,
             preview: state.rendered_content.substring(0, 500)
           });
+
+          // CRITICAL: Also capture component CSS so frontend can render styles
+          // ComponentStyleService generates CSS that's injected into <head>, but that
+          // CSS isn't included in the pre-rendered HTML. We need to save it separately.
+          const componentStyleService = window.GMKB?.services?.componentStyle;
+          if (componentStyleService) {
+            const componentCSS = componentStyleService.getAllCSS(cleanComponents);
+            const sectionCSS = componentStyleService.getAllSectionCSS(this.sections);
+            state.rendered_css = [sectionCSS, componentCSS].filter(Boolean).join('\n');
+            console.log('🎨 Pre-rendered CSS captured:', {
+              componentCSSLength: componentCSS.length,
+              sectionCSSLength: sectionCSS.length,
+              totalLength: state.rendered_css.length
+            });
+          } else {
+            console.warn('⚠️ ComponentStyleService not available, skipping CSS capture');
+            state.rendered_css = '';
+          }
         } else {
           console.warn('⚠️ Preview element not found, skipping pre-render');
           state.rendered_content = '';
+          state.rendered_css = '';
         }
         
         // ═══════════════════════════════════════════════════════════════

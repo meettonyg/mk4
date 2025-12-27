@@ -367,13 +367,16 @@ export class APIService {
         theme: sanitizedState.theme || 'professional_clean',
         themeCustomizations: sanitizedState.themeCustomizations || {},
         // PRE-RENDER ARCHITECTURE: Include rendered HTML for frontend display
-        rendered_content: sanitizedState.rendered_content || ''
+        rendered_content: sanitizedState.rendered_content || '',
+        // PRE-RENDER ARCHITECTURE: Include component CSS for frontend styling
+        rendered_css: sanitizedState.rendered_css || ''
       };
-      
+
       // CRITICAL DEBUG: Log what's being saved
       console.log('🎨 APIService SAVE: Payload details:', {
         'payload.theme': payload.theme,
         'rendered_content length': payload.rendered_content?.length || 0,
+        'rendered_css length': payload.rendered_css?.length || 0,
         'rendered_content preview': payload.rendered_content?.substring(0, 200) || '(empty)',
         'components': Object.keys(payload.components).length,
         'sections': payload.sections.length
