@@ -37,7 +37,7 @@
             :intent="currentIntent"
             :placeholders="currentIntent?.formPlaceholders || {}"
             :labels="currentIntent?.formLabels || {}"
-            :profileData="profileData"
+            :profileData="loadedProfileData"
             :hasSelectedProfile="hasSelectedProfile"
           ></slot>
         </div>
@@ -637,13 +637,18 @@ async function copyToClipboard() {
 }
 
 // Profile handlers (logged-in users)
+// Store loaded profile data locally (since composable instances are separate)
+const loadedProfileData = ref(null);
+
 function handleProfileLoaded(data) {
+  loadedProfileData.value = data;
   emit('profile-loaded', data);
   // Reset saved state when profile changes
   savedToProfile.value = false;
 }
 
 function handleProfileCleared() {
+  loadedProfileData.value = null;
   emit('profile-cleared');
   savedToProfile.value = false;
 }
