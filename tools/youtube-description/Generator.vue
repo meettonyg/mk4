@@ -224,24 +224,22 @@
   <div v-else class="gmkb-embedded-form">
     <!-- Simplified 2-field form for landing page -->
     <div class="gmkb-embedded-fields">
-      <div
-        v-for="field in embeddedFields"
-        :key="field.key"
-        class="gmkb-embedded-field"
-      >
-        <label class="gmkb-embedded-label">{{ field.label }}</label>
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.videoTitle || 'Video Title' }} *</label>
         <input
-          v-if="field.type === 'text'"
-          v-model="field.key === 'videoTitle' ? videoTitle : videoContent"
+          v-model="videoTitle"
           type="text"
           class="gmkb-embedded-input"
-          :placeholder="field.placeholder"
+          :placeholder="currentIntent?.formPlaceholders?.videoTitle || 'e.g., How to Build a Personal Brand in 2024'"
         />
+      </div>
+
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.videoContent || 'Video Content Summary' }}</label>
         <textarea
-          v-else
-          v-model="field.key === 'videoTitle' ? videoTitle : videoContent"
-          class="gmkb-embedded-input"
-          :placeholder="field.placeholder"
+          v-model="videoContent"
+          class="gmkb-embedded-input gmkb-embedded-textarea"
+          :placeholder="currentIntent?.formPlaceholders?.videoContent || 'e.g., Main topics covered, key takeaways, call to action...'"
           rows="3"
         ></textarea>
       </div>
@@ -403,6 +401,11 @@ const embeddedFields = computed(() => {
     }
   ];
 });
+
+/**
+ * Current intent for embedded mode
+ */
+const currentIntent = computed(() => props.intent || null);
 
 /**
  * Generate preview text for embedded mode

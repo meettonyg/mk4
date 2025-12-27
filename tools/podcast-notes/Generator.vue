@@ -263,25 +263,23 @@
   <div v-else class="gmkb-embedded-form">
     <!-- Simplified 2-field form for landing page -->
     <div class="gmkb-embedded-fields">
-      <div
-        v-for="field in embeddedFields"
-        :key="field.key"
-        class="gmkb-embedded-field"
-      >
-        <label class="gmkb-embedded-label">{{ field.label }}</label>
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.episodeTitle || 'Episode Title' }} *</label>
         <input
-          v-if="field.type === 'input'"
-          v-model="field.key === 'episodeTitle' ? episodeTitle : topicsCovered"
+          v-model="episodeTitle"
           type="text"
           class="gmkb-embedded-input"
-          :placeholder="field.placeholder"
+          :placeholder="currentIntent?.formPlaceholders?.episodeTitle || 'e.g., How to Build a High-Performance Team'"
           @input="handleEmbeddedFieldChange"
         />
+      </div>
+
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.topicsCovered || 'Topics Covered' }}</label>
         <textarea
-          v-else
-          v-model="field.key === 'episodeTitle' ? episodeTitle : topicsCovered"
+          v-model="topicsCovered"
           class="gmkb-embedded-input gmkb-embedded-textarea"
-          :placeholder="field.placeholder"
+          :placeholder="currentIntent?.formPlaceholders?.topicsCovered || 'e.g., Leadership principles, team dynamics, communication...'"
           rows="3"
           @input="handleEmbeddedFieldChange"
         ></textarea>
@@ -454,6 +452,11 @@ const embeddedFields = computed(() => {
     }
   ];
 });
+
+/**
+ * Current intent for embedded mode
+ */
+const currentIntent = computed(() => props.intent || null);
 
 /**
  * Generate preview text for embedded mode

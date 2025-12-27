@@ -250,28 +250,37 @@
   <div v-else class="gmkb-embedded-form">
     <!-- Simplified form for landing page -->
     <div class="gmkb-embedded-fields">
-      <div
-        v-for="field in embeddedFields"
-        :key="field.key"
-        class="gmkb-embedded-field"
-      >
-        <label class="gmkb-embedded-label">{{ field.label }}</label>
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.topic || 'Blog Topic' }} *</label>
         <input
-          v-if="field.type === 'text'"
-          v-model="field.key === 'topic' ? topic : audience"
+          v-model="topic"
           type="text"
           class="gmkb-embedded-input"
-          :placeholder="field.placeholder"
+          :placeholder="currentIntent?.formPlaceholders?.topic || 'e.g., 5 Leadership Lessons from Failed Startups'"
           @input="handleEmbeddedFieldChange"
         />
+      </div>
+
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.keyPoints || 'Key Points to Cover' }}</label>
         <textarea
-          v-else
           v-model="keyPoints"
           class="gmkb-embedded-input gmkb-embedded-textarea"
-          :placeholder="field.placeholder"
+          :placeholder="currentIntent?.formPlaceholders?.keyPoints || 'e.g., Main arguments, examples, takeaways...'"
           rows="3"
           @input="handleEmbeddedFieldChange"
         ></textarea>
+      </div>
+
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.audience || 'Target Audience (Optional)' }}</label>
+        <input
+          v-model="audience"
+          type="text"
+          class="gmkb-embedded-input"
+          :placeholder="currentIntent?.formPlaceholders?.audience || 'e.g., Startup founders, entrepreneurs'"
+          @input="handleEmbeddedFieldChange"
+        />
       </div>
     </div>
 
@@ -476,6 +485,11 @@ const embeddedFields = computed(() => {
     }
   ];
 });
+
+/**
+ * Current intent for embedded mode
+ */
+const currentIntent = computed(() => props.intent || null);
 
 /**
  * Generate preview text for embedded mode

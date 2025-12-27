@@ -237,18 +237,24 @@
   <div v-else class="gmkb-embedded-form">
     <!-- Simplified 2-field form for landing page -->
     <div class="gmkb-embedded-fields">
-      <div
-        v-for="field in embeddedFields"
-        :key="field.key"
-        class="gmkb-embedded-field"
-      >
-        <label class="gmkb-embedded-label">{{ field.label }}</label>
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.topic || 'Topic or Key Message' }} *</label>
         <input
-          v-model="field.key === 'topic' ? topic : expertise"
+          v-model="topic"
           type="text"
           class="gmkb-embedded-input"
-          :placeholder="field.placeholder"
+          :placeholder="currentIntent?.formPlaceholders?.topic || 'e.g., Why authentic leadership matters'"
         />
+      </div>
+
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.expertise || 'Your Expertise (Optional)' }}</label>
+        <textarea
+          v-model="expertise"
+          class="gmkb-embedded-input gmkb-embedded-textarea"
+          :placeholder="currentIntent?.formPlaceholders?.expertise || 'e.g., Leadership coach with 20 years experience...'"
+          rows="2"
+        ></textarea>
       </div>
     </div>
 
@@ -452,6 +458,11 @@ const embeddedFields = computed(() => {
     }
   ];
 });
+
+/**
+ * Current intent for embedded mode
+ */
+const currentIntent = computed(() => props.intent || null);
 
 /**
  * Generate preview text for embedded mode
