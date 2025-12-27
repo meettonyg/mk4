@@ -290,6 +290,18 @@ class GMKB_Profile_Schema {
             'label' => 'HOW do you help them achieve this result?',
             'group' => 'authority_hook',
         ],
+        'hook_where' => [
+            'type' => self::TYPE_STRING,
+            'sanitize' => 'text',
+            'label' => 'WHERE (context)?',
+            'group' => 'authority_hook',
+        ],
+        'hook_why' => [
+            'type' => self::TYPE_STRING,
+            'sanitize' => 'text',
+            'label' => 'WHY (purpose)?',
+            'group' => 'authority_hook',
+        ],
         'authority_hook' => [
             'type' => self::TYPE_HTML,
             'sanitize' => 'html',
