@@ -272,7 +272,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, inject } from 'vue';
 import { useAITopics } from '../../src/composables/useAITopics';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useProfileContext } from '../../src/composables/useProfileContext';
@@ -284,7 +284,7 @@ import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
 import ProfileSelector from '../../src/vue/components/shared/ProfileSelector.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel } from '../_shared';
+import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
 
 const props = defineProps({
   /**
@@ -344,6 +344,26 @@ const authorityHookText = ref('');
 const selectedTopicIndex = ref(-1);
 const selectedProfileId = ref(props.profileId || null);
 const saveSuccess = ref(false);
+
+// Inject profile data from EmbeddedToolWrapper (for embedded mode)
+const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+
+/**
+ * Populate form fields from profile data
+ */
+function populateFromProfile(profileData) {
+  if (!profileData) return;
+
+  // Populate expertise from hook_what or expertise field
+  if (profileData.hook_what && !expertise.value) {
+    expertise.value = profileData.hook_what;
+  }
+
+  // Populate authority hook text
+  if (profileData.authority_hook && !authorityHookText.value) {
+    authorityHookText.value = profileData.authority_hook;
+  }
+}
 
 /**
  * Topics formula for guidance panel
@@ -540,6 +560,19 @@ watch(contextProfileId, (newVal) => {
     selectedProfileId.value = newVal;
   }
 });
+
+/**
+ * Watch for injected profile data changes (embedded mode)
+ */
+watch(
+  injectedProfileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>

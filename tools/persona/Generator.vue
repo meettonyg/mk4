@@ -232,7 +232,7 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue';
+import { ref, computed, reactive, watch, inject } from 'vue';
 import { useAIGenerator } from '../../src/composables/useAIGenerator';
 
 // Compact widget components (integrated mode)
@@ -242,7 +242,7 @@ import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel } from '../_shared';
+import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
 
 const props = defineProps({
   /**
@@ -306,6 +306,26 @@ config.fields.forEach(field => {
   formData[field.name] = field.default || '';
 });
 formData.tone = 'professional';
+
+// Inject profile data from EmbeddedToolWrapper (for embedded mode)
+const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+
+/**
+ * Populate form fields from profile data
+ */
+function populateFromProfile(profileData) {
+  if (!profileData) return;
+
+  // Populate services from hook_what or services field
+  if (profileData.hook_what && !formData.services) {
+    formData.services = profileData.hook_what;
+  }
+
+  // Populate industry from industry field
+  if (profileData.industry && !formData.industry) {
+    formData.industry = profileData.industry;
+  }
+}
 
 // Use the generic AI generator
 const {
@@ -436,6 +456,19 @@ const handleApply = () => {
     fullContent: generatedContent.value
   });
 };
+
+/**
+ * Watch for injected profile data changes (embedded mode)
+ */
+watch(
+  injectedProfileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>

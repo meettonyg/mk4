@@ -286,7 +286,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, inject } from 'vue';
 import { useAITagline } from '../../src/composables/useAITagline';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 
@@ -297,7 +297,10 @@ import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel } from '../_shared';
+import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
+
+// Inject profile data from EmbeddedToolWrapper (for embedded mode)
+const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
 
 const props = defineProps({
   /**
@@ -449,6 +452,39 @@ watch(authorityHookSummary, (newVal) => {
     authorityHookText.value = newVal;
   }
 });
+
+/**
+ * Populate form fields from profile data
+ */
+function populateFromProfile(profileData) {
+  if (!profileData) return;
+
+  // Build full name from profile
+  const firstName = profileData.first_name || '';
+  const lastName = profileData.last_name || '';
+  const fullName = [firstName, lastName].filter(Boolean).join(' ');
+  if (fullName) {
+    name.value = fullName;
+  }
+
+  // Use authority hook if available
+  if (profileData.authority_hook) {
+    authorityHookText.value = profileData.authority_hook;
+  }
+}
+
+/**
+ * Watch for injected profile data from EmbeddedToolWrapper
+ */
+watch(
+  injectedProfileData,
+  (newData) => {
+    if (newData) {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>

@@ -404,12 +404,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch, inject } from 'vue';
 import { useImpactIntro, CREDENTIAL_TYPES } from '../../src/composables/useImpactIntro';
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel } from '../_shared';
+import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
 
 const props = defineProps({
   /**
@@ -452,6 +452,34 @@ const {
 // Modal state
 const showExamplesModal = ref(false);
 const selectedType = ref(null);
+
+// Inject profile data from EmbeddedToolWrapper (for embedded mode)
+const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+
+/**
+ * Populate form fields from profile data
+ */
+function populateFromProfile(profileData) {
+  if (!profileData) return;
+
+  // Populate credentials from profile credentials array
+  if (profileData.credentials && Array.isArray(profileData.credentials) && credentials.value.length === 0) {
+    profileData.credentials.forEach(cred => {
+      if (!credentials.value.includes(cred)) {
+        addCredential(cred);
+      }
+    });
+  }
+
+  // Populate achievements from profile achievements array
+  if (profileData.achievements && Array.isArray(profileData.achievements) && achievements.value.length === 0) {
+    profileData.achievements.forEach(ach => {
+      if (!achievements.value.includes(ach)) {
+        addAchievement(ach);
+      }
+    });
+  }
+}
 
 /**
  * Impact intro formula for guidance panel
@@ -568,6 +596,19 @@ const emitChange = () => {
 onMounted(() => {
   syncFromStore();
 });
+
+/**
+ * Watch for injected profile data changes (embedded mode)
+ */
+watch(
+  injectedProfileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>

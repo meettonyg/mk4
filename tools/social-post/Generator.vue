@@ -281,7 +281,7 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue';
+import { ref, computed, reactive, watch, inject } from 'vue';
 import { useAIGenerator } from '../../src/composables/useAIGenerator';
 
 // Compact widget components (integrated mode)
@@ -291,7 +291,7 @@ import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel } from '../_shared';
+import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
 
 const props = defineProps({
   /**

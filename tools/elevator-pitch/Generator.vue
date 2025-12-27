@@ -243,7 +243,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch, inject } from 'vue';
 import { useAIGenerator } from '../../src/composables/useAIGenerator';
 
 // Compact widget components (integrated mode)
@@ -253,7 +253,10 @@ import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel } from '../_shared';
+import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
+
+// Inject profile data from EmbeddedToolWrapper (for embedded mode)
+const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
 
 const props = defineProps({
   /**
@@ -378,6 +381,44 @@ const handleApply = () => {
     content: generatedContent.value
   });
 };
+
+/**
+ * Populate form fields from profile data
+ */
+function populateFromProfile(profileData) {
+  if (!profileData) return;
+
+  // Build full name from profile
+  const firstName = profileData.first_name || '';
+  const lastName = profileData.last_name || '';
+  const fullName = [firstName, lastName].filter(Boolean).join(' ');
+  if (fullName) {
+    name.value = fullName;
+  }
+
+  // Use authority hook if available
+  if (profileData.authority_hook) {
+    authorityHook.value = profileData.authority_hook;
+  }
+
+  // Use hook_who for audience if available
+  if (profileData.hook_who) {
+    audience.value = profileData.hook_who;
+  }
+}
+
+/**
+ * Watch for injected profile data from EmbeddedToolWrapper
+ */
+watch(
+  injectedProfileData,
+  (newData) => {
+    if (newData) {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>
