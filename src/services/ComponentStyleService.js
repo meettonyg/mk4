@@ -552,11 +552,65 @@ class ComponentStyleService {
     this.styleElements.forEach((styleEl, componentId) => {
       styleEl.remove();
     });
-    
+
     this.styleElements.clear();
     this.settingsCache.clear();
-    
+
     console.log('🗑️ Cleared all component styles');
+  }
+
+  /**
+   * Get all component CSS as a single string
+   * Used for saving to database so frontend can render styles
+   * @param {Object} components - Components object from store
+   * @returns {string} Combined CSS for all components
+   */
+  getAllCSS(components) {
+    if (!components || typeof components !== 'object') {
+      console.warn('⚠️ Invalid components object for getAllCSS');
+      return '';
+    }
+
+    const cssRules = [];
+
+    Object.entries(components).forEach(([componentId, component]) => {
+      if (component.settings) {
+        const css = this.generateCSS(componentId, component.settings);
+        if (css) {
+          cssRules.push(`/* Component: ${componentId} (${component.type || 'unknown'}) */`);
+          cssRules.push(css);
+          cssRules.push(''); // Empty line for readability
+        }
+      }
+    });
+
+    return cssRules.join('\n');
+  }
+
+  /**
+   * Get all section CSS as a single string
+   * @param {Array} sections - Sections array from store
+   * @returns {string} Combined CSS for all sections
+   */
+  getAllSectionCSS(sections) {
+    if (!Array.isArray(sections)) {
+      return '';
+    }
+
+    const cssRules = [];
+
+    sections.forEach(section => {
+      if (section.settings) {
+        const css = this.generateSectionCSS(section.section_id, section.settings);
+        if (css) {
+          cssRules.push(`/* Section: ${section.section_id} */`);
+          cssRules.push(css);
+          cssRules.push('');
+        }
+      }
+    });
+
+    return cssRules.join('\n');
   }
 
   /**
