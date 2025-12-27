@@ -92,7 +92,16 @@ class GMKB_Frontend_Display {
         $pre_rendered_html = get_post_meta($post_id, 'gmkb_rendered_html', true);
 
         if (empty($pre_rendered_html)) {
-            return '<div class="gmkb-error">Media kit not found. Please open and save it in the builder.</div>';
+            // Check if state exists but HTML wasn't captured
+            $state = get_post_meta($post_id, 'gmkb_media_kit_state', true);
+            $has_state = !empty($state);
+            $component_count = is_array($state) && isset($state['components']) ? count($state['components']) : 0;
+
+            return '<div class="gmkb-error" style="padding: 40px; text-align: center; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; margin: 20px;">' .
+                '<h3 style="color: #dc2626; margin: 0 0 10px;">Media Kit Needs Re-Save</h3>' .
+                '<p style="color: #7f1d1d; margin: 0;">This media kit needs to be opened and saved in the builder to display.</p>' .
+                '<p style="color: #991b1b; font-size: 12px; margin-top: 10px;">Debug: State exists: ' . ($has_state ? 'Yes' : 'No') . ', Components: ' . $component_count . '</p>' .
+                '</div>';
         }
 
         // Load state for theme information
@@ -136,6 +145,58 @@ class GMKB_Frontend_Display {
         <?php
 
         return ob_get_clean();
+    }
+
+    /**
+     * Render media kit from template (called by mediakit-frontend-template.php)
+     *
+     * @param array $state Media kit state
+     * @param int $post_id Post ID
+     * @param string|null $theme_id Optional theme ID
+     */
+    public function render_media_kit_template($state, $post_id, $theme_id = null) {
+        // Get pre-rendered HTML
+        $pre_rendered_html = get_post_meta($post_id, 'gmkb_rendered_html', true);
+
+        if (empty($pre_rendered_html)) {
+            $component_count = is_array($state) && isset($state['components']) ? count($state['components']) : 0;
+            ?>
+            <div class="gmkb-error" style="padding: 40px; text-align: center; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; margin: 20px;">
+                <h3 style="color: #dc2626; margin: 0 0 10px;">Media Kit Needs Re-Save</h3>
+                <p style="color: #7f1d1d; margin: 0;">This media kit needs to be opened and saved in the builder to display.</p>
+                <p style="color: #991b1b; font-size: 12px; margin-top: 10px;">Debug: Components in state: <?php echo $component_count; ?></p>
+            </div>
+            <?php
+            return;
+        }
+
+        // Load theme
+        $theme_id = $theme_id ?? $state['theme'] ?? 'professional_clean';
+        $this->current_theme = $this->load_theme($theme_id);
+
+        // Get theme customizations
+        $theme_customizations = $state['themeCustomizations'] ?? array();
+
+        // Build wrapper classes
+        $wrapper_classes = array(
+            'gmkb-frontend-display',
+            'gmkb-theme--' . ($this->current_theme['theme_id'] ?? 'professional_clean'),
+            'gmkb-responsive'
+        );
+        ?>
+        <div class="<?php echo implode(' ', $wrapper_classes); ?>"
+             data-media-kit-id="<?php echo esc_attr($post_id); ?>"
+             data-gmkb-theme="<?php echo esc_attr($theme_id); ?>"
+             data-gmkb-post-id="<?php echo esc_attr($post_id); ?>">
+
+            <?php $this->inject_theme_css($theme_customizations, $post_id); ?>
+
+            <div class="gmkb-prerendered-content">
+                <?php echo $pre_rendered_html; ?>
+            </div>
+
+        </div>
+        <?php
     }
 
     /**
