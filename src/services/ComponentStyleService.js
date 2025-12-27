@@ -577,11 +577,22 @@ class ComponentStyleService {
       return '';
     }
 
+    console.log('🎨 getAllCSS: Processing', Object.keys(components).length, 'components');
+
     const cssRules = [];
 
     Object.entries(components).forEach(([componentId, component]) => {
+      console.log(`🎨 Component ${componentId}:`, {
+        type: component.type,
+        hasSettings: !!component.settings,
+        hasStyle: !!component.settings?.style,
+        hasAdvanced: !!component.settings?.advanced,
+        backgroundColor: component.settings?.style?.background?.color
+      });
+
       if (component.settings) {
         const css = this.generateCSS(componentId, component.settings);
+        console.log(`🎨 Generated CSS for ${componentId}:`, css ? `${css.length} chars` : '(empty)');
         if (css) {
           cssRules.push(`/* Component: ${componentId} (${component.type || 'unknown'}) */`);
           cssRules.push(css);
@@ -590,6 +601,7 @@ class ComponentStyleService {
       }
     });
 
+    console.log('🎨 getAllCSS: Total CSS rules:', cssRules.length);
     return cssRules.join('\n');
   }
 
