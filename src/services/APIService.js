@@ -370,12 +370,13 @@ export class APIService {
         rendered_content: sanitizedState.rendered_content || ''
       };
       
-      // CRITICAL DEBUG: Log what theme is being saved
-      console.log('🎨 APIService SAVE: Sending theme to backend:', {
+      // CRITICAL DEBUG: Log what's being saved
+      console.log('🎨 APIService SAVE: Payload details:', {
         'payload.theme': payload.theme,
-        'payload.theme type': typeof payload.theme,
-        'sanitizedState.theme': sanitizedState.theme,
-        'themeCustomizations present': !!payload.themeCustomizations
+        'rendered_content length': payload.rendered_content?.length || 0,
+        'rendered_content preview': payload.rendered_content?.substring(0, 200) || '(empty)',
+        'components': Object.keys(payload.components).length,
+        'sections': payload.sections.length
       });
       
       // Log payload size in debug mode

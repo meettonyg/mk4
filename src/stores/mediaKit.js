@@ -513,13 +513,23 @@ export const useMediaKitStore = defineStore('mediaKit', {
         // PRE-RENDER ARCHITECTURE: Capture rendered HTML from preview
         // This HTML will be used directly on the frontend, eliminating need for PHP templates
         const previewElement = document.getElementById('media-kit-preview');
+        console.log('🔍 Pre-render: Looking for #media-kit-preview', {
+          found: !!previewElement,
+          childCount: previewElement?.children?.length,
+          innerHTMLLength: previewElement?.innerHTML?.length
+        });
+
         if (previewElement) {
           // Clone the preview to avoid modifying the live DOM
           const clone = previewElement.cloneNode(true);
+          const beforeLength = clone.innerHTML.length;
+
+          // Count elements to be removed
+          const builderOnlyElements = clone.querySelectorAll('[data-builder-only]');
+          console.log('🔍 Pre-render: Elements with [data-builder-only]:', builderOnlyElements.length);
 
           // Remove all builder-only UI elements (marked with data-builder-only attribute)
-          // This is the single, decoupled selector for stripping editor UI
-          clone.querySelectorAll('[data-builder-only]').forEach(el => el.remove());
+          builderOnlyElements.forEach(el => el.remove());
 
           // Clean up wrapper states (selection, hover indicators)
           clone.querySelectorAll('[data-component-wrapper]').forEach(wrapper => {
@@ -529,8 +539,10 @@ export const useMediaKitStore = defineStore('mediaKit', {
           // Get clean HTML
           state.rendered_content = clone.innerHTML;
           console.log('📄 Pre-rendered HTML captured:', {
-            length: state.rendered_content.length,
-            preview: state.rendered_content.substring(0, 200) + '...'
+            beforeLength,
+            afterLength: state.rendered_content.length,
+            strippedBytes: beforeLength - state.rendered_content.length,
+            preview: state.rendered_content.substring(0, 500)
           });
         } else {
           console.warn('⚠️ Preview element not found, skipping pre-render');
