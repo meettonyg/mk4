@@ -564,14 +564,20 @@ class GMKB_REST_API_V2 {
             $rendered_css = $body['rendered_css'] ?? '';
             if (!empty($rendered_css)) {
                 // Basic CSS sanitization - remove potential XSS vectors
+                // Note: A proper CSS sanitizer library would be more robust
+
+                // Remove @import rules to prevent loading external malicious stylesheets
+                $sanitized_css = preg_replace('/@import[^;]*;?/i', '', $rendered_css);
                 // Remove any javascript: URLs
-                $sanitized_css = preg_replace('/javascript\s*:/i', '', $rendered_css);
+                $sanitized_css = preg_replace('/javascript\s*:/i', '', $sanitized_css);
                 // Remove expression() (IE-specific XSS vector)
                 $sanitized_css = preg_replace('/expression\s*\(/i', '', $sanitized_css);
                 // Remove behavior: (IE-specific)
                 $sanitized_css = preg_replace('/behavior\s*:/i', '', $sanitized_css);
                 // Remove -moz-binding (Firefox-specific)
                 $sanitized_css = preg_replace('/-moz-binding\s*:/i', '', $sanitized_css);
+                // Remove url() with data: scheme (potential XSS vector)
+                $sanitized_css = preg_replace('/url\s*\(\s*["\']?\s*data:/i', 'url(', $sanitized_css);
 
                 update_post_meta($post_id, 'gmkb_rendered_css', $sanitized_css);
 
