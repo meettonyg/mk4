@@ -305,7 +305,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, inject } from 'vue';
 import { useAuthorityHook, AUTHORITY_HOOK_FIELDS } from '../../src/composables/useAuthorityHook';
 import { useAIGenerator } from '../../src/composables/useAIGenerator';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
@@ -315,7 +315,7 @@ import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
 import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, ProfileContextBanner } from '../_shared';
+import { GeneratorLayout, GuidancePanel, ProfileContextBanner, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
 
 // Profile context for standalone mode
 const {
@@ -324,6 +324,10 @@ const {
   selectedProfileId,
   saveMultipleToProfile
 } = useStandaloneProfile();
+
+// Inject profile data from EmbeddedToolWrapper (for embedded mode)
+// This provides reactive updates when profile is selected from dropdown
+const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
 
 const props = defineProps({
   /**
@@ -703,6 +707,31 @@ watch(
 );
 
 /**
+ * Populate form fields from profile data
+ */
+function populateFromProfile(profileData) {
+  if (!profileData) return;
+
+  // Pre-populate fields from profile data
+  hookFields.value = {
+    who: profileData.hook_who || hookFields.value.who || '',
+    what: profileData.hook_what || hookFields.value.what || '',
+    when: profileData.hook_when || hookFields.value.when || '',
+    how: profileData.hook_how || hookFields.value.how || '',
+    where: profileData.hook_where || hookFields.value.where || '',
+    why: profileData.hook_why || hookFields.value.why || ''
+  };
+
+  // Sync to composable
+  who.value = hookFields.value.who;
+  what.value = hookFields.value.what;
+  when.value = hookFields.value.when;
+  how.value = hookFields.value.how;
+  where.value = hookFields.value.where;
+  why.value = hookFields.value.why;
+}
+
+/**
  * Watch for profileData prop changes (embedded mode with EmbeddedToolWrapper)
  * Pre-populates form fields when profile data is provided
  */
@@ -710,23 +739,21 @@ watch(
   () => props.profileData,
   (newData) => {
     if (newData && props.mode === 'embedded') {
-      // Pre-populate fields from profile data
-      hookFields.value = {
-        who: newData.hook_who || hookFields.value.who || '',
-        what: newData.hook_what || hookFields.value.what || '',
-        when: newData.hook_when || hookFields.value.when || '',
-        how: newData.hook_how || hookFields.value.how || '',
-        where: newData.hook_where || hookFields.value.where || '',
-        why: newData.hook_why || hookFields.value.why || ''
-      };
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
 
-      // Sync to composable
-      who.value = hookFields.value.who;
-      what.value = hookFields.value.what;
-      when.value = hookFields.value.when;
-      how.value = hookFields.value.how;
-      where.value = hookFields.value.where;
-      why.value = hookFields.value.why;
+/**
+ * Watch for injected profile data from EmbeddedToolWrapper (embedded mode)
+ * This is the primary reactive source for profile changes in embedded mode
+ */
+watch(
+  injectedProfileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
     }
   },
   { immediate: true }

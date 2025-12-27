@@ -256,9 +256,10 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, provide } from 'vue';
 import ProfileContextBanner from './ProfileContextBanner.vue';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
+import { EMBEDDED_PROFILE_DATA_KEY } from './constants';
 
 // Profile management for logged-in users
 const {
@@ -639,6 +640,9 @@ async function copyToClipboard() {
 // Profile handlers (logged-in users)
 // Store loaded profile data locally (since composable instances are separate)
 const loadedProfileData = ref(null);
+
+// Provide profile data to child components (like Generator) via inject
+provide(EMBEDDED_PROFILE_DATA_KEY, loadedProfileData);
 
 function handleProfileLoaded(data) {
   loadedProfileData.value = data;
