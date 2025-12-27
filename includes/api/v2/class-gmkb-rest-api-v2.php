@@ -521,6 +521,43 @@ class GMKB_REST_API_V2 {
             // Theme is part of state - no separate save needed (already in $state_data above)
             // Theme validation was done during state data preparation
 
+            // PRE-RENDER ARCHITECTURE: Save rendered HTML for frontend display
+            // This eliminates the need for PHP template rendering on the frontend
+            $rendered_content = $body['rendered_content'] ?? '';
+            if (!empty($rendered_content)) {
+                // Simple sanitization - remove dangerous tags only
+                // We trust the Vue-generated HTML but strip potentially dangerous elements
+                $sanitized_html = $rendered_content;
+
+                // Remove script tags and their content
+                $sanitized_html = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $sanitized_html);
+
+                // Remove onclick, onerror, onload and other event handlers
+                $sanitized_html = preg_replace('/\s+on\w+\s*=\s*["\'][^"\']*["\']/i', '', $sanitized_html);
+                $sanitized_html = preg_replace('/\s+on\w+\s*=\s*[^\s>]*/i', '', $sanitized_html);
+
+                // Remove javascript: URLs
+                $sanitized_html = preg_replace('/href\s*=\s*["\']javascript:[^"\']*["\']/i', 'href="#"', $sanitized_html);
+
+                // Remove data: URLs in src (potential XSS vector)
+                $sanitized_html = preg_replace('/src\s*=\s*["\']data:[^"\']*["\']/i', 'src=""', $sanitized_html);
+
+                // Remove iframe tags
+                $sanitized_html = preg_replace('/<iframe\b[^>]*>(.*?)<\/iframe>/is', '', $sanitized_html);
+
+                // Remove object/embed tags
+                $sanitized_html = preg_replace('/<object\b[^>]*>(.*?)<\/object>/is', '', $sanitized_html);
+                $sanitized_html = preg_replace('/<embed\b[^>]*>/i', '', $sanitized_html);
+
+                update_post_meta($post_id, 'gmkb_rendered_html', $sanitized_html);
+
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('📄 GMKB REST API v2: Pre-rendered HTML saved');
+                    error_log('  - Original size: ' . strlen($rendered_content) . ' bytes');
+                    error_log('  - Sanitized size: ' . strlen($sanitized_html) . ' bytes');
+                }
+            }
+
             // ROOT FIX: Clear cache after successful save
             $cache_key = 'gmkb_mediakit_' . $post_id;
             delete_transient($cache_key);

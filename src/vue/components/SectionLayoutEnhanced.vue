@@ -21,8 +21,8 @@
           @mouseenter="hoveredSection = section.section_id"
           @mouseleave="hoveredSection = null"
         >
-          <!-- Section Header with Controls - Shows on hover only -->
-          <div class="gmkb-section__header">
+          <!-- Section Header with Controls - Shows on hover only (stripped from pre-render) -->
+          <div class="gmkb-section__header" data-builder-only>
             <div class="gmkb-section__header-bar">
               <div class="section-handle">
                 <span class="handle-icon">⋮⋮</span>
@@ -89,7 +89,7 @@
                 @dragleave="onDragLeave"
                 @drop.prevent="onDrop($event, section.section_id, 1)"
               >
-                <div v-if="(!section.components || section.components.length === 0)" class="drop-placeholder">
+                <div v-if="(!section.components || section.components.length === 0)" class="drop-placeholder" data-builder-only>
                   <span class="drop-icon">📦</span>
                   <span>Drop components here</span>
                 </div>
@@ -141,7 +141,7 @@
                   @dragleave="onDragLeave"
                   @drop.prevent="onDrop($event, section.section_id, 1)"
                 >
-                  <div v-if="!getColumnComponents(section, 1).length" class="drop-placeholder">
+                  <div v-if="!getColumnComponents(section, 1).length" class="drop-placeholder" data-builder-only>
                     <span class="drop-icon">📦</span>
                     <span>Column 1</span>
                   </div>
@@ -190,7 +190,7 @@
                   @dragleave="onDragLeave"
                   @drop.prevent="onDrop($event, section.section_id, 2)"
                 >
-                  <div v-if="!getColumnComponents(section, 2).length" class="drop-placeholder">
+                  <div v-if="!getColumnComponents(section, 2).length" class="drop-placeholder" data-builder-only>
                     <span class="drop-icon">📦</span>
                     <span>Column 2</span>
                   </div>
@@ -243,7 +243,7 @@
                   @dragleave="onDragLeave"
                   @drop.prevent="onDrop($event, section.section_id, 1)"
                 >
-                  <div v-if="!getColumnComponents(section, 1).length" class="drop-placeholder">
+                  <div v-if="!getColumnComponents(section, 1).length" class="drop-placeholder" data-builder-only>
                     <span class="drop-icon">📦</span>
                     <span>Main Column</span>
                   </div>
@@ -290,7 +290,7 @@
                   @dragleave="onDragLeave"
                   @drop.prevent="onDrop($event, section.section_id, 2)"
                 >
-                  <div v-if="!getColumnComponents(section, 2).length" class="drop-placeholder">
+                  <div v-if="!getColumnComponents(section, 2).length" class="drop-placeholder" data-builder-only>
                     <span class="drop-icon">📦</span>
                     <span>Sidebar</span>
                   </div>
@@ -341,7 +341,7 @@
                   @dragleave="onDragLeave"
                   @drop.prevent="onDrop($event, section.section_id, 1)"
                 >
-                  <div v-if="!getColumnComponents(section, 1).length" class="drop-placeholder">
+                  <div v-if="!getColumnComponents(section, 1).length" class="drop-placeholder" data-builder-only>
                     <span class="drop-icon">📦</span>
                     <span>Sidebar</span>
                   </div>
@@ -388,7 +388,7 @@
                   @dragleave="onDragLeave"
                   @drop.prevent="onDrop($event, section.section_id, 2)"
                 >
-                  <div v-if="!getColumnComponents(section, 2).length" class="drop-placeholder">
+                  <div v-if="!getColumnComponents(section, 2).length" class="drop-placeholder" data-builder-only>
                     <span class="drop-icon">📦</span>
                     <span>Main Column</span>
                   </div>
@@ -444,7 +444,7 @@
                   @dragleave="onDragLeave"
                   @drop.prevent="onDrop($event, section.section_id, col)"
                 >
-                  <div v-if="!getColumnComponents(section, col).length" class="drop-placeholder">
+                  <div v-if="!getColumnComponents(section, col).length" class="drop-placeholder" data-builder-only>
                     <span class="drop-icon">📦</span>
                     <span>Column {{ col }}</span>
                   </div>

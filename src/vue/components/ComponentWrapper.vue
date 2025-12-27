@@ -1,10 +1,11 @@
 <template>
-  <div 
+  <div
     class="component-wrapper"
     :class="wrapperClass"
     :id="customId"
     :data-component-id="componentId || component?.id"
     :data-draggable="true"
+    data-component-wrapper
     @mouseenter="onMouseEnter"
     @mouseleave="onMouseLeave"
   >

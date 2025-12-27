@@ -1,64 +1,51 @@
 <template>
-  <div class="component-controls">
+  <div class="component-controls" data-builder-only>
     <div class="component-controls__bar">
       <span class="component-controls__label">{{ componentLabel }}</span>
       
       <div class="component-controls__actions">
-        <button 
+        <button
           class="control-btn"
           title="Move Up"
           @click="moveUp"
           :disabled="isFirst"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="18 15 12 9 6 15"></polyline>
-          </svg>
+          <i class="fa-solid fa-arrow-up"></i>
         </button>
-        
-        <button 
+
+        <button
           class="control-btn"
           title="Move Down"
           @click="moveDown"
           :disabled="isLast"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
+          <i class="fa-solid fa-arrow-down"></i>
         </button>
-        
+
         <div class="control-separator"></div>
-        
-        <button 
+
+        <button
           class="control-btn"
           title="Edit"
           @click="edit"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-          </svg>
+          <i class="fa-solid fa-pen"></i>
         </button>
-        
-        <button 
+
+        <button
           class="control-btn"
           title="Duplicate"
           @click="duplicate"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-          </svg>
+          <i class="fa-solid fa-copy"></i>
         </button>
-        
-        <button 
+
+        <button
           class="control-btn control-btn--danger"
           title="Delete"
           @click="deleteComponent"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-          </svg>
+          <i class="fa-solid fa-trash"></i>
         </button>
       </div>
     </div>
@@ -204,23 +191,35 @@ const deleteComponent = () => {
 }
 
 .component-wrapper .component-controls__actions {
-  display: flex;
+  display: flex !important; /* DEBUG: Force display */
   gap: 2px;
   align-items: center;
+  background: rgba(0,255,0,0.1); /* DEBUG: Green tint to see if rendering */
+  padding: 2px; /* DEBUG: Make visible */
 }
 
 .component-wrapper .component-controls .control-btn {
   width: 28px;
   height: 28px;
-  border: none;
-  background: transparent;
+  border: 1px solid #ccc;
+  background: #f8f8f8;
   border-radius: 4px;
-  display: flex;
+  display: flex !important;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
-  color: var(--gmkb-color-text, #333);
+  color: #333;
+}
+
+/* Fix SVG icons */
+.component-wrapper .component-controls .control-btn svg {
+  width: 16px !important;
+  height: 16px !important;
+  display: block !important;
+  stroke: #333 !important;
+  stroke-width: 2px !important;
+  fill: none !important;
 }
 
 .component-wrapper .component-controls .control-btn:hover:not(:disabled) {

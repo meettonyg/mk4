@@ -509,6 +509,52 @@ export const useMediaKitStore = defineStore('mediaKit', {
           globalSettings: this.globalSettings,
           layout: this.sections.map(s => s.section_id) // Add layout for compatibility
         };
+
+        // PRE-RENDER ARCHITECTURE: Capture rendered HTML from preview
+        // This HTML will be used directly on the frontend, eliminating need for PHP templates
+        // v2: Pre-render capture with debug logging
+        const previewElement = document.getElementById('media-kit-preview');
+        console.log('🔍 Pre-render: Looking for #media-kit-preview', {
+          found: !!previewElement,
+          childCount: previewElement?.children?.length,
+          innerHTMLLength: previewElement?.innerHTML?.length
+        });
+
+        if (previewElement) {
+          // Clone the preview to avoid modifying the live DOM
+          const clone = previewElement.cloneNode(true);
+          const beforeLength = clone.innerHTML.length;
+
+          // Count elements to be removed
+          const builderOnlyElements = clone.querySelectorAll('[data-builder-only]');
+          console.log('🔍 Pre-render: Elements with [data-builder-only]:', builderOnlyElements.length);
+
+          // Remove all builder-only UI elements (marked with data-builder-only attribute)
+          builderOnlyElements.forEach(el => el.remove());
+
+          // Clean up wrapper states (selection, hover indicators)
+          clone.querySelectorAll('[data-component-wrapper]').forEach(wrapper => {
+            wrapper.classList.remove('is-selected', 'is-hovered', 'is-editing');
+          });
+
+          // Get clean HTML and strip Vue comment nodes (<!---->) which can corrupt with wp_kses
+          let cleanHtml = clone.innerHTML;
+          // Remove Vue empty comment nodes
+          cleanHtml = cleanHtml.replace(/<!---->/g, '');
+          // Remove any other HTML comments
+          cleanHtml = cleanHtml.replace(/<!--[\s\S]*?-->/g, '');
+
+          state.rendered_content = cleanHtml;
+          console.log('📄 Pre-rendered HTML captured:', {
+            beforeLength,
+            afterLength: state.rendered_content.length,
+            strippedBytes: beforeLength - state.rendered_content.length,
+            preview: state.rendered_content.substring(0, 500)
+          });
+        } else {
+          console.warn('⚠️ Preview element not found, skipping pre-render');
+          state.rendered_content = '';
+        }
         
         // ═══════════════════════════════════════════════════════════════
         // COMPREHENSIVE DEBUG LOGGING
