@@ -530,23 +530,6 @@ const handleEmbeddedFieldChange = () => {
 };
 
 /**
- * Populate form fields from profile data
- */
-function populateFromProfile(profileData) {
-  if (!profileData) return;
-
-  // Populate services from hook_what or services field
-  if (profileData.hook_what && !services.value) {
-    services.value = profileData.hook_what;
-  }
-
-  // Populate authority hook text
-  if (profileData.authority_hook && !authorityHookText.value) {
-    authorityHookText.value = profileData.authority_hook;
-  }
-}
-
-/**
  * Sync authority hook from store on mount
  */
 onMounted(() => {
