@@ -152,7 +152,7 @@
 
   <!-- Integrated Mode: Compact widget -->
   <AiWidgetFrame
-    v-else
+    v-else-if="mode === 'integrated'"
     title="Service Packages Generator"
     description="Create tiered service packages that communicate clear value and outcomes."
     :mode="mode"
@@ -260,6 +260,52 @@
       </div>
     </template>
   </AiWidgetFrame>
+
+  <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
+  <div v-else class="gmkb-embedded-form">
+    <!-- Simplified 2-field form for landing page -->
+    <div class="gmkb-embedded-fields">
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">Services You Offer</label>
+        <input
+          v-model="services"
+          type="text"
+          class="gmkb-embedded-input"
+          placeholder="e.g., 1-on-1 coaching, group workshops, keynote speaking"
+          @input="handleEmbeddedFieldChange"
+        />
+      </div>
+
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">Your Expertise</label>
+        <input
+          v-model="authorityHookText"
+          type="text"
+          class="gmkb-embedded-input"
+          placeholder="e.g., I help entrepreneurs scale their businesses through strategic planning"
+          @input="handleEmbeddedFieldChange"
+        />
+      </div>
+    </div>
+
+    <!-- Results display for embedded mode -->
+    <div v-if="hasOffers" class="gmkb-embedded-result">
+      <div class="gmkb-embedded-result__content">
+        <div
+          v-for="(pkg, index) in offers"
+          :key="index"
+          class="gmkb-embedded-package"
+        >
+          <strong>{{ pkg.name }}:</strong> {{ pkg.description }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Error display -->
+    <div v-if="error" class="gmkb-embedded-error">
+      {{ error }}
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -276,11 +322,15 @@ import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_s
 
 const props = defineProps({
   /**
-   * Mode: 'integrated' or 'standalone'
+   * Mode: 'integrated', 'standalone', or 'embedded'
+   * - standalone: Full two-panel layout with guidance
+   * - integrated: Compact widget for embedding in other components
+   * - embedded: Landing page embed with simplified form
    */
   mode: {
     type: String,
-    default: 'standalone'
+    default: 'standalone',
+    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
   },
 
   /**
@@ -289,10 +339,28 @@ const props = defineProps({
   componentId: {
     type: String,
     default: null
+  },
+
+  /**
+   * Intent object for embedded mode
+   * Contains: { id, label, contextHeading, contextDescription, formPlaceholders, formLabels }
+   */
+  intent: {
+    type: Object,
+    default: null
+  },
+
+  /**
+   * Profile data for pre-population (embedded mode)
+   * Passed from EmbeddedToolWrapper via scoped slot
+   */
+  profileData: {
+    type: Object,
+    default: null
   }
 });
 
-const emit = defineEmits(['applied', 'generated']);
+const emit = defineEmits(['applied', 'generated', 'change', 'preview-update', 'update:can-generate']);
 
 // Use composables
 const {
@@ -377,6 +445,45 @@ const canGenerate = computed(() => {
 });
 
 /**
+ * Current intent (for embedded mode)
+ */
+const currentIntent = computed(() => {
+  return props.intent || {
+    id: 'default',
+    label: 'Service Packages',
+    formPlaceholders: {
+      services: 'e.g., 1-on-1 coaching, group workshops, keynote speaking',
+      expertise: 'e.g., I help entrepreneurs scale their businesses through strategic planning'
+    },
+    formLabels: {
+      services: 'Services You Offer',
+      expertise: 'Your Expertise'
+    }
+  };
+});
+
+/**
+ * Generate preview text for embedded mode
+ */
+const embeddedPreviewText = computed(() => {
+  const servicesVal = services.value || '[SERVICES]';
+  const expertiseVal = authorityHookText.value || '[EXPERTISE]';
+
+  if (!services.value && !authorityHookText.value) {
+    return null; // Show default preview
+  }
+
+  return `Creating tiered service packages for <strong>${servicesVal}</strong> based on expertise: <strong>${expertiseVal}</strong>`;
+});
+
+/**
+ * Check if embedded form has minimum required fields
+ */
+const canGenerateEmbedded = computed(() => {
+  return services.value?.trim() && authorityHookText.value?.trim();
+});
+
+/**
  * Handle generate button click
  */
 const handleGenerate = async () => {
@@ -413,6 +520,33 @@ const handleApply = () => {
 };
 
 /**
+ * Handle embedded field change
+ */
+const handleEmbeddedFieldChange = () => {
+  emit('change', {
+    services: services.value,
+    expertise: authorityHookText.value
+  });
+};
+
+/**
+ * Populate form fields from profile data
+ */
+function populateFromProfile(profileData) {
+  if (!profileData) return;
+
+  // Populate services from hook_what or services field
+  if (profileData.hook_what && !services.value) {
+    services.value = profileData.hook_what;
+  }
+
+  // Populate authority hook text
+  if (profileData.authority_hook && !authorityHookText.value) {
+    authorityHookText.value = profileData.authority_hook;
+  }
+}
+
+/**
  * Sync authority hook from store on mount
  */
 onMounted(() => {
@@ -443,6 +577,48 @@ watch(
   },
   { immediate: true }
 );
+
+/**
+ * Watch for profileData prop changes (embedded mode with EmbeddedToolWrapper)
+ * Pre-populates form fields when profile data is provided
+ */
+watch(
+  () => props.profileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
+
+/**
+ * Watch for field changes in embedded mode and emit preview updates
+ */
+watch(
+  () => [services.value, authorityHookText.value],
+  () => {
+    if (props.mode === 'embedded') {
+      emit('preview-update', {
+        previewHtml: embeddedPreviewText.value,
+        fields: {
+          services: services.value,
+          expertise: authorityHookText.value
+        }
+      });
+    }
+  },
+  { deep: true }
+);
+
+/**
+ * Emit can-generate status changes to parent (for embedded mode)
+ */
+watch(canGenerateEmbedded, (newValue) => {
+  if (props.mode === 'embedded') {
+    emit('update:can-generate', !!newValue);
+  }
+}, { immediate: true });
 </script>
 
 <style scoped>
@@ -752,5 +928,91 @@ watch(
   border-radius: var(--gmkb-ai-radius-md, 8px);
   font-size: 13px;
   color: var(--gmkb-ai-text-secondary, #64748b);
+}
+
+/* Embedded Mode Styles (for landing page) */
+.gmkb-embedded-form {
+  width: 100%;
+}
+
+.gmkb-embedded-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.gmkb-embedded-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.gmkb-embedded-label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.gmkb-embedded-input {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  background: var(--mkcg-bg-secondary, #f9fafb);
+  box-sizing: border-box;
+  font-size: 15px;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.gmkb-embedded-input:focus {
+  outline: none;
+  border-color: var(--mkcg-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.gmkb-embedded-input::placeholder {
+  color: var(--mkcg-text-light, #94a3b8);
+}
+
+.gmkb-embedded-result {
+  margin-top: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid #86efac;
+  border-radius: 8px;
+}
+
+.gmkb-embedded-result__content {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #166534;
+}
+
+.gmkb-embedded-package {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(22, 101, 52, 0.1);
+}
+
+.gmkb-embedded-package:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.gmkb-embedded-package strong {
+  color: #15803d;
+}
+
+.gmkb-embedded-error {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 14px;
 }
 </style>

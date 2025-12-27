@@ -193,7 +193,7 @@
 
   <!-- Integrated Mode: Compact widget -->
   <AiWidgetFrame
-    v-else
+    v-else-if="mode === 'integrated'"
     title="Impact Intro Builder"
     description="Build your credentials and achievements for powerful guest introductions."
     :mode="mode"
@@ -368,6 +368,76 @@
     </template>
   </AiWidgetFrame>
 
+  <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
+  <div v-else class="gmkb-embedded-form">
+    <!-- Simplified credentials field for landing page -->
+    <div class="gmkb-embedded-fields">
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">{{ currentIntent.credentialsLabel }}</label>
+        <input
+          v-model="newCredential"
+          type="text"
+          class="gmkb-embedded-input"
+          :placeholder="currentIntent.credentialsPlaceholder"
+          @keydown.enter.prevent="handleAddCredential"
+        />
+      </div>
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">{{ currentIntent.achievementsLabel }}</label>
+        <input
+          v-model="newAchievement"
+          type="text"
+          class="gmkb-embedded-input"
+          :placeholder="currentIntent.achievementsPlaceholder"
+          @keydown.enter.prevent="handleAddAchievement"
+        />
+      </div>
+    </div>
+
+    <!-- Tags display for added items -->
+    <div v-if="credentials.length > 0 || achievements.length > 0" class="gmkb-embedded-tags-section">
+      <div v-if="credentials.length > 0" class="gmkb-embedded-tags">
+        <div
+          v-for="(credential, index) in credentials"
+          :key="`cred-${index}`"
+          class="gmkb-embedded-tag"
+        >
+          <span>{{ credential }}</span>
+          <button
+            type="button"
+            class="gmkb-embedded-tag__remove"
+            @click="removeCredential(index)"
+          >
+            &times;
+          </button>
+        </div>
+      </div>
+      <div v-if="achievements.length > 0" class="gmkb-embedded-tags">
+        <div
+          v-for="(achievement, index) in achievements"
+          :key="`ach-${index}`"
+          class="gmkb-embedded-tag"
+        >
+          <span>{{ achievement }}</span>
+          <button
+            type="button"
+            class="gmkb-embedded-tag__remove"
+            @click="removeAchievement(index)"
+          >
+            &times;
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results display for embedded mode -->
+    <div v-if="hasMinimumData" class="gmkb-embedded-result">
+      <div class="gmkb-embedded-result__content">
+        {{ impactSummary }}
+      </div>
+    </div>
+  </div>
+
   <!-- Examples Modal -->
   <div
     v-if="showExamplesModal"
@@ -404,7 +474,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, inject } from 'vue';
+import { ref, computed, onMounted, watch, inject } from 'vue';
 import { useImpactIntro, CREDENTIAL_TYPES } from '../../src/composables/useImpactIntro';
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
 
@@ -413,11 +483,15 @@ import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_s
 
 const props = defineProps({
   /**
-   * Mode: 'integrated' or 'standalone'
+   * Mode: 'integrated', 'standalone', or 'embedded'
+   * - standalone: Full two-panel layout with guidance
+   * - integrated: Compact widget for embedding in other components
+   * - embedded: Landing page embed with simplified form
    */
   mode: {
     type: String,
-    default: 'standalone'
+    default: 'standalone',
+    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
   },
 
   /**
@@ -426,10 +500,28 @@ const props = defineProps({
   componentId: {
     type: String,
     default: null
+  },
+
+  /**
+   * Intent object for embedded mode
+   * Contains: { id, label, credentialsLabel, credentialsPlaceholder, achievementsLabel, achievementsPlaceholder }
+   */
+  intent: {
+    type: Object,
+    default: null
+  },
+
+  /**
+   * Profile data for pre-population (embedded mode)
+   * Passed from EmbeddedToolWrapper via scoped slot
+   */
+  profileData: {
+    type: Object,
+    default: null
   }
 });
 
-const emit = defineEmits(['applied', 'change']);
+const emit = defineEmits(['applied', 'change', 'preview-update', 'update:can-generate']);
 
 // Use composable
 const {
@@ -455,6 +547,39 @@ const selectedType = ref(null);
 
 // Inject profile data from EmbeddedToolWrapper (for embedded mode)
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+
+/**
+ * Intent configuration for embedded mode
+ * Provides default labels and placeholders that can be customized via props
+ */
+const currentIntent = computed(() => {
+  const defaults = {
+    credentialsLabel: 'Your Credentials & Qualifications',
+    credentialsPlaceholder: 'e.g., PhD in Psychology, ICF Certified Coach',
+    achievementsLabel: 'Your Achievements & Recognition',
+    achievementsPlaceholder: 'e.g., TEDx Speaker, Forbes 30 Under 30'
+  };
+
+  if (!props.intent) return defaults;
+
+  return {
+    credentialsLabel: props.intent.credentialsLabel || defaults.credentialsLabel,
+    credentialsPlaceholder: props.intent.credentialsPlaceholder || defaults.credentialsPlaceholder,
+    achievementsLabel: props.intent.achievementsLabel || defaults.achievementsLabel,
+    achievementsPlaceholder: props.intent.achievementsPlaceholder || defaults.achievementsPlaceholder
+  };
+});
+
+/**
+ * Generate preview text for embedded mode
+ */
+const embeddedPreviewText = computed(() => {
+  if (!hasMinimumData.value) {
+    return null;
+  }
+
+  return impactSummary.value;
+});
 
 /**
  * Populate form fields from profile data
@@ -609,6 +734,55 @@ watch(
   },
   { immediate: true }
 );
+
+/**
+ * Watch for profileData prop changes (embedded mode with EmbeddedToolWrapper)
+ * Pre-populates form fields when profile data is provided
+ */
+watch(
+  () => props.profileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
+
+/**
+ * Watch for credentials/achievements changes in embedded mode and emit preview updates
+ */
+watch(
+  () => [credentials.value, achievements.value],
+  () => {
+    if (props.mode === 'embedded') {
+      emit('preview-update', {
+        previewHtml: embeddedPreviewText.value,
+        data: {
+          credentials: credentials.value,
+          achievements: achievements.value
+        }
+      });
+    }
+  },
+  { deep: true }
+);
+
+/**
+ * Check if embedded form has minimum required data
+ */
+const canGenerate = computed(() => {
+  return hasMinimumData.value;
+});
+
+/**
+ * Emit can-generate status changes to parent (for embedded mode)
+ */
+watch(canGenerate, (newValue) => {
+  if (props.mode === 'embedded') {
+    emit('update:can-generate', !!newValue);
+  }
+}, { immediate: true });
 </script>
 
 <style scoped>
@@ -871,5 +1045,107 @@ watch(
 .gmkb-ai-example:hover {
   border-color: var(--gmkb-ai-primary, #6366f1);
   background: rgba(99, 102, 241, 0.1);
+}
+
+/* Embedded Mode Styles (for landing page) */
+.gmkb-embedded-form {
+  width: 100%;
+}
+
+.gmkb-embedded-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.gmkb-embedded-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.gmkb-embedded-label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.gmkb-embedded-input {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  background: var(--mkcg-bg-secondary, #f9fafb);
+  box-sizing: border-box;
+  font-size: 15px;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.gmkb-embedded-input:focus {
+  outline: none;
+  border-color: var(--mkcg-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.gmkb-embedded-input::placeholder {
+  color: var(--mkcg-text-light, #94a3b8);
+}
+
+.gmkb-embedded-tags-section {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gmkb-embedded-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gmkb-embedded-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--mkcg-bg-tertiary, #f1f5f9);
+  border: 1px solid var(--mkcg-border-light, #cbd5e1);
+  border-radius: 20px;
+  font-size: 13px;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.gmkb-embedded-tag__remove {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--mkcg-text-secondary, #64748b);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.gmkb-embedded-tag__remove:hover {
+  color: var(--mkcg-danger, #dc3545);
+}
+
+.gmkb-embedded-result {
+  margin-top: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1px solid #34d399;
+  border-radius: 8px;
+}
+
+.gmkb-embedded-result__content {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #065f46;
+  font-style: italic;
 }
 </style>

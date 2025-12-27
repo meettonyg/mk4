@@ -150,7 +150,7 @@
 
   <!-- Integrated Mode: Compact widget -->
   <AiWidgetFrame
-    v-else
+    v-else-if="mode === 'integrated'"
     title="Sound Bite Generator"
     description="Create memorable quotes and one-liners for media appearances."
     :mode="mode"
@@ -232,6 +232,44 @@
       </div>
     </template>
   </AiWidgetFrame>
+
+  <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
+  <div v-else class="gmkb-embedded-form">
+    <!-- Simplified 2-field form for landing page -->
+    <div class="gmkb-embedded-fields">
+      <div
+        v-for="field in embeddedFields"
+        :key="field.key"
+        class="gmkb-embedded-field"
+      >
+        <label class="gmkb-embedded-label">{{ field.label }}</label>
+        <input
+          v-model="field.key === 'topic' ? topic : expertise"
+          type="text"
+          class="gmkb-embedded-input"
+          :placeholder="field.placeholder"
+        />
+      </div>
+    </div>
+
+    <!-- Results display for embedded mode -->
+    <div v-if="hasContent" class="gmkb-embedded-result">
+      <div class="gmkb-embedded-result__content">
+        <div
+          v-for="(soundBite, index) in soundBites"
+          :key="index"
+          class="gmkb-embedded-result__item"
+        >
+          "{{ soundBite }}"
+        </div>
+      </div>
+    </div>
+
+    <!-- Error display -->
+    <div v-if="error" class="gmkb-embedded-error">
+      {{ error }}
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -245,13 +283,21 @@ import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 // Full layout components (standalone mode)
 import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
 
+// Inject profile data from EmbeddedToolWrapper (for embedded mode)
+// This provides reactive updates when profile is selected from dropdown
+const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+
 const props = defineProps({
   /**
-   * Mode: 'integrated' or 'standalone'
+   * Mode: 'integrated', 'standalone', or 'embedded'
+   * - standalone: Full two-panel layout with guidance
+   * - integrated: Compact widget for embedding in other components
+   * - embedded: Landing page embed with simplified form
    */
   mode: {
     type: String,
-    default: 'standalone'
+    default: 'standalone',
+    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
   },
 
   /**
@@ -260,10 +306,28 @@ const props = defineProps({
   componentId: {
     type: String,
     default: null
+  },
+
+  /**
+   * Intent object for embedded mode
+   * Contains: { id, label, contextHeading, contextDescription, formPlaceholders, formLabels }
+   */
+  intent: {
+    type: Object,
+    default: null
+  },
+
+  /**
+   * Profile data for pre-population (embedded mode)
+   * Passed from EmbeddedToolWrapper via scoped slot
+   */
+  profileData: {
+    type: Object,
+    default: null
   }
 });
 
-const emit = defineEmits(['applied', 'generated']);
+const emit = defineEmits(['applied', 'generated', 'change', 'preview-update', 'update:can-generate']);
 
 // Use composable
 const {
@@ -362,6 +426,48 @@ const contextLabel = computed(() => {
 });
 
 /**
+ * Embedded mode field configuration
+ * In embedded mode, we show a simplified 2-field form (topic, expertise)
+ */
+const embeddedFields = computed(() => {
+  const defaultLabels = {
+    topic: 'Topic or Theme',
+    expertise: 'Your Expertise/Perspective'
+  };
+  const defaultPlaceholders = {
+    topic: 'e.g., leadership, innovation, work-life balance',
+    expertise: 'What unique perspective do you bring to this topic?'
+  };
+
+  return [
+    {
+      key: 'topic',
+      label: props.intent?.formLabels?.topic || defaultLabels.topic,
+      placeholder: props.intent?.formPlaceholders?.topic || defaultPlaceholders.topic
+    },
+    {
+      key: 'expertise',
+      label: props.intent?.formLabels?.expertise || defaultLabels.expertise,
+      placeholder: props.intent?.formPlaceholders?.expertise || defaultPlaceholders.expertise
+    }
+  ];
+});
+
+/**
+ * Generate preview text for embedded mode
+ */
+const embeddedPreviewText = computed(() => {
+  const topicVal = topic.value || '[TOPIC]';
+  const expertiseVal = expertise.value || '[YOUR PERSPECTIVE]';
+
+  if (!topic.value && !expertise.value) {
+    return null; // Show default preview
+  }
+
+  return `"<strong>${topicVal}</strong>: ${expertiseVal}"`;
+});
+
+/**
  * Handle generate button click
  */
 const handleGenerate = async () => {
@@ -407,6 +513,82 @@ const handleApply = () => {
     context: context.value
   });
 };
+
+/**
+ * Populate form fields from profile data
+ */
+function populateFromProfile(profileData) {
+  if (!profileData) return;
+
+  // Pre-populate fields from profile data
+  if (profileData.expertise) {
+    expertise.value = profileData.expertise;
+  }
+  // Note: topic is typically user-specific per use case, not from profile
+}
+
+/**
+ * Watch for profileData prop changes (embedded mode with EmbeddedToolWrapper)
+ * Pre-populates form fields when profile data is provided
+ */
+watch(
+  () => props.profileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
+
+/**
+ * Watch for injected profile data from EmbeddedToolWrapper (embedded mode)
+ * This is the primary reactive source for profile changes in embedded mode
+ */
+watch(
+  injectedProfileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
+
+/**
+ * Watch for field changes in embedded mode and emit preview updates
+ */
+watch(
+  () => [topic.value, expertise.value],
+  () => {
+    if (props.mode === 'embedded') {
+      emit('preview-update', {
+        previewHtml: embeddedPreviewText.value,
+        fields: {
+          topic: topic.value,
+          expertise: expertise.value
+        }
+      });
+    }
+  },
+  { deep: true }
+);
+
+/**
+ * Check if embedded form has minimum required fields
+ */
+const canGenerateEmbedded = computed(() => {
+  return topic.value?.trim() && expertise.value?.trim();
+});
+
+/**
+ * Emit can-generate status changes to parent (for embedded mode)
+ */
+watch(canGenerateEmbedded, (newValue) => {
+  if (props.mode === 'embedded') {
+    emit('update:can-generate', !!newValue);
+  }
+}, { immediate: true });
 </script>
 
 <style scoped>
@@ -567,5 +749,88 @@ const handleApply = () => {
   line-height: 1.6;
   color: var(--gmkb-ai-text-primary, #1e293b);
   font-style: italic;
+}
+
+/* Embedded Mode Styles (for landing page) */
+.gmkb-embedded-form {
+  width: 100%;
+}
+
+.gmkb-embedded-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.gmkb-embedded-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.gmkb-embedded-label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.gmkb-embedded-input {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  background: var(--mkcg-bg-secondary, #f9fafb);
+  box-sizing: border-box;
+  font-size: 15px;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.gmkb-embedded-input:focus {
+  outline: none;
+  border-color: var(--mkcg-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.gmkb-embedded-input::placeholder {
+  color: var(--mkcg-text-light, #94a3b8);
+}
+
+.gmkb-embedded-result {
+  margin-top: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid #86efac;
+  border-radius: 8px;
+}
+
+.gmkb-embedded-result__content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gmkb-embedded-result__item {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #166534;
+  font-style: italic;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(134, 239, 172, 0.3);
+}
+
+.gmkb-embedded-result__item:last-child {
+  border-bottom: none;
+}
+
+.gmkb-embedded-error {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 14px;
 }
 </style>

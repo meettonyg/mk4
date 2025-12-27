@@ -174,7 +174,7 @@
 
   <!-- Integrated Mode: Compact widget -->
   <AiWidgetFrame
-    v-else
+    v-else-if="mode === 'integrated'"
     title="Social Post Generator"
     description="Create engaging social media posts for multiple platforms."
     :mode="mode"
@@ -278,6 +278,57 @@
       </div>
     </template>
   </AiWidgetFrame>
+
+  <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
+  <div v-else class="gmkb-embedded-form">
+    <!-- Simplified form for landing page -->
+    <div class="gmkb-embedded-fields">
+      <div
+        v-for="field in embeddedFields"
+        :key="field.key"
+        class="gmkb-embedded-field"
+      >
+        <label class="gmkb-embedded-label">{{ field.label }}</label>
+        <textarea
+          v-if="field.key === 'topic'"
+          v-model="formData[field.key]"
+          class="gmkb-embedded-input gmkb-embedded-textarea"
+          :placeholder="field.placeholder"
+          rows="3"
+        ></textarea>
+        <select
+          v-else-if="field.key === 'platform'"
+          v-model="formData[field.key]"
+          class="gmkb-embedded-input gmkb-embedded-select"
+        >
+          <option value="linkedin">LinkedIn</option>
+          <option value="twitter">Twitter/X</option>
+          <option value="instagram">Instagram</option>
+          <option value="facebook">Facebook</option>
+          <option value="all">All Platforms</option>
+        </select>
+        <input
+          v-else
+          v-model="formData[field.key]"
+          type="text"
+          class="gmkb-embedded-input"
+          :placeholder="field.placeholder"
+        />
+      </div>
+    </div>
+
+    <!-- Results display for embedded mode -->
+    <div v-if="hasContent" class="gmkb-embedded-result">
+      <div class="gmkb-embedded-result__content">
+        {{ currentPost?.content || generatedContent }}
+      </div>
+    </div>
+
+    <!-- Error display -->
+    <div v-if="error" class="gmkb-embedded-error">
+      {{ error }}
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -295,11 +346,15 @@ import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_s
 
 const props = defineProps({
   /**
-   * Mode: 'integrated' or 'standalone'
+   * Mode: 'integrated', 'standalone', or 'embedded'
+   * - standalone: Full two-panel layout with guidance
+   * - integrated: Compact widget for embedding in other components
+   * - embedded: Landing page embed with simplified form
    */
   mode: {
     type: String,
-    default: 'standalone'
+    default: 'standalone',
+    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
   },
 
   /**
@@ -308,10 +363,28 @@ const props = defineProps({
   componentId: {
     type: String,
     default: null
+  },
+
+  /**
+   * Intent object for embedded mode
+   * Contains: { id, label, contextHeading, contextDescription, formPlaceholders, formLabels }
+   */
+  intent: {
+    type: Object,
+    default: null
+  },
+
+  /**
+   * Profile data for pre-population (embedded mode)
+   * Passed from EmbeddedToolWrapper via scoped slot
+   */
+  profileData: {
+    type: Object,
+    default: null
   }
 });
 
-const emit = defineEmits(['applied', 'generated']);
+const emit = defineEmits(['applied', 'generated', 'change', 'preview-update', 'update:can-generate']);
 
 // Form data
 const formData = reactive({
@@ -337,6 +410,10 @@ const {
 // Selection state for integrated mode
 const selectedIndex = ref(0);
 const selectedPlatform = ref('linkedin');
+
+// Inject profile data from EmbeddedToolWrapper (for embedded mode)
+// This provides reactive updates when profile is selected from dropdown
+const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
 
 /**
  * Social post formula for guidance panel
@@ -464,6 +541,55 @@ const canGenerate = computed(() => {
 });
 
 /**
+ * Embedded mode field configuration
+ * In embedded mode, we show a simplified form (topic, platform)
+ */
+const embeddedFields = computed(() => {
+  const defaultLabels = {
+    topic: 'What do you want to post about?',
+    platform: 'Platform'
+  };
+  const defaultPlaceholders = {
+    topic: 'e.g., How to scale your business effectively',
+    platform: 'Select platform'
+  };
+
+  return [
+    {
+      key: 'topic',
+      label: props.intent?.formLabels?.topic || defaultLabels.topic,
+      placeholder: props.intent?.formPlaceholders?.topic || defaultPlaceholders.topic
+    },
+    {
+      key: 'platform',
+      label: props.intent?.formLabels?.platform || defaultLabels.platform,
+      placeholder: props.intent?.formPlaceholders?.platform || defaultPlaceholders.platform
+    }
+  ];
+});
+
+/**
+ * Generate preview text for embedded mode
+ */
+const embeddedPreviewText = computed(() => {
+  const topicVal = formData.topic || '[YOUR TOPIC]';
+  const platformVal = formData.platform || 'LinkedIn';
+
+  if (!formData.topic) {
+    return null; // Show default preview
+  }
+
+  return `"Create a compelling ${platformVal} post about <strong>${topicVal}</strong> that drives engagement."`;
+});
+
+/**
+ * Check if embedded form has minimum required fields
+ */
+const canGenerateEmbedded = computed(() => {
+  return formData.topic?.trim();
+});
+
+/**
  * Handle generate button click
  */
 const handleGenerate = async () => {
@@ -514,6 +640,76 @@ const handleApply = () => {
     platform: formData.platform
   });
 };
+
+/**
+ * Populate form fields from profile data
+ */
+function populateFromProfile(profileData) {
+  if (!profileData) return;
+
+  // Pre-populate fields from profile data
+  // Social post doesn't have specific profile fields, but we can use general profile info
+  // to provide better context in the topic field if it's empty
+  if (profileData.expertise && !formData.topic) {
+    formData.topic = `Share insights about ${profileData.expertise}`;
+  }
+}
+
+/**
+ * Watch for profileData prop changes (embedded mode with EmbeddedToolWrapper)
+ * Pre-populates form fields when profile data is provided
+ */
+watch(
+  () => props.profileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
+
+/**
+ * Watch for injected profile data from EmbeddedToolWrapper (embedded mode)
+ * This is the primary reactive source for profile changes in embedded mode
+ */
+watch(
+  injectedProfileData,
+  (newData) => {
+    if (newData && props.mode === 'embedded') {
+      populateFromProfile(newData);
+    }
+  },
+  { immediate: true }
+);
+
+/**
+ * Watch for field changes in embedded mode and emit preview updates
+ */
+watch(
+  () => [formData.topic, formData.platform],
+  () => {
+    if (props.mode === 'embedded') {
+      emit('preview-update', {
+        previewHtml: embeddedPreviewText.value,
+        fields: {
+          topic: formData.topic,
+          platform: formData.platform
+        }
+      });
+    }
+  },
+  { deep: true }
+);
+
+/**
+ * Emit can-generate status changes to parent (for embedded mode)
+ */
+watch(canGenerateEmbedded, (newValue) => {
+  if (props.mode === 'embedded') {
+    emit('update:can-generate', !!newValue);
+  }
+}, { immediate: true });
 </script>
 
 <style scoped>
@@ -699,5 +895,91 @@ const handleApply = () => {
   color: var(--gmkb-ai-primary, #6366f1);
   background: rgba(99, 102, 241, 0.1);
   border-color: var(--gmkb-ai-primary, #6366f1);
+}
+
+/* Embedded Mode Styles (for landing page) */
+.gmkb-embedded-form {
+  width: 100%;
+}
+
+.gmkb-embedded-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.gmkb-embedded-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.gmkb-embedded-label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.gmkb-embedded-input {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  background: var(--mkcg-bg-secondary, #f9fafb);
+  box-sizing: border-box;
+  font-size: 15px;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.gmkb-embedded-textarea {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
+}
+
+.gmkb-embedded-select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+.gmkb-embedded-input:focus {
+  outline: none;
+  border-color: var(--mkcg-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.gmkb-embedded-input::placeholder {
+  color: var(--mkcg-text-light, #94a3b8);
+}
+
+.gmkb-embedded-result {
+  margin-top: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid #86efac;
+  border-radius: 8px;
+}
+
+.gmkb-embedded-result__content {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #166534;
+  white-space: pre-wrap;
+}
+
+.gmkb-embedded-error {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 14px;
 }
 </style>
