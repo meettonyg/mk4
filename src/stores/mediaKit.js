@@ -16,8 +16,8 @@ import { getDefaultSettings, getComponentDefaults, mergeWithDefaults } from '../
 import { validateComponent, sanitizeComponent } from '../utils/componentValidator.js';
 // PHASE 4: Component Deprecation System
 import deprecationManager from '../services/ComponentDeprecationManager.js';
-// PRE-POPULATION: Import PodsDataIntegration for pre-populating new components from profile data
-import podsDataIntegration from '../core/PodsDataIntegration.js';
+// PRE-POPULATION: Import ProfileDataIntegration for pre-populating new components from profile data
+import profileDataIntegration from '../core/ProfileDataIntegration.js';
 
 export const useMediaKitStore = defineStore('mediaKit', {
   state: () => ({
@@ -790,10 +790,10 @@ export const useMediaKitStore = defineStore('mediaKit', {
         }
       }
       
-      // PRE-POPULATION: Get pre-populated data from profile/pods data
+      // PRE-POPULATION: Get pre-populated data from profile data
       // This allows new components to be automatically filled with profile data
       // User-provided data takes precedence over pre-populated data
-      const prePopulatedData = podsDataIntegration.getPrePopulatedData(componentData.type);
+      const prePopulatedData = profileDataIntegration.getPrePopulatedData(componentData.type);
 
       const component = {
         id: componentId,

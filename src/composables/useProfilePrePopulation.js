@@ -31,7 +31,7 @@
  */
 
 import { ref, computed, onMounted } from 'vue';
-import podsDataIntegration from '../core/PodsDataIntegration.js';
+import profileDataIntegration from '../core/ProfileDataIntegration.js';
 import { useMediaKitStore } from '../stores/mediaKit.js';
 import aiSaveBridge from '../services/AISaveBridge.js';
 
@@ -75,7 +75,7 @@ export function useProfilePrePopulation(componentType = null) {
   const initialize = () => {
     if (!componentType) return;
 
-    const data = podsDataIntegration.getPrePopulatedData(componentType);
+    const data = profileDataIntegration.getPrePopulatedData(componentType);
     prePopulatedData.value = data;
     profileDataAvailable.value = Object.keys(data).length > 0;
 
@@ -94,7 +94,7 @@ export function useProfilePrePopulation(componentType = null) {
    * Get the full raw profile data
    */
   const getProfileData = () => {
-    return podsDataIntegration.getProfileData();
+    return profileDataIntegration.getProfileData();
   };
 
   /**
@@ -108,7 +108,7 @@ export function useProfilePrePopulation(componentType = null) {
       console.warn('[useProfilePrePopulation] No component type specified');
       return {};
     }
-    return podsDataIntegration.getPrePopulatedData(targetType);
+    return profileDataIntegration.getPrePopulatedData(targetType);
   };
 
   /**
@@ -117,7 +117,7 @@ export function useProfilePrePopulation(componentType = null) {
    * @returns {*} The field value or null
    */
   const getProfileField = (fieldNames) => {
-    return podsDataIntegration.getProfileField(fieldNames);
+    return profileDataIntegration.getProfileField(fieldNames);
   };
 
   /**
@@ -126,7 +126,7 @@ export function useProfilePrePopulation(componentType = null) {
    * @returns {boolean}
    */
   const hasProfileField = (fieldNames) => {
-    return podsDataIntegration.hasProfileField(fieldNames);
+    return profileDataIntegration.hasProfileField(fieldNames);
   };
 
   /**
@@ -188,7 +188,7 @@ export function useProfilePrePopulation(componentType = null) {
   const getFieldMappings = (type = null) => {
     const targetType = type || componentType;
     if (!targetType) return null;
-    return podsDataIntegration.getComponentPodsConfig(targetType);
+    return profileDataIntegration.getComponentFieldConfig(targetType);
   };
 
   /**
@@ -339,7 +339,7 @@ export function useProfilePrePopulation(componentType = null) {
     saveToProfile,
 
     // Direct access to services (for advanced use)
-    podsDataIntegration,
+    profileDataIntegration,
     aiSaveBridge
   };
 }
