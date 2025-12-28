@@ -309,16 +309,20 @@ body.dark-mode .field-hint {
 .section-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 16px;
 }
 
 .section-header h4 {
   margin: 0;
+  flex-shrink: 0;
 }
 
 .section-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
 }
