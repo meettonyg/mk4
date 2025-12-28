@@ -29,6 +29,13 @@
             <label>Topics Title</label>
             <input v-model="localData.topicsTitle" @input="updateComponent" placeholder="Topics of Expertise" />
           </div>
+          <div class="field-group">
+            <label>Topics Display Style</label>
+            <select v-model="localData.topicsDisplay" @change="updateComponent">
+              <option value="cards">Cards</option>
+              <option value="list">List</option>
+            </select>
+          </div>
           <div v-for="i in 5" :key="`topic_${i}`" class="field-group">
             <label>Topic {{ i }}</label>
             <input v-model="localData[`topic_${i}`]" @input="updateComponent" />
@@ -39,6 +46,13 @@
           <div class="field-group">
             <label>Questions Title</label>
             <input v-model="localData.questionsTitle" @input="updateComponent" placeholder="Interview Questions" />
+          </div>
+          <div class="field-group">
+            <label>Questions Display Style</label>
+            <select v-model="localData.questionsDisplay" @change="updateComponent">
+              <option value="list">List</option>
+              <option value="accordion">Accordion</option>
+            </select>
           </div>
           <div v-for="i in 10" :key="`question_${i}`" class="field-group">
             <label>Question {{ i }}</label>
@@ -64,7 +78,9 @@ const localData = ref({
   displayMode: 'combined',
   showModeSelector: true,
   topicsTitle: 'Topics of Expertise',
-  questionsTitle: 'Interview Questions'
+  topicsDisplay: 'cards',
+  questionsTitle: 'Interview Questions',
+  questionsDisplay: 'list'
 });
 
 for (let i = 1; i <= 5; i++) localData.value[`topic_${i}`] = '';

@@ -203,6 +203,15 @@
       </div>
 
       <div class="field-group">
+        <label class="field-label">Title Alignment</label>
+        <select v-model="localData.titleAlignment" class="field-select" @change="updateData">
+          <option value="left">Left</option>
+          <option value="center">Center</option>
+          <option value="right">Right</option>
+        </select>
+      </div>
+
+      <div class="field-group">
         <label class="field-label">Filter by Type</label>
         <select v-model="localData.filterByType" class="field-select" @change="updateData">
           <option value="all">All Types</option>
@@ -298,6 +307,7 @@ const localData = reactive({
   columns: '3',
   cardStyle: 'elevated',
   customTitle: 'Special Offers',
+  titleAlignment: 'center',
   filterByType: 'all',
   maxOffers: 6,
   showImage: true,

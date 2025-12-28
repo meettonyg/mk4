@@ -153,6 +153,15 @@
       </div>
 
       <div class="field-group">
+        <label class="field-label">Title Alignment</label>
+        <select v-model="localData.titleAlignment" class="field-select" @change="updateData">
+          <option value="left">Left</option>
+          <option value="center">Center</option>
+          <option value="right">Right</option>
+        </select>
+      </div>
+
+      <div class="field-group">
         <label class="field-label">Max Interviews to Show</label>
         <input
           v-model.number="localData.maxInterviews"
@@ -262,6 +271,7 @@ const localData = reactive({
   columns: '2',
   cardStyle: 'elevated',
   customTitle: 'Featured Interviews',
+  titleAlignment: 'center',
   maxInterviews: 6,
   showPodcastName: true,
   showHostName: true,
