@@ -293,6 +293,39 @@ blockquote {
 }
 
 /* ==========================================
+   FRONTEND DISPLAY OVERRIDES
+   These styles hide builder-specific UI on the public frontend
+   The .gmkb-frontend-display class only exists on published pages
+   ========================================== */
+
+.gmkb-frontend-display .component-wrapper,
+.gmkb-frontend-display [data-component-wrapper] {
+  /* Remove all builder borders/outlines on frontend */
+  outline: none !important;
+  outline-offset: 0 !important;
+}
+
+/* Specifically target Vue scoped styles that may leak through prerendered content */
+.gmkb-frontend-display .component-wrapper--hovering,
+.gmkb-frontend-display .component-wrapper--selected,
+.gmkb-frontend-display .component-wrapper--editing {
+  outline: none !important;
+}
+
+/* Hide any builder drop zones that may have been prerendered */
+.gmkb-frontend-display .component-drop-zone {
+  border: none !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+}
+
+/* Hide builder controls that may have been prerendered */
+.gmkb-frontend-display .component-controls,
+.gmkb-frontend-display .gmkb-section-controls {
+  display: none !important;
+}
+
+/* ==========================================
    PRINT STYLES
    ========================================== */
 
