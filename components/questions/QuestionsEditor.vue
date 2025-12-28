@@ -54,26 +54,6 @@
                 Load from Profile
               </button>
               <button
-                v-if="canSaveToProfile"
-                type="button"
-                class="profile-save-btn"
-                :class="{ 'is-saving': isSaving }"
-                :disabled="isSaving || !localData.questions.length"
-                @click="handleSaveToProfile"
-                title="Save questions to your profile"
-              >
-                <svg v-if="!isSaving" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                  <polyline points="17 21 17 13 7 13 7 21"/>
-                  <polyline points="7 3 7 8 15 8"/>
-                </svg>
-                <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
-                  <circle cx="12" cy="12" r="10"/>
-                  <path d="M12 6v6l4 2"/>
-                </svg>
-                {{ isSaving ? 'Saving...' : 'Save to Profile' }}
-              </button>
-              <button
                 type="button"
                 class="ai-generate-btn"
                 @click="showAiModal = true"
@@ -87,46 +67,69 @@
           </div>
 
           <div class="questions-list">
-            <div 
-              v-for="(qa, index) in localData.questions" 
+            <div
+              v-for="(qa, index) in localData.questions"
               :key="index"
               class="question-item"
             >
               <div class="question-header">
                 <span class="question-number">Q{{ index + 1 }}</span>
-                <button 
+                <button
                   @click="removeQuestion(index)"
                   class="remove-btn"
                   title="Remove question"
                 >×</button>
               </div>
-              
+
               <div class="field-group">
                 <label>Question *</label>
-                <input 
-                  v-model="qa.question" 
+                <input
+                  v-model="qa.question"
                   @input="updateComponent"
                   type="text"
                   placeholder="Your question here..."
                 />
               </div>
-              
+
               <div class="field-group">
                 <label>Answer *</label>
-                <textarea 
-                  v-model="qa.answer" 
+                <textarea
+                  v-model="qa.answer"
                   @input="updateComponent"
                   rows="3"
                   placeholder="Your answer here..."
                 />
               </div>
             </div>
-            
-            <button 
+
+            <button
               @click="addQuestion"
               class="add-btn"
             >
               + Add Question
+            </button>
+          </div>
+
+          <!-- Save to Profile button below the fields -->
+          <div v-if="canSaveToProfile" class="section-footer">
+            <button
+              type="button"
+              class="profile-save-btn profile-save-btn--full"
+              :class="{ 'is-saving': isSaving }"
+              :disabled="isSaving || !localData.questions.length"
+              @click="handleSaveToProfile"
+              title="Save questions to your profile"
+            >
+              <svg v-if="!isSaving" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/>
+                <polyline points="7 3 7 8 15 8"/>
+              </svg>
+              <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 6v6l4 2"/>
+              </svg>
+              {{ isSaving ? 'Saving...' : 'Save to Profile' }}
             </button>
           </div>
         </section>
@@ -313,4 +316,7 @@ body.dark-mode .profile-save-btn:hover:not(:disabled) { background: rgba(245, 15
 .ai-generate-btn svg { flex-shrink: 0; }
 body.dark-mode .ai-generate-btn { color: #818cf8; background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.25); }
 body.dark-mode .ai-generate-btn:hover { background: rgba(99, 102, 241, 0.2); border-color: rgba(99, 102, 241, 0.35); }
+.section-footer { margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
+body.dark-mode .section-footer { border-top-color: #334155; }
+.profile-save-btn--full { width: 100%; justify-content: center; padding: 10px 16px; font-size: 14px; }
 </style>
