@@ -48,6 +48,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useMediaKitStore } from '@/stores/mediaKit'
+import { useUIStore } from '@/stores/ui'
 import ComponentControls from './builder/ComponentControls.vue'
 import UnifiedComponentRegistry from '@/services/UnifiedComponentRegistry'
 
@@ -90,6 +91,7 @@ const props = defineProps({
 const emit = defineEmits(['edit', 'duplicate', 'remove'])
 
 const store = useMediaKitStore()
+const uiStore = useUIStore()
 const isHovered = ref(false)
 
 // ROOT FIX: Get Vue component from UnifiedComponentRegistry
@@ -195,19 +197,13 @@ const isEditing = computed(() => {
   }
 })
 
-// Show controls when hovering or selected
+// Show controls when hovering or selected (but not in preview mode)
 const showControlsComputed = computed(() => {
   try {
-    const result = props.showControls && (isHovered.value || isSelected.value);
-    console.log('🔍 showControlsComputed:', {
-      componentId: props.componentId || props.component?.id,
-      propsShowControls: props.showControls,
-      isHovered: isHovered.value,
-      isSelected: isSelected.value,
-      actualComponentExists: !!actualComponent.value,
-      result: result
-    });
-    return result;
+    // Hide all controls in preview mode for clean preview
+    if (uiStore.previewMode) return false;
+
+    return props.showControls && (isHovered.value || isSelected.value);
   } catch (error) {
     console.error('[ComponentWrapper] Error in showControlsComputed:', error);
     return false;
@@ -228,12 +224,18 @@ const customId = computed(() => {
 
 // Wrapper classes
 // ROOT FIX: Added null safety for actualComponent.value + custom CSS classes
+// FIX: Only apply builder UI classes (hover/selected/editing borders) when showControls is true
 const wrapperClass = computed(() => {
   try {
+    // Only show builder UI borders when:
+    // 1. showControls is enabled (edit mode)
+    // 2. NOT in preview mode (uiStore.previewMode is false)
+    // This prevents borders from appearing in preview/published mode
+    const showBuilderUI = props.showControls && !uiStore.previewMode;
     const classes = {
-      'component-wrapper--selected': isSelected.value,
-      'component-wrapper--editing': isEditing.value,
-      'component-wrapper--hovering': isHovered.value
+      'component-wrapper--selected': showBuilderUI && isSelected.value,
+      'component-wrapper--editing': showBuilderUI && isEditing.value,
+      'component-wrapper--hovering': showBuilderUI && isHovered.value
     };
     
     // CRITICAL: Only add type class if component exists and has type
