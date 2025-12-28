@@ -24,16 +24,51 @@
         <section class="editor-section">
           <div class="section-header">
             <h4>Introduction Text</h4>
-            <button
-              type="button"
-              class="ai-generate-btn"
-              @click="showAiModal = true"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-              </svg>
-              Generate with AI
-            </button>
+            <div class="section-actions">
+              <button
+                v-if="hasProfileData"
+                type="button"
+                class="profile-load-btn"
+                @click="handleLoadFromProfile"
+                title="Load introduction from your profile"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                Load from Profile
+              </button>
+              <button
+                v-if="canSaveToProfile"
+                type="button"
+                class="profile-save-btn"
+                :class="{ 'is-saving': isSaving }"
+                :disabled="isSaving || !localData.introduction"
+                @click="handleSaveToProfile"
+                title="Save introduction to your profile"
+              >
+                <svg v-if="!isSaving" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 6v6l4 2"/>
+                </svg>
+                {{ isSaving ? 'Saving...' : 'Save to Profile' }}
+              </button>
+              <button
+                type="button"
+                class="ai-generate-btn"
+                @click="showAiModal = true"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+                Generate with AI
+              </button>
+            </div>
           </div>
 
           <div class="field-group">
@@ -84,12 +119,13 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, onMounted } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
 import BaseStylePanel from '../../src/vue/components/sidebar/editors/BaseStylePanel.vue';
 import BaseAdvancedPanel from '../../src/vue/components/sidebar/editors/BaseAdvancedPanel.vue';
 import { AiModal } from '../../src/vue/components/ai';
 import GuestIntroGenerator from '@tools/guest-intro/Generator.vue';
+import { useProfilePrePopulation } from '@composables/useProfilePrePopulation';
 
 const props = defineProps({
   componentId: {
@@ -109,10 +145,45 @@ const tabs = [
   { id: 'advanced', label: 'Advanced' }
 ];
 
+// Profile pre-population and save
+const {
+  hasProfileData,
+  getPrePopulatedData,
+  getProfileField,
+  canSaveToProfile,
+  isSaving,
+  saveToProfile
+} = useProfilePrePopulation('guest-intro');
+
 // Data from component JSON state (single source of truth)
 const localData = ref({
   introduction: ''
 });
+
+// Load data from profile
+const handleLoadFromProfile = () => {
+  const profileData = getPrePopulatedData();
+  if (profileData.introduction) {
+    localData.value.introduction = profileData.introduction;
+    updatePodsField();
+  }
+};
+
+// Save data to profile
+const handleSaveToProfile = async () => {
+  if (!localData.value.introduction || !localData.value.introduction.trim()) {
+    console.warn('[GuestIntroEditor] No introduction content to save');
+    return;
+  }
+
+  const result = await saveToProfile({ introduction: localData.value.introduction });
+
+  if (result.success) {
+    console.log('[GuestIntroEditor] ✅ Guest introduction saved to profile');
+  } else {
+    console.error('[GuestIntroEditor] ❌ Failed to save guest introduction:', result.errors);
+  }
+};
 
 // Load component data
 const loadComponentData = () => {
@@ -364,7 +435,7 @@ const handleAiApplied = (data) => {
   background: #94a3b8;
 }
 
-/* Section Header with AI Button */
+/* Section Header with Action Buttons */
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -374,6 +445,78 @@ const handleAiApplied = (data) => {
 
 .section-header h4 {
   margin: 0;
+}
+
+.section-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.profile-load-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.profile-load-btn:hover {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.profile-load-btn svg {
+  flex-shrink: 0;
+}
+
+.profile-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.profile-save-btn:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.profile-save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.profile-save-btn.is-saving {
+  opacity: 0.7;
+}
+
+.profile-save-btn svg {
+  flex-shrink: 0;
+}
+
+.profile-save-btn svg.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .ai-generate-btn {

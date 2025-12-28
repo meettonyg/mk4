@@ -136,11 +136,27 @@ $post = get_post($post_id);
             <meta property="og:image" content="<?php echo get_the_post_thumbnail_url($post_id, 'large'); ?>">
         <?php endif; ?>
     <?php endif; ?>
-    
-    <?php 
+
+    <?php
+    /**
+     * Hook for enhanced SEO meta tags (Open Graph, Twitter Cards)
+     * Premium feature - outputs enhanced social sharing meta
+     * @since 2.3.0
+     */
+    do_action('gmkb_profile_head_meta', $post_id);
+
+    /**
+     * Hook for Schema.org structured data output (JSON-LD)
+     * Premium feature - outputs Person, ProfilePage, FAQ schemas
+     * @since 2.3.0
+     */
+    do_action('gmkb_profile_head_schema', $post_id);
+    ?>
+
+    <?php
     // ROOT FIX: Clean wp_head() - styling comes from Vue bundle and theme CSS
     // Action hooks are handled in enqueue.php
-    wp_head(); 
+    wp_head();
     ?>
 </head>
 <body <?php body_class(['gmkb-media-kit-page', 'gmkb-theme--' . esc_attr($global_settings['theme'] ?? 'professional_clean')]); ?>>

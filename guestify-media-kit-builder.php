@@ -168,6 +168,26 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-profile-scoring.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/class-profile-scoring.php';
 }
 
+// Premium Features - Feature gating for premium functionality
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-premium-features.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-premium-features.php';
+}
+
+// Profile Schema Markup - Schema.org structured data generation
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-profile-schema-markup.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-profile-schema-markup.php';
+}
+
+// SEO Service - Profile SEO meta tags and schema output
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/seo/class-profile-seo-service.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/seo/class-profile-seo-service.php';
+}
+
+// AEO Optimizer - Answer Engine Optimization scoring and recommendations
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/seo/class-aeo-optimizer.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/seo/class-aeo-optimizer.php';
+}
+
 // Legacy: Formidable Field ID to Post Meta mapping
 // TODO: Remove after migration verification complete
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/formidable-field-map.php')) {

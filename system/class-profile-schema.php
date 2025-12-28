@@ -693,6 +693,73 @@ class GMKB_Profile_Schema {
             'label' => 'Suggested Intro',
             'group' => 'ai_generated',
         ],
+
+        // =====================
+        // SEO & Schema (Premium)
+        // =====================
+        'seo_schema_enabled' => [
+            'type' => self::TYPE_STRING,
+            'sanitize' => 'text',
+            'label' => 'Enable Schema Markup',
+            'group' => 'seo',
+            'premium' => true,
+        ],
+        'seo_schema_types' => [
+            'type' => self::TYPE_ARRAY,
+            'sanitize' => 'array:text',
+            'label' => 'Enabled Schema Types',
+            'group' => 'seo',
+            'premium' => true,
+        ],
+        'seo_custom_title' => [
+            'type' => self::TYPE_STRING,
+            'sanitize' => 'text',
+            'label' => 'Custom SEO Title',
+            'group' => 'seo',
+            'premium' => true,
+        ],
+        'seo_custom_description' => [
+            'type' => self::TYPE_TEXT,
+            'sanitize' => 'text',
+            'label' => 'Custom Meta Description',
+            'group' => 'seo',
+            'premium' => true,
+        ],
+        'seo_enabled_features' => [
+            'type' => self::TYPE_ARRAY,
+            'sanitize' => 'array:text',
+            'label' => 'Enabled SEO Features',
+            'group' => 'seo',
+            'premium' => true,
+        ],
+
+        // =====================
+        // Authority & Credentials
+        // =====================
+        'alumni_of' => [
+            'type' => self::TYPE_STRING,
+            'sanitize' => 'text',
+            'label' => 'Education / Alumni Of',
+            'group' => 'authority',
+        ],
+        'awards' => [
+            'type' => self::TYPE_TEXT,
+            'sanitize' => 'text',
+            'label' => 'Awards & Recognition',
+            'group' => 'authority',
+        ],
+        'member_of' => [
+            'type' => self::TYPE_TEXT,
+            'sanitize' => 'text',
+            'label' => 'Professional Memberships',
+            'group' => 'authority',
+        ],
+        'certifications' => [
+            'type' => self::TYPE_TEXT,
+            'sanitize' => 'text',
+            'label' => 'Certifications & Licenses',
+            'group' => 'authority',
+        ],
     ];
 
     /**

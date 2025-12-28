@@ -59,6 +59,11 @@
                 <template #branding>
                     <BrandingTab />
                 </template>
+
+                <!-- SEO & Visibility Tab -->
+                <template #seo>
+                    <SeoTab />
+                </template>
             </ProfileTabs>
         </template>
 
@@ -84,6 +89,7 @@ import OverviewTab from './components/overview/OverviewTab.vue';
 import ValueTab from './components/value/ValueTab.vue';
 import MessagingTab from './components/messaging/MessagingTab.vue';
 import BrandingTab from './components/branding/BrandingTab.vue';
+import SeoTab from './components/seo/SeoTab.vue';
 
 // Props
 const props = defineProps({

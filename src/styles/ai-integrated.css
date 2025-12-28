@@ -1,0 +1,598 @@
+/**
+ * AI Generator Integrated Mode Styles
+ * Styles for AI tools when running inside the Media Kit Builder (modal context)
+ *
+ * Unlike standalone mode, this does NOT use `all: initial` reset,
+ * allowing the builder's base styles to be inherited.
+ *
+ * Part of the Unified AI Generator Architecture ("Modular Widgets")
+ *
+ * @package GMKB
+ * @subpackage Styles
+ * @version 1.0.0
+ * @since 2.2.0
+ */
+
+/* ========================================
+   INTEGRATED MODE WRAPPER
+   ======================================== */
+
+/**
+ * Integrated mode wrapper - works within builder context
+ * Does NOT reset all styles, inherits builder's base styles
+ */
+.gmkb-integrated-scope {
+  display: block;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--gmkb-ai-text, #1f2937);
+  box-sizing: border-box;
+}
+
+.gmkb-integrated-scope *,
+.gmkb-integrated-scope *::before,
+.gmkb-integrated-scope *::after {
+  box-sizing: inherit;
+}
+
+/* ========================================
+   AI WIDGET CONTAINER
+   ======================================== */
+
+.gmkb-integrated-scope .gmkb-ai-widget {
+  font-family: inherit;
+  color: inherit;
+}
+
+.gmkb-integrated-scope .gmkb-ai-widget--loading {
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+/* ========================================
+   WIDGET HEADER
+   ======================================== */
+
+.gmkb-integrated-scope .gmkb-ai-widget__header {
+  padding: 0 0 16px 0;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--gmkb-ai-border, #e2e8f0);
+}
+
+.gmkb-integrated-scope .gmkb-ai-widget__title {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gmkb-ai-text, #1e293b);
+  line-height: 1.3;
+}
+
+.gmkb-integrated-scope .gmkb-ai-widget__description {
+  margin: 0;
+  font-size: 13px;
+  color: var(--gmkb-ai-text-secondary, #64748b);
+  line-height: 1.5;
+}
+
+/* ========================================
+   WIDGET BODY (INPUT AREA)
+   ======================================== */
+
+.gmkb-integrated-scope .gmkb-ai-widget__body {
+  padding: 0;
+}
+
+/* ========================================
+   FORM ELEMENTS
+   ======================================== */
+
+.gmkb-integrated-scope .gmkb-ai-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gmkb-integrated-scope .gmkb-ai-form-group {
+  margin-bottom: 0;
+}
+
+.gmkb-integrated-scope .gmkb-ai-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gmkb-ai-text, #374151);
+}
+
+.gmkb-integrated-scope .gmkb-ai-label--required::after {
+  content: ' *';
+  color: var(--gmkb-ai-error, #ef4444);
+}
+
+.gmkb-integrated-scope .gmkb-ai-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--gmkb-ai-text-muted, #9ca3af);
+}
+
+/* Input Fields */
+.gmkb-integrated-scope .gmkb-ai-input {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.5;
+  color: var(--gmkb-ai-text, #1f2937);
+  background: var(--gmkb-ai-bg, #ffffff);
+  border: 1px solid var(--gmkb-ai-border, #d1d5db);
+  border-radius: var(--gmkb-ai-radius-md, 8px);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.gmkb-integrated-scope .gmkb-ai-input:focus {
+  outline: none;
+  border-color: var(--gmkb-ai-primary, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.gmkb-integrated-scope .gmkb-ai-input::placeholder {
+  color: var(--gmkb-ai-text-muted, #9ca3af);
+}
+
+.gmkb-integrated-scope .gmkb-ai-input--error {
+  border-color: var(--gmkb-ai-error, #ef4444);
+}
+
+.gmkb-integrated-scope .gmkb-ai-input--error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+/* Textarea */
+.gmkb-integrated-scope .gmkb-ai-textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* Select Dropdown */
+.gmkb-integrated-scope .gmkb-ai-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 10px center;
+  background-repeat: no-repeat;
+  background-size: 16px 16px;
+  padding-right: 36px;
+}
+
+/* ========================================
+   TOGGLE BUTTONS (Length, POV, Tone)
+   ======================================== */
+
+.gmkb-integrated-scope .gmkb-ai-toggle-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.gmkb-integrated-scope .gmkb-ai-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--gmkb-ai-text-secondary, #4b5563);
+  background: var(--gmkb-ai-bg-tertiary, #f3f4f6);
+  border: 1px solid var(--gmkb-ai-border, #e5e7eb);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gmkb-integrated-scope .gmkb-ai-toggle:hover {
+  background: var(--gmkb-ai-bg-secondary, #e5e7eb);
+  border-color: var(--gmkb-ai-border-hover, #d1d5db);
+}
+
+.gmkb-integrated-scope .gmkb-ai-toggle--active {
+  color: #ffffff;
+  background: var(--gmkb-ai-primary, #6366f1);
+  border-color: var(--gmkb-ai-primary, #6366f1);
+}
+
+.gmkb-integrated-scope .gmkb-ai-toggle--active:hover {
+  background: var(--gmkb-ai-primary-hover, #4f46e5);
+  border-color: var(--gmkb-ai-primary-hover, #4f46e5);
+}
+
+/* ========================================
+   BUTTONS
+   ======================================== */
+
+.gmkb-integrated-scope .gmkb-ai-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  line-height: 1;
+  border: none;
+  border-radius: var(--gmkb-ai-radius-md, 8px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gmkb-integrated-scope .gmkb-ai-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Primary Button (Generate) */
+.gmkb-integrated-scope .gmkb-ai-button--primary {
+  color: #ffffff;
+  background: var(--gmkb-ai-primary-gradient, linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%));
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
+}
+
+.gmkb-integrated-scope .gmkb-ai-button--primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.4);
+  transform: translateY(-1px);
+}
+
+.gmkb-integrated-scope .gmkb-ai-button--primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Secondary Button */
+.gmkb-integrated-scope .gmkb-ai-button--secondary {
+  color: var(--gmkb-ai-text-secondary, #4b5563);
+  background: var(--gmkb-ai-bg-tertiary, #f3f4f6);
+  border: 1px solid var(--gmkb-ai-border, #e5e7eb);
+}
+
+.gmkb-integrated-scope .gmkb-ai-button--secondary:hover:not(:disabled) {
+  background: var(--gmkb-ai-bg-secondary, #e5e7eb);
+  border-color: var(--gmkb-ai-border-hover, #d1d5db);
+}
+
+/* Ghost Button */
+.gmkb-integrated-scope .gmkb-ai-button--ghost {
+  color: var(--gmkb-ai-primary, #6366f1);
+  background: transparent;
+}
+
+.gmkb-integrated-scope .gmkb-ai-button--ghost:hover:not(:disabled) {
+  background: var(--gmkb-ai-primary-light, rgba(99, 102, 241, 0.1));
+}
+
+/* Full Width Button */
+.gmkb-integrated-scope .gmkb-ai-button--full {
+  width: 100%;
+}
+
+/* ========================================
+   LOADING SPINNER
+   ======================================== */
+
+.gmkb-integrated-scope .gmkb-ai-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: gmkb-integrated-spin 0.75s linear infinite;
+}
+
+@keyframes gmkb-integrated-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ========================================
+   RESULTS AREA
+   ======================================== */
+
+.gmkb-integrated-scope .gmkb-ai-widget__results {
+  padding: 16px 0 0 0;
+  margin-top: 16px;
+  border-top: 1px solid var(--gmkb-ai-border, #e2e8f0);
+}
+
+.gmkb-integrated-scope .gmkb-ai-results__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.gmkb-integrated-scope .gmkb-ai-results__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gmkb-ai-text-secondary, #374151);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.gmkb-integrated-scope .gmkb-ai-results__content {
+  padding: 14px;
+  background: var(--gmkb-ai-bg-secondary, #f8fafc);
+  border: 1px solid var(--gmkb-ai-border, #e5e7eb);
+  border-radius: var(--gmkb-ai-radius-md, 8px);
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--gmkb-ai-text, #1f2937);
+  white-space: pre-wrap;
+}
+
+/* Results Tabs */
+.gmkb-integrated-scope .gmkb-ai-results__tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.gmkb-integrated-scope .gmkb-ai-results__tab {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+  color: var(--gmkb-ai-text-secondary, #64748b);
+  background: transparent;
+  border: 1px solid var(--gmkb-ai-border, #e5e7eb);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gmkb-integrated-scope .gmkb-ai-results__tab:hover {
+  border-color: var(--gmkb-ai-primary, #6366f1);
+}
+
+.gmkb-integrated-scope .gmkb-ai-results__tab--active {
+  color: var(--gmkb-ai-primary, #6366f1);
+  background: var(--gmkb-ai-primary-light, rgba(99, 102, 241, 0.1));
+  border-color: var(--gmkb-ai-primary, #6366f1);
+}
+
+/* Results as list */
+.gmkb-integrated-scope .gmkb-ai-results__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gmkb-integrated-scope .gmkb-ai-results__list-item {
+  padding: 10px 14px;
+  background: var(--gmkb-ai-bg, #ffffff);
+  border: 1px solid var(--gmkb-ai-border, #e5e7eb);
+  border-radius: var(--gmkb-ai-radius-md, 8px);
+  margin-bottom: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--gmkb-ai-text, #1f2937);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gmkb-integrated-scope .gmkb-ai-results__list-item:hover {
+  border-color: var(--gmkb-ai-primary, #6366f1);
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.1);
+}
+
+.gmkb-integrated-scope .gmkb-ai-results__list-item--selected {
+  border-color: var(--gmkb-ai-primary, #6366f1);
+  background: var(--gmkb-ai-primary-light, rgba(99, 102, 241, 0.05));
+}
+
+.gmkb-integrated-scope .gmkb-ai-results__list-item:last-child {
+  margin-bottom: 0;
+}
+
+/* ========================================
+   WIDGET FOOTER
+   ======================================== */
+
+.gmkb-integrated-scope .gmkb-ai-widget__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 0 0 0;
+  margin-top: 16px;
+  border-top: 1px solid var(--gmkb-ai-border, #e2e8f0);
+}
+
+.gmkb-integrated-scope .gmkb-ai-widget__footer-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* ========================================
+   ERROR MESSAGE
+   ======================================== */
+
+.gmkb-integrated-scope .gmkb-ai-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--gmkb-ai-error-light, #fef2f2);
+  border: 1px solid #fecaca;
+  border-radius: var(--gmkb-ai-radius-md, 8px);
+  margin-bottom: 16px;
+}
+
+.gmkb-integrated-scope .gmkb-ai-error__icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: var(--gmkb-ai-error, #ef4444);
+}
+
+.gmkb-integrated-scope .gmkb-ai-error__content {
+  flex: 1;
+}
+
+.gmkb-integrated-scope .gmkb-ai-error__message {
+  margin: 0;
+  font-size: 13px;
+  color: #991b1b;
+  line-height: 1.5;
+}
+
+.gmkb-integrated-scope .gmkb-ai-error__retry {
+  margin-top: 8px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #991b1b;
+  background: #ffffff;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gmkb-integrated-scope .gmkb-ai-error__retry:hover {
+  background: #fef2f2;
+  border-color: var(--gmkb-ai-error, #ef4444);
+}
+
+/* ========================================
+   COPY SUCCESS TOAST
+   ======================================== */
+
+.gmkb-integrated-scope .gmkb-ai-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #ffffff;
+  background: var(--gmkb-ai-success, #10b981);
+  border-radius: var(--gmkb-ai-radius-md, 8px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 9999;
+}
+
+.gmkb-integrated-scope .gmkb-ai-toast--visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.gmkb-integrated-scope .gmkb-ai-toast__icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* ========================================
+   DARK MODE SUPPORT
+   ======================================== */
+
+body.dark-mode .gmkb-integrated-scope {
+  color: #f1f5f9;
+}
+
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-widget__header {
+  border-bottom-color: #334155;
+}
+
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-widget__title {
+  color: #f1f5f9;
+}
+
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-widget__description {
+  color: #94a3b8;
+}
+
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-label {
+  color: #e2e8f0;
+}
+
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-input {
+  color: #f1f5f9;
+  background: #1e293b;
+  border-color: #475569;
+}
+
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-input:focus {
+  border-color: #818cf8;
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+}
+
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-input::placeholder {
+  color: #64748b;
+}
+
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-toggle {
+  color: #cbd5e1;
+  background: #334155;
+  border-color: #475569;
+}
+
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-toggle:hover {
+  background: #475569;
+}
+
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-toggle--active {
+  color: #ffffff;
+  background: #6366f1;
+  border-color: #6366f1;
+}
+
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-button--secondary {
+  color: #cbd5e1;
+  background: #334155;
+  border-color: #475569;
+}
+
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-button--secondary:hover:not(:disabled) {
+  background: #475569;
+}
+
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-widget__results,
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-widget__footer {
+  border-top-color: #334155;
+}
+
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-results__content {
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-results__tab {
+  color: #94a3b8;
+  border-color: #475569;
+}
+
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-results__tab--active {
+  color: #818cf8;
+  background: rgba(129, 140, 248, 0.15);
+  border-color: #818cf8;
+}
+
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-results__list-item {
+  background: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-results__list-item:hover {
+  border-color: #818cf8;
+}

@@ -46,6 +46,12 @@
                 <p class="empty-slot">Branding content not provided</p>
             </slot>
         </div>
+
+        <div class="tab-content seo">
+            <slot name="seo">
+                <p class="empty-slot">SEO content not provided</p>
+            </slot>
+        </div>
     </div>
 </template>
 
@@ -138,7 +144,8 @@ defineEmits(['change']);
 .profile-tabs-component #tab-overview:checked ~ .tab-content.overview,
 .profile-tabs-component #tab-value:checked ~ .tab-content.value,
 .profile-tabs-component #tab-messaging:checked ~ .tab-content.messaging,
-.profile-tabs-component #tab-branding:checked ~ .tab-content.branding {
+.profile-tabs-component #tab-branding:checked ~ .tab-content.branding,
+.profile-tabs-component #tab-seo:checked ~ .tab-content.seo {
     display: block;
     animation: profileTabsFadeIn 0.3s ease;
 }
@@ -147,7 +154,8 @@ defineEmits(['change']);
 .profile-tabs-component #tab-overview:checked ~ .tabs-header label[for="tab-overview"],
 .profile-tabs-component #tab-value:checked ~ .tabs-header label[for="tab-value"],
 .profile-tabs-component #tab-messaging:checked ~ .tabs-header label[for="tab-messaging"],
-.profile-tabs-component #tab-branding:checked ~ .tabs-header label[for="tab-branding"] {
+.profile-tabs-component #tab-branding:checked ~ .tabs-header label[for="tab-branding"],
+.profile-tabs-component #tab-seo:checked ~ .tabs-header label[for="tab-seo"] {
     color: #14b8a6;
     font-weight: 600;
     border-bottom-color: #14b8a6;
