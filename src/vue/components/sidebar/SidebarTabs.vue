@@ -500,6 +500,63 @@
             <span>Advanced Settings</span>
           </button>
         </div>
+
+        <!-- SEO & Visibility Section -->
+        <div class="panel-section seo-section">
+          <h3 class="panel-section-title">
+            <i class="fa-solid fa-search"></i>
+            SEO & Visibility
+          </h3>
+
+          <!-- AEO Score Badge -->
+          <div v-if="seoData.aeoScore !== null" class="aeo-score-badge" :class="getAeoGradeClass(seoData.aeoScore)">
+            <div class="aeo-score-value">{{ seoData.aeoScore }}</div>
+            <div class="aeo-score-label">AEO Score</div>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">Meta Title</label>
+            <input
+              type="text"
+              class="text-input"
+              v-model="seoData.metaTitle"
+              @input="updateSeoData"
+              :placeholder="seoData.profileName ? `${seoData.profileName} - Media Kit` : 'Page title for search engines'"
+            />
+            <span class="input-hint">{{ seoData.metaTitle?.length || 0 }}/60 characters</span>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">Meta Description</label>
+            <textarea
+              class="text-input textarea-input"
+              rows="3"
+              v-model="seoData.metaDescription"
+              @input="updateSeoData"
+              :placeholder="seoData.profileBio ? seoData.profileBio.substring(0, 155) + '...' : 'Brief description for search results'"
+            ></textarea>
+            <span class="input-hint">{{ seoData.metaDescription?.length || 0 }}/160 characters</span>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">Schema Type</label>
+            <select class="select-input" v-model="seoData.schemaType" @change="updateSeoData">
+              <option value="Person">Person (Individual)</option>
+              <option value="Organization">Organization</option>
+              <option value="ProfilePage">Profile Page</option>
+            </select>
+          </div>
+
+          <button
+            v-if="hasProfileSeo"
+            class="secondary-btn sync-btn"
+            @click="syncSeoFromProfile"
+            :disabled="isSyncingSeo"
+          >
+            <i :class="isSyncingSeo ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-sync'"></i>
+            {{ isSyncingSeo ? 'Syncing...' : 'Sync from Profile' }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -605,7 +662,95 @@ export default {
     const backgroundImageRepeat = ref('no-repeat');
     const backgroundOverlayColor = ref('#000000');
     const backgroundOverlayOpacity = ref(0);
-    
+
+    // SEO Data - auto-populated from profile
+    const seoData = ref({
+      metaTitle: '',
+      metaDescription: '',
+      schemaType: 'Person',
+      aeoScore: null,
+      profileName: '',
+      profileBio: ''
+    });
+    const isSyncingSeo = ref(false);
+
+    // Check if profile has SEO data available
+    const hasProfileSeo = computed(() => {
+      return !!(window.gmkbData?.profile_id || window.gmkbVueData?.pods_data);
+    });
+
+    // Get AEO grade class based on score
+    const getAeoGradeClass = (score) => {
+      if (score >= 80) return 'aeo-grade-a';
+      if (score >= 60) return 'aeo-grade-b';
+      if (score >= 40) return 'aeo-grade-c';
+      return 'aeo-grade-d';
+    };
+
+    // Update SEO data in store
+    const updateSeoData = () => {
+      store.customSettings = {
+        ...store.customSettings,
+        seo: {
+          metaTitle: seoData.value.metaTitle,
+          metaDescription: seoData.value.metaDescription,
+          schemaType: seoData.value.schemaType
+        }
+      };
+      store._trackChange();
+    };
+
+    // Sync SEO data from profile
+    const syncSeoFromProfile = async () => {
+      isSyncingSeo.value = true;
+
+      try {
+        const profileId = window.gmkbData?.profile_id || store.profileId;
+        if (!profileId) {
+          console.warn('[SidebarTabs] No profile ID available for SEO sync');
+          return;
+        }
+
+        // Fetch profile SEO data from API
+        const response = await fetch(`/wp-json/gmkb/v2/profile/${profileId}`, {
+          headers: {
+            'X-WP-Nonce': window.gmkbData?.nonce || window.gmkbVueData?.nonce || ''
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+
+          // Auto-populate from profile data
+          const fullName = [data.first_name, data.last_name].filter(Boolean).join(' ');
+          seoData.value.profileName = fullName;
+          seoData.value.profileBio = data.biography || data.bio || '';
+
+          // Set meta title if empty
+          if (!seoData.value.metaTitle && fullName) {
+            seoData.value.metaTitle = `${fullName} - Media Kit`;
+          }
+
+          // Set meta description from bio if empty
+          if (!seoData.value.metaDescription && seoData.value.profileBio) {
+            seoData.value.metaDescription = seoData.value.profileBio.substring(0, 155);
+          }
+
+          // Get AEO score if available
+          if (data.seo?.aeo_score !== undefined) {
+            seoData.value.aeoScore = data.seo.aeo_score;
+          }
+
+          updateSeoData();
+          console.log('[SidebarTabs] ✅ SEO data synced from profile');
+        }
+      } catch (error) {
+        console.error('[SidebarTabs] ❌ Failed to sync SEO from profile:', error);
+      } finally {
+        isSyncingSeo.value = false;
+      }
+    };
+
     // Background types
     const backgroundTypes = [
       { id: 'color', icon: 'fa-solid fa-palette', label: 'Color' },
@@ -1123,11 +1268,22 @@ export default {
             backgroundOverlayOpacity.value = bg.image.overlayOpacity;
           }
         }
-        
+
         updatePageBackground();
       }
+
+      // Initialize SEO data from store or auto-sync from profile
+      if (store.customSettings?.seo) {
+        const seo = store.customSettings.seo;
+        seoData.value.metaTitle = seo.metaTitle || '';
+        seoData.value.metaDescription = seo.metaDescription || '';
+        seoData.value.schemaType = seo.schemaType || 'Person';
+      } else if (hasProfileSeo.value) {
+        // Auto-sync from profile on first load
+        syncSeoFromProfile();
+      }
     });
-    
+
     onBeforeUnmount(() => {
       document.removeEventListener('keydown', handleKeyboardShortcut);
       document.removeEventListener('gmkb:components-discovered', handleComponentsDiscovered);
@@ -1191,7 +1347,14 @@ export default {
       onSectionDragEnter,
       onSectionDragLeave,
       onSectionDrop,
-      onSectionDragEnd
+      onSectionDragEnd,
+      // SEO data and methods
+      seoData,
+      hasProfileSeo,
+      isSyncingSeo,
+      getAeoGradeClass,
+      updateSeoData,
+      syncSeoFromProfile
     };
   }
 };
@@ -2567,5 +2730,169 @@ body.dark-mode .sidebar-content::-webkit-scrollbar-thumb {
 
 body.dark-mode .sidebar-content::-webkit-scrollbar-thumb:hover {
   background: #6b7280;
+}
+
+/* SEO Section Styles */
+.seo-section .panel-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.seo-section .panel-section-title i {
+  color: #06b6d4;
+  font-size: 14px;
+}
+
+.textarea-input {
+  resize: vertical;
+  min-height: 60px;
+  font-family: inherit;
+}
+
+.input-hint {
+  display: block;
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+body.dark-mode .input-hint {
+  color: #6b7280;
+}
+
+/* AEO Score Badge */
+.aeo-score-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+}
+
+.aeo-score-badge.aeo-grade-a {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+.aeo-score-badge.aeo-grade-b {
+  background: #fefce8;
+  border-color: #fde047;
+}
+
+.aeo-score-badge.aeo-grade-c {
+  background: #fff7ed;
+  border-color: #fdba74;
+}
+
+.aeo-score-badge.aeo-grade-d {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
+body.dark-mode .aeo-score-badge.aeo-grade-a {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+body.dark-mode .aeo-score-badge.aeo-grade-b {
+  background: rgba(234, 179, 8, 0.1);
+  border-color: rgba(234, 179, 8, 0.3);
+}
+
+body.dark-mode .aeo-score-badge.aeo-grade-c {
+  background: rgba(249, 115, 22, 0.1);
+  border-color: rgba(249, 115, 22, 0.3);
+}
+
+body.dark-mode .aeo-score-badge.aeo-grade-d {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.aeo-score-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #059669;
+}
+
+.aeo-grade-b .aeo-score-value {
+  color: #ca8a04;
+}
+
+.aeo-grade-c .aeo-score-value {
+  color: #ea580c;
+}
+
+.aeo-grade-d .aeo-score-value {
+  color: #dc2626;
+}
+
+body.dark-mode .aeo-score-value {
+  color: #34d399;
+}
+
+body.dark-mode .aeo-grade-b .aeo-score-value {
+  color: #fbbf24;
+}
+
+body.dark-mode .aeo-grade-c .aeo-score-value {
+  color: #fb923c;
+}
+
+body.dark-mode .aeo-grade-d .aeo-score-value {
+  color: #f87171;
+}
+
+.aeo-score-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+}
+
+body.dark-mode .aeo-score-label {
+  color: #9ca3af;
+}
+
+/* Sync Button */
+.sync-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.sync-btn i {
+  font-size: 12px;
+}
+
+.sync-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Design Panel Layout Fix */
+.design-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.design-panel .panel-section {
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 16px;
+}
+
+.design-panel .panel-section:last-child {
+  border-bottom: none;
+}
+
+body.dark-mode .design-panel .panel-section {
+  border-bottom-color: #334155;
 }
 </style>
