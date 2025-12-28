@@ -313,15 +313,30 @@ blockquote {
 }
 
 /* Hide any builder drop zones that may have been prerendered */
-.gmkb-frontend-display .component-drop-zone {
+.gmkb-frontend-display .component-drop-zone,
+.gmkb-frontend-display [class*="component-drop-zone"],
+.gmkb-frontend-display [data-section-id] > .component-drop-zone {
   border: none !important;
+  border-width: 0 !important;
+  border-style: none !important;
   padding: 0 !important;
   min-height: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Reset component-list wrapper */
+.gmkb-frontend-display .component-list {
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 /* Hide builder controls that may have been prerendered */
 .gmkb-frontend-display .component-controls,
-.gmkb-frontend-display .gmkb-section-controls {
+.gmkb-frontend-display .gmkb-section-controls,
+.gmkb-frontend-display .gmkb-section__header,
+.gmkb-frontend-display .drop-placeholder,
+.gmkb-frontend-display [data-builder-only] {
   display: none !important;
 }
 
