@@ -28,6 +28,64 @@ class GMKB_AEO_Optimizer {
     ];
 
     /**
+     * Entity Clarity scoring values
+     */
+    private const SCORE_ENTITY_FULL_NAME = 20;
+    private const SCORE_ENTITY_JOB_TITLE = 20;
+    private const SCORE_ENTITY_ORGANIZATION = 15;
+    private const SCORE_ENTITY_HEADSHOT = 20;
+    private const SCORE_ENTITY_DESCRIPTION = 25;
+
+    /**
+     * Expertise Depth scoring values
+     */
+    private const SCORE_EXPERTISE_TOPICS_FULL = 30;       // 3+ topics
+    private const SCORE_EXPERTISE_TOPIC_EACH = 10;        // Per topic (< 3)
+    private const SCORE_EXPERTISE_AUTHORITY_HOOK = 25;
+    private const SCORE_EXPERTISE_IMPACT_INTRO = 20;
+    private const SCORE_EXPERTISE_TAGS = 15;
+    private const SCORE_EXPERTISE_CREDENTIALS = 10;
+    private const MIN_TOPICS_FOR_FULL_SCORE = 3;
+
+    /**
+     * Social Validation scoring values
+     */
+    private const SCORE_SOCIAL_LINKS_FULL = 50;           // 2+ social links
+    private const SCORE_SOCIAL_LINKS_SINGLE = 25;         // 1 social link
+    private const SCORE_SOCIAL_LINKEDIN = 20;
+    private const SCORE_SOCIAL_WEBSITE = 20;
+    private const SCORE_SOCIAL_LOGOS = 10;
+    private const MIN_SOCIAL_FOR_FULL_SCORE = 2;
+
+    /**
+     * Content Richness scoring values
+     */
+    private const SCORE_CONTENT_BIO_LONG = 30;            // 500+ chars
+    private const SCORE_CONTENT_BIO_MEDIUM = 20;          // 200+ chars
+    private const SCORE_CONTENT_BIO_SHORT = 10;           // Any content
+    private const BIO_LENGTH_LONG = 500;
+    private const BIO_LENGTH_MEDIUM = 200;
+    private const SCORE_CONTENT_QUESTIONS_FULL = 40;      // 5+ questions
+    private const SCORE_CONTENT_QUESTIONS_SOME = 25;      // 3+ questions
+    private const SCORE_CONTENT_QUESTIONS_FEW = 10;       // Any questions
+    private const MIN_QUESTIONS_FOR_FULL_SCORE = 5;
+    private const MIN_QUESTIONS_FOR_SOME_SCORE = 3;
+    private const SCORE_CONTENT_WHY_BOOK = 20;
+    private const SCORE_CONTENT_PODCAST_INTRO = 10;
+
+    /**
+     * Freshness scoring values (days thresholds)
+     */
+    private const FRESHNESS_EXCELLENT_DAYS = 30;
+    private const FRESHNESS_GOOD_DAYS = 90;
+    private const FRESHNESS_FAIR_DAYS = 180;
+    private const FRESHNESS_STALE_DAYS = 365;
+    private const SCORE_FRESHNESS_EXCELLENT = 100;
+    private const SCORE_FRESHNESS_GOOD = 75;
+    private const SCORE_FRESHNESS_FAIR = 50;
+    private const SCORE_FRESHNESS_STALE = 25;
+
+    /**
      * Profile post ID
      *
      * @var int
@@ -173,75 +231,75 @@ class GMKB_AEO_Optimizer {
         $recommendations = [];
         $checks = [];
 
-        // Full name (20%)
+        // Full name
         $has_name = $this->has_field('first_name') && $this->has_field('last_name');
         $checks['full_name'] = $has_name;
         if ($has_name) {
-            $score += 20;
+            $score += self::SCORE_ENTITY_FULL_NAME;
         } else {
             $recommendations[] = [
                 'factor' => 'entity_clarity',
                 'field' => 'name',
                 'message' => 'Add your full name (first and last) for clear identity',
-                'impact' => 20,
+                'impact' => self::SCORE_ENTITY_FULL_NAME,
             ];
         }
 
-        // Job title (20%)
+        // Job title
         $has_title = $this->has_field('guest_title');
         $checks['job_title'] = $has_title;
         if ($has_title) {
-            $score += 20;
+            $score += self::SCORE_ENTITY_JOB_TITLE;
         } else {
             $recommendations[] = [
                 'factor' => 'entity_clarity',
                 'field' => 'guest_title',
                 'message' => 'Add your professional title/role',
-                'impact' => 15,
+                'impact' => self::SCORE_ENTITY_JOB_TITLE - 5,
             ];
         }
 
-        // Organization (15%)
+        // Organization
         $has_company = $this->has_field('company');
         $checks['organization'] = $has_company;
         if ($has_company) {
-            $score += 15;
+            $score += self::SCORE_ENTITY_ORGANIZATION;
         } else {
             $recommendations[] = [
                 'factor' => 'entity_clarity',
                 'field' => 'company',
                 'message' => 'Add your organization or business name',
-                'impact' => 10,
+                'impact' => self::SCORE_ENTITY_ORGANIZATION - 5,
             ];
         }
 
-        // Headshot (20%)
+        // Headshot
         $has_image = $this->has_field('headshot_primary');
         $checks['headshot'] = $has_image;
         if ($has_image) {
-            $score += 20;
+            $score += self::SCORE_ENTITY_HEADSHOT;
         } else {
             $recommendations[] = [
                 'factor' => 'entity_clarity',
                 'field' => 'headshot_primary',
                 'message' => 'Add a professional headshot for visual identity',
-                'impact' => 15,
+                'impact' => self::SCORE_ENTITY_HEADSHOT - 5,
             ];
         }
 
-        // Unique description (25%)
+        // Unique description
         $has_tagline = $this->has_field('tagline');
         $has_authority = $this->has_field('authority_hook');
         $has_description = $has_tagline || $has_authority;
         $checks['description'] = $has_description;
         if ($has_description) {
-            $score += 25;
+            $score += self::SCORE_ENTITY_DESCRIPTION;
         } else {
             $recommendations[] = [
                 'factor' => 'entity_clarity',
                 'field' => 'tagline',
                 'message' => 'Add a tagline or authority hook to describe what you do',
-                'impact' => 20,
+                'impact' => self::SCORE_ENTITY_DESCRIPTION - 5,
             ];
         }
 
@@ -267,77 +325,78 @@ class GMKB_AEO_Optimizer {
         $recommendations = [];
         $checks = [];
 
-        // Topics (30%) - need 3+ for full credit
+        // Topics - need MIN_TOPICS_FOR_FULL_SCORE+ for full credit
+        $topic_fields = GMKB_Profile_Schema::get_fields_by_group('topics');
         $topic_count = 0;
-        for ($i = 1; $i <= 5; $i++) {
-            if ($this->has_field("topic_{$i}")) {
+        foreach ($topic_fields as $field) {
+            if (strpos($field, 'topic_') === 0 && $this->has_field($field)) {
                 $topic_count++;
             }
         }
         $checks['topics'] = $topic_count;
 
-        if ($topic_count >= 3) {
-            $score += 30;
+        if ($topic_count >= self::MIN_TOPICS_FOR_FULL_SCORE) {
+            $score += self::SCORE_EXPERTISE_TOPICS_FULL;
         } elseif ($topic_count > 0) {
-            $score += $topic_count * 10;
+            $score += $topic_count * self::SCORE_EXPERTISE_TOPIC_EACH;
             $recommendations[] = [
                 'factor' => 'expertise_depth',
                 'field' => 'topics',
-                'message' => "Add " . (3 - $topic_count) . " more expertise topics (you have {$topic_count})",
-                'impact' => (3 - $topic_count) * 10,
+                'message' => "Add " . (self::MIN_TOPICS_FOR_FULL_SCORE - $topic_count) . " more expertise topics (you have {$topic_count})",
+                'impact' => (self::MIN_TOPICS_FOR_FULL_SCORE - $topic_count) * self::SCORE_EXPERTISE_TOPIC_EACH,
             ];
         } else {
             $recommendations[] = [
                 'factor' => 'expertise_depth',
                 'field' => 'topics',
-                'message' => 'Add at least 3 expertise topics you can discuss',
-                'impact' => 25,
+                'message' => 'Add at least ' . self::MIN_TOPICS_FOR_FULL_SCORE . ' expertise topics you can discuss',
+                'impact' => self::SCORE_EXPERTISE_AUTHORITY_HOOK,
             ];
         }
 
-        // Authority hook (25%)
+        // Authority hook
         $has_hook = $this->has_field('authority_hook');
         $checks['authority_hook'] = $has_hook;
         if ($has_hook) {
-            $score += 25;
+            $score += self::SCORE_EXPERTISE_AUTHORITY_HOOK;
         } else {
             $recommendations[] = [
                 'factor' => 'expertise_depth',
                 'field' => 'authority_hook',
                 'message' => 'Create an authority hook explaining who you help and how',
-                'impact' => 20,
+                'impact' => self::SCORE_EXPERTISE_AUTHORITY_HOOK - 5,
             ];
         }
 
-        // Impact intro (20%)
+        // Impact intro
         $has_impact = $this->has_field('impact_intro');
         $checks['impact_intro'] = $has_impact;
         if ($has_impact) {
-            $score += 20;
+            $score += self::SCORE_EXPERTISE_IMPACT_INTRO;
         } else {
             $recommendations[] = [
                 'factor' => 'expertise_depth',
                 'field' => 'impact_intro',
                 'message' => 'Add an impact intro with your key achievements',
-                'impact' => 15,
+                'impact' => self::SCORE_EXPERTISE_IMPACT_INTRO - 5,
             ];
         }
 
-        // Expertise tags (15%)
+        // Expertise tags
         $expertise_tags = $this->get_field('expertise_tags');
-        $has_tags = is_array($expertise_tags) && count($expertise_tags) >= 3;
+        $has_tags = is_array($expertise_tags) && count($expertise_tags) >= self::MIN_TOPICS_FOR_FULL_SCORE;
         $checks['expertise_tags'] = $has_tags;
         if ($has_tags) {
-            $score += 15;
+            $score += self::SCORE_EXPERTISE_TAGS;
         }
 
-        // Credentials - alumni, awards, certifications (10%)
+        // Credentials - alumni, awards, certifications
         $has_credentials = $this->has_field('alumni_of') ||
                           $this->has_field('awards') ||
                           $this->has_field('certifications');
         $checks['credentials'] = $has_credentials;
         if ($has_credentials) {
-            $score += 10;
+            $score += self::SCORE_EXPERTISE_CREDENTIALS;
         }
 
         return [
@@ -362,76 +421,69 @@ class GMKB_AEO_Optimizer {
         $recommendations = [];
         $checks = [];
 
-        // Social links (50%) - need 2+ for full credit
-        $social_fields = [
-            'social_linkedin',
-            'social_twitter',
-            'social_instagram',
-            'social_facebook',
-            'social_youtube',
-            'social_tiktok',
-        ];
+        // Social links - need MIN_SOCIAL_FOR_FULL_SCORE+ for full credit
+        $social_fields = GMKB_Profile_Schema::get_fields_by_group('social');
         $social_count = 0;
         foreach ($social_fields as $field) {
-            if ($this->has_field($field)) {
+            if (strpos($field, 'social_') === 0 && $this->has_field($field)) {
                 $social_count++;
             }
         }
         $checks['social_count'] = $social_count;
 
-        if ($social_count >= 2) {
-            $score += 50;
+        if ($social_count >= self::MIN_SOCIAL_FOR_FULL_SCORE) {
+            $score += self::SCORE_SOCIAL_LINKS_FULL;
         } elseif ($social_count === 1) {
-            $score += 25;
+            $score += self::SCORE_SOCIAL_LINKS_SINGLE;
             $recommendations[] = [
                 'factor' => 'social_validation',
                 'field' => 'social',
                 'message' => 'Add at least one more social media profile link',
-                'impact' => 15,
+                'impact' => self::SCORE_SOCIAL_LINKEDIN - 5,
             ];
         } else {
             $recommendations[] = [
                 'factor' => 'social_validation',
                 'field' => 'social',
                 'message' => 'Add social media profile links (LinkedIn highly recommended)',
-                'impact' => 20,
+                'impact' => self::SCORE_SOCIAL_LINKEDIN,
             ];
         }
 
-        // LinkedIn specifically (20%)
+        // LinkedIn specifically
         $has_linkedin = $this->has_field('social_linkedin');
         $checks['linkedin'] = $has_linkedin;
         if ($has_linkedin) {
-            $score += 20;
+            $score += self::SCORE_SOCIAL_LINKEDIN;
         } else {
             $recommendations[] = [
                 'factor' => 'social_validation',
                 'field' => 'social_linkedin',
                 'message' => 'Add your LinkedIn profile URL',
-                'impact' => 15,
+                'impact' => self::SCORE_SOCIAL_LINKEDIN - 5,
             ];
         }
 
-        // Website (20%)
+        // Website
         $has_website = $this->has_field('website_primary');
         $checks['website'] = $has_website;
         if ($has_website) {
-            $score += 20;
+            $score += self::SCORE_SOCIAL_WEBSITE;
         } else {
             $recommendations[] = [
                 'factor' => 'social_validation',
                 'field' => 'website_primary',
                 'message' => 'Add your professional website URL',
-                'impact' => 10,
+                'impact' => self::SCORE_SOCIAL_LOGOS,
             ];
         }
 
-        // Featured logos / press mentions (10%)
+        // Featured logos / press mentions
         $logos = $this->get_field('logos');
         $has_logos = is_array($logos) ? !empty($logos) : !empty($logos);
         $checks['logos'] = $has_logos;
         if ($has_logos) {
-            $score += 10;
+            $score += self::SCORE_SOCIAL_LOGOS;
         }
 
         return [
@@ -456,80 +508,81 @@ class GMKB_AEO_Optimizer {
         $recommendations = [];
         $checks = [];
 
-        // Biography depth (30%)
+        // Biography depth
         $biography = $this->get_field('biography');
         $bio_length = strlen(wp_strip_all_tags($biography));
         $checks['biography_length'] = $bio_length;
 
-        if ($bio_length >= 500) {
-            $score += 30;
-        } elseif ($bio_length >= 200) {
-            $score += 20;
+        if ($bio_length >= self::BIO_LENGTH_LONG) {
+            $score += self::SCORE_CONTENT_BIO_LONG;
+        } elseif ($bio_length >= self::BIO_LENGTH_MEDIUM) {
+            $score += self::SCORE_CONTENT_BIO_MEDIUM;
         } elseif ($bio_length > 0) {
-            $score += 10;
+            $score += self::SCORE_CONTENT_BIO_SHORT;
             $recommendations[] = [
                 'factor' => 'content_richness',
                 'field' => 'biography',
-                'message' => 'Expand your biography to at least 200 words for better AI understanding',
-                'impact' => 15,
+                'message' => 'Expand your biography to at least ' . self::BIO_LENGTH_MEDIUM . ' characters for better AI understanding',
+                'impact' => self::SCORE_CONTENT_BIO_MEDIUM - self::SCORE_CONTENT_BIO_SHORT,
             ];
         } else {
             $recommendations[] = [
                 'factor' => 'content_richness',
                 'field' => 'biography',
                 'message' => 'Add a detailed professional biography',
-                'impact' => 20,
+                'impact' => self::SCORE_CONTENT_BIO_MEDIUM,
             ];
         }
 
-        // Interview questions for FAQ (40%) - need 5+ for full credit
+        // Interview questions for FAQ - dynamically from schema
+        $question_fields = GMKB_Profile_Schema::get_fields_by_group('questions');
         $question_count = 0;
-        for ($i = 1; $i <= 25; $i++) {
-            if ($this->has_field("question_{$i}")) {
+        foreach ($question_fields as $field) {
+            if ($this->has_field($field)) {
                 $question_count++;
             }
         }
         $checks['question_count'] = $question_count;
 
-        if ($question_count >= 5) {
-            $score += 40;
-        } elseif ($question_count >= 3) {
-            $score += 25;
+        if ($question_count >= self::MIN_QUESTIONS_FOR_FULL_SCORE) {
+            $score += self::SCORE_CONTENT_QUESTIONS_FULL;
+        } elseif ($question_count >= self::MIN_QUESTIONS_FOR_SOME_SCORE) {
+            $score += self::SCORE_CONTENT_QUESTIONS_SOME;
             $recommendations[] = [
                 'factor' => 'content_richness',
                 'field' => 'questions',
-                'message' => 'Add ' . (5 - $question_count) . ' more interview questions for richer FAQ schema',
-                'impact' => 10,
+                'message' => 'Add ' . (self::MIN_QUESTIONS_FOR_FULL_SCORE - $question_count) . ' more interview questions for richer FAQ schema',
+                'impact' => self::SCORE_CONTENT_QUESTIONS_FEW,
             ];
         } elseif ($question_count > 0) {
-            $score += 10;
+            $score += self::SCORE_CONTENT_QUESTIONS_FEW;
             $recommendations[] = [
                 'factor' => 'content_richness',
                 'field' => 'questions',
-                'message' => 'Add at least 5 interview questions you can answer',
-                'impact' => 15,
+                'message' => 'Add at least ' . self::MIN_QUESTIONS_FOR_FULL_SCORE . ' interview questions you can answer',
+                'impact' => self::SCORE_CONTENT_QUESTIONS_SOME - self::SCORE_CONTENT_QUESTIONS_FEW,
             ];
         } else {
             $recommendations[] = [
                 'factor' => 'content_richness',
                 'field' => 'questions',
                 'message' => 'Add interview questions - these become FAQ rich snippets',
-                'impact' => 25,
+                'impact' => self::SCORE_CONTENT_QUESTIONS_SOME,
             ];
         }
 
-        // Why book you / value proposition (20%)
+        // Why book you / value proposition
         $has_why = $this->has_field('why_book_you');
         $checks['why_book_you'] = $has_why;
         if ($has_why) {
-            $score += 20;
+            $score += self::SCORE_CONTENT_WHY_BOOK;
         }
 
-        // Podcast intro (10%)
+        // Podcast intro
         $has_intro = $this->has_field('podcast_intro');
         $checks['podcast_intro'] = $has_intro;
         if ($has_intro) {
-            $score += 10;
+            $score += self::SCORE_CONTENT_PODCAST_INTRO;
         }
 
         return [
@@ -563,14 +616,14 @@ class GMKB_AEO_Optimizer {
             $now = time();
             $days_ago = ($now - $modified_time) / (60 * 60 * 24);
 
-            if ($days_ago <= 30) {
-                $score += 100; // Updated in last month
-            } elseif ($days_ago <= 90) {
-                $score += 75; // Updated in last 3 months
-            } elseif ($days_ago <= 180) {
-                $score += 50; // Updated in last 6 months
-            } elseif ($days_ago <= 365) {
-                $score += 25; // Updated in last year
+            if ($days_ago <= self::FRESHNESS_EXCELLENT_DAYS) {
+                $score += self::SCORE_FRESHNESS_EXCELLENT; // Updated in last month
+            } elseif ($days_ago <= self::FRESHNESS_GOOD_DAYS) {
+                $score += self::SCORE_FRESHNESS_GOOD; // Updated in last 3 months
+            } elseif ($days_ago <= self::FRESHNESS_FAIR_DAYS) {
+                $score += self::SCORE_FRESHNESS_FAIR; // Updated in last 6 months
+            } elseif ($days_ago <= self::FRESHNESS_STALE_DAYS) {
+                $score += self::SCORE_FRESHNESS_STALE; // Updated in last year
                 $recommendations[] = [
                     'factor' => 'freshness',
                     'field' => 'profile',

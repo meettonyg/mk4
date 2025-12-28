@@ -21,6 +21,21 @@ class GMKB_Profile_API {
     const NAMESPACE = 'gmkb/v2';
 
     /**
+     * SEO-related fields for settings endpoints
+     */
+    private const SEO_FIELDS = [
+        'seo_schema_enabled',
+        'seo_schema_types',
+        'seo_custom_title',
+        'seo_custom_description',
+        'seo_enabled_features',
+        'alumni_of',
+        'awards',
+        'member_of',
+        'certifications',
+    ];
+
+    /**
      * Repository instance
      *
      * @var GMKB_Profile_Repository
@@ -493,21 +508,8 @@ class GMKB_Profile_API {
     public static function get_seo_settings($request) {
         $post_id = (int) $request->get_param('id');
 
-        // Get SEO-related fields
-        $seo_fields = [
-            'seo_schema_enabled',
-            'seo_schema_types',
-            'seo_custom_title',
-            'seo_custom_description',
-            'seo_enabled_features',
-            'alumni_of',
-            'awards',
-            'member_of',
-            'certifications',
-        ];
-
         $settings = [];
-        foreach ($seo_fields as $field) {
+        foreach (self::SEO_FIELDS as $field) {
             $value = get_post_meta($post_id, $field, true);
             $settings[$field] = $value;
         }
@@ -564,21 +566,8 @@ class GMKB_Profile_API {
             }
         }
 
-        // Allowed SEO fields
-        $seo_fields = [
-            'seo_schema_enabled',
-            'seo_schema_types',
-            'seo_custom_title',
-            'seo_custom_description',
-            'seo_enabled_features',
-            'alumni_of',
-            'awards',
-            'member_of',
-            'certifications',
-        ];
-
         $updated = [];
-        foreach ($seo_fields as $field) {
+        foreach (self::SEO_FIELDS as $field) {
             if (isset($body[$field])) {
                 $value = $body[$field];
 

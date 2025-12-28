@@ -198,11 +198,15 @@ class GMKB_Profile_Schema_Markup {
             return array_filter($expertise_tags);
         }
 
-        // Fall back to individual topic fields
-        for ($i = 1; $i <= 5; $i++) {
-            $topic = $this->get_field("topic_{$i}");
-            if (!empty($topic)) {
-                $topics[] = $topic;
+        // Fall back to individual topic fields - dynamically from schema
+        $topic_fields = GMKB_Profile_Schema::get_fields_by_group('topics');
+        foreach ($topic_fields as $field) {
+            // Only include topic_N fields, not legacy
+            if (strpos($field, 'topic_') === 0 && strpos($field, 'legacy') === false) {
+                $topic = $this->get_field($field);
+                if (!empty($topic)) {
+                    $topics[] = $topic;
+                }
             }
         }
 
@@ -217,8 +221,10 @@ class GMKB_Profile_Schema_Markup {
     public function get_questions(): array {
         $questions = [];
 
-        for ($i = 1; $i <= 25; $i++) {
-            $question = $this->get_field("question_{$i}");
+        // Dynamically get question fields from schema
+        $question_fields = GMKB_Profile_Schema::get_fields_by_group('questions');
+        foreach ($question_fields as $field) {
+            $question = $this->get_field($field);
             if (!empty($question)) {
                 // For FAQ schema, we need an answer
                 // Use the question itself or a default answer pattern

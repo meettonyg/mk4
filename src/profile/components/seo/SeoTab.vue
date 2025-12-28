@@ -470,7 +470,7 @@ const saveSection = async (sectionId) => {
 };
 
 const loadAeoScore = async () => {
-    // Fetch AEO score from API
+    // Fetch AEO score from API (single source of truth)
     try {
         const response = await fetch(`/wp-json/gmkb/v2/profile/${store.postId}/aeo-score`, {
             headers: {
@@ -486,137 +486,22 @@ const loadAeoScore = async () => {
             aeoFactors.value = Object.values(data.factors || {});
             aeoRecommendations.value = data.recommendations || [];
         } else {
-            // Fallback: calculate locally using available data
-            calculateLocalAeoScore();
+            // Show error state - API is the single source of truth
+            aeoScore.value = 0;
+            aeoGrade.value = '—';
+            aeoSummary.value = 'Unable to calculate AEO score. Please try again later.';
+            aeoFactors.value = [];
+            aeoRecommendations.value = [];
+            console.error('Failed to load AEO score:', response.status, response.statusText);
         }
     } catch (error) {
         console.error('Failed to load AEO score:', error);
-        // Fallback to local calculation
-        calculateLocalAeoScore();
-    }
-};
-
-const calculateLocalAeoScore = () => {
-    // Simple local calculation when API is not available
-    let score = 0;
-    const factors = [];
-
-    // Entity Clarity (25%)
-    let entityScore = 0;
-    if (store.fields.first_name && store.fields.last_name) entityScore += 20;
-    if (store.fields.guest_title) entityScore += 20;
-    if (store.fields.company) entityScore += 15;
-    if (store.fields.headshot_primary) entityScore += 20;
-    if (store.fields.tagline || store.fields.authority_hook) entityScore += 25;
-    factors.push({
-        id: 'entity_clarity',
-        label: 'Entity Clarity',
-        description: 'How clearly AI can identify who you are',
-        score: entityScore,
-        max: 100,
-    });
-    score += (entityScore / 100) * 25;
-
-    // Expertise Depth (25%)
-    let expertiseScore = 0;
-    let topicCount = 0;
-    for (let i = 1; i <= 5; i++) {
-        if (store.fields[`topic_${i}`]) topicCount++;
-    }
-    if (topicCount >= 3) expertiseScore += 30;
-    else if (topicCount > 0) expertiseScore += topicCount * 10;
-    if (store.fields.authority_hook) expertiseScore += 25;
-    if (store.fields.impact_intro) expertiseScore += 20;
-    if (store.fields.alumni_of || store.fields.awards) expertiseScore += 10;
-    factors.push({
-        id: 'expertise_depth',
-        label: 'Expertise Depth',
-        description: 'Demonstrated knowledge and authority signals',
-        score: Math.min(expertiseScore, 100),
-        max: 100,
-    });
-    score += (Math.min(expertiseScore, 100) / 100) * 25;
-
-    // Social Validation (20%)
-    let socialScore = 0;
-    let socialCount = 0;
-    const socialFields = ['social_linkedin', 'social_twitter', 'social_instagram', 'social_facebook', 'social_youtube'];
-    socialFields.forEach((f) => {
-        if (store.fields[f]) socialCount++;
-    });
-    if (socialCount >= 2) socialScore += 50;
-    else if (socialCount === 1) socialScore += 25;
-    if (store.fields.social_linkedin) socialScore += 20;
-    if (store.fields.website_primary) socialScore += 20;
-    factors.push({
-        id: 'social_validation',
-        label: 'Social Validation',
-        description: 'Cross-platform identity verification',
-        score: Math.min(socialScore, 100),
-        max: 100,
-    });
-    score += (Math.min(socialScore, 100) / 100) * 20;
-
-    // Content Richness (20%)
-    let contentScore = 0;
-    const bioLength = (store.fields.biography || '').replace(/<[^>]*>/g, '').length;
-    if (bioLength >= 500) contentScore += 30;
-    else if (bioLength >= 200) contentScore += 20;
-    else if (bioLength > 0) contentScore += 10;
-    let questionCount = 0;
-    for (let i = 1; i <= 25; i++) {
-        if (store.fields[`question_${i}`]) questionCount++;
-    }
-    if (questionCount >= 5) contentScore += 40;
-    else if (questionCount >= 3) contentScore += 25;
-    else if (questionCount > 0) contentScore += 10;
-    if (store.fields.why_book_you) contentScore += 20;
-    factors.push({
-        id: 'content_richness',
-        label: 'Content Richness',
-        description: 'Depth of answerable content',
-        score: Math.min(contentScore, 100),
-        max: 100,
-    });
-    score += (Math.min(contentScore, 100) / 100) * 20;
-
-    // Freshness (10%)
-    factors.push({
-        id: 'freshness',
-        label: 'Freshness',
-        description: 'How recently the profile was updated',
-        score: 75, // Assume recent since they're viewing it
-        max: 100,
-    });
-    score += (75 / 100) * 10;
-
-    aeoScore.value = Math.round(score);
-    aeoGrade.value = score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : 'D';
-    aeoFactors.value = factors;
-
-    // Generate recommendations
-    const recs = [];
-    if (!store.fields.social_linkedin) {
-        recs.push({ message: 'Add your LinkedIn profile URL', impact: 15 });
-    }
-    if (topicCount < 3) {
-        recs.push({ message: `Add ${3 - topicCount} more expertise topics`, impact: 10 });
-    }
-    if (questionCount < 5) {
-        recs.push({ message: 'Add more interview questions for FAQ schema', impact: 15 });
-    }
-    if (!store.fields.authority_hook) {
-        recs.push({ message: 'Create an authority hook explaining who you help', impact: 20 });
-    }
-    aeoRecommendations.value = recs.slice(0, 5);
-
-    // Generate summary
-    if (score >= 80) {
-        aeoSummary.value = 'Excellent! Your profile is highly optimized for AI visibility.';
-    } else if (score >= 60) {
-        aeoSummary.value = 'Good foundation! Follow the recommendations to improve further.';
-    } else {
-        aeoSummary.value = 'Your profile needs work to be visible to AI systems.';
+        // Show error state
+        aeoScore.value = 0;
+        aeoGrade.value = '—';
+        aeoSummary.value = 'Unable to connect to the server. Please check your connection.';
+        aeoFactors.value = [];
+        aeoRecommendations.value = [];
     }
 };
 
