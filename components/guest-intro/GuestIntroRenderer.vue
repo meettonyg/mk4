@@ -3,7 +3,7 @@
   <div class="gmkb-component gmkb-component--guestintro" :data-component-id="componentId">
     <div class="intro-container">
       <div class="intro-content">
-        <p v-if="displayIntroduction" class="intro-text">{{ displayIntroduction }}</p>
+        <div v-if="displayIntroduction" class="intro-text" v-html="formattedIntro"></div>
         <p v-else class="intro-text intro-text--placeholder">No introduction available.</p>
       </div>
     </div>
@@ -51,6 +51,27 @@ export default {
     // Data from component JSON state (single source of truth)
     const displayIntroduction = computed(() => props.data?.introduction || props.props?.introduction || '');
 
+    // FORMATTED INTRO: Convert plain text to HTML paragraphs with line breaks
+    const formattedIntro = computed(() => {
+      if (!displayIntroduction.value) return '';
+
+      // If already has HTML tags, return as-is
+      if (displayIntroduction.value.includes('<p>') || displayIntroduction.value.includes('<br')) {
+        return displayIntroduction.value;
+      }
+
+      // Convert double newlines to paragraphs, single newlines to <br>
+      return displayIntroduction.value
+        .split(/\n\n+/)  // Split on double+ newlines for paragraphs
+        .filter(p => p.trim())
+        .map(p => {
+          // Convert single newlines within paragraphs to <br>
+          const withBreaks = p.trim().replace(/\n/g, '<br>');
+          return `<p>${withBreaks}</p>`;
+        })
+        .join('');
+    });
+
     // Lifecycle
     onMounted(() => {
       // Event-driven approach - dispatch mount event
@@ -68,7 +89,8 @@ export default {
     });
 
     return {
-      displayIntroduction
+      displayIntroduction,
+      formattedIntro
     };
   }
 };
@@ -92,6 +114,15 @@ export default {
   font-size: var(--gmkb-font-size-base, 1rem);
   line-height: var(--gmkb-line-height-relaxed, 1.7);
   margin: 0;
+}
+
+/* Paragraph spacing within intro text */
+.intro-text p {
+  margin: 0 0 1em 0;
+}
+
+.intro-text p:last-child {
+  margin-bottom: 0;
 }
 
 .intro-text--placeholder {

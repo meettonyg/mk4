@@ -56,15 +56,19 @@ export default {
       if (!biography.value) return '';
 
       // If already has HTML tags, return as-is
-      if (biography.value.includes('<p>')) {
+      if (biography.value.includes('<p>') || biography.value.includes('<br')) {
         return biography.value;
       }
 
-      // Convert newlines to paragraphs
+      // Convert double newlines to paragraphs, single newlines to <br>
       return biography.value
-        .split('\n\n')
+        .split(/\n\n+/)  // Split on double+ newlines for paragraphs
         .filter(p => p.trim())
-        .map(p => `<p>${p}</p>`)
+        .map(p => {
+          // Convert single newlines within paragraphs to <br>
+          const withBreaks = p.trim().replace(/\n/g, '<br>');
+          return `<p>${withBreaks}</p>`;
+        })
         .join('');
     });
 
