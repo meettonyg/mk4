@@ -49,7 +49,9 @@ const COMPONENT_TO_SAVE_TYPE = {
   'guest-intro': 'guest_intro',
   'hero': 'biography', // Hero uses biography fields
   'tagline': 'tagline',
-  'authority-hook': 'authority_hook'
+  'authority-hook': 'authority_hook',
+  'contact': 'contact',
+  'social': 'social'
 };
 
 export function useProfilePrePopulation(componentType = null) {

@@ -37,8 +37,25 @@
         </section>
         
         <section class="editor-section">
-          <h4>Social Networks</h4>
-          
+          <div class="section-header">
+            <h4>Social Networks</h4>
+            <div class="section-actions">
+              <button
+                v-if="hasProfileData"
+                type="button"
+                class="profile-load-btn"
+                @click="handleLoadFromProfile"
+                title="Load social links from your profile"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                Load from Profile
+              </button>
+            </div>
+          </div>
+
           <div class="social-network" v-for="(network, key) in socialNetworks" :key="key">
             <div class="network-header">
               <span class="network-icon">{{ network.icon }}</span>
@@ -51,8 +68,31 @@
               type="url"
             />
           </div>
+
+          <!-- Save to Profile button -->
+          <div v-if="canSaveToProfile" class="section-footer">
+            <button
+              type="button"
+              class="profile-save-btn profile-save-btn--full"
+              :class="{ 'is-saving': isSaving }"
+              :disabled="isSaving || !hasSocialLinks"
+              @click="handleSaveToProfile"
+              title="Save social links to your profile"
+            >
+              <svg v-if="!isSaving" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/>
+                <polyline points="7 3 7 8 15 8"/>
+              </svg>
+              <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 6v6l4 2"/>
+              </svg>
+              {{ isSaving ? 'Saving...' : 'Save to Profile' }}
+            </button>
+          </div>
         </section>
-        
+
         <section class="editor-section">
           <h4>Display Options</h4>
           
@@ -73,9 +113,10 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, computed } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
 import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
+import { useProfilePrePopulation } from '@composables/useProfilePrePopulation';
 
 const props = defineProps({
   componentId: {
@@ -90,6 +131,15 @@ const store = useMediaKitStore();
 
 // Active tab state
 const activeTab = ref('content');
+
+// Profile pre-population and save
+const {
+  hasProfileData,
+  getPrePopulatedData,
+  canSaveToProfile,
+  isSaving,
+  saveToProfile
+} = useProfilePrePopulation('social');
 
 const socialNetworks = {
   facebook: { name: 'Facebook', icon: '👤', placeholder: 'https://facebook.com/username' },
@@ -117,6 +167,41 @@ const displaySettings = ref({
   description: '',
   showLabels: false
 });
+
+// Check if any social links are filled
+const hasSocialLinks = computed(() => {
+  return Object.values(socialUrls.value).some(url => url && url.trim());
+});
+
+// Load data from profile
+const handleLoadFromProfile = () => {
+  const profileData = getPrePopulatedData();
+  if (profileData.linkedin) socialUrls.value.linkedin = profileData.linkedin;
+  if (profileData.twitter) socialUrls.value.twitter = profileData.twitter;
+  if (profileData.facebook) socialUrls.value.facebook = profileData.facebook;
+  if (profileData.instagram) socialUrls.value.instagram = profileData.instagram;
+  if (profileData.youtube) socialUrls.value.youtube = profileData.youtube;
+  if (profileData.tiktok) socialUrls.value.tiktok = profileData.tiktok;
+  updateDisplaySettings();
+};
+
+// Save data to profile
+const handleSaveToProfile = async () => {
+  const socialData = {};
+  for (const [key, url] of Object.entries(socialUrls.value)) {
+    if (url && url.trim()) {
+      socialData[key] = url.trim();
+    }
+  }
+
+  const result = await saveToProfile(socialData);
+
+  if (result.success) {
+    console.log('[SocialEditor] ✅ Social links saved to profile');
+  } else {
+    console.error('[SocialEditor] ❌ Failed to save social links:', result.errors);
+  }
+};
 
 // Load component data
 const loadComponentData = () => {
@@ -346,5 +431,119 @@ body.dark-mode .network-name {
 
 .social-network input {
   width: 100%;
+}
+
+/* Section Header with Action Buttons */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.section-header h4 {
+  margin: 0;
+}
+
+.section-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.profile-load-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.profile-load-btn:hover {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.profile-load-btn svg {
+  flex-shrink: 0;
+}
+
+body.dark-mode .profile-load-btn {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+/* Section Footer with Save Button */
+.section-footer {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+body.dark-mode .section-footer {
+  border-top-color: #334155;
+}
+
+.profile-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.profile-save-btn:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.profile-save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.profile-save-btn.is-saving {
+  opacity: 0.7;
+}
+
+.profile-save-btn svg {
+  flex-shrink: 0;
+}
+
+.profile-save-btn svg.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+body.dark-mode .profile-save-btn {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.profile-save-btn--full {
+  width: 100%;
+  justify-content: center;
+  padding: 10px 16px;
+  font-size: 14px;
 }
 </style>
