@@ -533,18 +533,9 @@ export class ProfileDataIntegration {
   hasProfileData() {
     return Object.keys(this.profileData).length > 0;
   }
-
-  // Legacy method aliases for backwards compatibility
-  getPodsDataSource() { return this.getProfileDataSource(); }
-  getComponentPodsConfig(componentType) { return this.getComponentFieldConfig(componentType); }
-  transformPodsData(config, data) { return this.transformProfileData(config, data); }
-  hasPodsData() { return this.hasProfileData(); }
 }
 
 // Create singleton instance
 const profileDataIntegration = new ProfileDataIntegration();
-
-// Legacy export alias for backwards compatibility
-export const podsDataIntegration = profileDataIntegration;
 
 export default profileDataIntegration;

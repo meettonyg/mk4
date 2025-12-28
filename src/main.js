@@ -556,10 +556,7 @@ async function initialize() {
     console.log('✅ Component registry initialized');
     
     // Initialize profile data integration (accessible via GMKB.services.profile)
-    // Legacy window aliases for backwards compatibility
     window.profileDataIntegration = profileDataIntegration;
-    window.podsDataIntegration = profileDataIntegration;  // Legacy alias
-    window.gmkbPodsIntegration = profileDataIntegration;  // Legacy alias
     logger.info('✅ Profile data integration initialized');
     
     // ROOT FIX: NO MORE initDragDrop() - Vue handles ALL drag/drop!
