@@ -739,7 +739,7 @@ watch(() => props.data, (newData) => {
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 0.875rem;
-  background: #fff;
+  background: #ffffff;
 }
 
 .field-input:focus,
