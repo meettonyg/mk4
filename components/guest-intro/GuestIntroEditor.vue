@@ -441,8 +441,8 @@ const handleAiApplied = (data) => {
 /* Section Header with Action Buttons */
 .section-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 12px;
   margin-bottom: 16px;
 }
 
@@ -452,8 +452,14 @@ const handleAiApplied = (data) => {
 
 .section-actions {
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  align-items: center;
+  width: 100%;
+}
+
+.section-actions button {
+  width: 100%;
+  justify-content: center;
 }
 
 .profile-load-btn {

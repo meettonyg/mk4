@@ -2878,9 +2878,8 @@ body.dark-mode .aeo-score-label {
 
 /* Design Panel Layout Fix */
 .design-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+  display: block;
+  overflow-y: auto;
 }
 
 .design-panel .panel-section {
