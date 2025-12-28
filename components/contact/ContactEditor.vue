@@ -73,10 +73,10 @@
           </div>
           
           <div class="field-group">
-            <label for="contact-address">Address</label>
-            <textarea 
-              id="contact-address"
-              v-model="localData.address" 
+            <label for="contact-location">Location</label>
+            <textarea
+              id="contact-location"
+              v-model="localData.location"
               @input="updateComponent"
               rows="2"
               placeholder="123 Main St, City, State 12345"
@@ -116,7 +116,7 @@ const localData = ref({
   email: '',
   phone: '',
   skype: '',
-  address: ''
+  location: ''
 });
 
 // Load component data
@@ -129,7 +129,7 @@ const loadComponentData = () => {
       email: component.data.email || '',
       phone: component.data.phone || '',
       skype: component.data.skype || '',
-      address: component.data.address || ''
+      location: component.data.location || component.data.address || ''
     };
   }
 };

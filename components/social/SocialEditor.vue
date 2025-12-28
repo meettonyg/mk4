@@ -148,6 +148,17 @@ onMounted(() => {
   loadComponentData();
 });
 
+// Build links array from individual social URLs (for renderer compatibility)
+const buildLinksArray = () => {
+  const links = [];
+  for (const [platform, url] of Object.entries(socialUrls.value)) {
+    if (url && url.trim()) {
+      links.push({ platform, url: url.trim() });
+    }
+  }
+  return links;
+};
+
 // Update social URL in component data
 let urlUpdateTimeout = null;
 const updateSocialUrl = (fieldKey) => {
@@ -159,7 +170,8 @@ const updateSocialUrl = (fieldKey) => {
       data: {
         ...component.data,
         ...displaySettings.value,
-        ...socialUrls.value
+        ...socialUrls.value,
+        links: buildLinksArray() // Add links array for renderer
       }
     });
     store.isDirty = true;
@@ -178,7 +190,8 @@ const updateDisplaySettings = () => {
       data: {
         ...component.data,
         ...displaySettings.value,
-        ...socialUrls.value
+        ...socialUrls.value,
+        links: buildLinksArray() // Add links array for renderer
       }
     });
     store.isDirty = true;
