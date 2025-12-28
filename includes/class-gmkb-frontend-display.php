@@ -427,27 +427,15 @@ class GMKB_Frontend_Display {
 
     /**
      * Enqueue frontend assets
+     *
+     * NOTE: The design system CSS is loaded in enqueue.php via gmkb_enqueue_frontend_assets()
+     * We do NOT load the Vue bundle CSS (dist/gmkb.css) here because it contains
+     * builder-specific styles (hover borders, drop zones, etc.) that should NOT
+     * appear on the public frontend.
      */
     public function enqueue_frontend_assets() {
-        if (!is_singular()) {
-            return;
-        }
-
-        $post_id = get_the_ID();
-        $pre_rendered = get_post_meta($post_id, 'gmkb_rendered_html', true);
-
-        if (empty($pre_rendered)) {
-            return;
-        }
-
-        // Enqueue frontend CSS
-        if (file_exists(GMKB_PLUGIN_DIR . 'dist/gmkb.css')) {
-            wp_enqueue_style(
-                'gmkb-frontend',
-                GMKB_PLUGIN_URL . 'dist/gmkb.css',
-                array(),
-                filemtime(GMKB_PLUGIN_DIR . 'dist/gmkb.css')
-            );
-        }
+        // Frontend CSS is now handled centrally in enqueue.php
+        // This method is kept for backwards compatibility but does nothing
+        // The design system CSS provides all necessary styling for rendered components
     }
 }
