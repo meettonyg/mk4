@@ -1,5 +1,25 @@
 <template>
   <div class="interviews-editor">
+    <div class="editor-header">
+      <h3>Featured Interviews</h3>
+      <button @click="closeEditor" class="close-btn">×</button>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="editor-tabs">
+      <button
+        v-for="tab in tabs"
+        :key="tab.id"
+        :class="['tab-btn', { active: activeTab === tab.id }]"
+        @click="activeTab = tab.id"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
+
+    <div class="editor-content">
+      <!-- CONTENT TAB -->
+      <div v-show="activeTab === 'content'" class="tab-panel">
     <!-- Interview Selection with Dropdown UI -->
     <div class="editor-section">
       <h4 class="editor-section-title">Select Interviews</h4>
@@ -179,6 +199,24 @@
         <span>Show Listen Button</span>
       </label>
     </div>
+      </div>
+
+      <!-- STYLE TAB -->
+      <div v-show="activeTab === 'style'" class="tab-panel">
+        <BaseStylePanel
+          :component-id="componentId"
+          :component-type="'interviews'"
+          :show-typography="true"
+        />
+      </div>
+
+      <!-- ADVANCED TAB -->
+      <div v-show="activeTab === 'advanced'" class="tab-panel">
+        <BaseAdvancedPanel
+          :component-id="componentId"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -186,14 +224,28 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
 import { apiRequest } from '../../src/utils/api.js';
+import BaseStylePanel from '../../src/vue/components/sidebar/editors/BaseStylePanel.vue';
+import BaseAdvancedPanel from '../../src/vue/components/sidebar/editors/BaseAdvancedPanel.vue';
 
 const props = defineProps({
   componentId: { type: String, required: true },
   data: { type: Object, default: () => ({}) }
 });
 
-const emit = defineEmits(['update']);
+const emit = defineEmits(['update', 'close']);
 const store = useMediaKitStore();
+
+// Tab state
+const activeTab = ref('content');
+const tabs = [
+  { id: 'content', label: 'Content' },
+  { id: 'style', label: 'Style' },
+  { id: 'advanced', label: 'Advanced' }
+];
+
+const closeEditor = () => {
+  store.closeEditPanel();
+};
 
 // Check if editing a profile (guests post type) - interviews should sync with profile
 const isProfilePost = computed(() => window.gmkbData?.postType === 'guests');
@@ -353,17 +405,98 @@ watch(() => props.data, (newData) => {
 
 <style scoped>
 .interviews-editor {
-  padding: 1rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: white;
+}
+
+.editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(to bottom, #ffffff, #f9fafb);
+}
+
+.editor-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.close-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 24px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.editor-tabs {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-btn:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.tab-btn.active {
+  color: #3b82f6;
+  background: white;
+  border-bottom-color: #3b82f6;
+}
+
+.editor-content {
+  flex: 1;
+  overflow-y: auto;
+  background: #f9fafb;
+}
+
+.tab-panel {
+  padding: 20px;
 }
 
 .editor-section {
-  margin-bottom: 1.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid #e5e7eb;
 }
 
 .editor-section:last-child {
-  border-bottom: none;
+  margin-bottom: 0;
 }
 
 .editor-section-title {

@@ -213,9 +213,13 @@ const updatePodsField = async () => {
     try {
       console.log('[GuestIntroEditor] Updating component data: introduction =', localData.value.introduction);
 
-      // Update component data in store
-      store.updateComponentData(props.componentId, {
-        introduction: localData.value.introduction
+      // Update component data in store - merge with existing data
+      const existingData = store.components[props.componentId]?.data || {};
+      store.updateComponent(props.componentId, {
+        data: {
+          ...existingData,
+          introduction: localData.value.introduction
+        }
       });
 
       console.log('✅ Saved introduction to component data');
