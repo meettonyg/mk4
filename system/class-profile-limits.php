@@ -135,10 +135,10 @@ class GMKB_Profile_Limits {
             // Check if any of the user's tags match this tier
             $tag_match = array_intersect($user_tags, $tier['tags']);
 
-            if (!empty($tag_match) && $tier['priority'] > $highest_priority) {
+            if (!empty($tag_match) && ($tier['priority'] ?? 0) > $highest_priority) {
                 $matched_tier = $tier;
                 $matched_tier['key'] = $tier_key;
-                $highest_priority = $tier['priority'];
+                $highest_priority = $tier['priority'] ?? 0;
             }
         }
 
@@ -246,8 +246,7 @@ class GMKB_Profile_Limits {
              LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = 'owner_user_id'
              WHERE p.post_type = 'guests'
              AND p.post_status IN ('publish', 'draft', 'private')
-             AND (pm.meta_value = %d OR (pm.meta_value IS NULL AND p.post_author = %d))",
-            $user_id,
+             AND COALESCE(pm.meta_value, p.post_author) = %d",
             $user_id
         ));
 

@@ -327,14 +327,14 @@ class GMKB_Profile_Limits_Admin {
         // Average profiles per user
         $avg_profiles = $total_users > 0 ? $total_profiles / $total_users : 0;
 
-        // Users at their limit (this is approximate - would need more complex query)
-        $users_at_limit = 0;
+        // Users at their limit - requires complex per-user tier calculation, not currently available
+        $users_at_limit = 'N/A';
 
         return [
             'total_users' => (int) $total_users,
             'total_profiles' => (int) $total_profiles,
             'avg_profiles_per_user' => (float) $avg_profiles,
-            'users_at_limit' => (int) $users_at_limit,
+            'users_at_limit' => $users_at_limit,
         ];
     }
 }
