@@ -8,11 +8,9 @@ class ComponentStyleService {
   constructor() {
     // Map of componentId → <style> element
     this.styleElements = new Map();
-    
+
     // Map of componentId → current settings hash (for change detection)
     this.settingsCache = new Map();
-    
-    console.log('✅ ComponentStyleService initialized');
   }
 
   /**
@@ -32,22 +30,13 @@ class ComponentStyleService {
     }
 
     try {
-      console.log(`🎨 applySectionStyling CALLED for ${sectionId}`);
-      console.log('  Settings:', settings);
-
       // Generate CSS variables for section
       const css = this.generateSectionCSS(sectionId, settings);
 
-      console.log(`🎨 Generated section CSS for ${sectionId}:`);
-      console.log(css || '(empty CSS)');
-
       // Inject or update styles
       this.injectStyles(`section-${sectionId}`, css);
-
-      console.log(`✅ Applied section styles to ${sectionId}`);
     } catch (error) {
-      console.error(`❌ Failed to apply section styles to ${sectionId}:`, error);
-      console.error('  Error stack:', error.stack);
+      console.error(`Failed to apply section styles to ${sectionId}:`, error);
     }
   }
 
@@ -203,46 +192,21 @@ class ComponentStyleService {
    */
   applyStyling(componentId, settings) {
     if (!componentId || !settings) {
-      console.warn('⚠️ Invalid parameters for applyStyling:', { componentId, settings });
       return;
     }
 
     try {
-      // CRITICAL DEBUG: Log what we're working with
-      console.log(`🔍 applyStyling CALLED for ${componentId}`);
-      console.log('  Settings:', settings);
-      console.log('  Has style?', !!settings.style);
-      console.log('  Has advanced?', !!settings.advanced);
-      
       // Generate CSS
       const css = this.generateCSS(componentId, settings);
-      
-      // CRITICAL DEBUG: Log generated CSS
-      console.log(`🎨 Generated CSS for ${componentId}:`);
-      console.log(css || '(empty CSS)');
-      
+
       // Inject or update styles
       this.injectStyles(componentId, css);
-      
-      // CRITICAL DEBUG: Verify injection
-      const styleEl = this.styleElements.get(componentId);
-      console.log(`✅ Style element exists?`, !!styleEl);
-      if (styleEl) {
-        console.log('  Style element ID:', styleEl.id);
-        console.log('  Style element parent:', styleEl.parentNode?.nodeName);
-        console.log('  CSS content length:', styleEl.textContent?.length);
-      }
-      
-      // Cache settings hash for debugging
+
+      // Cache settings hash
       const settingsHash = JSON.stringify(settings);
       this.settingsCache.set(componentId, settingsHash);
-      
-      if (window.gmkbData?.debugMode) {
-        console.log(`🎨 Applied styles to component ${componentId}`);
-      }
     } catch (error) {
-      console.error(`❌ Failed to apply styles to ${componentId}:`, error);
-      console.error('  Error stack:', error.stack);
+      console.error(`Failed to apply styles to ${componentId}:`, error);
     }
   }
 
@@ -262,12 +226,18 @@ class ComponentStyleService {
     }
     
     const { style, advanced } = settings;
-    if (!style || !advanced) {
+    // Only skip if BOTH style AND advanced are missing
+    // Components may have just style or just advanced settings
+    if (!style && !advanced) {
       if (window.gmkbData?.debugMode) {
-        console.warn(`⚠️ Missing style or advanced settings for ${componentId}`);
+        console.warn(`⚠️ Missing both style and advanced settings for ${componentId}`);
       }
       return '';
     }
+
+    // Safely default to empty objects if one is missing
+    const safeStyle = style || {};
+    const safeAdvanced = advanced || {};
 
     const rules = [];
 
@@ -291,24 +261,24 @@ class ComponentStyleService {
     const componentRules = []; // For background, padding, border, typography, effects
 
     // Spacing (margin & padding) - Apply strategically
-    if (style.spacing) {
-      if (style.spacing.margin) {
-        const m = style.spacing.margin;
+    if (safeStyle.spacing) {
+      if (safeStyle.spacing.margin) {
+        const m = safeStyle.spacing.margin;
         wrapperRules.push(`margin: ${m.top}${m.unit} ${m.right}${m.unit} ${m.bottom}${m.unit} ${m.left}${m.unit}`);
       }
-      if (style.spacing.padding) {
-        const p = style.spacing.padding;
+      if (safeStyle.spacing.padding) {
+        const p = safeStyle.spacing.padding;
         componentRules.push(`padding: ${p.top}${p.unit} ${p.right}${p.unit} ${p.bottom}${p.unit} ${p.left}${p.unit}`);
       }
     }
 
     // Background - Apply to component root
-    if (style.background) {
-      if (style.background.color) {
+    if (safeStyle.background) {
+      if (safeStyle.background.color) {
         // CRITICAL FIX: Use CSS variable fallback for theme support
         // If component has custom color, use it
         // If not, fall back to theme variable
-        const bgColor = this.htmlDecode(style.background.color);
+        const bgColor = this.htmlDecode(safeStyle.background.color);
         
         // Only apply background if it's not the theme's default background
         // This allows theme colors to show through
@@ -321,15 +291,15 @@ class ComponentStyleService {
           componentRules.push(`background-color: var(--gmkb-color-surface, ${bgColor}) !important`);
         }
       }
-      if (style.background.opacity !== undefined && style.background.opacity !== 100) {
-        componentRules.push(`opacity: ${style.background.opacity / 100}`);
+      if (safeStyle.background.opacity !== undefined && safeStyle.background.opacity !== 100) {
+        componentRules.push(`opacity: ${safeStyle.background.opacity / 100}`);
       }
     }
 
     // Typography (if present) - Apply to component root
     // CRITICAL FIX: Add !important to override component-specific styles
-    if (style.typography) {
-      const t = style.typography;
+    if (safeStyle.typography) {
+      const t = safeStyle.typography;
       // ROOT FIX: Format font family with proper CSS quotes
       if (t.fontFamily) {
         const fontFamily = this.formatFontFamily(t.fontFamily);
@@ -369,8 +339,8 @@ class ComponentStyleService {
     }
 
     // Border - Apply to component root
-    if (style.border) {
-      const b = style.border;
+    if (safeStyle.border) {
+      const b = safeStyle.border;
       
       // Border width
       if (b.width) {
@@ -391,18 +361,18 @@ class ComponentStyleService {
 
     // Effects - Apply to component root
     // CRITICAL FIX: Add !important to override component-specific styles
-    if (style.effects) {
-      if (style.effects.boxShadow && style.effects.boxShadow !== 'none') {
-        componentRules.push(`box-shadow: ${style.effects.boxShadow} !important`);
+    if (safeStyle.effects) {
+      if (safeStyle.effects.boxShadow && safeStyle.effects.boxShadow !== 'none') {
+        componentRules.push(`box-shadow: ${safeStyle.effects.boxShadow} !important`);
       }
-      if (style.effects.opacity !== undefined && style.effects.opacity !== 100) {
-        componentRules.push(`opacity: ${style.effects.opacity / 100} !important`);
+      if (safeStyle.effects.opacity !== undefined && safeStyle.effects.opacity !== 100) {
+        componentRules.push(`opacity: ${safeStyle.effects.opacity / 100} !important`);
       }
     }
 
     // Advanced - Layout (apply to wrapper)
-    if (advanced.layout) {
-      const layout = advanced.layout;
+    if (safeAdvanced.layout) {
+      const layout = safeAdvanced.layout;
       
       // Width
       if (layout.width) {
@@ -511,7 +481,6 @@ class ComponentStyleService {
    */
   watchComponent(componentId, store) {
     if (!store) {
-      console.warn('⚠️ Store not provided for watchComponent');
       return;
     }
 
@@ -530,33 +499,139 @@ class ComponentStyleService {
    */
   initializeAll(components) {
     if (!components || typeof components !== 'object') {
-      console.warn('⚠️ Invalid components object');
       return;
     }
 
-    let count = 0;
     Object.entries(components).forEach(([componentId, component]) => {
       if (component.settings) {
         this.applyStyling(componentId, component.settings);
-        count++;
       }
     });
-
-    console.log(`✅ Initialized ${count} component styles`);
   }
 
   /**
    * Clear all styles (for cleanup)
    */
   clearAll() {
-    this.styleElements.forEach((styleEl, componentId) => {
+    this.styleElements.forEach((styleEl) => {
       styleEl.remove();
     });
-    
+
     this.styleElements.clear();
     this.settingsCache.clear();
-    
-    console.log('🗑️ Cleared all component styles');
+  }
+
+  /**
+   * Get all component CSS as a single string
+   * Used for saving to database so frontend can render styles
+   * @param {Object} components - Components object from store
+   * @returns {string} Combined CSS for all components
+   */
+  getAllCSS(components) {
+    if (!components || typeof components !== 'object') {
+      return '';
+    }
+
+    const cssRules = [];
+
+    Object.entries(components).forEach(([componentId, component]) => {
+      if (component.settings) {
+        const css = this.generateCSS(componentId, component.settings);
+        if (css) {
+          cssRules.push(`/* Component: ${componentId} (${component.type || 'unknown'}) */`);
+          cssRules.push(css);
+          cssRules.push('');
+        }
+      }
+    });
+
+    return cssRules.join('\n');
+  }
+
+  /**
+   * Get all section CSS as a single string
+   * @param {Array} sections - Sections array from store
+   * @returns {string} Combined CSS for all sections
+   */
+  getAllSectionCSS(sections) {
+    if (!Array.isArray(sections)) {
+      return '';
+    }
+
+    const cssRules = [];
+
+    // Add layout CSS rules first (needed for frontend rendering)
+    cssRules.push(this.generateLayoutCSS());
+    cssRules.push('');
+
+    sections.forEach(section => {
+      // Generate section settings CSS
+      if (section.settings) {
+        const css = this.generateSectionCSS(section.section_id, section.settings);
+        if (css) {
+          cssRules.push(`/* Section: ${section.section_id} */`);
+          cssRules.push(css);
+          cssRules.push('');
+        }
+      }
+    });
+
+    return cssRules.join('\n');
+  }
+
+  /**
+   * Generate layout CSS rules for frontend rendering
+   * These replicate the scoped styles from SectionLayoutEnhanced.vue
+   * @returns {string} CSS string with layout rules
+   */
+  generateLayoutCSS() {
+    return `/* Layout CSS - Required for frontend grid layouts */
+.layout-full-width {
+  display: block;
+}
+
+.layout-two-column,
+.layout-two_column {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.layout-three-column,
+.layout-three_column {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.layout-main-sidebar {
+  display: grid;
+  grid-template-columns: 7fr 3fr;
+}
+
+.layout-sidebar-main {
+  display: grid;
+  grid-template-columns: 3fr 7fr;
+}
+
+/* Section column styling */
+.gmkb-section__column {
+  min-height: 50px;
+}
+
+/* Responsive: Stack columns on mobile */
+@media (max-width: 768px) {
+  .layout-two-column,
+  .layout-two_column,
+  .layout-three-column,
+  .layout-three_column,
+  .layout-main-sidebar,
+  .layout-sidebar-main {
+    grid-template-columns: 1fr;
+  }
+
+  .gmkb-section__column {
+    width: 100%;
+  }
+}`;
   }
 
   /**

@@ -1,28 +1,15 @@
 <template>
-  <div class="interviews-editor">
-    <div class="editor-header">
-      <h3>Featured Interviews</h3>
-      <button @click="closeEditor" class="close-btn">×</button>
-    </div>
-
-    <!-- Tab Navigation -->
-    <div class="editor-tabs">
-      <button
-        v-for="tab in tabs"
-        :key="tab.id"
-        :class="['tab-btn', { active: activeTab === tab.id }]"
-        @click="activeTab = tab.id"
-      >
-        {{ tab.label }}
-      </button>
-    </div>
-
-    <div class="editor-content">
-      <!-- CONTENT TAB -->
-      <div v-show="activeTab === 'content'" class="tab-panel">
-    <!-- Interview Selection with Dropdown UI -->
-    <div class="editor-section">
-      <h4 class="editor-section-title">Select Interviews</h4>
+  <ComponentEditorTemplate
+    :component-id="componentId"
+    component-type="Interviews"
+    :show-typography="true"
+    @close="handleClose"
+  >
+    <template #content>
+      <div class="interviews-editor">
+        <!-- Interview Selection with Dropdown UI -->
+        <div class="editor-section">
+          <h4 class="editor-section-title">Select Interviews</h4>
 
       <div v-if="isLoadingInterviews" class="loading-state">
         <div class="spinner"></div>
@@ -209,32 +196,15 @@
       </label>
     </div>
       </div>
-
-      <!-- STYLE TAB -->
-      <div v-show="activeTab === 'style'" class="tab-panel">
-        <BaseStylePanel
-          :component-id="componentId"
-          :component-type="'interviews'"
-          :show-typography="true"
-        />
-      </div>
-
-      <!-- ADVANCED TAB -->
-      <div v-show="activeTab === 'advanced'" class="tab-panel">
-        <BaseAdvancedPanel
-          :component-id="componentId"
-        />
-      </div>
-    </div>
-  </div>
+    </template>
+  </ComponentEditorTemplate>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
 import { apiRequest } from '../../src/utils/api.js';
-import BaseStylePanel from '../../src/vue/components/sidebar/editors/BaseStylePanel.vue';
-import BaseAdvancedPanel from '../../src/vue/components/sidebar/editors/BaseAdvancedPanel.vue';
+import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 
 const props = defineProps({
   componentId: { type: String, required: true },
@@ -242,6 +212,11 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update', 'close']);
+
+// Handle close button
+const handleClose = () => {
+  emit('close');
+};
 const store = useMediaKitStore();
 
 // Tab state
