@@ -173,6 +173,11 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-premium-features.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/class-premium-features.php';
 }
 
+// Profile Limits - Membership tier based profile creation limits
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-profile-limits.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-profile-limits.php';
+}
+
 // Profile Schema Markup - Schema.org structured data generation
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-profile-schema-markup.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/class-profile-schema-markup.php';
@@ -257,6 +262,11 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-onboarding-api
 // Onboarding Admin API - Rewards management endpoints
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-onboarding-admin-api.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-onboarding-admin-api.php';
+}
+
+// Profile Limits API - Membership tier limits endpoints
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-profile-limits-api.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-profile-limits-api.php';
 }
 
 // Offers Migration - Migrate Formidable offers to native CPT
@@ -400,6 +410,11 @@ if (is_admin()) {
     // Onboarding Admin - Rewards management and statistics
     if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/admin/class-gmkb-onboarding-admin.php')) {
         require_once GUESTIFY_PLUGIN_DIR . 'includes/admin/class-gmkb-onboarding-admin.php';
+    }
+
+    // Profile Limits Admin - Membership tier management
+    if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/admin/class-gmkb-profile-limits-admin.php')) {
+        require_once GUESTIFY_PLUGIN_DIR . 'includes/admin/class-gmkb-profile-limits-admin.php';
     }
 }
 

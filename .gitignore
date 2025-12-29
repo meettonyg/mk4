@@ -10,6 +10,9 @@ dist/*
 !dist/profile/
 !dist/profile-list/
 !dist/seo-tools/
+!dist/onboarding/
+!dist/onboarding-admin/
+!dist/profile-limits-admin/
 
 # Environment files
 .env

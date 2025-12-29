@@ -12,9 +12,13 @@ export const useProfileListStore = defineStore('profileList', {
         nonce: null,
         apiUrl: '/wp-json/',
         createUrl: '/app/profiles/guest/profile/',
+        upgradeUrl: '/pricing/',
 
         // Profiles data
         profiles: [],
+
+        // Limit status
+        limitStatus: null,
 
         // UI state
         isLoading: false,
@@ -50,6 +54,64 @@ export const useProfileListStore = defineStore('profileList', {
          * Get profile count
          */
         profileCount: (state) => state.profiles.length,
+
+        /**
+         * Check if user can create more profiles
+         */
+        canCreateProfile: (state) => {
+            if (!state.limitStatus) return true;
+            return state.limitStatus.can_create;
+        },
+
+        /**
+         * Check if user is at their profile limit
+         */
+        isAtLimit: (state) => {
+            if (!state.limitStatus) return false;
+            return state.limitStatus.at_limit;
+        },
+
+        /**
+         * Check if user has unlimited profiles
+         */
+        isUnlimited: (state) => {
+            if (!state.limitStatus) return false;
+            return state.limitStatus.is_unlimited;
+        },
+
+        /**
+         * Get profile limit (max allowed)
+         */
+        profileLimit: (state) => {
+            if (!state.limitStatus) return -1;
+            return state.limitStatus.profile_limit;
+        },
+
+        /**
+         * Get remaining profile slots
+         */
+        remainingSlots: (state) => {
+            if (!state.limitStatus) return -1;
+            return state.limitStatus.remaining_slots;
+        },
+
+        /**
+         * Get user's membership tier info
+         */
+        membershipTier: (state) => {
+            if (!state.limitStatus) return null;
+            return state.limitStatus.tier;
+        },
+
+        /**
+         * Get the upgrade URL
+         */
+        upgradeLink: (state) => {
+            if (state.limitStatus?.upgrade_url) {
+                return state.limitStatus.upgrade_url;
+            }
+            return state.upgradeUrl;
+        },
     },
 
     actions: {
@@ -74,7 +136,12 @@ export const useProfileListStore = defineStore('profileList', {
 
                 if (response.success) {
                     this.profiles = response.profiles || [];
+                    this.limitStatus = response.limit_status || null;
                     console.log(`Loaded ${this.profiles.length} profiles`);
+
+                    if (this.limitStatus) {
+                        console.log(`Profile limits: ${this.limitStatus.current_count}/${this.limitStatus.profile_limit === -1 ? 'unlimited' : this.limitStatus.profile_limit}`);
+                    }
                 } else {
                     throw new Error(response.message || 'Failed to load profiles');
                 }
@@ -90,6 +157,12 @@ export const useProfileListStore = defineStore('profileList', {
          * Create a new profile
          */
         async createProfile() {
+            // Check limits before attempting creation
+            if (this.limitStatus && !this.limitStatus.can_create) {
+                this.lastError = `You have reached your profile limit of ${this.limitStatus.profile_limit}. Please upgrade to create more profiles.`;
+                return null;
+            }
+
             this.isCreating = true;
             this.lastError = null;
 
@@ -102,6 +175,11 @@ export const useProfileListStore = defineStore('profileList', {
                 if (response.success && response.profile) {
                     // Add to list
                     this.profiles.unshift(response.profile);
+
+                    // Update limit status if returned
+                    if (response.limit_status) {
+                        this.limitStatus = response.limit_status;
+                    }
 
                     // Reset form
                     this.newProfile = { first_name: '', last_name: '' };
@@ -118,6 +196,12 @@ export const useProfileListStore = defineStore('profileList', {
                 }
             } catch (error) {
                 console.error('Failed to create profile:', error);
+
+                // Check for limit error in response
+                if (error.limit_status) {
+                    this.limitStatus = error.limit_status;
+                }
+
                 this.lastError = error.message;
                 return null;
             } finally {
@@ -148,10 +232,17 @@ export const useProfileListStore = defineStore('profileList', {
 
         /**
          * Open create modal
+         * Returns false if at limit, true if modal opened
          */
         openCreateModal() {
+            // Check if user can create more profiles
+            if (this.limitStatus && !this.limitStatus.can_create) {
+                return false;
+            }
+
             this.newProfile = { first_name: '', last_name: '' };
             this.showCreateModal = true;
+            return true;
         },
 
         /**
