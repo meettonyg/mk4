@@ -212,6 +212,16 @@
   /* Layout only - typography inherits */
 }
 
+/* Paragraph spacing within biography text */
+.biography-text p {
+  margin: 0 0 1em 0;
+  line-height: var(--gmkb-line-height-relaxed, 1.7);
+}
+
+.biography-text p:last-child {
+  margin-bottom: 0;
+}
+
 .biography-placeholder {
   /* Semantic styling for placeholders */
   color: var(--gmkb-color-text-muted);

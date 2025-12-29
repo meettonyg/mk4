@@ -16,6 +16,8 @@ import { getDefaultSettings, getComponentDefaults, mergeWithDefaults } from '../
 import { validateComponent, sanitizeComponent } from '../utils/componentValidator.js';
 // PHASE 4: Component Deprecation System
 import deprecationManager from '../services/ComponentDeprecationManager.js';
+// PRE-POPULATION: Import ProfileDataIntegration for pre-populating new components from profile data
+import profileDataIntegration from '../core/ProfileDataIntegration.js';
 
 export const useMediaKitStore = defineStore('mediaKit', {
   state: () => ({
@@ -807,13 +809,21 @@ export const useMediaKitStore = defineStore('mediaKit', {
         }
       }
       
+      // PRE-POPULATION: Get pre-populated data from profile data
+      // This allows new components to be automatically filled with profile data
+      // User-provided data takes precedence over pre-populated data
+      const prePopulatedData = profileDataIntegration.getPrePopulatedData(componentData.type);
+
       const component = {
         id: componentId,
         type: componentData.type,
-        data: { ...defaultProps, ...(componentData.data || {}) },
-        props: { ...defaultProps, ...(componentData.props || {}) },
+        // Merge order: defaultProps < prePopulatedData < user-provided data
+        data: { ...defaultProps, ...prePopulatedData, ...(componentData.data || {}) },
+        props: { ...defaultProps, ...prePopulatedData, ...(componentData.props || {}) },
         settings: componentSettings, // PHASE 2: Always use schema-compliant settings
-        schema: componentSchema
+        schema: componentSchema,
+        // Track if component was pre-populated (for UI feedback)
+        _prePopulated: Object.keys(prePopulatedData).length > 0
       };
       
       // CRITICAL: Log component creation in debug mode
@@ -827,13 +837,9 @@ export const useMediaKitStore = defineStore('mediaKit', {
         console.warn('[Store] Component validation warnings:', validation.errors);
       }
       
-      // ROOT FIX: Enrich component with Pods data configuration
-      if (window.podsDataIntegration || window.gmkbPodsIntegration) {
-        const podsIntegration = window.podsDataIntegration || window.gmkbPodsIntegration;
-        podsIntegration.enrichComponentData(component);
-        console.log('[Store] Component after Pods enrichment:', component);
-      } else {
-        console.warn('[Store] PodsDataIntegration not available');
+      // PRE-POPULATION: Log pre-populated data if available
+      if (component._prePopulated) {
+        console.log(`[Store] Component "${componentData.type}" pre-populated with profile data:`, prePopulatedData);
       }
       
       // Add to components map

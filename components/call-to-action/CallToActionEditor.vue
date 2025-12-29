@@ -38,40 +38,40 @@
 
         <section class="editor-section">
           <h4>Buttons</h4>
-          
+
           <div class="button-group">
             <label class="button-label">Primary Button</label>
             <div class="field-group">
-              <input 
-                v-model="localData.button_text" 
+              <input
+                v-model="localData.cta_button_1_text"
                 @input="updateComponent"
                 type="text"
                 placeholder="Button text"
               />
             </div>
             <div class="field-group">
-              <input 
-                v-model="localData.button_url" 
+              <input
+                v-model="localData.cta_button_1_url"
                 @input="updateComponent"
                 type="url"
                 placeholder="https://"
               />
             </div>
           </div>
-          
+
           <div class="button-group">
             <label class="button-label">Secondary Button (Optional)</label>
             <div class="field-group">
-              <input 
-                v-model="localData.secondary_button_text" 
+              <input
+                v-model="localData.cta_button_2_text"
                 @input="updateComponent"
                 type="text"
                 placeholder="Button text"
               />
             </div>
             <div class="field-group">
-              <input 
-                v-model="localData.secondary_button_url" 
+              <input
+                v-model="localData.cta_button_2_url"
                 @input="updateComponent"
                 type="url"
                 placeholder="https://"
@@ -141,10 +141,12 @@ const activeTab = ref('content');
 const localData = ref({
   title: 'Ready to Take Action?',
   description: '',
-  button_text: '',
-  button_url: '',
-  secondary_button_text: '',
-  secondary_button_url: '',
+  cta_button_1_text: '',
+  cta_button_1_url: '',
+  cta_button_1_style: 'primary',
+  cta_button_2_text: '',
+  cta_button_2_url: '',
+  cta_button_2_style: 'secondary',
   background_color: '#3b82f6',
   background_image: ''
 });
@@ -156,10 +158,13 @@ const loadComponentData = () => {
     localData.value = {
       title: component.data.title || 'Ready to Take Action?',
       description: component.data.description || '',
-      button_text: component.data.button_text || '',
-      button_url: component.data.button_url || '',
-      secondary_button_text: component.data.secondary_button_text || '',
-      secondary_button_url: component.data.secondary_button_url || '',
+      // Support both old and new field names for backwards compatibility
+      cta_button_1_text: component.data.cta_button_1_text || component.data.button_text || '',
+      cta_button_1_url: component.data.cta_button_1_url || component.data.button_url || '',
+      cta_button_1_style: component.data.cta_button_1_style || 'primary',
+      cta_button_2_text: component.data.cta_button_2_text || component.data.secondary_button_text || '',
+      cta_button_2_url: component.data.cta_button_2_url || component.data.secondary_button_url || '',
+      cta_button_2_style: component.data.cta_button_2_style || 'secondary',
       background_color: component.data.background_color || '#3b82f6',
       background_image: component.data.background_image || ''
     };

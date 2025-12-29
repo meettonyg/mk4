@@ -37,8 +37,25 @@
         </section>
 
         <section class="editor-section">
-          <h4>Contact Information</h4>
-          
+          <div class="section-header">
+            <h4>Contact Information</h4>
+            <div class="section-actions">
+              <button
+                v-if="hasProfileData"
+                type="button"
+                class="profile-load-btn"
+                @click="handleLoadFromProfile"
+                title="Load contact info from your profile"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                Load from Profile
+              </button>
+            </div>
+          </div>
+
           <div class="field-group">
             <label for="contact-email">Email</label>
             <input 
@@ -73,14 +90,37 @@
           </div>
           
           <div class="field-group">
-            <label for="contact-address">Address</label>
-            <textarea 
-              id="contact-address"
-              v-model="localData.address" 
+            <label for="contact-location">Location</label>
+            <textarea
+              id="contact-location"
+              v-model="localData.location"
               @input="updateComponent"
               rows="2"
               placeholder="123 Main St, City, State 12345"
             />
+          </div>
+
+          <!-- Save to Profile button -->
+          <div v-if="canSaveToProfile" class="section-footer">
+            <button
+              type="button"
+              class="profile-save-btn profile-save-btn--full"
+              :class="{ 'is-saving': isSaving }"
+              :disabled="isSaving || (!localData.email && !localData.phone && !localData.location)"
+              @click="handleSaveToProfile"
+              title="Save contact info to your profile"
+            >
+              <svg v-if="!isSaving" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/>
+                <polyline points="7 3 7 8 15 8"/>
+              </svg>
+              <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 6v6l4 2"/>
+              </svg>
+              {{ isSaving ? 'Saving...' : 'Save to Profile' }}
+            </button>
           </div>
         </section>
 
@@ -94,6 +134,7 @@
 import { ref, watch } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
 import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
+import { useProfilePrePopulation } from '@composables/useProfilePrePopulation';
 
 const props = defineProps({
   componentId: {
@@ -109,6 +150,15 @@ const store = useMediaKitStore();
 // Active tab state
 const activeTab = ref('content');
 
+// Profile pre-population and save
+const {
+  hasProfileData,
+  getPrePopulatedData,
+  canSaveToProfile,
+  isSaving,
+  saveToProfile
+} = useProfilePrePopulation('contact');
+
 // Local data state
 const localData = ref({
   title: 'Get in Touch',
@@ -116,8 +166,34 @@ const localData = ref({
   email: '',
   phone: '',
   skype: '',
-  address: ''
+  location: ''
 });
+
+// Load data from profile
+const handleLoadFromProfile = () => {
+  const profileData = getPrePopulatedData();
+  if (profileData.email) localData.value.email = profileData.email;
+  if (profileData.phone) localData.value.phone = profileData.phone;
+  if (profileData.website) localData.value.website = profileData.website;
+  updateComponent();
+};
+
+// Save data to profile
+const handleSaveToProfile = async () => {
+  const contactData = {
+    email: localData.value.email || '',
+    phone: localData.value.phone || '',
+    location: localData.value.location || ''
+  };
+
+  const result = await saveToProfile(contactData);
+
+  if (result.success) {
+    console.log('[ContactEditor] ✅ Contact info saved to profile');
+  } else {
+    console.error('[ContactEditor] ❌ Failed to save contact info:', result.errors);
+  }
+};
 
 // Load component data
 const loadComponentData = () => {
@@ -129,7 +205,7 @@ const loadComponentData = () => {
       email: component.data.email || '',
       phone: component.data.phone || '',
       skype: component.data.skype || '',
-      address: component.data.address || ''
+      location: component.data.location || component.data.address || ''
     };
   }
 };
@@ -243,5 +319,119 @@ body.dark-mode .field-group textarea {
 .field-group textarea {
   resize: vertical;
   min-height: 80px;
+}
+
+/* Section Header with Action Buttons */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.section-header h4 {
+  margin: 0;
+}
+
+.section-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.profile-load-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.profile-load-btn:hover {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.profile-load-btn svg {
+  flex-shrink: 0;
+}
+
+body.dark-mode .profile-load-btn {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+/* Section Footer with Save Button */
+.section-footer {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+body.dark-mode .section-footer {
+  border-top-color: #334155;
+}
+
+.profile-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.profile-save-btn:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.profile-save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.profile-save-btn.is-saving {
+  opacity: 0.7;
+}
+
+.profile-save-btn svg {
+  flex-shrink: 0;
+}
+
+.profile-save-btn svg.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+body.dark-mode .profile-save-btn {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.profile-save-btn--full {
+  width: 100%;
+  justify-content: center;
+  padding: 10px 16px;
+  font-size: 14px;
 }
 </style>

@@ -14,16 +14,31 @@
         <section class="editor-section">
           <div class="section-header">
             <h4>Biography Text</h4>
-            <button
-              type="button"
-              class="ai-generate-btn"
-              @click="showAiModal = true"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-              </svg>
-              Generate with AI
-            </button>
+            <div class="section-actions">
+              <button
+                v-if="hasProfileData"
+                type="button"
+                class="profile-load-btn"
+                @click="handleLoadFromProfile"
+                title="Load biography from your profile"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                Load from Profile
+              </button>
+              <button
+                type="button"
+                class="ai-generate-btn"
+                @click="showAiModal = true"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+                Generate with AI
+              </button>
+            </div>
           </div>
 
           <div class="field-group">
@@ -36,6 +51,29 @@
               placeholder="Enter biography text..."
             />
             <p class="field-hint">Write your biography here. This will be displayed on the frontend.</p>
+          </div>
+
+          <!-- Save to Profile button below the field -->
+          <div v-if="canSaveToProfile" class="section-footer">
+            <button
+              type="button"
+              class="profile-save-btn profile-save-btn--full"
+              :class="{ 'is-saving': isSaving }"
+              :disabled="isSaving || !localData.biography"
+              @click="handleSaveToProfile"
+              title="Save biography to your profile"
+            >
+              <svg v-if="!isSaving" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/>
+                <polyline points="7 3 7 8 15 8"/>
+              </svg>
+              <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 6v6l4 2"/>
+              </svg>
+              {{ isSaving ? 'Saving...' : 'Save to Profile' }}
+            </button>
           </div>
         </section>
       </div>
@@ -53,11 +91,12 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import { useMediaKitStore } from '@stores/mediaKit';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 import { AiModal } from '@/vue/components/ai';
 import BiographyGenerator from '@tools/biography/Generator.vue';
+import { useProfilePrePopulation } from '@composables/useProfilePrePopulation';
 
 const props = defineProps({
   componentId: {
@@ -76,6 +115,16 @@ const activeTab = ref('content');
 // AI Modal state
 const showAiModal = ref(false);
 
+// Profile pre-population and save
+const {
+  hasProfileData,
+  getPrePopulatedData,
+  getProfileField,
+  canSaveToProfile,
+  isSaving,
+  saveToProfile
+} = useProfilePrePopulation('biography');
+
 // SIMPLIFIED: Local data state - biography text only
 const localData = ref({
   biography: ''
@@ -89,6 +138,31 @@ const loadComponentData = () => {
     localData.value = {
       biography: component.data.biography || component.data.bio || component.data.content || ''
     };
+  }
+};
+
+// Load data from profile
+const handleLoadFromProfile = () => {
+  const profileData = getPrePopulatedData();
+  if (profileData.biography) {
+    localData.value.biography = profileData.biography;
+    updateComponent();
+  }
+};
+
+// Save data to profile
+const handleSaveToProfile = async () => {
+  if (!localData.value.biography) {
+    console.warn('[BiographyEditor] No biography content to save');
+    return;
+  }
+
+  const result = await saveToProfile({ biography: localData.value.biography });
+
+  if (result.success) {
+    console.log('[BiographyEditor] ✅ Biography saved to profile');
+  } else {
+    console.error('[BiographyEditor] ❌ Failed to save biography:', result.errors);
   }
 };
 
@@ -234,16 +308,114 @@ body.dark-mode .field-hint {
   color: #64748b;
 }
 
-/* Section Header with AI Button */
+/* Section Header with Action Buttons */
 .section-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 16px;
 }
 
 .section-header h4 {
   margin: 0;
+  flex-shrink: 0;
+}
+
+.section-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.profile-load-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.profile-load-btn:hover {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.profile-load-btn svg {
+  flex-shrink: 0;
+}
+
+body.dark-mode .profile-load-btn {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+body.dark-mode .profile-load-btn:hover {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.profile-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.profile-save-btn:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.profile-save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.profile-save-btn.is-saving {
+  opacity: 0.7;
+}
+
+.profile-save-btn svg {
+  flex-shrink: 0;
+}
+
+.profile-save-btn svg.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+body.dark-mode .profile-save-btn {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+body.dark-mode .profile-save-btn:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: rgba(245, 158, 11, 0.35);
 }
 
 .ai-generate-btn {
@@ -279,5 +451,23 @@ body.dark-mode .ai-generate-btn {
 body.dark-mode .ai-generate-btn:hover {
   background: rgba(99, 102, 241, 0.2);
   border-color: rgba(99, 102, 241, 0.35);
+}
+
+/* Section Footer with Save Button */
+.section-footer {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+body.dark-mode .section-footer {
+  border-top-color: #334155;
+}
+
+.profile-save-btn--full {
+  width: 100%;
+  justify-content: center;
+  padding: 10px 16px;
+  font-size: 14px;
 }
 </style>

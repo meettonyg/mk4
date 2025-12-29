@@ -26,24 +26,35 @@
           </div>
 
           <div class="field-group">
-            <label for="hero-title">Title</label>
-            <input 
-              id="hero-title"
-              v-model="localData.title" 
+            <label for="hero-name">Name</label>
+            <input
+              id="hero-name"
+              v-model="localData.name"
               @input="updateComponent"
               type="text"
-              placeholder="Enter headline..."
+              placeholder="Your name..."
             />
           </div>
-          
+
           <div class="field-group">
-            <label for="hero-subtitle">Subtitle</label>
-            <textarea 
-              id="hero-subtitle"
-              v-model="localData.subtitle" 
+            <label for="hero-title">Title / Tagline</label>
+            <input
+              id="hero-title"
+              v-model="localData.title"
+              @input="updateComponent"
+              type="text"
+              placeholder="Your professional title or tagline..."
+            />
+          </div>
+
+          <div class="field-group">
+            <label for="hero-bio">Bio</label>
+            <textarea
+              id="hero-bio"
+              v-model="localData.bio"
               @input="updateComponent"
               rows="3"
-              placeholder="Enter subheading..."
+              placeholder="Brief introduction or bio..."
             />
           </div>
         </section>
@@ -75,7 +86,7 @@
         </section>
 
         <section class="editor-section">
-          <h4>Background Image</h4>
+          <h4>Profile Image</h4>
 
           <!-- PHASE 5: Profile Image Picker -->
           <ProfileImagePicker
@@ -86,22 +97,22 @@
           />
 
           <div class="field-group">
-            <label for="hero-bg-image">Background Image URL</label>
+            <label for="hero-image">Image URL</label>
             <input
-              id="hero-bg-image"
-              v-model="localData.backgroundImage"
+              id="hero-image"
+              v-model="localData.imageUrl"
               @input="updateComponent"
               type="url"
-              placeholder="https://example.com/background.jpg"
+              placeholder="https://example.com/profile.jpg"
             />
             <button @click="openMediaLibrary" class="media-btn">
               Choose from Media Library
             </button>
           </div>
-          
+
           <!-- Image Preview -->
-          <div v-if="localData.backgroundImage" class="image-preview">
-            <img :src="localData.backgroundImage" alt="Background preview" />
+          <div v-if="localData.imageUrl" class="image-preview">
+            <img :src="localData.imageUrl" alt="Profile preview" />
           </div>
         </section>
 
@@ -161,9 +172,10 @@ const showAiModal = ref(false);
 
 // Local data state
 const localData = ref({
+  name: '',
   title: '',
-  subtitle: '',
-  backgroundImage: '',
+  bio: '',
+  imageUrl: '',
   ctaText: '',
   ctaUrl: '',
   alignment: 'center'
@@ -174,9 +186,10 @@ const loadComponentData = () => {
   const component = store.components[props.componentId];
   if (component && component.data) {
     localData.value = {
+      name: component.data.name || '',
       title: component.data.title || '',
-      subtitle: component.data.subtitle || '',
-      backgroundImage: component.data.backgroundImage || '',
+      bio: component.data.bio || component.data.subtitle || '',
+      imageUrl: component.data.imageUrl || component.data.backgroundImage || '',
       ctaText: component.data.ctaText || '',
       ctaUrl: component.data.ctaUrl || '#',
       alignment: component.data.alignment || 'center'
@@ -199,15 +212,16 @@ const updateComponent = () => {
   updateTimeout = setTimeout(() => {
     store.updateComponent(props.componentId, {
       data: {
+        name: localData.value.name,
         title: localData.value.title,
-        subtitle: localData.value.subtitle,
-        backgroundImage: localData.value.backgroundImage,
+        bio: localData.value.bio,
+        imageUrl: localData.value.imageUrl,
         ctaText: localData.value.ctaText,
         ctaUrl: localData.value.ctaUrl,
         alignment: localData.value.alignment
       }
     });
-    
+
     store.isDirty = true;
   }, 300);
 };
@@ -243,7 +257,7 @@ const handleClose = () => {
 // Handle AI content applied
 const handleAiApplied = (data) => {
   if (data.tagline) {
-    localData.value.subtitle = data.tagline;
+    localData.value.bio = data.tagline;
     updateComponent();
   }
   showAiModal.value = false;
@@ -258,8 +272,8 @@ const handleProfileImageSelect = (image) => {
 
   console.log('📸 Hero: Selected from profile branding', image);
 
-  // Use the selected headshot as background image
-  localData.value.backgroundImage = image.url;
+  // Use the selected headshot as profile image
+  localData.value.imageUrl = image.url;
 
   // Update component
   updateComponent();

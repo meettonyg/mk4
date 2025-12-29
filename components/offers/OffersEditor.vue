@@ -1,7 +1,16 @@
 <template>
-  <div class="offers-editor">
-    <!-- Offer Selection -->
-    <div class="editor-section">
+  <ComponentEditorTemplate
+    :component-id="componentId"
+    component-type="Offers"
+    :show-typography="true"
+    :active-tab="activeTab"
+    @update:active-tab="activeTab = $event"
+    @close="$emit('close')"
+  >
+    <template #content>
+      <div class="offers-editor">
+        <!-- Offer Selection -->
+        <div class="editor-section">
       <h4 class="editor-section-title">Select Offers</h4>
 
       <div v-if="isLoadingOffers" class="loading-state">
@@ -194,6 +203,15 @@
       </div>
 
       <div class="field-group">
+        <label class="field-label">Title Alignment</label>
+        <select v-model="localData.titleAlignment" class="field-select" @change="updateData">
+          <option value="left">Left</option>
+          <option value="center">Center</option>
+          <option value="right">Right</option>
+        </select>
+      </div>
+
+      <div class="field-group">
         <label class="field-label">Filter by Type</label>
         <select v-model="localData.filterByType" class="field-select" @change="updateData">
           <option value="all">All Types</option>
@@ -245,20 +263,26 @@
         <span>Show CTA Button</span>
       </label>
     </div>
-  </div>
+      </div>
+    </template>
+  </ComponentEditorTemplate>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
+import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 
 const props = defineProps({
   componentId: { type: String, required: true },
   data: { type: Object, default: () => ({}) }
 });
 
-const emit = defineEmits(['update']);
+const emit = defineEmits(['update', 'close']);
 const store = useMediaKitStore();
+
+// Active tab state
+const activeTab = ref('content');
 
 // Local state
 const isLoadingOffers = ref(false);
@@ -283,6 +307,7 @@ const localData = reactive({
   columns: '3',
   cardStyle: 'elevated',
   customTitle: 'Special Offers',
+  titleAlignment: 'center',
   filterByType: 'all',
   maxOffers: 6,
   showImage: true,

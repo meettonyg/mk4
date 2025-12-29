@@ -4,10 +4,13 @@
     <div class="component-root topics-container">
       <h2 v-if="title" class="topics-title">{{ title }}</h2>
       <p v-if="description" class="topics-description">{{ description }}</p>
-      
-      <div v-for="(topic, index) in topics" :key="index" class="topic-item">
-        <div class="topic-title">{{ topic.name || topic.text || topic }}</div>
-        <p v-if="topic.description" class="topic-description">{{ topic.description }}</p>
+
+      <div class="topics-grid" :style="gridStyle">
+        <div v-for="(topic, index) in topics" :key="index" class="topic-item">
+          <span v-if="showIcons" class="topic-icon">💡</span>
+          <div class="topic-title">{{ topic.name || topic.text || topic }}</div>
+          <p v-if="topic.description" class="topic-description">{{ topic.description }}</p>
+        </div>
       </div>
     </div>
   </div>
@@ -52,6 +55,17 @@ export default {
 
     const description = computed(() => props.data?.description || props.props?.description || '');
 
+    // Display options from editor
+    const columns = computed(() => parseInt(props.data?.columns) || 3);
+    const showIcons = computed(() => props.data?.showIcons || false);
+
+    // Dynamic grid style based on columns
+    const gridStyle = computed(() => ({
+      display: 'grid',
+      gridTemplateColumns: `repeat(${columns.value}, 1fr)`,
+      gap: '16px'
+    }));
+
     // Topics from component data
     const topics = computed(() => {
       if (props.data?.topics && Array.isArray(props.data.topics)) {
@@ -74,6 +88,9 @@ export default {
     return {
       title,
       description,
+      columns,
+      showIcons,
+      gridStyle,
       topics
     };
   }

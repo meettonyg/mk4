@@ -129,6 +129,39 @@ const FIELD_MAPPINGS = {
     },
     // Native offers require special handling via Offers API
     requiresNativeApi: true
+  },
+
+  contact: {
+    // Contact info maps to individual profile fields
+    mapToFields: (contactData) => {
+      const fields = {};
+      if (typeof contactData === 'object') {
+        if (contactData.email) fields.email = contactData.email;
+        if (contactData.phone) fields.phone = contactData.phone;
+        if (contactData.location) fields.location = contactData.location;
+        if (contactData.website) fields.website = contactData.website;
+      }
+      return fields;
+    }
+  },
+
+  social: {
+    // Social links map to individual profile fields
+    mapToFields: (socialData) => {
+      const fields = {};
+      if (typeof socialData === 'object') {
+        if (socialData.linkedin) fields.linkedin = socialData.linkedin;
+        if (socialData.twitter) fields.twitter = socialData.twitter;
+        if (socialData.facebook) fields.facebook = socialData.facebook;
+        if (socialData.instagram) fields.instagram = socialData.instagram;
+        if (socialData.youtube) fields.youtube = socialData.youtube;
+        if (socialData.tiktok) fields.tiktok = socialData.tiktok;
+        if (socialData.github) fields.github = socialData.github;
+        if (socialData.medium) fields.medium = socialData.medium;
+        if (socialData.website) fields.website = socialData.website;
+      }
+      return fields;
+    }
   }
 };
 

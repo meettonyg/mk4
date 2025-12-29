@@ -39,59 +39,97 @@
         <section class="editor-section">
           <div class="section-header">
             <h4>Questions & Answers</h4>
-            <button
-              type="button"
-              class="ai-generate-btn"
-              @click="showAiModal = true"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-              </svg>
-              Generate with AI
-            </button>
+            <div class="section-actions">
+              <button
+                v-if="hasProfileData"
+                type="button"
+                class="profile-load-btn"
+                @click="handleLoadFromProfile"
+                title="Load questions from your profile"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                Load from Profile
+              </button>
+              <button
+                type="button"
+                class="ai-generate-btn"
+                @click="showAiModal = true"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+                Generate with AI
+              </button>
+            </div>
           </div>
 
           <div class="questions-list">
-            <div 
-              v-for="(qa, index) in localData.questions" 
+            <div
+              v-for="(qa, index) in localData.questions"
               :key="index"
               class="question-item"
             >
               <div class="question-header">
                 <span class="question-number">Q{{ index + 1 }}</span>
-                <button 
+                <button
                   @click="removeQuestion(index)"
                   class="remove-btn"
                   title="Remove question"
                 >×</button>
               </div>
-              
+
               <div class="field-group">
                 <label>Question *</label>
-                <input 
-                  v-model="qa.question" 
+                <input
+                  v-model="qa.question"
                   @input="updateComponent"
                   type="text"
                   placeholder="Your question here..."
                 />
               </div>
-              
+
               <div class="field-group">
                 <label>Answer *</label>
-                <textarea 
-                  v-model="qa.answer" 
+                <textarea
+                  v-model="qa.answer"
                   @input="updateComponent"
                   rows="3"
                   placeholder="Your answer here..."
                 />
               </div>
             </div>
-            
-            <button 
+
+            <button
               @click="addQuestion"
               class="add-btn"
             >
               + Add Question
+            </button>
+          </div>
+
+          <!-- Save to Profile button below the fields -->
+          <div v-if="canSaveToProfile" class="section-footer">
+            <button
+              type="button"
+              class="profile-save-btn profile-save-btn--full"
+              :class="{ 'is-saving': isSaving }"
+              :disabled="isSaving || !localData.questions.length"
+              @click="handleSaveToProfile"
+              title="Save questions to your profile"
+            >
+              <svg v-if="!isSaving" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/>
+                <polyline points="7 3 7 8 15 8"/>
+              </svg>
+              <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 6v6l4 2"/>
+              </svg>
+              {{ isSaving ? 'Saving...' : 'Save to Profile' }}
             </button>
           </div>
         </section>
@@ -115,6 +153,7 @@ import { useMediaKitStore } from '../../src/stores/mediaKit';
 import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 import { AiModal } from '../../src/vue/components/ai';
 import QuestionsGenerator from '@tools/questions/Generator.vue';
+import { useProfilePrePopulation } from '@composables/useProfilePrePopulation';
 
 const props = defineProps({
   componentId: {
@@ -128,11 +167,51 @@ const store = useMediaKitStore();
 const activeTab = ref('content');
 const showAiModal = ref(false);
 
+// Profile pre-population and save
+const {
+  hasProfileData,
+  getPrePopulatedData,
+  getProfileField,
+  canSaveToProfile,
+  isSaving,
+  saveToProfile
+} = useProfilePrePopulation('questions');
+
 const localData = ref({
   title: 'Frequently Asked Questions',
   description: '',
   questions: []
 });
+
+// Load data from profile
+const handleLoadFromProfile = () => {
+  const profileData = getPrePopulatedData();
+  if (profileData.questions && Array.isArray(profileData.questions)) {
+    // Convert profile questions (strings) to Q&A format
+    localData.value.questions = profileData.questions.map(q => ({
+      question: typeof q === 'string' ? q : q.question || '',
+      answer: typeof q === 'object' ? q.answer || '' : ''
+    }));
+    updateComponent();
+  }
+};
+
+// Save data to profile
+const handleSaveToProfile = async () => {
+  const questionsToSave = localData.value.questions.filter(q => q.question && q.question.trim());
+  if (questionsToSave.length === 0) {
+    console.warn('[QuestionsEditor] No questions to save');
+    return;
+  }
+
+  const result = await saveToProfile({ questions: questionsToSave });
+
+  if (result.success) {
+    console.log('[QuestionsEditor] ✅ Questions saved to profile');
+  } else {
+    console.error('[QuestionsEditor] ❌ Failed to save questions:', result.errors);
+  }
+};
 
 const loadComponentData = () => {
   const component = store.components[props.componentId];
@@ -217,9 +296,27 @@ body.dark-mode .remove-btn { background: #450a0a; border-color: #7f1d1d; color: 
 body.dark-mode .add-btn { background: #0c4a6e; border-color: #0369a1; color: #7dd3fc; }
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .section-header h4 { margin: 0; }
+.section-actions { display: flex; gap: 8px; align-items: center; }
+.profile-load-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 12px; font-weight: 500; color: #10b981; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+.profile-load-btn:hover { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3); }
+.profile-load-btn svg { flex-shrink: 0; }
+body.dark-mode .profile-load-btn { color: #34d399; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.25); }
+body.dark-mode .profile-load-btn:hover { background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.35); }
+.profile-save-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 12px; font-weight: 500; color: #f59e0b; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+.profile-save-btn:hover:not(:disabled) { background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.3); }
+.profile-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.profile-save-btn.is-saving { opacity: 0.7; }
+.profile-save-btn svg { flex-shrink: 0; }
+.profile-save-btn svg.spin { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+body.dark-mode .profile-save-btn { color: #fbbf24; background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.25); }
+body.dark-mode .profile-save-btn:hover:not(:disabled) { background: rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.35); }
 .ai-generate-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 12px; font-weight: 500; color: #6366f1; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 6px; cursor: pointer; transition: all 0.2s; }
 .ai-generate-btn:hover { background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.3); }
 .ai-generate-btn svg { flex-shrink: 0; }
 body.dark-mode .ai-generate-btn { color: #818cf8; background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.25); }
 body.dark-mode .ai-generate-btn:hover { background: rgba(99, 102, 241, 0.2); border-color: rgba(99, 102, 241, 0.35); }
+.section-footer { margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
+body.dark-mode .section-footer { border-top-color: #334155; }
+.profile-save-btn--full { width: 100%; justify-content: center; padding: 10px 16px; font-size: 14px; }
 </style>

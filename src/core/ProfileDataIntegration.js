@@ -1,34 +1,42 @@
 /**
- * Pods Data Integration - Self-Contained Architecture Compliant
- * 
+ * Profile Data Integration - Self-Contained Architecture Compliant
+ *
  * This integration respects the self-contained component architecture:
  * - Each component defines its own data needs in /components/[name]/pods-config.json
- * - This class only acts as a bridge between Pods data and components
+ * - This class acts as a bridge between profile data and components
  * - No hardcoded field mappings here
+ *
+ * NOTE: Despite referencing "pods_data" in variable names (legacy), this class
+ * works with native WordPress post_meta. The data source is abstracted in PHP
+ * via gmkb_get_pods_data() which falls back to gmkb_get_native_meta_data()
+ * when the Pods plugin is not installed.
+ *
+ * @since 2.5.0 Renamed from PodsDataIntegration to ProfileDataIntegration
  */
 
-export class PodsDataIntegration {
+export class ProfileDataIntegration {
   constructor() {
-    this.podsData = this.getPodsDataSource();
-    
-    if (Object.keys(this.podsData).length > 0) {
-      console.log('[PodsDataIntegration] Pods data available:', Object.keys(this.podsData).length, 'fields');
+    this.profileData = this.getProfileDataSource();
+
+    if (Object.keys(this.profileData).length > 0) {
+      console.log('[ProfileDataIntegration] Profile data available:', Object.keys(this.profileData).length, 'fields');
     }
   }
 
   /**
-   * Get Pods data from WordPress
-   * Single source of truth for where Pods data lives
+   * Get profile data from WordPress
+   * Single source of truth for where profile data lives
+   * Note: The variable name "pods_data" is legacy - data may come from native post_meta
    */
-  getPodsDataSource() {
+  getProfileDataSource() {
     return window.gmkbData?.pods_data || window.gmkbVueData?.pods_data || {};
   }
 
   /**
-   * Get component's Pods configuration
+   * Get component's field configuration
    * Each component defines its own needs in pods-config.json
    */
-  getComponentPodsConfig(componentType) {
+  getComponentFieldConfig(componentType) {
     // First, try to get from the component's actual config if passed from PHP
     if (window.gmkbComponentConfigs && window.gmkbComponentConfigs[componentType]) {
       const config = window.gmkbComponentConfigs[componentType];
@@ -36,15 +44,15 @@ export class PodsDataIntegration {
         return config.pods_config;
       }
     }
-    
-    // ROOT FIX: Check the actual registry singleton (window.gmkbComponentRegistry)
+
+    // Check the actual registry singleton (window.gmkbComponentRegistry)
     if (window.gmkbComponentRegistry) {
       const component = window.gmkbComponentRegistry.get(componentType);
       if (component && component.pods_config) {
         return component.pods_config;
       }
     }
-    
+
     // Otherwise, return embedded configs that match what's in the component folders
     // This is a fallback - in production, these should come from the actual files
     const configs = this.getEmbeddedConfigs();
@@ -58,7 +66,7 @@ export class PodsDataIntegration {
   getEmbeddedConfigs() {
     return {
       biography: {
-        dataSource: "pods",
+        dataSource: "profile",
         fields: {
           biography: ["biography", "guest_biography", "bio"],
           name: {
@@ -71,7 +79,7 @@ export class PodsDataIntegration {
         }
       },
       hero: {
-        dataSource: "pods",
+        dataSource: "profile",
         fields: {
           title: {
             type: "composite",
@@ -83,7 +91,7 @@ export class PodsDataIntegration {
         }
       },
       contact: {
-        dataSource: "pods",
+        dataSource: "profile",
         fields: {
           email: ["email", "contact_email"],
           phone: ["phone", "contact_phone"],
@@ -94,7 +102,7 @@ export class PodsDataIntegration {
         }
       },
       topics: {
-        dataSource: "pods",
+        dataSource: "profile",
         fields: {
           topics: {
             type: "array",
@@ -104,7 +112,7 @@ export class PodsDataIntegration {
         }
       },
       questions: {
-        dataSource: "pods",
+        dataSource: "profile",
         fields: {
           questions: {
             type: "array",
@@ -120,7 +128,7 @@ export class PodsDataIntegration {
         }
       },
       'guest-intro': {
-        dataSource: "pods",
+        dataSource: "profile",
         fields: {
           first_name: ["first_name", "fname"],
           last_name: ["last_name", "lname"],
@@ -136,7 +144,7 @@ export class PodsDataIntegration {
         }
       },
       'topics-questions': {
-        dataSource: "pods",
+        dataSource: "profile",
         fields: {
           topics: {
             type: "array",
@@ -157,7 +165,7 @@ export class PodsDataIntegration {
         }
       },
       social: {
-        dataSource: "pods",
+        dataSource: "profile",
         fields: {
           linkedin: ["linkedin", "linkedin_url", "linkedin_profile"],
           twitter: ["twitter", "twitter_handle", "twitter_url", "x_handle"],
@@ -172,7 +180,7 @@ export class PodsDataIntegration {
         }
       },
       testimonials: {
-        dataSource: "pods",
+        dataSource: "profile",
         fields: {
           testimonials: {
             type: "array",
@@ -192,7 +200,7 @@ export class PodsDataIntegration {
         }
       },
       'call-to-action': {
-        dataSource: "pods",
+        dataSource: "profile",
         fields: {
           cta_title: ["cta_title", "call_to_action_title", "action_title"],
           cta_text: ["cta_text", "call_to_action_text", "action_text"],
@@ -204,7 +212,7 @@ export class PodsDataIntegration {
         }
       },
       stats: {
-        dataSource: "pods",
+        dataSource: "profile",
         fields: {
           years_experience: ["years_experience", "experience_years", "years_in_field"],
           projects_completed: ["projects_completed", "total_projects", "projects"],
@@ -219,7 +227,7 @@ export class PodsDataIntegration {
         }
       },
       'video-intro': {
-        dataSource: "pods",
+        dataSource: "profile",
         fields: {
           video_url: ["video_url", "intro_video", "youtube_video"],
           video_title: ["video_title", "intro_video_title"],
@@ -230,7 +238,7 @@ export class PodsDataIntegration {
         }
       },
       'photo-gallery': {
-        dataSource: "pods",
+        dataSource: "profile",
         fields: {
           gallery_images: {
             type: "array",
@@ -260,7 +268,7 @@ export class PodsDataIntegration {
         }
       },
       'podcast-player': {
-        dataSource: "pods",
+        dataSource: "profile",
         fields: {
           podcast_url: ["podcast_url", "podcast_link"],
           podcast_name: ["podcast_name", "podcast_title"],
@@ -278,7 +286,7 @@ export class PodsDataIntegration {
         }
       },
       'booking-calendar': {
-        dataSource: "pods",
+        dataSource: "profile",
         fields: {
           calendar_url: ["calendar_url", "booking_url", "calendly_url", "schedule_link"],
           calendar_embed_code: ["calendar_embed", "booking_embed", "calendly_embed"],
@@ -289,7 +297,7 @@ export class PodsDataIntegration {
         }
       },
       'authority-hook': {
-        dataSource: "pods",
+        dataSource: "profile",
         fields: {
           authority_statement: ["authority_statement", "credibility_statement", "why_me"],
           unique_value: ["unique_value", "unique_value_proposition", "uvp"],
@@ -308,7 +316,7 @@ export class PodsDataIntegration {
         }
       },
       'logo-grid': {
-        dataSource: "pods",
+        dataSource: "profile",
         fields: {
           client_logos: {
             type: "array",
@@ -346,31 +354,31 @@ export class PodsDataIntegration {
   }
 
   /**
-   * Transform Pods data based on component's configuration
-   * ROOT FIX: Added comprehensive error handling and null safety
+   * Transform profile data based on component's configuration
+   * Added comprehensive error handling and null safety
    */
-  transformPodsData(config, podsData) {
+  transformProfileData(config, profileData) {
     const result = {};
-    
-    // CRITICAL FIX: Validate inputs
+
+    // Validate inputs
     if (!config || !config.fields || typeof config.fields !== 'object') {
-      console.warn('[PodsDataIntegration] Invalid config structure:', config);
-      return result;
-    }
-    
-    if (!podsData || typeof podsData !== 'object') {
-      console.warn('[PodsDataIntegration] Invalid podsData structure');
+      console.warn('[ProfileDataIntegration] Invalid config structure:', config);
       return result;
     }
 
-    // CRITICAL FIX: Wrap field processing in try-catch for each field
+    if (!profileData || typeof profileData !== 'object') {
+      console.warn('[ProfileDataIntegration] Invalid profileData structure');
+      return result;
+    }
+
+    // Wrap field processing in try-catch for each field
     for (const [targetField, sourceConfig] of Object.entries(config.fields)) {
       try {
       if (typeof sourceConfig === 'object' && sourceConfig.type === 'composite') {
         // Handle composite fields (like full name)
         let value = sourceConfig.format;
         for (const field of sourceConfig.fields) {
-          const fieldValue = podsData[field] || '';
+          const fieldValue = profileData[field] || '';
           value = value.replace(`{${field}}`, fieldValue);
         }
         result[targetField] = value.trim();
@@ -378,8 +386,8 @@ export class PodsDataIntegration {
         // Handle array fields (like topics)
         const values = [];
         for (const field of sourceConfig.fields) {
-          if (podsData[field]) {
-            values.push(podsData[field]);
+          if (profileData[field]) {
+            values.push(profileData[field]);
           }
         }
         result[targetField] = values;
@@ -387,15 +395,15 @@ export class PodsDataIntegration {
         // Handle simple field mapping (with fallbacks)
         const possibleFields = Array.isArray(sourceConfig) ? sourceConfig : [sourceConfig];
         for (const field of possibleFields) {
-          if (podsData[field]) {
-            result[targetField] = podsData[field];
+          if (profileData[field]) {
+            result[targetField] = profileData[field];
             break;
           }
         }
       }
       } catch (fieldError) {
-        // CRITICAL FIX: Log but continue processing other fields
-        console.warn(`[PodsDataIntegration] Error processing field ${targetField}:`, fieldError);
+        // Log but continue processing other fields
+        console.warn(`[ProfileDataIntegration] Error processing field ${targetField}:`, fieldError);
         // Continue to next field
       }
     }
@@ -404,7 +412,7 @@ export class PodsDataIntegration {
   }
 
   /**
-   * DEPRECATED: Enrich component with Pods data
+   * DEPRECATED: Enrich component with profile data
    *
    * This method has been disabled to fix a critical data loss bug.
    *
@@ -413,8 +421,8 @@ export class PodsDataIntegration {
    * - API fires: 'gmkb_after_save_mediakit' (no underscore)
    * - Sync listened for: 'gmkb_after_save_media_kit' (with underscore)
    *
-   * This meant Pods/meta fields were NEVER being updated when users saved.
-   * However, this "Read Arc" (enrichment) WAS active, causing stale Pods data
+   * This meant profile fields were NEVER being updated when users saved.
+   * However, this "Read Arc" (enrichment) WAS active, causing stale profile data
    * to overwrite valid JSON state on every load - DATA LOSS.
    *
    * SOLUTION: The JSON state (gmkb_media_kit_state) is now the single source of truth.
@@ -427,19 +435,107 @@ export class PodsDataIntegration {
   enrichComponentData(component) {
     // DEPRECATED: Return component unchanged
     // This is a no-op safety net in case any code still calls this method
-    console.warn('[PodsDataIntegration] DEPRECATED: enrichComponentData() is disabled. JSON state is now single source of truth.');
+    console.warn('[ProfileDataIntegration] DEPRECATED: enrichComponentData() is disabled. JSON state is now single source of truth.');
     return component;
   }
 
   /**
-   * Check if Pods data is available
+   * Get pre-populated data for a NEW component being added
+   *
+   * Unlike enrichComponentData (which was used for loading existing components),
+   * this method is specifically for PRE-POPULATING new components from profile data.
+   *
+   * This is safe because:
+   * - It only affects NEW components being added to the builder
+   * - User can still edit/override the pre-populated values
+   * - It doesn't overwrite existing saved component data
+   *
+   * @param {string} componentType - The component type (e.g., 'biography', 'topics')
+   * @returns {Object} Pre-populated data object for the component
    */
-  hasPodsData() {
-    return Object.keys(this.podsData).length > 0;
+  getPrePopulatedData(componentType) {
+    if (!componentType) {
+      console.warn('[ProfileDataIntegration] getPrePopulatedData: No component type provided');
+      return {};
+    }
+
+    // Get fresh profile data from window (in case it was updated)
+    const profileData = this.getProfileDataSource();
+
+    if (!profileData || Object.keys(profileData).length === 0) {
+      console.log('[ProfileDataIntegration] getPrePopulatedData: No profile data available');
+      return {};
+    }
+
+    // Get the component's config
+    const config = this.getComponentFieldConfig(componentType);
+
+    if (!config) {
+      console.log(`[ProfileDataIntegration] getPrePopulatedData: No config for component type "${componentType}"`);
+      return {};
+    }
+
+    // Transform the profile data into component data format
+    const transformedData = this.transformProfileData(config, profileData);
+
+    console.log(`[ProfileDataIntegration] Pre-populated data for "${componentType}":`, transformedData);
+
+    return transformedData;
+  }
+
+  /**
+   * Get all available profile data (for editors that need access to full profile)
+   *
+   * @returns {Object} Full profile data
+   */
+  getProfileData() {
+    return this.getProfileDataSource();
+  }
+
+  /**
+   * Get specific field value from profile data
+   * Supports fallback field names (e.g., ['biography', 'guest_biography', 'bio'])
+   *
+   * @param {string|string[]} fieldNames - Field name or array of fallback field names
+   * @returns {*} The field value or null
+   */
+  getProfileField(fieldNames) {
+    const profileData = this.getProfileDataSource();
+
+    if (!profileData || Object.keys(profileData).length === 0) {
+      return null;
+    }
+
+    const fields = Array.isArray(fieldNames) ? fieldNames : [fieldNames];
+
+    for (const field of fields) {
+      if (profileData[field] !== undefined && profileData[field] !== null && profileData[field] !== '') {
+        return profileData[field];
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Check if a specific field has data in the profile
+   *
+   * @param {string|string[]} fieldNames - Field name or array of fallback field names
+   * @returns {boolean}
+   */
+  hasProfileField(fieldNames) {
+    return this.getProfileField(fieldNames) !== null;
+  }
+
+  /**
+   * Check if profile data is available
+   */
+  hasProfileData() {
+    return Object.keys(this.profileData).length > 0;
   }
 }
 
 // Create singleton instance
-const podsDataIntegration = new PodsDataIntegration();
+const profileDataIntegration = new ProfileDataIntegration();
 
-export default podsDataIntegration;
+export default profileDataIntegration;

@@ -140,6 +140,15 @@
       </div>
 
       <div class="field-group">
+        <label class="field-label">Title Alignment</label>
+        <select v-model="localData.titleAlignment" class="field-select" @change="updateData">
+          <option value="left">Left</option>
+          <option value="center">Center</option>
+          <option value="right">Right</option>
+        </select>
+      </div>
+
+      <div class="field-group">
         <label class="field-label">Max Interviews to Show</label>
         <input
           v-model.number="localData.maxInterviews"
@@ -210,6 +219,18 @@ const handleClose = () => {
 };
 const store = useMediaKitStore();
 
+// Tab state
+const activeTab = ref('content');
+const tabs = [
+  { id: 'content', label: 'Content' },
+  { id: 'style', label: 'Style' },
+  { id: 'advanced', label: 'Advanced' }
+];
+
+const closeEditor = () => {
+  store.closeEditPanel();
+};
+
 // Check if editing a profile (guests post type) - interviews should sync with profile
 const isProfilePost = computed(() => window.gmkbData?.postType === 'guests');
 const profileId = computed(() => isProfilePost.value ? window.gmkbData?.postId : null);
@@ -225,6 +246,7 @@ const localData = reactive({
   columns: '2',
   cardStyle: 'elevated',
   customTitle: 'Featured Interviews',
+  titleAlignment: 'center',
   maxInterviews: 6,
   showPodcastName: true,
   showHostName: true,
@@ -368,17 +390,98 @@ watch(() => props.data, (newData) => {
 
 <style scoped>
 .interviews-editor {
-  padding: 1rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: white;
+}
+
+.editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(to bottom, #ffffff, #f9fafb);
+}
+
+.editor-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.close-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 24px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.editor-tabs {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-btn:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.tab-btn.active {
+  color: #3b82f6;
+  background: white;
+  border-bottom-color: #3b82f6;
+}
+
+.editor-content {
+  flex: 1;
+  overflow-y: auto;
+  background: #f9fafb;
+}
+
+.tab-panel {
+  padding: 20px;
 }
 
 .editor-section {
-  margin-bottom: 1.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid #e5e7eb;
 }
 
 .editor-section:last-child {
-  border-bottom: none;
+  margin-bottom: 0;
 }
 
 .editor-section-title {
@@ -611,7 +714,7 @@ watch(() => props.data, (newData) => {
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 0.875rem;
-  background: #fff;
+  background: #ffffff;
 }
 
 .field-input:focus,

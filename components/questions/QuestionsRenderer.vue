@@ -2,8 +2,9 @@
   <!-- ROOT FIX: Use design system classes -->
   <div class="gmkb-component gmkb-component--questions" :data-component-id="componentId">
     <div class="component-root questions-content">
-    <h2 v-if="title" class="section-title">{{ title }}</h2>
-    <div class="questions-list">
+      <h2 v-if="title" class="section-title">{{ title }}</h2>
+      <p v-if="description" class="section-description">{{ description }}</p>
+      <div class="questions-list">
       <div v-for="(question, index) in questions" :key="index" class="question-item">
         <div class="question-text">{{ question.question || question }}</div>
         <div v-if="question.answer" class="question-answer">{{ question.answer }}</div>
@@ -49,6 +50,7 @@ export default {
   setup(props) {
     // Data from component JSON state (single source of truth)
     const title = computed(() => props.data?.title || props.props?.title || 'Frequently Asked Questions');
+    const description = computed(() => props.data?.description || props.props?.description || '');
 
     // Questions from component data
     const questions = computed(() => {
@@ -74,6 +76,7 @@ export default {
 
     return {
       title,
+      description,
       questions
     };
   }

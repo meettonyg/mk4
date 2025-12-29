@@ -33,7 +33,7 @@ import { APIService } from './services/APIService.js';
 import { DataValidator } from './services/DataValidator.js';
 import { logger } from './utils/logger.js';
 import UnifiedComponentRegistry from './services/UnifiedComponentRegistry.js';
-import podsDataIntegration from './core/PodsDataIntegration.js';
+import profileDataIntegration from './core/ProfileDataIntegration.js';
 // P0 FIX #12: NonceManager removed - unused import
 // Nonce handling is done in APIService directly
 // P0 FIX #12: importExportService removed - handled by Vue composable
@@ -373,7 +373,7 @@ async function initializeVue() {
       analytics: analytics,
       toast: { show: showToast },
       console: ConsoleAPI,
-      pods: podsDataIntegration,
+      profile: profileDataIntegration,
       registry: UnifiedComponentRegistry,
       componentStyle: componentStyleService,
       stylePresets: stylePresetsModule,
@@ -466,12 +466,12 @@ async function initializeVue() {
     
     // Debug info
     setTimeout(() => {
-      console.log('📊 Pods Data Check:');
-      const podsData = window.gmkbData?.pods_data || window.gmkbData?.podsData || {};
-      const fieldCount = Object.keys(podsData).length;
+      console.log('📊 Profile Data Check:');
+      const profileData = window.gmkbData?.pods_data || window.gmkbData?.podsData || {};
+      const fieldCount = Object.keys(profileData).length;
       console.log(`  Fields loaded: ${fieldCount}`);
       if (fieldCount > 0) {
-        console.log('  Available fields:', Object.keys(podsData).slice(0, 5));
+        console.log('  Available fields:', Object.keys(profileData).slice(0, 5));
       }
     }, 1000);
     
@@ -555,11 +555,9 @@ async function initialize() {
     UnifiedComponentRegistry.initialize();
     console.log('✅ Component registry initialized');
     
-    // Initialize Pods integration (accessible via GMKB.services.pods)
-    // Accessible via window for legacy compatibility
-    window.podsDataIntegration = podsDataIntegration;
-    window.gmkbPodsIntegration = podsDataIntegration;
-    logger.info('✅ Pods data integration initialized');
+    // Initialize profile data integration (accessible via GMKB.services.profile)
+    window.profileDataIntegration = profileDataIntegration;
+    logger.info('✅ Profile data integration initialized');
     
     // ROOT FIX: NO MORE initDragDrop() - Vue handles ALL drag/drop!
     // ROOT FIX: NO MORE ImportExportManager - Vue composable handles it!

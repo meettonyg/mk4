@@ -47,6 +47,7 @@ export const useUIStore = defineStore('ui', {
         zoomLevel: 100,
         showGrid: false,
         showOutlines: false,
+        previewMode: false, // When true, hides all builder UI (borders, controls) for clean preview
         
         // Sidebar state
         sidebarOpen: true,
@@ -102,7 +103,10 @@ export const useUIStore = defineStore('ui', {
         isMobilePreview: (state) => state.devicePreview === 'mobile',
         
         // Check if in tablet preview
-        isTabletPreview: (state) => state.devicePreview === 'tablet'
+        isTabletPreview: (state) => state.devicePreview === 'tablet',
+
+        // Check if in preview mode (hides builder UI)
+        isPreviewMode: (state) => state.previewMode
     },
     
     actions: {
@@ -316,7 +320,24 @@ export const useUIStore = defineStore('ui', {
         toggleOutlines() {
             this.showOutlines = !this.showOutlines;
         },
-        
+
+        togglePreviewMode() {
+            this.previewMode = !this.previewMode;
+
+            // Dispatch event for components that need to react
+            document.dispatchEvent(new CustomEvent('gmkb:preview-mode-changed', {
+                detail: { previewMode: this.previewMode }
+            }));
+        },
+
+        setPreviewMode(enabled) {
+            this.previewMode = enabled;
+
+            document.dispatchEvent(new CustomEvent('gmkb:preview-mode-changed', {
+                detail: { previewMode: this.previewMode }
+            }));
+        },
+
         // Sidebar actions
         toggleSidebar() {
             this.sidebarOpen = !this.sidebarOpen;
