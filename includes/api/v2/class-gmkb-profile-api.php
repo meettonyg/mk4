@@ -396,10 +396,27 @@ class GMKB_Profile_API {
         $repo = self::get_repository();
         $profiles = $repo->list_for_user($user_id);
 
+        // Get limit status for current user
+        $limit_status = null;
+        if (class_exists('GMKB_Profile_Limits')) {
+            $limit_status = GMKB_Profile_Limits::get_limit_status($user_id);
+
+            // Apply display limit if configured
+            $display_limit = $limit_status['display_limit'] ?? -1;
+            if ($display_limit !== -1 && count($profiles) > $display_limit) {
+                // Sort by modified date descending before limiting
+                usort($profiles, function($a, $b) {
+                    return strtotime($b['modified'] ?? 0) - strtotime($a['modified'] ?? 0);
+                });
+                $profiles = array_slice($profiles, 0, $display_limit);
+            }
+        }
+
         return rest_ensure_response([
             'success' => true,
             'profiles' => $profiles,
             'total' => count($profiles),
+            'limit_status' => $limit_status,
         ]);
     }
 
@@ -407,6 +424,27 @@ class GMKB_Profile_API {
      * Create a new profile
      */
     public static function create_profile($request) {
+        $user_id = get_current_user_id();
+
+        // Check profile limits before creation
+        if (class_exists('GMKB_Profile_Limits')) {
+            if (!GMKB_Profile_Limits::can_create_profile($user_id)) {
+                $limit_status = GMKB_Profile_Limits::get_limit_status($user_id);
+
+                return new WP_Error(
+                    'profile_limit_reached',
+                    sprintf(
+                        'You have reached your profile limit of %d. Please upgrade your membership to create more profiles.',
+                        $limit_status['profile_limit']
+                    ),
+                    [
+                        'status' => 403,
+                        'limit_status' => $limit_status,
+                    ]
+                );
+            }
+        }
+
         $body = $request->get_json_params();
 
         $repo = self::get_repository();
@@ -418,6 +456,12 @@ class GMKB_Profile_API {
 
         $post = get_post($post_id);
 
+        // Get updated limit status after creation
+        $limit_status = null;
+        if (class_exists('GMKB_Profile_Limits')) {
+            $limit_status = GMKB_Profile_Limits::get_limit_status($user_id);
+        }
+
         return rest_ensure_response([
             'success' => true,
             'profile' => [
@@ -428,6 +472,7 @@ class GMKB_Profile_API {
                 'editUrl' => "/app/profiles/guest/profile/?entry={$post->post_name}",
                 'viewUrl' => get_permalink($post_id),
             ],
+            'limit_status' => $limit_status,
             'message' => 'Profile created successfully',
         ]);
     }

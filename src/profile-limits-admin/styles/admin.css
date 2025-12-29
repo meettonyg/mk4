@@ -1,0 +1,27 @@
+/**
+ * Profile Limits Admin Styles
+ */
+
+/* Base container styling */
+.profile-limits-admin {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+/* Inherit WordPress admin styles where needed */
+.profile-limits-admin input[type="text"],
+.profile-limits-admin input[type="number"],
+.profile-limits-admin select,
+.profile-limits-admin textarea {
+    font-size: 14px;
+    padding: 6px 8px;
+    border: 1px solid #8c8f94;
+    border-radius: 4px;
+}
+
+.profile-limits-admin input:focus,
+.profile-limits-admin select:focus,
+.profile-limits-admin textarea:focus {
+    border-color: #2271b1;
+    outline: none;
+    box-shadow: 0 0 0 1px #2271b1;
+}

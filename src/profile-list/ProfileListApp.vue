@@ -6,6 +6,11 @@
             <p class="guestify-page-subtitle">
                 Create and manage different expertise profiles for your podcast guest appearances
             </p>
+            <!-- Profile limit indicator -->
+            <p v-if="store.limitStatus && !store.isUnlimited" class="guestify-limit-indicator">
+                {{ store.profileCount }} of {{ store.profileLimit }} profiles used
+                <span v-if="store.membershipTier" class="tier-badge">{{ store.membershipTier.name }}</span>
+            </p>
         </div>
 
         <!-- Loading State -->
@@ -32,8 +37,12 @@
                 @delete="handleDelete"
             />
 
-            <!-- Add New Profile Card -->
-            <div class="guestify-profile-card guestify-add-card" @click="store.openCreateModal()">
+            <!-- Add New Profile Card (only show if can create) -->
+            <div
+                v-if="store.canCreateProfile"
+                class="guestify-profile-card guestify-add-card"
+                @click="store.openCreateModal()"
+            >
                 <svg xmlns="http://www.w3.org/2000/svg" class="guestify-add-icon" viewBox="0 0 24 24"
                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
@@ -42,6 +51,26 @@
                 </svg>
                 <p class="guestify-add-title">Create New Profile</p>
                 <p class="guestify-add-subtitle">Add another expertise area</p>
+            </div>
+
+            <!-- Upgrade CTA Card (show when at limit) -->
+            <div
+                v-else-if="store.isAtLimit"
+                class="guestify-profile-card guestify-upgrade-card"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" class="guestify-upgrade-icon" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                    <path d="M2 17l10 5 10-5"></path>
+                    <path d="M2 12l10 5 10-5"></path>
+                </svg>
+                <p class="guestify-upgrade-title">Profile Limit Reached</p>
+                <p class="guestify-upgrade-subtitle">
+                    You've used all {{ store.profileLimit }} profile{{ store.profileLimit === 1 ? '' : 's' }} on your {{ store.membershipTier?.name || 'current' }} plan
+                </p>
+                <a :href="store.upgradeLink" class="guestify-upgrade-button">
+                    Upgrade to Create Unlimited One Sheets
+                </a>
             </div>
         </div>
 
@@ -209,16 +238,98 @@ const handleCreate = async () => {
     margin: 0;
 }
 
+/* Profile Limit Indicator */
+.guestify-limit-indicator {
+    font-size: 14px;
+    color: #516f90;
+    margin: 8px 0 0 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tier-badge {
+    background: linear-gradient(135deg, #ED8936, #F6AD55);
+    color: white;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+/* Upgrade Card Styles */
+.guestify-upgrade-card {
+    flex: 1 0 calc(33.333% - 20px);
+    max-width: calc(33.333% - 20px);
+    margin: 10px;
+    min-width: 280px;
+    min-height: 200px;
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    border: 2px dashed #ED8936;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    text-align: center;
+}
+
+.guestify-upgrade-icon {
+    width: 40px;
+    height: 40px;
+    color: #ED8936;
+    margin-bottom: 16px;
+}
+
+.guestify-upgrade-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #4A5568;
+    margin: 0 0 8px 0;
+}
+
+.guestify-upgrade-subtitle {
+    font-size: 14px;
+    color: #516f90;
+    margin: 0 0 16px 0;
+    line-height: 1.4;
+}
+
+.guestify-upgrade-button {
+    display: inline-block;
+    background: linear-gradient(135deg, #ED8936, #DD6B20);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(237, 137, 54, 0.3);
+}
+
+.guestify-upgrade-button:hover {
+    background: linear-gradient(135deg, #DD6B20, #C05621);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(237, 137, 54, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
-    .guestify-add-card {
+    .guestify-add-card,
+    .guestify-upgrade-card {
         flex: 1 0 calc(50% - 20px);
         max-width: calc(50% - 20px);
     }
 }
 
 @media (max-width: 768px) {
-    .guestify-add-card {
+    .guestify-add-card,
+    .guestify-upgrade-card {
         flex: 1 0 calc(100% - 20px);
         max-width: calc(100% - 20px);
     }
