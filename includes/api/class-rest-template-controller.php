@@ -125,6 +125,18 @@ class GMKB_REST_Template_Controller {
     }
 
     /**
+     * Get ThemeDiscovery instance
+     *
+     * @return ThemeDiscovery
+     */
+    private function get_theme_discovery() {
+        if (!class_exists('ThemeDiscovery')) {
+            require_once GMKB_PLUGIN_DIR . 'system/ThemeDiscovery.php';
+        }
+        return new ThemeDiscovery(GMKB_PLUGIN_DIR . 'themes');
+    }
+
+    /**
      * Get all templates (lightweight list for directory)
      *
      * Returns both built-in themes (as templates) and user-saved templates
@@ -132,38 +144,28 @@ class GMKB_REST_Template_Controller {
     public function get_templates($request) {
         $templates = array();
 
-        // 1. Load Built-in Themes as Templates
-        $themes_dir = defined('GMKB_PLUGIN_DIR') ? GMKB_PLUGIN_DIR . 'themes' : plugin_dir_path(dirname(dirname(__FILE__))) . 'themes';
+        // 1. Load Built-in Themes as Templates (using ThemeDiscovery for caching)
+        $discovery = $this->get_theme_discovery();
 
-        if (file_exists($themes_dir)) {
-            $theme_dirs = glob($themes_dir . '/*', GLOB_ONLYDIR);
-
-            foreach ($theme_dirs as $theme_dir) {
-                $theme_file = $theme_dir . '/theme.json';
-
-                if (file_exists($theme_file)) {
-                    $theme_data = json_decode(file_get_contents($theme_file), true);
-
-                    if ($theme_data && isset($theme_data['theme_id'])) {
-                        $theme_id = $theme_data['theme_id'];
-
-                        $templates[] = array(
-                            'id'                  => $theme_id,
-                            'type'                => 'built_in',
-                            'name'                => $theme_data['theme_name'] ?? $theme_id,
-                            'description'         => $theme_data['description'] ?? '',
-                            'category'            => $theme_data['category'] ?? 'portfolio',
-                            'tags'                => $theme_data['metadata']['tags'] ?? array(),
-                            'is_premium'          => $theme_data['metadata']['is_premium'] ?? false,
-                            'is_new'              => $theme_data['metadata']['is_new'] ?? false,
-                            'sort_order'          => $theme_data['metadata']['sort_order'] ?? 100,
-                            'preview_image'       => $this->get_preview_url($theme_id),
-                            'thumbnail_image'     => $this->get_thumbnail_url($theme_id),
-                            'has_default_content' => !empty($theme_data['defaultContent']),
-                        );
-                    }
-                }
+        foreach ($discovery->getThemes() as $slug => $theme_data) {
+            if (empty($theme_data['theme_id'])) {
+                continue;
             }
+
+            $templates[] = array(
+                'id'                  => $slug,
+                'type'                => 'built_in',
+                'name'                => $theme_data['theme_name'] ?? $slug,
+                'description'         => $theme_data['description'] ?? '',
+                'category'            => $theme_data['category'] ?? 'portfolio',
+                'tags'                => $theme_data['metadata']['tags'] ?? array(),
+                'is_premium'          => $theme_data['metadata']['is_premium'] ?? false,
+                'is_new'              => $theme_data['metadata']['is_new'] ?? false,
+                'sort_order'          => $theme_data['metadata']['sort_order'] ?? 100,
+                'preview_image'       => $this->get_preview_url($slug),
+                'thumbnail_image'     => $this->get_thumbnail_url($slug),
+                'has_default_content' => !empty($theme_data['defaultContent']),
+            );
         }
 
         // 2. Load User Templates (Custom Post Type)
@@ -254,25 +256,15 @@ class GMKB_REST_Template_Controller {
             ));
         }
 
-        // Built-in theme
-        $themes_dir = defined('GMKB_PLUGIN_DIR') ? GMKB_PLUGIN_DIR . 'themes' : plugin_dir_path(dirname(dirname(__FILE__))) . 'themes';
-        $theme_file = $themes_dir . '/' . sanitize_file_name($id) . '/theme.json';
+        // Built-in theme (using ThemeDiscovery for caching)
+        $discovery = $this->get_theme_discovery();
+        $theme_data = $discovery->getTheme(sanitize_file_name($id));
 
-        if (!file_exists($theme_file)) {
+        if (!$theme_data) {
             return new WP_Error(
                 'not_found',
                 __('Template not found', 'guestify-media-kit'),
                 array('status' => 404)
-            );
-        }
-
-        $theme_data = json_decode(file_get_contents($theme_file), true);
-
-        if (!$theme_data) {
-            return new WP_Error(
-                'invalid_theme',
-                __('Invalid theme data', 'guestify-media-kit'),
-                array('status' => 500)
             );
         }
 
@@ -496,5 +488,4 @@ class GMKB_REST_Template_Controller {
     }
 }
 
-// Initialize the controller
-new GMKB_REST_Template_Controller();
+// Note: Controller is initialized by the main plugin file (guestify-media-kit-builder.php)

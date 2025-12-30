@@ -84,17 +84,22 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted, h } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, h, defineAsyncComponent } from 'vue';
 import { useTemplateStore } from '../../../stores/templates';
 import { useUIStore } from '../../../stores/ui';
 
-// Try to import MediaKitPreview if it exists
-let MediaKitPreview = null;
-try {
-  MediaKitPreview = defineAsyncComponent(() => import('../MediaKitPreview.vue'));
-} catch {
-  // Fallback - will show placeholder
-}
+// Async load MediaKitPreview with loading/error handling
+const MediaKitPreview = defineAsyncComponent({
+  loader: () => import('../MediaKitPreview.vue'),
+  loadingComponent: {
+    template: '<div class="preview-loading"><div class="loading-spinner"></div><p>Loading preview...</p></div>'
+  },
+  errorComponent: {
+    template: '<div class="preview-error"><p>Error loading preview component.</p></div>'
+  },
+  delay: 200,
+  timeout: 15000
+});
 
 const templateStore = useTemplateStore();
 const uiStore = useUIStore();
