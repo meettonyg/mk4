@@ -1,10 +1,77 @@
 {
   "theme_id": "minimal_elegant",
   "theme_name": "Minimal Elegant",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A sophisticated, minimalist theme with monochrome aesthetics",
-  "preview_image": "minimal-elegant-preview.jpg",
+  "category": "minimal",
+  "metadata": {
+    "tags": ["minimal", "sophisticated", "author", "elegant"],
+    "is_premium": false,
+    "is_new": true,
+    "sort_order": 30,
+    "author": "Guestify"
+  },
+  "preview_image": "preview.jpg",
+  "thumbnail_image": "thumbnail.jpg",
   "defaultPreset": "large",
+  "defaultContent": {
+    "sections": [
+      {
+        "type": "full_width",
+        "components": [
+          {
+            "type": "hero",
+            "settings": {
+              "style": { "padding": "large", "minimal": true }
+            },
+            "data": {
+              "headline": "Author Name",
+              "subheadline": "Writer | Storyteller | Creative"
+            }
+          }
+        ]
+      },
+      {
+        "type": "full_width",
+        "components": [
+          {
+            "type": "biography",
+            "settings": { "style": { "centered": true, "narrow": true } },
+            "data": {
+              "title": "About",
+              "content": "A brief introduction to your work and creative philosophy."
+            }
+          }
+        ]
+      },
+      {
+        "type": "full_width",
+        "components": [
+          {
+            "type": "gallery",
+            "settings": { "layout": "masonry", "columns": 3 },
+            "data": {
+              "title": "Selected Works",
+              "items": []
+            }
+          }
+        ]
+      },
+      {
+        "type": "full_width",
+        "components": [
+          {
+            "type": "contact",
+            "settings": { "style": { "minimal": true } },
+            "data": {
+              "title": "Contact",
+              "email": "hello@example.com"
+            }
+          }
+        ]
+      }
+    ]
+  },
   "typography": {
     "primary_font": {
       "family": "Helvetica Neue, Helvetica, Arial, sans-serif",

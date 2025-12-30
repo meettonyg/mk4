@@ -307,6 +307,19 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/class-rest-theme-controller.
     }, 5);
 }
 
+// Template Directory REST API Controller - Carrd-like template selection
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/class-rest-template-controller.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/class-rest-template-controller.php';
+    add_action('init', function() {
+        if (class_exists('GMKB_REST_Template_Controller')) {
+            new GMKB_REST_Template_Controller();
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB: Template REST API Controller instantiated');
+            }
+        }
+    }, 5);
+}
+
 // Component system files
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php';

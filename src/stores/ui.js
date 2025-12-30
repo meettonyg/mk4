@@ -14,6 +14,10 @@ import storageService from '../services/StorageService';
 
 export const useUIStore = defineStore('ui', {
     state: () => ({
+        // Template Directory - State-based routing
+        currentView: 'builder', // 'directory' | 'builder'
+        templateDemoId: null,   // ID of template being demoed (for overlay)
+
         // Selection state
         selectedComponentId: null,
         selectedComponentIds: [], // For multi-select
@@ -106,7 +110,12 @@ export const useUIStore = defineStore('ui', {
         isTabletPreview: (state) => state.devicePreview === 'tablet',
 
         // Check if in preview mode (hides builder UI)
-        isPreviewMode: (state) => state.previewMode
+        isPreviewMode: (state) => state.previewMode,
+
+        // Template Directory getters
+        isDirectoryView: (state) => state.currentView === 'directory',
+        isBuilderView: (state) => state.currentView === 'builder',
+        isDemoActive: (state) => state.templateDemoId !== null
     },
     
     actions: {
@@ -454,12 +463,55 @@ export const useUIStore = defineStore('ui', {
             this.showKeyboardShortcuts = !this.showKeyboardShortcuts;
         },
         
+        // ===== Template Directory Actions =====
+
+        /**
+         * Show the template directory view
+         */
+        showTemplateDirectory() {
+            this.currentView = 'directory';
+            // Reset builder state when entering directory
+            this.closeSidebarEditor();
+            this.clearSelection();
+            console.log('✅ UI Store: Switched to template directory view');
+        },
+
+        /**
+         * Show the builder view
+         */
+        showBuilder() {
+            this.currentView = 'builder';
+            this.templateDemoId = null; // Close any demo
+            console.log('✅ UI Store: Switched to builder view');
+        },
+
+        /**
+         * Open template demo overlay
+         * @param {string|number} templateId - The template to preview
+         */
+        openTemplateDemo(templateId) {
+            this.templateDemoId = templateId;
+            console.log('✅ UI Store: Opened template demo for:', templateId);
+        },
+
+        /**
+         * Close template demo overlay
+         */
+        closeTemplateDemo() {
+            this.templateDemoId = null;
+            console.log('✅ UI Store: Closed template demo');
+        },
+
         // Reset UI state
         resetUIState() {
             // Clear selections
             this.clearSelection();
             this.clearHoveredComponent();
-            
+
+            // Reset template directory state
+            this.currentView = 'builder';
+            this.templateDemoId = null;
+
             // ROOT FIX: Reset sidebar to default mode
             this.sidebarMode = 'default';
             this.editingSectionId = null;

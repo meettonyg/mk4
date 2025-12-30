@@ -1,10 +1,80 @@
 {
   "theme_id": "creative_bold",
   "theme_name": "Creative Bold",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A vibrant, bold theme for creative professionals and artists",
-  "preview_image": "creative-bold-preview.jpg",
+  "category": "creative",
+  "metadata": {
+    "tags": ["bold", "vibrant", "artist", "speaker"],
+    "is_premium": false,
+    "is_new": false,
+    "sort_order": 20,
+    "author": "Guestify"
+  },
+  "preview_image": "preview.jpg",
+  "thumbnail_image": "thumbnail.jpg",
   "defaultPreset": "large",
+  "defaultContent": {
+    "sections": [
+      {
+        "type": "full_width",
+        "components": [
+          {
+            "type": "hero",
+            "settings": {
+              "style": { "padding": "large", "background": "gradient" }
+            },
+            "data": {
+              "headline": "Make an Impact",
+              "subheadline": "Creative strategies for the modern era",
+              "cta_text": "Work With Me"
+            }
+          }
+        ]
+      },
+      {
+        "type": "two_column",
+        "columns": {
+          "1": [
+            {
+              "type": "biography",
+              "settings": { "style": { "card": true, "accent": true } },
+              "data": {
+                "title": "The Story",
+                "content": "Your creative journey and what drives your work."
+              }
+            }
+          ],
+          "2": [
+            {
+              "type": "stats",
+              "settings": { "style": { "accent": true, "large": true } },
+              "data": {
+                "items": [
+                  { "value": "10+", "label": "Years Experience" },
+                  { "value": "500+", "label": "Projects Completed" },
+                  { "value": "50+", "label": "Happy Clients" }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "type": "full_width",
+        "components": [
+          {
+            "type": "topics",
+            "settings": { "layout": "grid", "style": { "colorful": true } },
+            "data": {
+              "title": "What I Do",
+              "items": ["Creative Direction", "Brand Strategy", "Visual Design"]
+            }
+          }
+        ]
+      }
+    ]
+  },
   "typography": {
     "primary_font": {
       "family": "Poppins, sans-serif",

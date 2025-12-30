@@ -1,10 +1,90 @@
 {
   "theme_id": "modern_dark",
   "theme_name": "Modern Dark",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A sleek dark theme with high contrast and modern aesthetics",
-  "preview_image": "modern-dark-preview.jpg",
+  "category": "portfolio",
+  "metadata": {
+    "tags": ["dark", "modern", "tech", "developer"],
+    "is_premium": false,
+    "is_new": false,
+    "sort_order": 40,
+    "author": "Guestify"
+  },
+  "preview_image": "preview.jpg",
+  "thumbnail_image": "thumbnail.jpg",
   "defaultPreset": "medium",
+  "defaultContent": {
+    "sections": [
+      {
+        "type": "full_width",
+        "components": [
+          {
+            "type": "hero",
+            "settings": {
+              "style": { "padding": "large", "gradient": true, "glow": true }
+            },
+            "data": {
+              "headline": "Developer Name",
+              "subheadline": "Full Stack Developer | Tech Enthusiast",
+              "cta_text": "View Projects"
+            }
+          }
+        ]
+      },
+      {
+        "type": "full_width",
+        "components": [
+          {
+            "type": "skills",
+            "settings": { "layout": "tags", "style": { "glowing": true } },
+            "data": {
+              "title": "Tech Stack",
+              "items": ["JavaScript", "React", "Node.js", "Python", "AWS"]
+            }
+          }
+        ]
+      },
+      {
+        "type": "full_width",
+        "components": [
+          {
+            "type": "projects",
+            "settings": { "layout": "cards", "columns": 2 },
+            "data": {
+              "title": "Featured Projects",
+              "items": []
+            }
+          }
+        ]
+      },
+      {
+        "type": "two_column",
+        "columns": {
+          "1": [
+            {
+              "type": "biography",
+              "settings": { "style": { "card": true, "glass": true } },
+              "data": {
+                "title": "About Me",
+                "content": "Passionate about building elegant solutions to complex problems."
+              }
+            }
+          ],
+          "2": [
+            {
+              "type": "contact",
+              "settings": { "style": { "card": true, "glass": true } },
+              "data": {
+                "title": "Get In Touch",
+                "email": "dev@example.com"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
   "typography": {
     "primary_font": {
       "family": "SF Pro Display, -apple-system, BlinkMacSystemFont, sans-serif",

@@ -1,10 +1,89 @@
 {
   "theme_id": "professional_clean",
   "theme_name": "Professional Clean",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A clean, professional theme perfect for business and corporate media kits",
-  "preview_image": "professional-clean-preview.jpg",
+  "category": "corporate",
+  "metadata": {
+    "tags": ["business", "clean", "professional", "consultant"],
+    "is_premium": false,
+    "is_new": false,
+    "sort_order": 10,
+    "author": "Guestify"
+  },
+  "preview_image": "preview.jpg",
+  "thumbnail_image": "thumbnail.jpg",
   "defaultPreset": "medium",
+  "defaultContent": {
+    "sections": [
+      {
+        "type": "full_width",
+        "components": [
+          {
+            "type": "hero",
+            "settings": {
+              "style": { "padding": "large", "alignment": "center" }
+            },
+            "data": {
+              "headline": "Your Name",
+              "subheadline": "Professional Title | Industry Expert",
+              "cta_text": "Get in Touch"
+            }
+          }
+        ]
+      },
+      {
+        "type": "two_column",
+        "columns": {
+          "1": [
+            {
+              "type": "biography",
+              "settings": { "style": { "card": true } },
+              "data": {
+                "title": "About Me",
+                "content": "Share your professional background and expertise here."
+              }
+            }
+          ],
+          "2": [
+            {
+              "type": "image",
+              "settings": { "style": { "rounded": true } },
+              "data": {
+                "alt": "Professional headshot"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "type": "full_width",
+        "components": [
+          {
+            "type": "topics",
+            "settings": { "layout": "grid", "columns": 3 },
+            "data": {
+              "title": "Speaking Topics",
+              "items": ["Topic 1", "Topic 2", "Topic 3"]
+            }
+          }
+        ]
+      },
+      {
+        "type": "full_width",
+        "components": [
+          {
+            "type": "contact",
+            "settings": { "style": { "centered": true } },
+            "data": {
+              "title": "Let's Connect",
+              "email": "contact@example.com"
+            }
+          }
+        ]
+      }
+    ]
+  },
   "typography": {
     "primary_font": {
       "family": "Inter, sans-serif",
