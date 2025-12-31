@@ -1,0 +1,422 @@
+{
+  "theme_id": "influencer_creator",
+  "theme_name": "Influencer & Creator",
+  "version": "2.0.0",
+  "description": "Bold, vibrant template for content creators, influencers, and social media personalities. Showcases social stats, brand partnerships, and collaboration opportunities.",
+  "category": "creator",
+  "metadata": {
+    "tags": ["influencer", "creator", "social-media", "youtube", "instagram", "tiktok", "brand"],
+    "is_premium": false,
+    "is_new": true,
+    "sort_order": 45,
+    "author": "Guestify",
+    "use_case": "YouTubers, Instagram influencers, TikTok creators, content creators, brand ambassadors"
+  },
+  "preview_image": "preview.jpg",
+  "thumbnail_image": "thumbnail.jpg",
+  "defaultPreset": "large",
+  "defaultContent": {
+    "sections": [
+      {
+        "id": "hero-section",
+        "type": "full_width",
+        "background": "gradient-animated",
+        "components": [
+          {
+            "type": "hero",
+            "settings": {
+              "layout": "center_aligned",
+              "imageStyle": "circle",
+              "showCTA": true,
+              "minHeight": "650px",
+              "textColor": "#ffffff",
+              "style": "bold"
+            },
+            "data": {
+              "headline": "Creator Name ✨",
+              "subheadline": "Content Creator | Lifestyle | Wellness",
+              "description": "Inspiring 2M+ followers to live their best lives through authentic content and genuine connections.",
+              "cta_text": "Let's Collaborate",
+              "cta_link": "#collaborate"
+            }
+          }
+        ]
+      },
+      {
+        "id": "stats-section",
+        "type": "full_width",
+        "components": [
+          {
+            "type": "stats",
+            "settings": {
+              "layout": "cards",
+              "columns": 4,
+              "showIcons": true,
+              "animateNumbers": true,
+              "colorScheme": "gradient",
+              "style": "social"
+            },
+            "data": {
+              "items": [
+                { "value": "2.1M", "label": "Instagram Followers", "icon": "instagram", "color": "#E4405F" },
+                { "value": "850K", "label": "YouTube Subscribers", "icon": "youtube", "color": "#FF0000" },
+                { "value": "1.5M", "label": "TikTok Followers", "icon": "tiktok", "color": "#000000" },
+                { "value": "8.5%", "label": "Avg Engagement Rate", "icon": "heart", "color": "#FF6B6B" }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "video-section",
+        "type": "full_width",
+        "background": "surface",
+        "components": [
+          {
+            "type": "video-intro",
+            "settings": {
+              "style": "featured",
+              "autoplay": false,
+              "showStats": true
+            },
+            "data": {
+              "title": "Watch My Content",
+              "subtitle": "Get a feel for my style and audience",
+              "video_url": "",
+              "stats": {
+                "views": "2.5M",
+                "likes": "180K",
+                "comments": "12K"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "content-categories-section",
+        "type": "full_width",
+        "components": [
+          {
+            "type": "topics",
+            "settings": {
+              "layout": "grid",
+              "columns": 4,
+              "showDescriptions": true,
+              "showIcons": true,
+              "style": "colorful-cards"
+            },
+            "data": {
+              "title": "Content Categories",
+              "subtitle": "What I create and share with my community",
+              "items": [
+                {
+                  "title": "Lifestyle",
+                  "description": "Day-in-my-life, routines, and authentic moments",
+                  "icon": "sun",
+                  "color": "#FFD93D"
+                },
+                {
+                  "title": "Fashion & Beauty",
+                  "description": "Outfit inspiration, tutorials, and product reviews",
+                  "icon": "sparkles",
+                  "color": "#FF6B9D"
+                },
+                {
+                  "title": "Travel",
+                  "description": "Adventures, travel guides, and hidden gems",
+                  "icon": "plane",
+                  "color": "#4ECDC4"
+                },
+                {
+                  "title": "Wellness",
+                  "description": "Health tips, mindfulness, and self-care routines",
+                  "icon": "heart",
+                  "color": "#95E1D3"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "bio-section",
+        "type": "two_column",
+        "columns": {
+          "ratio": "45-55",
+          "1": [
+            {
+              "type": "photo-gallery",
+              "settings": {
+                "layout": "collage",
+                "style": "instagram",
+                "columns": 2,
+                "gap": "small"
+              },
+              "data": {
+                "images": [
+                  { "alt": "Content photo 1" },
+                  { "alt": "Content photo 2" },
+                  { "alt": "Content photo 3" },
+                  { "alt": "Content photo 4" }
+                ]
+              }
+            }
+          ],
+          "2": [
+            {
+              "type": "biography",
+              "settings": {
+                "style": "casual",
+                "showTitle": true
+              },
+              "data": {
+                "title": "Hey, I'm [Name]! 👋",
+                "content": "I started creating content in [year] as a creative outlet, never imagining it would become my full-time passion. Today, I'm blessed to connect with millions of amazing people who share my love for [topics].\n\nMy content is all about authenticity—I share the highs, the lows, and everything in between. Whether it's a perfectly styled flat lay or a messy morning routine, I believe in keeping it real.\n\n**What I'm known for:**\n• Relatable, authentic content\n• High engagement and loyal community\n• Professional, brand-safe partnerships\n• Creative storytelling that converts"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "brands-section",
+        "type": "full_width",
+        "background": "surface",
+        "components": [
+          {
+            "type": "logo-grid",
+            "settings": {
+              "layout": "grid",
+              "columns": 6,
+              "showLabels": false,
+              "grayscale": false,
+              "hoverEffect": true
+            },
+            "data": {
+              "title": "Brands I've Worked With",
+              "subtitle": "Proud partnerships with amazing companies",
+              "logos": [
+                { "name": "Brand 1", "alt": "Brand logo" },
+                { "name": "Brand 2", "alt": "Brand logo" },
+                { "name": "Brand 3", "alt": "Brand logo" },
+                { "name": "Brand 4", "alt": "Brand logo" },
+                { "name": "Brand 5", "alt": "Brand logo" },
+                { "name": "Brand 6", "alt": "Brand logo" }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "offers-section",
+        "type": "full_width",
+        "background": "gradient",
+        "components": [
+          {
+            "type": "offers",
+            "settings": {
+              "layout": "cards",
+              "columns": 3,
+              "showPricing": false,
+              "style": "featured"
+            },
+            "data": {
+              "title": "Collaboration Packages",
+              "subtitle": "Let's create something amazing together",
+              "items": [
+                {
+                  "title": "Sponsored Post",
+                  "description": "Single feed post or carousel with authentic storytelling, custom caption, and story promotion.",
+                  "includes": ["1 Feed Post", "3 Story Frames", "Link in Bio (24hrs)", "Usage Rights (30 days)"],
+                  "cta_text": "Inquire"
+                },
+                {
+                  "title": "Video Integration",
+                  "description": "Dedicated YouTube video segment or full TikTok/Reels featuring your product or service.",
+                  "includes": ["60-90s Integration", "Custom Script", "B-Roll Footage", "Cross-Platform Sharing"],
+                  "cta_text": "Inquire",
+                  "featured": true
+                },
+                {
+                  "title": "Brand Ambassador",
+                  "description": "Long-term partnership with ongoing content, exclusivity, and deep brand integration.",
+                  "includes": ["Monthly Content", "Event Appearances", "Exclusivity Option", "Detailed Analytics"],
+                  "cta_text": "Inquire"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "testimonials-section",
+        "type": "full_width",
+        "components": [
+          {
+            "type": "testimonials",
+            "settings": {
+              "layout": "cards",
+              "columns": 2,
+              "showPhotos": true,
+              "showCompany": true,
+              "colorScheme": "gradient"
+            },
+            "data": {
+              "title": "What Brands Say",
+              "items": [
+                {
+                  "quote": "Working with [Name] exceeded our expectations. The content was authentic, engagement was incredible, and we saw a 3x ROI on our campaign.",
+                  "author": "Marketing Director",
+                  "company": "Major Brand"
+                },
+                {
+                  "quote": "Professional, creative, and delivered on time. [Name]'s audience trusts their recommendations, which translated to real results for us.",
+                  "author": "Brand Manager",
+                  "company": "Another Brand"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "social-section",
+        "type": "full_width",
+        "background": "surface",
+        "components": [
+          {
+            "type": "social",
+            "settings": {
+              "layout": "grid",
+              "showFollowers": true,
+              "showLabels": true,
+              "iconSize": "xlarge",
+              "style": "cards-colored"
+            },
+            "data": {
+              "title": "Let's Connect",
+              "subtitle": "Follow along on your favorite platform",
+              "links": [
+                { "platform": "instagram", "followers": "2.1M", "handle": "@username" },
+                { "platform": "youtube", "followers": "850K", "handle": "Channel Name" },
+                { "platform": "tiktok", "followers": "1.5M", "handle": "@username" },
+                { "platform": "twitter", "followers": "200K", "handle": "@username" }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "contact-section",
+        "type": "full_width",
+        "background": "gradient",
+        "components": [
+          {
+            "type": "contact",
+            "settings": {
+              "style": "modern",
+              "layout": "centered",
+              "fields": ["brand_name", "contact_name", "email", "campaign_type", "budget_range", "timeline", "message"],
+              "maxWidth": "700px"
+            },
+            "data": {
+              "title": "Let's Work Together! ✨",
+              "subtitle": "Tell me about your brand and campaign goals",
+              "button_text": "Send Inquiry",
+              "note": "I typically respond within 24-48 hours"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "typography": {
+    "primary_font": {
+      "family": "Plus Jakarta Sans, sans-serif",
+      "weights": [400, 500, 600, 700, 800],
+      "fallback": "-apple-system, BlinkMacSystemFont, sans-serif"
+    },
+    "heading_font": {
+      "family": "Plus Jakarta Sans, sans-serif",
+      "weights": [600, 700, 800],
+      "fallback": "Arial, sans-serif"
+    },
+    "font_scale": 1.3,
+    "line_height": {
+      "body": 1.7,
+      "heading": 1.1
+    }
+  },
+  "colors": {
+    "primary": "#FF6B6B",
+    "primary_hover": "#FF5252",
+    "secondary": "#4ECDC4",
+    "secondary_hover": "#3DBDB5",
+    "accent": "#FFE66D",
+    "text": "#2D3436",
+    "text_light": "#636E72",
+    "text_muted": "#95A5A6",
+    "background": "#ffffff",
+    "surface": "#FFF5F5",
+    "surface_hover": "#FFE8E8",
+    "border": "#FFD5D5",
+    "gradient_start": "#FF6B6B",
+    "gradient_middle": "#FF8E53",
+    "gradient_end": "#FFE66D",
+    "error": "#E74C3C",
+    "success": "#2ECC71",
+    "warning": "#F39C12"
+  },
+  "spacing": {
+    "base_unit": "10px",
+    "component_gap": "64px",
+    "section_gap": "100px",
+    "container_padding": "24px",
+    "content_max_width": "1300px"
+  },
+  "effects": {
+    "border_radius": "20px",
+    "border_radius_sm": "12px",
+    "border_radius_lg": "28px",
+    "border_radius_full": "9999px",
+    "shadow": "0 10px 40px rgba(255, 107, 107, 0.2)",
+    "shadow_sm": "0 4px 15px rgba(255, 107, 107, 0.1)",
+    "shadow_lg": "0 20px 60px rgba(255, 107, 107, 0.25)",
+    "transitions": "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+    "transitions_fast": "all 0.2s ease-out",
+    "gradient": "linear-gradient(135deg, var(--gmkb-color-gradient-start), var(--gmkb-color-gradient-middle), var(--gmkb-color-gradient-end))"
+  },
+  "components": {
+    "button": {
+      "padding": "16px 36px",
+      "font_weight": "700",
+      "letter_spacing": "0",
+      "border_radius": "9999px",
+      "shadow": "0 4px 15px rgba(255, 107, 107, 0.3)"
+    },
+    "card": {
+      "padding": "32px",
+      "shadow": "0 8px 30px rgba(0, 0, 0, 0.08)",
+      "border_radius": "20px"
+    }
+  },
+  "animations": {
+    "gradient_shift": "gradientShift 8s ease infinite",
+    "float": "float 3s ease-in-out infinite",
+    "pulse": "pulse 2s ease-in-out infinite"
+  },
+  "special": {
+    "animated_gradients": true,
+    "playful_interactions": true,
+    "social_media_optimized": true
+  },
+  "responsive": {
+    "breakpoints": {
+      "sm": "640px",
+      "md": "768px",
+      "lg": "1024px",
+      "xl": "1280px"
+    },
+    "font_scale_mobile": 0.85,
+    "spacing_scale_mobile": 0.7
+  }
+}

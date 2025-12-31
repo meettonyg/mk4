@@ -2,82 +2,289 @@
   "theme_id": "modern_dark",
   "theme_name": "Modern Dark",
   "version": "2.0.0",
-  "description": "A sleek dark theme with high contrast and modern aesthetics",
+  "description": "Sleek dark-mode template with glassmorphism effects. Perfect for tech-savvy professionals, designers, and modern brands.",
   "category": "portfolio",
   "metadata": {
-    "tags": ["dark", "modern", "tech", "developer"],
+    "tags": ["dark", "modern", "tech", "developer", "designer", "portfolio"],
     "is_premium": false,
     "is_new": false,
     "sort_order": 40,
-    "author": "Guestify"
+    "author": "Guestify",
+    "use_case": "Designers, creative technologists, modern brands, portfolio showcases"
   },
   "preview_image": "preview.jpg",
   "thumbnail_image": "thumbnail.jpg",
-  "defaultPreset": "medium",
+  "defaultPreset": "large",
   "defaultContent": {
     "sections": [
       {
+        "id": "hero-section",
         "type": "full_width",
+        "background": "gradient-dark",
         "components": [
           {
             "type": "hero",
             "settings": {
-              "style": { "padding": "large", "gradient": true, "glow": true }
+              "layout": "center_aligned",
+              "imageStyle": "circle",
+              "showCTA": true,
+              "minHeight": "600px",
+              "textColor": "#f3f4f6",
+              "style": "glow"
             },
             "data": {
-              "headline": "Developer Name",
-              "subheadline": "Full Stack Developer | Tech Enthusiast",
-              "cta_text": "View Projects"
+              "headline": "Designing the Future",
+              "subheadline": "Product Designer | Creative Technologist | Speaker",
+              "description": "Creating digital experiences that inspire, engage, and transform the way people interact with technology.",
+              "cta_text": "View My Work",
+              "cta_link": "#projects"
             }
           }
         ]
       },
       {
+        "id": "stats-section",
+        "type": "full_width",
+        "background": "surface-dark",
+        "components": [
+          {
+            "type": "stats",
+            "settings": {
+              "layout": "horizontal",
+              "columns": 4,
+              "showIcons": true,
+              "animateNumbers": true,
+              "colorScheme": "gradient",
+              "style": "glow"
+            },
+            "data": {
+              "items": [
+                { "value": "12+", "label": "Years Experience", "icon": "calendar" },
+                { "value": "100+", "label": "Projects Shipped", "icon": "rocket" },
+                { "value": "50+", "label": "Awards Won", "icon": "trophy" },
+                { "value": "3", "label": "Design Systems", "icon": "layers" }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "projects-section",
         "type": "full_width",
         "components": [
           {
-            "type": "skills",
-            "settings": { "layout": "tags", "style": { "glowing": true } },
+            "type": "photo-gallery",
+            "settings": {
+              "layout": "masonry",
+              "columns": 3,
+              "style": "project-cards-dark",
+              "showOverlay": true,
+              "showLinks": true
+            },
             "data": {
-              "title": "Tech Stack",
-              "items": ["JavaScript", "React", "Node.js", "Python", "AWS"]
+              "title": "Featured Work",
+              "subtitle": "Selected projects from the past few years",
+              "items": [
+                {
+                  "title": "Project Alpha",
+                  "category": "Product Design",
+                  "description": "End-to-end product design for a fintech startup",
+                  "link": "#"
+                },
+                {
+                  "title": "Project Beta",
+                  "category": "Design System",
+                  "description": "Enterprise design system serving 200+ developers",
+                  "link": "#"
+                },
+                {
+                  "title": "Project Gamma",
+                  "category": "Mobile App",
+                  "description": "Award-winning iOS app with 1M+ downloads",
+                  "link": "#"
+                },
+                {
+                  "title": "Project Delta",
+                  "category": "Brand Identity",
+                  "description": "Complete rebrand for a global technology company",
+                  "link": "#"
+                }
+              ]
             }
           }
         ]
       },
       {
+        "id": "skills-section",
         "type": "full_width",
+        "background": "surface-dark",
         "components": [
           {
-            "type": "projects",
-            "settings": { "layout": "cards", "columns": 2 },
+            "type": "topics",
+            "settings": {
+              "layout": "tags",
+              "style": "pills-glow",
+              "showCategories": true
+            },
             "data": {
-              "title": "Featured Projects",
-              "items": []
+              "title": "Skills & Tools",
+              "categories": [
+                {
+                  "name": "Design",
+                  "items": ["Figma", "Sketch", "Adobe Creative Suite", "Framer", "Principle"]
+                },
+                {
+                  "name": "Development",
+                  "items": ["HTML/CSS", "JavaScript", "React", "Swift", "Webflow"]
+                },
+                {
+                  "name": "Strategy",
+                  "items": ["User Research", "Design Systems", "Workshop Facilitation", "Product Strategy"]
+                }
+              ]
             }
           }
         ]
       },
       {
+        "id": "bio-section",
         "type": "two_column",
         "columns": {
+          "ratio": "40-60",
           "1": [
             {
-              "type": "biography",
-              "settings": { "style": { "card": true, "glass": true } },
+              "type": "profile-photo",
+              "settings": {
+                "style": "rounded",
+                "size": "large",
+                "border": "gradient"
+              },
               "data": {
-                "title": "About Me",
-                "content": "Passionate about building elegant solutions to complex problems."
+                "alt": "Designer headshot"
               }
             }
           ],
           "2": [
             {
-              "type": "contact",
-              "settings": { "style": { "card": true, "glass": true } },
+              "type": "biography",
+              "settings": {
+                "style": "casual",
+                "showTitle": true
+              },
               "data": {
-                "title": "Get In Touch",
-                "email": "dev@example.com"
+                "title": "A Bit About Me",
+                "content": "I'm a product designer who believes that great design is invisible—it simply works. For the past 12 years, I've been crafting digital experiences for companies ranging from startups to Fortune 100.\n\nMy approach combines systems thinking with human-centered design, creating solutions that scale while remaining delightfully usable. I'm particularly passionate about design systems, accessibility, and the intersection of design and development.\n\n**Currently:** Design Lead @ [Company]\n**Previously:** [Company], [Company], Freelance\n**Speaking:** WWDC, Config, Design+Code"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "testimonials-section",
+        "type": "full_width",
+        "components": [
+          {
+            "type": "testimonials",
+            "settings": {
+              "layout": "cards",
+              "columns": 2,
+              "showPhotos": true,
+              "showCompany": true,
+              "colorScheme": "gradient",
+              "style": "glassmorphism"
+            },
+            "data": {
+              "title": "Kind Words",
+              "items": [
+                {
+                  "quote": "One of the most talented designers I've worked with. Their ability to translate complex problems into elegant solutions is remarkable.",
+                  "author": "Name",
+                  "role": "CEO",
+                  "company": "Tech Company"
+                },
+                {
+                  "quote": "Combines technical depth with design sensibility in a way that's incredibly rare. A true full-stack designer.",
+                  "author": "Name",
+                  "role": "VP Product",
+                  "company": "Another Company"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "speaking-section",
+        "type": "full_width",
+        "background": "surface-dark",
+        "components": [
+          {
+            "type": "topics",
+            "settings": {
+              "layout": "grid",
+              "columns": 3,
+              "showDescriptions": true,
+              "style": "cards-dark"
+            },
+            "data": {
+              "title": "Speaking Topics",
+              "items": [
+                {
+                  "title": "Design Systems at Scale",
+                  "description": "Building and maintaining design systems that serve large organizations."
+                },
+                {
+                  "title": "The Future of Design Tools",
+                  "description": "How AI and new technologies are reshaping design workflows."
+                },
+                {
+                  "title": "From Pixel to Product",
+                  "description": "Bridging the gap between design and engineering."
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "contact-section",
+        "type": "two_column",
+        "background": "gradient-dark",
+        "columns": {
+          "ratio": "50-50",
+          "1": [
+            {
+              "type": "contact",
+              "settings": {
+                "style": "dark",
+                "fields": ["name", "email", "company", "project_type", "message"]
+              },
+              "data": {
+                "title": "Let's Create Together",
+                "subtitle": "Have a project in mind? Let's talk.",
+                "button_text": "Send Message"
+              }
+            }
+          ],
+          "2": [
+            {
+              "type": "social",
+              "settings": {
+                "layout": "grid",
+                "columns": 2,
+                "showLabels": true,
+                "showFollowers": true,
+                "iconSize": "large",
+                "style": "cards-dark"
+              },
+              "data": {
+                "title": "Find Me Online",
+                "links": [
+                  { "platform": "twitter", "label": "Twitter", "followers": "25K" },
+                  { "platform": "dribbble", "label": "Dribbble", "followers": "15K" },
+                  { "platform": "linkedin", "label": "LinkedIn" },
+                  { "platform": "github", "label": "GitHub" }
+                ]
               }
             }
           ]
@@ -133,8 +340,8 @@
   },
   "spacing": {
     "base_unit": "8px",
-    "component_gap": "40px",
-    "section_gap": "80px",
+    "component_gap": "56px",
+    "section_gap": "96px",
     "container_padding": "24px",
     "content_max_width": "1280px"
   },
@@ -146,6 +353,7 @@
     "shadow_sm": "0 2px 8px rgba(0, 0, 0, 0.3)",
     "shadow_lg": "0 20px 60px rgba(0, 0, 0, 0.6)",
     "shadow_colored": "0 10px 40px rgba(96, 165, 250, 0.2)",
+    "shadow_glow": "0 0 40px rgba(96, 165, 250, 0.3)",
     "transitions": "all 0.3s ease",
     "transitions_fast": "all 0.15s ease",
     "blur": "blur(20px)",

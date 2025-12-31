@@ -1,0 +1,415 @@
+{
+  "theme_id": "podcast_guest",
+  "theme_name": "Podcast Guest",
+  "version": "2.0.0",
+  "description": "Dynamic template for podcast guests and audio content creators. Features episode player, interview questions, and booking for podcast appearances.",
+  "category": "podcast",
+  "metadata": {
+    "tags": ["podcast", "audio", "interview", "media", "guest"],
+    "is_premium": false,
+    "is_new": true,
+    "sort_order": 25,
+    "author": "Guestify",
+    "use_case": "Podcast guests, audio creators, subject matter experts seeking podcast appearances"
+  },
+  "preview_image": "preview.jpg",
+  "thumbnail_image": "thumbnail.jpg",
+  "defaultPreset": "large",
+  "defaultContent": {
+    "sections": [
+      {
+        "id": "hero-section",
+        "type": "full_width",
+        "background": "gradient",
+        "components": [
+          {
+            "type": "hero",
+            "settings": {
+              "layout": "center_aligned",
+              "imageStyle": "circle",
+              "showCTA": true,
+              "minHeight": "550px",
+              "overlayOpacity": 0.6,
+              "textColor": "#ffffff"
+            },
+            "data": {
+              "headline": "Your Next Great Guest",
+              "subheadline": "Expert in [Topic] | Featured on 100+ Podcasts",
+              "description": "Engaging conversations that captivate your audience and boost your downloads.",
+              "cta_text": "Book Me on Your Show"
+            }
+          }
+        ]
+      },
+      {
+        "id": "stats-section",
+        "type": "full_width",
+        "background": "surface",
+        "components": [
+          {
+            "type": "stats",
+            "settings": {
+              "layout": "cards",
+              "columns": 4,
+              "showIcons": true,
+              "animateNumbers": true,
+              "colorScheme": "gradient"
+            },
+            "data": {
+              "items": [
+                { "value": "150+", "label": "Podcast Appearances", "icon": "microphone" },
+                { "value": "2M+", "label": "Combined Downloads", "icon": "headphones" },
+                { "value": "4.9", "label": "Average Host Rating", "icon": "star" },
+                { "value": "48hrs", "label": "Response Time", "icon": "clock" }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "podcast-player-section",
+        "type": "full_width",
+        "components": [
+          {
+            "type": "podcast-player",
+            "settings": {
+              "layout": "featured",
+              "showEpisodeList": true,
+              "maxEpisodes": 6,
+              "style": "cards",
+              "showPodcastName": true,
+              "showDuration": true
+            },
+            "data": {
+              "title": "Recent Appearances",
+              "subtitle": "Listen to some of my favorite conversations",
+              "episodes": [
+                {
+                  "podcast_name": "The Industry Podcast",
+                  "episode_title": "The Future of [Topic]",
+                  "duration": "58 min",
+                  "date": "2024",
+                  "audio_url": "",
+                  "podcast_image": ""
+                },
+                {
+                  "podcast_name": "Expert Conversations",
+                  "episode_title": "Deep Dive into [Subject]",
+                  "duration": "45 min",
+                  "date": "2024",
+                  "audio_url": "",
+                  "podcast_image": ""
+                },
+                {
+                  "podcast_name": "The Growth Show",
+                  "episode_title": "Lessons Learned from [Experience]",
+                  "duration": "52 min",
+                  "date": "2024",
+                  "audio_url": "",
+                  "podcast_image": ""
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "topics-section",
+        "type": "full_width",
+        "background": "primary",
+        "components": [
+          {
+            "type": "topics",
+            "settings": {
+              "layout": "grid",
+              "columns": 3,
+              "showDescriptions": true,
+              "showIcons": true,
+              "style": "cards-dark"
+            },
+            "data": {
+              "title": "Topics I Love to Discuss",
+              "subtitle": "Expertise that resonates with diverse audiences",
+              "items": [
+                {
+                  "title": "Industry Insights",
+                  "description": "Breaking down complex trends into actionable insights your audience can use immediately.",
+                  "icon": "chart-line"
+                },
+                {
+                  "title": "Personal Journey",
+                  "description": "Stories of failure, resilience, and breakthrough that inspire and entertain.",
+                  "icon": "road"
+                },
+                {
+                  "title": "Practical Strategies",
+                  "description": "Step-by-step frameworks listeners can implement the same day.",
+                  "icon": "tools"
+                },
+                {
+                  "title": "Future Predictions",
+                  "description": "Where the industry is heading and how to prepare for what's next.",
+                  "icon": "crystal-ball"
+                },
+                {
+                  "title": "Behind the Scenes",
+                  "description": "Insider perspectives and stories that haven't been told before.",
+                  "icon": "film"
+                },
+                {
+                  "title": "Rapid Fire Q&A",
+                  "description": "High-energy question rounds that keep audiences engaged.",
+                  "icon": "bolt"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "questions-section",
+        "type": "full_width",
+        "components": [
+          {
+            "type": "questions",
+            "settings": {
+              "layout": "cards",
+              "columns": 2,
+              "style": "interview",
+              "showNumbers": true,
+              "expandable": false
+            },
+            "data": {
+              "title": "Questions Hosts Love to Ask Me",
+              "subtitle": "Conversation starters that lead to great content",
+              "items": [
+                {
+                  "question": "What's the biggest myth in your industry?",
+                  "answer": "I love debunking common misconceptions with data and real examples."
+                },
+                {
+                  "question": "What was your biggest failure and what did it teach you?",
+                  "answer": "A vulnerable story that connects with audiences on a human level."
+                },
+                {
+                  "question": "If you could give one piece of advice to your younger self?",
+                  "answer": "Timeless wisdom that resonates across demographics."
+                },
+                {
+                  "question": "What's something you believe that most people disagree with?",
+                  "answer": "A contrarian take that sparks interesting debate."
+                },
+                {
+                  "question": "What are you most excited about right now?",
+                  "answer": "Current projects and passions that bring energy to the conversation."
+                },
+                {
+                  "question": "How can listeners take action on what we discussed?",
+                  "answer": "Clear, actionable next steps your audience can implement."
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "bio-section",
+        "type": "two_column",
+        "columns": {
+          "ratio": "40-60",
+          "1": [
+            {
+              "type": "profile-photo",
+              "settings": {
+                "style": "rounded",
+                "size": "large"
+              },
+              "data": {
+                "alt": "Professional headshot"
+              }
+            },
+            {
+              "type": "social",
+              "settings": {
+                "layout": "horizontal",
+                "showLabels": false,
+                "iconSize": "medium"
+              },
+              "data": {}
+            }
+          ],
+          "2": [
+            {
+              "type": "biography",
+              "settings": {
+                "style": "storytelling",
+                "showTitle": true
+              },
+              "data": {
+                "title": "The Short Version",
+                "content": "I'm a [profession] who has spent [X] years helping [audience] achieve [outcome]. My unconventional path—from [origin story] to [current position]—gives me a unique perspective that podcast audiences love.\n\nI've been told I have a gift for making complex topics accessible and entertaining. Whether your show is 30 minutes or 3 hours, I'll bring energy, preparation, and genuine enthusiasm to our conversation.\n\n**What hosts say:** \"One of the most prepared and engaging guests we've ever had.\""
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "testimonials-section",
+        "type": "full_width",
+        "background": "surface",
+        "components": [
+          {
+            "type": "testimonials",
+            "settings": {
+              "layout": "cards",
+              "columns": 3,
+              "showPhotos": true,
+              "showCompany": true,
+              "quoteStyle": "standard",
+              "colorScheme": "neutral"
+            },
+            "data": {
+              "title": "What Podcast Hosts Say",
+              "items": [
+                {
+                  "quote": "Our episode together was our most downloaded of the year. Listeners are still requesting a follow-up!",
+                  "author": "Host Name",
+                  "role": "Host",
+                  "company": "The Podcast Name"
+                },
+                {
+                  "quote": "Incredibly well-prepared and brought so much energy. The conversation flowed naturally from start to finish.",
+                  "author": "Host Name",
+                  "role": "Host",
+                  "company": "Another Podcast"
+                },
+                {
+                  "quote": "A true professional who understands what makes great podcast content. Highly recommend!",
+                  "author": "Host Name",
+                  "role": "Host",
+                  "company": "Great Show Name"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "booking-section",
+        "type": "full_width",
+        "background": "gradient",
+        "components": [
+          {
+            "type": "call-to-action",
+            "settings": {
+              "style": "hero",
+              "alignment": "center"
+            },
+            "data": {
+              "title": "Let's Create Something Great Together",
+              "description": "I'm always excited to connect with new audiences. If you think I'd be a good fit for your show, let's chat!",
+              "cta_text": "Book a Pre-Interview Call",
+              "secondary_cta_text": "Download My One-Sheet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "contact-section",
+        "type": "full_width",
+        "components": [
+          {
+            "type": "contact",
+            "settings": {
+              "style": "podcast-booking",
+              "fields": ["name", "email", "podcast_name", "audience_size", "topics_of_interest", "preferred_dates", "message"],
+              "showLabels": true
+            },
+            "data": {
+              "title": "Podcast Booking Request",
+              "subtitle": "Tell me about your show and audience",
+              "button_text": "Submit Booking Request"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "typography": {
+    "primary_font": {
+      "family": "DM Sans, sans-serif",
+      "weights": [400, 500, 700],
+      "fallback": "-apple-system, BlinkMacSystemFont, sans-serif"
+    },
+    "heading_font": {
+      "family": "Space Grotesk, sans-serif",
+      "weights": [500, 600, 700],
+      "fallback": "Arial, sans-serif"
+    },
+    "font_scale": 1.25,
+    "line_height": {
+      "body": 1.7,
+      "heading": 1.15
+    }
+  },
+  "colors": {
+    "primary": "#7c3aed",
+    "primary_hover": "#6d28d9",
+    "secondary": "#ec4899",
+    "secondary_hover": "#db2777",
+    "accent": "#06b6d4",
+    "text": "#1e1b4b",
+    "text_light": "#4c4a6d",
+    "text_muted": "#7c7a9c",
+    "background": "#ffffff",
+    "surface": "#faf5ff",
+    "surface_hover": "#f3e8ff",
+    "border": "#e9d5ff",
+    "gradient_start": "#7c3aed",
+    "gradient_end": "#ec4899",
+    "error": "#ef4444",
+    "success": "#10b981",
+    "warning": "#f59e0b"
+  },
+  "spacing": {
+    "base_unit": "8px",
+    "component_gap": "56px",
+    "section_gap": "96px",
+    "container_padding": "24px",
+    "content_max_width": "1200px"
+  },
+  "effects": {
+    "border_radius": "16px",
+    "border_radius_sm": "8px",
+    "border_radius_lg": "24px",
+    "border_radius_full": "9999px",
+    "shadow": "0 10px 40px rgba(124, 58, 237, 0.15)",
+    "shadow_sm": "0 4px 12px rgba(124, 58, 237, 0.08)",
+    "shadow_lg": "0 20px 60px rgba(124, 58, 237, 0.2)",
+    "transitions": "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    "gradient": "linear-gradient(135deg, var(--gmkb-color-gradient-start), var(--gmkb-color-gradient-end))"
+  },
+  "components": {
+    "button": {
+      "padding": "14px 32px",
+      "font_weight": "600",
+      "letter_spacing": "0",
+      "border_radius": "9999px"
+    },
+    "card": {
+      "padding": "28px",
+      "shadow": "0 4px 20px rgba(124, 58, 237, 0.1)",
+      "border_radius": "16px"
+    }
+  },
+  "responsive": {
+    "breakpoints": {
+      "sm": "640px",
+      "md": "768px",
+      "lg": "1024px",
+      "xl": "1280px"
+    },
+    "font_scale_mobile": 0.88,
+    "spacing_scale_mobile": 0.75
+  }
+}

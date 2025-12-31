@@ -1,0 +1,405 @@
+{
+  "theme_id": "tech_developer",
+  "theme_name": "Tech Developer",
+  "version": "2.0.0",
+  "description": "Modern dark-mode template for developers, engineers, and tech professionals. Features skills showcase, project portfolio, and technical expertise.",
+  "category": "tech",
+  "metadata": {
+    "tags": ["developer", "engineer", "tech", "portfolio", "dark-mode", "programmer"],
+    "is_premium": false,
+    "is_new": true,
+    "sort_order": 35,
+    "author": "Guestify",
+    "use_case": "Software developers, engineers, CTOs, tech founders, DevRel professionals"
+  },
+  "preview_image": "preview.jpg",
+  "thumbnail_image": "thumbnail.jpg",
+  "defaultPreset": "large",
+  "defaultContent": {
+    "sections": [
+      {
+        "id": "hero-section",
+        "type": "full_width",
+        "background": "dark",
+        "components": [
+          {
+            "type": "hero",
+            "settings": {
+              "layout": "left_aligned",
+              "imageStyle": "none",
+              "showCTA": true,
+              "minHeight": "600px",
+              "textColor": "#f8fafc",
+              "style": "terminal"
+            },
+            "data": {
+              "headline": "Building the Future,<br/>One Line at a Time",
+              "subheadline": "Senior Software Engineer | Open Source Contributor | Tech Speaker",
+              "description": "> 10+ years shipping products that scale. Passionate about clean code, developer experience, and making complex systems simple.",
+              "cta_text": "View My Work",
+              "cta_link": "#projects"
+            }
+          }
+        ]
+      },
+      {
+        "id": "stats-section",
+        "type": "full_width",
+        "background": "surface-dark",
+        "components": [
+          {
+            "type": "stats",
+            "settings": {
+              "layout": "horizontal",
+              "columns": 5,
+              "showIcons": true,
+              "animateNumbers": true,
+              "colorScheme": "custom",
+              "style": "github"
+            },
+            "data": {
+              "items": [
+                { "value": "15K+", "label": "GitHub Stars", "icon": "star" },
+                { "value": "500+", "label": "Contributions", "icon": "git-commit" },
+                { "value": "50+", "label": "Open Source Projects", "icon": "folder" },
+                { "value": "10M+", "label": "NPM Downloads", "icon": "download" },
+                { "value": "20+", "label": "Tech Talks", "icon": "presentation" }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "skills-section",
+        "type": "full_width",
+        "components": [
+          {
+            "type": "topics",
+            "settings": {
+              "layout": "tags",
+              "style": "pills",
+              "showCategories": true,
+              "animated": true
+            },
+            "data": {
+              "title": "Tech Stack",
+              "subtitle": "Technologies I work with daily",
+              "categories": [
+                {
+                  "name": "Languages",
+                  "items": ["TypeScript", "Python", "Go", "Rust", "JavaScript"]
+                },
+                {
+                  "name": "Frontend",
+                  "items": ["React", "Vue.js", "Next.js", "Tailwind CSS", "GraphQL"]
+                },
+                {
+                  "name": "Backend",
+                  "items": ["Node.js", "PostgreSQL", "Redis", "Docker", "Kubernetes"]
+                },
+                {
+                  "name": "Cloud & DevOps",
+                  "items": ["AWS", "GCP", "Terraform", "CI/CD", "Monitoring"]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "projects-section",
+        "type": "full_width",
+        "background": "dark",
+        "components": [
+          {
+            "type": "photo-gallery",
+            "settings": {
+              "layout": "grid",
+              "columns": 2,
+              "style": "project-cards",
+              "showLinks": true,
+              "showTech": true
+            },
+            "data": {
+              "title": "Featured Projects",
+              "subtitle": "Open source tools and side projects",
+              "items": [
+                {
+                  "title": "Project Alpha",
+                  "description": "A high-performance library for real-time data synchronization across distributed systems.",
+                  "tech": ["TypeScript", "WebSocket", "Redis"],
+                  "github": "#",
+                  "demo": "#",
+                  "stars": "5.2K"
+                },
+                {
+                  "title": "DevTool Beta",
+                  "description": "CLI tool that automates common development workflows and saves hours of manual work.",
+                  "tech": ["Go", "Docker", "CLI"],
+                  "github": "#",
+                  "demo": "#",
+                  "stars": "3.8K"
+                },
+                {
+                  "title": "Framework Gamma",
+                  "description": "Lightweight framework for building type-safe APIs with automatic documentation.",
+                  "tech": ["TypeScript", "OpenAPI", "Node.js"],
+                  "github": "#",
+                  "demo": "#",
+                  "stars": "2.1K"
+                },
+                {
+                  "title": "Plugin Delta",
+                  "description": "VS Code extension that enhances developer productivity with AI-powered suggestions.",
+                  "tech": ["TypeScript", "VS Code API", "AI"],
+                  "github": "#",
+                  "marketplace": "#",
+                  "installs": "50K+"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "bio-section",
+        "type": "two_column",
+        "columns": {
+          "ratio": "35-65",
+          "1": [
+            {
+              "type": "profile-photo",
+              "settings": {
+                "style": "rounded",
+                "size": "large",
+                "border": "gradient"
+              },
+              "data": {
+                "alt": "Developer headshot"
+              }
+            }
+          ],
+          "2": [
+            {
+              "type": "biography",
+              "settings": {
+                "style": "casual",
+                "showTitle": true
+              },
+              "data": {
+                "title": "Hello, World! 👋",
+                "content": "I'm a software engineer who believes that great code should be as readable as great prose. For the past decade, I've been building products at companies ranging from early-stage startups to Fortune 500s.\n\nCurrently, I'm focused on [current focus area], where I get to solve interesting problems at scale. When I'm not coding, you'll find me contributing to open source, writing technical articles, or speaking at conferences about developer experience.\n\n**Currently:** Senior Engineer @ [Company]\n**Previously:** [Previous Company], [Another Company]\n**Education:** [Degree] from [University]"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "talks-section",
+        "type": "full_width",
+        "background": "surface-dark",
+        "components": [
+          {
+            "type": "video-intro",
+            "settings": {
+              "layout": "grid",
+              "columns": 3,
+              "showDuration": true,
+              "showEvent": true
+            },
+            "data": {
+              "title": "Conference Talks",
+              "subtitle": "Selected presentations from recent conferences",
+              "videos": [
+                {
+                  "title": "Scaling Real-Time Systems",
+                  "event": "TechConf 2024",
+                  "duration": "35 min",
+                  "thumbnail": ""
+                },
+                {
+                  "title": "The Art of Code Review",
+                  "event": "DevSummit 2024",
+                  "duration": "28 min",
+                  "thumbnail": ""
+                },
+                {
+                  "title": "Building Developer Tools That Scale",
+                  "event": "OSS Conference",
+                  "duration": "42 min",
+                  "thumbnail": ""
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "topics-section",
+        "type": "full_width",
+        "components": [
+          {
+            "type": "topics",
+            "settings": {
+              "layout": "grid",
+              "columns": 3,
+              "showDescriptions": true,
+              "style": "minimal"
+            },
+            "data": {
+              "title": "Speaking Topics",
+              "subtitle": "I speak about building great software",
+              "items": [
+                {
+                  "title": "System Design at Scale",
+                  "description": "Architectural patterns for building systems that handle millions of requests."
+                },
+                {
+                  "title": "Developer Experience",
+                  "description": "Creating tools and workflows that make developers more productive and happy."
+                },
+                {
+                  "title": "Open Source Strategy",
+                  "description": "Building and maintaining successful open source projects."
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "contact-section",
+        "type": "two_column",
+        "background": "dark",
+        "columns": {
+          "ratio": "50-50",
+          "1": [
+            {
+              "type": "contact",
+              "settings": {
+                "style": "minimal-dark",
+                "fields": ["name", "email", "company", "topic", "message"]
+              },
+              "data": {
+                "title": "Let's Connect",
+                "subtitle": "For speaking, consulting, or collaboration inquiries",
+                "button_text": "Send Message"
+              }
+            }
+          ],
+          "2": [
+            {
+              "type": "social",
+              "settings": {
+                "layout": "list",
+                "showLabels": true,
+                "showFollowers": true,
+                "iconSize": "large",
+                "style": "dark"
+              },
+              "data": {
+                "title": "Find Me Online",
+                "links": [
+                  { "platform": "github", "label": "GitHub", "followers": "15K" },
+                  { "platform": "twitter", "label": "Twitter", "followers": "25K" },
+                  { "platform": "linkedin", "label": "LinkedIn" },
+                  { "platform": "blog", "label": "Technical Blog" },
+                  { "platform": "youtube", "label": "YouTube", "subscribers": "10K" }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "typography": {
+    "primary_font": {
+      "family": "JetBrains Mono, monospace",
+      "weights": [400, 500, 700],
+      "fallback": "Fira Code, Monaco, Consolas, monospace"
+    },
+    "heading_font": {
+      "family": "Inter, sans-serif",
+      "weights": [500, 600, 700, 800],
+      "fallback": "-apple-system, BlinkMacSystemFont, sans-serif"
+    },
+    "font_scale": 1.2,
+    "line_height": {
+      "body": 1.7,
+      "heading": 1.15
+    }
+  },
+  "colors": {
+    "primary": "#22d3ee",
+    "primary_hover": "#06b6d4",
+    "secondary": "#a78bfa",
+    "secondary_hover": "#8b5cf6",
+    "accent": "#4ade80",
+    "text": "#f1f5f9",
+    "text_light": "#cbd5e1",
+    "text_muted": "#94a3b8",
+    "background": "#0f172a",
+    "background_secondary": "#1e293b",
+    "surface": "#1e293b",
+    "surface_hover": "#334155",
+    "border": "#334155",
+    "code_bg": "#0d1117",
+    "gradient_start": "#22d3ee",
+    "gradient_end": "#a78bfa",
+    "error": "#f87171",
+    "success": "#4ade80",
+    "warning": "#fbbf24"
+  },
+  "spacing": {
+    "base_unit": "8px",
+    "component_gap": "48px",
+    "section_gap": "96px",
+    "container_padding": "24px",
+    "content_max_width": "1280px"
+  },
+  "effects": {
+    "border_radius": "12px",
+    "border_radius_sm": "8px",
+    "border_radius_lg": "16px",
+    "shadow": "0 10px 40px rgba(0, 0, 0, 0.4)",
+    "shadow_sm": "0 4px 12px rgba(0, 0, 0, 0.3)",
+    "shadow_lg": "0 20px 60px rgba(0, 0, 0, 0.5)",
+    "shadow_glow": "0 0 40px rgba(34, 211, 238, 0.2)",
+    "transitions": "all 0.2s ease",
+    "backdrop_blur": "blur(12px)",
+    "gradient": "linear-gradient(135deg, var(--gmkb-color-gradient-start), var(--gmkb-color-gradient-end))"
+  },
+  "components": {
+    "button": {
+      "padding": "12px 28px",
+      "font_weight": "500",
+      "letter_spacing": "0",
+      "background": "transparent",
+      "border_width": "1px",
+      "border_color": "var(--gmkb-color-primary)"
+    },
+    "card": {
+      "padding": "24px",
+      "shadow": "0 4px 20px rgba(0, 0, 0, 0.3)",
+      "background": "rgba(30, 41, 59, 0.8)",
+      "backdrop_blur": "blur(12px)"
+    }
+  },
+  "special": {
+    "dark_mode_optimized": true,
+    "use_glassmorphism": true,
+    "syntax_highlighting": true,
+    "terminal_style_elements": true
+  },
+  "responsive": {
+    "breakpoints": {
+      "sm": "640px",
+      "md": "768px",
+      "lg": "1024px",
+      "xl": "1280px"
+    },
+    "font_scale_mobile": 0.9,
+    "spacing_scale_mobile": 0.8
+  }
+}
