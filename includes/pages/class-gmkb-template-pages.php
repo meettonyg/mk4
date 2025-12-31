@@ -99,8 +99,8 @@ class GMKB_Template_Pages {
      * Initialize WordPress hooks
      */
     private function init_hooks() {
-        // Rewrite rules
-        add_action('init', array($this, 'register_rewrite_rules'));
+        // Rewrite rules - use priority 10 (same as tool pages)
+        add_action('init', array($this, 'register_rewrite_rules'), 10);
         add_filter('query_vars', array($this, 'register_query_vars'));
 
         // Template handling
@@ -114,8 +114,11 @@ class GMKB_Template_Pages {
         // Body class
         add_filter('body_class', array($this, 'add_body_class'));
 
-        // Flush rewrite rules when needed
-        add_action('admin_init', array($this, 'maybe_flush_rewrite_rules'));
+        // Flush rewrite rules on first load or when needed
+        add_action('init', array($this, 'maybe_flush_rewrite_rules'), 99);
+
+        // Check if rules need to be added (first time setup)
+        add_action('admin_init', array($this, 'check_rewrite_rules'));
     }
 
     /**
@@ -772,6 +775,43 @@ $slug = $template['slug'] ?? '';
         if (get_option('gmkb_template_pages_flush_rewrite')) {
             flush_rewrite_rules();
             delete_option('gmkb_template_pages_flush_rewrite');
+
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB Template Pages: Flushed rewrite rules');
+            }
+        }
+    }
+
+    /**
+     * Check if rewrite rules exist, if not schedule a flush
+     */
+    public function check_rewrite_rules() {
+        $rules = get_option('rewrite_rules');
+
+        // Check if our rules exist
+        $has_directory_rule = false;
+        $has_single_rule = false;
+
+        if (is_array($rules)) {
+            foreach ($rules as $pattern => $query) {
+                if (strpos($pattern, $this->base_path) !== false) {
+                    if (strpos($query, $this->directory_var) !== false) {
+                        $has_directory_rule = true;
+                    }
+                    if (strpos($query, $this->query_var) !== false) {
+                        $has_single_rule = true;
+                    }
+                }
+            }
+        }
+
+        // If rules are missing, schedule a flush
+        if (!$has_directory_rule || !$has_single_rule) {
+            self::schedule_flush();
+
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('⚠️ GMKB Template Pages: Rewrite rules missing, scheduled flush');
+            }
         }
     }
 
@@ -781,7 +821,35 @@ $slug = $template['slug'] ?? '';
     public static function schedule_flush() {
         update_option('gmkb_template_pages_flush_rewrite', true);
     }
+
+    /**
+     * Force flush rewrite rules (for manual trigger)
+     */
+    public static function force_flush() {
+        flush_rewrite_rules();
+        delete_option('gmkb_template_pages_flush_rewrite');
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB Template Pages: Force flushed rewrite rules');
+        }
+    }
 }
 
 // Initialize
 GMKB_Template_Pages::instance();
+
+// Add admin action to force flush via URL parameter
+// Visit: /wp-admin/?gmkb_flush_template_rules=1
+add_action('admin_init', function() {
+    if (isset($_GET['gmkb_flush_template_rules']) && current_user_can('manage_options')) {
+        GMKB_Template_Pages::force_flush();
+        add_action('admin_notices', function() {
+            echo '<div class="notice notice-success is-dismissible"><p>GMKB Template rewrite rules flushed successfully.</p></div>';
+        });
+    }
+});
+
+// Helper function for template access
+function gmkb_get_template_pages() {
+    return GMKB_Template_Pages::instance();
+}
