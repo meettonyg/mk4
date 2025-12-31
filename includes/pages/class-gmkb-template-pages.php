@@ -80,8 +80,16 @@ class GMKB_Template_Pages {
      * Constructor
      */
     private function __construct() {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('📦 GMKB Template Pages: Constructor starting...');
+        }
+
         $this->load_dependencies();
         $this->init_hooks();
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB Template Pages: Constructor completed');
+        }
     }
 
     /**
@@ -99,12 +107,32 @@ class GMKB_Template_Pages {
      * Initialize WordPress hooks
      */
     private function init_hooks() {
+        $init_already_fired = did_action('init') > 0;
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('🔧 GMKB Template Pages: init_hooks() called');
+            error_log('   - did_action(init): ' . did_action('init'));
+            error_log('   - init already fired: ' . ($init_already_fired ? 'YES' : 'NO'));
+        }
+
         // Rewrite rules - use priority 10 (same as tool pages)
         add_action('init', array($this, 'register_rewrite_rules'), 10);
+
+        // CRITICAL: If init already fired, register rules immediately
+        if ($init_already_fired) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('⚡ GMKB Template Pages: init already fired, registering rules immediately');
+            }
+            $this->register_rewrite_rules();
+        }
+
         add_filter('query_vars', array($this, 'register_query_vars'));
 
+        // CRITICAL: Catch template URLs during request parsing (before 404 detection)
+        add_action('parse_request', array($this, 'parse_template_request'), 1);
+
         // Template handling
-        add_filter('template_include', array($this, 'load_template'));
+        add_filter('template_include', array($this, 'load_template'), 99);
 
         // SEO hooks
         add_action('wp_head', array($this, 'output_seo_tags'), 1);
@@ -119,6 +147,10 @@ class GMKB_Template_Pages {
 
         // Check if rules need to be added (first time setup)
         add_action('admin_init', array($this, 'check_rewrite_rules'));
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB Template Pages: All hooks registered');
+        }
     }
 
     /**
@@ -165,6 +197,50 @@ class GMKB_Template_Pages {
         $vars[] = $this->query_var;
         $vars[] = $this->directory_var;
         return $vars;
+    }
+
+    /**
+     * Parse template request - catches URLs that rewrite rules might miss
+     *
+     * This is a fallback for when rewrite rules haven't been flushed yet.
+     * Runs during parse_request before WordPress determines if it's a 404.
+     *
+     * @param WP $wp WordPress request object
+     */
+    public function parse_template_request($wp) {
+        $request = trim($wp->request, '/');
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('🔍 GMKB Template Pages: parse_template_request()');
+            error_log('   - Request: ' . $request);
+        }
+
+        // Match /templates/ (directory)
+        if ($request === $this->base_path || $request === $this->base_path . '/') {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB Template Pages: Matched directory URL');
+            }
+            $wp->query_vars[$this->directory_var] = '1';
+            return;
+        }
+
+        // Match /templates/{slug}/ (individual template)
+        if (preg_match('#^' . preg_quote($this->base_path, '#') . '/([^/]+)/?$#', $request, $matches)) {
+            $template_slug = sanitize_file_name($matches[1]);
+
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB Template Pages: Matched template URL: ' . $template_slug);
+            }
+
+            // Verify template exists
+            if ($this->discovery) {
+                $template_data = $this->discovery->getTheme($template_slug);
+                if ($template_data) {
+                    $wp->query_vars[$this->query_var] = $template_slug;
+                    return;
+                }
+            }
+        }
     }
 
     /**
@@ -865,8 +941,17 @@ $slug = $template['slug'] ?? '';
     }
 }
 
-// Initialize
-GMKB_Template_Pages::instance();
+// Initialize with debug logging
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('🚀 GMKB Template Pages: File loaded, initializing class...');
+    error_log('   - did_action(init): ' . did_action('init'));
+}
+
+$gmkb_template_pages = GMKB_Template_Pages::instance();
+
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('✅ GMKB Template Pages: Instance created');
+}
 
 // Add admin action to force flush via URL parameter
 // Visit: /wp-admin/?gmkb_flush_template_rules=1
