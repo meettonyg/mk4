@@ -314,28 +314,35 @@ function gmkb_enqueue_vue_only_assets() {
 
 function gmkb_prepare_data_for_injection() {
     $post_id = gmkb_get_post_id();
-
-    if (!$post_id || !get_post($post_id)) {
-        return array();
-    }
+    $is_new_media_kit = (!$post_id || !get_post($post_id));
 
     $is_logged_in = is_user_logged_in();
     $user_id = get_current_user_id();
 
-    $can_edit = false;
+    // For new media kits, everyone can edit until they try to save
+    // Save will require registration
+    $can_edit = true;
+    $can_save = false;
+
     if ($is_logged_in) {
-        $post = get_post($post_id);
-        $post_type_object = get_post_type_object($post->post_type);
-        $edit_cap = $post_type_object->cap->edit_post ?? 'edit_post';
-        $can_edit = current_user_can($edit_cap, $post_id);
+        // Logged in users can always save new media kits
+        if ($is_new_media_kit) {
+            $can_save = true;
+        } else {
+            // For existing media kits, check edit permissions
+            $post = get_post($post_id);
+            $post_type_object = get_post_type_object($post->post_type);
+            $edit_cap = $post_type_object->cap->edit_post ?? 'edit_post';
+            $can_save = current_user_can($edit_cap, $post_id);
 
-        if (!$can_edit) {
-            $edit_posts_cap = $post_type_object->cap->edit_posts ?? 'edit_posts';
-            $can_edit = current_user_can($edit_posts_cap);
-        }
+            if (!$can_save) {
+                $edit_posts_cap = $post_type_object->cap->edit_posts ?? 'edit_posts';
+                $can_save = current_user_can($edit_posts_cap);
+            }
 
-        if (!$can_edit && current_user_can('manage_options')) {
-            $can_edit = true;
+            if (!$can_save && current_user_can('manage_options')) {
+                $can_save = true;
+            }
         }
     }
 
@@ -351,17 +358,34 @@ function gmkb_prepare_data_for_injection() {
 
     $component_registry = gmkb_get_component_registry_data();
     $themes = gmkb_get_theme_data();
-    $saved_state = gmkb_get_saved_state($post_id);
-    $pods_data = gmkb_get_pods_data($post_id);
     $deprecation_config = apply_filters('gmkb_deprecation_config', array());
-    $profile_branding = gmkb_get_profile_branding($post_id);
+
+    // For new media kits, provide empty defaults
+    if ($is_new_media_kit) {
+        $saved_state = null;
+        $pods_data = array();
+        $profile_branding = null;
+        $post_type = 'mkcg';
+        $post_title = 'New Media Kit';
+    } else {
+        $saved_state = gmkb_get_saved_state($post_id);
+        $pods_data = gmkb_get_pods_data($post_id);
+        $profile_branding = gmkb_get_profile_branding($post_id);
+        $post_type = get_post_type($post_id);
+        $post_title = get_the_title($post_id);
+    }
+
+    // Build registration URL for anonymous users
+    $register_url = wp_registration_url();
+    $current_url = $_SERVER['REQUEST_URI'] ?? '/tools/media-kit/';
 
     return array(
         'ajaxUrl'           => admin_url('admin-ajax.php'),
         'nonce'             => $nonce,
-        'postId'            => $post_id,
-        'postType'          => get_post_type($post_id),
-        'postTitle'         => get_the_title($post_id),
+        'postId'            => $post_id ?: null,
+        'postType'          => $post_type,
+        'postTitle'         => $post_title,
+        'isNewMediaKit'     => $is_new_media_kit,
         'pluginUrl'         => GUESTIFY_PLUGIN_URL,
         'isDevelopment'     => defined('GMKB_DEV_MODE') && GMKB_DEV_MODE,
         'restUrl'           => esc_url_raw($rest_url),
@@ -384,8 +408,10 @@ function gmkb_prepare_data_for_injection() {
         'user'              => array(
             'isLoggedIn'    => $is_logged_in,
             'userId'        => $user_id,
-            'canSave'       => $can_edit,
-            'loginUrl'      => wp_login_url($_SERVER['REQUEST_URI'] ?? ''),
+            'canEdit'       => $can_edit,
+            'canSave'       => $can_save,
+            'loginUrl'      => wp_login_url($current_url),
+            'registerUrl'   => add_query_arg('redirect_to', urlencode($current_url), $register_url),
         ),
     );
 }
@@ -429,7 +455,7 @@ function gmkb_get_theme_data() {
             try {
                 $theme_dir = GUESTIFY_PLUGIN_DIR . 'themes/';
                 $theme_discovery = new ThemeDiscovery($theme_dir);
-                $theme_discovery->scan();
+                $theme_discovery->scan(true); // Force fresh scan to pick up new themes
                 $themes = $theme_discovery->getThemes();
 
                 foreach ($themes as $theme_id => $theme_data) {
@@ -441,6 +467,8 @@ function gmkb_get_theme_data() {
                         'typography' => $theme_data['typography'] ?? array(),
                         'spacing' => $theme_data['spacing'] ?? array(),
                         'effects' => $theme_data['effects'] ?? array(),
+                        'metadata' => $theme_data['metadata'] ?? array(),
+                        'defaultContent' => $theme_data['defaultContent'] ?? null,
                         'isCustom' => false,
                         'isBuiltIn' => true
                     );

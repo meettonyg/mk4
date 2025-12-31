@@ -483,7 +483,30 @@ export const useMediaKitStore = defineStore('mediaKit', {
         console.log('⏭️ Save skipped: No changes to save');
         return;
       }
-      
+
+      // Check if user can save (logged in with permissions)
+      const userData = window.gmkbData?.user;
+      const isNewMediaKit = window.gmkbData?.isNewMediaKit;
+
+      if (!userData?.canSave) {
+        console.log('⚠️ Save blocked: User does not have save permissions');
+
+        // Dispatch event to show registration prompt
+        const event = new CustomEvent('gmkb:save-requires-auth', {
+          detail: {
+            isNewMediaKit,
+            loginUrl: userData?.loginUrl || '/wp-login.php',
+            registerUrl: userData?.registerUrl || '/wp-login.php?action=register',
+            message: isNewMediaKit
+              ? 'Create a free account to save your media kit'
+              : 'Please log in to save changes'
+          }
+        });
+        document.dispatchEvent(event);
+
+        return { success: false, requiresAuth: true };
+      }
+
       try {
         this.isSaving = true;
         console.log('💾 Starting save operation...');
