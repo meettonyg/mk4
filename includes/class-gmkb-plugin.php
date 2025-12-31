@@ -1,10 +1,10 @@
 <?php
 /**
  * Main Plugin Class
- * 
+ *
  * Issue #13 FIX: Extracted from guestify-media-kit-builder.php
  * Handles core plugin initialization and component discovery
- * 
+ *
  * @package Guestify
  * @since 4.0.0
  */
@@ -37,19 +37,12 @@ class GMKB_Plugin {
      */
     private function __construct() {
         if (self::$initialized) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB: Preventing double initialization - already initialized');
-            }
             return;
         }
         self::$initialized = true;
-        
+
         $this->init_component_system();
         $this->init_hooks();
-        
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB: Pure Vue initialization complete');
-        }
     }
 
     /**
@@ -58,35 +51,16 @@ class GMKB_Plugin {
     private function init_component_system() {
         // Initialize component system
         $this->component_discovery = new ComponentDiscovery(GUESTIFY_PLUGIN_DIR . 'components');
-        
+
         // Make globally available
         global $gmkb_component_discovery;
         $gmkb_component_discovery = $this->component_discovery;
-        
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB: ComponentDiscovery initialized');
-        }
-        
-        // ROOT FIX: Force immediate scan to ensure components are available for REST API
-        // This ensures getRequiredPodsFields() has data when called
+
+        // Force immediate scan to ensure components are available for REST API
         try {
-            $scan_result = $this->component_discovery->scan(false);
-            $components_found = $this->component_discovery->getComponents();
-            
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('📊 GMKB: Found ' . count($components_found) . ' components during initialization');
-                
-                // Log Pods field discovery for debugging
-                $pods_fields = $this->component_discovery->getRequiredPodsFields();
-                error_log('🔍 GMKB: Discovered ' . count($pods_fields) . ' unique Pods fields from component configs');
-                if (count($pods_fields) > 0) {
-                    error_log('  Sample fields: ' . implode(', ', array_slice($pods_fields, 0, 10)));
-                }
-            }
+            $this->component_discovery->scan(false);
         } catch (Exception $e) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('❌ GMKB: Component scan failed: ' . $e->getMessage());
-            }
+            // Silently handle scan failures
         }
     }
 
@@ -198,10 +172,6 @@ class GMKB_Plugin {
                 wp_insert_term($name, 'offer_type', array('slug' => $slug));
             }
         }
-
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB: Registered gmkb_offer CPT and offer_type taxonomy');
-        }
     }
 
     /**
@@ -221,7 +191,7 @@ class GMKB_Plugin {
     public function rest_get_components() {
         $components = $this->component_discovery->getComponents();
         $categories = $this->component_discovery->getCategories();
-        
+
         return array(
             'success' => true,
             'components' => $components,
@@ -237,23 +207,20 @@ class GMKB_Plugin {
      */
     public function media_kit_shortcode($atts) {
         ob_start();
-        
+
         // Always use Pure Vue template
         $template = GUESTIFY_PLUGIN_DIR . 'templates/builder-template-vue-pure.php';
-        
+
         if (file_exists($template)) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ GMKB: Loading Pure Vue template via shortcode');
-            }
             include $template;
         } else {
             echo '<div style="padding: 20px; text-align: center; background: #fee; border: 2px solid #f88; border-radius: 8px; margin: 20px;">
-                <h2>⚠️ Template Not Found</h2>
+                <h2>Template Not Found</h2>
                 <p>Pure Vue template file not found: ' . esc_html($template) . '</p>
                 <p>Please ensure the builder-template-vue-pure.php file exists in the templates directory.</p>
             </div>';
         }
-        
+
         return ob_get_clean();
     }
 
@@ -263,14 +230,14 @@ class GMKB_Plugin {
     public function ensure_topics_ajax_handlers_registered() {
         if (class_exists('GMKB_Topics_Ajax_Handler')) {
             $topics_handler = GMKB_Topics_Ajax_Handler::get_instance();
-            
+
             $registered_actions = array(
                 'wp_ajax_save_custom_topics',
                 'wp_ajax_nopriv_save_custom_topics',
                 'wp_ajax_load_stored_topics',
                 'wp_ajax_nopriv_load_stored_topics'
             );
-            
+
             foreach ($registered_actions as $action) {
                 if (!has_action($action)) {
                     if (strpos($action, 'save') !== false) {
@@ -296,7 +263,7 @@ class GMKB_Plugin {
      */
     public function detect_mkcg_post_id() {
         $post_id = 0;
-        
+
         // P0 FIX #11: Sanitize and validate all inputs
         if (isset($_GET['post_id']) && is_numeric($_GET['post_id'])) {
             $post_id = absint($_GET['post_id']);
@@ -313,36 +280,27 @@ class GMKB_Plugin {
         } elseif (isset($GLOBALS['post']) && is_object($GLOBALS['post']) && isset($GLOBALS['post']->ID)) {
             $post_id = absint($GLOBALS['post']->ID);
         }
-        
+
         // P0 FIX #11: Validate post exists and is accessible
         if ($post_id > 0) {
             $post = get_post($post_id);
-            
+
             // Check if post exists
             if (!$post) {
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('GMKB: Invalid post ID - post does not exist: ' . $post_id);
-                }
                 return 0;
             }
-            
+
             // Check if post is trashed
             if ($post->post_status === 'trash') {
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('GMKB: Invalid post ID - post is trashed: ' . $post_id);
-                }
                 return 0;
             }
-            
+
             // P0 FIX #11: Check user permissions
             if (!current_user_can('edit_post', $post_id)) {
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('GMKB: User lacks permission to edit post: ' . $post_id);
-                }
                 return 0;
             }
         }
-        
+
         return $post_id;
     }
 }
