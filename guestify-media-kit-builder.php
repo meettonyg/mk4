@@ -391,6 +391,18 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/pages/class-gmkb-tool-pages.php'
     require_once GUESTIFY_PLUGIN_DIR . 'includes/pages/class-gmkb-tool-pages.php';
 }
 
+// Virtual Template Pages: Auto-generated pages at /templates/ and /templates/{slug}/
+// SEO-friendly template directory for media kit designs
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/pages/class-gmkb-template-pages.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/pages/class-gmkb-template-pages.php';
+}
+
+// Template Directory Shortcode - Display templates on any page
+// Usage: [gmkb_templates] or [gmkb_templates category="corporate" columns="3"]
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/template-directory-shortcode.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/template-directory-shortcode.php';
+}
+
 // Offers Shortcode - Display offers on any page
 // Usage: [gmkb_offers] or [gmkb_offers profile_id="123" layout="grid" columns="3"]
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/offers-shortcode.php')) {
