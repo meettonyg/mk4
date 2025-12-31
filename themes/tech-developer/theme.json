@@ -5,6 +5,12 @@
   "description": "Modern dark-mode template for developers, engineers, and tech professionals. Features skills showcase, project portfolio, and technical expertise.",
   "category": "tech",
   "metadata": {
+    "audience_type": "developer",
+    "audience_label": "Developers & Engineers",
+    "style_variant": "dark",
+    "style_label": "Dark Mode",
+    "icon": "fa-solid fa-code",
+    "preview_colors": ["#22d3ee", "#a78bfa"],
     "tags": ["developer", "engineer", "tech", "portfolio", "dark-mode", "programmer"],
     "is_premium": false,
     "is_new": true,

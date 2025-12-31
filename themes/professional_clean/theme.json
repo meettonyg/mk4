@@ -5,6 +5,12 @@
   "description": "A clean, professional template perfect for business professionals, consultants, and corporate speakers. Balanced design that emphasizes credibility and expertise.",
   "category": "corporate",
   "metadata": {
+    "audience_type": "professional",
+    "audience_label": "Business Professionals",
+    "style_variant": "classic",
+    "style_label": "Classic",
+    "icon": "fa-solid fa-briefcase",
+    "preview_colors": ["#2563eb", "#1e40af"],
     "tags": ["business", "clean", "professional", "consultant", "corporate"],
     "is_premium": false,
     "is_new": false,

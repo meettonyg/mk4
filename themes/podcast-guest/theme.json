@@ -5,6 +5,12 @@
   "description": "Dynamic template for podcast guests and audio content creators. Features episode player, interview questions, and booking for podcast appearances.",
   "category": "podcast",
   "metadata": {
+    "audience_type": "podcaster",
+    "audience_label": "Podcast Guests",
+    "style_variant": "modern",
+    "style_label": "Modern",
+    "icon": "fa-solid fa-podcast",
+    "preview_colors": ["#7c3aed", "#ec4899"],
     "tags": ["podcast", "audio", "interview", "media", "guest"],
     "is_premium": false,
     "is_new": true,

@@ -5,11 +5,18 @@
   "description": "A vibrant, bold theme for creative professionals and artists",
   "category": "creative",
   "metadata": {
+    "audience_type": "creative",
+    "audience_label": "Creative Professionals",
+    "style_variant": "bold",
+    "style_label": "Bold",
+    "icon": "fa-solid fa-palette",
+    "preview_colors": ["#f97316", "#dc2626"],
     "tags": ["bold", "vibrant", "artist", "speaker"],
     "is_premium": false,
     "is_new": false,
     "sort_order": 20,
-    "author": "Guestify"
+    "author": "Guestify",
+    "use_case": "Artists, designers, creative directors, brand strategists"
   },
   "preview_image": "preview.jpg",
   "thumbnail_image": "thumbnail.jpg",

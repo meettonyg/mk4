@@ -1,0 +1,356 @@
+{
+  "theme_id": "creator_classic",
+  "theme_name": "Creator Classic",
+  "version": "2.0.0",
+  "description": "Professional, polished template for established content creators. Balanced design that emphasizes credibility and brand partnerships.",
+  "category": "creator",
+  "metadata": {
+    "audience_type": "creator",
+    "audience_label": "Content Creators",
+    "style_variant": "classic",
+    "style_label": "Classic",
+    "icon": "fa-solid fa-video",
+    "preview_colors": ["#0369a1", "#0891b2"],
+    "tags": ["creator", "classic", "professional", "polished", "brand-friendly"],
+    "is_premium": false,
+    "is_new": true,
+    "sort_order": 47,
+    "author": "Guestify",
+    "use_case": "Established influencers, professional content creators, brand ambassadors, media personalities"
+  },
+  "preview_image": "preview.jpg",
+  "thumbnail_image": "thumbnail.jpg",
+  "defaultPreset": "large",
+  "defaultContent": {
+    "sections": [
+      {
+        "id": "hero-section",
+        "type": "full_width",
+        "background": "gradient",
+        "components": [
+          {
+            "type": "hero",
+            "settings": {
+              "layout": "split_screen",
+              "imageStyle": "rounded",
+              "showCTA": true,
+              "minHeight": "600px"
+            },
+            "data": {
+              "headline": "Creator Name",
+              "subheadline": "Content Creator | Brand Partner | Storyteller",
+              "description": "Creating content that connects brands with audiences authentically.",
+              "cta_text": "Partner With Me"
+            }
+          }
+        ]
+      },
+      {
+        "id": "stats-section",
+        "type": "full_width",
+        "background": "surface",
+        "components": [
+          {
+            "type": "stats",
+            "settings": {
+              "layout": "cards",
+              "columns": 4,
+              "showIcons": true,
+              "animateNumbers": true,
+              "colorScheme": "primary"
+            },
+            "data": {
+              "items": [
+                { "value": "800K", "label": "Total Followers", "icon": "users" },
+                { "value": "50M+", "label": "Monthly Views", "icon": "eye" },
+                { "value": "100+", "label": "Brand Campaigns", "icon": "briefcase" },
+                { "value": "7.2%", "label": "Engagement Rate", "icon": "heart" }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "video-section",
+        "type": "full_width",
+        "components": [
+          {
+            "type": "video-intro",
+            "settings": {
+              "style": "featured",
+              "aspectRatio": "16:9",
+              "showStats": true
+            },
+            "data": {
+              "title": "Featured Content",
+              "subtitle": "See my work in action",
+              "video_url": "",
+              "thumbnail": ""
+            }
+          }
+        ]
+      },
+      {
+        "id": "categories-section",
+        "type": "full_width",
+        "background": "surface",
+        "components": [
+          {
+            "type": "topics",
+            "settings": {
+              "layout": "grid",
+              "columns": 4,
+              "showDescriptions": true,
+              "showIcons": true,
+              "style": "cards"
+            },
+            "data": {
+              "title": "Content Categories",
+              "items": [
+                {
+                  "title": "Lifestyle",
+                  "description": "Authentic daily life content",
+                  "icon": "home"
+                },
+                {
+                  "title": "Tech",
+                  "description": "Reviews and tutorials",
+                  "icon": "laptop"
+                },
+                {
+                  "title": "Travel",
+                  "description": "Adventures and guides",
+                  "icon": "plane"
+                },
+                {
+                  "title": "Wellness",
+                  "description": "Health and self-care",
+                  "icon": "heart"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "bio-section",
+        "type": "two_column",
+        "columns": {
+          "ratio": "40-60",
+          "1": [
+            {
+              "type": "profile-photo",
+              "settings": {
+                "style": "rounded",
+                "size": "large"
+              },
+              "data": {
+                "alt": "Creator photo"
+              }
+            }
+          ],
+          "2": [
+            {
+              "type": "biography",
+              "settings": {
+                "style": "professional",
+                "showTitle": true
+              },
+              "data": {
+                "title": "About Me",
+                "content": "I've been creating content since [year], building a community of [X] engaged followers who trust my recommendations.\n\nMy content philosophy centers on authenticity. I only partner with brands I genuinely believe in, which is why my audience trusts my recommendations—and why my campaigns consistently outperform industry benchmarks.\n\n**Platforms:** Instagram, YouTube, TikTok\n**Niche:** [Primary focus areas]\n**Audience:** [Demographics]"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "brands-section",
+        "type": "full_width",
+        "components": [
+          {
+            "type": "logo-grid",
+            "settings": {
+              "layout": "grid",
+              "columns": 6,
+              "showLabels": false,
+              "grayscale": false
+            },
+            "data": {
+              "title": "Trusted by Leading Brands",
+              "logos": [
+                { "name": "Brand 1" },
+                { "name": "Brand 2" },
+                { "name": "Brand 3" },
+                { "name": "Brand 4" },
+                { "name": "Brand 5" },
+                { "name": "Brand 6" }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "offers-section",
+        "type": "full_width",
+        "background": "surface",
+        "components": [
+          {
+            "type": "offers",
+            "settings": {
+              "layout": "cards",
+              "columns": 3,
+              "showPricing": false
+            },
+            "data": {
+              "title": "Partnership Options",
+              "items": [
+                {
+                  "title": "Sponsored Post",
+                  "description": "Feed post with authentic storytelling",
+                  "includes": ["1 Feed Post", "Story Promotion", "Link in Bio"]
+                },
+                {
+                  "title": "Video Integration",
+                  "description": "Dedicated video segment",
+                  "includes": ["60-90s Integration", "Cross-Platform", "B-Roll"],
+                  "featured": true
+                },
+                {
+                  "title": "Ambassador",
+                  "description": "Ongoing partnership",
+                  "includes": ["Monthly Content", "Events", "Exclusivity"]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "testimonials-section",
+        "type": "full_width",
+        "components": [
+          {
+            "type": "testimonials",
+            "settings": {
+              "layout": "cards",
+              "columns": 2,
+              "showPhotos": true,
+              "showCompany": true
+            },
+            "data": {
+              "title": "What Brands Say",
+              "items": [
+                {
+                  "quote": "Professional, reliable, and delivered exceptional results. Our best influencer campaign to date.",
+                  "author": "Marketing Director",
+                  "company": "Major Brand"
+                },
+                {
+                  "quote": "Authentic content that resonated with our target audience. 3x ROI on our investment.",
+                  "author": "Brand Manager",
+                  "company": "Another Brand"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "contact-section",
+        "type": "full_width",
+        "background": "primary",
+        "components": [
+          {
+            "type": "contact",
+            "settings": {
+              "style": "modern",
+              "layout": "centered",
+              "fields": ["brand_name", "contact_name", "email", "campaign_type", "message"],
+              "maxWidth": "600px"
+            },
+            "data": {
+              "title": "Let's Collaborate",
+              "subtitle": "Tell me about your campaign",
+              "button_text": "Send Inquiry"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "typography": {
+    "primary_font": {
+      "family": "Inter, sans-serif",
+      "weights": [400, 500, 600, 700],
+      "fallback": "-apple-system, sans-serif"
+    },
+    "heading_font": {
+      "family": "Outfit, sans-serif",
+      "weights": [500, 600, 700],
+      "fallback": "Arial, sans-serif"
+    },
+    "font_scale": 1.2,
+    "line_height": {
+      "body": 1.7,
+      "heading": 1.2
+    }
+  },
+  "colors": {
+    "primary": "#0369a1",
+    "primary_hover": "#0284c7",
+    "secondary": "#0891b2",
+    "secondary_hover": "#06b6d4",
+    "accent": "#22d3ee",
+    "text": "#0f172a",
+    "text_light": "#475569",
+    "text_muted": "#94a3b8",
+    "background": "#ffffff",
+    "surface": "#f0f9ff",
+    "surface_hover": "#e0f2fe",
+    "border": "#bae6fd",
+    "gradient_start": "#0369a1",
+    "gradient_end": "#0891b2",
+    "error": "#dc2626",
+    "success": "#16a34a",
+    "warning": "#f59e0b"
+  },
+  "spacing": {
+    "base_unit": "8px",
+    "component_gap": "56px",
+    "section_gap": "96px",
+    "container_padding": "24px",
+    "content_max_width": "1200px"
+  },
+  "effects": {
+    "border_radius": "12px",
+    "border_radius_sm": "8px",
+    "border_radius_lg": "16px",
+    "shadow": "0 4px 20px rgba(3, 105, 161, 0.1)",
+    "shadow_sm": "0 2px 8px rgba(3, 105, 161, 0.05)",
+    "shadow_lg": "0 12px 40px rgba(3, 105, 161, 0.15)",
+    "transitions": "all 0.3s ease",
+    "gradient": "linear-gradient(135deg, var(--gmkb-color-gradient-start), var(--gmkb-color-gradient-end))"
+  },
+  "components": {
+    "button": {
+      "padding": "14px 32px",
+      "font_weight": "600",
+      "letter_spacing": "0"
+    },
+    "card": {
+      "padding": "28px",
+      "shadow": "0 4px 16px rgba(0, 0, 0, 0.08)"
+    }
+  },
+  "responsive": {
+    "breakpoints": {
+      "sm": "640px",
+      "md": "768px",
+      "lg": "1024px",
+      "xl": "1280px"
+    },
+    "font_scale_mobile": 0.9,
+    "spacing_scale_mobile": 0.75
+  }
+}

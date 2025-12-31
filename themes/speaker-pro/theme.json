@@ -5,6 +5,12 @@
   "description": "Professional template designed for keynote speakers, trainers, and public speakers. Features prominent speaking topics, testimonials, and booking integration.",
   "category": "speaker",
   "metadata": {
+    "audience_type": "speaker",
+    "audience_label": "Speakers & Trainers",
+    "style_variant": "classic",
+    "style_label": "Classic",
+    "icon": "fa-solid fa-microphone",
+    "preview_colors": ["#1e3a5f", "#c9a227"],
     "tags": ["speaker", "keynote", "trainer", "public-speaking", "conference"],
     "is_premium": false,
     "is_new": true,

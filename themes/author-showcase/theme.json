@@ -5,6 +5,12 @@
   "description": "Elegant template for authors, writers, and thought leaders. Showcases books, press coverage, and interview opportunities.",
   "category": "author",
   "metadata": {
+    "audience_type": "author",
+    "audience_label": "Authors & Writers",
+    "style_variant": "classic",
+    "style_label": "Classic",
+    "icon": "fa-solid fa-book",
+    "preview_colors": ["#2d3436", "#b8860b"],
     "tags": ["author", "writer", "book", "thought-leader", "journalist"],
     "is_premium": false,
     "is_new": true,

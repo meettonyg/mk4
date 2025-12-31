@@ -5,6 +5,12 @@
   "description": "Bold, vibrant template for content creators, influencers, and social media personalities. Showcases social stats, brand partnerships, and collaboration opportunities.",
   "category": "creator",
   "metadata": {
+    "audience_type": "creator",
+    "audience_label": "Content Creators",
+    "style_variant": "bold",
+    "style_label": "Bold",
+    "icon": "fa-solid fa-video",
+    "preview_colors": ["#FF6B6B", "#FFE66D"],
     "tags": ["influencer", "creator", "social-media", "youtube", "instagram", "tiktok", "brand"],
     "is_premium": false,
     "is_new": true,

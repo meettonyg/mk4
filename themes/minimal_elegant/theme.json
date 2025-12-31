@@ -5,11 +5,18 @@
   "description": "A sophisticated, minimalist theme with monochrome aesthetics",
   "category": "minimal",
   "metadata": {
+    "audience_type": "creative",
+    "audience_label": "Creative Professionals",
+    "style_variant": "minimal",
+    "style_label": "Minimal",
+    "icon": "fa-solid fa-circle",
+    "preview_colors": ["#000000", "#333333"],
     "tags": ["minimal", "sophisticated", "author", "elegant"],
     "is_premium": false,
     "is_new": true,
     "sort_order": 30,
-    "author": "Guestify"
+    "author": "Guestify",
+    "use_case": "Writers, artists, architects, minimalist brands"
   },
   "preview_image": "preview.jpg",
   "thumbnail_image": "thumbnail.jpg",

@@ -5,6 +5,12 @@
   "description": "Sleek dark-mode template with glassmorphism effects. Perfect for tech-savvy professionals, designers, and modern brands.",
   "category": "portfolio",
   "metadata": {
+    "audience_type": "designer",
+    "audience_label": "Designers & Creatives",
+    "style_variant": "dark",
+    "style_label": "Dark Mode",
+    "icon": "fa-solid fa-moon",
+    "preview_colors": ["#60a5fa", "#818cf8"],
     "tags": ["dark", "modern", "tech", "developer", "designer", "portfolio"],
     "is_premium": false,
     "is_new": false,

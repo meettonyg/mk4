@@ -5,6 +5,12 @@
   "description": "Refined, minimal template for C-suite executives, board members, and senior leaders. Emphasizes credibility, achievements, and professional presence.",
   "category": "executive",
   "metadata": {
+    "audience_type": "executive",
+    "audience_label": "Executives & Leaders",
+    "style_variant": "minimal",
+    "style_label": "Minimal",
+    "icon": "fa-solid fa-user-tie",
+    "preview_colors": ["#1a1a1a", "#8b7355"],
     "tags": ["executive", "ceo", "leadership", "board", "corporate", "c-suite"],
     "is_premium": true,
     "is_new": true,
