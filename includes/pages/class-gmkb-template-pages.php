@@ -147,6 +147,12 @@ class GMKB_Template_Pages {
             'index.php?' . $this->directory_var . '=1',
             'top'
         );
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB Template Pages: Rewrite rules registered');
+            error_log('   - Single: ^' . $this->base_path . '/([^/]+)/?$ => ' . $this->query_var);
+            error_log('   - Directory: ^' . $this->base_path . '/?$ => ' . $this->directory_var);
+        }
     }
 
     /**
@@ -168,15 +174,36 @@ class GMKB_Template_Pages {
      * @return string Modified template path
      */
     public function load_template($template) {
+        // Debug: Log all query vars
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            global $wp_query;
+            $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : 'unknown';
+            error_log('🔍 GMKB Template Pages: load_template() called');
+            error_log('   - Request URI: ' . $request_uri);
+            error_log('   - Query var (' . $this->query_var . '): ' . get_query_var($this->query_var));
+            error_log('   - Directory var (' . $this->directory_var . '): ' . get_query_var($this->directory_var));
+            error_log('   - is_404: ' . ($wp_query->is_404 ? 'true' : 'false'));
+        }
+
         // Check for individual template page
         $template_slug = get_query_var($this->query_var);
         if (!empty($template_slug)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB: Loading single template for: ' . $template_slug);
+            }
             return $this->load_single_template($template_slug);
         }
 
         // Check for directory page
         if (get_query_var($this->directory_var)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB: Loading directory template');
+            }
             return $this->load_directory_template();
+        }
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('ℹ️ GMKB: No template match, returning original: ' . $template);
         }
 
         return $template;
@@ -848,6 +875,75 @@ add_action('admin_init', function() {
         GMKB_Template_Pages::force_flush();
         add_action('admin_notices', function() {
             echo '<div class="notice notice-success is-dismissible"><p>GMKB Template rewrite rules flushed successfully.</p></div>';
+        });
+    }
+
+    // Debug: Show rewrite rules status
+    // Visit: /wp-admin/?gmkb_debug_template_rules=1
+    if (isset($_GET['gmkb_debug_template_rules']) && current_user_can('manage_options')) {
+        add_action('admin_notices', function() {
+            $rules = get_option('rewrite_rules');
+            $template_rules = array();
+
+            if (is_array($rules)) {
+                foreach ($rules as $pattern => $query) {
+                    if (strpos($pattern, 'templates') !== false || strpos($query, 'gmkb_template') !== false) {
+                        $template_rules[$pattern] = $query;
+                    }
+                }
+            }
+
+            echo '<div class="notice notice-info">';
+            echo '<h3>GMKB Template Rewrite Rules Debug</h3>';
+
+            if (empty($template_rules)) {
+                echo '<p style="color: red;"><strong>❌ No template rules found!</strong></p>';
+                echo '<p>The rewrite rules for /templates/ are not registered. Try:</p>';
+                echo '<ol>';
+                echo '<li><a href="' . admin_url('?gmkb_flush_template_rules=1') . '">Force flush rewrite rules</a></li>';
+                echo '<li>Go to Settings → Permalinks and click Save</li>';
+                echo '</ol>';
+            } else {
+                echo '<p style="color: green;"><strong>✅ Found ' . count($template_rules) . ' template rule(s):</strong></p>';
+                echo '<table class="widefat" style="max-width: 800px;">';
+                echo '<thead><tr><th>Pattern</th><th>Query</th></tr></thead>';
+                echo '<tbody>';
+                foreach ($template_rules as $pattern => $query) {
+                    echo '<tr><td><code>' . esc_html($pattern) . '</code></td><td><code>' . esc_html($query) . '</code></td></tr>';
+                }
+                echo '</tbody></table>';
+            }
+
+            // Check for conflicting pages
+            $conflicting_pages = get_posts(array(
+                'post_type' => array('page', 'post'),
+                'name' => 'templates',
+                'post_status' => array('publish', 'draft', 'trash', 'pending'),
+                'posts_per_page' => -1,
+            ));
+
+            if (!empty($conflicting_pages)) {
+                echo '<p style="color: orange;"><strong>⚠️ Found conflicting pages with slug "templates":</strong></p>';
+                echo '<ul>';
+                foreach ($conflicting_pages as $page) {
+                    echo '<li>' . esc_html($page->post_title) . ' (ID: ' . $page->ID . ', Status: ' . $page->post_status . ') - ';
+                    echo '<a href="' . get_edit_post_link($page->ID) . '">Edit</a>';
+                    if ($page->post_status === 'trash') {
+                        echo ' | <a href="' . get_delete_post_link($page->ID, '', true) . '">Delete Permanently</a>';
+                    }
+                    echo '</li>';
+                }
+                echo '</ul>';
+            } else {
+                echo '<p style="color: green;">✅ No conflicting pages found with slug "templates"</p>';
+            }
+
+            echo '<p><strong>Test URLs:</strong></p>';
+            echo '<ul>';
+            echo '<li><a href="' . home_url('/templates/') . '" target="_blank">/templates/</a></li>';
+            echo '<li><a href="' . home_url('/templates/professional_clean/') . '" target="_blank">/templates/professional_clean/</a></li>';
+            echo '</ul>';
+            echo '</div>';
         });
     }
 });
