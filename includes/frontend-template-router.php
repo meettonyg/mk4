@@ -96,6 +96,7 @@ class GMKB_Frontend_Template_Router {
 
         // STRICT URL check - only load on media kit URLs
         $is_builder_page = false;
+        $is_builder_url_without_id = false;
 
         if (isset($_SERVER['REQUEST_URI'])) {
             $uri = $_SERVER['REQUEST_URI'];
@@ -105,8 +106,17 @@ class GMKB_Frontend_Template_Router {
                 // Now check for builder parameters
                 if (isset($_GET['mkcg_id']) || isset($_GET['post_id'])) {
                     $is_builder_page = true;
+                } else {
+                    // URL matched but no ID provided - redirect to templates
+                    $is_builder_url_without_id = true;
                 }
             }
+        }
+
+        // If builder URL but no ID, redirect to templates page
+        if ($is_builder_url_without_id) {
+            wp_redirect(home_url('/templates/'), 302);
+            exit;
         }
 
         if ($is_builder_page) {

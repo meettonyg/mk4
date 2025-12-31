@@ -35,7 +35,7 @@ class ThemeDiscovery {
     
     /**
      * Scan for themes
-     * 
+     *
      * @param bool $force_fresh Force fresh scan without cache
      * @return array Array of themes
      */
@@ -44,8 +44,15 @@ class ThemeDiscovery {
         if (!$force_fresh) {
             $cached_themes = get_transient($this->cache_key);
             if ($cached_themes !== false) {
-                $this->themes = $cached_themes;
-                return $this->themes;
+                // Auto-bust cache if theme directory count changed
+                $theme_dirs = glob($this->themes_dir . '/*', GLOB_ONLYDIR);
+                if (count($theme_dirs) !== count($cached_themes)) {
+                    // New themes added or removed, force refresh
+                    $force_fresh = true;
+                } else {
+                    $this->themes = $cached_themes;
+                    return $this->themes;
+                }
             }
         }
         
