@@ -206,7 +206,8 @@ class GMKB_Template_Pages {
         $this->current_template = $template_data;
         $this->current_template['slug'] = $template_slug;
 
-        // Mark as valid page
+        // CRITICAL: Force 200 OK status - WordPress defaults to 404 for virtual pages
+        status_header(200);
         $wp_query->is_404 = false;
         $wp_query->is_page = true;
         $wp_query->is_singular = true;
@@ -235,10 +236,12 @@ class GMKB_Template_Pages {
     private function load_directory_template() {
         global $wp_query;
 
-        // Mark as valid page
+        // CRITICAL: Force 200 OK status - WordPress defaults to 404 for virtual pages
+        status_header(200);
         $wp_query->is_404 = false;
         $wp_query->is_page = true;
         $wp_query->is_singular = true;
+        $wp_query->is_archive = true; // Helps with some SEO plugins
 
         // Check for theme template override
         $theme_template = locate_template('gmkb-template-directory.php');
