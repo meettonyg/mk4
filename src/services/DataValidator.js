@@ -21,13 +21,20 @@ export class DataValidator {
       );
     }
 
+    // For new media kits, postId is not required
+    const isNewMediaKit = window.gmkbData.isNewMediaKit === true;
+
     const required = [
-      'postId',
       'nonce',
       'restUrl',
       'restNonce',
       'ajaxUrl'
     ];
+
+    // Only require postId for existing media kits
+    if (!isNewMediaKit) {
+      required.push('postId');
+    }
 
     const missing = required.filter(key => !window.gmkbData[key]);
 
@@ -37,9 +44,11 @@ export class DataValidator {
       );
     }
 
-    // Validate types
-    if (typeof window.gmkbData.postId !== 'number') {
-      throw new Error('gmkbData.postId must be a number');
+    // Validate types - only check postId type if it's provided
+    if (window.gmkbData.postId !== null && window.gmkbData.postId !== undefined) {
+      if (typeof window.gmkbData.postId !== 'number') {
+        throw new Error('gmkbData.postId must be a number');
+      }
     }
 
     // ROOT FIX: Allow relative URLs (WordPress commonly supplies '/wp-json/')
