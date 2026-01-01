@@ -64,7 +64,7 @@ class GMKB_REST_Template_Controller {
         register_rest_route(self::NAMESPACE, '/templates/(?P<id>[\w-]+)', array(
             'methods'             => WP_REST_Server::READABLE,
             'callback'            => array($this, 'get_template'),
-            'permission_callback' => array($this, 'read_permission_check'),
+            'permission_callback' => array($this, 'single_read_permission_check'),
             'args'                => array(
                 'id' => array(
                     'required'          => true,
@@ -111,10 +111,29 @@ class GMKB_REST_Template_Controller {
     }
 
     /**
-     * Check read permission - must be logged in
+     * Check read permission for templates list
+     * Built-in templates are public, but user templates require auth
      */
     public function read_permission_check() {
-        return is_user_logged_in();
+        // Allow public access - built-in templates are safe to expose
+        // User templates are filtered by author in get_templates()
+        return true;
+    }
+
+    /**
+     * Check read permission for single template
+     * Built-in templates are public, user templates require ownership
+     */
+    public function single_read_permission_check($request) {
+        $id = $request->get_param('id');
+
+        // Numeric IDs are user templates - require auth
+        if (is_numeric($id)) {
+            return is_user_logged_in();
+        }
+
+        // Built-in templates (string IDs like 'author-bold') are public
+        return true;
     }
 
     /**
