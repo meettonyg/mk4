@@ -15,8 +15,12 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// ROOT FIX: Enhanced post ID detection with multiple strategies
+// Enhanced post ID detection with multiple strategies
+// Supports "create new" mode when no ID is provided
 $post_id = 0;
+$is_new_media_kit = false;
+$post = null;
+
 if (isset($_GET['mkcg_id'])) {
     $post_id = intval($_GET['mkcg_id']);
 } elseif (isset($_GET['post_id'])) {
@@ -27,21 +31,30 @@ if (isset($_GET['mkcg_id'])) {
     $post_id = get_the_ID();
 }
 
-// Verify post exists
-$post = get_post($post_id);
-if (!$post) {
-    wp_die(
-        'Invalid media kit ID: Post not found (ID: ' . esc_html($post_id) . ')',
-        'Media Kit Builder Error',
-        array('response' => 404)
-    );
+// Check if we have a valid post ID
+if ($post_id > 0) {
+    $post = get_post($post_id);
+    if (!$post) {
+        wp_die(
+            'Invalid media kit ID: Post not found (ID: ' . esc_html($post_id) . ')',
+            'Media Kit Builder Error',
+            array('response' => 404)
+        );
+    }
+
+    // Support multiple post types
+    $allowed_post_types = array('guests', 'mkcg');
+    if (!in_array($post->post_type, $allowed_post_types)) {
+        wp_die('Invalid media kit ID: Post type "' . esc_html($post->post_type) . '" is not supported. Expected: guests or mkcg');
+    }
+} else {
+    // "Create new" mode - no post ID provided
+    // Non-registered users can create media kits, but need to register to save
+    $is_new_media_kit = true;
 }
 
-// Support multiple post types
-$allowed_post_types = array('guests', 'mkcg');
-if (!in_array($post->post_type, $allowed_post_types)) {
-    wp_die('Invalid media kit ID: Post type "' . esc_html($post->post_type) . '" is not supported. Expected: guests or mkcg');
-}
+// Page title for create new mode vs edit mode
+$page_title = $is_new_media_kit ? 'Create New Media Kit' : esc_html($post->post_title) . ' - Media Kit Builder';
 
 ?><!DOCTYPE html>
 <html <?php language_attributes(); ?> class="gmkb-pure-vue">
@@ -49,7 +62,7 @@ if (!in_array($post->post_type, $allowed_post_types)) {
     <meta charset="<?php bloginfo('charset'); ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
-    <title><?php echo esc_html($post->post_title); ?> - Media Kit Builder</title>
+    <title><?php echo $page_title; ?></title>
 
     <?php
     // ROOT FIX: DIRECTLY enqueue media library BEFORE wp_head()

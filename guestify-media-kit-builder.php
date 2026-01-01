@@ -33,10 +33,6 @@ add_action('wp', function() {
         
         // Enqueue media styles
         wp_enqueue_style('media-views');
-        
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB MAIN: Enqueued ALL media scripts on wp hook');
-        }
     }
 }, 1);
 
@@ -287,9 +283,6 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/ComponentDiscoveryAPI.php'))
     add_action('init', function() {
         if (class_exists('\GMKB\ComponentDiscoveryAPI')) {
             new \GMKB\ComponentDiscoveryAPI();
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ GMKB Phase 3: ComponentDiscoveryAPI instantiated');
-            }
         }
     }, 5);
 }
@@ -300,9 +293,16 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/class-rest-theme-controller.
     add_action('init', function() {
         if (class_exists('GMKB_REST_Theme_Controller')) {
             new GMKB_REST_Theme_Controller();
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ GMKB: Theme REST API Controller instantiated');
-            }
+        }
+    }, 5);
+}
+
+// Template Directory REST API Controller - Carrd-like template selection
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/class-rest-template-controller.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/class-rest-template-controller.php';
+    add_action('init', function() {
+        if (class_exists('GMKB_REST_Template_Controller')) {
+            new GMKB_REST_Template_Controller();
         }
     }, 5);
 }
@@ -321,9 +321,6 @@ if (is_dir($components_dir)) {
         $data_integration_file = $component_folder . '/data-integration.php';
         if (file_exists($data_integration_file)) {
             require_once $data_integration_file;
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ GMKB: Loaded data integration for ' . basename($component_folder));
-            }
         }
     }
 }
@@ -376,6 +373,18 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/class-gmkb-tool-short
 // No manual page creation required - URLs are handled via rewrite rules
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/pages/class-gmkb-tool-pages.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/pages/class-gmkb-tool-pages.php';
+}
+
+// Virtual Template Pages: Auto-generated pages at /templates/ and /templates/{slug}/
+// SEO-friendly template directory for media kit designs
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/pages/class-gmkb-template-pages.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/pages/class-gmkb-template-pages.php';
+}
+
+// Template Directory Shortcode - Display templates on any page
+// Usage: [gmkb_templates] or [gmkb_templates category="corporate" columns="3"]
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/template-directory-shortcode.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/template-directory-shortcode.php';
 }
 
 // Offers Shortcode - Display offers on any page
@@ -439,9 +448,6 @@ $gmkb_plugin = GMKB_Plugin::get_instance();
 global $gmkb_component_discovery;
 if (!isset($gmkb_component_discovery)) {
     $gmkb_component_discovery = $gmkb_plugin->get_component_discovery();
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('✅ GMKB: ComponentDiscovery made globally available from main plugin file');
-    }
 }
 
 // ROOT FIX: Initialize REST API v2 AFTER ComponentDiscovery is ready
@@ -449,9 +455,6 @@ if (!isset($gmkb_component_discovery)) {
 global $gmkb_rest_api_v2;
 if (class_exists('GMKB_REST_API_V2')) {
     $gmkb_rest_api_v2 = new GMKB_REST_API_V2();
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('✅ GMKB: REST API v2 initialized with ComponentDiscovery ready');
-    }
 }
 
 // AI INTEGRATION: Initialize AI Controller
@@ -459,9 +462,6 @@ if (class_exists('GMKB_REST_API_V2')) {
 global $gmkb_ai_controller;
 if (class_exists('GMKB_AI_Controller')) {
     $gmkb_ai_controller = new GMKB_AI_Controller();
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('✅ GMKB: AI Controller initialized');
-    }
 }
 
 // Initialize admin functionality
@@ -474,9 +474,3 @@ $gmkb_ajax->set_component_discovery($gmkb_plugin->get_component_discovery());
 
 // Initialize routing
 $gmkb_routing = GMKB_Routing::get_instance();
-
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('🚀 GMKB: Option A - Pure Vue plugin loaded');
-    error_log('✅ All PHP rendering removed - 100% Vue.js');
-    error_log('✅ Issue #13: Refactored into 4 class files');
-}

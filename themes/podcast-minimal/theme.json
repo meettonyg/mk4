@@ -1,0 +1,267 @@
+{
+  "theme_id": "podcast_minimal",
+  "theme_name": "Podcast Minimal",
+  "version": "2.0.0",
+  "description": "Clean, focused template for thoughtful podcast guests who let their expertise speak for itself. Minimalist design that emphasizes content quality.",
+  "category": "podcast",
+  "metadata": {
+    "audience_type": "podcaster",
+    "audience_label": "Podcast Guests",
+    "style_variant": "minimal",
+    "style_label": "Minimal",
+    "icon": "fa-solid fa-podcast",
+    "preview_colors": ["#1e293b", "#64748b"],
+    "tags": ["podcast", "minimal", "clean", "focused", "professional"],
+    "is_premium": false,
+    "is_new": true,
+    "sort_order": 27,
+    "author": "Guestify",
+    "use_case": "Academic experts, industry analysts, journalists, serious subject matter experts"
+  },
+  "preview_image": "preview.jpg",
+  "thumbnail_image": "thumbnail.jpg",
+  "defaultPreset": "medium",
+  "defaultContent": {
+    "sections": [
+      {
+        "id": "hero-section",
+        "type": "full_width",
+        "background": "light",
+        "components": [
+          {
+            "type": "hero",
+            "settings": {
+              "layout": "split_screen",
+              "imageStyle": "square",
+              "showCTA": false,
+              "minHeight": "450px",
+              "style": "minimal"
+            },
+            "data": {
+              "headline": "Expert Name",
+              "subheadline": "Subject Matter Expert",
+              "description": "Available for podcast interviews on [topic]."
+            }
+          }
+        ]
+      },
+      {
+        "id": "expertise-section",
+        "type": "full_width",
+        "components": [
+          {
+            "type": "biography",
+            "settings": {
+              "style": "centered",
+              "showTitle": false,
+              "maxWidth": "650px"
+            },
+            "data": {
+              "content": "I'm a [profession] with [X] years of experience in [field]. My research and insights have been featured on 100+ podcasts, from niche industry shows to mainstream media."
+            }
+          }
+        ]
+      },
+      {
+        "id": "stats-section",
+        "type": "full_width",
+        "background": "surface",
+        "components": [
+          {
+            "type": "stats",
+            "settings": {
+              "layout": "horizontal",
+              "columns": 3,
+              "showIcons": false,
+              "separator": true,
+              "style": "minimal"
+            },
+            "data": {
+              "items": [
+                { "value": "100+", "label": "Podcast Appearances" },
+                { "value": "15", "label": "Years of Expertise" },
+                { "value": "24hrs", "label": "Response Time" }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "topics-section",
+        "type": "full_width",
+        "components": [
+          {
+            "type": "topics",
+            "settings": {
+              "layout": "list",
+              "showDescriptions": true,
+              "style": "minimal"
+            },
+            "data": {
+              "title": "Interview Topics",
+              "items": [
+                {
+                  "title": "The State of [Industry]",
+                  "description": "Current trends, challenges, and opportunities."
+                },
+                {
+                  "title": "Research Insights",
+                  "description": "What the data tells us about [subject]."
+                },
+                {
+                  "title": "Practical Applications",
+                  "description": "How listeners can apply these insights."
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "podcast-player-section",
+        "type": "full_width",
+        "background": "surface",
+        "components": [
+          {
+            "type": "podcast-player",
+            "settings": {
+              "layout": "list",
+              "showEpisodeList": true,
+              "maxEpisodes": 3,
+              "style": "minimal"
+            },
+            "data": {
+              "title": "Recent Appearances",
+              "episodes": [
+                {
+                  "podcast_name": "Industry Podcast",
+                  "episode_title": "Deep Analysis of [Topic]",
+                  "duration": "45 min"
+                },
+                {
+                  "podcast_name": "Expert Conversations",
+                  "episode_title": "Research Findings on [Subject]",
+                  "duration": "52 min"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "bio-section",
+        "type": "full_width",
+        "components": [
+          {
+            "type": "biography",
+            "settings": {
+              "style": "minimal",
+              "showTitle": true,
+              "layout": "centered",
+              "maxWidth": "600px"
+            },
+            "data": {
+              "title": "Background",
+              "content": "I hold a [degree] from [institution] and have spent my career at the intersection of [field] and [field].\n\nMy approach to podcast interviews focuses on providing actionable insights backed by research and real-world experience. I prepare thoroughly for each conversation and aim to leave audiences with new perspectives they can apply immediately."
+            }
+          }
+        ]
+      },
+      {
+        "id": "contact-section",
+        "type": "full_width",
+        "components": [
+          {
+            "type": "contact",
+            "settings": {
+              "style": "minimal",
+              "layout": "centered",
+              "fields": ["name", "email", "podcast_name", "message"],
+              "maxWidth": "480px"
+            },
+            "data": {
+              "title": "Booking Inquiries",
+              "button_text": "Send"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "typography": {
+    "primary_font": {
+      "family": "Inter, sans-serif",
+      "weights": [300, 400, 500],
+      "fallback": "-apple-system, sans-serif"
+    },
+    "heading_font": {
+      "family": "Inter, sans-serif",
+      "weights": [500, 600],
+      "fallback": "-apple-system, sans-serif"
+    },
+    "font_scale": 1.1,
+    "line_height": {
+      "body": 1.8,
+      "heading": 1.3
+    }
+  },
+  "colors": {
+    "primary": "#1e293b",
+    "primary_hover": "#334155",
+    "secondary": "#475569",
+    "accent": "#64748b",
+    "text": "#1e293b",
+    "text_light": "#475569",
+    "text_muted": "#94a3b8",
+    "background": "#ffffff",
+    "surface": "#f8fafc",
+    "surface_hover": "#f1f5f9",
+    "border": "#e2e8f0",
+    "error": "#dc2626",
+    "success": "#16a34a",
+    "warning": "#f59e0b"
+  },
+  "spacing": {
+    "base_unit": "8px",
+    "component_gap": "80px",
+    "section_gap": "120px",
+    "container_padding": "40px",
+    "content_max_width": "900px"
+  },
+  "effects": {
+    "border_radius": "4px",
+    "border_radius_sm": "2px",
+    "border_radius_lg": "8px",
+    "shadow": "0 1px 3px rgba(0, 0, 0, 0.1)",
+    "shadow_sm": "0 1px 2px rgba(0, 0, 0, 0.05)",
+    "shadow_lg": "0 4px 12px rgba(0, 0, 0, 0.1)",
+    "transitions": "all 0.2s ease"
+  },
+  "components": {
+    "button": {
+      "padding": "12px 28px",
+      "font_weight": "500",
+      "letter_spacing": "0",
+      "border_width": "1px"
+    },
+    "card": {
+      "padding": "32px",
+      "shadow": "none",
+      "border_width": "1px"
+    }
+  },
+  "special": {
+    "minimal_decoration": true,
+    "emphasis_through_spacing": true
+  },
+  "responsive": {
+    "breakpoints": {
+      "sm": "640px",
+      "md": "768px",
+      "lg": "1024px",
+      "xl": "1100px"
+    },
+    "font_scale_mobile": 0.95,
+    "spacing_scale_mobile": 0.8
+  }
+}

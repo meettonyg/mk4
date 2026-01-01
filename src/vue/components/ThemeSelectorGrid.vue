@@ -1,96 +1,319 @@
 <template>
-  <div class="theme-selector-grid">
-    <button
-      v-for="theme in themes"
-      :key="theme.id"
-      @click="selectTheme(theme.id)"
-      class="theme-card"
-      :class="{ 
-        active: theme.id === activeThemeId,
-        recommended: theme.recommended,
-        'top-pick': theme.topPick
-      }"
-    >
-      <!-- Badge -->
-      <div v-if="theme.topPick" class="theme-badge top-pick">
-        <i class="fa-solid fa-crown"></i>
-        <span>TOP PICK</span>
-      </div>
-      <div v-else-if="theme.recommended" class="theme-badge recommended">
-        <i class="fa-solid fa-star"></i>
-        <span>RECOMMENDED</span>
+  <div class="theme-selector-container">
+    <!-- Filter Tabs -->
+    <div class="filter-section">
+      <!-- Audience Filter -->
+      <div class="filter-group">
+        <label class="filter-label">Audience</label>
+        <div class="filter-tabs">
+          <button
+            v-for="audience in audienceFilters"
+            :key="audience.value"
+            @click="activeAudienceFilter = audience.value"
+            class="filter-tab"
+            :class="{ active: activeAudienceFilter === audience.value }"
+          >
+            <i v-if="audience.icon" :class="audience.icon"></i>
+            {{ audience.label }}
+          </button>
+        </div>
       </div>
 
-      <!-- Icon - Using Font Awesome instead of emoji -->
-      <div class="theme-icon">
-        <i :class="theme.iconClass"></i>
+      <!-- Style Filter -->
+      <div class="filter-group">
+        <label class="filter-label">Style</label>
+        <div class="filter-tabs">
+          <button
+            v-for="style in styleFilters"
+            :key="style.value"
+            @click="activeStyleFilter = style.value"
+            class="filter-tab"
+            :class="{ active: activeStyleFilter === style.value }"
+          >
+            {{ style.label }}
+          </button>
+        </div>
       </div>
+    </div>
 
-      <!-- Name -->
-      <div class="theme-name">{{ theme.name }}</div>
-    </button>
+    <!-- Theme Count -->
+    <div class="results-count">
+      {{ filteredThemes.length }} template{{ filteredThemes.length !== 1 ? 's' : '' }} found
+    </div>
+
+    <!-- Grouped Themes -->
+    <div v-for="group in groupedThemes" :key="group.audience" class="theme-group">
+      <h3 class="group-title" v-if="activeAudienceFilter === 'all'">
+        <i :class="group.icon"></i>
+        {{ group.label }}
+      </h3>
+
+      <div class="theme-selector-grid">
+        <button
+          v-for="theme in group.themes"
+          :key="theme.id"
+          @click="selectTheme(theme.id)"
+          class="theme-card"
+          :class="{
+            active: theme.id === activeThemeId,
+            'is-new': theme.metadata?.is_new,
+            'is-premium': theme.metadata?.is_premium
+          }"
+        >
+          <!-- Badges -->
+          <div v-if="theme.metadata?.is_new" class="theme-badge new">
+            <span>NEW</span>
+          </div>
+          <div v-else-if="theme.metadata?.is_premium" class="theme-badge premium">
+            <i class="fa-solid fa-crown"></i>
+            <span>PREMIUM</span>
+          </div>
+
+          <!-- Preview with gradient from theme colors -->
+          <div
+            class="theme-preview"
+            :style="getPreviewStyle(theme)"
+          >
+            <i :class="getThemeIcon(theme)"></i>
+          </div>
+
+          <!-- Theme Info -->
+          <div class="theme-info">
+            <div class="theme-name">{{ theme.name }}</div>
+            <div class="theme-style" v-if="theme.metadata?.style_label">
+              {{ theme.metadata.style_label }}
+            </div>
+          </div>
+
+          <!-- Active indicator -->
+          <div v-if="theme.id === activeThemeId" class="active-check">
+            <i class="fa-solid fa-check"></i>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div v-if="filteredThemes.length === 0" class="empty-state">
+      <i class="fa-solid fa-search"></i>
+      <p>No templates match your filters</p>
+      <button @click="resetFilters" class="reset-button">Reset Filters</button>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import { useThemeStore } from '../../stores/theme';
+import { useMediaKitStore } from '../../stores/mediaKit';
 
 const themeStore = useThemeStore();
+const mediaKitStore = useMediaKitStore();
 
-// Map of theme IDs to Font Awesome icons
-const themeIconMap = {
-  'classic': 'fa-solid fa-file-lines',
-  'elegant': 'fa-solid fa-gem',
-  'minimal': 'fa-solid fa-circle',
-  'modern': 'fa-solid fa-star',
-  'bold': 'fa-solid fa-dumbbell',
-  'vibrant': 'fa-solid fa-palette',
-  'compact': 'fa-solid fa-box',
-  'spacious': 'fa-solid fa-building',
-  'professional_clean': 'fa-solid fa-briefcase',
-  'creative_bold': 'fa-solid fa-dumbbell',
-  'minimal_elegant': 'fa-solid fa-circle',
-  'modern_dark': 'fa-solid fa-moon'
-};
+// Filter state
+const activeAudienceFilter = ref('all');
+const activeStyleFilter = ref('all');
+
+// Audience filter options
+const audienceFilters = [
+  { value: 'all', label: 'All', icon: null },
+  { value: 'speaker', label: 'Speakers', icon: 'fa-solid fa-microphone' },
+  { value: 'author', label: 'Authors', icon: 'fa-solid fa-book' },
+  { value: 'podcaster', label: 'Podcasters', icon: 'fa-solid fa-podcast' },
+  { value: 'creator', label: 'Creators', icon: 'fa-solid fa-video' },
+  { value: 'developer', label: 'Developers', icon: 'fa-solid fa-code' },
+  { value: 'executive', label: 'Executives', icon: 'fa-solid fa-user-tie' },
+  { value: 'professional', label: 'Professionals', icon: 'fa-solid fa-briefcase' },
+  { value: 'creative', label: 'Creatives', icon: 'fa-solid fa-palette' },
+  { value: 'designer', label: 'Designers', icon: 'fa-solid fa-moon' }
+];
+
+// Style filter options
+const styleFilters = [
+  { value: 'all', label: 'All Styles' },
+  { value: 'classic', label: 'Classic' },
+  { value: 'bold', label: 'Bold' },
+  { value: 'minimal', label: 'Minimal' },
+  { value: 'modern', label: 'Modern' },
+  { value: 'dark', label: 'Dark Mode' }
+];
 
 const activeThemeId = computed(() => themeStore.activeThemeId);
 
-// Process themes with icon classes and badges
-const themes = computed(() => {
-  return themeStore.availableThemes.map(theme => {
-    // Determine icon class
-    const iconClass = themeIconMap[theme.id] || 'fa-solid fa-palette';
-    
-    // Determine badges
-    const topPick = theme.id === 'classic' || theme.id === 'professional_clean';
-    const recommended = ['elegant', 'minimal', 'minimal_elegant'].includes(theme.id);
-    
-    return {
-      ...theme,
-      iconClass,
-      topPick,
-      recommended
-    };
+// Filter themes based on active filters
+const filteredThemes = computed(() => {
+  return themeStore.availableThemes.filter(theme => {
+    const audienceMatch = activeAudienceFilter.value === 'all' ||
+      theme.metadata?.audience_type === activeAudienceFilter.value;
+    const styleMatch = activeStyleFilter.value === 'all' ||
+      theme.metadata?.style_variant === activeStyleFilter.value;
+    return audienceMatch && styleMatch;
   });
 });
 
+// Group themes by audience
+const groupedThemes = computed(() => {
+  const groups = {};
+
+  filteredThemes.value.forEach(theme => {
+    const audience = theme.metadata?.audience_type || 'other';
+    const audienceLabel = theme.metadata?.audience_label || 'Other Templates';
+    const audienceIcon = theme.metadata?.icon || 'fa-solid fa-palette';
+
+    if (!groups[audience]) {
+      groups[audience] = {
+        audience,
+        label: audienceLabel,
+        icon: audienceIcon,
+        themes: []
+      };
+    }
+    groups[audience].themes.push(theme);
+  });
+
+  // Sort groups by theme count (most first)
+  return Object.values(groups).sort((a, b) => b.themes.length - a.themes.length);
+});
+
+// Get theme icon from metadata or fallback
+function getThemeIcon(theme) {
+  return theme.metadata?.icon || 'fa-solid fa-palette';
+}
+
+// Get preview style with gradient from theme colors
+function getPreviewStyle(theme) {
+  const colors = theme.metadata?.preview_colors;
+  if (colors && colors.length >= 2) {
+    return {
+      background: `linear-gradient(135deg, ${colors[0]}, ${colors[1]})`
+    };
+  }
+  // Fallback to theme's primary/secondary colors
+  if (theme.colors?.primary && theme.colors?.secondary) {
+    return {
+      background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})`
+    };
+  }
+  // Default gradient
+  return {
+    background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)'
+  };
+}
+
 function selectTheme(themeId) {
   themeStore.selectTheme(themeId);
-  
-  // Update media kit store
-  const mediaKitStore = useMediaKitStore();
   mediaKitStore.theme = themeId;
-  mediaKitStore.isDirty = true;
+  mediaKitStore._trackChange();
+}
+
+function resetFilters() {
+  activeAudienceFilter.value = 'all';
+  activeStyleFilter.value = 'all';
 }
 </script>
 
 <style scoped>
+.theme-selector-container {
+  padding: 16px;
+}
+
+/* Filter Section */
+.filter-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--gmkb-color-border, #e5e7eb);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gmkb-color-text-light, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.filter-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gmkb-color-text-light, #64748b);
+  background: var(--gmkb-color-surface, #f8fafc);
+  border: 1px solid var(--gmkb-color-border, #e5e7eb);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-tab:hover {
+  background: var(--gmkb-color-surface-hover, #f1f5f9);
+  border-color: var(--gmkb-color-primary, #3b82f6);
+  color: var(--gmkb-color-primary, #3b82f6);
+}
+
+.filter-tab.active {
+  background: var(--gmkb-color-primary, #3b82f6);
+  border-color: var(--gmkb-color-primary, #3b82f6);
+  color: white;
+}
+
+.filter-tab i {
+  font-size: 12px;
+}
+
+/* Results Count */
+.results-count {
+  font-size: 13px;
+  color: var(--gmkb-color-text-muted, #94a3b8);
+  margin-bottom: 16px;
+}
+
+/* Theme Groups */
+.theme-group {
+  margin-bottom: 32px;
+}
+
+.group-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gmkb-color-text, #1e293b);
+}
+
+.group-title i {
+  font-size: 18px;
+  color: var(--gmkb-color-primary, #3b82f6);
+}
+
+body.dark-mode .group-title {
+  color: #f3f4f6;
+}
+
+/* Theme Grid */
 .theme-selector-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 16px;
-  padding: 20px;
 }
 
 .theme-card {
@@ -98,9 +321,8 @@ function selectTheme(themeId) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 12px;
-  padding: 24px 16px;
+  padding: 20px 16px;
   background: white;
   border: 2px solid #e5e7eb;
   border-radius: 12px;
@@ -116,7 +338,7 @@ body.dark-mode .theme-card {
 .theme-card:hover {
   border-color: #3b82f6;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.15);
 }
 
 .theme-card.active {
@@ -129,94 +351,73 @@ body.dark-mode .theme-card.active {
   background: rgba(59, 130, 246, 0.1);
 }
 
+/* Badges */
 .theme-badge {
   position: absolute;
   top: -8px;
-  left: 50%;
-  transform: translateX(-50%);
+  right: 12px;
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 10px;
+  font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  white-space: nowrap;
   z-index: 1;
 }
 
-.theme-badge.top-pick {
+.theme-badge.new {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.theme-badge.premium {
   background: linear-gradient(135deg, #fbbf24, #f59e0b);
   color: #78350f;
 }
 
-.theme-badge.recommended {
-  background: linear-gradient(135deg, #60a5fa, #3b82f6);
-  color: white;
-}
-
 .theme-badge i {
-  font-size: 10px;
+  font-size: 9px;
 }
 
-.theme-icon {
-  width: 60px;
-  height: 60px;
+/* Theme Preview */
+.theme-preview {
+  width: 70px;
+  height: 70px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
-  border-radius: 50%;
+  border-radius: 16px;
   transition: all 0.2s;
 }
 
-body.dark-mode .theme-icon {
-  background: linear-gradient(135deg, #334155, #475569);
-}
-
-.theme-card:hover .theme-icon {
-  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-}
-
-body.dark-mode .theme-card:hover .theme-icon {
-  background: linear-gradient(135deg, #1e40af, #3b82f6);
-}
-
-.theme-card.active .theme-icon {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-}
-
-.theme-icon i {
+.theme-preview i {
   font-size: 28px;
-  color: #64748b;
-  transition: all 0.2s;
-}
-
-body.dark-mode .theme-icon i {
-  color: #cbd5e1;
-}
-
-.theme-card:hover .theme-icon i {
-  color: #3b82f6;
-  transform: scale(1.1);
-}
-
-body.dark-mode .theme-card:hover .theme-icon i {
-  color: #60a5fa;
-}
-
-.theme-card.active .theme-icon i {
   color: white;
-  transform: scale(1.15);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.theme-card:hover .theme-preview {
+  transform: scale(1.05);
+}
+
+.theme-card.active .theme-preview {
+  transform: scale(1.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Theme Info */
+.theme-info {
+  text-align: center;
 }
 
 .theme-name {
   font-size: 14px;
   font-weight: 600;
   color: #1e293b;
-  text-align: center;
+  margin-bottom: 2px;
 }
 
 body.dark-mode .theme-name {
@@ -231,27 +432,97 @@ body.dark-mode .theme-card.active .theme-name {
   color: #60a5fa;
 }
 
+.theme-style {
+  font-size: 11px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Active Check */
+.active-check {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #3b82f6;
+  border-radius: 50%;
+  color: white;
+  font-size: 11px;
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.empty-state i {
+  font-size: 48px;
+  color: #d1d5db;
+  margin-bottom: 16px;
+}
+
+.empty-state p {
+  font-size: 16px;
+  color: #6b7280;
+  margin: 0 0 16px 0;
+}
+
+.reset-button {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #3b82f6;
+  background: transparent;
+  border: 1px solid #3b82f6;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reset-button:hover {
+  background: #3b82f6;
+  color: white;
+}
+
 /* Responsive */
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  .filter-tabs {
+    gap: 6px;
+  }
+
+  .filter-tab {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+
   .theme-selector-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
-    padding: 16px;
   }
-  
+
   .theme-card {
-    padding: 20px 12px;
+    padding: 16px 12px;
   }
-  
-  .theme-icon {
-    width: 50px;
-    height: 50px;
+
+  .theme-preview {
+    width: 56px;
+    height: 56px;
   }
-  
-  .theme-icon i {
-    font-size: 24px;
+
+  .theme-preview i {
+    font-size: 22px;
   }
-  
+
   .theme-name {
     font-size: 13px;
   }

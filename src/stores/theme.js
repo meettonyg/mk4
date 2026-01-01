@@ -293,6 +293,8 @@ export const useThemeStore = defineStore('theme', {
             typography: { ...defaultTypography, ...(theme.typography || {}) },
             spacing: { ...defaultSpacing, ...(theme.spacing || {}) },
             effects: { ...defaultEffects, ...(theme.effects || {}) },
+            metadata: theme.metadata || {},
+            defaultContent: theme.defaultContent || null,
             category: theme.category || 'custom',
             isCustom: theme.isCustom || false,
             isBuiltIn: theme.isBuiltIn !== false

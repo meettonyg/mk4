@@ -483,7 +483,30 @@ export const useMediaKitStore = defineStore('mediaKit', {
         console.log('⏭️ Save skipped: No changes to save');
         return;
       }
-      
+
+      // Check if user can save (logged in with permissions)
+      const userData = window.gmkbData?.user;
+      const isNewMediaKit = window.gmkbData?.isNewMediaKit;
+
+      if (!userData?.canSave) {
+        console.log('⚠️ Save blocked: User does not have save permissions');
+
+        // Dispatch event to show registration prompt
+        const event = new CustomEvent('gmkb:save-requires-auth', {
+          detail: {
+            isNewMediaKit,
+            loginUrl: userData?.loginUrl || '/wp-login.php',
+            registerUrl: userData?.registerUrl || '/wp-login.php?action=register',
+            message: isNewMediaKit
+              ? 'Create a free account to save your media kit'
+              : 'Please log in to save changes'
+          }
+        });
+        document.dispatchEvent(event);
+
+        return { success: false, requiresAuth: true };
+      }
+
       try {
         this.isSaving = true;
         console.log('💾 Starting save operation...');
@@ -1793,6 +1816,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
     /**
      * ROOT FIX: Use StorageService instead of direct localStorage
      * Offline handling with local storage backup
+     * Supports anonymous sessions with special 'anonymous' key
      */
     backupToLocalStorage() {
       try {
@@ -1800,13 +1824,23 @@ export const useMediaKitStore = defineStore('mediaKit', {
           components: this.components,
           sections: this.sections,
           theme: this.theme,
+          themeCustomizations: this.themeCustomizations,
+          globalSettings: this.globalSettings,
           timestamp: Date.now(),
           postId: this.postId
         };
-        
-        const success = storageService.createBackup(this.postId, backup);
+
+        // Use 'anonymous' key for new media kits without a postId
+        const backupKey = this.postId || 'anonymous';
+        const success = storageService.createBackup(backupKey, backup);
+
+        // Also save to special anonymous backup key for template picker resume
+        if (!this.postId) {
+          storageService.set('gmkb_anonymous_backup', backup);
+        }
+
         if (success) {
-          console.log('📦 Local backup created');
+          console.log('📦 Local backup created', backupKey === 'anonymous' ? '(anonymous)' : `(post ${backupKey})`);
         } else {
           console.warn('⚠️ Local backup failed (storage unavailable)');
         }
@@ -1821,14 +1855,16 @@ export const useMediaKitStore = defineStore('mediaKit', {
      */
     restoreFromLocalStorage() {
       try {
-        const backup = storageService.getBackup(this.postId, 3600000); // 1 hour max age
-        
+        // Use 'anonymous' key for new media kits without a postId
+        const backupKey = this.postId || 'anonymous';
+        const backup = storageService.getBackup(backupKey, 86400000); // 24 hour max age for anonymous
+
         if (backup) {
           this.initialize(backup);
           console.log('♻️ Restored from local backup');
           return true;
         }
-        
+
         return false;
       } catch (error) {
         console.warn('Local restore failed:', error);
@@ -1842,7 +1878,13 @@ export const useMediaKitStore = defineStore('mediaKit', {
      */
     clearLocalBackup() {
       try {
-        storageService.removeBackup(this.postId);
+        const backupKey = this.postId || 'anonymous';
+        storageService.removeBackup(backupKey);
+
+        // Also clear anonymous backup if this was an anonymous session
+        if (!this.postId) {
+          storageService.remove('gmkb_anonymous_backup');
+        }
       } catch (error) {
         console.warn('Clear backup failed:', error);
       }

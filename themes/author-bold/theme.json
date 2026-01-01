@@ -1,0 +1,272 @@
+{
+  "theme_id": "author_bold",
+  "theme_name": "Author Bold",
+  "version": "2.0.0",
+  "description": "Striking template for authors with a strong voice and bold perspective. Rich colors, confident typography, and impactful layouts.",
+  "category": "author",
+  "metadata": {
+    "audience_type": "author",
+    "audience_label": "Authors & Writers",
+    "style_variant": "bold",
+    "style_label": "Bold",
+    "icon": "fa-solid fa-book",
+    "preview_colors": ["#7c2d12", "#b91c1c"],
+    "tags": ["author", "writer", "bold", "literary", "powerful"],
+    "is_premium": false,
+    "is_new": true,
+    "sort_order": 16,
+    "author": "Guestify",
+    "use_case": "Bestselling authors, provocative writers, public intellectuals, opinion leaders"
+  },
+  "preview_image": "preview.jpg",
+  "thumbnail_image": "thumbnail.jpg",
+  "defaultPreset": "large",
+  "defaultContent": {
+    "sections": [
+      {
+        "id": "hero-section",
+        "type": "full_width",
+        "background": "dark",
+        "components": [
+          {
+            "type": "hero",
+            "settings": {
+              "layout": "center_aligned",
+              "imageStyle": "none",
+              "showCTA": true,
+              "minHeight": "600px",
+              "textColor": "#fef2f2"
+            },
+            "data": {
+              "headline": "Bestselling Author",
+              "subheadline": "Challenging Conventional Wisdom Since [Year]",
+              "description": "Author of [Number] books that have shaped how millions think about [topic].",
+              "cta_text": "Read the Latest Book"
+            }
+          }
+        ]
+      },
+      {
+        "id": "featured-book-section",
+        "type": "two_column",
+        "background": "gradient",
+        "columns": {
+          "ratio": "35-65",
+          "1": [
+            {
+              "type": "photo-gallery",
+              "settings": {
+                "layout": "single",
+                "style": "book-cover-bold",
+                "showShadow": true
+              },
+              "data": {
+                "images": [{ "alt": "Book cover" }]
+              }
+            }
+          ],
+          "2": [
+            {
+              "type": "guest-intro",
+              "settings": {
+                "style": "featured-bold"
+              },
+              "data": {
+                "title": "THE NEW BOOK",
+                "subtitle": "#1 New York Times Bestseller",
+                "content": "\"A tour de force that will fundamentally change how you see the world.\" — Major Publication\n\nIn this groundbreaking work, I take on the biggest challenges facing [field] and offer a radical new framework for thinking about [topic].",
+                "cta_text": "Order Your Copy",
+                "cta_link": "#"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "press-section",
+        "type": "full_width",
+        "components": [
+          {
+            "type": "testimonials",
+            "settings": {
+              "layout": "quotes",
+              "showPhotos": false,
+              "showCompany": true,
+              "quoteStyle": "large-bold",
+              "maxTestimonials": 3
+            },
+            "data": {
+              "title": "CRITICAL ACCLAIM",
+              "items": [
+                {
+                  "quote": "Essential reading. This book will be debated for decades.",
+                  "company": "The New York Times"
+                },
+                {
+                  "quote": "A intellectual powerhouse who doesn't pull punches.",
+                  "company": "The Atlantic"
+                },
+                {
+                  "quote": "Required reading for anyone who wants to understand our moment.",
+                  "company": "Washington Post"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "bio-section",
+        "type": "two_column",
+        "columns": {
+          "ratio": "40-60",
+          "1": [
+            {
+              "type": "profile-photo",
+              "settings": {
+                "style": "square",
+                "size": "large",
+                "border": "accent"
+              },
+              "data": {
+                "alt": "Author portrait"
+              }
+            }
+          ],
+          "2": [
+            {
+              "type": "biography",
+              "settings": {
+                "style": "bold",
+                "showTitle": true
+              },
+              "data": {
+                "title": "ABOUT THE AUTHOR",
+                "content": "I've spent [X] years asking uncomfortable questions and refusing easy answers.\n\nMy work has been praised and criticized in equal measure—which tells me I'm doing something right. I believe ideas matter, that words have power, and that writers have a responsibility to challenge readers, not just comfort them.\n\n**Books:** [Number] published, [Number] million copies sold, translated into [X] languages\n**Awards:** [Major Award], [Another Award]\n**Teaching:** [University] Professor of [Subject]"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "books-section",
+        "type": "full_width",
+        "background": "surface",
+        "components": [
+          {
+            "type": "photo-gallery",
+            "settings": {
+              "layout": "grid",
+              "columns": 4,
+              "style": "book-covers-bold"
+            },
+            "data": {
+              "title": "THE BOOKS",
+              "images": [
+                { "alt": "Book 1", "caption": "Title One" },
+                { "alt": "Book 2", "caption": "Title Two" },
+                { "alt": "Book 3", "caption": "Title Three" },
+                { "alt": "Book 4", "caption": "Title Four" }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "contact-section",
+        "type": "full_width",
+        "background": "dark",
+        "components": [
+          {
+            "type": "contact",
+            "settings": {
+              "style": "bold-dark",
+              "layout": "centered",
+              "fields": ["name", "email", "organization", "inquiry_type", "message"],
+              "maxWidth": "600px"
+            },
+            "data": {
+              "title": "MEDIA & SPEAKING",
+              "subtitle": "For interviews, appearances, and speaking engagements",
+              "button_text": "SEND MESSAGE"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "typography": {
+    "primary_font": {
+      "family": "Merriweather, serif",
+      "weights": [400, 700, 900],
+      "fallback": "Georgia, serif"
+    },
+    "heading_font": {
+      "family": "Oswald, sans-serif",
+      "weights": [500, 600, 700],
+      "fallback": "Arial Black, sans-serif"
+    },
+    "font_scale": 1.25,
+    "line_height": {
+      "body": 1.75,
+      "heading": 1.1
+    }
+  },
+  "colors": {
+    "primary": "#7c2d12",
+    "primary_hover": "#9a3412",
+    "secondary": "#b91c1c",
+    "accent": "#dc2626",
+    "text": "#1c1917",
+    "text_light": "#57534e",
+    "text_muted": "#a8a29e",
+    "background": "#fafaf9",
+    "surface": "#f5f5f4",
+    "surface_hover": "#e7e5e4",
+    "border": "#d6d3d1",
+    "gradient_start": "#7c2d12",
+    "gradient_end": "#b91c1c",
+    "error": "#dc2626",
+    "success": "#16a34a",
+    "warning": "#f59e0b"
+  },
+  "spacing": {
+    "base_unit": "8px",
+    "component_gap": "64px",
+    "section_gap": "100px",
+    "container_padding": "32px",
+    "content_max_width": "1100px"
+  },
+  "effects": {
+    "border_radius": "4px",
+    "border_radius_sm": "2px",
+    "border_radius_lg": "8px",
+    "shadow": "0 10px 30px rgba(0, 0, 0, 0.15)",
+    "shadow_sm": "0 4px 12px rgba(0, 0, 0, 0.1)",
+    "shadow_lg": "0 20px 50px rgba(0, 0, 0, 0.2)",
+    "transitions": "all 0.3s ease",
+    "gradient": "linear-gradient(135deg, var(--gmkb-color-gradient-start), var(--gmkb-color-gradient-end))"
+  },
+  "components": {
+    "button": {
+      "padding": "14px 32px",
+      "font_weight": "700",
+      "letter_spacing": "0.05em",
+      "text_transform": "uppercase"
+    },
+    "card": {
+      "padding": "32px",
+      "shadow": "0 8px 25px rgba(0, 0, 0, 0.1)"
+    }
+  },
+  "responsive": {
+    "breakpoints": {
+      "sm": "640px",
+      "md": "768px",
+      "lg": "1024px",
+      "xl": "1200px"
+    },
+    "font_scale_mobile": 0.9,
+    "spacing_scale_mobile": 0.75
+  }
+}

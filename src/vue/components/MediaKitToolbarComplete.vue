@@ -159,14 +159,62 @@
           <div class="gmkb-modal__body">
             <p>Share functionality coming soon!</p>
             <div class="gmkb-modal__share-link">
-              <input 
-                type="text" 
-                :value="shareLink" 
-                readonly 
+              <input
+                type="text"
+                :value="shareLink"
+                readonly
                 class="gmkb-modal__share-input"
                 @click="$event.target.select()"
               />
               <button @click="copyShareLink" class="gmkb-btn gmkb-btn--primary">Copy Link</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Auth Prompt Modal -->
+    <Teleport to="body">
+      <div v-if="showAuthPrompt" class="gmkb-modal-overlay" @click.self="closeAuthPrompt">
+        <div class="gmkb-modal gmkb-modal--auth">
+          <div class="gmkb-modal__header">
+            <h2>{{ authPromptData.isNewMediaKit ? 'Save Your Media Kit' : 'Login Required' }}</h2>
+            <button @click="closeAuthPrompt" class="gmkb-modal__close">×</button>
+          </div>
+          <div class="gmkb-modal__body gmkb-auth-prompt">
+            <div class="gmkb-auth-prompt__icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path>
+                <path d="M17 21v-8H7v8M7 3v5h8"></path>
+              </svg>
+            </div>
+            <p class="gmkb-auth-prompt__message">{{ authPromptData.message }}</p>
+
+            <!-- URL Preview -->
+            <div class="gmkb-auth-prompt__url-preview" v-if="authPromptData.isNewMediaKit">
+              <label>Your media kit URL will be:</label>
+              <div class="gmkb-auth-prompt__url">
+                <span class="gmkb-auth-prompt__url-domain">guestify.ai/</span>
+                <span class="gmkb-auth-prompt__url-username">yourname</span>
+              </div>
+            </div>
+
+            <p class="gmkb-auth-prompt__subtext" v-if="authPromptData.isNewMediaKit">
+              Share your professional media kit with anyone, anywhere.
+            </p>
+            <div class="gmkb-auth-prompt__actions">
+              <button @click="goToRegister" class="gmkb-btn gmkb-btn--primary gmkb-btn--lg">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
+                  <circle cx="8.5" cy="7" r="4"></circle>
+                  <line x1="20" y1="8" x2="20" y2="14"></line>
+                  <line x1="23" y1="11" x2="17" y2="11"></line>
+                </svg>
+                Create Free Account
+              </button>
+              <button @click="goToLogin" class="gmkb-btn gmkb-btn--secondary">
+                Already have an account? Log in
+              </button>
             </div>
           </div>
         </div>
@@ -191,6 +239,15 @@ const exportModal = ref(null)
 const showShareModal = ref(false)
 // RESET FUNCTIONALITY: Global reset modal ref
 const resetModal = ref(null)
+
+// Auth prompt state
+const showAuthPrompt = ref(false)
+const authPromptData = ref({
+  isNewMediaKit: false,
+  loginUrl: '/wp-login.php',
+  registerUrl: '/wp-login.php?action=register',
+  message: ''
+})
 
 // Dark mode state
 const isDarkMode = ref(false)
@@ -337,13 +394,40 @@ function copyShareLink() {
 
 async function handleSave() {
   try {
-    await store.save()
+    const result = await store.save()
+
+    // Check if save requires authentication
+    if (result?.requiresAuth) {
+      // The store already dispatched the event, but we can also show a toast
+      showInfo('Please log in or register to save your media kit')
+      return
+    }
+
     showSuccess('✅ Media kit saved successfully!')
     console.log('✅ Manual save triggered')
   } catch (error) {
     console.error('❌ Save failed:', error)
     showError('Failed to save: ' + error.message)
   }
+}
+
+// Handle auth required event
+function handleSaveRequiresAuth(event) {
+  const { isNewMediaKit, loginUrl, registerUrl, message } = event.detail
+  authPromptData.value = { isNewMediaKit, loginUrl, registerUrl, message }
+  showAuthPrompt.value = true
+}
+
+function closeAuthPrompt() {
+  showAuthPrompt.value = false
+}
+
+function goToLogin() {
+  window.location.href = authPromptData.value.loginUrl
+}
+
+function goToRegister() {
+  window.location.href = authPromptData.value.registerUrl
 }
 
 // Keyboard shortcuts
@@ -385,11 +469,13 @@ const initDarkMode = () => {
 onMounted(() => {
   initDarkMode()
   document.addEventListener('keydown', handleKeyboard)
+  document.addEventListener('gmkb:save-requires-auth', handleSaveRequiresAuth)
   console.log('✅ Perfected toolbar mounted with BEM conventions')
 })
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeyboard)
+  document.removeEventListener('gmkb:save-requires-auth', handleSaveRequiresAuth)
 })
 </script>
 
@@ -904,5 +990,103 @@ body.dark-mode .gmkb-toolbar__btn:hover:not(:disabled) {
   .gmkb-toolbar__device-selector {
     display: none;
   }
+}
+
+/* Auth Prompt Modal */
+.gmkb-modal--auth {
+  max-width: 420px;
+}
+
+.gmkb-auth-prompt {
+  text-align: center;
+  padding: 32px 24px;
+}
+
+.gmkb-auth-prompt__icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  border-radius: 16px;
+  color: white;
+}
+
+.gmkb-auth-prompt__message {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 8px;
+}
+
+.gmkb-auth-prompt__subtext {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0 0 24px;
+}
+
+.gmkb-auth-prompt__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gmkb-btn--secondary {
+  background: transparent;
+  color: #64748b;
+  border: none;
+}
+
+.gmkb-btn--secondary:hover {
+  color: #3b82f6;
+  text-decoration: underline;
+}
+
+.gmkb-btn--lg {
+  padding: 14px 24px;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* URL Preview */
+.gmkb-auth-prompt__url-preview {
+  margin: 20px 0;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  border-radius: 12px;
+  border: 1px solid #bae6fd;
+}
+
+.gmkb-auth-prompt__url-preview label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #0369a1;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.gmkb-auth-prompt__url {
+  font-size: 18px;
+  font-weight: 600;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+}
+
+.gmkb-auth-prompt__url-domain {
+  color: #64748b;
+}
+
+.gmkb-auth-prompt__url-username {
+  color: #0ea5e9;
+  background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 </style>

@@ -185,13 +185,16 @@ async function initializeVue() {
     console.log('4️⃣ Initializing stores...');
     const { useMediaKitStore } = await import('./stores/mediaKit.js');
     const { useThemeStore } = await import('./stores/theme.js');
-    
+    const { useTemplateStore } = await import('./stores/templates.js');
+
     const mediaKitStore = useMediaKitStore(pinia);
     const themeStore = useThemeStore(pinia);
-    
+    const templateStore = useTemplateStore(pinia);
+
     // ROOT FIX: Register stores immediately after creation
     window.GMKB.stores.mediaKit = mediaKitStore;
     window.GMKB.stores.theme = themeStore;
+    window.GMKB.stores.templates = templateStore;
     window.GMKB.stores.pinia = pinia;
     console.log('✅ Stores created and registered globally');
     
@@ -226,6 +229,26 @@ async function initializeVue() {
       }
     }
     
+    // STEP 5.5: Set initial view based on content state
+    console.log('5️⃣.5 Setting initial view...');
+    const hasExistingContent = mediaKitStore.sections.length > 0 ||
+                               Object.keys(mediaKitStore.components).length > 0;
+
+    if (hasExistingContent) {
+      // Has content - go directly to builder
+      uiStore.showBuilder();
+      console.log('✅ Existing content found - showing builder');
+    } else {
+      // No content - show template directory first
+      uiStore.showTemplateDirectory();
+      console.log('✅ No content - showing template directory');
+
+      // Pre-fetch templates for faster selection
+      templateStore.fetchTemplates().catch(err => {
+        console.warn('⚠️ Template pre-fetch failed:', err);
+      });
+    }
+
     // STEP 6: Initialize theme (BEFORE Vue mount)
     console.log('6️⃣ Initializing theme...');
     
@@ -335,6 +358,7 @@ async function initializeVue() {
     window.GMKB.stores = window.GMKB.stores || {};
     window.GMKB.stores.mediaKit = mediaKitStore;
     window.GMKB.stores.theme = themeStore;
+    window.GMKB.stores.templates = templateStore;
     window.GMKB.stores.ui = uiStore;
     window.GMKB.stores.pinia = pinia;
       

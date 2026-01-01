@@ -1,0 +1,250 @@
+{
+  "theme_id": "speaker_minimal",
+  "theme_name": "Speaker Minimal",
+  "version": "2.0.0",
+  "description": "Clean, refined template for thoughtful speakers who let their content speak for itself. Minimalist design with elegant typography and ample whitespace.",
+  "category": "speaker",
+  "metadata": {
+    "audience_type": "speaker",
+    "audience_label": "Speakers & Trainers",
+    "style_variant": "minimal",
+    "style_label": "Minimal",
+    "icon": "fa-solid fa-microphone",
+    "preview_colors": ["#18181b", "#71717a"],
+    "tags": ["speaker", "keynote", "minimal", "elegant", "refined"],
+    "is_premium": false,
+    "is_new": true,
+    "sort_order": 7,
+    "author": "Guestify",
+    "use_case": "Thought leaders, academic speakers, executive presenters, TED speakers"
+  },
+  "preview_image": "preview.jpg",
+  "thumbnail_image": "thumbnail.jpg",
+  "defaultPreset": "medium",
+  "defaultContent": {
+    "sections": [
+      {
+        "id": "hero-section",
+        "type": "full_width",
+        "background": "light",
+        "components": [
+          {
+            "type": "hero",
+            "settings": {
+              "layout": "split_screen",
+              "imageStyle": "square",
+              "showCTA": false,
+              "minHeight": "500px",
+              "style": "minimal"
+            },
+            "data": {
+              "headline": "Speaker Name",
+              "subheadline": "Keynote Speaker",
+              "description": "Exploring ideas that shape our future."
+            }
+          }
+        ]
+      },
+      {
+        "id": "intro-section",
+        "type": "full_width",
+        "components": [
+          {
+            "type": "biography",
+            "settings": {
+              "style": "centered",
+              "showTitle": false,
+              "maxWidth": "700px"
+            },
+            "data": {
+              "content": "For over two decades, I've been researching and speaking about [topic]. My work bridges academic rigor with practical insights, helping audiences navigate complexity with clarity."
+            }
+          }
+        ]
+      },
+      {
+        "id": "stats-section",
+        "type": "full_width",
+        "background": "surface",
+        "components": [
+          {
+            "type": "stats",
+            "settings": {
+              "layout": "horizontal",
+              "columns": 3,
+              "showIcons": false,
+              "animateNumbers": false,
+              "separator": true,
+              "style": "minimal"
+            },
+            "data": {
+              "items": [
+                { "value": "300+", "label": "Keynotes" },
+                { "value": "50+", "label": "Countries" },
+                { "value": "20", "label": "Years Speaking" }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "topics-section",
+        "type": "full_width",
+        "components": [
+          {
+            "type": "topics",
+            "settings": {
+              "layout": "list",
+              "showDescriptions": true,
+              "showIcons": false,
+              "style": "minimal"
+            },
+            "data": {
+              "title": "Speaking Topics",
+              "items": [
+                {
+                  "title": "The Architecture of Understanding",
+                  "description": "How we construct meaning in an age of information overload."
+                },
+                {
+                  "title": "Thinking in Systems",
+                  "description": "Seeing the connections that others miss."
+                },
+                {
+                  "title": "The Future of [Field]",
+                  "description": "Evidence-based insights for what comes next."
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "testimonials-section",
+        "type": "full_width",
+        "components": [
+          {
+            "type": "testimonials",
+            "settings": {
+              "layout": "quotes",
+              "showPhotos": false,
+              "showCompany": true,
+              "quoteStyle": "elegant",
+              "maxTestimonials": 2
+            },
+            "data": {
+              "items": [
+                {
+                  "quote": "A rare speaker who combines intellectual depth with genuine accessibility. Our audience was captivated.",
+                  "author": "Conference Director",
+                  "company": "World Economic Forum"
+                },
+                {
+                  "quote": "Thoughtful, nuanced, and deeply researched. The kind of speaker who changes how you think.",
+                  "author": "VP of Learning",
+                  "company": "Fortune 100 Company"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "contact-section",
+        "type": "full_width",
+        "components": [
+          {
+            "type": "contact",
+            "settings": {
+              "style": "minimal",
+              "layout": "centered",
+              "fields": ["name", "email", "organization", "message"],
+              "maxWidth": "500px"
+            },
+            "data": {
+              "title": "Speaking Inquiries",
+              "button_text": "Send"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "typography": {
+    "primary_font": {
+      "family": "Inter, sans-serif",
+      "weights": [300, 400, 500],
+      "fallback": "-apple-system, sans-serif"
+    },
+    "heading_font": {
+      "family": "Newsreader, serif",
+      "weights": [400, 500],
+      "fallback": "Georgia, serif"
+    },
+    "font_scale": 1.1,
+    "line_height": {
+      "body": 1.8,
+      "heading": 1.3
+    }
+  },
+  "colors": {
+    "primary": "#18181b",
+    "primary_hover": "#27272a",
+    "secondary": "#52525b",
+    "accent": "#71717a",
+    "text": "#18181b",
+    "text_light": "#52525b",
+    "text_muted": "#a1a1aa",
+    "background": "#ffffff",
+    "surface": "#fafafa",
+    "surface_hover": "#f4f4f5",
+    "border": "#e4e4e7",
+    "error": "#dc2626",
+    "success": "#16a34a",
+    "warning": "#f59e0b"
+  },
+  "spacing": {
+    "base_unit": "8px",
+    "component_gap": "80px",
+    "section_gap": "140px",
+    "container_padding": "40px",
+    "content_max_width": "900px"
+  },
+  "effects": {
+    "border_radius": "0px",
+    "border_radius_sm": "0px",
+    "border_radius_lg": "0px",
+    "shadow": "none",
+    "shadow_sm": "none",
+    "shadow_lg": "none",
+    "transitions": "all 0.3s ease"
+  },
+  "components": {
+    "button": {
+      "padding": "12px 28px",
+      "font_weight": "400",
+      "letter_spacing": "0.05em",
+      "text_transform": "uppercase",
+      "border_width": "1px"
+    },
+    "card": {
+      "padding": "40px",
+      "shadow": "none",
+      "border_width": "1px"
+    }
+  },
+  "special": {
+    "minimal_decoration": true,
+    "emphasis_through_spacing": true
+  },
+  "responsive": {
+    "breakpoints": {
+      "sm": "640px",
+      "md": "768px",
+      "lg": "1024px",
+      "xl": "1200px"
+    },
+    "font_scale_mobile": 0.95,
+    "spacing_scale_mobile": 0.8
+  }
+}

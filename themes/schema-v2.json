@@ -1,0 +1,220 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GMKB Theme Schema V2",
+  "description": "Enhanced theme schema with template directory support",
+  "type": "object",
+  "required": ["theme_id", "theme_name", "version"],
+  "properties": {
+    "theme_id": {
+      "type": "string",
+      "description": "Unique identifier for the theme"
+    },
+    "theme_name": {
+      "type": "string",
+      "description": "Human-readable display name"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "category": {
+      "type": "string",
+      "enum": ["portfolio", "startup", "speaker", "corporate", "author", "creative", "minimal"],
+      "description": "Primary category for filtering in template directory"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "maxItems": 5,
+          "description": "Searchable tags for template discovery"
+        },
+        "is_premium": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this is a premium/paid template"
+        },
+        "is_new": {
+          "type": "boolean",
+          "default": false,
+          "description": "Flag for NEW badge display"
+        },
+        "sort_order": {
+          "type": "integer",
+          "default": 100,
+          "description": "Lower numbers appear first in directory"
+        },
+        "author": {
+          "type": "string",
+          "default": "Guestify"
+        }
+      }
+    },
+    "preview_image": {
+      "type": "string",
+      "description": "Filename for full preview (1200x800)"
+    },
+    "thumbnail_image": {
+      "type": "string",
+      "description": "Filename for thumbnail (400x300)"
+    },
+    "defaultPreset": {
+      "type": "string",
+      "enum": ["small", "medium", "large"],
+      "default": "medium"
+    },
+    "defaultContent": {
+      "description": "Pre-configured layout - NO IDs, builder generates UUIDs on instantiation",
+      "type": "object",
+      "properties": {
+        "sections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["full_width", "two_column", "three_column"]
+              },
+              "components": {
+                "type": "array",
+                "description": "Components for full_width sections",
+                "items": {
+                  "$ref": "#/definitions/componentDef"
+                }
+              },
+              "columns": {
+                "type": "object",
+                "description": "Column definitions for multi-column sections",
+                "patternProperties": {
+                  "^[1-3]$": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/componentDef"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "typography": {
+      "type": "object",
+      "properties": {
+        "primary_font": { "$ref": "#/definitions/fontDef" },
+        "heading_font": { "$ref": "#/definitions/fontDef" },
+        "font_scale": { "type": "number" },
+        "line_height": {
+          "type": "object",
+          "properties": {
+            "body": { "type": "number" },
+            "heading": { "type": "number" }
+          }
+        },
+        "letter_spacing": {
+          "type": "object",
+          "properties": {
+            "body": { "type": "string" },
+            "heading": { "type": "string" }
+          }
+        }
+      }
+    },
+    "colors": {
+      "type": "object",
+      "properties": {
+        "primary": { "type": "string" },
+        "primary_hover": { "type": "string" },
+        "secondary": { "type": "string" },
+        "text": { "type": "string" },
+        "text_light": { "type": "string" },
+        "background": { "type": "string" },
+        "surface": { "type": "string" },
+        "border": { "type": "string" },
+        "error": { "type": "string" },
+        "success": { "type": "string" },
+        "warning": { "type": "string" },
+        "info": { "type": "string" }
+      }
+    },
+    "spacing": {
+      "type": "object",
+      "properties": {
+        "base_unit": { "type": "string" },
+        "component_gap": { "type": "string" },
+        "section_gap": { "type": "string" },
+        "container_padding": { "type": "string" },
+        "content_max_width": { "type": "string" }
+      }
+    },
+    "effects": {
+      "type": "object",
+      "properties": {
+        "border_radius": { "type": "string" },
+        "border_radius_sm": { "type": "string" },
+        "border_radius_lg": { "type": "string" },
+        "shadow": { "type": "string" },
+        "shadow_sm": { "type": "string" },
+        "shadow_lg": { "type": "string" },
+        "transitions": { "type": "string" },
+        "blur": { "type": "string" }
+      }
+    },
+    "components": {
+      "type": "object",
+      "properties": {
+        "button": { "type": "object" },
+        "card": { "type": "object" },
+        "input": { "type": "object" }
+      }
+    },
+    "responsive": {
+      "type": "object",
+      "properties": {
+        "breakpoints": { "type": "object" },
+        "font_scale_mobile": { "type": "number" },
+        "spacing_scale_mobile": { "type": "number" }
+      }
+    }
+  },
+  "definitions": {
+    "fontDef": {
+      "type": "object",
+      "properties": {
+        "family": { "type": "string" },
+        "weights": {
+          "type": "array",
+          "items": { "type": "integer" }
+        },
+        "fallback": { "type": "string" }
+      }
+    },
+    "componentDef": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Component type (hero, biography, stats, topics, etc.)"
+        },
+        "settings": {
+          "type": "object",
+          "description": "Component configuration settings"
+        },
+        "data": {
+          "type": "object",
+          "description": "Default content data for the component"
+        }
+      }
+    }
+  }
+}
