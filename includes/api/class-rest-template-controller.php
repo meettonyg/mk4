@@ -258,7 +258,17 @@ class GMKB_REST_Template_Controller {
 
         // Built-in theme (using ThemeDiscovery for caching)
         $discovery = $this->get_theme_discovery();
-        $theme_data = $discovery->getTheme(sanitize_file_name($id));
+        $sanitized_id = sanitize_file_name($id);
+        $theme_data = $discovery->getTheme($sanitized_id);
+
+        // Try alternate format if not found (underscores <-> hyphens)
+        if (!$theme_data) {
+            // Theme IDs in JSON use underscores, directory names use hyphens
+            $alternate_id = strpos($sanitized_id, '_') !== false
+                ? str_replace('_', '-', $sanitized_id)
+                : str_replace('-', '_', $sanitized_id);
+            $theme_data = $discovery->getTheme($alternate_id);
+        }
 
         if (!$theme_data) {
             return new WP_Error(

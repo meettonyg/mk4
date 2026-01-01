@@ -264,7 +264,10 @@ export const useTemplateStore = defineStore('templates', {
                             layout: sectionDef.type,
                             type: 'layout',
                             components: [],
-                            columns: {}
+                            columns: {},
+                            settings: {
+                                background: sectionDef.background || 'default'
+                            }
                         };
 
                         // Handle full_width sections
@@ -286,7 +289,18 @@ export const useTemplateStore = defineStore('templates', {
 
                         // Handle multi-column sections
                         if (sectionDef.columns) {
+                            // Store column ratio if provided (for section settings)
+                            if (sectionDef.columns.ratio) {
+                                section.settings = section.settings || {};
+                                section.settings.columnRatio = sectionDef.columns.ratio;
+                            }
+
                             for (const [colNum, colComponents] of Object.entries(sectionDef.columns)) {
+                                // Skip non-column entries like 'ratio'
+                                if (!Array.isArray(colComponents)) {
+                                    continue;
+                                }
+
                                 section.columns[colNum] = [];
 
                                 for (const compDef of colComponents) {
