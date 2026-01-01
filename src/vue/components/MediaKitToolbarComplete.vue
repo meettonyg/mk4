@@ -189,8 +189,18 @@
               </svg>
             </div>
             <p class="gmkb-auth-prompt__message">{{ authPromptData.message }}</p>
+
+            <!-- URL Preview -->
+            <div class="gmkb-auth-prompt__url-preview" v-if="authPromptData.isNewMediaKit">
+              <label>Your media kit URL will be:</label>
+              <div class="gmkb-auth-prompt__url">
+                <span class="gmkb-auth-prompt__url-domain">guestify.ai/</span>
+                <span class="gmkb-auth-prompt__url-username">yourname</span>
+              </div>
+            </div>
+
             <p class="gmkb-auth-prompt__subtext" v-if="authPromptData.isNewMediaKit">
-              Your media kit will be saved and you can access it anytime.
+              Share your professional media kit with anyone, anywhere.
             </p>
             <div class="gmkb-auth-prompt__actions">
               <button @click="goToRegister" class="gmkb-btn gmkb-btn--primary gmkb-btn--lg">
@@ -1041,5 +1051,42 @@ body.dark-mode .gmkb-toolbar__btn:hover:not(:disabled) {
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+
+/* URL Preview */
+.gmkb-auth-prompt__url-preview {
+  margin: 20px 0;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  border-radius: 12px;
+  border: 1px solid #bae6fd;
+}
+
+.gmkb-auth-prompt__url-preview label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #0369a1;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.gmkb-auth-prompt__url {
+  font-size: 18px;
+  font-weight: 600;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+}
+
+.gmkb-auth-prompt__url-domain {
+  color: #64748b;
+}
+
+.gmkb-auth-prompt__url-username {
+  color: #0ea5e9;
+  background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 </style>
