@@ -160,15 +160,26 @@ function applySelectedTemplate() {
 
   console.log('🎨 Applying template:', templateId);
 
-  // Find the template
-  const template = themeStore.availableThemes.find(t => t.id === templateId);
+  // Normalize template ID: convert hyphens to underscores for matching
+  // URLs use hyphens (author-bold) but theme IDs use underscores (author_bold)
+  const normalizedId = templateId.replace(/-/g, '_');
+
+  // Find the template (try both original and normalized ID)
+  let template = themeStore.availableThemes.find(t => t.id === templateId);
+  if (!template && normalizedId !== templateId) {
+    template = themeStore.availableThemes.find(t => t.id === normalizedId);
+    if (template) {
+      console.log('🔄 Template found with normalized ID:', normalizedId);
+    }
+  }
+
   if (!template) {
-    console.warn('Template not found:', templateId);
+    console.warn('Template not found:', templateId, '(also tried:', normalizedId + ')');
     return;
   }
 
-  // Apply the template's theme
-  themeStore.selectTheme(templateId);
+  // Apply the template's theme (use the template's actual ID)
+  themeStore.selectTheme(template.id);
 
   // If template has defaultContent, apply it
   if (template.defaultContent) {

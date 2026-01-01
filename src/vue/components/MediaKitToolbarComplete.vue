@@ -9,6 +9,18 @@
           <span class="gmkb-toolbar__document-title">{{ postTitle }}</span>
         </div>
       </div>
+
+      <!-- Profile Selector for logged-in users -->
+      <div v-if="isLoggedIn && !isNewMediaKit" class="gmkb-toolbar__profile-selector">
+        <ProfileSelector
+          v-model="selectedProfileId"
+          mode="dropdown"
+          label=""
+          :show-label="false"
+          placeholder="Switch profile..."
+          @select="handleProfileSwitch"
+        />
+      </div>
     </div>
 
     <!-- Center Section - Device Preview -->
@@ -232,6 +244,9 @@ import ExportModal from './ExportModal.vue'
 import GlobalResetModal from './ui/GlobalResetModal.vue'
 // ROOT FIX: Import StorageService for centralized localStorage access
 import storageService from '../../services/StorageService'
+// Profile switching support
+import ProfileSelector from './shared/ProfileSelector.vue'
+import profileContextService from '../../services/ProfileContextService.js'
 
 const store = useMediaKitStore()
 const { showSuccess, showInfo, showError } = useToast()
@@ -248,6 +263,39 @@ const authPromptData = ref({
   registerUrl: '/wp-login.php?action=register',
   message: ''
 })
+
+// Profile switching state
+const isLoggedIn = computed(() => !!window.gmkbData?.user?.isLoggedIn)
+const isNewMediaKit = computed(() => !!window.gmkbData?.isNewMediaKit)
+const selectedProfileId = ref(window.gmkbData?.profileId || null)
+
+// Handle profile switch - updates store's podsData with new profile data
+const handleProfileSwitch = async (profileId) => {
+  if (!profileId) return
+
+  try {
+    console.log('🔄 Switching to profile:', profileId)
+
+    // Fetch profile data via ProfileContextService
+    const profileData = await profileContextService.loadProfileData(profileId)
+
+    if (profileData) {
+      // Update store's podsData with new profile data
+      store.podsData = profileData
+
+      // Dispatch event for components to refresh
+      document.dispatchEvent(new CustomEvent('gmkb:profile-switched', {
+        detail: { profileId, profileData }
+      }))
+
+      showSuccess('Profile switched successfully')
+      console.log('✅ Profile switched to:', profileId)
+    }
+  } catch (error) {
+    console.error('Failed to switch profile:', error)
+    showError('Failed to switch profile')
+  }
+}
 
 // Dark mode state
 const isDarkMode = ref(false)
@@ -522,6 +570,31 @@ onUnmounted(() => {
 .gmkb-toolbar__section--right {
   flex: 1;
   justify-content: flex-end;
+}
+
+/* Element: profile-selector */
+.gmkb-toolbar__profile-selector {
+  margin-left: 16px;
+  padding-left: 16px;
+  border-left: 1px solid #e5e7eb;
+}
+
+.gmkb-toolbar__profile-selector :deep(.profile-selector__select) {
+  min-width: 180px;
+  padding: 6px 32px 6px 10px;
+  font-size: 13px;
+  border-color: #e5e7eb;
+  border-radius: 6px;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__profile-selector {
+  border-left-color: #334155;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__profile-selector :deep(.profile-selector__select) {
+  background: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
 }
 
 /* Element: branding */
