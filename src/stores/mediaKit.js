@@ -2227,6 +2227,11 @@ export const useMediaKitStore = defineStore('mediaKit', {
       this.editingComponentId = null;
     },
 
+    // Set profile data (for profile switching)
+    setProfileData(profileData) {
+      this.podsData = profileData;
+    },
+
     // Section selection management
     selectSection(sectionId) {
       this.selectedSectionId = sectionId;

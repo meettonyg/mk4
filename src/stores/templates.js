@@ -291,7 +291,6 @@ export const useTemplateStore = defineStore('templates', {
                         if (sectionDef.columns) {
                             // Store column ratio if provided (for section settings)
                             if (sectionDef.columns.ratio) {
-                                section.settings = section.settings || {};
                                 section.settings.columnRatio = sectionDef.columns.ratio;
                             }
 

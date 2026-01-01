@@ -280,8 +280,8 @@ const handleProfileSwitch = async (profileId) => {
     const profileData = await profileContextService.loadProfileData(profileId)
 
     if (profileData) {
-      // Update store's podsData with new profile data
-      store.podsData = profileData
+      // Update store's podsData with new profile data via action
+      store.setProfileData(profileData)
 
       // Dispatch event for components to refresh
       document.dispatchEvent(new CustomEvent('gmkb:profile-switched', {
