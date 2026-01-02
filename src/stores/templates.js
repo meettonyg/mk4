@@ -5,7 +5,7 @@
  * Carrd-like template directory feature.
  *
  * @package GMKB
- * @version 2.0.0
+ * @version 2.0.1
  */
 
 import { defineStore } from 'pinia';
@@ -130,7 +130,8 @@ export const useTemplateStore = defineStore('templates', {
 
             try {
                 const restUrl = window.gmkbData?.restUrl || '/wp-json/';
-                const nonce = window.gmkbData?.nonce || '';
+                // CRITICAL FIX: Use restNonce for REST API calls (not the AJAX nonce)
+                const nonce = window.gmkbData?.restNonce || '';
 
                 const response = await fetch(`${restUrl}gmkb/v1/templates`, {
                     headers: {
@@ -194,7 +195,8 @@ export const useTemplateStore = defineStore('templates', {
          */
         async fetchTemplate(templateId) {
             const restUrl = window.gmkbData?.restUrl || '/wp-json/';
-            const nonce = window.gmkbData?.nonce || '';
+            // CRITICAL FIX: Use restNonce for REST API calls (not the AJAX nonce)
+            const nonce = window.gmkbData?.restNonce || '';
 
             try {
                 const response = await fetch(`${restUrl}gmkb/v1/templates/${templateId}`, {
@@ -397,7 +399,8 @@ export const useTemplateStore = defineStore('templates', {
             const mediaKitStore = useMediaKitStore();
             const themeStore = useThemeStore();
             const restUrl = window.gmkbData?.restUrl || '/wp-json/';
-            const nonce = window.gmkbData?.nonce || '';
+            // CRITICAL FIX: Use restNonce for REST API calls (not the AJAX nonce)
+            const nonce = window.gmkbData?.restNonce || '';
 
             console.log('💾 Saving as template:', name);
 
@@ -450,7 +453,8 @@ export const useTemplateStore = defineStore('templates', {
          */
         async deleteUserTemplate(templateId) {
             const restUrl = window.gmkbData?.restUrl || '/wp-json/';
-            const nonce = window.gmkbData?.nonce || '';
+            // CRITICAL FIX: Use restNonce for REST API calls (not the AJAX nonce)
+            const nonce = window.gmkbData?.restNonce || '';
 
             console.log('🗑️ Deleting template:', templateId);
 
