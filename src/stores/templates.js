@@ -12,6 +12,7 @@ import { defineStore } from 'pinia';
 import { useMediaKitStore } from './mediaKit';
 import { useThemeStore } from './theme';
 import { useUIStore } from './ui';
+import { mergeWithDefaults } from '../utils/componentSchema';
 
 export const useTemplateStore = defineStore('templates', {
     state: () => ({
@@ -286,11 +287,13 @@ export const useTemplateStore = defineStore('templates', {
                                 const compId = this._generateId('comp');
                                 section.components.push(compId);
 
+                                // ROOT FIX: Merge template settings with DEFAULT_SETTINGS
+                                // This ensures components have proper style/advanced structure
                                 mediaKitStore.components[compId] = {
                                     component_id: compId,
                                     type: compDef.type,
                                     section_id: sectionId,
-                                    settings: compDef.settings || {},
+                                    settings: mergeWithDefaults(compDef.settings || {}),
                                     data: compDef.data || {},
                                     customization: {}
                                 };
@@ -316,12 +319,14 @@ export const useTemplateStore = defineStore('templates', {
                                     const compId = this._generateId('comp');
                                     section.columns[colNum].push(compId);
 
+                                    // ROOT FIX: Merge template settings with DEFAULT_SETTINGS
+                                    // This ensures components have proper style/advanced structure
                                     mediaKitStore.components[compId] = {
                                         component_id: compId,
                                         type: compDef.type,
                                         section_id: sectionId,
                                         column: parseInt(colNum),
-                                        settings: compDef.settings || {},
+                                        settings: mergeWithDefaults(compDef.settings || {}),
                                         data: compDef.data || {},
                                         customization: {}
                                     };
