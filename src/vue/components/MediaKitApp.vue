@@ -199,25 +199,8 @@ async function applySelectedTemplate() {
     }
   } catch (error) {
     console.error('❌ Failed to apply template:', error);
-
-    // Fallback: Try simple theme application if template API fails
-    console.log('⚠️ Falling back to simple theme application');
-    let template = themeStore.availableThemes.find(t => t.id === templateId);
-    if (!template && normalizedId !== templateId) {
-      template = themeStore.availableThemes.find(t => t.id === normalizedId);
-    }
-
-    if (template) {
-      themeStore.selectTheme(template.id);
-      // If template has defaultContent, apply it
-      if (template.defaultContent) {
-        console.log('📄 Applying template default content (fallback)');
-        store.applyState(template.defaultContent);
-      }
-      store._trackChange();
-    } else {
-      console.warn('Template not found:', templateId, '(also tried:', normalizedId + ')');
-    }
+    // Template API failed - user will see empty builder
+    // This should not happen once PHP permissions fix is deployed
   }
 }
 
