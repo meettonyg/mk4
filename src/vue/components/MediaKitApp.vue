@@ -68,6 +68,7 @@
 import { onMounted, onUnmounted, ref, computed, nextTick } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
 import { useThemeStore } from '../../stores/theme';
+import { useTemplateStore } from '../../stores/templates';
 import { useTheme } from '../composables/useTheme';
 import LoadingScreen from './LoadingScreen.vue';
 import ThemeProvider from './ThemeProvider.vue';
@@ -88,6 +89,7 @@ import storageService from '../../services/StorageService';
 // Store references
 const store = useMediaKitStore();
 const themeStore = useThemeStore();
+const templateStore = useTemplateStore();
 const { applyTheme } = useTheme();
 
 // Loading states
@@ -154,30 +156,52 @@ function handleResumeSession() {
 }
 
 // Apply template when URL has template parameter
-function applySelectedTemplate() {
+async function applySelectedTemplate() {
   const templateId = urlParams.get('template');
   if (!templateId) return;
 
   console.log('🎨 Applying template:', templateId);
 
-  // Find the template
-  const template = themeStore.availableThemes.find(t => t.id === templateId);
-  if (!template) {
-    console.warn('Template not found:', templateId);
-    return;
+  // Normalize template ID: convert hyphens to underscores for matching
+  // URLs use hyphens (author-bold) but theme IDs use underscores (author_bold)
+  const normalizedId = templateId.replace(/-/g, '_');
+
+  try {
+    // Use templateStore.initializeFromTemplate() which:
+    // 1. Fetches full template data via REST API (includes defaultContent)
+    // 2. Generates fresh UUIDs for sections/components
+    // 3. Properly applies theme and theme customizations
+    // 4. Handles both built-in and user templates
+
+    // NOTE: REST API uses directory names (hyphens) as lookup keys
+    // Try original hyphenated ID first, then normalized underscored version
+    let success = false;
+    try {
+      // Try original (usually hyphenated from URL)
+      await templateStore.initializeFromTemplate(templateId);
+      success = true;
+      console.log('✅ Template initialized with ID:', templateId);
+    } catch (err) {
+      if (normalizedId !== templateId) {
+        // Try normalized ID (underscores)
+        console.log('🔄 Trying normalized template ID:', normalizedId);
+        await templateStore.initializeFromTemplate(normalizedId);
+        success = true;
+        console.log('✅ Template initialized with normalized ID:', normalizedId);
+      } else {
+        throw err;
+      }
+    }
+
+    if (success) {
+      // Mark as dirty so changes will be saved
+      store._trackChange();
+    }
+  } catch (error) {
+    console.error('❌ Failed to apply template:', error);
+    // Template API failed - user will see empty builder
+    // This should not happen once PHP permissions fix is deployed
   }
-
-  // Apply the template's theme
-  themeStore.selectTheme(templateId);
-
-  // If template has defaultContent, apply it
-  if (template.defaultContent) {
-    console.log('📄 Applying template default content');
-    store.applyState(template.defaultContent);
-  }
-
-  // Mark as dirty so changes will be saved
-  store._trackChange();
 }
 
 // Restore session from localStorage backup
@@ -254,7 +278,8 @@ onMounted(async () => {
       const restored = restoreSessionFromBackup();
       if (!restored) {
         // Apply selected template if no backup to restore
-        applySelectedTemplate();
+        // IMPORTANT: Await to ensure template components are loaded before marking ready
+        await applySelectedTemplate();
       }
     }
 

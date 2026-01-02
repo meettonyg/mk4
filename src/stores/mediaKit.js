@@ -1724,13 +1724,22 @@ export const useMediaKitStore = defineStore('mediaKit', {
         }
         return;
       }
-      
+
       // ROOT FIX: Check if auto-save is enabled
       if (!this.autoSaveEnabled) {
         console.log('⏩ Auto-save disabled, skipping');
         return;
       }
-      
+
+      // FIX: Skip auto-save for new media kits without a postId
+      // Saving will be handled when user explicitly saves or post is created
+      if (!this.postId) {
+        if (window.gmkbData?.debugMode) {
+          console.log('⏩ Auto-save skipped: No postId (new media kit - use manual save to create)');
+        }
+        return;
+      }
+
       if (this.isDirty && !this.isSaving) {
         try {
           // Use the new save method that uses REST API
@@ -2216,6 +2225,11 @@ export const useMediaKitStore = defineStore('mediaKit', {
     // Close edit panel
     closeEditPanel() {
       this.editingComponentId = null;
+    },
+
+    // Set profile data (for profile switching)
+    setProfileData(profileData) {
+      this.podsData = profileData;
     },
 
     // Section selection management
