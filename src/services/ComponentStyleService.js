@@ -414,8 +414,8 @@ class ComponentStyleService {
     }
 
     // Responsive visibility
-    if (advanced.responsive) {
-      const resp = advanced.responsive;
+    if (safeAdvanced.responsive) {
+      const resp = safeAdvanced.responsive;
       
       // Mobile (max-width: 767px)
       if (resp.hideOnMobile) {
