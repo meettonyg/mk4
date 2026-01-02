@@ -122,6 +122,30 @@ export const useTemplateStore = defineStore('templates', {
 
     actions: {
         /**
+         * Centralized fetch helper with REST API authentication
+         * Reduces code duplication across all API methods (DRY principle)
+         *
+         * @param {string} endpoint - API endpoint (relative to restUrl)
+         * @param {Object} options - Fetch options (method, body, headers, etc.)
+         * @returns {Promise<Response>} Fetch response
+         */
+        async _fetchWithAuth(endpoint, options = {}) {
+            const restUrl = window.gmkbData?.restUrl || '/wp-json/';
+            const nonce = window.gmkbData?.restNonce || '';
+            const url = `${restUrl}${endpoint}`;
+
+            const fetchOptions = {
+                ...options,
+                headers: {
+                    ...options.headers,
+                    'X-WP-Nonce': nonce
+                }
+            };
+
+            return fetch(url, fetchOptions);
+        },
+
+        /**
          * Fetch all templates from the API
          */
         async fetchTemplates() {
@@ -129,15 +153,7 @@ export const useTemplateStore = defineStore('templates', {
             this.error = null;
 
             try {
-                const restUrl = window.gmkbData?.restUrl || '/wp-json/';
-                // CRITICAL FIX: Use restNonce for REST API calls (not the AJAX nonce)
-                const nonce = window.gmkbData?.restNonce || '';
-
-                const response = await fetch(`${restUrl}gmkb/v1/templates`, {
-                    headers: {
-                        'X-WP-Nonce': nonce
-                    }
-                });
+                const response = await this._fetchWithAuth('gmkb/v1/templates');
 
                 if (!response.ok) {
                     throw new Error(`Failed to fetch templates: ${response.status}`);
@@ -194,16 +210,8 @@ export const useTemplateStore = defineStore('templates', {
          * Fetch single template with full content
          */
         async fetchTemplate(templateId) {
-            const restUrl = window.gmkbData?.restUrl || '/wp-json/';
-            // CRITICAL FIX: Use restNonce for REST API calls (not the AJAX nonce)
-            const nonce = window.gmkbData?.restNonce || '';
-
             try {
-                const response = await fetch(`${restUrl}gmkb/v1/templates/${templateId}`, {
-                    headers: {
-                        'X-WP-Nonce': nonce
-                    }
-                });
+                const response = await this._fetchWithAuth(`gmkb/v1/templates/${templateId}`);
 
                 if (!response.ok) {
                     throw new Error(`Failed to fetch template: ${response.status}`);
@@ -398,18 +406,14 @@ export const useTemplateStore = defineStore('templates', {
         async saveAsTemplate(name, description = '') {
             const mediaKitStore = useMediaKitStore();
             const themeStore = useThemeStore();
-            const restUrl = window.gmkbData?.restUrl || '/wp-json/';
-            // CRITICAL FIX: Use restNonce for REST API calls (not the AJAX nonce)
-            const nonce = window.gmkbData?.restNonce || '';
 
             console.log('💾 Saving as template:', name);
 
             try {
-                const response = await fetch(`${restUrl}gmkb/v1/templates/user`, {
+                const response = await this._fetchWithAuth('gmkb/v1/templates/user', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'X-WP-Nonce': nonce
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         name,
@@ -452,18 +456,11 @@ export const useTemplateStore = defineStore('templates', {
          * Delete a user template
          */
         async deleteUserTemplate(templateId) {
-            const restUrl = window.gmkbData?.restUrl || '/wp-json/';
-            // CRITICAL FIX: Use restNonce for REST API calls (not the AJAX nonce)
-            const nonce = window.gmkbData?.restNonce || '';
-
             console.log('🗑️ Deleting template:', templateId);
 
             try {
-                const response = await fetch(`${restUrl}gmkb/v1/templates/user/${templateId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-WP-Nonce': nonce
-                    }
+                const response = await this._fetchWithAuth(`gmkb/v1/templates/user/${templateId}`, {
+                    method: 'DELETE'
                 });
 
                 if (!response.ok) {
