@@ -1,18 +1,19 @@
 /**
- * GMKB API Service v2.0
- * 
+ * GMKB API Service v2.0.1
+ *
  * Pure REST API implementation for Phase 2 migration
  * Uses unified gmkb/v2/mediakit/{id} endpoint
  * Eliminates N+1 queries with single-query data fetching
- * 
+ *
  * PHASE 6 ENHANCEMENTS:
  * - Retry logic with exponential backoff
  * - Improved caching with TTL
  * - Race condition prevention
  * - Better error handling
- * 
+ * - New Media Kit Support (null postId handling)
+ *
  * @package GMKB
- * @version 2.0.0
+ * @version 2.0.1
  */
 
 import { retryOperation } from '../utils/retry.js';
@@ -24,26 +25,32 @@ export class APIService {
     this.restUrl = this.normalizeRestUrl(restUrl || window.gmkbData?.restUrl);
     this.restNonce = restNonce || window.gmkbData?.restNonce;
     this.postId = this.detectPostId(postId);
-    
-    // V2 API base URL
-    this.baseUrl = `${this.restUrl}gmkb/v2/mediakit/${this.postId}`;
-    
+
+    // V2 API base URL - only constructed if postId exists
+    if (this.postId) {
+      this.baseUrl = `${this.restUrl}gmkb/v2/mediakit/${this.postId}`;
+    } else {
+      this.baseUrl = null;
+    }
+
     // PHASE 6: Enhanced response cache with TTL
     this.cache = new Map();
     this.cacheExpiry = 60000; // 1 minute
-    
+
     // PHASE 6: Track in-flight requests to prevent race conditions
     this.inflightRequests = new Map();
-    
+
     // Validate initialization
     if (!this.restUrl || !this.restNonce) {
       console.error('APIService Critical Error: restUrl or restNonce is missing');
     }
+
+    // FIX: Don't error on missing postId - this is valid for new media kits
     if (!this.postId) {
-      console.error('APIService Critical Error: No post ID could be determined');
-    }
-    
-    if (window.gmkbData?.debugMode) {
+      if (window.gmkbData?.debugMode) {
+        console.log('ℹ️ APIService initialized in "creation mode" (no post ID yet)');
+      }
+    } else if (window.gmkbData?.debugMode) {
       console.log('✅ APIService v2.0 initialized:', {
         postId: this.postId,
         baseUrl: this.baseUrl,
@@ -177,8 +184,13 @@ export class APIService {
    */
   async load(options = {}) {
     const { useCache = true, forceRefresh = false } = options;
-    
+
     try {
+      // Check for postId first - this is required for loading
+      if (!this.postId) {
+        throw new Error('Cannot load: No post ID available (New Media Kit)');
+      }
+
       // PHASE 6: Check if there's already an in-flight request
       if (this.inflightRequests.has('load')) {
         console.log('⏳ Load already in progress, waiting...');
@@ -194,10 +206,6 @@ export class APIService {
           }
           return cached;
         }
-      }
-      
-      if (!this.postId) {
-        throw new Error('Cannot load: No post ID available');
       }
       
       // PHASE 6: Create load promise with retry logic and timeout

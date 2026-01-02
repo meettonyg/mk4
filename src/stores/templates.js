@@ -5,13 +5,14 @@
  * Carrd-like template directory feature.
  *
  * @package GMKB
- * @version 2.0.0
+ * @version 2.0.1
  */
 
 import { defineStore } from 'pinia';
 import { useMediaKitStore } from './mediaKit';
 import { useThemeStore } from './theme';
 import { useUIStore } from './ui';
+import { mergeWithDefaults } from '../utils/componentSchema';
 
 export const useTemplateStore = defineStore('templates', {
     state: () => ({
@@ -122,6 +123,30 @@ export const useTemplateStore = defineStore('templates', {
 
     actions: {
         /**
+         * Centralized fetch helper with REST API authentication
+         * Reduces code duplication across all API methods (DRY principle)
+         *
+         * @param {string} endpoint - API endpoint (relative to restUrl)
+         * @param {Object} options - Fetch options (method, body, headers, etc.)
+         * @returns {Promise<Response>} Fetch response
+         */
+        async _fetchWithAuth(endpoint, options = {}) {
+            const restUrl = window.gmkbData?.restUrl || '/wp-json/';
+            const nonce = window.gmkbData?.restNonce || '';
+            const url = `${restUrl}${endpoint}`;
+
+            const fetchOptions = {
+                ...options,
+                headers: {
+                    ...options.headers,
+                    'X-WP-Nonce': nonce
+                }
+            };
+
+            return fetch(url, fetchOptions);
+        },
+
+        /**
          * Fetch all templates from the API
          */
         async fetchTemplates() {
@@ -129,14 +154,7 @@ export const useTemplateStore = defineStore('templates', {
             this.error = null;
 
             try {
-                const restUrl = window.gmkbData?.restUrl || '/wp-json/';
-                const nonce = window.gmkbData?.nonce || '';
-
-                const response = await fetch(`${restUrl}gmkb/v1/templates`, {
-                    headers: {
-                        'X-WP-Nonce': nonce
-                    }
-                });
+                const response = await this._fetchWithAuth('gmkb/v1/templates');
 
                 if (!response.ok) {
                     throw new Error(`Failed to fetch templates: ${response.status}`);
@@ -193,15 +211,8 @@ export const useTemplateStore = defineStore('templates', {
          * Fetch single template with full content
          */
         async fetchTemplate(templateId) {
-            const restUrl = window.gmkbData?.restUrl || '/wp-json/';
-            const nonce = window.gmkbData?.nonce || '';
-
             try {
-                const response = await fetch(`${restUrl}gmkb/v1/templates/${templateId}`, {
-                    headers: {
-                        'X-WP-Nonce': nonce
-                    }
-                });
+                const response = await this._fetchWithAuth(`gmkb/v1/templates/${templateId}`);
 
                 if (!response.ok) {
                     throw new Error(`Failed to fetch template: ${response.status}`);
@@ -276,11 +287,13 @@ export const useTemplateStore = defineStore('templates', {
                                 const compId = this._generateId('comp');
                                 section.components.push(compId);
 
+                                // ROOT FIX: Merge template settings with DEFAULT_SETTINGS
+                                // This ensures components have proper style/advanced structure
                                 mediaKitStore.components[compId] = {
                                     component_id: compId,
                                     type: compDef.type,
                                     section_id: sectionId,
-                                    settings: compDef.settings || {},
+                                    settings: mergeWithDefaults(compDef.settings || {}),
                                     data: compDef.data || {},
                                     customization: {}
                                 };
@@ -306,12 +319,14 @@ export const useTemplateStore = defineStore('templates', {
                                     const compId = this._generateId('comp');
                                     section.columns[colNum].push(compId);
 
+                                    // ROOT FIX: Merge template settings with DEFAULT_SETTINGS
+                                    // This ensures components have proper style/advanced structure
                                     mediaKitStore.components[compId] = {
                                         component_id: compId,
                                         type: compDef.type,
                                         section_id: sectionId,
                                         column: parseInt(colNum),
-                                        settings: compDef.settings || {},
+                                        settings: mergeWithDefaults(compDef.settings || {}),
                                         data: compDef.data || {},
                                         customization: {}
                                     };
@@ -396,17 +411,14 @@ export const useTemplateStore = defineStore('templates', {
         async saveAsTemplate(name, description = '') {
             const mediaKitStore = useMediaKitStore();
             const themeStore = useThemeStore();
-            const restUrl = window.gmkbData?.restUrl || '/wp-json/';
-            const nonce = window.gmkbData?.nonce || '';
 
             console.log('💾 Saving as template:', name);
 
             try {
-                const response = await fetch(`${restUrl}gmkb/v1/templates/user`, {
+                const response = await this._fetchWithAuth('gmkb/v1/templates/user', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'X-WP-Nonce': nonce
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         name,
@@ -449,17 +461,11 @@ export const useTemplateStore = defineStore('templates', {
          * Delete a user template
          */
         async deleteUserTemplate(templateId) {
-            const restUrl = window.gmkbData?.restUrl || '/wp-json/';
-            const nonce = window.gmkbData?.nonce || '';
-
             console.log('🗑️ Deleting template:', templateId);
 
             try {
-                const response = await fetch(`${restUrl}gmkb/v1/templates/user/${templateId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-WP-Nonce': nonce
-                    }
+                const response = await this._fetchWithAuth(`gmkb/v1/templates/user/${templateId}`, {
+                    method: 'DELETE'
                 });
 
                 if (!response.ok) {
