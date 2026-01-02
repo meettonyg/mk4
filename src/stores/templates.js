@@ -273,7 +273,7 @@ export const useTemplateStore = defineStore('templates', {
                         const section = {
                             section_id: sectionId,
                             layout: sectionDef.type,
-                            type: 'layout',
+                            type: sectionDef.type,
                             components: [],
                             columns: {},
                             settings: {
@@ -388,7 +388,7 @@ export const useTemplateStore = defineStore('templates', {
             mediaKitStore.sections.push({
                 section_id: sectionId,
                 layout: 'full_width',
-                type: 'layout',
+                type: 'full_width',
                 components: [],
                 columns: {}
             });
