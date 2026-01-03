@@ -272,7 +272,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['applied', 'extracted', 'preview-update', 'update:can-generate', 'generated']);
+const emit = defineEmits(['applied', 'preview-update', 'update:can-generate', 'generated']);
 
 // Use shared composable
 const {
@@ -322,23 +322,34 @@ const examples = [
 ];
 
 /**
+ * Escape HTML special characters to prevent XSS
+ */
+const escapeHtml = (unsafe) => {
+  if (!unsafe) return '';
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
+/**
  * Handle extract and emit event
  */
 const onExtract = async () => {
   const result = await handleExtract();
   if (result) {
-    emit('extracted', {
-      url: podcastUrl.value,
-      info: result
-    });
     // Emit generated event for EmbeddedToolWrapper compatibility
     emit('generated', {
       url: podcastUrl.value,
       info: result
     });
-    // Emit preview update with podcast info for display
+    // Emit preview update with sanitized podcast info for display
+    const safeTitle = escapeHtml(result.title);
+    const safeEmail = escapeHtml(result.itunes_owner_email);
     emit('preview-update', {
-      previewHtml: result.title ? `<strong>${result.title}</strong>` + (result.itunes_owner_email ? `<br>Email: ${result.itunes_owner_email}` : '') : ''
+      previewHtml: safeTitle ? `<strong>${safeTitle}</strong>` + (safeEmail ? `<br>Email: ${safeEmail}` : '') : ''
     });
   }
 };
@@ -362,8 +373,7 @@ watch(canExtract, (newValue) => {
  * Expose handleGenerate for parent components to call via ref
  */
 defineExpose({
-  handleGenerate,
-  onExtract
+  handleGenerate
 });
 </script>
 

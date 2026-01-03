@@ -78,65 +78,45 @@ const LEGACY_ALIASES = {
 
 /**
  * Build component registry dynamically from toolModules
- * Auto-discovers Widget components from each tool's index.js
+ * Generic function to avoid code duplication
+ *
+ * @param {string} componentKey - Key to extract from module (e.g., 'Widget', 'Generator')
+ * @param {boolean} useDefaultFallback - Whether to fall back to module.default if componentKey not found
+ * @returns {Object} Registry mapping slugs to components
  */
-function buildToolComponents() {
-    const components = {};
+function buildComponentRegistry(componentKey, useDefaultFallback = false) {
+    const registry = {};
 
     Object.entries(toolModules).forEach(([slug, module]) => {
-        // Get Widget component (default export is Widget for most tools)
-        const Widget = module.Widget || module.default;
-        if (Widget) {
-            components[slug] = Widget;
+        const component = useDefaultFallback
+            ? (module[componentKey] || module.default)
+            : module[componentKey];
+        if (component) {
+            registry[slug] = component;
         }
     });
 
     // Add legacy aliases
     Object.entries(LEGACY_ALIASES).forEach(([alias, canonicalSlug]) => {
-        if (components[canonicalSlug]) {
-            components[alias] = components[canonicalSlug];
+        if (registry[canonicalSlug]) {
+            registry[alias] = registry[canonicalSlug];
         }
     });
 
-    return components;
-}
-
-/**
- * Build embedded generators registry dynamically from toolModules
- * Auto-discovers Generator components from each tool's index.js
- */
-function buildEmbeddedGenerators() {
-    const generators = {};
-
-    Object.entries(toolModules).forEach(([slug, module]) => {
-        // Get Generator component
-        const Generator = module.Generator;
-        if (Generator) {
-            generators[slug] = Generator;
-        }
-    });
-
-    // Add legacy aliases
-    Object.entries(LEGACY_ALIASES).forEach(([alias, canonicalSlug]) => {
-        if (generators[canonicalSlug]) {
-            generators[alias] = generators[canonicalSlug];
-        }
-    });
-
-    return generators;
+    return registry;
 }
 
 /**
  * Component registry for data-gmkb-tool attribute values
  * Auto-generated from toolModules with legacy alias support
  */
-const TOOL_COMPONENTS = buildToolComponents();
+const TOOL_COMPONENTS = buildComponentRegistry('Widget', true);
 
 /**
  * Generator component registry for PLG embedded mode
  * Auto-generated from toolModules with legacy alias support
  */
-const EMBEDDED_GENERATORS = buildEmbeddedGenerators();
+const EMBEDDED_GENERATORS = buildComponentRegistry('Generator');
 
 /**
  * Store mounted app instances for cleanup
