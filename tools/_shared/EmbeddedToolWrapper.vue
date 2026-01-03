@@ -85,10 +85,17 @@
               </p>
             </slot>
           </div>
-          <p v-if="showSaveCta" class="preview-subtext">
+          <!-- Different CTA for logged-in vs guest users -->
+          <p v-if="showSaveCta && !isLoggedIn" class="preview-subtext">
             {{ saveCtaPrefix }}
             <a href="#" @click.prevent="handleSaveClick">{{ saveCtaLink }}</a>
             {{ saveCtaSuffix }}
+          </p>
+          <p v-else-if="showSaveCta && isLoggedIn && !hasSelectedProfile" class="preview-subtext">
+            Select a profile above to save your generated content.
+          </p>
+          <p v-else-if="showSaveCta && isLoggedIn && hasSelectedProfile" class="preview-subtext">
+            Generate content and save it directly to <strong>{{ selectedProfile?.title || 'your profile' }}</strong>.
           </p>
         </div>
 
