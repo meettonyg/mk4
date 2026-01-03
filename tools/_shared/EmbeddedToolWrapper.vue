@@ -200,9 +200,9 @@
 
         <!-- Email Capture Mode -->
         <template v-if="!emailSubmitted">
-          <div class="soft-gate-icon">{{ gateReason === 'exit_intent' ? '👋' : '🎉' }}</div>
+          <div class="soft-gate-icon">{{ gateReason === 'exit_intent' ? '👋' : (gateReason === 'save_click' ? '💾' : '🎉') }}</div>
           <h3 class="soft-gate-title">
-            {{ gateReason === 'exit_intent' ? `Don't lose your ${contentNoun}!` : "You're on a roll!" }}
+            {{ gateReason === 'exit_intent' ? `Don't lose your ${contentNoun}!` : (gateReason === 'save_click' ? `Save your ${contentNoun}` : "You're on a roll!") }}
           </h3>
           <p class="soft-gate-text">
             {{ gateReason === 'exit_intent'
@@ -220,7 +220,7 @@
               @keyup.enter="handleEmailSubmit"
             />
             <button class="btn-gate-primary" @click="handleEmailSubmit" :disabled="!isValidEmail">
-              {{ gateReason === 'exit_intent' ? 'Send It To Me' : 'Save & Unlock' }}
+              {{ gateReason === 'exit_intent' ? 'Send It To Me' : (gateReason === 'save_click' ? 'Save to My Account' : 'Save & Unlock') }}
             </button>
           </div>
 
@@ -232,7 +232,7 @@
           </ul>
 
           <button v-if="canCloseGate" class="btn-gate-secondary" @click="closeSoftGate">
-            {{ gateReason === 'exit_intent' ? 'No thanks, let it disappear' : `Continue as Guest (${remainingGenerations} left)` }}
+            {{ gateReason === 'exit_intent' ? 'No thanks, let it disappear' : (gateReason === 'save_click' ? 'Maybe later' : `Continue as Guest (${remainingGenerations} left)`) }}
           </button>
         </template>
 
@@ -537,9 +537,8 @@ function handleSaveClick() {
   if (props.isLoggedIn) {
     emit('save-click');
   } else {
-    // Redirect to registration
-    const redirectUrl = encodeURIComponent(window.location.href);
-    window.location.href = `${props.registerUrl}?redirect=${redirectUrl}&source=tool_save&tool=${props.toolSlug}`;
+    // Show soft gate modal for guests
+    showGateWithReason('save_click');
   }
 }
 
