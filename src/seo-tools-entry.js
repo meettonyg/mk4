@@ -412,15 +412,27 @@ function initializeEmbeddedTool(container) {
             },
         },
         render() {
+            // Extract tool display name for dynamic labels
+            const toolDisplayName = meta.name || 'Content';
+            // Create a noun form (lowercase, for use in sentences)
+            const contentNoun = toolDisplayName.toLowerCase()
+                .replace(' generator', '')
+                .replace(' builder', '')
+                .replace(' writer', '');
+
             return h('div', { class: 'gmkb-standalone-scope' }, [
                 h(EmbeddedToolWrapper, {
                     intents: intents,
-                    defaultHeading: meta.hero?.contextHeading || 'Create your hook',
+                    defaultHeading: meta.hero?.contextHeading || `Create your ${contentNoun}`,
                     defaultDescription: meta.hero?.contextDescription || '',
                     isGenerating: this.isGenerating,
                     canGenerate: this.canGenerate,
-                    generateButtonText: `Generate ${meta.name || 'Hook'}`,
+                    generateButtonText: `Generate ${toolDisplayName}`,
                     previewContent: this.previewContent,
+                    // Tool-specific labels
+                    resultLabel: `Your ${toolDisplayName}`,
+                    contentNoun: contentNoun,
+                    previewLabel: `Sample ${toolDisplayName}`,
                     // PLG conversion props
                     toolSlug: toolSlug,
                     isLoggedIn: isLoggedIn,

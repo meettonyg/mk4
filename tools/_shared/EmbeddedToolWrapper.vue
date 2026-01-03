@@ -98,7 +98,7 @@
           <div class="success-panel__result">
             <div class="success-label">
               <span class="success-icon">✓</span>
-              Your Authority Hook
+              {{ resultLabel }}
             </div>
             <div class="success-content">
               <slot name="preview">
@@ -150,7 +150,7 @@
             <div v-if="isLoggedIn && hasSelectedProfile" class="save-cta-box save-cta-box--profile">
               <div class="save-cta-text">
                 <strong>Save to {{ selectedProfile?.title || 'your profile' }}</strong>
-                <span>Updates your profile with this hook</span>
+                <span>Updates your profile with this {{ contentNoun }}</span>
               </div>
               <button
                 class="btn-save-account"
@@ -164,12 +164,12 @@
             <div v-else-if="isLoggedIn && !hasSelectedProfile" class="save-cta-box save-cta-box--select">
               <div class="save-cta-text">
                 <strong>Select a profile above</strong>
-                <span>to save this hook to your account</span>
+                <span>to save this {{ contentNoun }} to your account</span>
               </div>
             </div>
             <div v-else class="save-cta-box">
               <div class="save-cta-text">
-                <strong>Keep this hook forever</strong>
+                <strong>Keep this {{ contentNoun }} forever</strong>
                 <span>+ unlock your full messaging suite</span>
               </div>
               <button class="btn-save-account" @click="handleSaveClick">
@@ -202,12 +202,12 @@
         <template v-if="!emailSubmitted">
           <div class="soft-gate-icon">{{ gateReason === 'exit_intent' ? '👋' : '🎉' }}</div>
           <h3 class="soft-gate-title">
-            {{ gateReason === 'exit_intent' ? "Don't lose your hook!" : "You're on a roll!" }}
+            {{ gateReason === 'exit_intent' ? `Don't lose your ${contentNoun}!` : "You're on a roll!" }}
           </h3>
           <p class="soft-gate-text">
             {{ gateReason === 'exit_intent'
-              ? "Enter your email and we'll send you your hook + 3 bonus tools:"
-              : "Enter your email to save your hook and unlock:"
+              ? `Enter your email and we'll send you your ${contentNoun} + 3 bonus tools:`
+              : `Enter your email to save your ${contentNoun} and unlock:`
             }}
           </p>
 
@@ -220,12 +220,12 @@
               @keyup.enter="handleEmailSubmit"
             />
             <button class="btn-gate-primary" @click="handleEmailSubmit" :disabled="!isValidEmail">
-              {{ gateReason === 'exit_intent' ? 'Send My Hook' : 'Save & Unlock' }}
+              {{ gateReason === 'exit_intent' ? 'Send It To Me' : 'Save & Unlock' }}
             </button>
           </div>
 
           <ul class="soft-gate-benefits">
-            <li>✓ Your hook saved forever</li>
+            <li>✓ Your {{ contentNoun }} saved forever</li>
             <li>✓ Bio Generator (free)</li>
             <li>✓ Elevator Pitch (free)</li>
             <li>✓ Tagline Generator (free)</li>
@@ -241,7 +241,7 @@
           <div class="soft-gate-icon">✅</div>
           <h3 class="soft-gate-title">Check your inbox!</h3>
           <p class="soft-gate-text">
-            We've sent your hook to {{ captureEmail }}
+            We've sent your {{ contentNoun }} to {{ captureEmail }}
           </p>
           <button class="btn-gate-primary" @click="handleGateSignup">
             Create Account to Edit & Save More
@@ -278,11 +278,11 @@ const props = defineProps({
   },
   defaultHeading: {
     type: String,
-    default: 'Create your hook'
+    default: 'Create your content'
   },
   defaultDescription: {
     type: String,
-    default: 'Fill in the fields below to generate your hook.'
+    default: 'Fill in the fields below to generate.'
   },
   isGenerating: {
     type: Boolean,
@@ -294,7 +294,7 @@ const props = defineProps({
   },
   generateButtonText: {
     type: String,
-    default: 'Generate Authority Hook'
+    default: 'Generate'
   },
   generatingText: {
     type: String,
@@ -302,7 +302,7 @@ const props = defineProps({
   },
   rateLimitText: {
     type: String,
-    default: 'Generate up to 3 hooks per day, no signup required.'
+    default: 'Generate up to 3 times per day, no signup required.'
   },
   upgradeText: {
     type: String,
@@ -310,7 +310,7 @@ const props = defineProps({
   },
   previewLabel: {
     type: String,
-    default: 'Sample Authority Hook'
+    default: 'Sample Result'
   },
   previewContent: {
     type: String,
@@ -318,7 +318,22 @@ const props = defineProps({
   },
   defaultPreviewContent: {
     type: String,
-    default: '"I help [WHO] achieve [WHAT] in [TIMEFRAME] without [PAIN POINT]."'
+    default: 'Your generated content will appear here.'
+  },
+  /**
+   * Label shown above the generated result (e.g., "Your Biography", "Your Authority Hook")
+   */
+  resultLabel: {
+    type: String,
+    default: 'Your Result'
+  },
+  /**
+   * Noun for the generated content (e.g., "biography", "hook", "pitch")
+   * Used in messages like "Don't lose your {contentNoun}!"
+   */
+  contentNoun: {
+    type: String,
+    default: 'content'
   },
   showSaveCta: {
     type: Boolean,
@@ -326,7 +341,7 @@ const props = defineProps({
   },
   saveCtaPrefix: {
     type: String,
-    default: 'Happy with this hook?'
+    default: 'Happy with this?'
   },
   saveCtaLink: {
     type: String,
@@ -349,39 +364,14 @@ const props = defineProps({
    */
   relatedTools: {
     type: Array,
-    default: () => [
-      {
-        slug: 'biography',
-        name: 'Biography Generator',
-        description: 'Turn your hook into a full professional bio',
-        icon: '📝',
-        url: '/tools/biography/',
-        requiresAccount: false
-      },
-      {
-        slug: 'elevator-pitch',
-        name: 'Elevator Pitch',
-        description: 'Expand your hook into a 30-second pitch',
-        icon: '🎯',
-        url: '/tools/elevator-pitch/',
-        requiresAccount: false
-      },
-      {
-        slug: 'podcast-pitch',
-        name: 'Podcast Pitch Template',
-        description: 'Use your hook to pitch podcast hosts',
-        icon: '🎙️',
-        url: '/tools/podcast-pitch/',
-        requiresAccount: true
-      }
-    ]
+    default: () => []
   },
   /**
-   * Tool slug for storage keys
+   * Tool slug for storage keys (required for proper rate limiting)
    */
   toolSlug: {
     type: String,
-    default: 'authority-hook'
+    required: true
   },
   /**
    * Whether user is logged in
