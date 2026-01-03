@@ -273,6 +273,16 @@ class GMKB_Tool_Pages {
             }
 
             wp_localize_script('gmkb-standalone-tools', 'gmkbStandaloneTools', $standalone_data);
+
+            // Add social login HTML for soft gate modal (Nextend Social Login integration)
+            $social_login_html = $this->get_social_login_html();
+            if (!empty($social_login_html)) {
+                wp_add_inline_script(
+                    'gmkb-standalone-tools',
+                    'window.gmkbSocialLogin = ' . wp_json_encode(array('html' => $social_login_html)) . ';',
+                    'before'
+                );
+            }
         }
     }
 
@@ -2457,6 +2467,43 @@ get_footer();
      */
     public function get_base_path() {
         return $this->base_path;
+    }
+
+    /**
+     * Get social login HTML for soft gate modal
+     *
+     * Renders social login buttons from Nextend Social Login plugin if available.
+     * Returns empty string if plugin is not active or user is already logged in.
+     *
+     * @return string Rendered social login HTML
+     */
+    private function get_social_login_html() {
+        // Don't show social login for logged-in users
+        if (is_user_logged_in()) {
+            return '';
+        }
+
+        // Check if Nextend Social Login is active
+        if (!class_exists('NextendSocialLogin', false)) {
+            return '';
+        }
+
+        // Capture the shortcode output
+        ob_start();
+
+        // Render Nextend Social Login buttons
+        // The shortcode renders login buttons for all configured providers
+        echo do_shortcode('[nextend_social_login]');
+
+        $html = ob_get_clean();
+
+        // Only return if we got actual content (not just whitespace)
+        $html = trim($html);
+        if (empty($html)) {
+            return '';
+        }
+
+        return $html;
     }
 }
 

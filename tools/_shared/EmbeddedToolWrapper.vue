@@ -211,6 +211,14 @@
             }}
           </p>
 
+          <!-- Social Login Buttons (if available) -->
+          <div v-if="socialLoginHtml" class="social-login-section">
+            <div class="social-login-buttons" v-html="socialLoginHtml"></div>
+            <div class="social-login-divider">
+              <span>or continue with email</span>
+            </div>
+          </div>
+
           <div class="email-capture-form">
             <input
               v-model="captureEmail"
@@ -386,6 +394,14 @@ const props = defineProps({
   registerUrl: {
     type: String,
     default: '/register/'
+  },
+  /**
+   * Pre-rendered social login HTML (from Nextend Social Login or similar plugin)
+   * If provided, displays social login buttons in the soft gate modal
+   */
+  socialLoginHtml: {
+    type: String,
+    default: ''
   }
 });
 
@@ -1376,6 +1392,57 @@ watch(() => props.isGenerating, (newVal, oldVal) => {
 
 .email-input::placeholder {
   color: var(--mkcg-text-light, #94a3b8);
+}
+
+/* ========================================
+   SOCIAL LOGIN SECTION
+   ======================================== */
+.social-login-section {
+  margin-bottom: 16px;
+}
+
+.social-login-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Style overrides for Nextend Social Login buttons */
+.social-login-buttons :deep(.nsl-container) {
+  text-align: center;
+}
+
+.social-login-buttons :deep(.nsl-container-buttons) {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.social-login-buttons :deep(.nsl-button) {
+  width: 100%;
+  border-radius: 8px !important;
+  font-family: inherit !important;
+}
+
+.social-login-divider {
+  display: flex;
+  align-items: center;
+  margin: 16px 0;
+  gap: 12px;
+}
+
+.social-login-divider::before,
+.social-login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--mkcg-border, #e2e8f0);
+}
+
+.social-login-divider span {
+  font-size: 13px;
+  color: var(--mkcg-text-light, #94a3b8);
+  white-space: nowrap;
 }
 
 /* ========================================

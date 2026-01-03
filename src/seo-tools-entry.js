@@ -338,6 +338,9 @@ function initializeEmbeddedTool(container) {
     // Check if user is logged in (check both possible sources)
     const isLoggedIn = !!(window.gmkbStandaloneTools?.isLoggedIn || window.gmkbUserData?.isLoggedIn);
 
+    // Get social login HTML (rendered by WordPress via Nextend Social Login or similar)
+    const socialLoginHtml = window.gmkbSocialLogin?.html || '';
+
     // Build related tools array from meta.relatedToolSlugs
     const relatedTools = buildRelatedTools(meta.relatedToolSlugs || [], toolSlug);
 
@@ -419,6 +422,7 @@ function initializeEmbeddedTool(container) {
                     relatedTools: relatedTools,
                     testimonial: testimonial,
                     registerUrl: '/register/',
+                    socialLoginHtml: socialLoginHtml,
                     // Event handlers
                     onIntentChange: this.handleIntentChange,
                     onGenerate: this.handleGenerate,
