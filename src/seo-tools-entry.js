@@ -37,208 +37,106 @@ import { createPinia } from 'pinia';
 import './styles/ai-standalone.css';
 import './styles/ai-shared.css';
 
-// Import generator components from consolidated /tools/ directories
-// Message Builder tools
-import BiographyWidget from '@tools/biography/Widget.vue';
-import TopicsWidget from '@tools/topics/Widget.vue';
-import QuestionsWidget from '@tools/questions/Widget.vue';
-import TaglineWidget from '@tools/tagline/Widget.vue';
-import GuestIntroWidget from '@tools/guest-intro/Widget.vue';
-import AuthorityHookWidget from '@tools/authority-hook/Widget.vue';
-import OffersWidget from '@tools/offers/Widget.vue';
-
-// Value Builder tools
-import ElevatorPitchWidget from '@tools/elevator-pitch/Widget.vue';
-import SoundBiteWidget from '@tools/sound-bite/Widget.vue';
-import PersonaWidget from '@tools/persona/Widget.vue';
-import ImpactIntroWidget from '@tools/impact-intro/Widget.vue';
-
-// Strategy tools
-import BrandStoryWidget from '@tools/brand-story/Widget.vue';
-import SignatureStoryWidget from '@tools/signature-story/Widget.vue';
-import CredibilityStoryWidget from '@tools/credibility-story/Widget.vue';
-import FrameworkWidget from '@tools/framework/Widget.vue';
-import InterviewPrepWidget from '@tools/interview-prep/Widget.vue';
-
-// Content tools
-import BlogWidget from '@tools/blog/Widget.vue';
-import ContentRepurposerWidget from '@tools/content-repurpose/Widget.vue';
-import PressReleaseWidget from '@tools/press-release/Widget.vue';
-
-// Social/Email tools
-import SocialPostWidget from '@tools/social-post/Widget.vue';
-import EmailWidget from '@tools/email/Widget.vue';
-import NewsletterWidget from '@tools/newsletter/Widget.vue';
-import YoutubeDescriptionWidget from '@tools/youtube-description/Widget.vue';
-import PodcastNotesWidget from '@tools/podcast-notes/Widget.vue';
-import SeoOptimizerWidget from '@tools/seo-optimizer/Widget.vue';
-import PodcastDetailsExtractorWidget from '@tools/podcast-details-extractor/Widget.vue';
+// Auto-discovery: Import all tool modules from centralized registry
+import { toolModules, EmbeddedToolWrapper } from '@tools';
 
 // Page components for directory and tool pages
 import ToolDirectoryPage from '@tools/ToolDirectoryPage.vue';
 import ToolLandingPage from '@tools/ToolLandingPage.vue';
 import DynamicToolPage from '@tools/DynamicToolPage.vue';
 
-// PLG Embedded tool components
-import { EmbeddedToolWrapper } from '@tools/_shared';
-import AuthorityHookGenerator from '@tools/authority-hook/Generator.vue';
-import BiographyGenerator from '@tools/biography/Generator.vue';
-import ElevatorPitchGenerator from '@tools/elevator-pitch/Generator.vue';
-import TaglineGenerator from '@tools/tagline/Generator.vue';
-import TopicsGenerator from '@tools/topics/Generator.vue';
-import QuestionsGenerator from '@tools/questions/Generator.vue';
-import GuestIntroGenerator from '@tools/guest-intro/Generator.vue';
-import OffersGenerator from '@tools/offers/Generator.vue';
-import ImpactIntroGenerator from '@tools/impact-intro/Generator.vue';
-import PersonaGenerator from '@tools/persona/Generator.vue';
-import SoundBiteGenerator from '@tools/sound-bite/Generator.vue';
-import BrandStoryGenerator from '@tools/brand-story/Generator.vue';
-import SignatureStoryGenerator from '@tools/signature-story/Generator.vue';
-import CredibilityStoryGenerator from '@tools/credibility-story/Generator.vue';
-import FrameworkGenerator from '@tools/framework/Generator.vue';
-import InterviewPrepGenerator from '@tools/interview-prep/Generator.vue';
-import BlogGenerator from '@tools/blog/Generator.vue';
-import ContentRepurposeGenerator from '@tools/content-repurpose/Generator.vue';
-import PressReleaseGenerator from '@tools/press-release/Generator.vue';
-import SocialPostGenerator from '@tools/social-post/Generator.vue';
-import EmailGenerator from '@tools/email/Generator.vue';
-import NewsletterGenerator from '@tools/newsletter/Generator.vue';
-import YoutubeDescriptionGenerator from '@tools/youtube-description/Generator.vue';
-import PodcastNotesGenerator from '@tools/podcast-notes/Generator.vue';
-import SeoOptimizerGenerator from '@tools/seo-optimizer/Generator.vue';
-import PodcastDetailsExtractorGenerator from '@tools/podcast-details-extractor/Generator.vue';
+/**
+ * Legacy alias mappings for backwards compatibility
+ * Maps legacy slugs to their canonical tool slugs
+ */
+const LEGACY_ALIASES = {
+    'biography-generator': 'biography',
+    'topics-generator': 'topics',
+    'questions-generator': 'questions',
+    'tagline-generator': 'tagline',
+    'guest-intro-generator': 'guest-intro',
+    'authority-hook-builder': 'authority-hook',
+    'offers-generator': 'offers',
+    'elevator-pitch-generator': 'elevator-pitch',
+    'sound-bite-generator': 'sound-bite',
+    'persona-generator': 'persona',
+    'impact-intro-builder': 'impact-intro',
+    'brand-story-generator': 'brand-story',
+    'signature-story-generator': 'signature-story',
+    'credibility-story-generator': 'credibility-story',
+    'framework-builder': 'framework',
+    'interview-prep-generator': 'interview-prep',
+    'blog-generator': 'blog',
+    'content-repurposer': 'content-repurpose',
+    'press-release-generator': 'press-release',
+    'social-post-generator': 'social-post',
+    'email-writer': 'email',
+    'newsletter-writer': 'newsletter',
+    'youtube-description-generator': 'youtube-description',
+    'podcast-notes-generator': 'podcast-notes',
+};
+
+/**
+ * Build component registry dynamically from toolModules
+ * Auto-discovers Widget components from each tool's index.js
+ */
+function buildToolComponents() {
+    const components = {};
+
+    Object.entries(toolModules).forEach(([slug, module]) => {
+        // Get Widget component (default export is Widget for most tools)
+        const Widget = module.Widget || module.default;
+        if (Widget) {
+            components[slug] = Widget;
+        }
+    });
+
+    // Add legacy aliases
+    Object.entries(LEGACY_ALIASES).forEach(([alias, canonicalSlug]) => {
+        if (components[canonicalSlug]) {
+            components[alias] = components[canonicalSlug];
+        }
+    });
+
+    return components;
+}
+
+/**
+ * Build embedded generators registry dynamically from toolModules
+ * Auto-discovers Generator components from each tool's index.js
+ */
+function buildEmbeddedGenerators() {
+    const generators = {};
+
+    Object.entries(toolModules).forEach(([slug, module]) => {
+        // Get Generator component
+        const Generator = module.Generator;
+        if (Generator) {
+            generators[slug] = Generator;
+        }
+    });
+
+    // Add legacy aliases
+    Object.entries(LEGACY_ALIASES).forEach(([alias, canonicalSlug]) => {
+        if (generators[canonicalSlug]) {
+            generators[alias] = generators[canonicalSlug];
+        }
+    });
+
+    return generators;
+}
 
 /**
  * Component registry for data-gmkb-tool attribute values
- * Supports both short names and legacy full slugs for backwards compatibility
+ * Auto-generated from toolModules with legacy alias support
  */
-const TOOL_COMPONENTS = {
-    // Message Builder tools
-    'biography': BiographyWidget,
-    'biography-generator': BiographyWidget,
-    'topics': TopicsWidget,
-    'topics-generator': TopicsWidget,
-    'questions': QuestionsWidget,
-    'questions-generator': QuestionsWidget,
-    'tagline': TaglineWidget,
-    'tagline-generator': TaglineWidget,
-    'guest-intro': GuestIntroWidget,
-    'guest-intro-generator': GuestIntroWidget,
-    'authority-hook': AuthorityHookWidget,
-    'authority-hook-builder': AuthorityHookWidget,
-    'offers': OffersWidget,
-    'offers-generator': OffersWidget,
-
-    // Value Builder tools
-    'elevator-pitch': ElevatorPitchWidget,
-    'elevator-pitch-generator': ElevatorPitchWidget,
-    'sound-bite': SoundBiteWidget,
-    'sound-bite-generator': SoundBiteWidget,
-    'persona': PersonaWidget,
-    'persona-generator': PersonaWidget,
-    'impact-intro': ImpactIntroWidget,
-    'impact-intro-builder': ImpactIntroWidget,
-
-    // Strategy tools
-    'brand-story': BrandStoryWidget,
-    'brand-story-generator': BrandStoryWidget,
-    'signature-story': SignatureStoryWidget,
-    'signature-story-generator': SignatureStoryWidget,
-    'credibility-story': CredibilityStoryWidget,
-    'credibility-story-generator': CredibilityStoryWidget,
-    'framework': FrameworkWidget,
-    'framework-builder': FrameworkWidget,
-    'interview-prep': InterviewPrepWidget,
-    'interview-prep-generator': InterviewPrepWidget,
-
-    // Content tools
-    'blog': BlogWidget,
-    'blog-generator': BlogWidget,
-    'content-repurpose': ContentRepurposerWidget,
-    'content-repurposer': ContentRepurposerWidget,
-    'press-release': PressReleaseWidget,
-    'press-release-generator': PressReleaseWidget,
-
-    // Social/Email tools
-    'social-post': SocialPostWidget,
-    'social-post-generator': SocialPostWidget,
-    'email': EmailWidget,
-    'email-writer': EmailWidget,
-    'newsletter': NewsletterWidget,
-    'newsletter-writer': NewsletterWidget,
-    'youtube-description': YoutubeDescriptionWidget,
-    'youtube-description-generator': YoutubeDescriptionWidget,
-    'podcast-notes': PodcastNotesWidget,
-    'podcast-notes-generator': PodcastNotesWidget,
-    'seo-optimizer': SeoOptimizerWidget,
-    'podcast-details-extractor': PodcastDetailsExtractorWidget,
-};
+const TOOL_COMPONENTS = buildToolComponents();
 
 /**
  * Generator component registry for PLG embedded mode
- * Maps tool slugs to their full Generator components (not widgets)
+ * Auto-generated from toolModules with legacy alias support
  */
-const EMBEDDED_GENERATORS = {
-    // Message Builder tools
-    'authority-hook': AuthorityHookGenerator,
-    'authority-hook-builder': AuthorityHookGenerator,
-    'biography': BiographyGenerator,
-    'biography-generator': BiographyGenerator,
-    'topics': TopicsGenerator,
-    'topics-generator': TopicsGenerator,
-    'questions': QuestionsGenerator,
-    'questions-generator': QuestionsGenerator,
-    'tagline': TaglineGenerator,
-    'tagline-generator': TaglineGenerator,
-    'guest-intro': GuestIntroGenerator,
-    'guest-intro-generator': GuestIntroGenerator,
-    'offers': OffersGenerator,
-    'offers-generator': OffersGenerator,
-
-    // Value Builder tools
-    'elevator-pitch': ElevatorPitchGenerator,
-    'elevator-pitch-generator': ElevatorPitchGenerator,
-    'sound-bite': SoundBiteGenerator,
-    'sound-bite-generator': SoundBiteGenerator,
-    'persona': PersonaGenerator,
-    'persona-generator': PersonaGenerator,
-    'impact-intro': ImpactIntroGenerator,
-    'impact-intro-builder': ImpactIntroGenerator,
-
-    // Strategy tools
-    'brand-story': BrandStoryGenerator,
-    'brand-story-generator': BrandStoryGenerator,
-    'signature-story': SignatureStoryGenerator,
-    'signature-story-generator': SignatureStoryGenerator,
-    'credibility-story': CredibilityStoryGenerator,
-    'credibility-story-generator': CredibilityStoryGenerator,
-    'framework': FrameworkGenerator,
-    'framework-builder': FrameworkGenerator,
-    'interview-prep': InterviewPrepGenerator,
-    'interview-prep-generator': InterviewPrepGenerator,
-
-    // Content tools
-    'blog': BlogGenerator,
-    'blog-generator': BlogGenerator,
-    'content-repurpose': ContentRepurposeGenerator,
-    'content-repurposer': ContentRepurposeGenerator,
-    'press-release': PressReleaseGenerator,
-    'press-release-generator': PressReleaseGenerator,
-
-    // Social/Email tools
-    'social-post': SocialPostGenerator,
-    'social-post-generator': SocialPostGenerator,
-    'email': EmailGenerator,
-    'email-writer': EmailGenerator,
-    'newsletter': NewsletterGenerator,
-    'newsletter-writer': NewsletterGenerator,
-    'youtube-description': YoutubeDescriptionGenerator,
-    'youtube-description-generator': YoutubeDescriptionGenerator,
-    'podcast-notes': PodcastNotesGenerator,
-    'podcast-notes-generator': PodcastNotesGenerator,
-    'seo-optimizer': SeoOptimizerGenerator,
-    'podcast-details-extractor': PodcastDetailsExtractorGenerator,
-};
+const EMBEDDED_GENERATORS = buildEmbeddedGenerators();
 
 /**
  * Store mounted app instances for cleanup

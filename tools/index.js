@@ -41,9 +41,9 @@ import * as seoOptimizer from './seo-optimizer';
 import * as podcastDetailsExtractor from './podcast-details-extractor';
 
 /**
- * All tool modules
+ * All tool modules - exported for use by entry points
  */
-const toolModules = {
+export const toolModules = {
   biography,
   topics,
   questions,
