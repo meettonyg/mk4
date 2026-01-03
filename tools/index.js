@@ -38,6 +38,7 @@ import * as newsletter from './newsletter';
 import * as youtubeDescription from './youtube-description';
 import * as podcastNotes from './podcast-notes';
 import * as seoOptimizer from './seo-optimizer';
+import * as podcastDetailsExtractor from './podcast-details-extractor';
 
 /**
  * All tool modules
@@ -67,7 +68,8 @@ const toolModules = {
   newsletter,
   'youtube-description': youtubeDescription,
   'podcast-notes': podcastNotes,
-  'seo-optimizer': seoOptimizer
+  'seo-optimizer': seoOptimizer,
+  'podcast-details-extractor': podcastDetailsExtractor
 };
 
 /**

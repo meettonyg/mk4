@@ -1,0 +1,188 @@
+{
+  "slug": "podcast-details-extractor",
+  "name": "Podcast Details Extractor",
+  "shortDescription": "Extract podcast information and contact details from Apple Podcasts or Google Podcasts URLs.",
+  "longDescription": "The Podcast Details Extractor helps you quickly gather essential information about any podcast from its Apple Podcasts or Google Podcasts URL. Get the podcast owner's email, show description, category, and more - all the details you need to craft the perfect pitch.",
+  "category": "strategy",
+  "icon": "MicrophoneIcon",
+  "useCases": [
+    "Research podcasts before pitching as a guest",
+    "Find podcast owner contact information",
+    "Gather show details for personalized outreach",
+    "Analyze podcast categories and descriptions",
+    "Build a database of target podcasts"
+  ],
+  "keyBenefits": [
+    "Instant access to podcast details",
+    "Find owner email addresses",
+    "No manual research required",
+    "Works with Apple and Google Podcasts"
+  ],
+  "targetAudience": [
+    "Podcast guests",
+    "PR professionals",
+    "Authors and speakers",
+    "Marketing agencies",
+    "Podcast booking services"
+  ],
+  "seo": {
+    "title": "Free Podcast Details Extractor | Find Podcast Contact Info",
+    "description": "Extract podcast owner emails, show descriptions, and contact details from Apple Podcasts and Google Podcasts URLs. Free tool for podcast guest outreach.",
+    "keywords": [
+      "podcast details extractor",
+      "podcast contact finder",
+      "podcast email finder",
+      "podcast research tool",
+      "apple podcasts extractor",
+      "podcast pitch research",
+      "podcast guest outreach"
+    ],
+    "canonicalPath": "/tools/podcast-details-extractor/"
+  },
+  "landingContent": {
+    "hero": {
+      "badge": "Free Tool",
+      "h1": "Podcast Details Extractor",
+      "subhead": "Extract podcast owner emails, descriptions, and show details from any Apple or Google Podcasts URL.",
+      "microProof": [
+        { "icon": "check", "text": "Works with Apple Podcasts" },
+        { "icon": "check", "text": "Works with Google Podcasts" },
+        { "icon": "check", "text": "Free to use" }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "Podcast Research",
+      "h1": "Podcast Details Extractor",
+      "subhead": "Get the information you need to craft personalized podcast pitches.",
+      "microProof": [
+        { "icon": "check", "text": "Unlimited extractions" },
+        { "icon": "check", "text": "Export to your dashboard" },
+        { "icon": "check", "text": "Save to pitch lists" }
+      ]
+    },
+    "intents": [
+      {
+        "id": "research",
+        "label": "Research a Podcast",
+        "contextHeading": "Get podcast details instantly",
+        "contextDescription": "Enter a podcast URL and extract all the information you need for your outreach.",
+        "formLabels": {
+          "url": "Podcast URL"
+        },
+        "formPlaceholders": {
+          "url": "e.g., https://podcasts.apple.com/us/podcast/..."
+        }
+      },
+      {
+        "id": "contact",
+        "label": "Find Contact Info",
+        "contextHeading": "Find the podcast owner's email",
+        "contextDescription": "Extract the owner email and other contact details from the podcast RSS feed.",
+        "formLabels": {
+          "url": "Podcast URL"
+        },
+        "formPlaceholders": {
+          "url": "e.g., https://podcasts.apple.com/us/podcast/..."
+        }
+      }
+    ],
+    "definition": {
+      "title": "What is a Podcast Details Extractor?",
+      "content": "A Podcast Details Extractor is a tool that retrieves metadata from podcast directories like Apple Podcasts and Google Podcasts. It pulls information from the podcast's RSS feed including the show title, description, owner name, email address, categories, and more - saving you hours of manual research."
+    },
+    "tips": [
+      "Use the owner email to send personalized pitch emails directly to decision makers",
+      "Check the last episode date to ensure the podcast is still active",
+      "Review the podcast category to tailor your pitch to their audience",
+      "Read the show description to understand their content focus"
+    ],
+    "examples": [
+      {
+        "title": "Apple Podcasts URL",
+        "content": "https://podcasts.apple.com/us/podcast/the-tim-ferriss-show/id863897795"
+      },
+      {
+        "title": "Google Podcasts URL",
+        "content": "https://podcasts.google.com/feed/..."
+      }
+    ],
+    "howItWorks": [
+      {
+        "step": 1,
+        "title": "Paste Podcast URL",
+        "description": "Enter an Apple Podcasts or Google Podcasts URL."
+      },
+      {
+        "step": 2,
+        "title": "Extract Details",
+        "description": "We fetch the podcast's RSS feed and extract key information."
+      },
+      {
+        "step": 3,
+        "title": "Use the Data",
+        "description": "Copy the owner email and details for your outreach."
+      }
+    ],
+    "features": [
+      {
+        "title": "Email Extraction",
+        "description": "Find the podcast owner's email address from the RSS feed.",
+        "icon": "EnvelopeIcon"
+      },
+      {
+        "title": "Show Details",
+        "description": "Get title, description, category, and publication dates.",
+        "icon": "DocumentTextIcon"
+      },
+      {
+        "title": "Cover Art",
+        "description": "View the podcast's cover image and branding.",
+        "icon": "PhotoIcon"
+      },
+      {
+        "title": "Multi-Platform",
+        "description": "Works with both Apple Podcasts and Google Podcasts URLs.",
+        "icon": "GlobeAltIcon"
+      }
+    ],
+    "faq": [
+      {
+        "question": "What podcast platforms are supported?",
+        "answer": "Currently we support Apple Podcasts and Google Podcasts URLs. Both platforms provide access to the podcast's RSS feed which contains the metadata."
+      },
+      {
+        "question": "Will I always get an email address?",
+        "answer": "Not all podcasts include an owner email in their RSS feed. The availability depends on what information the podcast owner has provided."
+      },
+      {
+        "question": "Is this tool free to use?",
+        "answer": "Yes, the Podcast Details Extractor is completely free to use. Registered users get unlimited extractions and can save podcasts to their dashboard."
+      },
+      {
+        "question": "Can I use this for cold outreach?",
+        "answer": "Yes, this tool is designed to help you research podcasts for guest pitching. Always personalize your outreach based on the show details you extract."
+      }
+    ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "This tool saved me hours of research. I found the owner email for 20 podcasts in minutes instead of digging through websites.",
+        "author": "Sarah M.",
+        "role": "PR Consultant",
+        "rating": "4.8"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your podcast guesting workflow",
+      "description": "Don't just extract details. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": ["Apple Podcasts", "Google Podcasts"],
+    "relatedToolSlugs": [
+      "guest-intro-generator",
+      "interview-prep",
+      "topics",
+      "authority-hook"
+    ]
+  }
+}
