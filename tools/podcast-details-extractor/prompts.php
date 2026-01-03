@@ -15,38 +15,27 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-return [
-    /**
-     * Validation rules
-     */
-    'validation' => [
-        'required' => ['url'],
-        'defaults' => []
-    ],
+/**
+ * Podcast Details Extractor Class
+ *
+ * Handles RSS feed fetching and parsing for podcast information extraction.
+ */
+class GMKB_Podcast_Details_Extractor {
 
     /**
-     * Tool type - not an AI tool, but a data extractor
+     * Rate limit: maximum requests per IP per hour
      */
-    'type' => 'extractor',
+    const RATE_LIMIT_MAX_REQUESTS = 30;
 
     /**
-     * Register REST API endpoint
+     * Rate limit window in seconds (1 hour)
      */
-    'rest_endpoint' => [
-        'namespace' => 'podcast-details-extractor/v1',
-        'route' => '/info',
-        'methods' => 'GET',
-        'callback' => 'gmkb_podcast_extractor_rest_callback',
-        'args' => [
-            'url' => [
-                'required' => true,
-                'type' => 'string',
-                'validate_callback' => function ($value) {
-                    return filter_var($value, FILTER_VALIDATE_URL) !== false;
-                },
-            ],
-        ],
-    ],
+    const RATE_LIMIT_WINDOW = 3600;
+
+    /**
+     * Transient prefix for rate limiting
+     */
+    const RATE_LIMIT_PREFIX = 'gmkb_pde_rate_';
 
     /**
      * Get iTunes/Apple Podcasts RSS URL from podcast page URL
@@ -54,7 +43,7 @@ return [
      * @param string $apple_podcast_url Apple Podcasts URL
      * @return string|false RSS feed URL or false on failure
      */
-    'get_itunes_rss_url' => function($apple_podcast_url) {
+    public function get_itunes_rss_url($apple_podcast_url) {
         preg_match('/id(\d+)/', $apple_podcast_url, $matches);
         if (!$matches) {
             return false;
@@ -77,7 +66,7 @@ return [
         }
 
         return false;
-    },
+    }
 
     /**
      * Get Google Podcasts RSS URL from podcast page URL
@@ -85,13 +74,13 @@ return [
      * @param string $google_podcast_url Google Podcasts URL
      * @return string|false RSS feed URL or false on failure
      */
-    'get_google_podcast_rss_url' => function($google_podcast_url) {
+    public function get_google_podcast_rss_url($google_podcast_url) {
         preg_match('/aHR0c[^"&]+/', $google_podcast_url, $matches);
         if ($matches) {
             return urldecode(base64_decode($matches[0]));
         }
         return false;
-    },
+    }
 
     /**
      * Determine platform and get RSS URL
@@ -99,24 +88,22 @@ return [
      * @param string $url Podcast URL (Apple or Google)
      * @return string|false RSS feed URL or false on failure
      */
-    'get_podcast_rss_url' => function($url) {
-        $config = include __FILE__;
-
+    public function get_podcast_rss_url($url) {
         if (strpos($url, 'podcasts.apple.com') !== false) {
-            return $config['get_itunes_rss_url']($url);
+            return $this->get_itunes_rss_url($url);
         } elseif (strpos($url, 'podcasts.google.com') !== false) {
-            return $config['get_google_podcast_rss_url']($url);
+            return $this->get_google_podcast_rss_url($url);
         }
         return false;
-    },
+    }
 
     /**
      * Extract podcast information from RSS feed
      *
      * @param string $rss_feed_url URL to the podcast RSS feed
-     * @return array Podcast information
+     * @return array Podcast information or error array
      */
-    'get_podcast_info' => function($rss_feed_url) {
+    public function get_podcast_info($rss_feed_url) {
         // Fetch RSS feed
         $response = wp_remote_get($rss_feed_url, [
             'timeout' => 30,
@@ -180,58 +167,123 @@ return [
         return array_filter($podcast_info, function($value) {
             return $value !== '';
         });
-    },
+    }
 
     /**
-     * Options for UI (not applicable for this tool)
+     * Check if request is rate limited
+     *
+     * @return bool|WP_Error True if allowed, WP_Error if rate limited
      */
-    'options' => []
-];
+    public function check_rate_limit() {
+        // Logged-in users get higher limits
+        if (is_user_logged_in()) {
+            return true;
+        }
 
-/**
- * REST API callback for podcast extraction
- *
- * @param WP_REST_Request $request REST request object
- * @return array|WP_Error Podcast information or error
- */
-function gmkb_podcast_extractor_rest_callback($request) {
-    $url = $request->get_param('url');
-    $config = include __DIR__ . '/prompts.php';
+        $ip = $this->get_client_ip();
+        $transient_key = self::RATE_LIMIT_PREFIX . md5($ip);
+        $request_count = get_transient($transient_key);
 
-    // Validate URL format
-    if (!filter_var($url, FILTER_VALIDATE_URL)) {
-        return new WP_Error('invalid_url', 'Invalid URL format.', ['status' => 400]);
+        if ($request_count === false) {
+            // First request from this IP
+            set_transient($transient_key, 1, self::RATE_LIMIT_WINDOW);
+            return true;
+        }
+
+        if ($request_count >= self::RATE_LIMIT_MAX_REQUESTS) {
+            return new WP_Error(
+                'rate_limited',
+                'Too many requests. Please try again later.',
+                ['status' => 429]
+            );
+        }
+
+        // Increment counter
+        set_transient($transient_key, $request_count + 1, self::RATE_LIMIT_WINDOW);
+        return true;
     }
 
-    // Check if URL is from supported platforms
-    if (strpos($url, 'podcasts.apple.com') === false && strpos($url, 'podcasts.google.com') === false) {
-        return new WP_Error('unsupported_platform', 'URL must be from Apple Podcasts or Google Podcasts.', ['status' => 400]);
+    /**
+     * Get client IP address
+     *
+     * @return string Client IP address
+     */
+    private function get_client_ip() {
+        $ip_keys = [
+            'HTTP_CF_CONNECTING_IP', // Cloudflare
+            'HTTP_X_FORWARDED_FOR',
+            'HTTP_X_REAL_IP',
+            'REMOTE_ADDR'
+        ];
+
+        foreach ($ip_keys as $key) {
+            if (!empty($_SERVER[$key])) {
+                $ip = $_SERVER[$key];
+                // Handle comma-separated IPs (X-Forwarded-For)
+                if (strpos($ip, ',') !== false) {
+                    $ip = trim(explode(',', $ip)[0]);
+                }
+                if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                    return $ip;
+                }
+            }
+        }
+
+        return '0.0.0.0';
     }
 
-    // Get RSS feed URL
-    $rss_feed_url = $config['get_podcast_rss_url']($url);
+    /**
+     * Handle REST API request
+     *
+     * @param WP_REST_Request $request REST request object
+     * @return array|WP_Error Podcast information or error
+     */
+    public function handle_rest_request($request) {
+        // Check rate limit
+        $rate_check = $this->check_rate_limit();
+        if (is_wp_error($rate_check)) {
+            return $rate_check;
+        }
 
-    if (!$rss_feed_url) {
-        return new WP_Error('rss_not_found', 'Could not find RSS feed for this podcast.', ['status' => 404]);
+        $url = $request->get_param('url');
+
+        // Validate URL format
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            return new WP_Error('invalid_url', 'Invalid URL format.', ['status' => 400]);
+        }
+
+        // Check if URL is from supported platforms
+        if (strpos($url, 'podcasts.apple.com') === false && strpos($url, 'podcasts.google.com') === false) {
+            return new WP_Error('unsupported_platform', 'URL must be from Apple Podcasts or Google Podcasts.', ['status' => 400]);
+        }
+
+        // Get RSS feed URL
+        $rss_feed_url = $this->get_podcast_rss_url($url);
+
+        if (!$rss_feed_url) {
+            return new WP_Error('rss_not_found', 'Could not find RSS feed for this podcast.', ['status' => 404]);
+        }
+
+        // Get podcast information
+        $podcast_info = $this->get_podcast_info($rss_feed_url);
+
+        if (isset($podcast_info['error'])) {
+            return new WP_Error('extraction_failed', $podcast_info['error'], ['status' => 500]);
+        }
+
+        return $podcast_info;
     }
-
-    // Get podcast information
-    $podcast_info = $config['get_podcast_info']($rss_feed_url);
-
-    if (isset($podcast_info['error'])) {
-        return new WP_Error('extraction_failed', $podcast_info['error'], ['status' => 500]);
-    }
-
-    return $podcast_info;
 }
 
 /**
  * Register REST routes for podcast extractor
  */
 add_action('rest_api_init', function() {
+    $extractor = new GMKB_Podcast_Details_Extractor();
+
     register_rest_route('podcast-details-extractor/v1', '/info', [
         'methods' => 'GET',
-        'callback' => 'gmkb_podcast_extractor_rest_callback',
+        'callback' => [$extractor, 'handle_rest_request'],
         'permission_callback' => '__return_true',
         'args' => [
             'url' => [
@@ -240,7 +292,20 @@ add_action('rest_api_init', function() {
                 'validate_callback' => function ($value) {
                     return filter_var($value, FILTER_VALIDATE_URL) !== false;
                 },
+                'sanitize_callback' => 'esc_url_raw',
             ],
         ],
     ]);
 });
+
+/**
+ * Return tool configuration for ToolDiscovery
+ */
+return [
+    'validation' => [
+        'required' => ['url'],
+        'defaults' => []
+    ],
+    'type' => 'extractor',
+    'options' => []
+];

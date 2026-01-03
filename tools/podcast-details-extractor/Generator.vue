@@ -22,7 +22,7 @@
             type="url"
             class="generator__field-input"
             placeholder="e.g., https://podcasts.apple.com/us/podcast/the-tim-ferriss-show/id863897795"
-            @keyup.enter="handleExtract"
+            @keyup.enter="onExtract"
           />
           <p class="generator__field-helper">
             Paste a podcast URL from Apple Podcasts or Google Podcasts
@@ -37,7 +37,7 @@
           class="generator__button generator__button--call-to-action"
           :class="{ 'generator__button--loading': isExtracting }"
           :disabled="!canExtract || isExtracting"
-          @click="handleExtract"
+          @click="onExtract"
         >
           <svg v-if="!isExtracting" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"/>
@@ -50,7 +50,7 @@
       <!-- Error Display -->
       <div v-if="error" class="generator__error">
         <p>{{ error }}</p>
-        <button type="button" class="generator__button generator__button--outline" @click="handleExtract">
+        <button type="button" class="generator__button generator__button--outline" @click="onExtract">
           Try Again
         </button>
       </div>
@@ -174,7 +174,7 @@
     target-component="PodcastDetails"
     :show-cta="!hasResults"
     @copy="copyAllDetails"
-    @retry="handleExtract"
+    @retry="onExtract"
   >
     <!-- Input Form -->
     <div class="gmkb-ai-form">
@@ -186,7 +186,7 @@
           type="url"
           class="gmkb-ai-input"
           placeholder="e.g., https://podcasts.apple.com/us/podcast/..."
-          @keyup.enter="handleExtract"
+          @keyup.enter="onExtract"
         />
         <span class="gmkb-ai-hint">
           Apple Podcasts or Google Podcasts URL
@@ -199,7 +199,7 @@
         class="gmkb-ai-button gmkb-ai-button--primary gmkb-ai-button--full"
         :class="{ 'gmkb-ai-button--loading': isExtracting }"
         :disabled="!canExtract || isExtracting"
-        @click="handleExtract"
+        @click="onExtract"
       >
         {{ isExtracting ? 'Extracting...' : 'Extract Details' }}
       </button>
@@ -243,16 +243,14 @@
 </template>
 
 <script setup>
-import { ref, computed, inject } from 'vue';
+import { computed } from 'vue';
+import { usePodcastExtractor } from './usePodcastExtractor.js';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
+import { GeneratorLayout, GuidancePanel } from '../_shared';
 
 // Compact widget components (integrated mode)
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
-
-// Inject profile data from EmbeddedToolWrapper (for embedded mode)
-const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
 
 const props = defineProps({
   mode: {
@@ -274,14 +272,22 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['applied', 'extracted', 'preview-update', 'update:can-generate']);
+const emit = defineEmits(['applied', 'extracted', 'preview-update']);
 
-// Local state
-const podcastUrl = ref('');
-const podcastInfo = ref({});
-const isExtracting = ref(false);
-const error = ref('');
-const emailCopied = ref(false);
+// Use shared composable
+const {
+  podcastUrl,
+  podcastInfo,
+  isExtracting,
+  error,
+  emailCopied,
+  canExtract,
+  hasResults,
+  formatDate,
+  handleExtract,
+  copyEmail,
+  copyAllDetails
+} = usePodcastExtractor();
 
 /**
  * Process steps for guidance panel
@@ -311,114 +317,20 @@ const examples = [
   },
   {
     title: 'Google Podcasts:',
-    description: 'https://podcasts.google.com/feed/aHR0cHM6Ly9...'
+    description: 'https://podcasts.google.com/feed/aHR0cHM6Ly...'
   }
 ];
 
 /**
- * Validation - can extract
+ * Handle extract and emit event
  */
-const canExtract = computed(() => {
-  const url = podcastUrl.value.trim();
-  return url && (url.includes('podcasts.apple.com') || url.includes('podcasts.google.com'));
-});
-
-/**
- * Has results
- */
-const hasResults = computed(() => {
-  return Object.keys(podcastInfo.value).length > 0 && podcastInfo.value.title;
-});
-
-/**
- * Format date for display
- */
-const formatDate = (dateString) => {
-  try {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  } catch {
-    return dateString;
-  }
-};
-
-/**
- * Handle extract button click
- */
-const handleExtract = async () => {
-  if (!canExtract.value) return;
-
-  isExtracting.value = true;
-  error.value = '';
-  podcastInfo.value = {};
-
-  try {
-    const response = await fetch(
-      `/wp-json/podcast-details-extractor/v1/info?url=${encodeURIComponent(podcastUrl.value)}`
-    );
-
-    if (!response.ok) {
-      throw new Error('Failed to extract podcast details');
-    }
-
-    const data = await response.json();
-
-    if (data.error) {
-      throw new Error(data.error);
-    }
-
-    podcastInfo.value = data;
-
+const onExtract = async () => {
+  const result = await handleExtract();
+  if (result) {
     emit('extracted', {
       url: podcastUrl.value,
-      info: data
+      info: result
     });
-  } catch (err) {
-    console.error('[PodcastExtractor] Extraction failed:', err);
-    error.value = err.message || 'Failed to extract podcast details. Please check the URL and try again.';
-  } finally {
-    isExtracting.value = false;
-  }
-};
-
-/**
- * Copy email to clipboard
- */
-const copyEmail = async () => {
-  if (!podcastInfo.value.itunes_owner_email) return;
-
-  try {
-    await navigator.clipboard.writeText(podcastInfo.value.itunes_owner_email);
-    emailCopied.value = true;
-    setTimeout(() => {
-      emailCopied.value = false;
-    }, 2000);
-  } catch (err) {
-    console.error('[PodcastExtractor] Copy failed:', err);
-  }
-};
-
-/**
- * Copy all details to clipboard
- */
-const copyAllDetails = async () => {
-  const details = [];
-
-  if (podcastInfo.value.title) details.push(`Title: ${podcastInfo.value.title}`);
-  if (podcastInfo.value.itunes_category) details.push(`Category: ${podcastInfo.value.itunes_category}`);
-  if (podcastInfo.value.description) details.push(`Description: ${podcastInfo.value.description}`);
-  if (podcastInfo.value.itunes_owner_name) details.push(`Owner: ${podcastInfo.value.itunes_owner_name}`);
-  if (podcastInfo.value.itunes_owner_email) details.push(`Email: ${podcastInfo.value.itunes_owner_email}`);
-  if (podcastInfo.value.link) details.push(`Website: ${podcastInfo.value.link}`);
-  if (podcastInfo.value.lastBuildDate) details.push(`Last Episode: ${formatDate(podcastInfo.value.lastBuildDate)}`);
-
-  try {
-    await navigator.clipboard.writeText(details.join('\n'));
-  } catch (err) {
-    console.error('[PodcastExtractor] Copy failed:', err);
   }
 };
 

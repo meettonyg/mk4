@@ -7,12 +7,16 @@ export { default as Widget } from './Widget.vue';
 // Default export is the widget (for shortcode/embedding use)
 export { default } from './Widget.vue';
 
+// Import meta from the single source of truth
+import metaJson from './meta.json';
+
+// Export meta derived from meta.json to ensure consistency
 export const meta = {
-  id: 'podcast-details-extractor',
-  slug: 'podcast-details-extractor',
-  name: 'Podcast Details Extractor',
-  title: 'Podcast Details Extractor',
-  description: 'Extract podcast information and contact details from Apple Podcasts or Google Podcasts URLs.',
-  category: 'strategy',
-  icon: 'podcast'
+  id: metaJson.slug,
+  slug: metaJson.slug,
+  name: metaJson.name,
+  title: metaJson.name,
+  description: metaJson.shortDescription,
+  category: metaJson.category,
+  icon: metaJson.icon
 };
