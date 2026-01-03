@@ -148,7 +148,8 @@ const componentImports = {
   newsletter: () => import('./newsletter/Generator.vue'),
   'youtube-description': () => import('./youtube-description/Generator.vue'),
   'podcast-notes': () => import('./podcast-notes/Generator.vue'),
-  'seo-optimizer': () => import('./seo-optimizer/Generator.vue')
+  'seo-optimizer': () => import('./seo-optimizer/Generator.vue'),
+  'podcast-details-extractor': () => import('./podcast-details-extractor/Generator.vue')
 };
 
 /**
