@@ -72,6 +72,7 @@ import NewsletterWidget from '@tools/newsletter/Widget.vue';
 import YoutubeDescriptionWidget from '@tools/youtube-description/Widget.vue';
 import PodcastNotesWidget from '@tools/podcast-notes/Widget.vue';
 import SeoOptimizerWidget from '@tools/seo-optimizer/Widget.vue';
+import PodcastDetailsExtractorWidget from '@tools/podcast-details-extractor/Widget.vue';
 
 // Page components for directory and tool pages
 import ToolDirectoryPage from '@tools/ToolDirectoryPage.vue';
@@ -105,6 +106,7 @@ import NewsletterGenerator from '@tools/newsletter/Generator.vue';
 import YoutubeDescriptionGenerator from '@tools/youtube-description/Generator.vue';
 import PodcastNotesGenerator from '@tools/podcast-notes/Generator.vue';
 import SeoOptimizerGenerator from '@tools/seo-optimizer/Generator.vue';
+import PodcastDetailsExtractorGenerator from '@tools/podcast-details-extractor/Generator.vue';
 
 /**
  * Component registry for data-gmkb-tool attribute values
@@ -169,6 +171,7 @@ const TOOL_COMPONENTS = {
     'podcast-notes': PodcastNotesWidget,
     'podcast-notes-generator': PodcastNotesWidget,
     'seo-optimizer': SeoOptimizerWidget,
+    'podcast-details-extractor': PodcastDetailsExtractorWidget,
 };
 
 /**
@@ -234,6 +237,7 @@ const EMBEDDED_GENERATORS = {
     'podcast-notes': PodcastNotesGenerator,
     'podcast-notes-generator': PodcastNotesGenerator,
     'seo-optimizer': SeoOptimizerGenerator,
+    'podcast-details-extractor': PodcastDetailsExtractorGenerator,
 };
 
 /**

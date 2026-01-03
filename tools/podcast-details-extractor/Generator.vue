@@ -243,7 +243,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, watch, defineExpose } from 'vue';
 import { usePodcastExtractor } from './usePodcastExtractor.js';
 
 // Full layout components (standalone mode)
@@ -272,7 +272,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['applied', 'extracted', 'preview-update']);
+const emit = defineEmits(['applied', 'extracted', 'preview-update', 'update:can-generate', 'generated']);
 
 // Use shared composable
 const {
@@ -331,10 +331,40 @@ const onExtract = async () => {
       url: podcastUrl.value,
       info: result
     });
+    // Emit generated event for EmbeddedToolWrapper compatibility
+    emit('generated', {
+      url: podcastUrl.value,
+      info: result
+    });
+    // Emit preview update with podcast info for display
+    emit('preview-update', {
+      previewHtml: result.title ? `<strong>${result.title}</strong>` + (result.itunes_owner_email ? `<br>Email: ${result.itunes_owner_email}` : '') : ''
+    });
   }
 };
 
+/**
+ * Method exposed for EmbeddedToolWrapper to call
+ * Alias for onExtract to match expected interface
+ */
+const handleGenerate = onExtract;
+
 const currentIntent = computed(() => props.intent || null);
+
+/**
+ * Watch canExtract and emit update:can-generate for EmbeddedToolWrapper
+ */
+watch(canExtract, (newValue) => {
+  emit('update:can-generate', newValue);
+}, { immediate: true });
+
+/**
+ * Expose handleGenerate for parent components to call via ref
+ */
+defineExpose({
+  handleGenerate,
+  onExtract
+});
 </script>
 
 <style scoped>
