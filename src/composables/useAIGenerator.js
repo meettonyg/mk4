@@ -5,6 +5,8 @@
  * Provides the core logic for making AI generation API calls.
  * Works in both integrated (builder) and standalone (free tools) modes.
  *
+ * Validation rules are now defined in each tool's meta.json for tool independence.
+ *
  * @package GMKB
  * @subpackage Composables
  * @version 1.0.0
@@ -13,6 +15,7 @@
 
 import { ref, computed } from 'vue';
 import { useAIStore } from '../stores/ai';
+import { toolModules } from '../../tools/index.js';
 
 /**
  * Get REST URL from available sources
@@ -52,6 +55,66 @@ function generateCacheKey(type, params) {
 }
 
 /**
+ * Get validation configuration from a tool's meta.json
+ * @param {string} type - The API type (e.g., 'biography', 'topics')
+ * @returns {Object|null} Validation config or null if not found
+ */
+function getValidationConfig(type) {
+  // Find the tool module by apiType
+  for (const [, module] of Object.entries(toolModules)) {
+    if (module.meta?.apiType === type && module.meta?.validation) {
+      return module.meta.validation;
+    }
+  }
+  return null;
+}
+
+/**
+ * Apply validation based on declarative config from tool meta
+ * @param {Object} config - Validation configuration from meta.json
+ * @param {Object} params - Parameters to validate
+ * @returns {{valid: boolean, message?: string}}
+ */
+function applyValidation(config, params) {
+  if (!config) {
+    // No validation config, assume valid
+    return { valid: true };
+  }
+
+  // Check 'anyOf' validation - at least one of these fields must have a value
+  if (config.anyOf && Array.isArray(config.anyOf)) {
+    const hasAnyValue = config.anyOf.some(field => {
+      const value = params[field];
+      return value !== undefined && value !== null && value !== '';
+    });
+
+    if (!hasAnyValue) {
+      return {
+        valid: false,
+        message: config.errorMessage || `At least one of these fields is required: ${config.anyOf.join(', ')}`
+      };
+    }
+  }
+
+  // Check 'required' validation - all of these fields must have values
+  if (config.required && Array.isArray(config.required)) {
+    const missingFields = config.required.filter(field => {
+      const value = params[field];
+      return value === undefined || value === null || value === '';
+    });
+
+    if (missingFields.length > 0) {
+      return {
+        valid: false,
+        message: config.errorMessage || `Required fields missing: ${missingFields.join(', ')}`
+      };
+    }
+  }
+
+  return { valid: true };
+}
+
+/**
  * Core AI Generator composable
  *
  * @param {string} type - Content type (biography, topics, questions, etc.)
@@ -86,6 +149,7 @@ export function useAIGenerator(type) {
 
   /**
    * Validate required fields for the content type
+   * Uses validation config from tool's meta.json for tool independence
    * @param {object} params Parameters to validate
    * @returns {{valid: boolean, message?: string}}
    */
@@ -94,52 +158,11 @@ export function useAIGenerator(type) {
       return { valid: false, message: 'Parameters are required' };
     }
 
-    // Type-specific validation
-    switch (type) {
-      case 'biography':
-        if (!params.name && !params.authorityHook) {
-          return { valid: false, message: 'Name or authority hook is required for biography generation' };
-        }
-        break;
+    // Get validation config from tool meta
+    const validationConfig = getValidationConfig(type);
 
-      case 'topics':
-        if (!params.expertise && !params.authorityHook) {
-          return { valid: false, message: 'Expertise or authority hook is required for topics generation' };
-        }
-        break;
-
-      case 'questions':
-        if (!params.topics && !params.authorityHook) {
-          return { valid: false, message: 'Topics or authority hook is required for questions generation' };
-        }
-        break;
-
-      case 'tagline':
-        if (!params.authorityHook && !params.name) {
-          return { valid: false, message: 'Authority hook or name is required for tagline generation' };
-        }
-        break;
-
-      case 'guest_intro':
-        if (!params.biography && !params.credentials) {
-          return { valid: false, message: 'Biography or credentials is required for guest intro generation' };
-        }
-        break;
-
-      case 'offers':
-        if (!params.services && !params.authorityHook) {
-          return { valid: false, message: 'Services or authority hook is required for offers generation' };
-        }
-        break;
-
-      case 'authority_hook':
-        if (!params.who && !params.what) {
-          return { valid: false, message: 'At least "who" or "what" is required for authority hook generation' };
-        }
-        break;
-    }
-
-    return { valid: true };
+    // Apply validation using tool-defined rules
+    return applyValidation(validationConfig, params);
   };
 
   /**

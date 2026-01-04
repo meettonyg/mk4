@@ -2,8 +2,25 @@
   "name": "Framework Builder",
   "slug": "framework-builder",
   "shortDescription": "Create proprietary frameworks and methodologies that position you as a thought leader.",
+  "emoji": "🔷",
+  "apiType": "framework",
+  "fieldMapping": {
+    "type": "object",
+    "fields": {
+      "name": "framework_name",
+      "steps": "framework_steps",
+      "description": "framework_description",
+      "content": "framework_description"
+    }
+  },
+  "validation": {
+    "anyOf": ["process", "approach", "skill", "outcome"],
+    "errorMessage": "Process or approach details are required for framework generation"
+  },
   "longDescription": "The Framework Builder helps you develop and articulate your unique methodology or process. Turn your approach into a branded, teachable framework that differentiates you and establishes intellectual property.",
   "category": "strategy",
+  "buttonText": "Create Framework",
+  "supportsProfileSave": true,
   "icon": "CubeTransparentIcon",
   "componentName": "FrameworkGenerator",
   "useCases": [
@@ -41,23 +58,41 @@
   },
   "landingContent": {
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "\u2728 Free AI Tool",
       "h1": "Free Framework Builder",
       "subhead": "Develop a branded methodology that differentiates you, establishes thought leadership, and creates intellectual property.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 4,000+ experts" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        {
+          "icon": "\u2713",
+          "text": "Used by 4,000+ experts"
+        },
+        {
+          "icon": "\u2713",
+          "text": "No signup required"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Free forever"
+        }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "\u2728 AI Tool",
       "h1": "Framework Builder",
       "subhead": "Turn your expertise into a proprietary framework that sets you apart.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        {
+          "icon": "\u2713",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Syncs across tools"
+        }
       ]
     },
     "intents": [
@@ -118,15 +153,15 @@
     "examples": [
       {
         "title": "The SCALE Method",
-        "content": "Strategy → Capacity → Automation → Leadership → Exit. A 5-step framework for building a sellable business."
+        "content": "Strategy \u2192 Capacity \u2192 Automation \u2192 Leadership \u2192 Exit. A 5-step framework for building a sellable business."
       },
       {
         "title": "The 3P Framework",
-        "content": "Position → Promote → Profit. A simple system for monetizing your expertise through speaking."
+        "content": "Position \u2192 Promote \u2192 Profit. A simple system for monetizing your expertise through speaking."
       },
       {
         "title": "The Authority Ladder",
-        "content": "Visibility → Credibility → Authority → Legacy. The progression every thought leader follows to lasting influence."
+        "content": "Visibility \u2192 Credibility \u2192 Authority \u2192 Legacy. The progression every thought leader follows to lasting influence."
       }
     ],
     "howItWorks": [
@@ -200,7 +235,12 @@
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
-    "compatibility": ["Courses", "Coaching Programs", "Books", "Keynotes"],
+    "compatibility": [
+      "Courses",
+      "Coaching Programs",
+      "Books",
+      "Keynotes"
+    ],
     "relatedToolSlugs": [
       "authority-hook-builder",
       "signature-story-generator",

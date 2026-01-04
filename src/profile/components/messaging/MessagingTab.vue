@@ -214,18 +214,29 @@ import { ref, reactive, computed } from 'vue';
 import { useProfileStore } from '../../stores/profile.js';
 import EditablePanel from '../layout/EditablePanel.vue';
 import { AiSparkleIcon } from '../icons';
+import { toolModules } from '../../../../tools/index.js';
 
 const store = useProfileStore();
 
-// URL constants
-const BIOGRAPHY_GENERATOR_BASE_URL = '/tools/biography-generator/';
-const GUEST_INTRO_GENERATOR_BASE_URL = '/tools/guest-intro-generator/';
-const TAGLINE_GENERATOR_BASE_URL = '/tools/tagline-generator/';
-const AUTHORITY_HOOK_BUILDER_BASE_URL = '/tools/authority-hook-builder/';
-const IMPACT_INTRO_BUILDER_BASE_URL = '/tools/impact-intro-builder/';
+/**
+ * Get tool URL from tool meta using apiType
+ * Tool URLs are derived from each tool's slug in meta.json for tool independence
+ * @param {string} apiType - The tool's API type (e.g., 'biography', 'tagline')
+ * @returns {string} The tool's base URL
+ */
+const getToolBaseUrl = (apiType) => {
+    for (const [, module] of Object.entries(toolModules)) {
+        if (module.meta?.apiType === apiType && module.meta?.slug) {
+            return `/tools/${module.meta.slug}/`;
+        }
+    }
+    // Fallback to apiType-based URL if not found
+    return `/tools/${apiType.replace(/_/g, '-')}/`;
+};
 
 // Generate dynamic URLs with entry parameter
-const buildToolUrl = (baseUrl) => {
+const buildToolUrl = (apiType) => {
+    const baseUrl = getToolBaseUrl(apiType);
     const entry = store.postData?.slug;
     if (entry) {
         return `${baseUrl}?frm_action=edit&entry=${entry}`;
@@ -233,11 +244,12 @@ const buildToolUrl = (baseUrl) => {
     return baseUrl;
 };
 
-const biographyGeneratorUrl = computed(() => buildToolUrl(BIOGRAPHY_GENERATOR_BASE_URL));
-const guestIntroGeneratorUrl = computed(() => buildToolUrl(GUEST_INTRO_GENERATOR_BASE_URL));
-const taglineGeneratorUrl = computed(() => buildToolUrl(TAGLINE_GENERATOR_BASE_URL));
-const authorityHookBuilderUrl = computed(() => buildToolUrl(AUTHORITY_HOOK_BUILDER_BASE_URL));
-const impactIntroBuilderUrl = computed(() => buildToolUrl(IMPACT_INTRO_BUILDER_BASE_URL));
+// Computed URLs using tool-defined slugs from meta.json
+const biographyGeneratorUrl = computed(() => buildToolUrl('biography'));
+const guestIntroGeneratorUrl = computed(() => buildToolUrl('guest_intro'));
+const taglineGeneratorUrl = computed(() => buildToolUrl('tagline'));
+const authorityHookBuilderUrl = computed(() => buildToolUrl('authority_hook'));
+const impactIntroBuilderUrl = computed(() => buildToolUrl('impact_intro'));
 
 // Helper to preserve line breaks in text
 const formatWithLineBreaks = (text) => {

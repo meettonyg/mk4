@@ -2,8 +2,11 @@
   "name": "Press Release Generator",
   "slug": "press-release-generator",
   "shortDescription": "Create professional press releases for announcements and media outreach.",
+  "emoji": "📰",
   "longDescription": "The Press Release Generator helps you create properly formatted press releases that journalists actually want to read. From product launches to company news, generate media-ready announcements that follow AP style guidelines.",
   "category": "content",
+  "buttonText": "Generate Press Release",
+  "supportsProfileSave": false,
   "icon": "NewspaperIcon",
   "componentName": "PressReleaseGenerator",
   "useCases": [
@@ -41,23 +44,41 @@
   },
   "landingContent": {
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "\u2728 Free AI Tool",
       "h1": "Free Press Release Generator",
       "subhead": "Create professional, AP-style press releases that are ready for media distribution and news coverage.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 4,000+ PR pros" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        {
+          "icon": "\u2713",
+          "text": "Used by 4,000+ PR pros"
+        },
+        {
+          "icon": "\u2713",
+          "text": "No signup required"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Free forever"
+        }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "\u2728 AI Tool",
       "h1": "Press Release Generator",
       "subhead": "Create press releases journalists actually read and publish.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        {
+          "icon": "\u2713",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Syncs across tools"
+        }
       ]
     },
     "intents": [
@@ -118,15 +139,15 @@
     "examples": [
       {
         "title": "Product Launch",
-        "content": "HEADLINE: [Company] Launches [Product] to Help [Audience] Achieve [Outcome] — LEAD: [City, Date] — [Company] today announced the launch of [Product], a new solution that helps [audience] [achieve specific outcome]."
+        "content": "HEADLINE: [Company] Launches [Product] to Help [Audience] Achieve [Outcome] \u2014 LEAD: [City, Date] \u2014 [Company] today announced the launch of [Product], a new solution that helps [audience] [achieve specific outcome]."
       },
       {
         "title": "Partnership Announcement",
-        "content": "HEADLINE: [Company A] Partners with [Company B] to Expand [Service/Market] — QUOTE: 'This partnership brings together [Company A's strength] with [Company B's strength] to deliver unprecedented value to [target audience].'"
+        "content": "HEADLINE: [Company A] Partners with [Company B] to Expand [Service/Market] \u2014 QUOTE: 'This partnership brings together [Company A's strength] with [Company B's strength] to deliver unprecedented value to [target audience].'"
       },
       {
         "title": "Award/Recognition",
-        "content": "HEADLINE: [Company] Named to [List/Award] for [Achievement] — LEAD: [Company], a leader in [industry], has been recognized by [organization] for [specific achievement]."
+        "content": "HEADLINE: [Company] Named to [List/Award] for [Achievement] \u2014 LEAD: [Company], a leader in [industry], has been recognized by [organization] for [specific achievement]."
       }
     ],
     "howItWorks": [
@@ -200,7 +221,12 @@
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
-    "compatibility": ["PRWeb", "Business Wire", "Direct Outreach", "Newsroom"],
+    "compatibility": [
+      "PRWeb",
+      "Business Wire",
+      "Direct Outreach",
+      "Newsroom"
+    ],
     "relatedToolSlugs": [
       "blog-generator",
       "social-post-generator",

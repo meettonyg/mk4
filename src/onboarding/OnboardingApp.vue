@@ -83,10 +83,51 @@
             </div>
 
             <template v-else>
+                <!-- Profile Selector (only show if multiple profiles) -->
+                <div v-if="store.hasMultipleProfiles" class="profile-context-section">
+                    <div class="profile-context-header">
+                        <label class="profile-context-label">View progress for:</label>
+                        <div class="profile-context-controls">
+                            <select
+                                v-model="selectedProfileId"
+                                @change="handleProfileChange(selectedProfileId)"
+                                class="profile-context-select"
+                            >
+                                <option :value="null">Best Profile (Auto)</option>
+                                <option
+                                    v-for="profile in store.availableProfiles"
+                                    :key="profile.id"
+                                    :value="profile.id"
+                                >
+                                    {{ profile.title || profile.name || `Profile #${profile.id}` }}
+                                </option>
+                            </select>
+                            <button
+                                v-if="store.isViewingSpecificProfile"
+                                @click="resetToBestProfile"
+                                class="profile-context-reset"
+                                title="Reset to best profile view"
+                            >
+                                <i class="fas fa-undo"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <p v-if="store.isViewingSpecificProfile" class="profile-context-hint">
+                        Showing progress for <strong>{{ store.currentProfileDisplay }}</strong>.
+                        Profile-specific tasks will be evaluated against this profile only.
+                    </p>
+                    <p v-else class="profile-context-hint">
+                        Showing progress for your most complete profile automatically.
+                    </p>
+                </div>
+
                 <!-- Progress Section -->
                 <div class="progress-section">
                     <div class="progress-section-header">
                         <h2 class="progress-title">Your Guest Interview progress</h2>
+                        <span v-if="store.isViewingSpecificProfile" class="progress-profile-badge">
+                            {{ store.currentProfileDisplay }}
+                        </span>
                     </div>
 
                     <div class="progress-bar-container">
@@ -211,10 +252,23 @@ const store = useOnboardingStore();
 
 // Local state
 const showDetails = ref(false);
+const selectedProfileId = ref(null);
 
 // Toggle details visibility
 const toggleDetails = () => {
     showDetails.value = !showDetails.value;
+};
+
+// Handle profile change from selector
+const handleProfileChange = async (profileId) => {
+    selectedProfileId.value = profileId;
+    await store.setCurrentProfile(profileId);
+};
+
+// Reset to "Best Profile" view
+const resetToBestProfile = async () => {
+    selectedProfileId.value = null;
+    await store.setCurrentProfile(null);
 };
 
 // Sorted rewards by threshold
@@ -544,6 +598,100 @@ onMounted(async () => {
 .error-banner p {
     color: #dc2626;
     margin: 0;
+}
+
+/* Profile Context Section */
+.profile-context-section {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.profile-context-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.profile-context-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #475569;
+}
+
+.profile-context-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.profile-context-select {
+    padding: 8px 32px 8px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #1e293b;
+    background: white;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 8px center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    min-width: 200px;
+}
+
+.profile-context-select:focus {
+    outline: none;
+    border-color: #14b8a6;
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.15);
+}
+
+.profile-context-reset {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: white;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.profile-context-reset:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+    border-color: #94a3b8;
+}
+
+.profile-context-hint {
+    margin: 12px 0 0 0;
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.5;
+}
+
+.profile-context-hint strong {
+    color: #14b8a6;
+    font-weight: 600;
+}
+
+/* Progress Profile Badge */
+.progress-profile-badge {
+    font-size: 12px;
+    font-weight: 600;
+    color: #14b8a6;
+    background: rgba(20, 184, 166, 0.1);
+    padding: 4px 10px;
+    border-radius: 12px;
 }
 
 /* Progress Section */

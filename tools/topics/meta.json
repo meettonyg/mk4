@@ -2,8 +2,22 @@
   "name": "Topics Generator",
   "slug": "topics-generator",
   "shortDescription": "Generate compelling speaking topics and podcast episode ideas tailored to your expertise.",
+  "emoji": "💡",
+  "apiType": "topics",
+  "fieldMapping": {
+    "type": "indexed_array",
+    "prefix": "topic_",
+    "maxItems": 5,
+    "sourceKeys": ["title", "text", "value"]
+  },
+  "validation": {
+    "anyOf": ["expertise", "authorityHook"],
+    "errorMessage": "Expertise or authority hook is required for topics generation"
+  },
   "longDescription": "The Topics Generator helps speakers, podcast hosts, and thought leaders create engaging topics that resonate with their target audience. Whether you need keynote ideas, podcast episode concepts, or workshop themes, this AI-powered tool generates relevant, actionable topics based on your expertise and audience.",
   "category": "message-builder",
+  "buttonText": "Generate Topics",
+  "supportsProfileSave": true,
   "icon": "ChatBubbleBottomCenterTextIcon",
   "componentName": "TopicsGenerator",
   "useCases": [
@@ -42,23 +56,41 @@
   },
   "landingContent": {
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "\u2728 Free AI Tool",
       "h1": "Free Topics Generator",
       "subhead": "Generate compelling speaking topics and podcast episode ideas tailored to your expertise in seconds.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 8,000+ speakers" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        {
+          "icon": "\u2713",
+          "text": "Used by 8,000+ speakers"
+        },
+        {
+          "icon": "\u2713",
+          "text": "No signup required"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Free forever"
+        }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "\u2728 AI Tool",
       "h1": "Topics Generator",
       "subhead": "Generate speaking topics and podcast ideas that resonate with your audience.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        {
+          "icon": "\u2713",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Syncs across tools"
+        }
       ]
     },
     "intents": [
@@ -107,7 +139,7 @@
     ],
     "definition": {
       "title": "What Makes a Great Speaking Topic?",
-      "content": "A great speaking topic combines your unique expertise with your audience's pressing needs. It's specific enough to deliver real value, yet broad enough to explore deeply. The best topics promise transformation—a clear before and after for your audience."
+      "content": "A great speaking topic combines your unique expertise with your audience's pressing needs. It's specific enough to deliver real value, yet broad enough to explore deeply. The best topics promise transformation\u2014a clear before and after for your audience."
     },
     "formula": "Provide solutions that focus on one concept per topic while remaining general enough to expand upon.",
     "tips": [
@@ -119,15 +151,15 @@
     "examples": [
       {
         "title": "Marketing Podcast",
-        "content": "The 3-step framework for landing high-profile podcast interviews • How to craft a compelling story that makes you memorable • Converting podcast appearances into high-ticket clients"
+        "content": "The 3-step framework for landing high-profile podcast interviews \u2022 How to craft a compelling story that makes you memorable \u2022 Converting podcast appearances into high-ticket clients"
       },
       {
         "title": "Business Growth Podcast",
-        "content": "The 5 most common mistakes when scaling SaaS businesses • Building a team that can operate without your daily involvement • Creating systems that allow for sustainable growth"
+        "content": "The 5 most common mistakes when scaling SaaS businesses \u2022 Building a team that can operate without your daily involvement \u2022 Creating systems that allow for sustainable growth"
       },
       {
         "title": "Author/Creator Podcast",
-        "content": "Turning your expertise into a bestselling book • Building an audience that eagerly awaits your content • Leveraging your book to open doors to speaking and media"
+        "content": "Turning your expertise into a bestselling book \u2022 Building an audience that eagerly awaits your content \u2022 Leveraging your book to open doors to speaking and media"
       }
     ],
     "howItWorks": [
@@ -201,7 +233,12 @@
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
-    "compatibility": ["Spotify", "Apple Podcasts", "YouTube", "LinkedIn"],
+    "compatibility": [
+      "Spotify",
+      "Apple Podcasts",
+      "YouTube",
+      "LinkedIn"
+    ],
     "relatedToolSlugs": [
       "questions-generator",
       "guest-intro-generator",

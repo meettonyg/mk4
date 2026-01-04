@@ -2,8 +2,21 @@
   "name": "Credibility Story Generator",
   "slug": "credibility-story-generator",
   "shortDescription": "Create stories that establish your authority and build trust with your audience.",
+  "emoji": "🏆",
+  "apiType": "credibility_story",
+  "fieldMapping": {
+    "type": "simple",
+    "targetField": "credibility_story",
+    "sourceKeys": ["text", "value", "content", "story"]
+  },
+  "validation": {
+    "anyOf": ["client", "outcome", "recognition", "experience"],
+    "errorMessage": "Client results or credentials are required for credibility story generation"
+  },
   "longDescription": "The Credibility Story Generator helps you craft narratives that demonstrate your expertise through experience, results, and recognition. Build trust with potential clients by showing, not just telling, why you're the right choice.",
   "category": "strategy",
+  "buttonText": "Create Story",
+  "supportsProfileSave": true,
   "icon": "ShieldCheckIcon",
   "componentName": "CredibilityStoryGenerator",
   "useCases": [
@@ -41,23 +54,41 @@
   },
   "landingContent": {
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "\u2728 Free AI Tool",
       "h1": "Free Credibility Story Generator",
       "subhead": "Create credibility stories that demonstrate your authority and build trust with potential clients through proven results.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 6,000+ professionals" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        {
+          "icon": "\u2713",
+          "text": "Used by 6,000+ professionals"
+        },
+        {
+          "icon": "\u2713",
+          "text": "No signup required"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Free forever"
+        }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "\u2728 AI Tool",
       "h1": "Credibility Story Generator",
       "subhead": "Show your expertise through powerful stories that build instant trust.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        {
+          "icon": "\u2713",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Syncs across tools"
+        }
       ]
     },
     "intents": [
@@ -108,7 +139,7 @@
       "title": "What is a Credibility Story?",
       "content": "A credibility story is a brief narrative that demonstrates your expertise through evidence rather than claims. Instead of saying 'I'm an expert,' you tell a story that shows your expertise in action through results, recognition, or experience."
     },
-    "formula": "[SITUATION] → [ACTION] → [RESULT] = Credibility Story",
+    "formula": "[SITUATION] \u2192 [ACTION] \u2192 [RESULT] = Credibility Story",
     "tips": [
       "Lead with the client's challenge - make the listener see themselves in the story",
       "Be specific - vague results feel fabricated; specific numbers build trust",
@@ -200,7 +231,12 @@
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
-    "compatibility": ["Sales Calls", "Proposals", "Websites", "Podcasts"],
+    "compatibility": [
+      "Sales Calls",
+      "Proposals",
+      "Websites",
+      "Podcasts"
+    ],
     "relatedToolSlugs": [
       "brand-story-generator",
       "signature-story-generator",

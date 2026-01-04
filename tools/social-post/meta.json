@@ -2,8 +2,11 @@
   "name": "Social Post Generator",
   "slug": "social-post-generator",
   "shortDescription": "Create engaging social media posts optimized for each platform.",
+  "emoji": "📱",
   "longDescription": "The Social Post Generator helps you create platform-optimized social media content that drives engagement. From LinkedIn thought leadership to Twitter threads to Instagram captions, generate posts that resonate with your audience.",
   "category": "social-email",
+  "buttonText": "Generate Post",
+  "supportsProfileSave": false,
   "icon": "ShareIcon",
   "componentName": "SocialPostGenerator",
   "useCases": [
@@ -41,23 +44,41 @@
   },
   "landingContent": {
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "\u2728 Free AI Tool",
       "h1": "Free Social Post Generator",
       "subhead": "Generate platform-optimized social media content that engages your audience and grows your following.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 12,000+ creators" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        {
+          "icon": "\u2713",
+          "text": "Used by 12,000+ creators"
+        },
+        {
+          "icon": "\u2713",
+          "text": "No signup required"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Free forever"
+        }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "\u2728 AI Tool",
       "h1": "Social Post Generator",
       "subhead": "Create social posts that stop the scroll and drive engagement.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        {
+          "icon": "\u2713",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Syncs across tools"
+        }
       ]
     },
     "intents": [
@@ -106,7 +127,7 @@
     ],
     "definition": {
       "title": "What Makes Social Posts Perform?",
-      "content": "High-performing social posts have three elements: a strong hook that stops the scroll, valuable content that earns engagement, and a clear call-to-action that drives interaction. Format matters too—write for how people actually read on each platform."
+      "content": "High-performing social posts have three elements: a strong hook that stops the scroll, valuable content that earns engagement, and a clear call-to-action that drives interaction. Format matters too\u2014write for how people actually read on each platform."
     },
     "formula": "[HOOK] + [VALUE/STORY] + [INSIGHT] + [CTA] = Engaging Social Post",
     "tips": [
@@ -122,7 +143,7 @@
       },
       {
         "title": "Twitter Thread Opener",
-        "content": "I spent $50,000 on courses before I learned this:\n\nThe best business advice is free.\n\nHere are 10 lessons that cost me nothing but changed everything 🧵"
+        "content": "I spent $50,000 on courses before I learned this:\n\nThe best business advice is free.\n\nHere are 10 lessons that cost me nothing but changed everything \ud83e\uddf5"
       },
       {
         "title": "Instagram Caption",
@@ -200,7 +221,12 @@
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
-    "compatibility": ["LinkedIn", "Twitter/X", "Instagram", "Facebook"],
+    "compatibility": [
+      "LinkedIn",
+      "Twitter/X",
+      "Instagram",
+      "Facebook"
+    ],
     "relatedToolSlugs": [
       "content-repurposer",
       "sound-bite-generator",

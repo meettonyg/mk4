@@ -2,8 +2,22 @@
   "name": "Questions Generator",
   "slug": "questions-generator",
   "shortDescription": "Create interview questions and suggested answers for media appearances and podcasts.",
+  "emoji": "❓",
+  "apiType": "questions",
+  "fieldMapping": {
+    "type": "indexed_array",
+    "prefix": "question_",
+    "maxItems": 25,
+    "sourceKeys": ["question", "text", "value"]
+  },
+  "validation": {
+    "anyOf": ["topics", "authorityHook"],
+    "errorMessage": "Topics or authority hook is required for questions generation"
+  },
   "longDescription": "The Questions Generator helps you prepare for interviews by creating relevant questions and thoughtful answers based on your expertise. Perfect for podcast appearances, press interviews, and panel discussions, this tool ensures you're always ready to deliver compelling responses.",
   "category": "message-builder",
+  "buttonText": "Generate Questions",
+  "supportsProfileSave": true,
   "icon": "QuestionMarkCircleIcon",
   "componentName": "QuestionsGenerator",
   "useCases": [
@@ -41,23 +55,41 @@
   },
   "landingContent": {
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "\u2728 Free AI Tool",
       "h1": "Free Interview Questions Generator",
       "subhead": "Generate thoughtful interview questions and compelling answers tailored to your expertise and interview context.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 7,000+ guests" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        {
+          "icon": "\u2713",
+          "text": "Used by 7,000+ guests"
+        },
+        {
+          "icon": "\u2713",
+          "text": "No signup required"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Free forever"
+        }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "\u2728 AI Tool",
       "h1": "Interview Questions Generator",
       "subhead": "Prepare for every interview with confidence using AI-generated questions and answers.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        {
+          "icon": "\u2713",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Syncs across tools"
+        }
       ]
     },
     "intents": [
@@ -106,7 +138,7 @@
     ],
     "definition": {
       "title": "Why Prepare Interview Questions?",
-      "content": "The best interview guests don't wing it—they prepare. By anticipating questions and crafting thoughtful answers, you deliver more value, stay on message, and transform every appearance into an opportunity to build authority."
+      "content": "The best interview guests don't wing it\u2014they prepare. By anticipating questions and crafting thoughtful answers, you deliver more value, stay on message, and transform every appearance into an opportunity to build authority."
     },
     "formula": "Balance specific questions that demonstrate expertise with story-based questions that engage the audience.",
     "tips": [
@@ -118,15 +150,15 @@
     "examples": [
       {
         "title": "Origin Questions",
-        "content": "What led you to develop this approach? • How did you discover this common mistake? • What was the turning point in your career?"
+        "content": "What led you to develop this approach? \u2022 How did you discover this common mistake? \u2022 What was the turning point in your career?"
       },
       {
         "title": "Process Questions",
-        "content": "Can you walk us through your step-by-step approach? • What does your process look like from start to finish? • How do you typically begin working with a new client?"
+        "content": "Can you walk us through your step-by-step approach? \u2022 What does your process look like from start to finish? \u2022 How do you typically begin working with a new client?"
       },
       {
         "title": "Results Questions",
-        "content": "What kind of results have your clients seen? • How does success look different after implementation? • What's the most surprising outcome you've witnessed?"
+        "content": "What kind of results have your clients seen? \u2022 How does success look different after implementation? \u2022 What's the most surprising outcome you've witnessed?"
       }
     ],
     "howItWorks": [
@@ -200,7 +232,12 @@
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
-    "compatibility": ["Spotify", "Apple Podcasts", "YouTube", "Zoom"],
+    "compatibility": [
+      "Spotify",
+      "Apple Podcasts",
+      "YouTube",
+      "Zoom"
+    ],
     "relatedToolSlugs": [
       "topics-generator",
       "interview-prep-generator",

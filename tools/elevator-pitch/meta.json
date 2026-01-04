@@ -2,8 +2,21 @@
   "name": "Elevator Pitch Generator",
   "slug": "elevator-pitch-generator",
   "shortDescription": "Craft a compelling 30-second pitch that clearly communicates your value proposition.",
+  "emoji": "🚀",
+  "apiType": "elevator_pitch",
+  "fieldMapping": {
+    "type": "simple",
+    "targetField": "elevator_pitch",
+    "sourceKeys": ["text", "value"]
+  },
+  "validation": {
+    "anyOf": ["authorityHook", "name", "role"],
+    "errorMessage": "Authority hook, name, or role is required for elevator pitch generation"
+  },
   "longDescription": "The Elevator Pitch Generator helps you create a concise, memorable pitch that captures who you are, what you do, and why it matters - all in 30 seconds or less. Perfect for networking events, cold introductions, and quick explanations of your work.",
   "category": "value-builder",
+  "buttonText": "Generate Pitch",
+  "supportsProfileSave": true,
   "icon": "RocketLaunchIcon",
   "componentName": "ElevatorPitchGenerator",
   "useCases": [
@@ -41,23 +54,41 @@
   },
   "landingContent": {
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "\u2728 Free AI Tool",
       "h1": "Free Elevator Pitch Generator",
       "subhead": "Create a compelling 30-second pitch that captures attention and opens doors to new opportunities.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 12,000+ professionals" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        {
+          "icon": "\u2713",
+          "text": "Used by 12,000+ professionals"
+        },
+        {
+          "icon": "\u2713",
+          "text": "No signup required"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Free forever"
+        }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "\u2728 AI Tool",
       "h1": "Elevator Pitch Generator",
       "subhead": "Deliver your value in 30 seconds flat with a pitch that sticks.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        {
+          "icon": "\u2713",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Syncs across tools"
+        }
       ]
     },
     "intents": [
@@ -106,9 +137,9 @@
     ],
     "definition": {
       "title": "What is an Elevator Pitch?",
-      "content": "An elevator pitch is a brief, persuasive speech that communicates who you are, what you do, and why it matters—all within 30 seconds (about 75-90 words). The goal isn't to close the deal, but to earn interest for a longer conversation."
+      "content": "An elevator pitch is a brief, persuasive speech that communicates who you are, what you do, and why it matters\u2014all within 30 seconds (about 75-90 words). The goal isn't to close the deal, but to earn interest for a longer conversation."
     },
-    "formula": "[Hook] → [Problem You Solve] → [Your Unique Solution] → [Proof/Credibility] → [Call to Action]",
+    "formula": "[Hook] \u2192 [Problem You Solve] \u2192 [Your Unique Solution] \u2192 [Proof/Credibility] \u2192 [Call to Action]",
     "tips": [
       "Start with a hook that grabs attention - a surprising stat, question, or bold statement",
       "Clearly articulate the problem you solve - make them feel the pain",
@@ -165,7 +196,7 @@
       },
       {
         "title": "Memorable Structure",
-        "description": "Hook → Problem → Solution → Proof format.",
+        "description": "Hook \u2192 Problem \u2192 Solution \u2192 Proof format.",
         "icon": "LightBulbIcon"
       }
     ],
@@ -201,7 +232,12 @@
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
-    "compatibility": ["LinkedIn", "Networking Events", "Conferences", "Cold Outreach"],
+    "compatibility": [
+      "LinkedIn",
+      "Networking Events",
+      "Conferences",
+      "Cold Outreach"
+    ],
     "relatedToolSlugs": [
       "sound-bite-generator",
       "authority-hook-builder",

@@ -2,8 +2,22 @@
   "name": "Sound Bite Generator",
   "slug": "sound-bite-generator",
   "shortDescription": "Create quotable phrases and memorable one-liners perfect for media appearances.",
+  "emoji": "💬",
+  "apiType": "sound_bite",
+  "fieldMapping": {
+    "type": "indexed_array",
+    "prefix": "sound_bite_",
+    "maxItems": 10,
+    "sourceKeys": ["text", "value", "quote", "content"]
+  },
+  "validation": {
+    "anyOf": ["topic", "message", "perspective"],
+    "errorMessage": "Topic or message is required for sound bite generation"
+  },
   "longDescription": "The Sound Bite Generator helps you craft memorable, quotable phrases that journalists love to share and audiences remember. Perfect for press interviews, podcast appearances, and social media, these bite-sized gems make you eminently quotable.",
   "category": "value-builder",
+  "buttonText": "Generate Sound Bites",
+  "supportsProfileSave": true,
   "icon": "BoltIcon",
   "componentName": "SoundBiteGenerator",
   "useCases": [
@@ -41,23 +55,41 @@
   },
   "landingContent": {
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "\u2728 Free AI Tool",
       "h1": "Free Sound Bite Generator",
       "subhead": "Generate memorable sound bites and quotable phrases that journalists share and audiences remember.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 8,000+ speakers" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        {
+          "icon": "\u2713",
+          "text": "Used by 8,000+ speakers"
+        },
+        {
+          "icon": "\u2713",
+          "text": "No signup required"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Free forever"
+        }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "\u2728 AI Tool",
       "h1": "Sound Bite Generator",
       "subhead": "Create quotable phrases that make you the expert everyone remembers.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        {
+          "icon": "\u2713",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Syncs across tools"
+        }
       ]
     },
     "intents": [
@@ -204,7 +236,12 @@
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
-    "compatibility": ["Twitter/X", "LinkedIn", "Instagram", "Press"],
+    "compatibility": [
+      "Twitter/X",
+      "LinkedIn",
+      "Instagram",
+      "Press"
+    ],
     "relatedToolSlugs": [
       "tagline-generator",
       "elevator-pitch-generator",

@@ -1,8 +1,8 @@
 <template>
   <div class="gmkb-tool-embed">
-    <!-- Profile Context Banner (logged-in users) -->
+    <!-- Profile Context Banner (logged-in users with profile-saveable tools only) -->
     <ProfileContextBanner
-      v-if="isLoggedIn"
+      v-if="isLoggedIn && supportsProfileSave"
       @profile-loaded="handleProfileLoaded"
       @profile-cleared="handleProfileCleared"
     />
@@ -85,10 +85,24 @@
               </p>
             </slot>
           </div>
-          <p v-if="showSaveCta" class="preview-subtext">
+          <!-- Different CTA based on tool type and user state -->
+          <!-- Guest users on profile-saveable tools -->
+          <p v-if="showSaveCta && !isLoggedIn && supportsProfileSave" class="preview-subtext">
             {{ saveCtaPrefix }}
             <a href="#" @click.prevent="handleSaveClick">{{ saveCtaLink }}</a>
             {{ saveCtaSuffix }}
+          </p>
+          <!-- Guest users on standalone tools -->
+          <p v-else-if="showSaveCta && !isLoggedIn && !supportsProfileSave" class="preview-subtext">
+            <a href="#" @click.prevent="handleSaveClick">Create a free account</a>
+            for unlimited generations.
+          </p>
+          <!-- Logged-in users on profile-saveable tools -->
+          <p v-else-if="showSaveCta && isLoggedIn && supportsProfileSave && !hasSelectedProfile" class="preview-subtext">
+            Select a profile above to save your generated content.
+          </p>
+          <p v-else-if="showSaveCta && isLoggedIn && supportsProfileSave && hasSelectedProfile" class="preview-subtext">
+            Generate content and save it directly to <strong>{{ selectedProfile?.title || 'your profile' }}</strong>.
           </p>
         </div>
 
@@ -98,7 +112,7 @@
           <div class="success-panel__result">
             <div class="success-label">
               <span class="success-icon">✓</span>
-              Your Authority Hook
+              {{ resultLabel }}
             </div>
             <div class="success-content">
               <slot name="preview">
@@ -146,11 +160,11 @@
               </a>
             </div>
 
-            <!-- Save CTA -->
-            <div v-if="isLoggedIn && hasSelectedProfile" class="save-cta-box save-cta-box--profile">
+            <!-- Save CTA (profile-saveable tools only) -->
+            <div v-if="supportsProfileSave && isLoggedIn && hasSelectedProfile" class="save-cta-box save-cta-box--profile">
               <div class="save-cta-text">
                 <strong>Save to {{ selectedProfile?.title || 'your profile' }}</strong>
-                <span>Updates your profile with this hook</span>
+                <span>Updates your profile with this {{ contentNoun }}</span>
               </div>
               <button
                 class="btn-save-account"
@@ -161,19 +175,29 @@
                 {{ savedToProfile ? '✓ Saved!' : (isSavingToProfile ? 'Saving...' : 'Save to Profile') }}
               </button>
             </div>
-            <div v-else-if="isLoggedIn && !hasSelectedProfile" class="save-cta-box save-cta-box--select">
+            <div v-else-if="supportsProfileSave && isLoggedIn && !hasSelectedProfile" class="save-cta-box save-cta-box--select">
               <div class="save-cta-text">
                 <strong>Select a profile above</strong>
-                <span>to save this hook to your account</span>
+                <span>to save this {{ contentNoun }} to your account</span>
               </div>
             </div>
-            <div v-else class="save-cta-box">
+            <div v-else-if="supportsProfileSave && !isLoggedIn" class="save-cta-box">
               <div class="save-cta-text">
-                <strong>Keep this hook forever</strong>
+                <strong>Keep this {{ contentNoun }} forever</strong>
                 <span>+ unlock your full messaging suite</span>
               </div>
               <button class="btn-save-account" @click="handleSaveClick">
                 Save with Free Account
+              </button>
+            </div>
+            <!-- Standalone tools - simpler CTA for guests -->
+            <div v-else-if="!supportsProfileSave && !isLoggedIn" class="save-cta-box">
+              <div class="save-cta-text">
+                <strong>Want unlimited generations?</strong>
+                <span>Create a free account to remove limits</span>
+              </div>
+              <button class="btn-save-account" @click="handleSaveClick">
+                Create Free Account
               </button>
             </div>
           </div>
@@ -200,16 +224,24 @@
 
         <!-- Email Capture Mode -->
         <template v-if="!emailSubmitted">
-          <div class="soft-gate-icon">{{ gateReason === 'exit_intent' ? '👋' : '🎉' }}</div>
+          <div class="soft-gate-icon">{{ gateReason === 'exit_intent' ? '👋' : (gateReason === 'save_click' ? '💾' : '🎉') }}</div>
           <h3 class="soft-gate-title">
-            {{ gateReason === 'exit_intent' ? "Don't lose your hook!" : "You're on a roll!" }}
+            {{ gateReason === 'exit_intent' ? `Don't lose your ${contentNoun}!` : (gateReason === 'save_click' ? `Save your ${contentNoun}` : "You're on a roll!") }}
           </h3>
           <p class="soft-gate-text">
             {{ gateReason === 'exit_intent'
-              ? "Enter your email and we'll send you your hook + 3 bonus tools:"
-              : "Enter your email to save your hook and unlock:"
+              ? `Enter your email and we'll send you your ${contentNoun} + 3 bonus tools:`
+              : `Enter your email to save your ${contentNoun} and unlock:`
             }}
           </p>
+
+          <!-- Social Login Buttons (if available) -->
+          <div v-if="socialLoginHtml" class="social-login-section">
+            <div class="social-login-buttons" v-html="socialLoginHtml"></div>
+            <div class="social-login-divider">
+              <span>or continue with email</span>
+            </div>
+          </div>
 
           <div class="email-capture-form">
             <input
@@ -220,19 +252,19 @@
               @keyup.enter="handleEmailSubmit"
             />
             <button class="btn-gate-primary" @click="handleEmailSubmit" :disabled="!isValidEmail">
-              {{ gateReason === 'exit_intent' ? 'Send My Hook' : 'Save & Unlock' }}
+              {{ gateReason === 'exit_intent' ? 'Send It To Me' : (gateReason === 'save_click' ? 'Save to My Account' : 'Save & Unlock') }}
             </button>
           </div>
 
           <ul class="soft-gate-benefits">
-            <li>✓ Your hook saved forever</li>
+            <li>✓ Your {{ contentNoun }} saved forever</li>
             <li>✓ Bio Generator (free)</li>
             <li>✓ Elevator Pitch (free)</li>
             <li>✓ Tagline Generator (free)</li>
           </ul>
 
           <button v-if="canCloseGate" class="btn-gate-secondary" @click="closeSoftGate">
-            {{ gateReason === 'exit_intent' ? 'No thanks, let it disappear' : `Continue as Guest (${remainingGenerations} left)` }}
+            {{ gateReason === 'exit_intent' ? 'No thanks, let it disappear' : (gateReason === 'save_click' ? 'Maybe later' : `Continue as Guest (${remainingGenerations} left)`) }}
           </button>
         </template>
 
@@ -241,7 +273,7 @@
           <div class="soft-gate-icon">✅</div>
           <h3 class="soft-gate-title">Check your inbox!</h3>
           <p class="soft-gate-text">
-            We've sent your hook to {{ captureEmail }}
+            We've sent your {{ contentNoun }} to {{ captureEmail }}
           </p>
           <button class="btn-gate-primary" @click="handleGateSignup">
             Create Account to Edit & Save More
@@ -278,11 +310,11 @@ const props = defineProps({
   },
   defaultHeading: {
     type: String,
-    default: 'Create your hook'
+    default: 'Create your content'
   },
   defaultDescription: {
     type: String,
-    default: 'Fill in the fields below to generate your hook.'
+    default: 'Fill in the fields below to generate.'
   },
   isGenerating: {
     type: Boolean,
@@ -294,7 +326,7 @@ const props = defineProps({
   },
   generateButtonText: {
     type: String,
-    default: 'Generate Authority Hook'
+    default: 'Generate'
   },
   generatingText: {
     type: String,
@@ -302,7 +334,7 @@ const props = defineProps({
   },
   rateLimitText: {
     type: String,
-    default: 'Generate up to 3 hooks per day, no signup required.'
+    default: 'Generate up to 3 times per day, no signup required.'
   },
   upgradeText: {
     type: String,
@@ -310,7 +342,7 @@ const props = defineProps({
   },
   previewLabel: {
     type: String,
-    default: 'Sample Authority Hook'
+    default: 'Sample Result'
   },
   previewContent: {
     type: String,
@@ -318,7 +350,22 @@ const props = defineProps({
   },
   defaultPreviewContent: {
     type: String,
-    default: '"I help [WHO] achieve [WHAT] in [TIMEFRAME] without [PAIN POINT]."'
+    default: 'Your generated content will appear here.'
+  },
+  /**
+   * Label shown above the generated result (e.g., "Your Biography", "Your Authority Hook")
+   */
+  resultLabel: {
+    type: String,
+    default: 'Your Result'
+  },
+  /**
+   * Noun for the generated content (e.g., "biography", "hook", "pitch")
+   * Used in messages like "Don't lose your {contentNoun}!"
+   */
+  contentNoun: {
+    type: String,
+    default: 'content'
   },
   showSaveCta: {
     type: Boolean,
@@ -326,7 +373,7 @@ const props = defineProps({
   },
   saveCtaPrefix: {
     type: String,
-    default: 'Happy with this hook?'
+    default: 'Happy with this?'
   },
   saveCtaLink: {
     type: String,
@@ -349,39 +396,14 @@ const props = defineProps({
    */
   relatedTools: {
     type: Array,
-    default: () => [
-      {
-        slug: 'biography',
-        name: 'Biography Generator',
-        description: 'Turn your hook into a full professional bio',
-        icon: '📝',
-        url: '/tools/biography/',
-        requiresAccount: false
-      },
-      {
-        slug: 'elevator-pitch',
-        name: 'Elevator Pitch',
-        description: 'Expand your hook into a 30-second pitch',
-        icon: '🎯',
-        url: '/tools/elevator-pitch/',
-        requiresAccount: false
-      },
-      {
-        slug: 'podcast-pitch',
-        name: 'Podcast Pitch Template',
-        description: 'Use your hook to pitch podcast hosts',
-        icon: '🎙️',
-        url: '/tools/podcast-pitch/',
-        requiresAccount: true
-      }
-    ]
+    default: () => []
   },
   /**
-   * Tool slug for storage keys
+   * Tool slug for storage keys (required for proper rate limiting)
    */
   toolSlug: {
     type: String,
-    default: 'authority-hook'
+    required: true
   },
   /**
    * Whether user is logged in
@@ -391,11 +413,28 @@ const props = defineProps({
     default: false
   },
   /**
+   * Whether this tool supports saving to a profile
+   * Profile-saveable tools: biography, tagline, elevator-pitch, topics, authority-hook, etc.
+   * Standalone tools: podcast-details-extractor, blog, email, social-post, etc.
+   */
+  supportsProfileSave: {
+    type: Boolean,
+    default: true
+  },
+  /**
    * Registration URL
    */
   registerUrl: {
     type: String,
     default: '/register/'
+  },
+  /**
+   * Pre-rendered social login HTML (from Nextend Social Login or similar plugin)
+   * If provided, displays social login buttons in the soft gate modal
+   */
+  socialLoginHtml: {
+    type: String,
+    default: ''
   }
 });
 
@@ -547,9 +586,8 @@ function handleSaveClick() {
   if (props.isLoggedIn) {
     emit('save-click');
   } else {
-    // Redirect to registration
-    const redirectUrl = encodeURIComponent(window.location.href);
-    window.location.href = `${props.registerUrl}?redirect=${redirectUrl}&source=tool_save&tool=${props.toolSlug}`;
+    // Show soft gate modal for guests
+    showGateWithReason('save_click');
   }
 }
 
@@ -1387,6 +1425,57 @@ watch(() => props.isGenerating, (newVal, oldVal) => {
 
 .email-input::placeholder {
   color: var(--mkcg-text-light, #94a3b8);
+}
+
+/* ========================================
+   SOCIAL LOGIN SECTION
+   ======================================== */
+.social-login-section {
+  margin-bottom: 16px;
+}
+
+.social-login-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Style overrides for Nextend Social Login buttons */
+.social-login-buttons :deep(.nsl-container) {
+  text-align: center;
+}
+
+.social-login-buttons :deep(.nsl-container-buttons) {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.social-login-buttons :deep(.nsl-button) {
+  width: 100%;
+  border-radius: 8px !important;
+  font-family: inherit !important;
+}
+
+.social-login-divider {
+  display: flex;
+  align-items: center;
+  margin: 16px 0;
+  gap: 12px;
+}
+
+.social-login-divider::before,
+.social-login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--mkcg-border, #e2e8f0);
+}
+
+.social-login-divider span {
+  font-size: 13px;
+  color: var(--mkcg-text-light, #94a3b8);
+  white-space: nowrap;
 }
 
 /* ========================================

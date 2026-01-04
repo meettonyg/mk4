@@ -2,8 +2,11 @@
   "name": "Blog Generator",
   "slug": "blog-generator",
   "shortDescription": "Create engaging blog posts and articles that establish thought leadership.",
+  "emoji": "📝",
   "longDescription": "The Blog Generator helps you create well-structured blog posts and articles that demonstrate your expertise and engage your audience. From outlines to full drafts, generate content that drives traffic and builds authority.",
   "category": "content",
+  "buttonText": "Write Blog Post",
+  "supportsProfileSave": false,
   "icon": "DocumentTextIcon",
   "componentName": "BlogGenerator",
   "useCases": [
@@ -41,23 +44,41 @@
   },
   "landingContent": {
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "\u2728 Free AI Tool",
       "h1": "Free Blog Generator",
       "subhead": "Generate well-structured blog posts and articles that showcase your expertise and engage your target audience.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 10,000+ writers" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        {
+          "icon": "\u2713",
+          "text": "Used by 10,000+ writers"
+        },
+        {
+          "icon": "\u2713",
+          "text": "No signup required"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Free forever"
+        }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "\u2728 AI Tool",
       "h1": "Blog Generator",
       "subhead": "Create blog content that establishes your authority and drives traffic.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        {
+          "icon": "\u2713",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Syncs across tools"
+        }
       ]
     },
     "intents": [
@@ -118,15 +139,15 @@
     "examples": [
       {
         "title": "How-To Post",
-        "content": "Title: '5 Steps to Landing Your First Podcast Interview' — Hook: 'I landed 47 podcast interviews in 6 months with zero connections in the industry. Here's the exact system.'"
+        "content": "Title: '5 Steps to Landing Your First Podcast Interview' \u2014 Hook: 'I landed 47 podcast interviews in 6 months with zero connections in the industry. Here's the exact system.'"
       },
       {
         "title": "Thought Leadership Post",
-        "content": "Title: 'Why Most Business Advice Is Wrong' — Hook: 'The productivity advice that built my first business nearly destroyed my second one.'"
+        "content": "Title: 'Why Most Business Advice Is Wrong' \u2014 Hook: 'The productivity advice that built my first business nearly destroyed my second one.'"
       },
       {
         "title": "Case Study Post",
-        "content": "Title: 'How We Grew From $0 to $1M in 12 Months' — Hook: 'Everyone said we needed funding. We proved them wrong with $500 and a simple framework.'"
+        "content": "Title: 'How We Grew From $0 to $1M in 12 Months' \u2014 Hook: 'Everyone said we needed funding. We proved them wrong with $500 and a simple framework.'"
       }
     ],
     "howItWorks": [
@@ -200,7 +221,12 @@
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
-    "compatibility": ["WordPress", "Medium", "LinkedIn", "Substack"],
+    "compatibility": [
+      "WordPress",
+      "Medium",
+      "LinkedIn",
+      "Substack"
+    ],
     "relatedToolSlugs": [
       "content-repurposer",
       "social-post-generator",

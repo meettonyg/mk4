@@ -243,7 +243,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, watch, defineExpose } from 'vue';
 import { usePodcastExtractor } from './usePodcastExtractor.js';
 
 // Full layout components (standalone mode)
@@ -272,7 +272,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['applied', 'extracted', 'preview-update']);
+const emit = defineEmits(['applied', 'preview-update', 'update:can-generate', 'generated']);
 
 // Use shared composable
 const {
@@ -322,19 +322,59 @@ const examples = [
 ];
 
 /**
+ * Escape HTML special characters to prevent XSS
+ */
+const escapeHtml = (unsafe) => {
+  if (!unsafe) return '';
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
+/**
  * Handle extract and emit event
  */
 const onExtract = async () => {
   const result = await handleExtract();
   if (result) {
-    emit('extracted', {
+    // Emit generated event for EmbeddedToolWrapper compatibility
+    emit('generated', {
       url: podcastUrl.value,
       info: result
+    });
+    // Emit preview update with sanitized podcast info for display
+    const safeTitle = escapeHtml(result.title);
+    const safeEmail = escapeHtml(result.itunes_owner_email);
+    emit('preview-update', {
+      previewHtml: safeTitle ? `<strong>${safeTitle}</strong>` + (safeEmail ? `<br>Email: ${safeEmail}` : '') : ''
     });
   }
 };
 
+/**
+ * Method exposed for EmbeddedToolWrapper to call
+ * Alias for onExtract to match expected interface
+ */
+const handleGenerate = onExtract;
+
 const currentIntent = computed(() => props.intent || null);
+
+/**
+ * Watch canExtract and emit update:can-generate for EmbeddedToolWrapper
+ */
+watch(canExtract, (newValue) => {
+  emit('update:can-generate', newValue);
+}, { immediate: true });
+
+/**
+ * Expose handleGenerate for parent components to call via ref
+ */
+defineExpose({
+  handleGenerate
+});
 </script>
 
 <style scoped>

@@ -2,8 +2,21 @@
   "name": "Signature Story Generator",
   "slug": "signature-story-generator",
   "shortDescription": "Create a go-to story that illustrates your expertise and methodology.",
+  "emoji": "✍️",
+  "apiType": "signature_story",
+  "fieldMapping": {
+    "type": "simple",
+    "targetField": "signature_story",
+    "sourceKeys": ["text", "value", "content", "story"]
+  },
+  "validation": {
+    "anyOf": ["challenge", "result", "moment", "lesson"],
+    "errorMessage": "Challenge or transformation details are required for signature story generation"
+  },
   "longDescription": "The Signature Story Generator helps you develop a memorable story that demonstrates your unique approach and expertise. This story becomes your go-to illustration in presentations, interviews, and sales conversations.",
   "category": "strategy",
+  "buttonText": "Create Story",
+  "supportsProfileSave": true,
   "icon": "PencilSquareIcon",
   "componentName": "SignatureStoryGenerator",
   "useCases": [
@@ -41,23 +54,41 @@
   },
   "landingContent": {
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "\u2728 Free AI Tool",
       "h1": "Free Signature Story Generator",
       "subhead": "Develop a memorable signature story that demonstrates your expertise and makes your methodology unforgettable.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 5,000+ speakers" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        {
+          "icon": "\u2713",
+          "text": "Used by 5,000+ speakers"
+        },
+        {
+          "icon": "\u2713",
+          "text": "No signup required"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Free forever"
+        }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "\u2728 AI Tool",
       "h1": "Signature Story Generator",
       "subhead": "Create your go-to story that sells your expertise without selling.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        {
+          "icon": "\u2713",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Syncs across tools"
+        }
       ]
     },
     "intents": [
@@ -108,7 +139,7 @@
       "title": "What is a Signature Story?",
       "content": "A signature story is your go-to illustration that demonstrates your expertise and methodology in action. It's the story you tell in every keynote, podcast, and sales conversation because it perfectly captures what you do and why it works."
     },
-    "formula": "[SITUATION] → [COMPLICATION] → [TURNING POINT] → [RESOLUTION] → [LESSON] = Signature Story",
+    "formula": "[SITUATION] \u2192 [COMPLICATION] \u2192 [TURNING POINT] \u2192 [RESOLUTION] \u2192 [LESSON] = Signature Story",
     "tips": [
       "Start in the middle of the action - skip the setup and drop the listener into the tension",
       "Include specific details - names, numbers, and sensory details make stories believable",
@@ -200,7 +231,12 @@
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
-    "compatibility": ["Keynotes", "Podcasts", "Sales Calls", "Workshops"],
+    "compatibility": [
+      "Keynotes",
+      "Podcasts",
+      "Sales Calls",
+      "Workshops"
+    ],
     "relatedToolSlugs": [
       "brand-story-generator",
       "credibility-story-generator",

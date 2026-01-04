@@ -2,8 +2,11 @@
   "name": "Persona Generator",
   "slug": "persona-generator",
   "shortDescription": "Create detailed audience personas to better understand and reach your ideal clients.",
+  "emoji": "👤",
   "longDescription": "The Persona Generator helps you build comprehensive profiles of your ideal audience members. Understand their pain points, desires, objections, and communication preferences to create content and messaging that truly resonates.",
   "category": "value-builder",
+  "buttonText": "Generate Persona",
+  "supportsProfileSave": false,
   "icon": "UserGroupIcon",
   "componentName": "PersonaGenerator",
   "useCases": [
@@ -41,23 +44,41 @@
   },
   "landingContent": {
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "\u2728 Free AI Tool",
       "h1": "Free Persona Generator",
       "subhead": "Generate detailed personas that reveal your ideal clients' pain points, desires, and the exact language that moves them to action.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 9,000+ marketers" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        {
+          "icon": "\u2713",
+          "text": "Used by 9,000+ marketers"
+        },
+        {
+          "icon": "\u2713",
+          "text": "No signup required"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Free forever"
+        }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "\u2728 AI Tool",
       "h1": "Persona Generator",
       "subhead": "Know your audience inside and out with detailed personas that drive results.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        {
+          "icon": "\u2713",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Syncs across tools"
+        }
       ]
     },
     "intents": [
@@ -106,7 +127,7 @@
     ],
     "definition": {
       "title": "What is a Customer Persona?",
-      "content": "A customer persona is a detailed profile of your ideal customer based on market research and real data. It includes demographics, psychographics, pain points, goals, objections, and communication preferences—everything you need to create messaging that resonates."
+      "content": "A customer persona is a detailed profile of your ideal customer based on market research and real data. It includes demographics, psychographics, pain points, goals, objections, and communication preferences\u2014everything you need to create messaging that resonates."
     },
     "formula": "[DEMOGRAPHIC] + [PSYCHOGRAPHIC] + [PAIN POINTS] + [DESIRED OUTCOMES] = Complete Persona",
     "tips": [
@@ -200,7 +221,12 @@
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
-    "compatibility": ["Marketing Strategy", "Content Creation", "Sales", "Product Development"],
+    "compatibility": [
+      "Marketing Strategy",
+      "Content Creation",
+      "Sales",
+      "Product Development"
+    ],
     "relatedToolSlugs": [
       "authority-hook-builder",
       "brand-story-generator",

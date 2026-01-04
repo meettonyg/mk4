@@ -41,9 +41,9 @@ import * as seoOptimizer from './seo-optimizer';
 import * as podcastDetailsExtractor from './podcast-details-extractor';
 
 /**
- * All tool modules
+ * All tool modules - exported for use by entry points
  */
-const toolModules = {
+export const toolModules = {
   biography,
   topics,
   questions,
@@ -198,6 +198,93 @@ export function getToolComponent(slug) {
  */
 export function getToolsWithStandaloneLayout() {
   return Object.values(TOOL_REGISTRY).filter(tool => tool.hasStandaloneLayout);
+}
+
+/**
+ * Build slug lookup map for resolving various slug formats
+ * Maps meta.slug (e.g., 'biography-generator') to canonical key (e.g., 'biography')
+ */
+const SLUG_LOOKUP = (() => {
+  const lookup = {};
+  Object.entries(toolModules).forEach(([key, module]) => {
+    const meta = module.meta;
+    if (!meta) return;
+    lookup[key] = key;
+    if (meta.slug && meta.slug !== key) {
+      lookup[meta.slug] = key;
+    }
+  });
+  return lookup;
+})();
+
+/**
+ * Resolve any slug format to canonical tool key
+ * @param {string} slug - Tool slug in any format
+ * @returns {string} Canonical tool key
+ */
+export function resolveSlug(slug) {
+  return SLUG_LOOKUP[slug] || slug;
+}
+
+/**
+ * Build component registry from tool modules
+ * @param {string} componentKey - Key to extract ('Widget', 'Generator', etc.)
+ * @param {boolean} useDefaultFallback - Fall back to module.default if key not found
+ * @returns {Object} Registry mapping slugs to components
+ */
+export function buildComponentRegistry(componentKey, useDefaultFallback = false) {
+  const registry = {};
+  Object.entries(toolModules).forEach(([slug, module]) => {
+    const component = useDefaultFallback
+      ? (module[componentKey] || module.default)
+      : module[componentKey];
+    if (component) {
+      registry[slug] = component;
+      // Also register by meta.slug for backwards compatibility
+      if (module.meta?.slug && module.meta.slug !== slug) {
+        registry[module.meta.slug] = component;
+      }
+    }
+  });
+  return registry;
+}
+
+/**
+ * Build related tools data from slugs
+ * Reads all metadata from each tool's meta.json
+ * @param {string[]} slugs - Array of tool slugs
+ * @param {string} currentSlug - Current tool slug (to exclude)
+ * @returns {Array} Related tool objects with name, description, icon, url, requiresAccount
+ */
+export function buildRelatedTools(slugs, currentSlug) {
+  return slugs
+    .filter(slug => slug !== currentSlug)
+    .slice(0, 3)
+    .map(slug => {
+      const canonicalSlug = resolveSlug(slug);
+      const module = toolModules[canonicalSlug];
+      const meta = module?.meta;
+
+      if (meta) {
+        return {
+          slug: canonicalSlug,
+          name: meta.name || canonicalSlug,
+          description: meta.shortDescription || 'Continue building your messaging',
+          icon: meta.emoji || '🔧',
+          url: `/tools/${canonicalSlug}/`,
+          requiresAccount: meta.supportsProfileSave === true
+        };
+      }
+
+      return {
+        slug,
+        name: slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        description: 'Continue building your messaging',
+        icon: '🔧',
+        url: `/tools/${slug}/`,
+        requiresAccount: false
+      };
+    });
 }
 
 // Re-export shared components

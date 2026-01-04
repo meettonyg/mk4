@@ -5,134 +5,141 @@
  * Provides a unified interface for AI tools to save generated content
  * to either profile fields (via Profile API) or component data (via Media Kit store).
  *
+ * Field mappings are now defined in each tool's meta.json for tool independence.
+ *
  * @since 2.2.0
  */
 
 import profileContextService from './ProfileContextService.js';
+import { toolModules } from '../../tools/index.js';
 
 /**
- * Field mappings for different AI tool types
- * Maps AI output keys to WordPress meta field names
+ * Get field mapping configuration from a tool's meta.json
+ * @param {string} type - The API type (e.g., 'biography', 'topics')
+ * @returns {Object|null} Field mapping config or null if not found
  */
-const FIELD_MAPPINGS = {
-  topics: {
-    // AI outputs an array of topics
-    // Maps to topic_1 through topic_5
-    mapToFields: (topics) => {
-      const fields = {};
-      const topicArray = Array.isArray(topics) ? topics : [topics];
+function getFieldMappingConfig(type) {
+  // Find the tool module by apiType
+  for (const [slug, module] of Object.entries(toolModules)) {
+    if (module.meta?.apiType === type && module.meta?.fieldMapping) {
+      return module.meta.fieldMapping;
+    }
+  }
+  return null;
+}
 
-      topicArray.slice(0, 5).forEach((topic, index) => {
-        const fieldName = `topic_${index + 1}`;
-        // Handle both string and object formats
-        fields[fieldName] = typeof topic === 'object'
-          ? (topic.title || topic.text || topic.value || '')
-          : topic;
+/**
+ * Apply field mapping based on declarative config from tool meta
+ * @param {Object} config - Field mapping configuration from meta.json
+ * @param {*} data - The AI-generated data to map
+ * @returns {Object} Mapped fields
+ */
+function applyFieldMapping(config, data) {
+  if (!config) return {};
+
+  const fields = {};
+
+  switch (config.type) {
+    case 'simple': {
+      // Simple 1:1 mapping to a single target field
+      const targetField = config.targetField;
+      const sourceKeys = config.sourceKeys || ['text', 'value'];
+
+      if (typeof data === 'string') {
+        fields[targetField] = data;
+      } else if (typeof data === 'object' && data !== null) {
+        // Try each source key in order
+        for (const key of sourceKeys) {
+          if (data[key]) {
+            fields[targetField] = data[key];
+            break;
+          }
+        }
+        // Fallback to first non-empty value
+        if (!fields[targetField]) {
+          const firstValue = Object.values(data).find(v => v && typeof v === 'string');
+          if (firstValue) fields[targetField] = firstValue;
+        }
+      }
+      break;
+    }
+
+    case 'indexed_array': {
+      // Map array to indexed fields (e.g., topic_1, topic_2, ...)
+      const prefix = config.prefix;
+      const maxItems = config.maxItems || 10;
+      const sourceKeys = config.sourceKeys || ['text', 'value'];
+
+      const dataArray = Array.isArray(data) ? data : [data];
+
+      dataArray.slice(0, maxItems).forEach((item, index) => {
+        const fieldName = `${prefix}${index + 1}`;
+        if (typeof item === 'string') {
+          fields[fieldName] = item;
+        } else if (typeof item === 'object' && item !== null) {
+          // Try each source key in order
+          for (const key of sourceKeys) {
+            if (item[key]) {
+              fields[fieldName] = item[key];
+              break;
+            }
+          }
+        }
       });
 
-      // Clear remaining topic fields if fewer than 5 provided
-      for (let i = topicArray.length; i < 5; i++) {
-        fields[`topic_${i + 1}`] = '';
+      // Clear remaining fields
+      for (let i = dataArray.length; i < maxItems; i++) {
+        fields[`${prefix}${i + 1}`] = '';
       }
-
-      return fields;
+      break;
     }
-  },
 
-  questions: {
-    // AI outputs an array of questions
-    // Maps to question_1 through question_25
-    mapToFields: (questions) => {
-      const fields = {};
-      const questionsArray = Array.isArray(questions) ? questions : [questions];
+    case 'object': {
+      // Map object keys to specific field names
+      const fieldMap = config.fields || {};
 
-      questionsArray.slice(0, 25).forEach((question, index) => {
-        const fieldName = `question_${index + 1}`;
-        fields[fieldName] = typeof question === 'object'
-          ? (question.question || question.text || question.value || '')
-          : question;
-      });
-
-      // Clear remaining question fields
-      for (let i = questionsArray.length; i < 25; i++) {
-        fields[`question_${i + 1}`] = '';
+      if (typeof data === 'string') {
+        // If string, try to find a default field
+        const defaultField = Object.values(fieldMap)[0];
+        if (defaultField) fields[defaultField] = data;
+      } else if (typeof data === 'object' && data !== null) {
+        for (const [sourceKey, targetField] of Object.entries(fieldMap)) {
+          if (data[sourceKey]) {
+            fields[targetField] = data[sourceKey];
+          }
+        }
       }
-
-      return fields;
+      break;
     }
-  },
 
-  biography: {
-    // AI outputs biography object with short, medium, long versions
-    mapToFields: (bioData) => {
-      const fields = {};
-
-      if (typeof bioData === 'string') {
-        fields.biography = bioData;
-      } else if (typeof bioData === 'object') {
-        if (bioData.short) fields.biography_short = bioData.short;
-        if (bioData.medium) fields.biography = bioData.medium;
-        if (bioData.long) fields.biography_long = bioData.long;
-        // Also support flat structure
-        if (bioData.biography) fields.biography = bioData.biography;
-        if (bioData.content) fields.biography = bioData.content;
-      }
-
-      return fields;
+    case 'native_api': {
+      // Native API types (like offers) return empty - use specialized save methods
+      break;
     }
-  },
 
-  tagline: {
-    mapToFields: (tagline) => ({
-      tagline: typeof tagline === 'object' ? tagline.text || tagline.value : tagline
-    })
-  },
+    default:
+      console.warn(`[AISaveBridge] Unknown field mapping type: ${config.type}`);
+  }
 
-  elevator_pitch: {
-    mapToFields: (pitch) => ({
-      elevator_pitch: typeof pitch === 'object' ? pitch.text || pitch.value : pitch
-    })
-  },
+  return fields;
+}
 
-  guest_intro: {
-    mapToFields: (intro) => ({
-      introduction: typeof intro === 'object' ? intro.text || intro.value : intro
-    })
-  },
+/**
+ * Check if a tool type requires native API handling
+ * @param {string} type - The API type
+ * @returns {boolean}
+ */
+function requiresNativeApi(type) {
+  const config = getFieldMappingConfig(type);
+  return config?.type === 'native_api';
+}
 
-  authority_hook: {
-    // Authority hook has multiple sub-fields
-    mapToFields: (hookData) => {
-      const fields = {};
-
-      if (typeof hookData === 'object') {
-        if (hookData.who) fields.hook_who = hookData.who;
-        if (hookData.what) fields.hook_what = hookData.what;
-        if (hookData.when) fields.hook_when = hookData.when;
-        if (hookData.how) fields.hook_how = hookData.how;
-        if (hookData.statement) fields.authority_statement = hookData.statement;
-        if (hookData.summary) fields.authority_hook_summary = hookData.summary;
-      }
-
-      return fields;
-    }
-  },
-
-  offers: {
-    // AI outputs array of offers - now uses native Offers CPT
-    // This mapping is used for legacy/fallback only
-    // Use saveOffersToProfile() method for native offer creation
-    mapToFields: (offers) => {
-      // For native offers, we don't map to flat fields
-      // Instead return empty - use saveOffersToProfile() method
-      return {};
-    },
-    // Native offers require special handling via Offers API
-    requiresNativeApi: true
-  },
-
+/**
+ * Legacy fallback mappings for types not yet migrated to tool meta
+ * These handle non-tool types like 'contact' and 'social'
+ */
+const LEGACY_MAPPINGS = {
   contact: {
-    // Contact info maps to individual profile fields
     mapToFields: (contactData) => {
       const fields = {};
       if (typeof contactData === 'object') {
@@ -146,7 +153,6 @@ const FIELD_MAPPINGS = {
   },
 
   social: {
-    // Social links map to individual profile fields
     mapToFields: (socialData) => {
       const fields = {};
       if (typeof socialData === 'object') {
@@ -164,6 +170,29 @@ const FIELD_MAPPINGS = {
     }
   }
 };
+
+/**
+ * Map AI output to profile fields using tool-defined configuration
+ * @param {string} type - The API type
+ * @param {*} data - AI-generated data
+ * @returns {Object} Mapped fields
+ */
+function mapToFields(type, data) {
+  // First try tool-defined field mapping from meta.json
+  const config = getFieldMappingConfig(type);
+  if (config) {
+    return applyFieldMapping(config, data);
+  }
+
+  // Fall back to legacy mappings for non-tool types
+  const legacyMapping = LEGACY_MAPPINGS[type];
+  if (legacyMapping?.mapToFields) {
+    return legacyMapping.mapToFields(data);
+  }
+
+  console.warn(`[AISaveBridge] No field mapping found for type: ${type}`);
+  return {};
+}
 
 /**
  * Helper to get REST API base URL and nonce
@@ -346,13 +375,8 @@ class AISaveBridge {
       throw new Error('Profile ID is required');
     }
 
-    const mapping = FIELD_MAPPINGS[type];
-    if (!mapping) {
-      throw new Error(`Unknown AI tool type: ${type}. Available types: ${Object.keys(FIELD_MAPPINGS).join(', ')}`);
-    }
-
     // Handle offers specially - use native Offers API
-    if (type === 'offers' && mapping.requiresNativeApi) {
+    if (requiresNativeApi(type)) {
       const result = await this.saveOffersToProfile(profileId, data, options);
       return {
         success: result.success,
@@ -361,8 +385,12 @@ class AISaveBridge {
       };
     }
 
-    // Map AI output to profile fields
-    const fields = mapping.mapToFields(data);
+    // Map AI output to profile fields using tool-defined configuration
+    const fields = mapToFields(type, data);
+
+    if (Object.keys(fields).length === 0) {
+      console.warn(`[AISaveBridge] No fields mapped for type: ${type}`);
+    }
 
     console.log(`[AISaveBridge] Saving ${type} to profile #${profileId}:`, fields);
 
@@ -444,42 +472,47 @@ class AISaveBridge {
       throw new Error(`Component not found: ${componentId}`);
     }
 
-    // Map AI output to component data format
-    const mapping = FIELD_MAPPINGS[type];
+    // Map AI output to profile fields using tool-defined configuration
+    const fields = mapToFields(type, data);
     let componentData = {};
 
-    if (mapping) {
-      // Use field mapping but convert to component data format
-      const fields = mapping.mapToFields(data);
+    // Get field mapping config to understand structure
+    const config = getFieldMappingConfig(type);
 
-      // Convert field names to component data keys
-      switch (type) {
-        case 'topics':
-          componentData.topics = Object.entries(fields)
-            .filter(([key]) => key.startsWith('topic_') && fields[key])
-            .map(([key, value]) => ({ title: value }));
+    if (config) {
+      // Convert mapped fields to component data format based on mapping type
+      switch (config.type) {
+        case 'indexed_array': {
+          // Convert indexed fields back to array for component storage
+          const prefix = config.prefix;
+          const items = Object.entries(fields)
+            .filter(([key]) => key.startsWith(prefix) && fields[key])
+            .sort(([a], [b]) => {
+              const numA = parseInt(a.replace(prefix, ''), 10);
+              const numB = parseInt(b.replace(prefix, ''), 10);
+              return numA - numB;
+            })
+            .map(([, value]) => {
+              // Use first sourceKey as the property name
+              const keyName = config.sourceKeys?.[0] || 'text';
+              return { [keyName]: value };
+            });
+          // Use type as the property name (e.g., 'topics', 'questions')
+          componentData[type] = items;
           break;
+        }
 
-        case 'questions':
-          componentData.questions = Object.entries(fields)
-            .filter(([key]) => key.startsWith('question_') && fields[key])
-            .map(([key, value]) => ({ question: value }));
-          break;
-
-        case 'biography':
-          componentData = {
-            biography: fields.biography || fields.biography_long || '',
-            bio: fields.biography || '',
-            shortBio: fields.biography_short || ''
-          };
+        case 'object':
+          // For object mappings like biography, use mapped fields directly
+          componentData = { ...fields };
           break;
 
         default:
-          // For other types, use fields directly
+          // For simple and other types, use fields directly
           componentData = fields;
       }
     } else {
-      // No mapping, use data directly
+      // No mapping config, use data directly
       componentData = typeof data === 'object' ? data : { content: data };
     }
 
@@ -542,9 +575,18 @@ class AISaveBridge {
 
   /**
    * Get available field mappings (for documentation/debugging)
+   * Now reads from tool meta files for tool independence
    */
   getAvailableTypes() {
-    return Object.keys(FIELD_MAPPINGS);
+    const types = [];
+    for (const [, module] of Object.entries(toolModules)) {
+      if (module.meta?.apiType && module.meta?.fieldMapping) {
+        types.push(module.meta.apiType);
+      }
+    }
+    // Add legacy types
+    types.push(...Object.keys(LEGACY_MAPPINGS));
+    return types;
   }
 
   /**
@@ -559,4 +601,4 @@ class AISaveBridge {
 const aiSaveBridge = new AISaveBridge();
 
 export default aiSaveBridge;
-export { AISaveBridge, FIELD_MAPPINGS };
+export { AISaveBridge, getFieldMappingConfig, applyFieldMapping, mapToFields };

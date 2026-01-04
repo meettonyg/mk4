@@ -2,8 +2,11 @@
   "name": "Interview Prep Generator",
   "slug": "interview-prep-generator",
   "shortDescription": "Prepare comprehensive interview guides with questions, answers, and key messages.",
+  "emoji": "🎙️",
   "longDescription": "The Interview Prep Generator creates complete preparation guides for your media appearances. Get anticipated questions, suggested answers, key messages, and strategic talking points all in one comprehensive document.",
   "category": "strategy",
+  "buttonText": "Prepare Interview",
+  "supportsProfileSave": false,
   "icon": "ClipboardDocumentListIcon",
   "componentName": "InterviewPrepGenerator",
   "useCases": [
@@ -41,23 +44,41 @@
   },
   "landingContent": {
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "\u2728 Free AI Tool",
       "h1": "Free Interview Prep Generator",
       "subhead": "Generate comprehensive interview guides with anticipated questions, strategic answers, and key messages that ensure you shine.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 5,000+ media guests" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        {
+          "icon": "\u2713",
+          "text": "Used by 5,000+ media guests"
+        },
+        {
+          "icon": "\u2713",
+          "text": "No signup required"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Free forever"
+        }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "\u2728 AI Tool",
       "h1": "Interview Prep Generator",
       "subhead": "Walk into every interview fully prepared and confident.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        {
+          "icon": "\u2713",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Syncs across tools"
+        }
       ]
     },
     "intents": [
@@ -106,7 +127,7 @@
     ],
     "definition": {
       "title": "Why Prepare for Interviews?",
-      "content": "The best media guests don't wing it. They know their key messages, anticipate questions, and have practiced bridge phrases. Preparation isn't about scripting every word—it's about having frameworks that let you be confidently authentic."
+      "content": "The best media guests don't wing it. They know their key messages, anticipate questions, and have practiced bridge phrases. Preparation isn't about scripting every word\u2014it's about having frameworks that let you be confidently authentic."
     },
     "formula": "[CONTEXT] + [KEY MESSAGES] + [ANTICIPATED QUESTIONS] + [BRIDGE PHRASES] = Complete Interview Prep",
     "tips": [
@@ -200,7 +221,12 @@
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
-    "compatibility": ["Podcasts", "Press Interviews", "Panel Discussions", "Webinars"],
+    "compatibility": [
+      "Podcasts",
+      "Press Interviews",
+      "Panel Discussions",
+      "Webinars"
+    ],
     "relatedToolSlugs": [
       "questions-generator",
       "topics-generator",

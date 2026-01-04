@@ -2,8 +2,21 @@
   "name": "Guest Intro Generator",
   "slug": "guest-intro-generator",
   "shortDescription": "Create introductions for podcast hosts or event MCs to read when introducing you.",
+  "emoji": "🎤",
+  "apiType": "guest_intro",
+  "fieldMapping": {
+    "type": "simple",
+    "targetField": "introduction",
+    "sourceKeys": ["text", "value"]
+  },
+  "validation": {
+    "anyOf": ["biography", "credentials"],
+    "errorMessage": "Biography or credentials is required for guest intro generation"
+  },
   "longDescription": "The Guest Intro Generator creates polished introductions that hosts can read verbatim when welcoming you to their show or event. From brief podcast intros to extended keynote introductions, this tool ensures you make a memorable first impression every time.",
   "category": "message-builder",
+  "buttonText": "Generate Introduction",
+  "supportsProfileSave": true,
   "icon": "MicrophoneIcon",
   "componentName": "GuestIntroGenerator",
   "useCases": [
@@ -41,23 +54,41 @@
   },
   "landingContent": {
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "\u2728 Free AI Tool",
       "h1": "Free Guest Intro Generator",
       "subhead": "Generate polished introductions that podcast hosts and event MCs can read to welcome you perfectly.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 6,000+ speakers" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        {
+          "icon": "\u2713",
+          "text": "Used by 6,000+ speakers"
+        },
+        {
+          "icon": "\u2713",
+          "text": "No signup required"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Free forever"
+        }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "\u2728 AI Tool",
       "h1": "Guest Intro Generator",
       "subhead": "Create introductions that make every appearance memorable from the first moment.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        {
+          "icon": "\u2713",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Syncs across tools"
+        }
       ]
     },
     "intents": [
@@ -106,7 +137,7 @@
     ],
     "definition": {
       "title": "What is a Guest Introduction?",
-      "content": "A guest introduction is a brief, polished script that hosts read to welcome you to their show or event. The best introductions hook the audience, establish your credibility, and create anticipation—all before you say a word."
+      "content": "A guest introduction is a brief, polished script that hosts read to welcome you to their show or event. The best introductions hook the audience, establish your credibility, and create anticipation\u2014all before you say a word."
     },
     "formula": "[Opening Hook] + [Guest Credentials] + [Relevance to Audience] + [Warm Welcome]",
     "tips": [
@@ -200,7 +231,12 @@
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
-    "compatibility": ["Spotify", "Apple Podcasts", "YouTube", "Zoom"],
+    "compatibility": [
+      "Spotify",
+      "Apple Podcasts",
+      "YouTube",
+      "Zoom"
+    ],
     "relatedToolSlugs": [
       "biography-generator",
       "topics-generator",
