@@ -1,8 +1,8 @@
 <template>
   <div class="gmkb-tool-embed">
-    <!-- Profile Context Banner (logged-in users) -->
+    <!-- Profile Context Banner (logged-in users with profile-saveable tools only) -->
     <ProfileContextBanner
-      v-if="isLoggedIn"
+      v-if="isLoggedIn && supportsProfileSave"
       @profile-loaded="handleProfileLoaded"
       @profile-cleared="handleProfileCleared"
     />
@@ -85,16 +85,23 @@
               </p>
             </slot>
           </div>
-          <!-- Different CTA for logged-in vs guest users -->
-          <p v-if="showSaveCta && !isLoggedIn" class="preview-subtext">
+          <!-- Different CTA based on tool type and user state -->
+          <!-- Guest users on profile-saveable tools -->
+          <p v-if="showSaveCta && !isLoggedIn && supportsProfileSave" class="preview-subtext">
             {{ saveCtaPrefix }}
             <a href="#" @click.prevent="handleSaveClick">{{ saveCtaLink }}</a>
             {{ saveCtaSuffix }}
           </p>
-          <p v-else-if="showSaveCta && isLoggedIn && !hasSelectedProfile" class="preview-subtext">
+          <!-- Guest users on standalone tools -->
+          <p v-else-if="showSaveCta && !isLoggedIn && !supportsProfileSave" class="preview-subtext">
+            <a href="#" @click.prevent="handleSaveClick">Create a free account</a>
+            for unlimited generations.
+          </p>
+          <!-- Logged-in users on profile-saveable tools -->
+          <p v-else-if="showSaveCta && isLoggedIn && supportsProfileSave && !hasSelectedProfile" class="preview-subtext">
             Select a profile above to save your generated content.
           </p>
-          <p v-else-if="showSaveCta && isLoggedIn && hasSelectedProfile" class="preview-subtext">
+          <p v-else-if="showSaveCta && isLoggedIn && supportsProfileSave && hasSelectedProfile" class="preview-subtext">
             Generate content and save it directly to <strong>{{ selectedProfile?.title || 'your profile' }}</strong>.
           </p>
         </div>
@@ -153,8 +160,8 @@
               </a>
             </div>
 
-            <!-- Save CTA -->
-            <div v-if="isLoggedIn && hasSelectedProfile" class="save-cta-box save-cta-box--profile">
+            <!-- Save CTA (profile-saveable tools only) -->
+            <div v-if="supportsProfileSave && isLoggedIn && hasSelectedProfile" class="save-cta-box save-cta-box--profile">
               <div class="save-cta-text">
                 <strong>Save to {{ selectedProfile?.title || 'your profile' }}</strong>
                 <span>Updates your profile with this {{ contentNoun }}</span>
@@ -168,19 +175,29 @@
                 {{ savedToProfile ? '✓ Saved!' : (isSavingToProfile ? 'Saving...' : 'Save to Profile') }}
               </button>
             </div>
-            <div v-else-if="isLoggedIn && !hasSelectedProfile" class="save-cta-box save-cta-box--select">
+            <div v-else-if="supportsProfileSave && isLoggedIn && !hasSelectedProfile" class="save-cta-box save-cta-box--select">
               <div class="save-cta-text">
                 <strong>Select a profile above</strong>
                 <span>to save this {{ contentNoun }} to your account</span>
               </div>
             </div>
-            <div v-else class="save-cta-box">
+            <div v-else-if="supportsProfileSave && !isLoggedIn" class="save-cta-box">
               <div class="save-cta-text">
                 <strong>Keep this {{ contentNoun }} forever</strong>
                 <span>+ unlock your full messaging suite</span>
               </div>
               <button class="btn-save-account" @click="handleSaveClick">
                 Save with Free Account
+              </button>
+            </div>
+            <!-- Standalone tools - simpler CTA for guests -->
+            <div v-else-if="!supportsProfileSave && !isLoggedIn" class="save-cta-box">
+              <div class="save-cta-text">
+                <strong>Want unlimited generations?</strong>
+                <span>Create a free account to remove limits</span>
+              </div>
+              <button class="btn-save-account" @click="handleSaveClick">
+                Create Free Account
               </button>
             </div>
           </div>
@@ -394,6 +411,15 @@ const props = defineProps({
   isLoggedIn: {
     type: Boolean,
     default: false
+  },
+  /**
+   * Whether this tool supports saving to a profile
+   * Profile-saveable tools: biography, tagline, elevator-pitch, topics, authority-hook, etc.
+   * Standalone tools: podcast-details-extractor, blog, email, social-post, etc.
+   */
+  supportsProfileSave: {
+    type: Boolean,
+    default: true
   },
   /**
    * Registration URL

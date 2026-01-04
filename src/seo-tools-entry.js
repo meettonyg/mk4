@@ -341,6 +341,25 @@ function initializeEmbeddedTool(container) {
     // Get social login HTML (rendered by WordPress via Nextend Social Login or similar)
     const socialLoginHtml = window.gmkbSocialLogin?.html || '';
 
+    // Tools that support saving to a media kit profile
+    const PROFILE_SAVEABLE_TOOLS = [
+        'biography',
+        'tagline',
+        'elevator-pitch',
+        'topics',
+        'authority-hook',
+        'impact-intro',
+        'sound-bite',
+        'credibility-story',
+        'brand-story',
+        'signature-story',
+        'offers',
+        'guest-intro',
+        'questions',
+        'framework',
+    ];
+    const supportsProfileSave = PROFILE_SAVEABLE_TOOLS.includes(toolSlug);
+
     // Build related tools array from meta.relatedToolSlugs
     const relatedTools = buildRelatedTools(meta.relatedToolSlugs || [], toolSlug);
 
@@ -419,6 +438,7 @@ function initializeEmbeddedTool(container) {
                     // PLG conversion props
                     toolSlug: toolSlug,
                     isLoggedIn: isLoggedIn,
+                    supportsProfileSave: supportsProfileSave,
                     relatedTools: relatedTools,
                     testimonial: testimonial,
                     registerUrl: '/register/',
