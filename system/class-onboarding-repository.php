@@ -311,7 +311,8 @@ class GMKB_Onboarding_Repository {
      * Find user's most complete profile (User Mastery approach)
      *
      * Returns the profile with the most messaging fields complete
-     * (authority_hook, impact_intro, topics)
+     * (authority_hook, impact_intro, topics). Uses modified_date as
+     * tiebreaker when scores are equal (most recently updated wins).
      *
      * @param int $user_id User ID
      * @return int|null Best profile ID or null if none found
@@ -332,14 +333,19 @@ class GMKB_Onboarding_Repository {
         // Score each profile based on messaging completeness
         $best_id = null;
         $best_score = -1;
+        $best_modified = '0000-00-00 00:00:00';
 
         foreach ($profiles as $profile) {
             $profile_id = $profile['id'];
             $score = $this->calculate_profile_messaging_score($profile_id);
+            $post = get_post($profile_id);
+            $modified = $post ? $post->post_modified : '0000-00-00 00:00:00';
 
-            if ($score > $best_score) {
+            // Select if higher score, or same score but more recently modified
+            if ($score > $best_score || ($score == $best_score && $modified > $best_modified)) {
                 $best_score = $score;
                 $best_id = $profile_id;
+                $best_modified = $modified;
             }
         }
 
