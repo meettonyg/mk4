@@ -4,6 +4,8 @@
  * Part of the Unified AI Generator Architecture ("Modular Widgets")
  * This entry creates a self-contained Vue application for public-facing AI generators.
  *
+ * All tool metadata is read from each tool's meta.json for tool independence.
+ *
  * Features:
  * - Auto-mounts to elements with [data-gmkb-tool] attribute
  * - Tool directory page [data-gmkb-page-type="directory"]
@@ -26,7 +28,7 @@
  *
  * @package GMKB
  * @subpackage SEO Tools
- * @version 2.0.0
+ * @version 3.0.0
  * @since 2.2.0
  */
 
@@ -46,39 +48,41 @@ import ToolLandingPage from '@tools/ToolLandingPage.vue';
 import DynamicToolPage from '@tools/DynamicToolPage.vue';
 
 /**
- * Legacy alias mappings for backwards compatibility
- * Maps legacy slugs to their canonical tool slugs
+ * Build slug lookup map from toolModules for resolving slugs
+ * Uses each tool's meta.slug for canonical resolution
  */
-const LEGACY_ALIASES = {
-    'biography-generator': 'biography',
-    'topics-generator': 'topics',
-    'questions-generator': 'questions',
-    'tagline-generator': 'tagline',
-    'guest-intro-generator': 'guest-intro',
-    'authority-hook-builder': 'authority-hook',
-    'offers-generator': 'offers',
-    'elevator-pitch-generator': 'elevator-pitch',
-    'sound-bite-generator': 'sound-bite',
-    'persona-generator': 'persona',
-    'impact-intro-builder': 'impact-intro',
-    'brand-story-generator': 'brand-story',
-    'signature-story-generator': 'signature-story',
-    'credibility-story-generator': 'credibility-story',
-    'framework-builder': 'framework',
-    'interview-prep-generator': 'interview-prep',
-    'blog-generator': 'blog',
-    'content-repurposer': 'content-repurpose',
-    'press-release-generator': 'press-release',
-    'social-post-generator': 'social-post',
-    'email-writer': 'email',
-    'newsletter-writer': 'newsletter',
-    'youtube-description-generator': 'youtube-description',
-    'podcast-notes-generator': 'podcast-notes',
-};
+function buildSlugLookup() {
+    const lookup = {};
+
+    Object.entries(toolModules).forEach(([key, module]) => {
+        const meta = module.meta;
+        if (!meta) return;
+
+        // Map canonical key
+        lookup[key] = key;
+
+        // Map the meta.slug (e.g., 'biography-generator' -> 'biography')
+        if (meta.slug && meta.slug !== key) {
+            lookup[meta.slug] = key;
+        }
+    });
+
+    return lookup;
+}
+
+const SLUG_LOOKUP = buildSlugLookup();
+
+/**
+ * Resolve a tool slug to its canonical key
+ * @param {string} slug - Any form of tool slug
+ * @returns {string} Canonical tool key
+ */
+function resolveSlug(slug) {
+    return SLUG_LOOKUP[slug] || slug;
+}
 
 /**
  * Build component registry dynamically from toolModules
- * Generic function to avoid code duplication
  *
  * @param {string} componentKey - Key to extract from module (e.g., 'Widget', 'Generator')
  * @param {boolean} useDefaultFallback - Whether to fall back to module.default if componentKey not found
@@ -93,13 +97,11 @@ function buildComponentRegistry(componentKey, useDefaultFallback = false) {
             : module[componentKey];
         if (component) {
             registry[slug] = component;
-        }
-    });
 
-    // Add legacy aliases
-    Object.entries(LEGACY_ALIASES).forEach(([alias, canonicalSlug]) => {
-        if (registry[canonicalSlug]) {
-            registry[alias] = registry[canonicalSlug];
+            // Also register by meta.slug for backwards compatibility
+            if (module.meta?.slug && module.meta.slug !== slug) {
+                registry[module.meta.slug] = component;
+            }
         }
     });
 
@@ -108,13 +110,13 @@ function buildComponentRegistry(componentKey, useDefaultFallback = false) {
 
 /**
  * Component registry for data-gmkb-tool attribute values
- * Auto-generated from toolModules with legacy alias support
+ * Auto-generated from toolModules
  */
 const TOOL_COMPONENTS = buildComponentRegistry('Widget', true);
 
 /**
  * Generator component registry for PLG embedded mode
- * Auto-generated from toolModules with legacy alias support
+ * Auto-generated from toolModules
  */
 const EMBEDDED_GENERATORS = buildComponentRegistry('Generator');
 
@@ -484,99 +486,44 @@ function initializeEmbeddedTool(container) {
 
 /**
  * Build related tools array from slugs for PLG expansion panel
+ * Reads tool metadata from each tool's meta.json for tool independence
  *
  * @param {string[]} slugs - Array of tool slugs
  * @param {string} currentSlug - Current tool slug (to exclude)
  * @returns {Array} Array of related tool objects
  */
 function buildRelatedTools(slugs, currentSlug) {
-    // Tool metadata for building related tools cards
-    const toolMeta = {
-        'biography-generator': {
-            name: 'Biography Generator',
-            description: 'Turn your hook into a full professional bio',
-            icon: '📝',
-            url: '/tools/biography/',
-            requiresAccount: false
-        },
-        'biography': {
-            name: 'Biography Generator',
-            description: 'Turn your hook into a full professional bio',
-            icon: '📝',
-            url: '/tools/biography/',
-            requiresAccount: false
-        },
-        'elevator-pitch-generator': {
-            name: 'Elevator Pitch',
-            description: 'Expand your hook into a 30-second pitch',
-            icon: '🎯',
-            url: '/tools/elevator-pitch/',
-            requiresAccount: false
-        },
-        'elevator-pitch': {
-            name: 'Elevator Pitch',
-            description: 'Expand your hook into a 30-second pitch',
-            icon: '🎯',
-            url: '/tools/elevator-pitch/',
-            requiresAccount: false
-        },
-        'tagline-generator': {
-            name: 'Tagline Generator',
-            description: 'Condense your hook into a punchy tagline',
-            icon: '✨',
-            url: '/tools/tagline/',
-            requiresAccount: false
-        },
-        'tagline': {
-            name: 'Tagline Generator',
-            description: 'Condense your hook into a punchy tagline',
-            icon: '✨',
-            url: '/tools/tagline/',
-            requiresAccount: false
-        },
-        'impact-intro-builder': {
-            name: 'Impact Intro',
-            description: 'Create a compelling introduction statement',
-            icon: '💫',
-            url: '/tools/impact-intro/',
-            requiresAccount: false
-        },
-        'impact-intro': {
-            name: 'Impact Intro',
-            description: 'Create a compelling introduction statement',
-            icon: '💫',
-            url: '/tools/impact-intro/',
-            requiresAccount: false
-        },
-        'interview-prep-generator': {
-            name: 'Interview Prep',
-            description: 'Prepare talking points for podcast interviews',
-            icon: '🎙️',
-            url: '/tools/interview-prep/',
-            requiresAccount: true
-        },
-        'podcast-pitch': {
-            name: 'Podcast Pitch',
-            description: 'Use your hook to pitch podcast hosts',
-            icon: '📧',
-            url: '/dashboard/pitches/',
-            requiresAccount: true
-        }
-    };
-
     return slugs
         .filter(slug => slug !== currentSlug)
         .slice(0, 3) // Max 3 related tools
-        .map(slug => ({
-            slug,
-            ...(toolMeta[slug] || {
+        .map(slug => {
+            // Resolve slug to canonical key and get tool module
+            const canonicalSlug = resolveSlug(slug);
+            const module = toolModules[canonicalSlug];
+            const meta = module?.meta;
+
+            if (meta) {
+                // Build from tool's meta.json
+                return {
+                    slug: canonicalSlug,
+                    name: meta.name || canonicalSlug,
+                    description: meta.shortDescription || 'Continue building your messaging',
+                    icon: meta.icon || '🔧',
+                    url: `/tools/${canonicalSlug}/`,
+                    requiresAccount: meta.supportsProfileSave === true
+                };
+            }
+
+            // Fallback for unknown slugs
+            return {
+                slug,
                 name: slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
                 description: 'Continue building your messaging',
                 icon: '🔧',
                 url: `/tools/${slug}/`,
                 requiresAccount: false
-            })
-        }));
+            };
+        });
 }
 
 /**
