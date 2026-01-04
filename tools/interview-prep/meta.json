@@ -2,6 +2,7 @@
   "name": "Interview Prep Generator",
   "slug": "interview-prep-generator",
   "shortDescription": "Prepare comprehensive interview guides with questions, answers, and key messages.",
+  "emoji": "🎙️",
   "longDescription": "The Interview Prep Generator creates complete preparation guides for your media appearances. Get anticipated questions, suggested answers, key messages, and strategic talking points all in one comprehensive document.",
   "category": "strategy",
   "buttonText": "Prepare Interview",

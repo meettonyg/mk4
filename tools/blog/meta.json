@@ -2,6 +2,7 @@
   "name": "Blog Generator",
   "slug": "blog-generator",
   "shortDescription": "Create engaging blog posts and articles that establish thought leadership.",
+  "emoji": "📝",
   "longDescription": "The Blog Generator helps you create well-structured blog posts and articles that demonstrate your expertise and engage your audience. From outlines to full drafts, generate content that drives traffic and builds authority.",
   "category": "content",
   "buttonText": "Write Blog Post",

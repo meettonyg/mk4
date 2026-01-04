@@ -2,6 +2,7 @@
   "slug": "biography-generator",
   "name": "Biography Generator",
   "shortDescription": "Create professional biographies perfect for media kits, speaker profiles, and author pages.",
+  "emoji": "📝",
   "apiType": "biography",
   "fieldMapping": {
     "type": "object",

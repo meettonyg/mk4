@@ -2,6 +2,7 @@
   "name": "Social Post Generator",
   "slug": "social-post-generator",
   "shortDescription": "Create engaging social media posts optimized for each platform.",
+  "emoji": "📱",
   "longDescription": "The Social Post Generator helps you create platform-optimized social media content that drives engagement. From LinkedIn thought leadership to Twitter threads to Instagram captions, generate posts that resonate with your audience.",
   "category": "social-email",
   "buttonText": "Generate Post",

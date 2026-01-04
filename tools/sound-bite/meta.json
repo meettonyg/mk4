@@ -2,6 +2,7 @@
   "name": "Sound Bite Generator",
   "slug": "sound-bite-generator",
   "shortDescription": "Create quotable phrases and memorable one-liners perfect for media appearances.",
+  "emoji": "💬",
   "apiType": "sound_bite",
   "fieldMapping": {
     "type": "indexed_array",

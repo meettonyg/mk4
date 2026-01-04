@@ -2,6 +2,7 @@
   "name": "Podcast Show Notes Generator",
   "slug": "podcast-notes-generator",
   "shortDescription": "Create professional show notes for podcast episodes that drive listens.",
+  "emoji": "🎧",
   "longDescription": "The Podcast Show Notes Generator helps you create comprehensive show notes that attract listeners and improve discoverability. Generate summaries, timestamps, key takeaways, and resource links for every episode.",
   "category": "social-email",
   "buttonText": "Generate Show Notes",

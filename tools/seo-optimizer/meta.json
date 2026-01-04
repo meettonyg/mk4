@@ -2,6 +2,7 @@
   "name": "SEO Optimizer",
   "slug": "seo-optimizer",
   "shortDescription": "Optimize your content for search engines with titles, meta descriptions, and keywords.",
+  "emoji": "🔍",
   "longDescription": "The SEO Optimizer helps you optimize any content for search engine visibility. Generate compelling meta titles, descriptions, and keyword strategies that improve your rankings and drive organic traffic.",
   "category": "social-email",
   "buttonText": "Optimize Content",

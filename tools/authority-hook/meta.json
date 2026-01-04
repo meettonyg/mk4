@@ -2,6 +2,7 @@
   "name": "Authority Hook Builder",
   "slug": "authority-hook-builder",
   "shortDescription": "Build your \"Authority Hook\" - a framework for positioning yourself as an expert using the 6 W's.",
+  "emoji": "🎯",
   "apiType": "authority_hook",
   "fieldMapping": {
     "type": "object",

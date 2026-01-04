@@ -2,6 +2,7 @@
   "name": "Content Repurposer",
   "slug": "content-repurposer",
   "shortDescription": "Transform existing content into multiple formats for different platforms.",
+  "emoji": "♻️",
   "longDescription": "The Content Repurposer helps you maximize the value of your existing content by transforming it into different formats. Turn a blog post into social threads, podcast scripts into newsletters, and more.",
   "category": "content",
   "buttonText": "Repurpose Content",

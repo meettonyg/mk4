@@ -2,6 +2,7 @@
   "name": "Guest Intro Generator",
   "slug": "guest-intro-generator",
   "shortDescription": "Create introductions for podcast hosts or event MCs to read when introducing you.",
+  "emoji": "🎤",
   "apiType": "guest_intro",
   "fieldMapping": {
     "type": "simple",

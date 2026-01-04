@@ -2,6 +2,7 @@
   "name": "Impact Intro Builder",
   "slug": "impact-intro-builder",
   "shortDescription": "Create powerful introductions that lead with your impact and results.",
+  "emoji": "💫",
   "apiType": "impact_intro",
   "fieldMapping": {
     "type": "simple",

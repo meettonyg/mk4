@@ -2,6 +2,7 @@
   "name": "Email Writer",
   "slug": "email-writer",
   "shortDescription": "Write professional emails for outreach, follow-ups, and business communication.",
+  "emoji": "📧",
   "longDescription": "The Email Writer helps you craft professional emails that get responses. From cold outreach to warm follow-ups to partnership proposals, generate persuasive emails that achieve your communication goals.",
   "category": "social-email",
   "buttonText": "Write Email",

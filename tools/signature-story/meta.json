@@ -2,6 +2,7 @@
   "name": "Signature Story Generator",
   "slug": "signature-story-generator",
   "shortDescription": "Create a go-to story that illustrates your expertise and methodology.",
+  "emoji": "✍️",
   "apiType": "signature_story",
   "fieldMapping": {
     "type": "simple",

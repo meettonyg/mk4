@@ -270,7 +270,7 @@ export function buildRelatedTools(slugs, currentSlug) {
           slug: canonicalSlug,
           name: meta.name || canonicalSlug,
           description: meta.shortDescription || 'Continue building your messaging',
-          icon: meta.icon || '🔧',
+          icon: meta.emoji || '🔧',
           url: `/tools/${canonicalSlug}/`,
           requiresAccount: meta.supportsProfileSave === true
         };

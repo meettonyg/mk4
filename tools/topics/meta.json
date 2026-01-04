@@ -2,6 +2,7 @@
   "name": "Topics Generator",
   "slug": "topics-generator",
   "shortDescription": "Generate compelling speaking topics and podcast episode ideas tailored to your expertise.",
+  "emoji": "💡",
   "apiType": "topics",
   "fieldMapping": {
     "type": "indexed_array",

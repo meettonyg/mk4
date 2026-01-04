@@ -2,6 +2,7 @@
   "name": "Elevator Pitch Generator",
   "slug": "elevator-pitch-generator",
   "shortDescription": "Craft a compelling 30-second pitch that clearly communicates your value proposition.",
+  "emoji": "🚀",
   "apiType": "elevator_pitch",
   "fieldMapping": {
     "type": "simple",

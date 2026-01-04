@@ -2,6 +2,7 @@
   "name": "Framework Builder",
   "slug": "framework-builder",
   "shortDescription": "Create proprietary frameworks and methodologies that position you as a thought leader.",
+  "emoji": "🔷",
   "apiType": "framework",
   "fieldMapping": {
     "type": "object",

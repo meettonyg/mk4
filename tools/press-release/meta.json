@@ -2,6 +2,7 @@
   "name": "Press Release Generator",
   "slug": "press-release-generator",
   "shortDescription": "Create professional press releases for announcements and media outreach.",
+  "emoji": "📰",
   "longDescription": "The Press Release Generator helps you create properly formatted press releases that journalists actually want to read. From product launches to company news, generate media-ready announcements that follow AP style guidelines.",
   "category": "content",
   "buttonText": "Generate Press Release",

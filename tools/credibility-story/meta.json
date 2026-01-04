@@ -2,6 +2,7 @@
   "name": "Credibility Story Generator",
   "slug": "credibility-story-generator",
   "shortDescription": "Create stories that establish your authority and build trust with your audience.",
+  "emoji": "🏆",
   "apiType": "credibility_story",
   "fieldMapping": {
     "type": "simple",

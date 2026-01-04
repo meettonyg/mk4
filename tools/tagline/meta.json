@@ -2,6 +2,7 @@
   "name": "Tagline Generator",
   "slug": "tagline-generator",
   "shortDescription": "Create compelling headlines, taglines, and value propositions that capture attention.",
+  "emoji": "✨",
   "apiType": "tagline",
   "fieldMapping": {
     "type": "simple",

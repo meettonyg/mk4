@@ -2,6 +2,7 @@
   "name": "Offers Generator",
   "slug": "offers-generator",
   "shortDescription": "Create compelling service offerings and product descriptions for your media kit.",
+  "emoji": "🎁",
   "apiType": "offers",
   "fieldMapping": {
     "type": "native_api",

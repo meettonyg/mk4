@@ -2,6 +2,7 @@
   "name": "Persona Generator",
   "slug": "persona-generator",
   "shortDescription": "Create detailed audience personas to better understand and reach your ideal clients.",
+  "emoji": "👤",
   "longDescription": "The Persona Generator helps you build comprehensive profiles of your ideal audience members. Understand their pain points, desires, objections, and communication preferences to create content and messaging that truly resonates.",
   "category": "value-builder",
   "buttonText": "Generate Persona",

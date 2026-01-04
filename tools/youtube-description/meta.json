@@ -2,6 +2,7 @@
   "name": "YouTube Description Generator",
   "slug": "youtube-description-generator",
   "shortDescription": "Create optimized YouTube video descriptions that drive views and engagement.",
+  "emoji": "🎬",
   "longDescription": "The YouTube Description Generator helps you write compelling video descriptions that improve discoverability and drive engagement. Generate SEO-optimized descriptions with proper timestamps, calls-to-action, and links.",
   "category": "social-email",
   "buttonText": "Generate Description",

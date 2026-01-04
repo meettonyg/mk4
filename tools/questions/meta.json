@@ -2,6 +2,7 @@
   "name": "Questions Generator",
   "slug": "questions-generator",
   "shortDescription": "Create interview questions and suggested answers for media appearances and podcasts.",
+  "emoji": "❓",
   "apiType": "questions",
   "fieldMapping": {
     "type": "indexed_array",

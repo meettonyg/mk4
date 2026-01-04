@@ -2,6 +2,7 @@
   "name": "Newsletter Writer",
   "slug": "newsletter-writer",
   "shortDescription": "Create engaging email newsletters that build audience relationships.",
+  "emoji": "📬",
   "longDescription": "The Newsletter Writer helps you create compelling email newsletters that engage subscribers and build loyal audiences. From welcome sequences to weekly updates to promotional campaigns, generate newsletters that get opened and clicked.",
   "category": "social-email",
   "buttonText": "Write Newsletter",

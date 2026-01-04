@@ -2,6 +2,7 @@
   "name": "Brand Story Generator",
   "slug": "brand-story-generator",
   "shortDescription": "Create a compelling brand narrative that connects with your audience emotionally.",
+  "emoji": "📖",
   "apiType": "brand_story",
   "fieldMapping": {
     "type": "simple",
