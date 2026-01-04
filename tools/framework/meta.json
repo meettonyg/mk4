@@ -2,6 +2,20 @@
   "name": "Framework Builder",
   "slug": "framework-builder",
   "shortDescription": "Create proprietary frameworks and methodologies that position you as a thought leader.",
+  "apiType": "framework",
+  "fieldMapping": {
+    "type": "object",
+    "fields": {
+      "name": "framework_name",
+      "steps": "framework_steps",
+      "description": "framework_description",
+      "content": "framework_description"
+    }
+  },
+  "validation": {
+    "anyOf": ["process", "approach", "skill", "outcome"],
+    "errorMessage": "Process or approach details are required for framework generation"
+  },
   "longDescription": "The Framework Builder helps you develop and articulate your unique methodology or process. Turn your approach into a branded, teachable framework that differentiates you and establishes intellectual property.",
   "category": "strategy",
   "buttonText": "Create Framework",

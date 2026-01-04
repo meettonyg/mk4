@@ -2,6 +2,16 @@
   "name": "Signature Story Generator",
   "slug": "signature-story-generator",
   "shortDescription": "Create a go-to story that illustrates your expertise and methodology.",
+  "apiType": "signature_story",
+  "fieldMapping": {
+    "type": "simple",
+    "targetField": "signature_story",
+    "sourceKeys": ["text", "value", "content", "story"]
+  },
+  "validation": {
+    "anyOf": ["challenge", "result", "moment", "lesson"],
+    "errorMessage": "Challenge or transformation details are required for signature story generation"
+  },
   "longDescription": "The Signature Story Generator helps you develop a memorable story that demonstrates your unique approach and expertise. This story becomes your go-to illustration in presentations, interviews, and sales conversations.",
   "category": "strategy",
   "buttonText": "Create Story",

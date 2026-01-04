@@ -2,6 +2,17 @@
   "name": "Topics Generator",
   "slug": "topics-generator",
   "shortDescription": "Generate compelling speaking topics and podcast episode ideas tailored to your expertise.",
+  "apiType": "topics",
+  "fieldMapping": {
+    "type": "indexed_array",
+    "prefix": "topic_",
+    "maxItems": 5,
+    "sourceKeys": ["title", "text", "value"]
+  },
+  "validation": {
+    "anyOf": ["expertise", "authorityHook"],
+    "errorMessage": "Expertise or authority hook is required for topics generation"
+  },
   "longDescription": "The Topics Generator helps speakers, podcast hosts, and thought leaders create engaging topics that resonate with their target audience. Whether you need keynote ideas, podcast episode concepts, or workshop themes, this AI-powered tool generates relevant, actionable topics based on your expertise and audience.",
   "category": "message-builder",
   "buttonText": "Generate Topics",

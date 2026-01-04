@@ -2,6 +2,16 @@
   "name": "Tagline Generator",
   "slug": "tagline-generator",
   "shortDescription": "Create compelling headlines, taglines, and value propositions that capture attention.",
+  "apiType": "tagline",
+  "fieldMapping": {
+    "type": "simple",
+    "targetField": "tagline",
+    "sourceKeys": ["text", "value"]
+  },
+  "validation": {
+    "anyOf": ["authorityHook", "name"],
+    "errorMessage": "Authority hook or name is required for tagline generation"
+  },
   "longDescription": "The Tagline Generator helps you craft memorable headlines and value propositions that instantly communicate your unique value. Whether you need a punchy tagline for your brand, a compelling headline for your media kit, or a powerful value proposition, this tool delivers results that resonate.",
   "category": "message-builder",
   "buttonText": "Create Tagline",

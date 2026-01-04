@@ -2,6 +2,22 @@
   "name": "Authority Hook Builder",
   "slug": "authority-hook-builder",
   "shortDescription": "Build your \"Authority Hook\" - a framework for positioning yourself as an expert using the 6 W's.",
+  "apiType": "authority_hook",
+  "fieldMapping": {
+    "type": "object",
+    "fields": {
+      "who": "hook_who",
+      "what": "hook_what",
+      "when": "hook_when",
+      "how": "hook_how",
+      "statement": "authority_statement",
+      "summary": "authority_hook_summary"
+    }
+  },
+  "validation": {
+    "anyOf": ["who", "what"],
+    "errorMessage": "At least \"who\" or \"what\" is required for authority hook generation"
+  },
   "longDescription": "The Authority Hook Builder uses the proven 6 W's framework (Who, What, When, How, Where, Why) to create a powerful positioning statement that establishes your expertise. This structured approach ensures you communicate your unique value proposition clearly and memorably.",
   "category": "value-builder",
   "buttonText": "Build Hook",

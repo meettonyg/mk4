@@ -2,6 +2,16 @@
   "name": "Elevator Pitch Generator",
   "slug": "elevator-pitch-generator",
   "shortDescription": "Craft a compelling 30-second pitch that clearly communicates your value proposition.",
+  "apiType": "elevator_pitch",
+  "fieldMapping": {
+    "type": "simple",
+    "targetField": "elevator_pitch",
+    "sourceKeys": ["text", "value"]
+  },
+  "validation": {
+    "anyOf": ["authorityHook", "name", "role"],
+    "errorMessage": "Authority hook, name, or role is required for elevator pitch generation"
+  },
   "longDescription": "The Elevator Pitch Generator helps you create a concise, memorable pitch that captures who you are, what you do, and why it matters - all in 30 seconds or less. Perfect for networking events, cold introductions, and quick explanations of your work.",
   "category": "value-builder",
   "buttonText": "Generate Pitch",

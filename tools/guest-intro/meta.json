@@ -2,6 +2,16 @@
   "name": "Guest Intro Generator",
   "slug": "guest-intro-generator",
   "shortDescription": "Create introductions for podcast hosts or event MCs to read when introducing you.",
+  "apiType": "guest_intro",
+  "fieldMapping": {
+    "type": "simple",
+    "targetField": "introduction",
+    "sourceKeys": ["text", "value"]
+  },
+  "validation": {
+    "anyOf": ["biography", "credentials"],
+    "errorMessage": "Biography or credentials is required for guest intro generation"
+  },
   "longDescription": "The Guest Intro Generator creates polished introductions that hosts can read verbatim when welcoming you to their show or event. From brief podcast intros to extended keynote introductions, this tool ensures you make a memorable first impression every time.",
   "category": "message-builder",
   "buttonText": "Generate Introduction",

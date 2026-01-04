@@ -2,6 +2,21 @@
   "slug": "biography-generator",
   "name": "Biography Generator",
   "shortDescription": "Create professional biographies perfect for media kits, speaker profiles, and author pages.",
+  "apiType": "biography",
+  "fieldMapping": {
+    "type": "object",
+    "fields": {
+      "short": "biography_short",
+      "medium": "biography",
+      "long": "biography_long",
+      "content": "biography",
+      "biography": "biography"
+    }
+  },
+  "validation": {
+    "anyOf": ["name", "authorityHook"],
+    "errorMessage": "Name or authority hook is required for biography generation"
+  },
   "longDescription": "The Biography Generator helps you craft compelling professional bios that showcase your expertise, achievements, and unique value. Whether you need a short bio for social media or a comprehensive one for speaking engagements, this AI-powered tool creates polished, professional content tailored to your needs.",
   "category": "message-builder",
   "buttonText": "Generate Bio",

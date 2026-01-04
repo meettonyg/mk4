@@ -2,6 +2,17 @@
   "name": "Questions Generator",
   "slug": "questions-generator",
   "shortDescription": "Create interview questions and suggested answers for media appearances and podcasts.",
+  "apiType": "questions",
+  "fieldMapping": {
+    "type": "indexed_array",
+    "prefix": "question_",
+    "maxItems": 25,
+    "sourceKeys": ["question", "text", "value"]
+  },
+  "validation": {
+    "anyOf": ["topics", "authorityHook"],
+    "errorMessage": "Topics or authority hook is required for questions generation"
+  },
   "longDescription": "The Questions Generator helps you prepare for interviews by creating relevant questions and thoughtful answers based on your expertise. Perfect for podcast appearances, press interviews, and panel discussions, this tool ensures you're always ready to deliver compelling responses.",
   "category": "message-builder",
   "buttonText": "Generate Questions",

@@ -2,6 +2,15 @@
   "name": "Offers Generator",
   "slug": "offers-generator",
   "shortDescription": "Create compelling service offerings and product descriptions for your media kit.",
+  "apiType": "offers",
+  "fieldMapping": {
+    "type": "native_api",
+    "apiEndpoint": "offers"
+  },
+  "validation": {
+    "anyOf": ["services", "authorityHook"],
+    "errorMessage": "Services or authority hook is required for offers generation"
+  },
   "longDescription": "The Offers Generator helps you articulate your services, products, and offerings in a way that resonates with potential clients. Create clear, compelling descriptions that showcase the value you provide and drive conversions.",
   "category": "message-builder",
   "buttonText": "Create Offer",

@@ -2,6 +2,17 @@
   "name": "Sound Bite Generator",
   "slug": "sound-bite-generator",
   "shortDescription": "Create quotable phrases and memorable one-liners perfect for media appearances.",
+  "apiType": "sound_bite",
+  "fieldMapping": {
+    "type": "indexed_array",
+    "prefix": "sound_bite_",
+    "maxItems": 10,
+    "sourceKeys": ["text", "value", "quote", "content"]
+  },
+  "validation": {
+    "anyOf": ["topic", "message", "perspective"],
+    "errorMessage": "Topic or message is required for sound bite generation"
+  },
   "longDescription": "The Sound Bite Generator helps you craft memorable, quotable phrases that journalists love to share and audiences remember. Perfect for press interviews, podcast appearances, and social media, these bite-sized gems make you eminently quotable.",
   "category": "value-builder",
   "buttonText": "Generate Sound Bites",

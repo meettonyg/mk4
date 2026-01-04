@@ -2,6 +2,16 @@
   "name": "Brand Story Generator",
   "slug": "brand-story-generator",
   "shortDescription": "Create a compelling brand narrative that connects with your audience emotionally.",
+  "apiType": "brand_story",
+  "fieldMapping": {
+    "type": "simple",
+    "targetField": "brand_story",
+    "sourceKeys": ["text", "value", "content", "story"]
+  },
+  "validation": {
+    "anyOf": ["catalyst", "mission", "journey", "purpose"],
+    "errorMessage": "Origin story or mission details are required for brand story generation"
+  },
   "longDescription": "The Brand Story Generator helps you craft a narrative that explains why you do what you do, building emotional connections with your audience. Transform your journey into a story that resonates, inspires trust, and differentiates you from competitors.",
   "category": "strategy",
   "buttonText": "Create Story",

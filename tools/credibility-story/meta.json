@@ -2,6 +2,16 @@
   "name": "Credibility Story Generator",
   "slug": "credibility-story-generator",
   "shortDescription": "Create stories that establish your authority and build trust with your audience.",
+  "apiType": "credibility_story",
+  "fieldMapping": {
+    "type": "simple",
+    "targetField": "credibility_story",
+    "sourceKeys": ["text", "value", "content", "story"]
+  },
+  "validation": {
+    "anyOf": ["client", "outcome", "recognition", "experience"],
+    "errorMessage": "Client results or credentials are required for credibility story generation"
+  },
   "longDescription": "The Credibility Story Generator helps you craft narratives that demonstrate your expertise through experience, results, and recognition. Build trust with potential clients by showing, not just telling, why you're the right choice.",
   "category": "strategy",
   "buttonText": "Create Story",
