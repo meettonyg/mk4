@@ -4,6 +4,8 @@
   "shortDescription": "Build your \"Authority Hook\" - a framework for positioning yourself as an expert using the 6 W's.",
   "longDescription": "The Authority Hook Builder uses the proven 6 W's framework (Who, What, When, How, Where, Why) to create a powerful positioning statement that establishes your expertise. This structured approach ensures you communicate your unique value proposition clearly and memorably.",
   "category": "value-builder",
+  "buttonText": "Build Hook",
+  "supportsProfileSave": true,
   "icon": "TrophyIcon",
   "componentName": "AuthorityHookBuilder",
   "useCases": [
@@ -41,23 +43,41 @@
   },
   "landingContent": {
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "\u2728 Free AI Tool",
       "h1": "Free Authority Hook Generator",
       "subhead": "Generate a positioning statement that establishes your expertise using the 6 W's framework.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 12,000+ experts" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        {
+          "icon": "\u2713",
+          "text": "Used by 12,000+ experts"
+        },
+        {
+          "icon": "\u2713",
+          "text": "No signup required"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Free forever"
+        }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "\u2728 AI Tool",
       "h1": "Authority Hook Generator",
       "subhead": "Generate a positioning statement that establishes your expertise using the 6 W's framework.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        {
+          "icon": "\u2713",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Syncs across tools"
+        }
       ]
     },
     "intents": [
@@ -65,7 +85,7 @@
         "id": "authority",
         "label": "Build Authority",
         "contextHeading": "Be recognized as the trusted voice",
-        "contextDescription": "Find high-authority shows, position yourself as an expert, and build host relationships—reaching the right audience with lasting influence.",
+        "contextDescription": "Find high-authority shows, position yourself as an expert, and build host relationships\u2014reaching the right audience with lasting influence.",
         "formLabels": {
           "who": "Who do you help? (Target Audience)",
           "what": "What result do they get?"
@@ -200,7 +220,12 @@
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
-    "compatibility": ["Spotify", "Apple Podcasts", "YouTube", "LinkedIn"],
+    "compatibility": [
+      "Spotify",
+      "Apple Podcasts",
+      "YouTube",
+      "LinkedIn"
+    ],
     "relatedToolSlugs": [
       "biography-generator",
       "elevator-pitch-generator",

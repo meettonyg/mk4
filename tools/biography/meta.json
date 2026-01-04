@@ -4,6 +4,8 @@
   "shortDescription": "Create professional biographies perfect for media kits, speaker profiles, and author pages.",
   "longDescription": "The Biography Generator helps you craft compelling professional bios that showcase your expertise, achievements, and unique value. Whether you need a short bio for social media or a comprehensive one for speaking engagements, this AI-powered tool creates polished, professional content tailored to your needs.",
   "category": "message-builder",
+  "buttonText": "Generate Bio",
+  "supportsProfileSave": true,
   "icon": "UserCircleIcon",
   "useCases": [
     "Create speaker bios for conference submissions",

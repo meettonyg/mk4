@@ -4,6 +4,8 @@
   "shortDescription": "Extract podcast information and contact details from Apple Podcasts or Google Podcasts URLs.",
   "longDescription": "The Podcast Details Extractor helps you quickly gather essential information about any podcast from its Apple Podcasts or Google Podcasts URL. Get the podcast owner's email, show description, category, and more - all the details you need to craft the perfect pitch.",
   "category": "strategy",
+  "buttonText": "Extract Details",
+  "supportsProfileSave": false,
   "icon": "MicrophoneIcon",
   "useCases": [
     "Research podcasts before pitching as a guest",

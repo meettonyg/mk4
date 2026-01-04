@@ -4,6 +4,8 @@
   "shortDescription": "Create powerful introductions that lead with your impact and results.",
   "longDescription": "The Impact Intro Builder helps you craft introductions that lead with the transformation you create, not just your credentials. Perfect for networking, speaking engagements, and professional profiles that need to make an immediate impression.",
   "category": "value-builder",
+  "buttonText": "Create Intro",
+  "supportsProfileSave": true,
   "icon": "ArrowTrendingUpIcon",
   "componentName": "ImpactIntroBuilder",
   "useCases": [
@@ -41,23 +43,41 @@
   },
   "landingContent": {
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "\u2728 Free AI Tool",
       "h1": "Free Impact Intro Builder",
       "subhead": "Create powerful introductions that immediately communicate the transformation you deliver and the results you achieve.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 7,000+ professionals" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        {
+          "icon": "\u2713",
+          "text": "Used by 7,000+ professionals"
+        },
+        {
+          "icon": "\u2713",
+          "text": "No signup required"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Free forever"
+        }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "\u2728 AI Tool",
       "h1": "Impact Intro Builder",
       "subhead": "Lead with your results, not your resume. Make every introduction count.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        {
+          "icon": "\u2713",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Syncs across tools"
+        }
       ]
     },
     "intents": [
@@ -204,7 +224,12 @@
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
-    "compatibility": ["LinkedIn", "Website", "Networking Events", "Presentations"],
+    "compatibility": [
+      "LinkedIn",
+      "Website",
+      "Networking Events",
+      "Presentations"
+    ],
     "relatedToolSlugs": [
       "elevator-pitch-generator",
       "authority-hook-builder",

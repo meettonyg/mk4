@@ -4,6 +4,8 @@
   "shortDescription": "Write professional emails for outreach, follow-ups, and business communication.",
   "longDescription": "The Email Writer helps you craft professional emails that get responses. From cold outreach to warm follow-ups to partnership proposals, generate persuasive emails that achieve your communication goals.",
   "category": "social-email",
+  "buttonText": "Write Email",
+  "supportsProfileSave": false,
   "icon": "EnvelopeIcon",
   "componentName": "EmailWriterGenerator",
   "useCases": [
@@ -41,23 +43,41 @@
   },
   "landingContent": {
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "\u2728 Free AI Tool",
       "h1": "Free Email Writer",
       "subhead": "Generate professional, persuasive emails that achieve your communication goals and get responses.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 9,000+ professionals" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        {
+          "icon": "\u2713",
+          "text": "Used by 9,000+ professionals"
+        },
+        {
+          "icon": "\u2713",
+          "text": "No signup required"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Free forever"
+        }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "\u2728 AI Tool",
       "h1": "Email Writer",
       "subhead": "Write emails that get opened, read, and responded to.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        {
+          "icon": "\u2713",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Syncs across tools"
+        }
       ]
     },
     "intents": [
@@ -200,7 +220,12 @@
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
-    "compatibility": ["Gmail", "Outlook", "HubSpot", "Mailchimp"],
+    "compatibility": [
+      "Gmail",
+      "Outlook",
+      "HubSpot",
+      "Mailchimp"
+    ],
     "relatedToolSlugs": [
       "newsletter-writer",
       "offers-generator",

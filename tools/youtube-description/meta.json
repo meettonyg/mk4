@@ -4,6 +4,8 @@
   "shortDescription": "Create optimized YouTube video descriptions that drive views and engagement.",
   "longDescription": "The YouTube Description Generator helps you write compelling video descriptions that improve discoverability and drive engagement. Generate SEO-optimized descriptions with proper timestamps, calls-to-action, and links.",
   "category": "social-email",
+  "buttonText": "Generate Description",
+  "supportsProfileSave": false,
   "icon": "PlayCircleIcon",
   "componentName": "YoutubeDescriptionGenerator",
   "useCases": [
@@ -41,23 +43,41 @@
   },
   "landingContent": {
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "\u2728 Free AI Tool",
       "h1": "Free YouTube Description Generator",
       "subhead": "Generate SEO-optimized video descriptions with timestamps, CTAs, and keywords that help your videos get discovered.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 8,000+ creators" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        {
+          "icon": "\u2713",
+          "text": "Used by 8,000+ creators"
+        },
+        {
+          "icon": "\u2713",
+          "text": "No signup required"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Free forever"
+        }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "\u2728 AI Tool",
       "h1": "YouTube Description Generator",
       "subhead": "Create video descriptions that get more views and engagement.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        {
+          "icon": "\u2713",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Syncs across tools"
+        }
       ]
     },
     "intents": [
@@ -118,15 +138,15 @@
     "examples": [
       {
         "title": "Tutorial Video",
-        "content": "In this video, I show you exactly how to [specific outcome] in [timeframe]. Whether you're [beginner/intermediate], these [number] steps will help you [benefit].\n\n⏱️ TIMESTAMPS\n0:00 - Introduction\n1:23 - Step 1...\n\n🔗 RESOURCES\n[Links mentioned]"
+        "content": "In this video, I show you exactly how to [specific outcome] in [timeframe]. Whether you're [beginner/intermediate], these [number] steps will help you [benefit].\n\n\u23f1\ufe0f TIMESTAMPS\n0:00 - Introduction\n1:23 - Step 1...\n\n\ud83d\udd17 RESOURCES\n[Links mentioned]"
       },
       {
         "title": "Interview/Podcast",
-        "content": "[Guest name] joins me to discuss [topic]. We cover [key point 1], [key point 2], and [key point 3].\n\n👤 ABOUT [GUEST]\n[Brief bio + links]\n\n⏱️ TIMESTAMPS\n0:00 - Who is [Guest]?\n..."
+        "content": "[Guest name] joins me to discuss [topic]. We cover [key point 1], [key point 2], and [key point 3].\n\n\ud83d\udc64 ABOUT [GUEST]\n[Brief bio + links]\n\n\u23f1\ufe0f TIMESTAMPS\n0:00 - Who is [Guest]?\n..."
       },
       {
         "title": "Vlog/Story",
-        "content": "[Hook that creates curiosity]. In this video, I take you through [experience] and share [insight or lesson].\n\n📌 KEY MOMENTS\n0:00 - [Teaser]\n2:30 - [Highlight]\n\n🔔 Subscribe for more [content type]"
+        "content": "[Hook that creates curiosity]. In this video, I take you through [experience] and share [insight or lesson].\n\n\ud83d\udccc KEY MOMENTS\n0:00 - [Teaser]\n2:30 - [Highlight]\n\n\ud83d\udd14 Subscribe for more [content type]"
       }
     ],
     "howItWorks": [
@@ -200,7 +220,12 @@
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
-    "compatibility": ["YouTube", "YouTube Shorts", "Vimeo", "Wistia"],
+    "compatibility": [
+      "YouTube",
+      "YouTube Shorts",
+      "Vimeo",
+      "Wistia"
+    ],
     "relatedToolSlugs": [
       "podcast-notes-generator",
       "content-repurposer",

@@ -4,6 +4,8 @@
   "shortDescription": "Create professional show notes for podcast episodes that drive listens.",
   "longDescription": "The Podcast Show Notes Generator helps you create comprehensive show notes that attract listeners and improve discoverability. Generate summaries, timestamps, key takeaways, and resource links for every episode.",
   "category": "social-email",
+  "buttonText": "Generate Show Notes",
+  "supportsProfileSave": false,
   "icon": "MicrophoneIcon",
   "componentName": "PodcastNotesGenerator",
   "useCases": [
@@ -41,23 +43,41 @@
   },
   "landingContent": {
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "\u2728 Free AI Tool",
       "h1": "Free Podcast Show Notes Generator",
       "subhead": "Generate comprehensive podcast show notes with summaries, timestamps, and key takeaways that help listeners find and engage with your episodes.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 5,000+ podcasters" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        {
+          "icon": "\u2713",
+          "text": "Used by 5,000+ podcasters"
+        },
+        {
+          "icon": "\u2713",
+          "text": "No signup required"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Free forever"
+        }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "\u2728 AI Tool",
       "h1": "Podcast Show Notes Generator",
       "subhead": "Turn browsers into listeners with show notes that convert.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        {
+          "icon": "\u2713",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Syncs across tools"
+        }
       ]
     },
     "intents": [
@@ -118,7 +138,7 @@
     "examples": [
       {
         "title": "Interview Episode",
-        "content": "SUMMARY: [Guest] shares how they [achieved outcome]. We discuss [topic 1], [topic 2], and why most people [common mistake].\n\nKEY TAKEAWAYS:\n• [Insight 1]\n• [Insight 2]\n• [Insight 3]\n\nABOUT [GUEST]: [Bio + links]"
+        "content": "SUMMARY: [Guest] shares how they [achieved outcome]. We discuss [topic 1], [topic 2], and why most people [common mistake].\n\nKEY TAKEAWAYS:\n\u2022 [Insight 1]\n\u2022 [Insight 2]\n\u2022 [Insight 3]\n\nABOUT [GUEST]: [Bio + links]"
       },
       {
         "title": "Solo Episode",
@@ -126,7 +146,7 @@
       },
       {
         "title": "Roundup Episode",
-        "content": "SUMMARY: I've compiled the best advice from [X] guests on [topic]. These are the patterns that separate [successful outcome] from [failure].\n\nFEATURED GUESTS:\n• [Guest 1] on [their topic]\n• [Guest 2] on [their topic]"
+        "content": "SUMMARY: I've compiled the best advice from [X] guests on [topic]. These are the patterns that separate [successful outcome] from [failure].\n\nFEATURED GUESTS:\n\u2022 [Guest 1] on [their topic]\n\u2022 [Guest 2] on [their topic]"
       }
     ],
     "howItWorks": [
@@ -200,7 +220,12 @@
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
-    "compatibility": ["Spotify", "Apple Podcasts", "Transistor", "Buzzsprout"],
+    "compatibility": [
+      "Spotify",
+      "Apple Podcasts",
+      "Transistor",
+      "Buzzsprout"
+    ],
     "relatedToolSlugs": [
       "youtube-description-generator",
       "content-repurposer",

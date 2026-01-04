@@ -341,54 +341,10 @@ function initializeEmbeddedTool(container) {
     // Get social login HTML (rendered by WordPress via Nextend Social Login or similar)
     const socialLoginHtml = window.gmkbSocialLogin?.html || '';
 
-    // Tools that support saving to a media kit profile
-    const PROFILE_SAVEABLE_TOOLS = [
-        'biography',
-        'tagline',
-        'elevator-pitch',
-        'topics',
-        'authority-hook',
-        'impact-intro',
-        'sound-bite',
-        'credibility-story',
-        'brand-story',
-        'signature-story',
-        'offers',
-        'guest-intro',
-        'questions',
-        'framework',
-    ];
-    const supportsProfileSave = PROFILE_SAVEABLE_TOOLS.includes(toolSlug);
-
-    // Tool-specific button text (action-oriented, matches what the tool does)
-    const TOOL_BUTTON_TEXT = {
-        'authority-hook': 'Build Hook',
-        'biography': 'Generate Bio',
-        'blog': 'Write Blog Post',
-        'brand-story': 'Create Story',
-        'content-repurpose': 'Repurpose Content',
-        'credibility-story': 'Create Story',
-        'elevator-pitch': 'Generate Pitch',
-        'email': 'Write Email',
-        'framework': 'Create Framework',
-        'guest-intro': 'Generate Introduction',
-        'impact-intro': 'Create Intro',
-        'interview-prep': 'Prepare Interview',
-        'newsletter': 'Write Newsletter',
-        'offers': 'Create Offer',
-        'persona': 'Generate Persona',
-        'podcast-details-extractor': 'Extract Details',
-        'podcast-notes': 'Generate Show Notes',
-        'press-release': 'Generate Press Release',
-        'questions': 'Generate Questions',
-        'seo-optimizer': 'Optimize Content',
-        'signature-story': 'Create Story',
-        'social-post': 'Generate Post',
-        'sound-bite': 'Generate Sound Bites',
-        'tagline': 'Create Tagline',
-        'topics': 'Generate Topics',
-        'youtube-description': 'Generate Description',
-    };
+    // Read tool configuration from meta (tool-independent approach)
+    // Each tool defines its own buttonText and supportsProfileSave in meta.json
+    const supportsProfileSave = meta.supportsProfileSave ?? true; // Default true for backwards compatibility
+    const buttonText = meta.buttonText || `Generate ${meta.name || 'Content'}`;
 
     // Build related tools array from meta.relatedToolSlugs
     const relatedTools = buildRelatedTools(meta.relatedToolSlugs || [], toolSlug);
@@ -459,7 +415,7 @@ function initializeEmbeddedTool(container) {
                     defaultDescription: meta.hero?.contextDescription || '',
                     isGenerating: this.isGenerating,
                     canGenerate: this.canGenerate,
-                    generateButtonText: TOOL_BUTTON_TEXT[toolSlug] || `Generate ${toolDisplayName}`,
+                    generateButtonText: buttonText,
                     previewContent: this.previewContent,
                     // Tool-specific labels
                     resultLabel: `Your ${toolDisplayName}`,

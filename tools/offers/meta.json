@@ -4,6 +4,8 @@
   "shortDescription": "Create compelling service offerings and product descriptions for your media kit.",
   "longDescription": "The Offers Generator helps you articulate your services, products, and offerings in a way that resonates with potential clients. Create clear, compelling descriptions that showcase the value you provide and drive conversions.",
   "category": "message-builder",
+  "buttonText": "Create Offer",
+  "supportsProfileSave": true,
   "icon": "GiftIcon",
   "componentName": "OffersGenerator",
   "useCases": [
@@ -41,23 +43,41 @@
   },
   "landingContent": {
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "\u2728 Free AI Tool",
       "h1": "Free Offers Generator",
       "subhead": "Generate professional service descriptions and product offerings that clearly communicate your value and drive conversions.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 5,000+ entrepreneurs" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        {
+          "icon": "\u2713",
+          "text": "Used by 5,000+ entrepreneurs"
+        },
+        {
+          "icon": "\u2713",
+          "text": "No signup required"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Free forever"
+        }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "\u2728 AI Tool",
       "h1": "Offers Generator",
       "subhead": "Create compelling service offerings that convert prospects into paying clients.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        {
+          "icon": "\u2713",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Syncs across tools"
+        }
       ]
     },
     "intents": [
@@ -108,7 +128,7 @@
       "title": "What Makes a Compelling Offer?",
       "content": "A compelling offer clearly communicates the transformation you deliver, not just what you do. It speaks to your ideal client's pain points, presents a clear path to their desired outcome, and removes friction from taking the next step."
     },
-    "formula": "[FREE OFFER] → [LOW-TICKET OFFER] → [PREMIUM OFFER] = Complete Value Ladder",
+    "formula": "[FREE OFFER] \u2192 [LOW-TICKET OFFER] \u2192 [PREMIUM OFFER] = Complete Value Ladder",
     "tips": [
       "Lead with value - focus on transformation, not transaction",
       "Create natural progression - each offer should lead to the next",
@@ -118,15 +138,15 @@
     "examples": [
       {
         "title": "Lead Generation",
-        "content": "Free: '7-Day Lead Gen Challenge' eBook • Low: $47 Templates Bundle • Premium: $2,500 Done-For-You Funnel Setup"
+        "content": "Free: '7-Day Lead Gen Challenge' eBook \u2022 Low: $47 Templates Bundle \u2022 Premium: $2,500 Done-For-You Funnel Setup"
       },
       {
         "title": "Consulting",
-        "content": "Free: Strategy Assessment Call • Low: $97/mo Group Coaching • Premium: $5,000 VIP Strategy Day"
+        "content": "Free: Strategy Assessment Call \u2022 Low: $97/mo Group Coaching \u2022 Premium: $5,000 VIP Strategy Day"
       },
       {
         "title": "Coaching",
-        "content": "Free: 'Mindset Mastery' PDF Guide • Low: $197 Self-Paced Course • Premium: $10,000 1:1 Coaching Package"
+        "content": "Free: 'Mindset Mastery' PDF Guide \u2022 Low: $197 Self-Paced Course \u2022 Premium: $10,000 1:1 Coaching Package"
       }
     ],
     "howItWorks": [
@@ -200,7 +220,12 @@
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
-    "compatibility": ["Website", "Media Kit", "LinkedIn", "Proposals"],
+    "compatibility": [
+      "Website",
+      "Media Kit",
+      "LinkedIn",
+      "Proposals"
+    ],
     "relatedToolSlugs": [
       "elevator-pitch-generator",
       "tagline-generator",

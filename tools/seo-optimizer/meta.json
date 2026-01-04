@@ -4,6 +4,8 @@
   "shortDescription": "Optimize your content for search engines with titles, meta descriptions, and keywords.",
   "longDescription": "The SEO Optimizer helps you optimize any content for search engine visibility. Generate compelling meta titles, descriptions, and keyword strategies that improve your rankings and drive organic traffic.",
   "category": "social-email",
+  "buttonText": "Optimize Content",
+  "supportsProfileSave": false,
   "icon": "MagnifyingGlassCircleIcon",
   "componentName": "SeoOptimizerGenerator",
   "useCases": [
@@ -41,23 +43,41 @@
   },
   "landingContent": {
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "\u2728 Free AI Tool",
       "h1": "Free SEO Optimizer",
       "subhead": "Generate compelling meta titles, descriptions, and keyword strategies that improve rankings and drive organic traffic.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 8,000+ marketers" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        {
+          "icon": "\u2713",
+          "text": "Used by 8,000+ marketers"
+        },
+        {
+          "icon": "\u2713",
+          "text": "No signup required"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Free forever"
+        }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "\u2728 AI Tool",
       "h1": "SEO Optimizer",
       "subhead": "Optimize your content for search in seconds.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        {
+          "icon": "\u2713",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Syncs across tools"
+        }
       ]
     },
     "intents": [
@@ -106,7 +126,7 @@
     ],
     "definition": {
       "title": "What is SEO Optimization?",
-      "content": "SEO optimization is the process of making your content more visible to search engines. This includes writing compelling title tags, meta descriptions, and strategically placing keywords—all designed to help your content rank higher and get more clicks."
+      "content": "SEO optimization is the process of making your content more visible to search engines. This includes writing compelling title tags, meta descriptions, and strategically placing keywords\u2014all designed to help your content rank higher and get more clicks."
     },
     "formula": "[PRIMARY KEYWORD] + [COMPELLING TITLE] + [BENEFIT-DRIVEN META] + [NATURAL INTEGRATION] = SEO-Optimized Content",
     "tips": [
@@ -200,7 +220,12 @@
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
-    "compatibility": ["WordPress", "Webflow", "Shopify", "Squarespace"],
+    "compatibility": [
+      "WordPress",
+      "Webflow",
+      "Shopify",
+      "Squarespace"
+    ],
     "relatedToolSlugs": [
       "blog-generator",
       "content-repurposer",

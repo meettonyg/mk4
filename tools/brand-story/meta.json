@@ -4,6 +4,8 @@
   "shortDescription": "Create a compelling brand narrative that connects with your audience emotionally.",
   "longDescription": "The Brand Story Generator helps you craft a narrative that explains why you do what you do, building emotional connections with your audience. Transform your journey into a story that resonates, inspires trust, and differentiates you from competitors.",
   "category": "strategy",
+  "buttonText": "Create Story",
+  "supportsProfileSave": true,
   "icon": "BookOpenIcon",
   "componentName": "BrandStoryGenerator",
   "useCases": [
@@ -41,23 +43,41 @@
   },
   "landingContent": {
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "\u2728 Free AI Tool",
       "h1": "Free Brand Story Generator",
       "subhead": "Create a compelling brand narrative that explains your 'why' and builds emotional connections with your audience.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 6,000+ brands" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        {
+          "icon": "\u2713",
+          "text": "Used by 6,000+ brands"
+        },
+        {
+          "icon": "\u2713",
+          "text": "No signup required"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Free forever"
+        }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "\u2728 AI Tool",
       "h1": "Brand Story Generator",
       "subhead": "Tell your story in a way that connects and converts.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        {
+          "icon": "\u2713",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Syncs across tools"
+        }
       ]
     },
     "intents": [
@@ -108,7 +128,7 @@
       "title": "What is a Brand Story?",
       "content": "A brand story is a narrative that explains who you are, why you exist, and what you stand for. Unlike a bio that lists credentials, a brand story creates emotional connection by sharing your journey, challenges, and the purpose that drives your work."
     },
-    "formula": "[CHALLENGE/ORIGIN] → [TRANSFORMATION] → [MISSION/PURPOSE] = Compelling Brand Story",
+    "formula": "[CHALLENGE/ORIGIN] \u2192 [TRANSFORMATION] \u2192 [MISSION/PURPOSE] = Compelling Brand Story",
     "tips": [
       "Start with tension - every great story begins with a challenge or turning point",
       "Show vulnerability - authenticity builds connection more than perfection",
@@ -200,7 +220,12 @@
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
-    "compatibility": ["Website", "Media Kit", "LinkedIn", "Pitch Decks"],
+    "compatibility": [
+      "Website",
+      "Media Kit",
+      "LinkedIn",
+      "Pitch Decks"
+    ],
     "relatedToolSlugs": [
       "signature-story-generator",
       "credibility-story-generator",

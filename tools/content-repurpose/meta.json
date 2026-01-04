@@ -4,6 +4,8 @@
   "shortDescription": "Transform existing content into multiple formats for different platforms.",
   "longDescription": "The Content Repurposer helps you maximize the value of your existing content by transforming it into different formats. Turn a blog post into social threads, podcast scripts into newsletters, and more.",
   "category": "content",
+  "buttonText": "Repurpose Content",
+  "supportsProfileSave": false,
   "icon": "ArrowsRightLeftIcon",
   "componentName": "ContentRepurposerGenerator",
   "useCases": [
@@ -41,29 +43,47 @@
   },
   "landingContent": {
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "\u2728 Free AI Tool",
       "h1": "Free Content Repurposer",
       "subhead": "Transform your existing content into multiple formats optimized for different platforms and audiences.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 7,000+ creators" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        {
+          "icon": "\u2713",
+          "text": "Used by 7,000+ creators"
+        },
+        {
+          "icon": "\u2713",
+          "text": "No signup required"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Free forever"
+        }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "\u2728 AI Tool",
       "h1": "Content Repurposer",
       "subhead": "Get 10x more from every piece of content you create.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        {
+          "icon": "\u2713",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Syncs across tools"
+        }
       ]
     },
     "intents": [
       {
         "id": "social",
-        "label": "Blog → Social",
+        "label": "Blog \u2192 Social",
         "contextHeading": "Turn one blog into a week of posts",
         "contextDescription": "Transform your blog posts into multiple social media posts for LinkedIn, Twitter, and Instagram.",
         "formLabels": {
@@ -77,7 +97,7 @@
       },
       {
         "id": "newsletter",
-        "label": "Podcast → Newsletter",
+        "label": "Podcast \u2192 Newsletter",
         "contextHeading": "Convert episodes into emails",
         "contextDescription": "Transform podcast transcripts into engaging email newsletters for your subscribers.",
         "formLabels": {
@@ -91,7 +111,7 @@
       },
       {
         "id": "article",
-        "label": "Video → Article",
+        "label": "Video \u2192 Article",
         "contextHeading": "Written content from video",
         "contextDescription": "Convert video scripts or transcripts into SEO-optimized blog articles.",
         "formLabels": {
@@ -106,9 +126,9 @@
     ],
     "definition": {
       "title": "What is Content Repurposing?",
-      "content": "Content repurposing is taking one piece of content and adapting it for multiple platforms and formats. It's not duplicating—it's transforming the same core message into format-native content that performs well on each platform."
+      "content": "Content repurposing is taking one piece of content and adapting it for multiple platforms and formats. It's not duplicating\u2014it's transforming the same core message into format-native content that performs well on each platform."
     },
-    "formula": "[SOURCE CONTENT] → [EXTRACT KEY POINTS] → [ADAPT FOR PLATFORM] → [OPTIMIZE FORMAT] = Multiplied Content",
+    "formula": "[SOURCE CONTENT] \u2192 [EXTRACT KEY POINTS] \u2192 [ADAPT FOR PLATFORM] \u2192 [OPTIMIZE FORMAT] = Multiplied Content",
     "tips": [
       "Start with long-form - it's easier to break down than build up; podcasts and blogs make great source material",
       "Extract 3-5 key insights - each insight can become its own piece of content",
@@ -118,15 +138,15 @@
     "examples": [
       {
         "title": "Podcast to Multi-Format",
-        "content": "1 podcast episode → Blog post recap → 5 LinkedIn posts → Twitter thread → Email newsletter → 3 Instagram quotes → YouTube Shorts"
+        "content": "1 podcast episode \u2192 Blog post recap \u2192 5 LinkedIn posts \u2192 Twitter thread \u2192 Email newsletter \u2192 3 Instagram quotes \u2192 YouTube Shorts"
       },
       {
         "title": "Blog to Social",
-        "content": "'5 Steps to...' blog → Each step becomes a LinkedIn carousel slide → Thread on Twitter → Email to subscribers → Quote graphics for Instagram"
+        "content": "'5 Steps to...' blog \u2192 Each step becomes a LinkedIn carousel slide \u2192 Thread on Twitter \u2192 Email to subscribers \u2192 Quote graphics for Instagram"
       },
       {
         "title": "Webinar to Content",
-        "content": "60-min webinar → 3 blog posts → 15 social posts → Lead magnet PDF → Email nurture sequence → Podcast episode"
+        "content": "60-min webinar \u2192 3 blog posts \u2192 15 social posts \u2192 Lead magnet PDF \u2192 Email nurture sequence \u2192 Podcast episode"
       }
     ],
     "howItWorks": [
@@ -200,7 +220,12 @@
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
-    "compatibility": ["LinkedIn", "Twitter/X", "Instagram", "Email"],
+    "compatibility": [
+      "LinkedIn",
+      "Twitter/X",
+      "Instagram",
+      "Email"
+    ],
     "relatedToolSlugs": [
       "blog-generator",
       "social-post-generator",

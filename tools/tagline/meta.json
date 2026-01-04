@@ -4,6 +4,8 @@
   "shortDescription": "Create compelling headlines, taglines, and value propositions that capture attention.",
   "longDescription": "The Tagline Generator helps you craft memorable headlines and value propositions that instantly communicate your unique value. Whether you need a punchy tagline for your brand, a compelling headline for your media kit, or a powerful value proposition, this tool delivers results that resonate.",
   "category": "message-builder",
+  "buttonText": "Create Tagline",
+  "supportsProfileSave": true,
   "icon": "SparklesIcon",
   "componentName": "TaglineGenerator",
   "useCases": [
@@ -41,23 +43,41 @@
   },
   "landingContent": {
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "\u2728 Free AI Tool",
       "h1": "Free Tagline Generator",
       "subhead": "Create compelling headlines, slogans, and value propositions that capture attention instantly.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 15,000+ brands" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        {
+          "icon": "\u2713",
+          "text": "Used by 15,000+ brands"
+        },
+        {
+          "icon": "\u2713",
+          "text": "No signup required"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Free forever"
+        }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "\u2728 AI Tool",
       "h1": "Tagline Generator",
       "subhead": "Generate memorable taglines and value propositions that make your brand unforgettable.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        {
+          "icon": "\u2713",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "\u2713",
+          "text": "Syncs across tools"
+        }
       ]
     },
     "intents": [
@@ -118,19 +138,19 @@
     "examples": [
       {
         "title": "Problem-Focused",
-        "content": "Profit Without Chaos • Ending Marketing Overwhelm • Scaling Without Sacrifice"
+        "content": "Profit Without Chaos \u2022 Ending Marketing Overwhelm \u2022 Scaling Without Sacrifice"
       },
       {
         "title": "Solution-Focused",
-        "content": "The Scaling Framework • Systems That Stick • Growth Made Simple"
+        "content": "The Scaling Framework \u2022 Systems That Stick \u2022 Growth Made Simple"
       },
       {
         "title": "Outcome-Focused",
-        "content": "Freedom Through Systems • Million-Dollar Results • Revenue on Repeat"
+        "content": "Freedom Through Systems \u2022 Million-Dollar Results \u2022 Revenue on Repeat"
       },
       {
         "title": "Authority-Focused",
-        "content": "The Growth Expert • Trusted by 500+ CEOs • The Go-To Strategy Partner"
+        "content": "The Growth Expert \u2022 Trusted by 500+ CEOs \u2022 The Go-To Strategy Partner"
       }
     ],
     "howItWorks": [
@@ -204,7 +224,12 @@
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
-    "compatibility": ["LinkedIn", "Twitter/X", "Website", "Business Cards"],
+    "compatibility": [
+      "LinkedIn",
+      "Twitter/X",
+      "Website",
+      "Business Cards"
+    ],
     "relatedToolSlugs": [
       "biography-generator",
       "elevator-pitch-generator",
