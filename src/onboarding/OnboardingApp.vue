@@ -216,7 +216,23 @@
 
                         <div class="task-content">
                             <div class="task-title">
-                                <a v-if="task.link" :href="task.link">
+                                <a
+                                    v-if="task.link && task.link_type === 'new_tab'"
+                                    :href="task.link"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    {{ task.label }}
+                                    <i class="fas fa-external-link-alt task-external-icon"></i>
+                                </a>
+                                <a
+                                    v-else-if="task.link && task.link_type === 'modal'"
+                                    href="#"
+                                    @click.prevent="handleModalLink(task)"
+                                >
+                                    {{ task.label }}
+                                </a>
+                                <a v-else-if="task.link" :href="task.link">
                                     {{ task.label }}
                                 </a>
                                 <span v-else>{{ task.label }}</span>
@@ -243,11 +259,186 @@
                 </div>
             </template>
         </div>
+
+        <!-- Quick Profile Setup Modal -->
+        <div v-if="showQuickProfileModal" class="onboarding-modal-overlay" @click.self="closeQuickProfileModal">
+            <div class="onboarding-modal">
+                <div class="onboarding-modal__header">
+                    <h2 class="onboarding-modal__title">
+                        <span class="onboarding-modal__icon">🎯</span>
+                        Quick Profile Setup
+                    </h2>
+                    <button class="onboarding-modal__close" @click="closeQuickProfileModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="onboarding-modal__body">
+                    <p class="onboarding-modal__intro">
+                        Let's get your guest profile started! Fill in these quick details to establish your credibility.
+                    </p>
+                    <form @submit.prevent="submitQuickProfile" class="quick-profile-form">
+                        <div class="form-group">
+                            <label for="qp-name">Full Name</label>
+                            <input
+                                type="text"
+                                id="qp-name"
+                                v-model="quickProfile.name"
+                                placeholder="e.g., John Smith"
+                                required
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label for="qp-title">Professional Title</label>
+                            <input
+                                type="text"
+                                id="qp-title"
+                                v-model="quickProfile.title"
+                                placeholder="e.g., Marketing Consultant, Author, CEO"
+                                required
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label for="qp-website">Website or LinkedIn</label>
+                            <input
+                                type="url"
+                                id="qp-website"
+                                v-model="quickProfile.website"
+                                placeholder="https://yourwebsite.com"
+                            />
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn-secondary" @click="closeQuickProfileModal">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn-primary" :disabled="isSubmittingProfile">
+                                {{ isSubmittingProfile ? 'Saving...' : 'Create Profile' }}
+                            </button>
+                        </div>
+                    </form>
+                    <p class="onboarding-modal__footer-note">
+                        You can add more details later in your full profile.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Survey Modal -->
+        <div v-if="showSurveyModal" class="onboarding-modal-overlay" @click.self="closeSurveyModal">
+            <div class="onboarding-modal onboarding-modal--survey">
+                <div class="onboarding-modal__header">
+                    <h2 class="onboarding-modal__title">
+                        <span class="onboarding-modal__icon">📊</span>
+                        Personalize Your Experience
+                    </h2>
+                    <button class="onboarding-modal__close" @click="closeSurveyModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="onboarding-modal__body">
+                    <!-- Survey Step Indicator -->
+                    <div class="survey-progress">
+                        <div class="survey-progress__bar">
+                            <div class="survey-progress__fill" :style="{ width: surveyProgressPercent + '%' }"></div>
+                        </div>
+                        <span class="survey-progress__text">Question {{ currentSurveyStep }} of {{ totalSurveySteps }}</span>
+                    </div>
+
+                    <!-- Survey Questions -->
+                    <div class="survey-questions">
+                        <!-- Step 1: Primary Goal -->
+                        <div v-show="currentSurveyStep === 1" class="survey-step">
+                            <h3 class="survey-question">What is your primary goal with guest interviews?</h3>
+                            <div class="survey-options">
+                                <label v-for="option in surveyOptions.goals" :key="option" class="survey-option">
+                                    <input type="radio" v-model="surveyAnswers.goal" :value="option" />
+                                    <span class="survey-option__label">{{ option }}</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Experience -->
+                        <div v-show="currentSurveyStep === 2" class="survey-step">
+                            <h3 class="survey-question">Have you been a guest on a podcast before?</h3>
+                            <div class="survey-options">
+                                <label v-for="option in surveyOptions.experience" :key="option" class="survey-option">
+                                    <input type="radio" v-model="surveyAnswers.experience" :value="option" />
+                                    <span class="survey-option__label">{{ option }}</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Background -->
+                        <div v-show="currentSurveyStep === 3" class="survey-step">
+                            <h3 class="survey-question">Which best describes your business, brand, or expertise?</h3>
+                            <div class="survey-options">
+                                <label v-for="option in surveyOptions.background" :key="option" class="survey-option">
+                                    <input type="radio" v-model="surveyAnswers.background" :value="option" />
+                                    <span class="survey-option__label">{{ option }}</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Step 4: Challenges -->
+                        <div v-show="currentSurveyStep === 4" class="survey-step">
+                            <h3 class="survey-question">What is the biggest challenge you face in getting booked on podcasts?</h3>
+                            <div class="survey-options">
+                                <label v-for="option in surveyOptions.challenges" :key="option" class="survey-option">
+                                    <input type="radio" v-model="surveyAnswers.challenge" :value="option" />
+                                    <span class="survey-option__label">{{ option }}</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Step 5: Strategy -->
+                        <div v-show="currentSurveyStep === 5" class="survey-step">
+                            <h3 class="survey-question">How do you plan to use podcast interviews?</h3>
+                            <div class="survey-options">
+                                <label v-for="option in surveyOptions.strategy" :key="option" class="survey-option">
+                                    <input type="radio" v-model="surveyAnswers.strategy" :value="option" />
+                                    <span class="survey-option__label">{{ option }}</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Survey Navigation -->
+                    <div class="survey-nav">
+                        <button
+                            v-if="currentSurveyStep > 1"
+                            type="button"
+                            class="btn-secondary"
+                            @click="prevSurveyStep"
+                        >
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                        <div class="survey-nav__spacer"></div>
+                        <button
+                            v-if="currentSurveyStep < totalSurveySteps"
+                            type="button"
+                            class="btn-primary"
+                            @click="nextSurveyStep"
+                            :disabled="!canAdvanceSurvey"
+                        >
+                            Next <i class="fas fa-arrow-right"></i>
+                        </button>
+                        <button
+                            v-else
+                            type="button"
+                            class="btn-primary"
+                            @click="submitSurvey"
+                            :disabled="isSubmittingSurvey || !canAdvanceSurvey"
+                        >
+                            {{ isSubmittingSurvey ? 'Saving...' : 'Complete Survey' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, reactive, onMounted } from 'vue';
 import { useOnboardingStore } from './stores/onboarding.js';
 
 // Store
@@ -257,9 +448,176 @@ const store = useOnboardingStore();
 const showDetails = ref(false);
 const selectedProfileId = ref(null);
 
+// Modal state
+const showQuickProfileModal = ref(false);
+const showSurveyModal = ref(false);
+const isSubmittingProfile = ref(false);
+const isSubmittingSurvey = ref(false);
+
+// Quick Profile form data
+const quickProfile = reactive({
+    name: '',
+    title: '',
+    website: ''
+});
+
+// Survey state
+const currentSurveyStep = ref(1);
+const totalSurveySteps = 5;
+const surveyAnswers = reactive({
+    goal: '',
+    experience: '',
+    background: '',
+    challenge: '',
+    strategy: ''
+});
+
+// Survey options (matching Formidable form)
+const surveyOptions = {
+    goals: [
+        'Build my authority & credibility',
+        'Generate leads & clients',
+        'Grow my personal brand & visibility',
+        'Sell a book, course, or program',
+        'Create strategic partnerships & JVs',
+        "I'm not sure yet"
+    ],
+    experience: [
+        'Yes, frequently',
+        'A few times',
+        "No, but I've been featured elsewhere",
+        "No, I'm brand new"
+    ],
+    background: [
+        'Coach, Consultant, or Service Provider',
+        'Author, Speaker, or Thought Leader',
+        'Entrepreneur or Business Owner',
+        'Agency or Marketing Professional',
+        'Corporate or C-Suite Executive',
+        'Other'
+    ],
+    challenges: [
+        'Finding the right podcasts to pitch',
+        'Crafting a compelling pitch that gets responses',
+        'Knowing what to say during interviews',
+        'Promoting & leveraging interviews after they go live',
+        'Monetizing my podcast appearances',
+        "I'm not sure where to start"
+    ],
+    strategy: [
+        'Generate leads & sales for my business',
+        'Drive traffic to my website, book, or offer',
+        'Establish myself as an expert in my industry',
+        'Grow my personal brand & audience',
+        'Create partnerships & collaborations',
+        'Monetize through sponsorships, affiliates, or referrals'
+    ]
+};
+
+// Survey progress percentage
+const surveyProgressPercent = computed(() => {
+    return ((currentSurveyStep.value - 1) / totalSurveySteps) * 100;
+});
+
+// Check if current survey step has an answer
+const canAdvanceSurvey = computed(() => {
+    switch (currentSurveyStep.value) {
+        case 1: return !!surveyAnswers.goal;
+        case 2: return !!surveyAnswers.experience;
+        case 3: return !!surveyAnswers.background;
+        case 4: return !!surveyAnswers.challenge;
+        case 5: return !!surveyAnswers.strategy;
+        default: return false;
+    }
+});
+
 // Toggle details visibility
 const toggleDetails = () => {
     showDetails.value = !showDetails.value;
+};
+
+// Handle modal link clicks
+const handleModalLink = (task) => {
+    if (task.link === '#quickProfileModal') {
+        showQuickProfileModal.value = true;
+    } else if (task.link === '#surveyModal') {
+        showSurveyModal.value = true;
+    }
+};
+
+// Quick Profile Modal handlers
+const closeQuickProfileModal = () => {
+    showQuickProfileModal.value = false;
+};
+
+const submitQuickProfile = async () => {
+    isSubmittingProfile.value = true;
+    try {
+        // Call API to create/update profile
+        const response = await store.apiRequest('POST', '/profiles/quick-setup', {
+            name: quickProfile.name,
+            title: quickProfile.title,
+            website: quickProfile.website
+        });
+
+        if (response.success) {
+            closeQuickProfileModal();
+            // Refresh progress to reflect completed task
+            await store.fetchProgress(true);
+            // Redirect to full profile page for additional editing
+            window.location.href = '/app/profiles/guest/profile/';
+        }
+    } catch (error) {
+        console.error('Failed to create profile:', error);
+        alert('Failed to create profile. Please try again.');
+    } finally {
+        isSubmittingProfile.value = false;
+    }
+};
+
+// Survey Modal handlers
+const closeSurveyModal = () => {
+    showSurveyModal.value = false;
+    currentSurveyStep.value = 1;
+};
+
+const nextSurveyStep = () => {
+    if (currentSurveyStep.value < totalSurveySteps) {
+        currentSurveyStep.value++;
+    }
+};
+
+const prevSurveyStep = () => {
+    if (currentSurveyStep.value > 1) {
+        currentSurveyStep.value--;
+    }
+};
+
+const submitSurvey = async () => {
+    isSubmittingSurvey.value = true;
+    try {
+        // Submit survey answers via API
+        const response = await store.apiRequest('POST', '/onboarding/complete/survey', {
+            answers: {
+                primary_goal: surveyAnswers.goal,
+                experience: surveyAnswers.experience,
+                background: surveyAnswers.background,
+                challenge: surveyAnswers.challenge,
+                strategy: surveyAnswers.strategy
+            }
+        });
+
+        if (response.success) {
+            closeSurveyModal();
+            // Refresh progress to reflect completed task
+            await store.fetchProgress(true);
+        }
+    } catch (error) {
+        console.error('Failed to submit survey:', error);
+        alert('Failed to submit survey. Please try again.');
+    } finally {
+        isSubmittingSurvey.value = false;
+    }
 };
 
 // Handle profile change from selector
@@ -1069,5 +1427,300 @@ onMounted(async () => {
         font-size: 12px;
         min-width: 100px;
     }
+}
+
+/* External Link Icon */
+.task-external-icon {
+    font-size: 11px;
+    margin-left: 4px;
+    opacity: 0.6;
+}
+
+/* ============================================
+   Modal Styles
+   ============================================ */
+
+.onboarding-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 20px;
+}
+
+.onboarding-modal {
+    background: white;
+    border-radius: 16px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.onboarding-modal--survey {
+    max-width: 560px;
+}
+
+.onboarding-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.onboarding-modal__title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.onboarding-modal__icon {
+    font-size: 24px;
+}
+
+.onboarding-modal__close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: #f1f5f9;
+    border: none;
+    border-radius: 8px;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.onboarding-modal__close:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+}
+
+.onboarding-modal__body {
+    padding: 24px;
+}
+
+.onboarding-modal__intro {
+    margin: 0 0 24px 0;
+    font-size: 15px;
+    color: #64748b;
+    line-height: 1.6;
+}
+
+.onboarding-modal__footer-note {
+    margin: 20px 0 0 0;
+    padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
+    font-size: 13px;
+    color: #94a3b8;
+    text-align: center;
+}
+
+/* Quick Profile Form */
+.quick-profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+}
+
+.form-group input {
+    padding: 12px 14px;
+    font-size: 15px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    transition: all 0.15s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #ff7a59;
+    box-shadow: 0 0 0 3px rgba(255, 122, 89, 0.15);
+}
+
+.form-group input::placeholder {
+    color: #9ca3af;
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+.btn-primary {
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 500;
+    color: white;
+    background: #ff7a59;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #ff8f73;
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #64748b;
+    background: #f1f5f9;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-secondary:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+}
+
+/* Survey Styles */
+.survey-progress {
+    margin-bottom: 24px;
+}
+
+.survey-progress__bar {
+    height: 6px;
+    background: #e5e7eb;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.survey-progress__fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff7a59, #ff9a80);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.survey-progress__text {
+    font-size: 13px;
+    color: #64748b;
+}
+
+.survey-step {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.survey-question {
+    margin: 0 0 20px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+    line-height: 1.4;
+}
+
+.survey-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.survey-option {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    background: #f8fafc;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.survey-option:hover {
+    border-color: #ff7a59;
+    background: #fff5f3;
+}
+
+.survey-option input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    margin-right: 12px;
+    accent-color: #ff7a59;
+}
+
+.survey-option input[type="radio"]:checked + .survey-option__label {
+    color: #ff7a59;
+    font-weight: 500;
+}
+
+.survey-option:has(input:checked) {
+    border-color: #ff7a59;
+    background: #fff5f3;
+}
+
+.survey-option__label {
+    font-size: 15px;
+    color: #374151;
+    line-height: 1.4;
+}
+
+.survey-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.survey-nav__spacer {
+    flex: 1;
 }
 </style>

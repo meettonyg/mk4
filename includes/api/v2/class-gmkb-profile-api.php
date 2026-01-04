@@ -154,6 +154,13 @@ class GMKB_Profile_API {
             'permission_callback' => [__CLASS__, 'check_edit_permission'],
         ]);
 
+        // Quick setup (minimal fields for onboarding quick win)
+        register_rest_route(self::NAMESPACE, '/profiles/quick-setup', [
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => [__CLASS__, 'quick_setup_profile'],
+            'permission_callback' => [__CLASS__, 'check_list_permission'],
+        ]);
+
         // Export profile (portable JSON)
         register_rest_route(self::NAMESPACE, '/profile/(?P<id>\d+)/export', [
             'methods' => WP_REST_Server::READABLE,
@@ -474,6 +481,108 @@ class GMKB_Profile_API {
             ],
             'limit_status' => $limit_status,
             'message' => 'Profile created successfully',
+        ]);
+    }
+
+    /**
+     * Quick setup - create or update profile with minimal fields
+     *
+     * This endpoint provides a low-friction way to complete the "Set up your guest profile"
+     * onboarding task. It accepts just name, title, and optional website.
+     *
+     * If user already has a profile, it updates the existing one.
+     * If not, it creates a new profile.
+     *
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response|WP_Error
+     */
+    public static function quick_setup_profile($request) {
+        $user_id = get_current_user_id();
+        $body = $request->get_json_params();
+
+        // Validate required fields
+        if (empty($body['name'])) {
+            return new WP_Error('missing_name', 'Name is required', ['status' => 400]);
+        }
+
+        if (empty($body['title'])) {
+            return new WP_Error('missing_title', 'Professional title is required', ['status' => 400]);
+        }
+
+        $repo = self::get_repository();
+
+        // Check if user already has a profile
+        $existing_profiles = $repo->list_for_user($user_id);
+        $profile_id = null;
+
+        if (!empty($existing_profiles)) {
+            // Update the first/primary profile
+            $profile_id = $existing_profiles[0]['id'];
+        } else {
+            // Check profile limits before creation
+            if (class_exists('GMKB_Profile_Limits')) {
+                if (!GMKB_Profile_Limits::can_create_profile($user_id)) {
+                    $limit_status = GMKB_Profile_Limits::get_limit_status($user_id);
+
+                    return new WP_Error(
+                        'profile_limit_reached',
+                        'You have reached your profile limit.',
+                        [
+                            'status' => 403,
+                            'limit_status' => $limit_status,
+                        ]
+                    );
+                }
+            }
+
+            // Create new profile with the name as title
+            $profile_id = $repo->create([
+                'post_title' => sanitize_text_field($body['name']),
+                'post_status' => 'publish',
+            ]);
+
+            if (is_wp_error($profile_id)) {
+                return $profile_id;
+            }
+        }
+
+        // Update profile fields
+        $fields_to_update = [
+            'name' => sanitize_text_field($body['name']),
+            'professional_title' => sanitize_text_field($body['title']),
+        ];
+
+        // Add website if provided
+        if (!empty($body['website'])) {
+            $fields_to_update['website'] = esc_url_raw($body['website']);
+        }
+
+        // Update the profile fields
+        $result = $repo->update($profile_id, $fields_to_update);
+
+        // Also update the post title to match the name
+        wp_update_post([
+            'ID' => $profile_id,
+            'post_title' => sanitize_text_field($body['name']),
+        ]);
+
+        // Fire action for onboarding progress tracking
+        do_action('gmkb_profile_updated', $profile_id, $user_id);
+
+        $post = get_post($profile_id);
+
+        return rest_ensure_response([
+            'success' => true,
+            'profile' => [
+                'id' => $profile_id,
+                'title' => $post->post_title,
+                'slug' => $post->post_name,
+                'status' => $post->post_status,
+                'editUrl' => "/app/profiles/guest/profile/?entry={$post->post_name}",
+                'viewUrl' => get_permalink($profile_id),
+            ],
+            'message' => empty($existing_profiles) ? 'Profile created successfully' : 'Profile updated successfully',
+            'is_new' => empty($existing_profiles),
         ]);
     }
 

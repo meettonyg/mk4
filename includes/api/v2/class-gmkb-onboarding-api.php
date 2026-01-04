@@ -320,6 +320,19 @@ class GMKB_Onboarding_API {
         // Handle specific tasks that can be manually completed
         switch ($task_id) {
             case 'survey':
+                // Get survey answers from request body
+                $body = $request->get_json_params();
+                $answers = $body['answers'] ?? [];
+
+                // Save survey answers to user meta if provided
+                if (!empty($answers)) {
+                    update_user_meta($user_id, '_gmkb_survey_primary_goal', sanitize_text_field($answers['primary_goal'] ?? ''));
+                    update_user_meta($user_id, '_gmkb_survey_experience', sanitize_text_field($answers['experience'] ?? ''));
+                    update_user_meta($user_id, '_gmkb_survey_background', sanitize_text_field($answers['background'] ?? ''));
+                    update_user_meta($user_id, '_gmkb_survey_challenge', sanitize_text_field($answers['challenge'] ?? ''));
+                    update_user_meta($user_id, '_gmkb_survey_strategy', sanitize_text_field($answers['strategy'] ?? ''));
+                }
+
                 $result = $repo->mark_survey_completed($user_id);
                 break;
 

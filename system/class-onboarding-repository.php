@@ -106,6 +106,7 @@ class GMKB_Onboarding_Repository {
                 'label' => $task['label'],
                 'description' => $task['description'],
                 'link' => $task['link'],
+                'link_type' => $task['link_type'] ?? 'default',
             ];
         }
 
