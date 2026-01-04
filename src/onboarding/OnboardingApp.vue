@@ -128,6 +128,9 @@
                         <span v-if="store.isViewingSpecificProfile" class="progress-profile-badge">
                             {{ store.currentProfileDisplay }}
                         </span>
+                        <span v-else-if="store.singleProfileName" class="progress-profile-badge progress-profile-badge--single">
+                            {{ store.singleProfileName }}
+                        </span>
                     </div>
 
                     <div class="progress-bar-container">
@@ -213,7 +216,7 @@
 
                         <div class="task-content">
                             <div class="task-title">
-                                <a v-if="task.action_url" :href="task.action_url">
+                                <a v-if="task.link" :href="task.link">
                                     {{ task.label }}
                                 </a>
                                 <span v-else>{{ task.label }}</span>
@@ -692,6 +695,11 @@ onMounted(async () => {
     background: rgba(20, 184, 166, 0.1);
     padding: 4px 10px;
     border-radius: 12px;
+}
+
+.progress-profile-badge--single {
+    color: #64748b;
+    background: rgba(100, 116, 139, 0.1);
 }
 
 /* Progress Section */

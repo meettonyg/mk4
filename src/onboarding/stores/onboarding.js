@@ -89,13 +89,21 @@ export const useOnboardingStore = defineStore('onboarding', {
 
             if (!state.progress?.tasks) return groups;
 
+            // Emoji icons for each group (fallback since schema uses image filenames)
+            const groupEmojis = {
+                foundation: '🎯',
+                discovery: '🔍',
+                messaging: '💬',
+                outreach: '🚀',
+            };
+
             Object.entries(state.progress.tasks).forEach(([taskId, task]) => {
                 const groupId = task.group || 'other';
                 if (!groups[groupId]) {
                     groups[groupId] = {
                         id: groupId,
                         label: state.taskGroups[groupId]?.label || groupId,
-                        icon: state.taskGroups[groupId]?.icon || '📋',
+                        icon: groupEmojis[groupId] || '📋',
                         tasks: [],
                         completedCount: 0,
                         totalPoints: 0,
@@ -203,6 +211,24 @@ export const useOnboardingStore = defineStore('onboarding', {
         },
 
         /**
+         * Whether user has any profiles
+         */
+        hasProfiles: (state) => {
+            return state.availableProfiles.length > 0;
+        },
+
+        /**
+         * Get the single profile name (when user has exactly one)
+         */
+        singleProfileName: (state) => {
+            if (state.availableProfiles.length === 1) {
+                const profile = state.availableProfiles[0];
+                return profile.title || profile.name || null;
+            }
+            return null;
+        },
+
+        /**
          * Profile strength data (for Media Kit display)
          */
         profileStrengthPercentage: (state) => {
@@ -265,7 +291,12 @@ export const useOnboardingStore = defineStore('onboarding', {
 
                 if (tasksRes.success) {
                     this.tasks = tasksRes.data.tasks || {};
-                    this.taskGroups = tasksRes.data.groups || {};
+                    // Convert groups array to object keyed by id for easy lookup
+                    const groupsArray = tasksRes.data.groups || [];
+                    this.taskGroups = {};
+                    groupsArray.forEach(group => {
+                        this.taskGroups[group.id] = group;
+                    });
                 }
 
                 this.lastFetched = Date.now();
@@ -289,8 +320,9 @@ export const useOnboardingStore = defineStore('onboarding', {
             try {
                 const response = await this.apiRequest('GET', '/profiles');
 
-                if (response.success && response.data) {
-                    this.availableProfiles = response.data.profiles || response.data || [];
+                if (response.success) {
+                    // API returns { success: true, profiles: [...] } directly (no data wrapper)
+                    this.availableProfiles = response.profiles || response.data?.profiles || [];
 
                     // If we have profiles but no current selection, don't auto-select
                     // Let the UI show "Best Profile" as default
