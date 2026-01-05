@@ -64,7 +64,19 @@
             <circle cx="12" cy="7" r="4"/>
           </svg>
         </div>
-        <div class="profile-context-banner__details">
+        <a
+          v-if="selectedProfile.edit_url"
+          :href="selectedProfile.edit_url"
+          class="profile-context-banner__details-link"
+          target="_blank"
+          title="View Profile"
+        >
+          <strong>{{ selectedProfile.title || selectedProfile.name }}</strong>
+          <span v-if="selectedProfile.completeness" class="profile-context-banner__completeness">
+            {{ selectedProfile.completeness }}% complete
+          </span>
+        </a>
+        <div v-else class="profile-context-banner__details">
           <strong>{{ selectedProfile.title || selectedProfile.name }}</strong>
           <span v-if="selectedProfile.completeness" class="profile-context-banner__completeness">
             {{ selectedProfile.completeness }}% complete
@@ -358,16 +370,34 @@ watch(profileData, (newData) => {
   object-fit: cover;
 }
 
-.profile-context-banner__details {
+.profile-context-banner__details,
+.profile-context-banner__details-link {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.profile-context-banner__details strong {
+.profile-context-banner__details-link {
+  text-decoration: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin: -4px -8px;
+  transition: background 0.15s;
+}
+
+.profile-context-banner__details-link:hover {
+  background: var(--pcb-primary-light);
+}
+
+.profile-context-banner__details strong,
+.profile-context-banner__details-link strong {
   font-size: 14px;
   font-weight: 600;
   color: var(--pcb-text);
+}
+
+.profile-context-banner__details-link:hover strong {
+  color: var(--pcb-primary);
 }
 
 .profile-context-banner__completeness {
