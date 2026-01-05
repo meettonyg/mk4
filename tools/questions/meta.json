@@ -137,10 +137,12 @@
       }
     ],
     "definition": {
-      "title": "Why Prepare Interview Questions?",
-      "content": "The best interview guests don't wing it\u2014they prepare. By anticipating questions and crafting thoughtful answers, you deliver more value, stay on message, and transform every appearance into an opportunity to build authority."
+      "title": "Crafting Effective Interview Questions",
+      "subtitle": "Well-crafted questions help podcast hosts guide the conversation while giving you opportunities to showcase your expertise. Each question should be open-ended and allow you to deliver valuable insights to listeners.",
+      "content": "The best interview guests don't wing it—they prepare. By anticipating questions and crafting thoughtful answers, you deliver more value, stay on message, and transform every appearance into an opportunity to build authority."
     },
-    "formula": "Balance specific questions that demonstrate expertise with story-based questions that engage the audience.",
+    "formulaLabel": "APPROACH",
+    "formula": "Balance **specific questions** that demonstrate your expertise with **story-based questions** that engage the audience.",
     "tips": [
       "Frame questions for stories - listeners connect with narratives, not lectures",
       "Show range and depth - mix strategic big-picture questions with tactical details",
@@ -165,17 +167,20 @@
       {
         "step": 1,
         "title": "Define Your Context",
-        "description": "Enter your expertise and interview type (podcast, press, panel)."
+        "description": "Enter your expertise and interview type (podcast, press, panel).",
+        "icon": "PencilSquareIcon"
       },
       {
         "step": 2,
         "title": "Set Preferences",
-        "description": "Choose question count, difficulty level, and whether to include answers."
+        "description": "Choose question count, difficulty level, and whether to include answers.",
+        "icon": "AdjustmentsHorizontalIcon"
       },
       {
         "step": 3,
         "title": "Review & Prepare",
-        "description": "Practice with your generated questions and refine your answers."
+        "description": "Practice with your generated questions and refine your answers.",
+        "icon": "ClipboardDocumentCheckIcon"
       }
     ],
     "features": [

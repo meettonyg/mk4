@@ -5,9 +5,33 @@
   "emoji": "🎤",
   "apiType": "guest_intro",
   "fieldMapping": {
-    "type": "simple",
+    "type": "object",
     "targetField": "introduction",
-    "sourceKeys": ["text", "value"]
+    "sourceKeys": ["text", "value"],
+    "fields": {
+      "short": "introduction_short",
+      "standard": "introduction",
+      "extended": "introduction_long",
+      "content": "introduction",
+      "introduction": "introduction"
+    },
+    "lengthVariants": {
+      "short": {
+        "targetField": "introduction_short",
+        "label": "Brief (30-45 sec)",
+        "description": "Quick intro for fast-paced podcasts"
+      },
+      "standard": {
+        "targetField": "introduction",
+        "label": "Standard (60-90 sec)",
+        "description": "Ideal for most podcast and event introductions"
+      },
+      "extended": {
+        "targetField": "introduction_long",
+        "label": "Extended (2-3 min)",
+        "description": "Comprehensive intro for keynotes and formal events"
+      }
+    }
   },
   "validation": {
     "anyOf": ["biography", "credentials"],
@@ -136,10 +160,12 @@
       }
     ],
     "definition": {
-      "title": "What is a Guest Introduction?",
-      "content": "A guest introduction is a brief, polished script that hosts read to welcome you to their show or event. The best introductions hook the audience, establish your credibility, and create anticipation\u2014all before you say a word."
+      "title": "Creating Powerful Guest Introductions",
+      "subtitle": "A professional guest introduction is vital for setting the right tone and building credibility with your audience. The best introductions hook listeners, establish your authority, and create anticipation before you even speak.",
+      "content": "A guest introduction is a brief, polished script that hosts read to welcome you to their show or event. The best introductions hook the audience, establish your credibility, and create anticipation—all before you say a word."
     },
-    "formula": "[Opening Hook] + [Guest Credentials] + [Relevance to Audience] + [Warm Welcome]",
+    "formulaLabel": "FORMULA",
+    "formula": "**[Opening Hook]** + **[Guest Credentials]** + **[Relevance to Audience]** + **[Warm Welcome]**",
     "tips": [
       "Start with an engaging hook - a question, statistic, or statement that captures attention",
       "Establish credibility - highlight the most compelling credentials relevant to the topic",
@@ -148,15 +174,15 @@
     ],
     "examples": [
       {
-        "title": "Podcast Guest Intro",
+        "title": "Brief Intro (30-45 sec)",
         "content": "Have you ever wondered why some businesses scale effortlessly while others stay stuck? Today's guest has cracked the code. Sarah Chen has helped over 200 SaaS founders reach $1M ARR, and she's here to share the exact framework she uses. Please welcome Sarah Chen!"
       },
       {
-        "title": "Keynote Speaker Intro",
+        "title": "Standard Intro (60-90 sec)",
         "content": "In a world where 80% of businesses fail within five years, our next speaker has built three successful exits. James Rivera is the author of 'Scale Smart' and has been featured in Forbes, Inc, and Entrepreneur. He's here to share the three decisions that make or break every business."
       },
       {
-        "title": "Panel Introduction",
+        "title": "Extended Intro (2-3 min)",
         "content": "Our next panelist brings a unique perspective to today's discussion. Dr. Maya Patel has spent 15 years researching consumer behavior and advises Fortune 500 companies on market positioning. Welcome, Dr. Patel!"
       }
     ],
@@ -164,17 +190,20 @@
       {
         "step": 1,
         "title": "Add Your Details",
-        "description": "Enter your name, title, achievements, and discussion topic."
+        "description": "Enter your name, title, achievements, and discussion topic.",
+        "icon": "PencilSquareIcon"
       },
       {
         "step": 2,
         "title": "Set the Tone",
-        "description": "Choose energetic, professional, or casual to match the show."
+        "description": "Choose energetic, professional, or casual to match the show.",
+        "icon": "MusicalNoteIcon"
       },
       {
         "step": 3,
         "title": "Copy & Share",
-        "description": "Copy your intro and send it to your host before the show."
+        "description": "Copy your intro and send it to your host before the show.",
+        "icon": "ClipboardDocumentIcon"
       }
     ],
     "features": [
@@ -242,6 +271,23 @@
       "topics-generator",
       "questions-generator",
       "podcast-notes-generator"
-    ]
+    ],
+    "relatedToolContext": {
+      "prerequisites": [{
+        "slug": "biography-generator",
+        "title": "Start with Your Biography",
+        "description": "Your Guest Introduction draws from your professional biography. Create your bio first to ensure your intro includes your most compelling credentials and achievements."
+      }],
+      "companions": [
+        {
+          "slug": "topics-generator",
+          "description": "Pair your intro with suggested topics to give hosts a complete guest package"
+        },
+        {
+          "slug": "questions-generator",
+          "description": "Include suggested interview questions to make the host's job easier"
+        }
+      ]
+    }
   }
 }

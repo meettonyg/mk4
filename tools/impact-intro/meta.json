@@ -136,10 +136,12 @@
       }
     ],
     "definition": {
-      "title": "What is an Impact Intro?",
+      "title": "Crafting Your Perfect Impact Intro",
+      "subtitle": "Your Impact Intro follows your Authority Hook and establishes deeper credibility. It showcases specific results and shares your mission or big idea that drives your work.",
       "content": "An impact intro is a brief statement that leads with the transformation you create rather than your title or credentials. It answers 'what have you accomplished?' before 'what do you do?' to immediately establish credibility and relevance."
     },
-    "formula": "I've [WHERE]. My mission is [WHY].",
+    "formulaLabel": "FORMULA",
+    "formula": "I've **[WHERE]**. My mission is **[WHY]**.",
     "tips": [
       "Lead with impact - start with the transformation you create, not your title",
       "Quantify when possible - numbers make results tangible and memorable",
@@ -168,17 +170,20 @@
       {
         "step": 1,
         "title": "Share Your Results",
-        "description": "Enter the outcomes and transformations you create."
+        "description": "Enter the outcomes and transformations you create.",
+        "icon": "ChartBarIcon"
       },
       {
         "step": 2,
         "title": "Add Context",
-        "description": "Include who you help and how you achieve results."
+        "description": "Include who you help and how you achieve results.",
+        "icon": "InformationCircleIcon"
       },
       {
         "step": 3,
         "title": "Generate Your Intro",
-        "description": "Get a powerful, impact-focused introduction."
+        "description": "Get a powerful, impact-focused introduction.",
+        "icon": "SparklesIcon"
       }
     ],
     "features": [
@@ -246,6 +251,18 @@
       "authority-hook-builder",
       "biography-generator",
       "tagline-generator"
-    ]
+    ],
+    "relatedToolContext": {
+      "prerequisites": [{
+        "slug": "authority-hook-builder",
+        "title": "Start with Your Authority Hook",
+        "description": "Your Impact Intro builds on your Authority Hook. If you haven't created your Authority Hook yet, start there to establish WHO, WHAT, WHEN, and HOW before adding WHERE and WHY."
+      }],
+      "nextStep": {
+        "slug": "biography-generator",
+        "title": "Generate Your Full Biography",
+        "description": "Combine your Authority Hook and Impact Intro into a complete professional biography that tells your story compellingly."
+      }
+    }
   }
 }

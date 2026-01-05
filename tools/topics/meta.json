@@ -138,10 +138,12 @@
       }
     ],
     "definition": {
-      "title": "What Makes a Great Speaking Topic?",
-      "content": "A great speaking topic combines your unique expertise with your audience's pressing needs. It's specific enough to deliver real value, yet broad enough to explore deeply. The best topics promise transformation\u2014a clear before and after for your audience."
+      "title": "Crafting Perfect Interview Topics",
+      "subtitle": "Strong interview topics provide value to listeners, suggest a structure for the conversation, and showcase your expertise. They should be focused on one concept at a time while remaining general enough to allow for discussion.",
+      "content": "A great speaking topic combines your unique expertise with your audience's pressing needs. It's specific enough to deliver real value, yet broad enough to explore deeply. The best topics promise transformation—a clear before and after for your audience."
     },
-    "formula": "Provide solutions that focus on one concept per topic while remaining general enough to expand upon.",
+    "formulaLabel": "APPROACH",
+    "formula": "Provide **solutions** that focus on **one concept** per topic while remaining **general enough** to expand upon.",
     "tips": [
       "Focus on value for listeners - great topics provide actionable solutions, not promotion",
       "One concept per topic - each topic should focus on a single idea, like a blog post",
@@ -166,17 +168,20 @@
       {
         "step": 1,
         "title": "Enter Your Expertise",
-        "description": "Tell us about your area of expertise and the audience you want to reach."
+        "description": "Tell us about your area of expertise and the audience you want to reach.",
+        "icon": "PencilSquareIcon"
       },
       {
         "step": 2,
         "title": "Set Your Preferences",
-        "description": "Choose the number of topics and format (titles only or with descriptions)."
+        "description": "Choose the number of topics and format (titles only or with descriptions).",
+        "icon": "AdjustmentsHorizontalIcon"
       },
       {
         "step": 3,
         "title": "Generate & Select",
-        "description": "Review AI-generated topics and select the ones that resonate most."
+        "description": "Review AI-generated topics and select the ones that resonate most.",
+        "icon": "CheckCircleIcon"
       }
     ],
     "features": [

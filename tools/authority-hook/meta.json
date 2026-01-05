@@ -142,10 +142,12 @@
       }
     ],
     "definition": {
-      "title": "What is an Authority Hook?",
+      "title": "Crafting Your Perfect Authority Hook",
+      "subtitle": "Your Authority Hook is the opening line that establishes your credibility when reaching out to podcast hosts. A powerful hook immediately communicates who you help, what results you deliver, when they need you, and how you do it.",
       "content": "An Authority Hook is a specialized positioning statement that instantly communicates your value. Unlike a generic bio, it uses the 6 W's framework to answer the listener's subconscious question: 'Why should I listen to you?'"
     },
-    "formula": "I help [WHO] achieve [WHAT] when [WHEN] through [HOW].",
+    "formulaLabel": "FORMULA",
+    "formula": "I help **[WHO]** achieve **[RESULT]** when **[WHEN]** through **[HOW]**.",
     "tips": [
       "Be specific about WHO - 'busy entrepreneurs' beats 'business owners'",
       "Focus on tangible RESULTS, not just activities",
@@ -170,17 +172,20 @@
       {
         "step": 1,
         "title": "Answer the 6 W's",
-        "description": "Fill in Who, What, When, How, Where, and Why."
+        "description": "Fill in Who, What, When, How, Where, and Why.",
+        "icon": "DocumentTextIcon"
       },
       {
         "step": 2,
         "title": "Generate Your Hook",
-        "description": "Watch your answers transform into a powerful statement."
+        "description": "Watch your answers transform into a powerful statement.",
+        "icon": "SparklesIcon"
       },
       {
         "step": 3,
         "title": "Apply Everywhere",
-        "description": "Use your hook in bios, pitches, and introductions."
+        "description": "Use your hook in bios, pitches, and introductions.",
+        "icon": "ShareIcon"
       }
     ],
     "features": [
@@ -248,6 +253,23 @@
       "elevator-pitch-generator",
       "tagline-generator",
       "impact-intro-builder"
-    ]
+    ],
+    "relatedToolContext": {
+      "nextStep": {
+        "slug": "impact-intro-builder",
+        "title": "Build Your Impact Intro Next",
+        "description": "Your Authority Hook establishes WHO, WHAT, WHEN, and HOW. Complete your positioning with the Impact Intro, which adds WHERE (your credentials) and WHY (your mission)."
+      },
+      "usedBy": [
+        {
+          "slug": "biography-generator",
+          "description": "Your Authority Hook becomes the foundation of your professional biography"
+        },
+        {
+          "slug": "tagline-generator",
+          "description": "Condense your Authority Hook into a punchy, memorable tagline"
+        }
+      ]
+    }
   }
 }
