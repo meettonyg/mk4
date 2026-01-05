@@ -188,10 +188,16 @@ class GMKB_AI_Settings_Admin {
             return;
         }
 
-        $api_key = self::get_api_key($provider);
+        // Use API key from form input if provided, otherwise fall back to saved option
+        $api_key = '';
+        if (isset($_POST['api_key']) && !empty($_POST['api_key'])) {
+            $api_key = sanitize_text_field($_POST['api_key']);
+        } else {
+            $api_key = self::get_api_key($provider);
+        }
 
         if (empty($api_key)) {
-            wp_send_json_error(['message' => 'No API key configured for ' . $providers[$provider]['name'] . '.']);
+            wp_send_json_error(['message' => 'No API key configured for ' . $providers[$provider]['name'] . '. Enter a key and try again.']);
             return;
         }
 
@@ -468,6 +474,9 @@ class GMKB_AI_Settings_Admin {
                     var $button = $(this);
                     var provider = $button.data('provider');
                     var $result = $('.gmkb-test-result[data-provider="' + provider + '"]');
+                    var providers = <?php echo wp_json_encode(array_map(function($p) { return $p['key_option']; }, $providers)); ?>;
+                    var keyFieldId = providers[provider];
+                    var apiKey = keyFieldId ? $('#' + keyFieldId).val() : '';
 
                     $button.prop('disabled', true).text('Testing...');
                     $result.html('');
@@ -478,6 +487,7 @@ class GMKB_AI_Settings_Admin {
                         data: {
                             action: 'gmkb_test_ai_connection',
                             provider: provider,
+                            api_key: apiKey,
                             nonce: '<?php echo wp_create_nonce('gmkb_ai_settings_nonce'); ?>'
                         },
                         success: function(response) {
