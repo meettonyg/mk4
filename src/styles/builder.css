@@ -1,6 +1,9 @@
 /**
  * Global Builder Structure Styles
  * Imported by Vite, bundled into dist/gmkb.css
+ *
+ * UNIFIED GUESTIFY DESIGN SYSTEM:
+ * Uses --gmkb-* tokens which map to unified --gfy-* tokens.
  */
 
 /* Hide WordPress admin bar in builder */
@@ -22,31 +25,31 @@ html {
 
 #gmkb-toolbar {
     flex-shrink: 0;
-    z-index: 100;
-    background: linear-gradient(to right, #1e293b, #0f172a);
+    z-index: var(--gmkb-z-sticky, 100);
+    background: linear-gradient(to right, var(--gmkb-color-surface, #1e293b), var(--gmkb-color-text, #0f172a));
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--gmkb-shadow-base, 0 1px 3px rgba(0, 0, 0, 0.1));
 }
 
 #gmkb-main-content {
     flex: 1;
     display: flex;
     overflow: hidden;
-    background: #e5e7eb;
-    transition: background 0.2s;
+    background: var(--gmkb-color-border, #e5e7eb);
+    transition: background var(--gmkb-transition-base, 0.2s);
 }
 
 body.dark-mode #gmkb-main-content {
-    background: #1e293b;
+    background: var(--gmkb-color-surface, #1e293b);
 }
 
 #gmkb-sidebar {
     width: 320px;
     height: 100%;
-    background: white;
-    border-right: 1px solid #e5e7eb;
+    background: var(--gmkb-color-background, white);
+    border-right: var(--gmkb-border-width-thin, 1px) solid var(--gmkb-color-border, #e5e7eb);
     box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
-    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width var(--gmkb-transition-slow, 0.3s cubic-bezier(0.4, 0, 0.2, 1));
     overflow: visible; /* CRITICAL: Allow toggle button to be visible */
     position: relative; /* Ensure absolute positioning works */
 }
@@ -58,8 +61,8 @@ body.dark-mode #gmkb-main-content {
 }
 
 body.dark-mode #gmkb-sidebar {
-    background: #0f172a;
-    border-right-color: #334155;
+    background: var(--gmkb-color-text, #0f172a);
+    border-right-color: var(--gmkb-color-border-dark, #334155);
 }
 
 #media-kit-preview {
@@ -76,8 +79,8 @@ body.dark-mode #gmkb-sidebar {
 }
 
 #media-kit-preview::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 4px;
+    background: var(--gmkb-color-border-dark, #cbd5e1);
+    border-radius: var(--gmkb-radius-sm, 4px);
 }
 
 /* Show builder when Vue is ready */
@@ -109,12 +112,12 @@ body.dark-mode #gmkb-sidebar {
         height: auto;
         max-height: 50vh;
         border-right: none;
-        border-bottom: 1px solid #e5e7eb;
+        border-bottom: var(--gmkb-border-width-thin, 1px) solid var(--gmkb-color-border, #e5e7eb);
         overflow-y: auto;
     }
-    
+
     body.dark-mode #gmkb-sidebar {
-        border-bottom-color: #334155;
+        border-bottom-color: var(--gmkb-color-border-dark, #334155);
     }
     
     /* Collapsed sidebar is hidden on mobile */

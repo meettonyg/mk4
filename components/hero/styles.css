@@ -1,34 +1,37 @@
 /**
  * Hero Component Styles
+ *
+ * UNIFIED GUESTIFY DESIGN SYSTEM:
+ * Uses --gmkb-* tokens which map to unified --gfy-* tokens.
  */
 .hero-component {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 2rem;
+    padding: var(--gmkb-space-8, 2rem);
     text-align: center;
-    background-color: var(--background-color, #f5f5f5);
-    border-radius: 0.5rem;
+    background-color: var(--gmkb-color-surface, #f5f5f5);
+    border-radius: var(--gmkb-radius-base, 0.5rem);
 }
 
 .hero-title {
-    font-size: 2.5rem;
-    margin-bottom: 0.5rem;
-    color: var(--primary-text-color, #333);
+    font-size: var(--gmkb-font-size-4xl, 2.5rem);
+    margin-bottom: var(--gmkb-space-2, 0.5rem);
+    color: var(--gmkb-color-text, #333);
 }
 
 .hero-subtitle {
-    font-size: 1.25rem;
-    margin-bottom: 1.5rem;
-    color: var(--secondary-text-color, #666);
+    font-size: var(--gmkb-font-size-xl, 1.25rem);
+    margin-bottom: var(--gmkb-space-6, 1.5rem);
+    color: var(--gmkb-color-text-light, #666);
 }
 
 .hero-image {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
+    width: var(--gmkb-hero-avatar-size, 150px);
+    height: var(--gmkb-hero-avatar-size, 150px);
+    border-radius: var(--gmkb-radius-full, 50%);
     overflow: hidden;
-    margin-bottom: 1rem;
+    margin-bottom: var(--gmkb-space-4, 1rem);
 }
 
 .hero-image img {
@@ -43,12 +46,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: var(--accent-color, #e0e0e0);
-    color: var(--primary-text-color, #333);
+    background-color: var(--gmkb-color-border, #e0e0e0);
+    color: var(--gmkb-color-text, #333);
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: background-color var(--gmkb-transition-slow, 0.3s ease);
 }
 
 .placeholder-image:hover {
-    background-color: var(--accent-hover-color, #d0d0d0);
+    background-color: var(--gmkb-color-border-dark, #d0d0d0);
 }
