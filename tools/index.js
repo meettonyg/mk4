@@ -227,6 +227,39 @@ export function resolveSlug(slug) {
 }
 
 /**
+ * Mapping of directory slugs to tool.json IDs
+ * These IDs are used by PHP and need to be registered for embedded mode to work
+ */
+const TOOL_JSON_IDS = {
+  'authority-hook': 'authority-hook-builder',
+  'biography': 'biography-generator',
+  'blog': 'blog-generator',
+  'brand-story': 'brand-story-generator',
+  'content-repurpose': 'content-repurposer',
+  'credibility-story': 'credibility-story-generator',
+  'elevator-pitch': 'elevator-pitch-generator',
+  'email': 'email-writer',
+  'framework': 'framework-builder',
+  'guest-intro': 'guest-intro-generator',
+  'impact-intro': 'impact-intro-builder',
+  'interview-prep': 'interview-prep-generator',
+  'newsletter': 'newsletter-writer',
+  'offers': 'offers-generator',
+  'persona': 'persona-generator',
+  'podcast-details-extractor': 'podcast-details-extractor',
+  'podcast-notes': 'podcast-notes-generator',
+  'press-release': 'press-release-generator',
+  'questions': 'questions-generator',
+  'seo-optimizer': 'seo-optimizer',
+  'signature-story': 'signature-story-generator',
+  'social-post': 'social-post-generator',
+  'sound-bite': 'sound-bite-generator',
+  'tagline': 'tagline-generator',
+  'topics': 'topics-generator',
+  'youtube-description': 'youtube-description-generator'
+};
+
+/**
  * Build component registry from tool modules
  * @param {string} componentKey - Key to extract ('Widget', 'Generator', etc.)
  * @param {boolean} useDefaultFallback - Fall back to module.default if key not found
@@ -239,7 +272,15 @@ export function buildComponentRegistry(componentKey, useDefaultFallback = false)
       ? (module[componentKey] || module.default)
       : module[componentKey];
     if (component) {
+      // Register by directory slug (e.g., 'authority-hook')
       registry[slug] = component;
+
+      // Also register by tool.json ID (e.g., 'authority-hook-builder')
+      // This is needed because PHP renders data-tool with tool.json ID
+      if (TOOL_JSON_IDS[slug]) {
+        registry[TOOL_JSON_IDS[slug]] = component;
+      }
+
       // Also register by meta.slug for backwards compatibility
       if (module.meta?.slug && module.meta.slug !== slug) {
         registry[module.meta.slug] = component;
