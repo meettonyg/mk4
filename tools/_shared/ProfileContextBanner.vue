@@ -65,8 +65,8 @@
           </svg>
         </div>
         <a
-          v-if="selectedProfile.edit_url"
-          :href="selectedProfile.edit_url"
+          v-if="selectedProfile.editUrl || selectedProfile.edit_url"
+          :href="selectedProfile.editUrl || selectedProfile.edit_url"
           class="profile-context-banner__details-link"
           target="_blank"
           title="View Profile"
@@ -84,8 +84,8 @@
         </div>
         <div class="profile-context-banner__actions">
           <a
-            v-if="selectedProfile.edit_url"
-            :href="selectedProfile.edit_url"
+            v-if="selectedProfile.editUrl || selectedProfile.edit_url"
+            :href="selectedProfile.editUrl || selectedProfile.edit_url"
             class="profile-context-banner__link"
             target="_blank"
             title="Edit Profile"
