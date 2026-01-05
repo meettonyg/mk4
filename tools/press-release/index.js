@@ -7,12 +7,5 @@ export { default as Widget } from './Widget.vue';
 // Default export is the widget (for shortcode/embedding use)
 export { default } from './Widget.vue';
 
-export const meta = {
-  id: 'press-release',
-  slug: 'press-release',
-  name: 'Press Release Generator',
-  title: 'Press Release Generator',
-  description: 'Create professional press releases for announcements and news.',
-  category: 'content',
-  icon: 'megaphone'
-};
+// Export meta from the single source of truth
+export { default as meta } from './meta.json';

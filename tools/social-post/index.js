@@ -7,12 +7,5 @@ export { default as Widget } from './Widget.vue';
 // Default export is the widget (for shortcode/embedding use)
 export { default } from './Widget.vue';
 
-export const meta = {
-  id: 'social-post',
-  slug: 'social-post',
-  name: 'Social Post Generator',
-  title: 'Social Post Generator',
-  description: 'Create engaging social media content for multiple platforms.',
-  category: 'social-email',
-  icon: 'share'
-};
+// Export meta from the single source of truth
+export { default as meta } from './meta.json';

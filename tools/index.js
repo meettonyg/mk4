@@ -239,8 +239,11 @@ export function buildComponentRegistry(componentKey, useDefaultFallback = false)
       ? (module[componentKey] || module.default)
       : module[componentKey];
     if (component) {
+      // Register by directory slug (e.g., 'authority-hook')
       registry[slug] = component;
-      // Also register by meta.slug for backwards compatibility
+
+      // Also register by meta.slug (from meta.json) for PHP compatibility
+      // meta.json contains the canonical slug used by PHP (e.g., 'authority-hook-builder')
       if (module.meta?.slug && module.meta.slug !== slug) {
         registry[module.meta.slug] = component;
       }
