@@ -238,10 +238,40 @@ class GMKB_Profile_Schema {
             'label' => 'Biography',
             'group' => 'messaging',
         ],
+        'biography_short' => [
+            'type' => self::TYPE_HTML,
+            'sanitize' => 'html',
+            'label' => 'Biography (Short)',
+            'group' => 'messaging',
+        ],
+        'biography_long' => [
+            'type' => self::TYPE_HTML,
+            'sanitize' => 'html',
+            'label' => 'Biography (Long)',
+            'group' => 'messaging',
+        ],
         'biography_alt' => [
             'type' => self::TYPE_HTML,
             'sanitize' => 'html',
             'label' => 'Biography (Alt)',
+            'group' => 'messaging',
+        ],
+        'introduction' => [
+            'type' => self::TYPE_HTML,
+            'sanitize' => 'html',
+            'label' => 'Guest Introduction',
+            'group' => 'messaging',
+        ],
+        'introduction_short' => [
+            'type' => self::TYPE_HTML,
+            'sanitize' => 'html',
+            'label' => 'Introduction (Short)',
+            'group' => 'messaging',
+        ],
+        'introduction_long' => [
+            'type' => self::TYPE_HTML,
+            'sanitize' => 'html',
+            'label' => 'Introduction (Long)',
             'group' => 'messaging',
         ],
         'podcast_intro' => [
@@ -427,6 +457,18 @@ class GMKB_Profile_Schema {
         // =====================
         // Offers
         // =====================
+        'offer_free' => [
+            'type' => self::TYPE_STRING,
+            'sanitize' => 'text',
+            'label' => 'Free Offer',
+            'group' => 'offers',
+        ],
+        'offer_free_link' => [
+            'type' => self::TYPE_URL,
+            'sanitize' => 'url',
+            'label' => 'Free Offer Link',
+            'group' => 'offers',
+        ],
         'offer_1' => [
             'type' => self::TYPE_STRING,
             'sanitize' => 'text',

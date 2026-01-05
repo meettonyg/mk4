@@ -12,6 +12,23 @@
       "long": "biography_long",
       "content": "biography",
       "biography": "biography"
+    },
+    "lengthVariants": {
+      "short": {
+        "targetField": "biography_short",
+        "label": "Short Bio (50-75 words)",
+        "description": "Perfect for social media profiles and quick introductions"
+      },
+      "medium": {
+        "targetField": "biography",
+        "label": "Medium Bio (100-150 words)",
+        "description": "Ideal for speaker introductions and media kits"
+      },
+      "long": {
+        "targetField": "biography_long",
+        "label": "Long Bio (200-300 words)",
+        "description": "Comprehensive bio for detailed profiles and publications"
+      }
     }
   },
   "validation": {
@@ -123,10 +140,12 @@
       }
     ],
     "definition": {
-      "title": "What is a Professional Biography?",
+      "title": "Crafting Your Perfect Biography",
+      "subtitle": "Your professional biography is an essential marketing tool that combines your Authority Hook and Impact Intro into a comprehensive narrative. A powerful biography communicates your credibility, expertise, results, and mission in a way that connects with your audience.",
       "content": "A professional biography is a concise summary of your career, expertise, and achievements written to establish credibility with your target audience. Unlike a resume, a bio tells your story in a way that connects with readers and positions you as an authority in your field."
     },
-    "formula": "I help [WHO] achieve [RESULT] when [WHEN] through [HOW]. I've [WHERE]. My mission is to [WHY].",
+    "formulaLabel": "FORMULA",
+    "formula": "I help **[WHO]** achieve **[RESULT]** when **[WHEN]** through **[HOW]**. I've **[WHERE]**. My mission is to **[WHY]**.",
     "tips": [
       "Start with your Authority Hook - clearly identify WHO you help and WHAT results you deliver",
       "Include specific, quantifiable achievements rather than vague claims",
@@ -151,17 +170,20 @@
       {
         "step": 1,
         "title": "Enter Your Details",
-        "description": "Provide your name, expertise, and notable achievements."
+        "description": "Provide your name, expertise, and notable achievements.",
+        "icon": "PencilSquareIcon"
       },
       {
         "step": 2,
         "title": "Choose Your Style",
-        "description": "Select tone, length, and point of view preferences."
+        "description": "Select tone, length, and point of view preferences.",
+        "icon": "AdjustmentsHorizontalIcon"
       },
       {
         "step": 3,
         "title": "Generate & Refine",
-        "description": "Review your bio and regenerate until it's perfect."
+        "description": "Review your bio and regenerate until it's perfect.",
+        "icon": "DocumentCheckIcon"
       }
     ],
     "features": [
@@ -224,6 +246,23 @@
       "guest-intro-generator",
       "authority-hook-builder",
       "elevator-pitch-generator"
-    ]
+    ],
+    "relatedToolContext": {
+      "prerequisites": [
+        {
+          "slug": "authority-hook-builder",
+          "description": "Your Authority Hook (WHO, WHAT, WHEN, HOW) forms the opening of your biography"
+        },
+        {
+          "slug": "impact-intro-builder",
+          "description": "Your Impact Intro (WHERE, WHY) completes your biography with credentials and mission"
+        }
+      ],
+      "nextStep": {
+        "slug": "guest-intro-generator",
+        "title": "Create Your Guest Introduction",
+        "description": "Transform your biography into a ready-to-read introduction that podcast hosts can use to welcome you to their show."
+      }
+    }
   }
 }

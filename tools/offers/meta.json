@@ -5,8 +5,29 @@
   "emoji": "🎁",
   "apiType": "offers",
   "fieldMapping": {
-    "type": "native_api",
-    "apiEndpoint": "offers"
+    "type": "indexed_array",
+    "prefix": "offer_",
+    "maxItems": 3,
+    "sourceKeys": ["offer", "text", "value"],
+    "offerTiers": {
+      "free": {
+        "targetField": "offer_free",
+        "label": "Free Offer",
+        "description": "Lead magnet or free resource to capture listener interest"
+      },
+      "low": {
+        "targetField": "offer_1",
+        "linkField": "offer_1_link",
+        "label": "Low-Ticket Offer",
+        "description": "Entry-level paid product or service ($47-$197)"
+      },
+      "premium": {
+        "targetField": "offer_2",
+        "linkField": "offer_2_link",
+        "label": "Premium Offer",
+        "description": "High-value service or coaching package ($2,000+)"
+      }
+    }
   },
   "validation": {
     "anyOf": ["services", "authorityHook"],
@@ -135,10 +156,12 @@
       }
     ],
     "definition": {
-      "title": "What Makes a Compelling Offer?",
+      "title": "Crafting Perfect Interview Offers",
+      "subtitle": "Strategic offers turn podcast interviews into business opportunities. Based on your Authority Hook, these offers create a natural bridge from listener to prospect, allowing you to capture value from each interview appearance.",
       "content": "A compelling offer clearly communicates the transformation you deliver, not just what you do. It speaks to your ideal client's pain points, presents a clear path to their desired outcome, and removes friction from taking the next step."
     },
-    "formula": "[FREE OFFER] \u2192 [LOW-TICKET OFFER] \u2192 [PREMIUM OFFER] = Complete Value Ladder",
+    "formulaLabel": "FORMULA",
+    "formula": "**[FREE OFFER]** → **[LOW-TICKET OFFER]** → **[PREMIUM OFFER]** = Complete Value Ladder for Podcast Audiences",
     "tips": [
       "Lead with value - focus on transformation, not transaction",
       "Create natural progression - each offer should lead to the next",
@@ -163,17 +186,20 @@
       {
         "step": 1,
         "title": "Describe Your Offer",
-        "description": "Enter what you provide and who it's for."
+        "description": "Enter what you provide and who it's for.",
+        "icon": "DocumentTextIcon"
       },
       {
         "step": 2,
         "title": "Add Key Details",
-        "description": "Include deliverables, outcomes, and unique benefits."
+        "description": "Include deliverables, outcomes, and unique benefits.",
+        "icon": "PlusCircleIcon"
       },
       {
         "step": 3,
         "title": "Generate & Polish",
-        "description": "Review your offer description and refine as needed."
+        "description": "Review your offer description and refine as needed.",
+        "icon": "DocumentCheckIcon"
       }
     ],
     "features": [
@@ -241,6 +267,18 @@
       "tagline-generator",
       "authority-hook-builder",
       "email-writer"
+    ],
+    "additionalGuidance": [
+      {
+        "title": "How to Mention Your Offer",
+        "icon": "SpeakerWaveIcon",
+        "content": "When mentioning your offer during an interview, keep it concise and natural. Wait for the host to ask about your services or for a natural transition point. Frame your offer in terms of how it helps the listener, not what you're selling."
+      },
+      {
+        "title": "Tracking Offer Effectiveness",
+        "icon": "ChartBarIcon",
+        "content": "Create unique tracking links or coupon codes for each podcast appearance. This lets you measure which shows drive the most conversions and helps you prioritize future guesting opportunities."
+      }
     ]
   }
 }

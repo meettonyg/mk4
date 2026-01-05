@@ -136,10 +136,12 @@
       }
     ],
     "definition": {
-      "title": "What is a Tagline?",
+      "title": "Crafting Your Perfect Tagline",
+      "subtitle": "Your professional tagline is a powerful statement that distills your expertise into a memorable phrase that sticks with audiences long after your interview ends. A great tagline communicates who you help, what you do, and why you're uniquely qualified to do it.",
       "content": "A tagline is a short, memorable phrase that captures the essence of your brand, product, or message. The best taglines are under 10 words, focus on transformation rather than features, and use language your audience immediately understands."
     },
-    "formula": "[WHO you help] + [WHAT you do] + [HOW you're unique]",
+    "formulaLabel": "TAGLINE FORMULA",
+    "formula": "**[WHO you help]** + **[WHAT you do]** + **[HOW you're unique]**",
     "tips": [
       "Keep it short - the best taglines are under 10 words",
       "Focus on transformation, not features - what changes for your client?",
@@ -168,17 +170,20 @@
       {
         "step": 1,
         "title": "Describe Your Offering",
-        "description": "Enter what you do and who you help."
+        "description": "Enter what you do and who you help.",
+        "icon": "PencilSquareIcon"
       },
       {
         "step": 2,
         "title": "Choose Your Style",
-        "description": "Select benefit-focused, action-oriented, question, or statement style."
+        "description": "Select benefit-focused, action-oriented, question, or statement style.",
+        "icon": "SwatchIcon"
       },
       {
         "step": 3,
         "title": "Pick Your Favorite",
-        "description": "Review multiple options and choose the one that resonates."
+        "description": "Review multiple options and choose the one that resonates.",
+        "icon": "CheckCircleIcon"
       }
     ],
     "features": [
@@ -246,6 +251,32 @@
       "elevator-pitch-generator",
       "authority-hook-builder",
       "brand-story-generator"
+    ],
+    "usageLocations": [
+      {
+        "location": "LinkedIn Headline",
+        "description": "Your tagline becomes the first thing prospects see on your profile"
+      },
+      {
+        "location": "Email Signature",
+        "description": "Reinforce your value proposition in every email you send"
+      },
+      {
+        "location": "Website Hero Section",
+        "description": "Capture visitor attention immediately above the fold"
+      },
+      {
+        "location": "Business Cards",
+        "description": "Leave a memorable impression during networking events"
+      },
+      {
+        "location": "Social Media Bios",
+        "description": "Consistent messaging across Twitter, Instagram, and other platforms"
+      },
+      {
+        "location": "Podcast Intros",
+        "description": "Give hosts a memorable way to introduce you to listeners"
+      }
     ]
   }
 }
