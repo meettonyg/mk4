@@ -425,6 +425,11 @@ if (is_admin()) {
     if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/admin/class-gmkb-profile-limits-admin.php')) {
         require_once GUESTIFY_PLUGIN_DIR . 'includes/admin/class-gmkb-profile-limits-admin.php';
     }
+
+    // AI Settings Admin - OpenAI API configuration
+    if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/admin/class-gmkb-ai-settings-admin.php')) {
+        require_once GUESTIFY_PLUGIN_DIR . 'includes/admin/class-gmkb-ai-settings-admin.php';
+    }
 }
 
 // ============================================

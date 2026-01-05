@@ -22,7 +22,7 @@ import {
 } from '@tools';
 
 import ToolDirectoryPage from '@tools/ToolDirectoryPage.vue';
-import ToolLandingPage from '@tools/ToolLandingPage.vue';
+import ToolLandingPage from '@/vue/components/tools/ToolLandingPage.vue';
 import DynamicToolPage from '@tools/DynamicToolPage.vue';
 
 // Build component registries from tool modules
@@ -117,6 +117,23 @@ function initializeToolPage(container) {
 }
 
 /**
+ * Initialize tool landing page (called from gmkb_tool_landing shortcode)
+ * Mounts the ToolLandingPage Vue component into the given container
+ */
+function initializeToolLanding(container, options = {}) {
+  ensureNonce();
+
+  const slug = options.slug || container.dataset.tool || '';
+  const app = mountApp(container, ToolLandingPage, {
+    slug: slug,
+    baseUrl: options.baseUrl || '/tools/'
+  });
+
+  console.log(`[GMKBSeoTools] Mounted landing page for: ${slug}`);
+  return app;
+}
+
+/**
  * Initialize PLG embedded tool [data-mode="embedded"]
  */
 function initializeEmbeddedTool(container) {
@@ -203,6 +220,7 @@ window.GMKBSeoTools = {
   initEmbedded: initializeEmbeddedTool,
   initAll: initializeAll,
   mountTool: initializeTool,
+  mountLanding: initializeToolLanding,
   destroy: destroyTool,
   destroyAll,
   version: '4.0.0'
@@ -238,6 +256,7 @@ export {
   initializeTool,
   initializeDirectory,
   initializeToolPage,
+  initializeToolLanding,
   initializeEmbeddedTool,
   initializeAll,
   destroyTool,
