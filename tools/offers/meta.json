@@ -12,6 +12,7 @@
     "offerTiers": {
       "free": {
         "targetField": "offer_free",
+        "linkField": "offer_free_link",
         "label": "Free Offer",
         "description": "Lead magnet or free resource to capture listener interest"
       },

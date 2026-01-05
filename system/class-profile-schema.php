@@ -265,13 +265,13 @@ class GMKB_Profile_Schema {
         'introduction_short' => [
             'type' => self::TYPE_HTML,
             'sanitize' => 'html',
-            'label' => 'Introduction (Short)',
+            'label' => 'Guest Introduction (Short)',
             'group' => 'messaging',
         ],
         'introduction_long' => [
             'type' => self::TYPE_HTML,
             'sanitize' => 'html',
-            'label' => 'Introduction (Long)',
+            'label' => 'Guest Introduction (Long)',
             'group' => 'messaging',
         ],
         'podcast_intro' => [

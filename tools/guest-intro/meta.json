@@ -273,11 +273,11 @@
       "podcast-notes-generator"
     ],
     "relatedToolContext": {
-      "prerequisite": {
+      "prerequisites": [{
         "slug": "biography-generator",
         "title": "Start with Your Biography",
         "description": "Your Guest Introduction draws from your professional biography. Create your bio first to ensure your intro includes your most compelling credentials and achievements."
-      },
+      }],
       "companions": [
         {
           "slug": "topics-generator",

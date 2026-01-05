@@ -253,11 +253,11 @@
       "tagline-generator"
     ],
     "relatedToolContext": {
-      "prerequisite": {
+      "prerequisites": [{
         "slug": "authority-hook-builder",
         "title": "Start with Your Authority Hook",
         "description": "Your Impact Intro builds on your Authority Hook. If you haven't created your Authority Hook yet, start there to establish WHO, WHAT, WHEN, and HOW before adding WHERE and WHY."
-      },
+      }],
       "nextStep": {
         "slug": "biography-generator",
         "title": "Generate Your Full Biography",
