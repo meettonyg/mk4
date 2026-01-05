@@ -1,15 +1,14 @@
 <?php
 /**
- * GMKB AI Service - OpenAI API Integration
+ * GMKB AI Service - Multi-Provider API Integration
  *
  * Part of the Unified AI Generator Architecture ("Modular Widgets")
- * Handles all OpenAI API interactions for content generation.
- *
- * Ported from: media-kit-content-generator/aigen/includes/services/class-mkcg-api-service.php
+ * Handles AI API interactions for content generation with support for
+ * OpenAI, Google Gemini, and Anthropic Claude.
  *
  * @package GMKB
  * @subpackage AI
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2.2.0
  */
 
@@ -23,22 +22,22 @@ require_once dirname(__FILE__) . '/class-gmkb-ai-config.php';
 class GMKB_AI_Service {
 
     /**
-     * OpenAI API key
+     * Current provider (openai, gemini, anthropic)
+     * @var string
+     */
+    private $provider;
+
+    /**
+     * API key for current provider
      * @var string
      */
     private $api_key;
 
     /**
-     * OpenAI API URL
+     * Current model to use
      * @var string
      */
-    private $api_url = 'https://api.openai.com/v1/chat/completions';
-
-    /**
-     * Default model to use
-     * @var string
-     */
-    private $model = 'gpt-4o-mini';
+    private $model;
 
     /**
      * Request timeout in seconds
@@ -53,27 +52,56 @@ class GMKB_AI_Service {
     private $config;
 
     /**
+     * Provider API endpoints
+     * @var array
+     */
+    private static $endpoints = [
+        'openai' => 'https://api.openai.com/v1/chat/completions',
+        'gemini' => 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
+        'anthropic' => 'https://api.anthropic.com/v1/messages',
+    ];
+
+    /**
      * Constructor
      */
     public function __construct() {
-        // Check constant first, then fall back to WordPress option
-        $this->api_key = defined('OPENAI_API_KEY') ? OPENAI_API_KEY : get_option('gmkb_openai_api_key', '');
+        // Load settings from admin or fall back to legacy
+        $this->provider = get_option('gmkb_ai_provider', 'openai');
+        $this->model = get_option('gmkb_ai_model', 'gpt-4o-mini');
+        $this->api_key = $this->get_api_key_for_provider($this->provider);
         $this->config = new GMKB_AI_Config();
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('GMKB AI Service: Initialized');
+            error_log('  - Provider: ' . $this->provider);
+            error_log('  - Model: ' . $this->model);
             error_log('  - API Key configured: ' . (!empty($this->api_key) ? 'YES' : 'NO'));
         }
     }
 
     /**
-     * Make a raw API call to OpenAI
+     * Get API key for a specific provider
      *
-     * This is the central method for all OpenAI interactions. It handles:
-     * - API key validation
-     * - Request formatting
-     * - Error handling
-     * - Response parsing
+     * @param string $provider Provider ID
+     * @return string API key
+     */
+    private function get_api_key_for_provider(string $provider): string {
+        // Check legacy constant for OpenAI
+        if ($provider === 'openai' && defined('OPENAI_API_KEY') && !empty(OPENAI_API_KEY)) {
+            return OPENAI_API_KEY;
+        }
+
+        $option_map = [
+            'openai' => 'gmkb_openai_api_key',
+            'gemini' => 'gmkb_gemini_api_key',
+            'anthropic' => 'gmkb_anthropic_api_key',
+        ];
+
+        return get_option($option_map[$provider] ?? '', '');
+    }
+
+    /**
+     * Make API call to the configured provider
      *
      * @param string $system_prompt The system prompt
      * @param string $user_prompt The user prompt
@@ -83,10 +111,10 @@ class GMKB_AI_Service {
     public function call_api($system_prompt, $user_prompt, $settings = array()) {
         // Validate API key
         if (empty($this->api_key)) {
-            error_log('GMKB AI Service: Missing OpenAI API key');
+            error_log('GMKB AI Service: Missing API key for ' . $this->provider);
             return array(
                 'success' => false,
-                'message' => 'AI service not configured. Please contact the administrator.'
+                'message' => 'AI service not configured. Please set up your API key in AI Settings.'
             );
         }
 
@@ -98,89 +126,168 @@ class GMKB_AI_Service {
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('GMKB AI Service: Making API call');
+            error_log('  - Provider: ' . $this->provider);
             error_log('  - Model: ' . $model);
-            error_log('  - System prompt length: ' . strlen($system_prompt));
-            error_log('  - User prompt length: ' . strlen($user_prompt));
         }
 
-        // Build request body
-        $body = wp_json_encode(array(
+        // Route to provider-specific method
+        switch ($this->provider) {
+            case 'gemini':
+                return $this->call_gemini_api($system_prompt, $user_prompt, $model, $temperature, $max_tokens, $timeout);
+            case 'anthropic':
+                return $this->call_anthropic_api($system_prompt, $user_prompt, $model, $temperature, $max_tokens, $timeout);
+            case 'openai':
+            default:
+                return $this->call_openai_api($system_prompt, $user_prompt, $model, $temperature, $max_tokens, $timeout);
+        }
+    }
+
+    /**
+     * Call OpenAI API
+     */
+    private function call_openai_api($system_prompt, $user_prompt, $model, $temperature, $max_tokens, $timeout) {
+        $body = wp_json_encode([
             'model' => $model,
-            'messages' => array(
-                array('role' => 'system', 'content' => $system_prompt),
-                array('role' => 'user', 'content' => $user_prompt)
-            ),
+            'messages' => [
+                ['role' => 'system', 'content' => $system_prompt],
+                ['role' => 'user', 'content' => $user_prompt]
+            ],
             'temperature' => $temperature,
             'max_tokens' => $max_tokens
-        ));
+        ]);
 
-        // Make API request
-        $response = wp_remote_post($this->api_url, array(
-            'method' => 'POST',
-            'headers' => array(
+        $response = wp_remote_post(self::$endpoints['openai'], [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->api_key,
                 'Content-Type' => 'application/json',
-            ),
+            ],
             'body' => $body,
             'timeout' => $timeout,
-        ));
+        ]);
 
-        // Handle request error
         if (is_wp_error($response)) {
-            error_log('GMKB AI Service: API request failed: ' . $response->get_error_message());
-            return array(
-                'success' => false,
-                'message' => 'API request failed: ' . $response->get_error_message()
-            );
+            return ['success' => false, 'message' => 'API request failed: ' . $response->get_error_message()];
         }
 
-        // Check response code
-        $response_code = wp_remote_retrieve_response_code($response);
-        $response_body = wp_remote_retrieve_body($response);
+        $code = wp_remote_retrieve_response_code($response);
+        $body = json_decode(wp_remote_retrieve_body($response), true);
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB AI Service: Response code: ' . $response_code);
+        if ($code !== 200) {
+            $error = $body['error']['message'] ?? 'OpenAI error (code: ' . $code . ')';
+            return ['success' => false, 'message' => $error];
         }
 
-        if ($response_code !== 200) {
-            error_log('GMKB AI Service: API error: ' . $response_body);
-
-            $error_data = json_decode($response_body, true);
-            $error_message = isset($error_data['error']['message'])
-                ? $error_data['error']['message']
-                : 'OpenAI API error (code: ' . $response_code . ')';
-
-            return array(
-                'success' => false,
-                'message' => $error_message
-            );
+        if (empty($body['choices'][0]['message']['content'])) {
+            return ['success' => false, 'message' => 'No content received from OpenAI.'];
         }
 
-        // Parse response
-        $data = json_decode($response_body, true);
-
-        if (empty($data['choices'][0]['message']['content'])) {
-            error_log('GMKB AI Service: No content in API response');
-            return array(
-                'success' => false,
-                'message' => 'No content received from AI service.'
-            );
-        }
-
-        $raw_content = $data['choices'][0]['message']['content'];
-        $tokens_used = isset($data['usage']['total_tokens']) ? $data['usage']['total_tokens'] : null;
-
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB AI Service: API call successful');
-            error_log('  - Tokens used: ' . ($tokens_used ?? 'unknown'));
-        }
-
-        return array(
+        return [
             'success' => true,
-            'content' => $raw_content,
-            'tokens_used' => $tokens_used,
+            'content' => $body['choices'][0]['message']['content'],
+            'tokens_used' => $body['usage']['total_tokens'] ?? null,
             'model' => $model
-        );
+        ];
+    }
+
+    /**
+     * Call Google Gemini API
+     */
+    private function call_gemini_api($system_prompt, $user_prompt, $model, $temperature, $max_tokens, $timeout) {
+        $url = str_replace('{model}', $model, self::$endpoints['gemini']) . '?key=' . $this->api_key;
+
+        // Gemini combines system + user into a single prompt
+        $combined_prompt = $system_prompt . "\n\n" . $user_prompt;
+
+        $body = wp_json_encode([
+            'contents' => [
+                ['parts' => [['text' => $combined_prompt]]]
+            ],
+            'generationConfig' => [
+                'temperature' => $temperature,
+                'maxOutputTokens' => $max_tokens,
+            ]
+        ]);
+
+        $response = wp_remote_post($url, [
+            'headers' => ['Content-Type' => 'application/json'],
+            'body' => $body,
+            'timeout' => $timeout,
+        ]);
+
+        if (is_wp_error($response)) {
+            return ['success' => false, 'message' => 'API request failed: ' . $response->get_error_message()];
+        }
+
+        $code = wp_remote_retrieve_response_code($response);
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if ($code !== 200) {
+            $error = $body['error']['message'] ?? 'Gemini error (code: ' . $code . ')';
+            return ['success' => false, 'message' => $error];
+        }
+
+        $content = $body['candidates'][0]['content']['parts'][0]['text'] ?? null;
+
+        if (empty($content)) {
+            return ['success' => false, 'message' => 'No content received from Gemini.'];
+        }
+
+        return [
+            'success' => true,
+            'content' => $content,
+            'tokens_used' => $body['usageMetadata']['totalTokenCount'] ?? null,
+            'model' => $model
+        ];
+    }
+
+    /**
+     * Call Anthropic Claude API
+     */
+    private function call_anthropic_api($system_prompt, $user_prompt, $model, $temperature, $max_tokens, $timeout) {
+        $body = wp_json_encode([
+            'model' => $model,
+            'max_tokens' => $max_tokens,
+            'system' => $system_prompt,
+            'messages' => [
+                ['role' => 'user', 'content' => $user_prompt]
+            ],
+            'temperature' => $temperature,
+        ]);
+
+        $response = wp_remote_post(self::$endpoints['anthropic'], [
+            'headers' => [
+                'x-api-key' => $this->api_key,
+                'Content-Type' => 'application/json',
+                'anthropic-version' => '2023-06-01',
+            ],
+            'body' => $body,
+            'timeout' => $timeout,
+        ]);
+
+        if (is_wp_error($response)) {
+            return ['success' => false, 'message' => 'API request failed: ' . $response->get_error_message()];
+        }
+
+        $code = wp_remote_retrieve_response_code($response);
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if ($code !== 200) {
+            $error = $body['error']['message'] ?? 'Anthropic error (code: ' . $code . ')';
+            return ['success' => false, 'message' => $error];
+        }
+
+        $content = $body['content'][0]['text'] ?? null;
+
+        if (empty($content)) {
+            return ['success' => false, 'message' => 'No content received from Claude.'];
+        }
+
+        return [
+            'success' => true,
+            'content' => $content,
+            'tokens_used' => ($body['usage']['input_tokens'] ?? 0) + ($body['usage']['output_tokens'] ?? 0),
+            'model' => $model
+        ];
     }
 
     /**
