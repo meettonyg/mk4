@@ -293,14 +293,16 @@ class GMKB_AI_Settings_Admin {
                             nonce: '<?php echo wp_create_nonce('gmkb_ai_settings_nonce'); ?>'
                         },
                         success: function(response) {
-                            if (response.success) {
-                                $result.html('<span style="color: #28a745;">&#10004; ' + response.data.message + '</span>');
-                            } else {
-                                $result.html('<span style="color: #dc3545;">&#10008; ' + response.data.message + '</span>');
-                            }
+                            var color = response.success ? '#28a745' : '#dc3545';
+                            var icon = response.success ? '&#10004; ' : '&#10008; ';
+                            $result.empty()
+                                .append($('<span>').css('color', color).html(icon))
+                                .append(document.createTextNode(response.data.message));
                         },
                         error: function() {
-                            $result.html('<span style="color: #dc3545;">&#10008; Request failed. Please try again.</span>');
+                            $result.empty()
+                                .append($('<span>').css('color', '#dc3545').html('&#10008; '))
+                                .append(document.createTextNode('Request failed. Please check your browser console for details.'));
                         },
                         complete: function() {
                             $button.prop('disabled', false).text('Test Connection');
