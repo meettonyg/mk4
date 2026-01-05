@@ -7,12 +7,5 @@ export { default as Widget } from './Widget.vue';
 // Default export is the widget (for shortcode/embedding use)
 export { default } from './Widget.vue';
 
-export const meta = {
-  id: 'authority-hook',
-  slug: 'authority-hook',
-  name: 'Authority Hook Builder',
-  title: 'Authority Hook Builder',
-  description: 'Build a powerful positioning statement using the 4W framework (Who, What, When, How) that clearly communicates who you serve and what transformation you provide.',
-  category: 'message-builder',
-  icon: 'zap'
-};
+// Export meta from the single source of truth
+export { default as meta } from './meta.json';

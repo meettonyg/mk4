@@ -7,12 +7,5 @@ export { default as Widget } from './Widget.vue';
 // Default export is the widget (for shortcode/embedding use)
 export { default } from './Widget.vue';
 
-export const meta = {
-  id: 'topics',
-  slug: 'topics',
-  name: 'Topics Generator',
-  title: 'Topics Generator',
-  description: 'Generate relevant topics and themes for your content and speaking.',
-  category: 'message-builder',
-  icon: 'list'
-};
+// Export meta from the single source of truth
+export { default as meta } from './meta.json';

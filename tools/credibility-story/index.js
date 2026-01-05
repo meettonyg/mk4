@@ -7,12 +7,5 @@ export { default as Widget } from './Widget.vue';
 // Default export is the widget (for shortcode/embedding use)
 export { default } from './Widget.vue';
 
-export const meta = {
-  id: 'credibility-story',
-  slug: 'credibility-story',
-  name: 'Credibility Story Generator',
-  title: 'Credibility Story Generator',
-  description: 'Build trust with stories that showcase your expertise and experience.',
-  category: 'strategy',
-  icon: 'award'
-};
+// Export meta from the single source of truth
+export { default as meta } from './meta.json';
