@@ -378,7 +378,7 @@ const {
   authorityHookSummary,
   setAll,
   syncFromStore,
-  loadFromPodsData
+  loadFromProfileData
 } = useAuthorityHook();
 
 // Profile context integration
@@ -421,7 +421,7 @@ function populateFromProfile(profileData) {
   }
 
   // Populate authority hook fields from profile data
-  loadFromPodsData(profileData);
+  loadFromProfileData(profileData);
 }
 
 /**

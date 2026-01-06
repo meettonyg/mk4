@@ -228,25 +228,25 @@ export function useImpactIntro() {
   };
 
   /**
-   * Load from pods data
-   * @param {object} podsData Pods data object
+   * Load from profile data
+   * @param {object} profileData Profile data object (field names are legacy from Pods migration)
    */
-  const loadFromPodsData = (podsData) => {
-    if (!podsData) return;
+  const loadFromProfileData = (profileData) => {
+    if (!profileData) return;
 
     // Load credentials
-    if (podsData.credentials) {
-      const creds = Array.isArray(podsData.credentials)
-        ? podsData.credentials
-        : podsData.credentials.split(',').map(c => c.trim()).filter(c => c);
+    if (profileData.credentials) {
+      const creds = Array.isArray(profileData.credentials)
+        ? profileData.credentials
+        : profileData.credentials.split(',').map(c => c.trim()).filter(c => c);
       credentials.value = creds;
     }
 
     // Load achievements
-    if (podsData.achievements) {
-      const achvs = Array.isArray(podsData.achievements)
-        ? podsData.achievements
-        : podsData.achievements.split(',').map(a => a.trim()).filter(a => a);
+    if (profileData.achievements) {
+      const achvs = Array.isArray(profileData.achievements)
+        ? profileData.achievements
+        : profileData.achievements.split(',').map(a => a.trim()).filter(a => a);
       achievements.value = achvs;
     }
   };
@@ -307,7 +307,7 @@ export function useImpactIntro() {
 
     // General methods
     reset,
-    loadFromPodsData,
+    loadFromProfileData,
     copySummaryToClipboard,
     syncFromStore,
 
