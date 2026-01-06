@@ -107,27 +107,27 @@ export function useAIGuestIntro() {
   };
 
   /**
-   * Load data from podsData
-   * @param {object} podsData Pods data object
+   * Load data from profile data
+   * @param {object} profileData Profile data object (field names are legacy from Pods migration)
    */
-  const loadFromPodsData = (podsData) => {
-    if (!podsData) return;
+  const loadFromProfileData = (profileData) => {
+    if (!profileData) return;
 
     // Load name
-    const firstName = podsData.first_name || '';
-    const lastName = podsData.last_name || '';
+    const firstName = profileData.first_name || '';
+    const lastName = profileData.last_name || '';
     if (firstName || lastName) {
       name.value = `${firstName} ${lastName}`.trim();
     }
 
     // Load biography
-    if (podsData.biography) {
-      biography.value = podsData.biography;
+    if (profileData.biography) {
+      biography.value = profileData.biography;
     }
 
     // Load tagline
-    if (podsData.tagline) {
-      tagline.value = podsData.tagline;
+    if (profileData.tagline) {
+      tagline.value = profileData.tagline;
     }
   };
 
@@ -170,7 +170,7 @@ export function useAIGuestIntro() {
     setName,
     setBiography,
     setTagline,
-    loadFromPodsData,
+    loadFromProfileData,
     reset
   };
 }

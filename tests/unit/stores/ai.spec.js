@@ -372,11 +372,11 @@ describe('AI Store', () => {
     });
   });
 
-  describe('Load from Pods Data', () => {
-    it('loads authority hook from Pods data', () => {
+  describe('Load from Profile Data', () => {
+    it('loads authority hook from profile data', () => {
       const store = useAIStore();
 
-      store.loadFromPodsData({
+      store.loadFromProfileData({
         hook_who: 'entrepreneurs',
         hook_what: 'build businesses',
         guest_title: 'Marketing Expert'
@@ -389,7 +389,7 @@ describe('AI Store', () => {
     it('loads credentials from comma-separated string', () => {
       const store = useAIStore();
 
-      store.loadFromPodsData({
+      store.loadFromProfileData({
         credentials: 'PhD, MBA, CPA'
       });
 
@@ -399,18 +399,18 @@ describe('AI Store', () => {
     it('loads credentials from array', () => {
       const store = useAIStore();
 
-      store.loadFromPodsData({
+      store.loadFromProfileData({
         credentials: ['PhD', 'MBA']
       });
 
       expect(store.impactIntro.credentials).toEqual(['PhD', 'MBA']);
     });
 
-    it('handles null/undefined Pods data', () => {
+    it('handles null/undefined profile data', () => {
       const store = useAIStore();
 
-      store.loadFromPodsData(null);
-      store.loadFromPodsData(undefined);
+      store.loadFromProfileData(null);
+      store.loadFromProfileData(undefined);
 
       // Should not throw and state should remain unchanged
       expect(store.authorityHook.who).toBe('');

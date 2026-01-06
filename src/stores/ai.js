@@ -38,13 +38,15 @@ export const useAIStore = defineStore('ai', {
 
     /**
      * Shared Authority Hook data (persists across generators)
-     * The 4W Framework: "Who/What/When/How"
+     * The 4W Framework: "Who/What/When/How" (with optional where/why for extended use)
      */
     authorityHook: {
       who: '',
       what: '',
       when: '',
-      how: ''
+      how: '',
+      where: '',
+      why: ''
     },
 
     /**
@@ -378,41 +380,41 @@ export const useAIStore = defineStore('ai', {
     },
 
     /**
-     * Load authority hook from Pods data
-     * @param {object} podsData Pods data object
+     * Load authority hook from profile data
+     * @param {object} profileData Profile data object (field names are legacy from Pods migration)
      */
-    loadFromPodsData(podsData) {
-      if (!podsData) return;
+    loadFromProfileData(profileData) {
+      if (!profileData) return;
 
       // Load authority hook fields if they exist
       const hookFields = {
-        who: podsData.hook_who || podsData.guest_title || '',
-        what: podsData.hook_what || '',
-        when: podsData.hook_when || '',
-        how: podsData.hook_how || '',
-        where: podsData.hook_where || '',
-        why: podsData.hook_why || ''
+        who: profileData.hook_who || profileData.guest_title || '',
+        what: profileData.hook_what || '',
+        when: profileData.hook_when || '',
+        how: profileData.hook_how || '',
+        where: profileData.hook_where || '',
+        why: profileData.hook_why || ''
       };
 
       // Only update if we have some data
       if (Object.values(hookFields).some(v => v)) {
         this.setAuthorityHook(hookFields);
-        console.log('[AI Store] Loaded authority hook from Pods data');
+        console.log('[AI Store] Loaded authority hook from profile data');
       }
 
       // Load credentials if available
-      if (podsData.credentials) {
-        const creds = Array.isArray(podsData.credentials)
-          ? podsData.credentials
-          : podsData.credentials.split(',').map(c => c.trim()).filter(c => c);
+      if (profileData.credentials) {
+        const creds = Array.isArray(profileData.credentials)
+          ? profileData.credentials
+          : profileData.credentials.split(',').map(c => c.trim()).filter(c => c);
         this.setCredentials(creds);
       }
 
       // Load achievements if available
-      if (podsData.achievements) {
-        const achievements = Array.isArray(podsData.achievements)
-          ? podsData.achievements
-          : podsData.achievements.split(',').map(a => a.trim()).filter(a => a);
+      if (profileData.achievements) {
+        const achievements = Array.isArray(profileData.achievements)
+          ? profileData.achievements
+          : profileData.achievements.split(',').map(a => a.trim()).filter(a => a);
         this.setAchievements(achievements);
       }
     }

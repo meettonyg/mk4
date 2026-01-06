@@ -40,19 +40,17 @@
           </p>
         </div>
 
-        <div class="generator__field">
-          <label class="generator__field-label">Authority Hook (Optional)</label>
-          <textarea
-            v-model="authorityHookText"
-            class="generator__field-input generator__field-textarea"
-            placeholder="e.g., I help busy executives achieve work-life balance..."
-            rows="2"
-          ></textarea>
-          <p class="generator__field-helper">
-            Add your positioning statement for more targeted topics.
-          </p>
-        </div>
       </div>
+
+      <!-- Authority Hook Section (collapsible) -->
+      <AuthorityHookSection
+        :hook-text="authorityHookSummary"
+        :components="authorityHook"
+        :show-badge="false"
+        :initially-open="isBuilderOpen"
+        @update:components="handleAuthorityHookUpdate"
+        @toggle="(open) => isBuilderOpen = open"
+      />
 
       <!-- Generate Button -->
       <div class="generator__actions">
@@ -115,6 +113,16 @@
 
         <!-- Save Actions -->
         <div v-if="showSaveToProfile" class="topics-generator__actions">
+          <!-- Save Authority Hook Checkbox -->
+          <label v-if="authorityHookSummary" class="topics-generator__checkbox-label">
+            <input
+              type="checkbox"
+              v-model="saveAuthorityHookToProfile"
+              class="topics-generator__checkbox"
+            />
+            <span>Also save Authority Hook to profile</span>
+          </label>
+
           <button
             type="button"
             class="generator__button generator__button--primary"
@@ -206,19 +214,15 @@
         </span>
       </div>
 
-      <!-- Authority Hook (optional) -->
-      <div class="gmkb-ai-form-group">
-        <label class="gmkb-ai-label">Authority Hook (Optional)</label>
-        <textarea
-          v-model="authorityHookText"
-          class="gmkb-ai-input gmkb-ai-textarea"
-          placeholder="e.g., I help busy executives achieve work-life balance..."
-          rows="2"
-        ></textarea>
-        <span class="gmkb-ai-hint">
-          Add your positioning statement for more targeted topics.
-        </span>
-      </div>
+      <!-- Authority Hook Section (collapsible) -->
+      <AuthorityHookSection
+        :hook-text="authorityHookSummary"
+        :components="authorityHook"
+        :show-badge="false"
+        :initially-open="isBuilderOpen"
+        @update:components="handleAuthorityHookUpdate"
+        @toggle="(open) => isBuilderOpen = open"
+      />
 
       <!-- Generate Button -->
       <AiGenerateButton
@@ -282,15 +286,15 @@
           rows="3"
         ></textarea>
       </div>
-      <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.background || 'Your Authority Hook (Optional)' }}</label>
-        <textarea
-          v-model="authorityHookText"
-          class="gmkb-embedded-input gmkb-embedded-textarea"
-          :placeholder="currentIntent?.formPlaceholders?.background || 'e.g., I help executives build high-performance teams...'"
-          rows="2"
-        ></textarea>
-      </div>
+      <!-- Authority Hook Section (collapsible) -->
+      <AuthorityHookSection
+        :hook-text="authorityHookSummary"
+        :components="authorityHook"
+        :show-badge="false"
+        :initially-open="false"
+        @update:components="handleAuthorityHookUpdate"
+        @toggle="(open) => isBuilderOpen = open"
+      />
     </div>
     <div v-if="error" class="gmkb-embedded-error">{{ error }}</div>
   </div>
@@ -310,6 +314,7 @@ import ProfileSelector from '../../src/vue/components/shared/ProfileSelector.vue
 
 // Full layout components (standalone mode)
 import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
+import AuthorityHookSection from '../_shared/AuthorityHookSection.vue';
 
 const props = defineProps({
   /**
@@ -368,7 +373,13 @@ const {
   copyToClipboard
 } = useAITopics();
 
-const { authorityHookSummary, syncFromStore } = useAuthorityHook();
+const {
+  authorityHook,
+  authorityHookSummary,
+  setAll,
+  syncFromStore,
+  loadFromProfileData
+} = useAuthorityHook();
 
 // Profile context integration
 const {
@@ -382,10 +393,18 @@ const {
 
 // Local state
 const expertise = ref('');
-const authorityHookText = ref('');
 const selectedTopicIndex = ref(-1);
 const selectedProfileId = ref(props.profileId || null);
 const saveSuccess = ref(false);
+const isBuilderOpen = ref(false);
+const saveAuthorityHookToProfile = ref(true); // Default to saving authority hook
+
+/**
+ * Handle authority hook component updates from AuthorityHookSection
+ */
+const handleAuthorityHookUpdate = (components) => {
+  setAll(components);
+};
 
 // Inject profile data from EmbeddedToolWrapper (for embedded mode)
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
@@ -401,10 +420,8 @@ function populateFromProfile(profileData) {
     expertise.value = profileData.hook_what;
   }
 
-  // Populate authority hook text
-  if (profileData.authority_hook && !authorityHookText.value) {
-    authorityHookText.value = profileData.authority_hook;
-  }
+  // Populate authority hook fields from profile data
+  loadFromProfileData(profileData);
 }
 
 /**
@@ -489,7 +506,7 @@ const handleGenerate = async () => {
     const context = props.mode === 'integrated' ? 'builder' : 'public';
     await generate({
       expertise: expertise.value,
-      authorityHook: authorityHookText.value
+      authorityHook: authorityHookSummary.value
     }, context);
 
     emit('generated', {
@@ -547,11 +564,26 @@ const handleSaveToProfile = async () => {
   saveSuccess.value = false;
 
   try {
-    const result = await saveToProfile('topics', topics.value, {
+    // Save topics
+    const topicsResult = await saveToProfile('topics', topics.value, {
       profileId: selectedProfileId.value
     });
 
-    if (result.success) {
+    // Save authority hook if checkbox is checked and we have data
+    let authorityHookResult = { success: true, saved: {} };
+    if (saveAuthorityHookToProfile.value && authorityHookSummary.value) {
+      authorityHookResult = await saveToProfile('authority_hook', {
+        who: authorityHook.value.who,
+        what: authorityHook.value.what,
+        when: authorityHook.value.when,
+        how: authorityHook.value.how,
+        summary: authorityHookSummary.value
+      }, {
+        profileId: selectedProfileId.value
+      });
+    }
+
+    if (topicsResult.success) {
       saveSuccess.value = true;
 
       // Auto-hide success message after 3 seconds
@@ -562,7 +594,11 @@ const handleSaveToProfile = async () => {
       emit('saved', {
         profileId: selectedProfileId.value,
         topics: topics.value,
-        fields: result.saved
+        fields: {
+          ...topicsResult.saved,
+          ...(authorityHookResult.saved || {})
+        },
+        authorityHookSaved: saveAuthorityHookToProfile.value && authorityHookResult.success
       });
     }
   } catch (err) {
@@ -575,22 +611,10 @@ const handleSaveToProfile = async () => {
  */
 onMounted(() => {
   syncFromStore();
-  if (authorityHookSummary.value) {
-    authorityHookText.value = authorityHookSummary.value;
-  }
 
   // Use context profile ID if available and no prop provided
   if (!selectedProfileId.value && contextProfileId.value) {
     selectedProfileId.value = contextProfileId.value;
-  }
-});
-
-/**
- * Watch for store changes
- */
-watch(authorityHookSummary, (newVal) => {
-  if (newVal && !authorityHookText.value) {
-    authorityHookText.value = newVal;
   }
 });
 
@@ -787,6 +811,28 @@ watch(canGenerate, (newValue) => {
   font-size: 14px;
   font-weight: 500;
   color: #10b981;
+}
+
+.topics-generator__checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--mkcg-text-secondary, #5a6d7e);
+  cursor: pointer;
+  width: 100%;
+  margin-bottom: var(--mkcg-space-sm, 12px);
+}
+
+.topics-generator__checkbox-label:hover {
+  color: var(--mkcg-text-primary, #2c3e50);
+}
+
+.topics-generator__checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--mkcg-primary, #1a9bdc);
+  cursor: pointer;
 }
 
 .topics-generator__error-msg {

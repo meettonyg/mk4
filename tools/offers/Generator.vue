@@ -374,7 +374,7 @@ const {
   copyToClipboard
 } = useAIOffers();
 
-const { authorityHookSummary, syncFromStore } = useAuthorityHook();
+const { authorityHookSummary, syncFromStore, loadFromProfileData } = useAuthorityHook();
 
 // Local state
 const services = ref('');
@@ -398,6 +398,9 @@ function populateFromProfile(profileData) {
   if (profileData.authority_hook && !authorityHookText.value) {
     authorityHookText.value = profileData.authority_hook;
   }
+
+  // Populate authority hook fields from profile data (for cross-tool sync)
+  loadFromProfileData(profileData);
 }
 
 /**

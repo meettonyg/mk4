@@ -161,19 +161,26 @@ export function useAuthorityHook() {
   };
 
   /**
-   * Load from pods data (4W Framework)
-   * @param {object} podsData Pods data object
+   * Load from profile data (4W Framework)
+   * @param {object} profileData Profile data object (field names are legacy from Pods migration)
    */
-  const loadFromPodsData = (podsData) => {
-    if (!podsData) return;
+  const loadFromProfileData = (profileData) => {
+    if (!profileData) return;
 
     // Load from various possible field names
-    if (podsData.hook_who || podsData.guest_title) {
-      who.value = podsData.hook_who || podsData.guest_title || '';
+    // Use property existence checks to allow empty strings to clear fields
+    if ('hook_who' in profileData || 'guest_title' in profileData) {
+      who.value = profileData.hook_who ?? profileData.guest_title ?? '';
     }
-    if (podsData.hook_what) what.value = podsData.hook_what;
-    if (podsData.hook_when) when.value = podsData.hook_when;
-    if (podsData.hook_how) how.value = podsData.hook_how;
+    if ('hook_what' in profileData) {
+      what.value = profileData.hook_what ?? '';
+    }
+    if ('hook_when' in profileData) {
+      when.value = profileData.hook_when ?? '';
+    }
+    if ('hook_how' in profileData) {
+      how.value = profileData.hook_how ?? '';
+    }
   };
 
   /**
@@ -223,7 +230,7 @@ export function useAuthorityHook() {
     updateField: setField, // Alias for backwards compatibility with Vue components
     setAll,
     reset,
-    loadFromPodsData,
+    loadFromProfileData,
     copySummaryToClipboard,
     syncFromStore,
 

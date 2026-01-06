@@ -357,7 +357,7 @@ const {
   copyToClipboard
 } = useAIQuestions();
 
-const { authorityHookSummary, syncFromStore } = useAuthorityHook();
+const { authorityHookSummary, syncFromStore, loadFromProfileData } = useAuthorityHook();
 
 // Local state
 const topicsText = ref('');
@@ -385,6 +385,9 @@ function populateFromProfile(profileData) {
   if (profileData.authority_hook && !authorityHookText.value) {
     authorityHookText.value = profileData.authority_hook;
   }
+
+  // Populate authority hook fields from profile data (for cross-tool sync)
+  loadFromProfileData(profileData);
 }
 
 /**
