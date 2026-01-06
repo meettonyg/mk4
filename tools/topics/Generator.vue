@@ -689,6 +689,13 @@ watch(canGenerate, (newValue) => {
     emit('update:can-generate', !!newValue);
   }
 }, { immediate: true });
+
+/**
+ * Expose methods for parent component access (embedded mode)
+ */
+defineExpose({
+  handleGenerate
+});
 </script>
 
 <style scoped>

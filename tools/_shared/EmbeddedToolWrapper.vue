@@ -98,11 +98,11 @@
             for unlimited generations.
           </p>
           <!-- Logged-in users on profile-saveable tools -->
-          <p v-else-if="showSaveCta && isLoggedIn && supportsProfileSave && !hasSelectedProfile" class="preview-subtext">
+          <p v-else-if="showSaveCta && isLoggedIn && supportsProfileSave && !loadedProfileData" class="preview-subtext">
             Select a profile above to save your generated content.
           </p>
-          <p v-else-if="showSaveCta && isLoggedIn && supportsProfileSave && hasSelectedProfile" class="preview-subtext">
-            Generate content and save it directly to <strong>{{ selectedProfile?.title || 'your profile' }}</strong>.
+          <p v-else-if="showSaveCta && isLoggedIn && supportsProfileSave && loadedProfileData" class="preview-subtext">
+            Generate content and save it directly to <strong>{{ loadedProfileData?.title || selectedProfile?.title || 'your profile' }}</strong>.
           </p>
         </div>
 
@@ -161,9 +161,9 @@
             </div>
 
             <!-- Save CTA (profile-saveable tools only) -->
-            <div v-if="supportsProfileSave && isLoggedIn && hasSelectedProfile" class="save-cta-box save-cta-box--profile">
+            <div v-if="supportsProfileSave && isLoggedIn && loadedProfileData" class="save-cta-box save-cta-box--profile">
               <div class="save-cta-text">
-                <strong>Save to {{ selectedProfile?.title || 'your profile' }}</strong>
+                <strong>Save to {{ loadedProfileData?.title || selectedProfile?.title || 'your profile' }}</strong>
                 <span>Updates your profile with this {{ contentNoun }}</span>
               </div>
               <button
@@ -175,7 +175,7 @@
                 {{ savedToProfile ? '✓ Saved!' : (isSavingToProfile ? 'Saving...' : 'Save to Profile') }}
               </button>
             </div>
-            <div v-else-if="supportsProfileSave && isLoggedIn && !hasSelectedProfile" class="save-cta-box save-cta-box--select">
+            <div v-else-if="supportsProfileSave && isLoggedIn && !loadedProfileData" class="save-cta-box save-cta-box--select">
               <div class="save-cta-text">
                 <strong>Select a profile above</strong>
                 <span>to save this {{ contentNoun }} to your account</span>

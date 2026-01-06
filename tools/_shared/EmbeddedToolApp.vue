@@ -97,12 +97,37 @@ function handlePreviewUpdate({ previewHtml }) {
 function handleGenerate() {
   if (generator.value?.handleGenerate) {
     isGenerating.value = true;
-    generator.value.handleGenerate();
+    generator.value.handleGenerate()
+      .catch((err) => {
+        console.error('[EmbeddedToolApp] Generation failed:', err);
+        isGenerating.value = false;
+      });
   }
 }
 
 function handleGenerated(data) {
   isGenerating.value = false;
+
+  // Update preview content based on generated data
+  if (data) {
+    // Handle topics array
+    if (data.topics && Array.isArray(data.topics)) {
+      previewContent.value = data.topics
+        .map((topic, i) => `<strong>${i + 1}.</strong> ${topic}`)
+        .join('<br><br>');
+    }
+    // Handle single content (hook, bio, tagline, etc.)
+    else if (data.hook || data.content || data.result) {
+      previewContent.value = data.hook || data.content || data.result;
+    }
+    // Handle questions array
+    else if (data.questions && Array.isArray(data.questions)) {
+      previewContent.value = data.questions
+        .map((q, i) => `<strong>${i + 1}.</strong> ${q}`)
+        .join('<br><br>');
+    }
+  }
+
   emit('generated', data);
 }
 
