@@ -393,6 +393,12 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/offers-shortcode.php'
     require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/offers-shortcode.php';
 }
 
+// Home Widget Shortcode - Compact widget for Guestify Home Dashboard
+// Usage: [gmkb_home_widget] or [gmkb_home_widget compact="true"]
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/home-widget-shortcode.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/home-widget-shortcode.php';
+}
+
 // ROOT FIX: Include debug REST endpoint for troubleshooting
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/debug-rest-endpoint.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/debug-rest-endpoint.php';
@@ -424,6 +430,11 @@ if (is_admin()) {
     // Profile Limits Admin - Membership tier management
     if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/admin/class-gmkb-profile-limits-admin.php')) {
         require_once GUESTIFY_PLUGIN_DIR . 'includes/admin/class-gmkb-profile-limits-admin.php';
+    }
+
+    // AI Settings Admin - OpenAI API configuration
+    if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/admin/class-gmkb-ai-settings-admin.php')) {
+        require_once GUESTIFY_PLUGIN_DIR . 'includes/admin/class-gmkb-ai-settings-admin.php';
     }
 }
 

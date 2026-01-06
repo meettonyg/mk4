@@ -1847,6 +1847,15 @@ get_footer();
         $tool_slug = $tool['id'];
         $intents = isset($landing['intents']) ? $landing['intents'] : array();
 
+        // Merge root-level meta fields with landing content for Vue component
+        $vue_meta = array_merge($landing, array(
+            'name' => $meta['name'] ?? '',
+            'buttonText' => $meta['buttonText'] ?? '',
+            'supportsProfileSave' => $meta['supportsProfileSave'] ?? true,
+            'socialProof' => $landing['socialProof'] ?? null,
+            'relatedToolSlugs' => $landing['relatedToolSlugs'] ?? array(),
+        ));
+
         ?>
         <div class="gmkb-plg-landing">
             <!-- 1. HERO (OUTCOME ENGINE) -->
@@ -1880,7 +1889,7 @@ get_footer();
                          data-tool="<?php echo esc_attr($tool_slug); ?>"
                          data-mode="embedded"
                          data-intents="<?php echo esc_attr(wp_json_encode($intents)); ?>"
-                         data-meta="<?php echo esc_attr(wp_json_encode($landing)); ?>">
+                         data-meta="<?php echo esc_attr(wp_json_encode($vue_meta)); ?>">
                         <!-- Vue app will mount here -->
                         <noscript>
                             <div class="gmkb-plg-noscript">

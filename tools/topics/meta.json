@@ -97,15 +97,15 @@
       {
         "id": "podcast",
         "label": "Podcast Topics",
-        "contextHeading": "Create episodes your audience craves",
-        "contextDescription": "Generate podcast episode ideas that resonate with listeners and showcase your expertise on the topics that matter most.",
+        "contextHeading": "Get booked on more podcasts",
+        "contextDescription": "Generate compelling interview topics that showcase your expertise and make podcast hosts eager to have you on their show.",
         "formLabels": {
           "expertise": "Your Area of Expertise",
-          "audience": "Who is Your Audience?"
+          "audience": "Your Authority Hook (Optional)"
         },
         "formPlaceholders": {
           "expertise": "e.g. Digital Marketing",
-          "audience": "e.g. Small Business Owners"
+          "audience": "e.g. I help small business owners grow their online presence..."
         }
       },
       {
@@ -115,11 +115,11 @@
         "contextDescription": "Develop keynote topics that event organizers can't resist. Stand out from other speakers with unique, compelling themes.",
         "formLabels": {
           "expertise": "Your Speaking Focus",
-          "audience": "Conference Audience"
+          "audience": "Your Authority Hook (Optional)"
         },
         "formPlaceholders": {
           "expertise": "e.g. Leadership Development",
-          "audience": "e.g. HR Professionals"
+          "audience": "e.g. I help executives build high-performing teams..."
         }
       },
       {
@@ -129,11 +129,11 @@
         "contextDescription": "Create workshop themes that deliver real value and keep participants engaged from start to finish.",
         "formLabels": {
           "expertise": "Your Teaching Focus",
-          "audience": "Workshop Participants"
+          "audience": "Your Authority Hook (Optional)"
         },
         "formPlaceholders": {
           "expertise": "e.g. Sales Training",
-          "audience": "e.g. B2B Sales Teams"
+          "audience": "e.g. I help sales teams close more deals..."
         }
       }
     ],
