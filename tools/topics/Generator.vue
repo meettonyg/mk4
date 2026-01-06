@@ -514,6 +514,7 @@ const handleGenerate = async () => {
     });
   } catch (err) {
     console.error('[TopicsGenerator] Generation failed:', err);
+    throw err; // Re-throw to allow parent component to handle it
   }
 };
 

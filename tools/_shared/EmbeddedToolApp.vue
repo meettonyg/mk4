@@ -110,21 +110,31 @@ function handleGenerated(data) {
 
   // Update preview content based on generated data
   if (data) {
+    // Escape HTML to prevent XSS from AI-generated content
+    const escapeHtml = (unsafe) => unsafe
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+
+    // Format array items as numbered HTML list
+    const formatArrayToHtmlList = (arr) =>
+      arr
+        .map((item, i) => `<strong>${i + 1}.</strong> ${escapeHtml(item)}`)
+        .join('<br><br>');
+
     // Handle topics array
     if (data.topics && Array.isArray(data.topics)) {
-      previewContent.value = data.topics
-        .map((topic, i) => `<strong>${i + 1}.</strong> ${topic}`)
-        .join('<br><br>');
+      previewContent.value = formatArrayToHtmlList(data.topics);
     }
     // Handle single content (hook, bio, tagline, etc.)
     else if (data.hook || data.content || data.result) {
-      previewContent.value = data.hook || data.content || data.result;
+      previewContent.value = escapeHtml(data.hook || data.content || data.result);
     }
     // Handle questions array
     else if (data.questions && Array.isArray(data.questions)) {
-      previewContent.value = data.questions
-        .map((q, i) => `<strong>${i + 1}.</strong> ${q}`)
-        .join('<br><br>');
+      previewContent.value = formatArrayToHtmlList(data.questions);
     }
   }
 
