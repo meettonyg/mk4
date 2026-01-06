@@ -16,6 +16,7 @@
       :supports-profile-save="supportsProfileSave"
       :related-tools="relatedTools"
       :testimonial="testimonial"
+      :authority-hook-data="authorityHookData"
       register-url="/register/"
       :social-login-html="socialLoginHtml"
       @intent-change="handleIntentChange"
@@ -23,6 +24,7 @@
       @save-click="handleSaveClick"
       @gate-shown="handleGateShown"
       @gate-signup="handleGateSignup"
+      @profile-saved="handleProfileSaved"
     >
       <template #form="{ profileData }">
         <component
@@ -34,6 +36,7 @@
           @preview-update="handlePreviewUpdate"
           @generated="handleGenerated"
           @update:can-generate="handleCanGenerateUpdate"
+          @authority-hook-update="handleAuthorityHookUpdate"
         />
       </template>
       <template #preview>
@@ -65,6 +68,7 @@ const previewContent = ref('');
 const isGenerating = ref(false);
 const canGenerate = ref(false);
 const generator = ref(null);
+const authorityHookData = ref(null);
 
 // Computed from meta
 const supportsProfileSave = computed(() => props.meta.supportsProfileSave ?? true);
@@ -155,5 +159,15 @@ function handleGateShown(data) {
 
 function handleGateSignup() {
   emit('gate-signup', { tool: props.toolSlug });
+}
+
+function handleAuthorityHookUpdate(data) {
+  authorityHookData.value = data;
+}
+
+function handleProfileSaved(data) {
+  // Profile save handled by EmbeddedToolWrapper
+  // Could emit an event or log if needed
+  console.log('[EmbeddedToolApp] Profile saved:', data);
 }
 </script>

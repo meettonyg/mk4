@@ -359,7 +359,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['applied', 'generated', 'saved', 'preview-update', 'update:can-generate']);
+const emit = defineEmits(['applied', 'generated', 'saved', 'preview-update', 'update:can-generate', 'authority-hook-update']);
 
 // Use composables
 const {
@@ -503,11 +503,11 @@ const handleGenerate = async () => {
   selectedTopicIndex.value = -1;
 
   try {
-    const context = props.mode === 'integrated' ? 'builder' : 'public';
+    // Let useAIGenerator determine context based on login status
     await generate({
       expertise: expertise.value,
       authorityHook: authorityHookSummary.value
-    }, context);
+    });
 
     emit('generated', {
       topics: topics.value
@@ -690,6 +690,25 @@ watch(canGenerate, (newValue) => {
     emit('update:can-generate', !!newValue);
   }
 }, { immediate: true });
+
+/**
+ * Watch authority hook changes and emit to parent (embedded mode)
+ */
+watch(
+  () => authorityHook.value,
+  (hookData) => {
+    if (props.mode === 'embedded' && hookData) {
+      emit('authority-hook-update', {
+        who: hookData.who || '',
+        what: hookData.what || '',
+        when: hookData.when || '',
+        how: hookData.how || '',
+        summary: authorityHookSummary.value || ''
+      });
+    }
+  },
+  { deep: true, immediate: true }
+);
 
 /**
  * Expose methods for parent component access (embedded mode)

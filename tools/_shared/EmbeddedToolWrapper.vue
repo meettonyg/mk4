@@ -166,6 +166,15 @@
                 <strong>Save to {{ loadedProfileData?.title || selectedProfile?.title || 'your profile' }}</strong>
                 <span>Updates your profile with this {{ contentNoun }}</span>
               </div>
+              <!-- Authority Hook Checkbox -->
+              <label v-if="authorityHookData" class="save-cta-checkbox">
+                <input
+                  type="checkbox"
+                  v-model="saveAuthorityHookToProfile"
+                  class="save-cta-checkbox__input"
+                />
+                <span class="save-cta-checkbox__label">Also save Authority Hook to profile</span>
+              </label>
               <button
                 class="btn-save-account"
                 :class="{ 'btn-save-account--saving': isSavingToProfile, 'btn-save-account--saved': savedToProfile }"
@@ -435,6 +444,14 @@ const props = defineProps({
   socialLoginHtml: {
     type: String,
     default: ''
+  },
+  /**
+   * Authority hook data to save alongside generated content
+   * If provided, shows "Also save Authority Hook" checkbox
+   */
+  authorityHookData: {
+    type: Object,
+    default: null
   }
 });
 
@@ -446,6 +463,7 @@ const hasGenerated = ref(false);
 const generationCount = ref(0);
 const showSoftGate = ref(false);
 const justCopied = ref(false);
+const saveAuthorityHookToProfile = ref(true); // Default to saving authority hook
 
 // Gate state
 const gateReason = ref(''); // 'exit_intent' | 'engagement_prompt' | 'limit_reached'
@@ -696,31 +714,45 @@ function handleProfileCleared() {
 }
 
 async function handleSaveToProfile() {
-  if (!hasSelectedProfile.value || isSavingToProfile.value) return;
+  if (!loadedProfileData.value || isSavingToProfile.value) return;
 
   isSavingToProfile.value = true;
   savedToProfile.value = false;
 
   try {
-    // Extract hook content from previewContent
-    // The parent component should emit the structured data, but we can save the raw hook too
-    const hookContent = props.previewContent || '';
+    // Build save payload - content will be provided by parent via event
+    const savePayload = {};
 
-    // Save authority hook fields to profile
-    // For now we save the combined hook - parent can override with structured data
-    const success = await saveMultipleToProfile({
-      authority_hook: hookContent.replace(/<[^>]*>/g, ''), // Strip HTML
+    // Include authority hook if checkbox is checked and data is available
+    if (saveAuthorityHookToProfile.value && props.authorityHookData) {
+      savePayload.hook_who = props.authorityHookData.who || '';
+      savePayload.hook_what = props.authorityHookData.what || '';
+      savePayload.hook_when = props.authorityHookData.when || '';
+      savePayload.hook_how = props.authorityHookData.how || '';
+      if (props.authorityHookData.summary) {
+        savePayload.authority_hook = props.authorityHookData.summary;
+      }
+    }
+
+    // Emit save event - parent should handle actual content saving
+    emit('profile-saved', {
+      profileId: loadedProfileData.value?.id,
+      profileData: loadedProfileData.value,
+      saveAuthorityHook: saveAuthorityHookToProfile.value,
+      authorityHookData: saveAuthorityHookToProfile.value ? props.authorityHookData : null
     });
 
-    if (success) {
-      savedToProfile.value = true;
-      emit('profile-saved', { hook: hookContent });
-
-      // Reset saved indicator after 3 seconds
-      setTimeout(() => {
-        savedToProfile.value = false;
-      }, 3000);
+    // Save authority hook to profile if checked
+    if (Object.keys(savePayload).length > 0) {
+      await saveMultipleToProfile(savePayload);
     }
+
+    savedToProfile.value = true;
+
+    // Reset saved indicator after 3 seconds
+    setTimeout(() => {
+      savedToProfile.value = false;
+    }, 3000);
   } catch (e) {
     console.error('[GMKBSeoTools] Failed to save to profile:', e);
   } finally {
@@ -800,8 +832,9 @@ watch(() => props.isGenerating, (newVal, oldVal) => {
   min-height: 450px;
 }
 
+/* Keep consistent layout after generation - no column collapse */
 .gmkb-tool-stage.has-generated {
-  grid-template-columns: 0.8fr 1.2fr;
+  grid-template-columns: 1.2fr 0.8fr;
 }
 
 /* Left Column: Context & Form */
@@ -1227,6 +1260,29 @@ watch(() => props.isGenerating, (newVal, oldVal) => {
 
 .save-cta-box--select .save-cta-text {
   color: var(--mkcg-text-secondary, #64748b);
+}
+
+/* Save CTA Checkbox */
+.save-cta-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.save-cta-checkbox__input {
+  width: 16px;
+  height: 16px;
+  accent-color: white;
+  cursor: pointer;
+}
+
+.save-cta-checkbox__label {
+  flex: 1;
 }
 
 /* Unlimited generations text */
