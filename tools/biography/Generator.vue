@@ -356,7 +356,7 @@ const {
   setPOV
 } = useAIBiography();
 
-const { authorityHookSummary, syncFromStore } = useAuthorityHook();
+const { authorityHookSummary, syncFromStore, loadFromProfileData } = useAuthorityHook();
 
 // Local state
 const name = ref(props.initialName);
@@ -510,6 +510,9 @@ function populateFromProfile(profileData) {
   if (profileData.authority_hook) {
     authorityHookText.value = profileData.authority_hook;
   }
+
+  // Populate authority hook fields from profile data (for cross-tool sync)
+  loadFromProfileData(profileData);
 }
 
 /**
