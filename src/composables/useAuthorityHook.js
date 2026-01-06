@@ -168,12 +168,19 @@ export function useAuthorityHook() {
     if (!podsData) return;
 
     // Load from various possible field names
-    if (podsData.hook_who || podsData.guest_title) {
-      who.value = podsData.hook_who || podsData.guest_title || '';
+    // Use property existence checks to allow empty strings to clear fields
+    if ('hook_who' in podsData || 'guest_title' in podsData) {
+      who.value = podsData.hook_who ?? podsData.guest_title ?? '';
     }
-    if (podsData.hook_what) what.value = podsData.hook_what;
-    if (podsData.hook_when) when.value = podsData.hook_when;
-    if (podsData.hook_how) how.value = podsData.hook_how;
+    if ('hook_what' in podsData) {
+      what.value = podsData.hook_what ?? '';
+    }
+    if ('hook_when' in podsData) {
+      when.value = podsData.hook_when ?? '';
+    }
+    if ('hook_how' in podsData) {
+      how.value = podsData.hook_how ?? '';
+    }
   };
 
   /**

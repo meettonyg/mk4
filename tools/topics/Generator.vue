@@ -364,10 +364,6 @@ const {
 } = useAITopics();
 
 const {
-  who,
-  what,
-  when,
-  how,
   authorityHook,
   authorityHookSummary,
   setAll,
