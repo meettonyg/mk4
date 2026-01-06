@@ -113,6 +113,16 @@
 
         <!-- Save Actions -->
         <div v-if="showSaveToProfile" class="topics-generator__actions">
+          <!-- Save Authority Hook Checkbox -->
+          <label v-if="authorityHookSummary" class="topics-generator__checkbox-label">
+            <input
+              type="checkbox"
+              v-model="saveAuthorityHookToProfile"
+              class="topics-generator__checkbox"
+            />
+            <span>Also save Authority Hook to profile</span>
+          </label>
+
           <button
             type="button"
             class="generator__button generator__button--primary"
@@ -387,6 +397,7 @@ const selectedTopicIndex = ref(-1);
 const selectedProfileId = ref(props.profileId || null);
 const saveSuccess = ref(false);
 const isBuilderOpen = ref(false);
+const saveAuthorityHookToProfile = ref(true); // Default to saving authority hook
 
 /**
  * Handle authority hook component updates from AuthorityHookSection
@@ -553,11 +564,26 @@ const handleSaveToProfile = async () => {
   saveSuccess.value = false;
 
   try {
-    const result = await saveToProfile('topics', topics.value, {
+    // Save topics
+    const topicsResult = await saveToProfile('topics', topics.value, {
       profileId: selectedProfileId.value
     });
 
-    if (result.success) {
+    // Save authority hook if checkbox is checked and we have data
+    let authorityHookResult = { success: true, saved: {} };
+    if (saveAuthorityHookToProfile.value && authorityHookSummary.value) {
+      authorityHookResult = await saveToProfile('authority_hook', {
+        who: authorityHook.value.who,
+        what: authorityHook.value.what,
+        when: authorityHook.value.when,
+        how: authorityHook.value.how,
+        summary: authorityHookSummary.value
+      }, {
+        profileId: selectedProfileId.value
+      });
+    }
+
+    if (topicsResult.success) {
       saveSuccess.value = true;
 
       // Auto-hide success message after 3 seconds
@@ -568,7 +594,11 @@ const handleSaveToProfile = async () => {
       emit('saved', {
         profileId: selectedProfileId.value,
         topics: topics.value,
-        fields: result.saved
+        fields: {
+          ...topicsResult.saved,
+          ...(authorityHookResult.saved || {})
+        },
+        authorityHookSaved: saveAuthorityHookToProfile.value && authorityHookResult.success
       });
     }
   } catch (err) {
@@ -781,6 +811,28 @@ watch(canGenerate, (newValue) => {
   font-size: 14px;
   font-weight: 500;
   color: #10b981;
+}
+
+.topics-generator__checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--mkcg-text-secondary, #5a6d7e);
+  cursor: pointer;
+  width: 100%;
+  margin-bottom: var(--mkcg-space-sm, 12px);
+}
+
+.topics-generator__checkbox-label:hover {
+  color: var(--mkcg-text-primary, #2c3e50);
+}
+
+.topics-generator__checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--mkcg-primary, #1a9bdc);
+  cursor: pointer;
 }
 
 .topics-generator__error-msg {
