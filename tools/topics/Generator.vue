@@ -758,12 +758,16 @@ defineExpose({
 </script>
 
 <style scoped>
-/* Single Column Layout Override - use higher specificity instead of !important */
-.topics-generator .generator__content--single {
+/* Single Column Layout Override - use :deep to override global styles */
+.topics-generator :deep(.generator__content--single) {
   display: block;
+  flex-direction: unset;
+  flex-wrap: unset;
 }
 
-.topics-generator .generator__panel--full {
+.topics-generator :deep(.generator__panel--full) {
+  flex: unset;
+  min-width: unset;
   max-width: 800px;
   margin: 0 auto;
 }
