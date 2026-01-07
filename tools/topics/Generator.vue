@@ -306,7 +306,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch, inject } from 'vue';
-import { useAITopics, getTopicTitle, getTopicCategory } from '../../src/composables/useAITopics';
+import { useAITopics } from '../../src/composables/useAITopics';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 
@@ -477,6 +477,25 @@ const toggleTopicSelect = (index) => {
       selectedTopics.value.add(index);
     }
   }
+};
+
+/**
+ * Get topic title (handles both string and object formats)
+ * Local helper to keep this tool self-contained
+ */
+const getTopicTitle = (topic) => {
+  if (!topic) return '';
+  if (typeof topic === 'string') return topic;
+  return topic.title || topic.text || '';
+};
+
+/**
+ * Get topic category
+ * Local helper to keep this tool self-contained
+ */
+const getTopicCategory = (topic) => {
+  if (!topic || typeof topic === 'string') return 'Topic';
+  return topic.category || 'Topic';
 };
 
 /**
