@@ -31,12 +31,12 @@ export function useAITopics() {
   const expertise = ref('');
   const customContext = ref('');
 
-  // Parsed topics array
+  // Parsed topics array - supports both string arrays and topic objects with categories
   const topics = computed(() => {
     const content = generator.generatedContent.value;
     if (!content) return [];
 
-    // If already an array, return as-is
+    // If already an array, return as-is (handles both string arrays and object arrays)
     if (Array.isArray(content)) {
       return content;
     }
@@ -55,12 +55,23 @@ export function useAITopics() {
     return [];
   });
 
-  // Individual topic accessors
-  const topic1 = computed(() => topics.value[0] || null);
-  const topic2 = computed(() => topics.value[1] || null);
-  const topic3 = computed(() => topics.value[2] || null);
-  const topic4 = computed(() => topics.value[3] || null);
-  const topic5 = computed(() => topics.value[4] || null);
+  // Individual topic accessors (support both string and object formats)
+  const getTopicTitle = (topic) => {
+    if (!topic) return null;
+    if (typeof topic === 'string') return topic;
+    return topic.title || topic.text || null;
+  };
+
+  const topic1 = computed(() => getTopicTitle(topics.value[0]));
+  const topic2 = computed(() => getTopicTitle(topics.value[1]));
+  const topic3 = computed(() => getTopicTitle(topics.value[2]));
+  const topic4 = computed(() => getTopicTitle(topics.value[3]));
+  const topic5 = computed(() => getTopicTitle(topics.value[4]));
+  const topic6 = computed(() => getTopicTitle(topics.value[5]));
+  const topic7 = computed(() => getTopicTitle(topics.value[6]));
+  const topic8 = computed(() => getTopicTitle(topics.value[7]));
+  const topic9 = computed(() => getTopicTitle(topics.value[8]));
+  const topic10 = computed(() => getTopicTitle(topics.value[9]));
 
   // Topics count
   const topicsCount = computed(() => topics.value.length);
@@ -138,6 +149,11 @@ export function useAITopics() {
     topic3,
     topic4,
     topic5,
+    topic6,
+    topic7,
+    topic8,
+    topic9,
+    topic10,
     topicsCount,
     topicsAsObject,
 

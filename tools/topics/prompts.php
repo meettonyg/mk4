@@ -17,7 +17,7 @@ return [
     'validation' => [
         'required' => ['expertise'],
         'defaults' => [
-            'count' => 5,
+            'count' => 10,
             'includeDescriptions' => true
         ]
     ],
@@ -52,6 +52,7 @@ return [
         if ($includeDescriptions) {
             $prompt .= "\nFormat each topic as:\n";
             $prompt .= "TOPIC: [Compelling title]\n";
+            $prompt .= "CATEGORY: [One-word category like Strategy, Mistakes, Case Study, Framework, Mindset, Revenue, Leadership, Hiring, Funding, Trends, Growth, Innovation, Marketing, Sales, Operations]\n";
             $prompt .= "HOOK: [One sentence that makes people want to learn more]\n";
             $prompt .= "KEY POINTS: [3 bullet points of what will be covered]\n";
         } else {
@@ -76,9 +77,12 @@ return [
                 }
                 $current_topic = [
                     'title' => trim($matches[1]),
+                    'category' => '',
                     'hook' => '',
                     'keyPoints' => []
                 ];
+            } elseif (preg_match('/^CATEGORY:\s*(.+)$/i', $line, $matches) && $current_topic) {
+                $current_topic['category'] = trim($matches[1]);
             } elseif (preg_match('/^HOOK:\s*(.+)$/i', $line, $matches) && $current_topic) {
                 $current_topic['hook'] = trim($matches[1]);
             } elseif (preg_match('/^KEY POINTS:/i', $line)) {
@@ -87,7 +91,7 @@ return [
                 $current_topic['keyPoints'][] = trim($matches[1]);
             } elseif ($current_topic === null && !empty($line)) {
                 // Simple title-only format
-                $topics[] = ['title' => $line, 'hook' => '', 'keyPoints' => []];
+                $topics[] = ['title' => $line, 'category' => '', 'hook' => '', 'keyPoints' => []];
             }
         }
 
