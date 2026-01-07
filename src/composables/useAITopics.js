@@ -65,6 +65,9 @@ export function useAITopics() {
   // Topics count
   const topicsCount = computed(() => topics.value.length);
 
+  // Has topics check
+  const hasTopics = computed(() => topics.value.length > 0);
+
   /**
    * Generate topics with current settings
    * @param {object} overrides Optional parameter overrides
@@ -129,6 +132,7 @@ export function useAITopics() {
 
     // Topics-specific computed
     topics,
+    hasTopics,
     topic1,
     topic2,
     topic3,

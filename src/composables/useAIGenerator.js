@@ -19,13 +19,18 @@ import { toolModules } from '../../tools/index.js';
 
 /**
  * Get REST URL from available sources
+ * Ensures trailing slash for proper URL concatenation
  * @returns {string} REST API base URL
  */
 function getRestUrl() {
-  return window.gmkbData?.restUrl
+  const url = window.gmkbData?.restUrl
     || window.gmkbProfileData?.apiUrl
+    || window.gmkbStandaloneTools?.apiBase
     || window.gmkbPublicData?.restUrl
     || '/wp-json/gmkb/v2/';
+
+  // Ensure trailing slash for proper URL concatenation
+  return url.endsWith('/') ? url : url + '/';
 }
 
 /**
@@ -38,9 +43,26 @@ function getNonce(context) {
     return window.gmkbData?.restNonce
       || window.gmkbData?.nonce
       || window.gmkbProfileData?.nonce
+      || window.gmkbStandaloneTools?.restNonce
       || '';
   }
-  return window.gmkbPublicNonce || window.gmkbPublicData?.publicNonce || '';
+  return window.gmkbPublicNonce
+    || window.gmkbPublicData?.publicNonce
+    || window.gmkbStandaloneTools?.nonce
+    || '';
+}
+
+/**
+ * Check if user is logged in from available sources
+ * @returns {boolean}
+ */
+function isUserLoggedIn() {
+  return !!(
+    window.gmkbData?.postId
+    || window.gmkbData?.post_id
+    || window.gmkbProfileData?.postId
+    || window.gmkbStandaloneTools?.isLoggedIn
+  );
 }
 
 /**
@@ -138,13 +160,11 @@ export function useAIGenerator(type) {
 
   /**
    * Determine context (builder or public)
+   * For logged-in users, use 'builder' context to leverage authenticated REST API
    * @returns {string} 'builder' or 'public'
    */
   const getContext = () => {
-    const isBuilderContext = window.gmkbData?.postId
-      || window.gmkbData?.post_id
-      || window.gmkbProfileData?.postId;
-    return isBuilderContext ? 'builder' : 'public';
+    return isUserLoggedIn() ? 'builder' : 'public';
   };
 
   /**
