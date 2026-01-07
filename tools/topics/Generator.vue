@@ -306,7 +306,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch, inject } from 'vue';
-import { useAITopics } from '../../src/composables/useAITopics';
+import { useAITopics, getTopicTitle, getTopicCategory } from '../../src/composables/useAITopics';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 
@@ -469,32 +469,14 @@ const setViewMode = (mode) => {
  * Toggle topic selection
  */
 const toggleTopicSelect = (index) => {
-  const newSet = new Set(selectedTopics.value);
-  if (newSet.has(index)) {
-    newSet.delete(index);
+  if (selectedTopics.value.has(index)) {
+    selectedTopics.value.delete(index);
   } else {
     // Only allow 5 selections max
-    if (newSet.size < 5) {
-      newSet.add(index);
+    if (selectedTopics.value.size < 5) {
+      selectedTopics.value.add(index);
     }
   }
-  selectedTopics.value = newSet;
-};
-
-/**
- * Get topic title (handles both string and object formats)
- */
-const getTopicTitle = (topic) => {
-  if (typeof topic === 'string') return topic;
-  return topic?.title || topic?.text || '';
-};
-
-/**
- * Get topic category
- */
-const getTopicCategory = (topic) => {
-  if (typeof topic === 'string') return 'Topic';
-  return topic?.category || 'Topic';
 };
 
 /**
@@ -514,7 +496,7 @@ const handleGenerate = async () => {
   try {
     // Generate with count: 10
     await generate({
-      expertise: expertise.value || authorityHookSummary.value,
+      expertise: authorityHookSummary.value,
       authorityHook: authorityHookSummary.value,
       count: 10
     });
@@ -598,10 +580,9 @@ const handleSaveToProfile = async () => {
   saveSuccess.value = false;
 
   try {
-    // Get selected topics (max 5)
+    // Get selected topics
     const selectedTopicsList = Array.from(selectedTopics.value)
       .sort((a, b) => a - b)
-      .slice(0, 5)
       .map(index => topics.value[index]);
 
     // Save selected topics
@@ -758,12 +739,12 @@ defineExpose({
 </script>
 
 <style scoped>
-/* Single Column Layout Override */
-.generator__content--single {
-  display: block !important;
+/* Single Column Layout Override - use higher specificity instead of !important */
+.topics-generator .generator__content--single {
+  display: block;
 }
 
-.generator__panel--full {
+.topics-generator .generator__panel--full {
   max-width: 800px;
   margin: 0 auto;
 }

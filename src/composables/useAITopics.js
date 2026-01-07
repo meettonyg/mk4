@@ -15,6 +15,29 @@ import { useAIGenerator } from './useAIGenerator';
 import { useAIStore } from '../stores/ai';
 
 /**
+ * Get topic title (handles both string and object formats)
+ * Exported for use in components
+ * @param {string|object} topic Topic string or object
+ * @returns {string|null} Topic title
+ */
+export const getTopicTitle = (topic) => {
+  if (!topic) return null;
+  if (typeof topic === 'string') return topic;
+  return topic.title || topic.text || null;
+};
+
+/**
+ * Get topic category
+ * Exported for use in components
+ * @param {string|object} topic Topic string or object
+ * @returns {string} Topic category or default 'Topic'
+ */
+export const getTopicCategory = (topic) => {
+  if (!topic || typeof topic === 'string') return 'Topic';
+  return topic.category || 'Topic';
+};
+
+/**
  * Topics generation composable
  *
  * @returns {object} Reactive state and methods for topics generation
@@ -55,13 +78,7 @@ export function useAITopics() {
     return [];
   });
 
-  // Individual topic accessors (support both string and object formats)
-  const getTopicTitle = (topic) => {
-    if (!topic) return null;
-    if (typeof topic === 'string') return topic;
-    return topic.title || topic.text || null;
-  };
-
+  // Individual topic accessors (use exported getTopicTitle helper)
   const topic1 = computed(() => getTopicTitle(topics.value[0]));
   const topic2 = computed(() => getTopicTitle(topics.value[1]));
   const topic3 = computed(() => getTopicTitle(topics.value[2]));
