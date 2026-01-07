@@ -4,6 +4,7 @@
   "shortDescription": "Generate compelling speaking topics and podcast episode ideas tailored to your expertise.",
   "emoji": "💡",
   "apiType": "topics",
+  "singleColumn": true,
   "fieldMapping": {
     "type": "indexed_array",
     "prefix": "topic_",
