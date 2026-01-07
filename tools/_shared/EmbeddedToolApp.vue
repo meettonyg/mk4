@@ -16,6 +16,7 @@
       :supports-profile-save="supportsProfileSave"
       :related-tools="relatedTools"
       :testimonial="testimonial"
+      :authority-hook-data="authorityHookData"
       register-url="/register/"
       :social-login-html="socialLoginHtml"
       @intent-change="handleIntentChange"
@@ -23,6 +24,7 @@
       @save-click="handleSaveClick"
       @gate-shown="handleGateShown"
       @gate-signup="handleGateSignup"
+      @profile-saved="handleProfileSaved"
     >
       <template #form="{ profileData }">
         <component
@@ -34,6 +36,7 @@
           @preview-update="handlePreviewUpdate"
           @generated="handleGenerated"
           @update:can-generate="handleCanGenerateUpdate"
+          @authority-hook-update="handleAuthorityHookUpdate"
         />
       </template>
       <template #preview>
@@ -65,6 +68,7 @@ const previewContent = ref('');
 const isGenerating = ref(false);
 const canGenerate = ref(false);
 const generator = ref(null);
+const authorityHookData = ref(null);
 
 // Computed from meta
 const supportsProfileSave = computed(() => props.meta.supportsProfileSave ?? true);
@@ -97,12 +101,47 @@ function handlePreviewUpdate({ previewHtml }) {
 function handleGenerate() {
   if (generator.value?.handleGenerate) {
     isGenerating.value = true;
-    generator.value.handleGenerate();
+    generator.value.handleGenerate()
+      .catch((err) => {
+        console.error('[EmbeddedToolApp] Generation failed:', err);
+        isGenerating.value = false;
+      });
   }
 }
 
 function handleGenerated(data) {
   isGenerating.value = false;
+
+  // Update preview content based on generated data
+  if (data) {
+    // Escape HTML to prevent XSS from AI-generated content
+    const escapeHtml = (unsafe) => unsafe
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+
+    // Format array items as numbered HTML list
+    const formatArrayToHtmlList = (arr) =>
+      arr
+        .map((item, i) => `<strong>${i + 1}.</strong> ${escapeHtml(item)}`)
+        .join('<br><br>');
+
+    // Handle topics array
+    if (data.topics && Array.isArray(data.topics)) {
+      previewContent.value = formatArrayToHtmlList(data.topics);
+    }
+    // Handle single content (hook, bio, tagline, etc.)
+    else if (data.hook || data.content || data.result) {
+      previewContent.value = escapeHtml(data.hook || data.content || data.result);
+    }
+    // Handle questions array
+    else if (data.questions && Array.isArray(data.questions)) {
+      previewContent.value = formatArrayToHtmlList(data.questions);
+    }
+  }
+
   emit('generated', data);
 }
 
@@ -120,5 +159,15 @@ function handleGateShown(data) {
 
 function handleGateSignup() {
   emit('gate-signup', { tool: props.toolSlug });
+}
+
+function handleAuthorityHookUpdate(data) {
+  authorityHookData.value = data;
+}
+
+function handleProfileSaved(data) {
+  // Profile save handled by EmbeddedToolWrapper
+  // Could emit an event or log if needed
+  console.log('[EmbeddedToolApp] Profile saved:', data);
 }
 </script>
