@@ -162,9 +162,19 @@
 
             <!-- Save CTA (profile-saveable tools only) -->
             <div v-if="supportsProfileSave && isLoggedIn && loadedProfileData" class="save-cta-box save-cta-box--profile">
-              <div class="save-cta-text">
-                <strong>Save to {{ loadedProfileData?.title || selectedProfile?.title || 'your profile' }}</strong>
-                <span>Updates your profile with this {{ contentNoun }}</span>
+              <div class="save-cta-row">
+                <div class="save-cta-text">
+                  <strong>Save to {{ loadedProfileData?.title || selectedProfile?.title || 'your profile' }}</strong>
+                  <span>Updates your profile with this {{ contentNoun }}</span>
+                </div>
+                <button
+                  class="btn-save-account"
+                  :class="{ 'btn-save-account--saving': isSavingToProfile, 'btn-save-account--saved': savedToProfile }"
+                  @click="handleSaveToProfile"
+                  :disabled="isSavingToProfile"
+                >
+                  {{ savedToProfile ? '✓ Saved!' : (isSavingToProfile ? 'Saving...' : 'Save to Profile') }}
+                </button>
               </div>
               <!-- Authority Hook Checkbox -->
               <label v-if="authorityHookData" class="save-cta-checkbox">
@@ -175,14 +185,6 @@
                 />
                 <span class="save-cta-checkbox__label">Also save Authority Hook to profile</span>
               </label>
-              <button
-                class="btn-save-account"
-                :class="{ 'btn-save-account--saving': isSavingToProfile, 'btn-save-account--saved': savedToProfile }"
-                @click="handleSaveToProfile"
-                :disabled="isSavingToProfile"
-              >
-                {{ savedToProfile ? '✓ Saved!' : (isSavingToProfile ? 'Saving...' : 'Save to Profile') }}
-              </button>
             </div>
             <div v-else-if="supportsProfileSave && isLoggedIn && !loadedProfileData" class="save-cta-box save-cta-box--select">
               <div class="save-cta-text">
@@ -1192,9 +1194,16 @@ watch(() => props.isGenerating, (newVal, oldVal) => {
   border-radius: 8px;
   padding: 16px;
   display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.save-cta-row {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  width: 100%;
 }
 
 .save-cta-text {
@@ -1271,7 +1280,8 @@ watch(() => props.isGenerating, (newVal, oldVal) => {
   cursor: pointer;
   color: rgba(255, 255, 255, 0.9);
   font-size: 13px;
-  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .save-cta-checkbox__input {

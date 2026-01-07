@@ -19,14 +19,18 @@ import { toolModules } from '../../tools/index.js';
 
 /**
  * Get REST URL from available sources
+ * Ensures trailing slash for proper URL concatenation
  * @returns {string} REST API base URL
  */
 function getRestUrl() {
-  return window.gmkbData?.restUrl
+  const url = window.gmkbData?.restUrl
     || window.gmkbProfileData?.apiUrl
     || window.gmkbStandaloneTools?.apiBase
     || window.gmkbPublicData?.restUrl
     || '/wp-json/gmkb/v2/';
+
+  // Ensure trailing slash for proper URL concatenation
+  return url.endsWith('/') ? url : url + '/';
 }
 
 /**
