@@ -151,18 +151,29 @@ Write a standard bio of 150-200 words suitable for speaker profiles, book jacket
 Write a comprehensive bio of 300-400 words suitable for press kits, detailed speaker pages, or formal introductions.
 {{/if}}',
 
-            'topics' => 'Generate 5 compelling interview/speaking topics for someone with this expertise:
+            'topics' => 'Generate 10 podcast interview topic TITLES for this expert:
 
 Authority Hook: {{authorityHook}}
 Additional Expertise: {{expertise}}
 
-Requirements:
-- Each topic should be attention-grabbing and promise clear value
-- Topics should showcase the person\'s unique approach and methodology
-- Include a mix of evergreen and timely topics
-- Each topic should be suitable for podcast interviews, webinars, or speaking engagements
+CRITICAL REQUIREMENTS:
+- Each topic must be a SHORT title (8-15 words max)
+- NO descriptions, explanations, or elaborations after the title
+- NO bullet points or sub-items
+- Topics should be intriguing and results-driven
+- Use specific frameworks, numbers, or contrarian angles
 
-Format: Return as a numbered list (1-5), with each topic on its own line.',
+FORMAT: Numbered list with ONLY the topic title on each line.
+
+GOOD examples (short, punchy titles):
+1. The 3-Step Framework for Landing High-Profile Podcast Interviews
+2. Why Most Experts Fail at Podcast Outreach
+3. Converting Podcast Appearances into High-Ticket Clients
+
+BAD example (DO NOT do this - too long):
+1. The 90-Day Revenue Revolution - This topic highlights the speaker\'s unique system...
+
+Generate 10 SHORT topic titles now:',
 
             'questions' => 'Generate 25 interview questions for a podcast guest with this background:
 
