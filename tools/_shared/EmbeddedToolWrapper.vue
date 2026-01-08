@@ -787,6 +787,13 @@ watch(() => props.isGenerating, (newVal, oldVal) => {
     hasGenerated.value = true;
   }
 });
+
+// Also watch previewContent directly - handles timing issues where content arrives after isGenerating changes
+watch(() => props.previewContent, (newVal) => {
+  if (newVal && !props.isGenerating && !hasGenerated.value) {
+    hasGenerated.value = true;
+  }
+});
 </script>
 
 <style scoped>
@@ -869,7 +876,14 @@ watch(() => props.isGenerating, (newVal, oldVal) => {
 
 /* When results are generated in single column, expand to full width */
 .gmkb-tool-stage--single.has-generated .tool-context {
-  max-width: 100%;
+  max-width: none;
+  width: 100%;
+  padding: 40px;
+}
+
+/* Expanded state - remove outer container constraint */
+.gmkb-tool-embed.gmkb-tool-embed--expanded {
+  max-width: none;
 }
 
 /* Left Column: Context & Form */
