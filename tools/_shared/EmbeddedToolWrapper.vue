@@ -858,6 +858,11 @@ watch(() => props.isGenerating, (newVal, oldVal) => {
   margin: 0 auto;
 }
 
+/* When results are generated in single column, expand to full width */
+.gmkb-tool-stage--single.has-generated .tool-context {
+  max-width: 100%;
+}
+
 /* Left Column: Context & Form */
 .tool-context {
   padding: 40px;
