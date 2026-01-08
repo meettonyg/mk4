@@ -402,13 +402,15 @@
       </div>
       <button
         class="gfy-btn gfy-btn-success"
+        :class="{ 'is-loading': isSaving }"
         @click="handleEmbeddedSave"
         :disabled="selectedTopics.size === 0 || isSaving"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <span v-if="isSaving" class="gfy-btn__spinner"></span>
+        <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
           <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
         </svg>
-        Save to Media Kit
+        {{ isSaving ? 'Saving...' : 'Save to Media Kit' }}
       </button>
     </div>
 
@@ -433,13 +435,18 @@
         :class="{
           'is-selected': selectedTopics.has(index),
           'is-disabled': selectedTopics.size >= 5 && !selectedTopics.has(index),
-          'is-editing': editingTopicIndex === index
+          'is-editing': editingTopicIndex === index,
+          'is-edited': editedTopics.has(index)
         }"
         @click="handleTopicCardClick(index, $event)"
       >
         <div class="gfy-topic-card__header">
           <div class="gfy-topic-card__number">{{ index + 1 }}</div>
           <div class="gfy-topic-card__actions">
+            <!-- Edited badge -->
+            <span v-if="editedTopics.has(index) && editingTopicIndex !== index" class="gfy-topic-card__edited-badge">
+              Edited
+            </span>
             <button
               v-if="editingTopicIndex !== index"
               class="gfy-topic-card__edit-btn"
@@ -1289,6 +1296,24 @@ defineExpose({
   transform: none;
 }
 
+/* Button Loading Spinner */
+.gfy-btn__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: gfy-spin 0.75s linear infinite;
+}
+
+.gfy-btn.is-loading {
+  pointer-events: none;
+}
+
+@keyframes gfy-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Selection Banner */
 .gfy-selection-banner {
   display: flex;
@@ -1443,6 +1468,20 @@ defineExpose({
   gap: 8px;
 }
 
+/* Edited Badge */
+.gfy-topic-card__edited-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 10px;
+}
+
 .gfy-topic-card__edit-btn {
   width: 28px;
   height: 28px;
@@ -1453,12 +1492,13 @@ defineExpose({
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  opacity: 0;
+  opacity: 0.6;
   transition: var(--mkcg-transition-fast, 0.15s ease);
   color: var(--mkcg-text-secondary, #5a6d7e);
 }
 
-.gfy-topic-card:hover .gfy-topic-card__edit-btn {
+.gfy-topic-card:hover .gfy-topic-card__edit-btn,
+.gfy-topic-card__edit-btn:focus {
   opacity: 1;
 }
 
