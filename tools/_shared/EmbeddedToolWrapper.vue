@@ -7,8 +7,8 @@
       @profile-cleared="handleProfileCleared"
     />
 
-    <!-- Intent Tabs -->
-    <div v-if="intents && intents.length > 0" class="gmkb-intent-tabs" role="tablist">
+    <!-- Intent Tabs (hidden when showing results in single column mode) -->
+    <div v-if="intents && intents.length > 0 && !(singleColumn && hasGenerated)" class="gmkb-intent-tabs" role="tablist">
       <button
         v-for="intent in intents"
         :key="intent.id"
