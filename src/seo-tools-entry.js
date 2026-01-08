@@ -18,6 +18,7 @@ import './styles/ai-shared.css';
 import {
   toolModules,
   buildComponentRegistry,
+  resolveSlug,
   EmbeddedToolApp
 } from '@tools';
 
@@ -157,7 +158,9 @@ function initializeEmbeddedTool(container) {
   }
 
   // Get meta from tool module (includes singleColumn, etc.) and merge with data attributes
-  const toolModule = toolModules[toolSlug];
+  // Use resolveSlug to convert meta.json slug (e.g., 'topics-generator') to directory slug (e.g., 'topics')
+  const canonicalSlug = resolveSlug(toolSlug);
+  const toolModule = toolModules[canonicalSlug];
   const moduleMeta = toolModule?.meta || {};
   const meta = { ...moduleMeta, ...dataMeta };
 
