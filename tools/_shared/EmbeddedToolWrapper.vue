@@ -1,5 +1,5 @@
 <template>
-  <div class="gmkb-tool-embed">
+  <div class="gmkb-tool-embed" :class="{ 'gmkb-tool-embed--expanded': singleColumn && hasGenerated }">
     <!-- Profile Context Banner (logged-in users with profile-saveable tools only) -->
     <ProfileContextBanner
       v-if="isLoggedIn && supportsProfileSave"
@@ -800,6 +800,11 @@ watch(() => props.isGenerating, (newVal, oldVal) => {
   max-width: 960px;
   margin: 0 auto;
   box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+/* Expanded mode for single column with results */
+.gmkb-tool-embed--expanded {
+  max-width: 100%;
 }
 
 /* Intent Tabs */
