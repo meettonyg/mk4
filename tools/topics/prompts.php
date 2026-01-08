@@ -35,7 +35,7 @@ return [
         $authorityHook = $params['authorityHook'] ?? '';
         $count = $params['count'] ?? 10;
 
-        $prompt = "Generate {$count} compelling podcast interview topics based on this expert's authority:\n\n";
+        $prompt = "Generate {$count} podcast interview topic TITLES for this expert:\n\n";
 
         // Use authority hook as primary input (legacy approach)
         if (!empty($authorityHook)) {
@@ -44,20 +44,26 @@ return [
             $prompt .= "Expert Authority: {$expertise}\n\n";
         }
 
-        $prompt .= "Requirements:\n";
-        $prompt .= "- Topics must directly relate to the expert's authority area\n";
-        $prompt .= "- Make topics intriguing and results-driven to attract podcast hosts\n";
-        $prompt .= "- Use specific strategies, frameworks, or proven methods\n";
-        $prompt .= "- Each topic should be a compelling title (not a full description)\n";
-        $prompt .= "- Topics should position the speaker as the go-to expert\n\n";
+        $prompt .= "CRITICAL REQUIREMENTS:\n";
+        $prompt .= "- Each topic must be a SHORT title (8-15 words max)\n";
+        $prompt .= "- NO descriptions, explanations, or elaborations\n";
+        $prompt .= "- NO bullet points or sub-items\n";
+        $prompt .= "- Topics should be intriguing and results-driven\n";
+        $prompt .= "- Use specific frameworks, numbers, or contrarian angles\n\n";
 
-        $prompt .= "Format: Return as a numbered list (1., 2., 3., etc.) with just the topic titles.\n";
-        $prompt .= "Do not include descriptions, categories, or bullet points - just the topic titles.\n\n";
+        $prompt .= "FORMAT: Numbered list with ONLY the topic title on each line.\n\n";
 
-        $prompt .= "Example format:\n";
+        $prompt .= "GOOD examples (short, punchy titles):\n";
         $prompt .= "1. The 3-Step Framework for Landing High-Profile Podcast Interviews\n";
-        $prompt .= "2. Why Most Experts Fail at Podcast Outreach (And How to Fix It)\n";
+        $prompt .= "2. Why Most Experts Fail at Podcast Outreach\n";
         $prompt .= "3. Converting Podcast Appearances into High-Ticket Clients\n";
+        $prompt .= "4. The 5 Mistakes SaaS Founders Make When Scaling\n";
+        $prompt .= "5. Building a Team That Operates Without Your Daily Involvement\n\n";
+
+        $prompt .= "BAD example (too long - DO NOT do this):\n";
+        $prompt .= "1. The 90-Day Revenue Revolution: How SaaS Founders Can Achieve 40% Growth with Proven Strategies - This topic highlights the speaker's unique 90-day system...\n\n";
+
+        $prompt .= "Generate {$count} SHORT topic titles now:";
 
         return $prompt;
     },
