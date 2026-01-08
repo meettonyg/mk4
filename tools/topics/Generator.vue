@@ -432,21 +432,55 @@
         class="gfy-topic-card"
         :class="{
           'is-selected': selectedTopics.has(index),
-          'is-disabled': selectedTopics.size >= 5 && !selectedTopics.has(index)
+          'is-disabled': selectedTopics.size >= 5 && !selectedTopics.has(index),
+          'is-editing': editingTopicIndex === index
         }"
-        @click="toggleTopicSelect(index)"
+        @click="handleTopicCardClick(index, $event)"
       >
         <div class="gfy-topic-card__header">
           <div class="gfy-topic-card__number">{{ index + 1 }}</div>
-          <div class="gfy-topic-card__checkbox">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-              <polyline points="20 6 9 17 4 12" stroke="currentColor" stroke-width="3" fill="none"></polyline>
-            </svg>
+          <div class="gfy-topic-card__actions">
+            <button
+              v-if="editingTopicIndex !== index"
+              class="gfy-topic-card__edit-btn"
+              @click.stop="startEditingTopic(index)"
+              title="Edit topic"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </button>
+            <div class="gfy-topic-card__checkbox">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <polyline points="20 6 9 17 4 12" stroke="currentColor" stroke-width="3" fill="none"></polyline>
+              </svg>
+            </div>
           </div>
         </div>
         <div class="gfy-topic-card__body">
           <span class="gfy-topic-card__category">{{ getTopicCategory(topic) }}</span>
-          <h3 class="gfy-topic-card__title">{{ getTopicTitle(topic) }}</h3>
+          <!-- Editing mode -->
+          <div v-if="editingTopicIndex === index" class="gfy-topic-card__edit-form" @click.stop>
+            <textarea
+              ref="editTextarea"
+              v-model="editingTopicText"
+              class="gfy-topic-card__edit-input"
+              rows="3"
+              @keydown.enter.prevent="saveTopicEdit(index)"
+              @keydown.escape="cancelTopicEdit"
+            ></textarea>
+            <div class="gfy-topic-card__edit-actions">
+              <button class="gfy-btn gfy-btn-sm gfy-btn-primary" @click.stop="saveTopicEdit(index)">
+                Save
+              </button>
+              <button class="gfy-btn gfy-btn-sm gfy-btn-secondary" @click.stop="cancelTopicEdit">
+                Cancel
+              </button>
+            </div>
+          </div>
+          <!-- Display mode -->
+          <h3 v-else class="gfy-topic-card__title">{{ getEditedTopicTitle(index, topic) }}</h3>
         </div>
       </div>
     </div>
@@ -480,7 +514,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, inject } from 'vue';
+import { ref, computed, onMounted, watch, inject, nextTick } from 'vue';
 import { useAITopics } from '../../src/composables/useAITopics';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useProfileContext } from '../../src/composables/useProfileContext';
@@ -580,6 +614,10 @@ const saveAuthorityHookToProfile = ref(true); // Default to saving authority hoo
 const viewMode = ref('grid'); // 'grid' or 'list'
 const selectedTopics = ref(new Set()); // Set of selected topic indices
 const showForm = ref(true); // Controls form vs results view in embedded mode
+const editingTopicIndex = ref(-1); // Which topic is being edited (-1 = none)
+const editingTopicText = ref(''); // Current text in edit textarea
+const editedTopics = ref(new Map()); // Map of index -> edited title
+const editTextarea = ref(null); // Ref for textarea element
 
 /**
  * Computed: show results in embedded mode
@@ -688,6 +726,60 @@ const getTopicCategory = (topic) => {
 };
 
 /**
+ * Get edited topic title (returns edited version if exists, otherwise original)
+ */
+const getEditedTopicTitle = (index, topic) => {
+  if (editedTopics.value.has(index)) {
+    return editedTopics.value.get(index);
+  }
+  return getTopicTitle(topic);
+};
+
+/**
+ * Start editing a topic
+ */
+const startEditingTopic = (index) => {
+  const topic = topics.value[index];
+  editingTopicIndex.value = index;
+  editingTopicText.value = getEditedTopicTitle(index, topic);
+  // Focus textarea after Vue updates the DOM
+  nextTick(() => {
+    if (editTextarea.value) {
+      editTextarea.value.focus();
+      editTextarea.value.select();
+    }
+  });
+};
+
+/**
+ * Save topic edit
+ */
+const saveTopicEdit = (index) => {
+  if (editingTopicText.value.trim()) {
+    editedTopics.value.set(index, editingTopicText.value.trim());
+  }
+  editingTopicIndex.value = -1;
+  editingTopicText.value = '';
+};
+
+/**
+ * Cancel topic edit
+ */
+const cancelTopicEdit = () => {
+  editingTopicIndex.value = -1;
+  editingTopicText.value = '';
+};
+
+/**
+ * Handle topic card click - select/deselect unless editing
+ */
+const handleTopicCardClick = (index, event) => {
+  // Don't toggle selection if we're editing
+  if (editingTopicIndex.value === index) return;
+  toggleTopicSelect(index);
+};
+
+/**
  * Handle topic selection (for integrated mode)
  */
 const handleSelectTopic = (index) => {
@@ -700,6 +792,8 @@ const handleSelectTopic = (index) => {
 const handleGenerate = async () => {
   selectedTopicIndex.value = -1;
   selectedTopics.value = new Set(); // Clear selections
+  editedTopics.value = new Map(); // Clear edited topics
+  editingTopicIndex.value = -1; // Cancel any active editing
 
   try {
     // Generate with count: 10
@@ -793,10 +887,21 @@ const handleSaveToProfile = async () => {
   saveSuccess.value = false;
 
   try {
-    // Get selected topics
+    // Get selected topics with edited titles applied
     const selectedTopicsList = Array.from(selectedTopics.value)
       .sort((a, b) => a - b)
-      .map(index => topics.value[index]);
+      .map(index => {
+        const topic = topics.value[index];
+        const editedTitle = editedTopics.value.get(index);
+        if (editedTitle) {
+          // Return topic object with edited title
+          if (typeof topic === 'string') {
+            return editedTitle;
+          }
+          return { ...topic, title: editedTitle };
+        }
+        return topic;
+      });
 
     // Save selected topics
     const topicsResult = await saveToProfile('topics', selectedTopicsList, {
@@ -851,10 +956,21 @@ const handleEmbeddedSave = async () => {
   saveSuccess.value = false;
 
   try {
-    // Get selected topics
+    // Get selected topics with edited titles applied
     const selectedTopicsList = Array.from(selectedTopics.value)
       .sort((a, b) => a - b)
-      .map(index => topics.value[index]);
+      .map(index => {
+        const topic = topics.value[index];
+        const editedTitle = editedTopics.value.get(index);
+        if (editedTitle) {
+          // Return topic object with edited title
+          if (typeof topic === 'string') {
+            return editedTitle;
+          }
+          return { ...topic, title: editedTitle };
+        }
+        return topic;
+      });
 
     // Save selected topics
     const topicsResult = await saveToProfile('topics', selectedTopicsList, {
@@ -1318,6 +1434,84 @@ defineExpose({
 .gfy-topic-card:hover .gfy-topic-card__checkbox {
   opacity: 1;
   border-color: var(--mkcg-primary, #1a9bdc);
+}
+
+/* Topic Card Actions (edit button + checkbox) */
+.gfy-topic-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gfy-topic-card__edit-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: var(--mkcg-bg-tertiary, #f5f7fa);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: var(--mkcg-transition-fast, 0.15s ease);
+  color: var(--mkcg-text-secondary, #5a6d7e);
+}
+
+.gfy-topic-card:hover .gfy-topic-card__edit-btn {
+  opacity: 1;
+}
+
+.gfy-topic-card__edit-btn:hover {
+  background: var(--mkcg-primary, #1a9bdc);
+  color: white;
+}
+
+/* Topic Card Editing State */
+.gfy-topic-card.is-editing {
+  cursor: default;
+  border-color: var(--mkcg-primary, #1a9bdc);
+  box-shadow: 0 4px 12px rgba(26, 155, 220, 0.2);
+}
+
+.gfy-topic-card.is-editing:hover {
+  transform: none;
+}
+
+.gfy-topic-card__edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gfy-topic-card__edit-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 6px;
+  font-size: var(--mkcg-font-size-md, 16px);
+  font-family: inherit;
+  line-height: var(--mkcg-line-height-relaxed, 1.6);
+  resize: vertical;
+  min-height: 60px;
+}
+
+.gfy-topic-card__edit-input:focus {
+  outline: none;
+  border-color: var(--mkcg-primary, #1a9bdc);
+  box-shadow: 0 0 0 3px rgba(26, 155, 220, 0.1);
+}
+
+.gfy-topic-card__edit-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* Small button variant */
+.gfy-btn-sm {
+  padding: 6px 12px;
+  font-size: 13px;
 }
 
 .gfy-topic-card__body {
