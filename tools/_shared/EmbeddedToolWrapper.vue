@@ -26,9 +26,11 @@
     <div class="gmkb-tool-stage" :class="{ 'has-generated': hasGenerated, 'gmkb-tool-stage--single': singleColumn }">
       <!-- Left: Context & Form -->
       <div class="tool-context">
-        <!-- Dynamic Context Header -->
-        <h3 class="tool-context__heading">{{ currentIntent?.contextHeading || defaultHeading }}</h3>
-        <p class="tool-context__description">{{ currentIntent?.contextDescription || defaultDescription }}</p>
+        <!-- Dynamic Context Header (hidden in single column mode when results showing) -->
+        <template v-if="!(singleColumn && hasGenerated)">
+          <h3 class="tool-context__heading">{{ currentIntent?.contextHeading || defaultHeading }}</h3>
+          <p class="tool-context__description">{{ currentIntent?.contextDescription || defaultDescription }}</p>
+        </template>
 
         <!-- Generator Form Slot -->
         <div class="tool-context__form">
@@ -42,35 +44,37 @@
           ></slot>
         </div>
 
-        <!-- Generate Action -->
-        <div class="tool-context__actions">
-          <button
-            class="gmkb-btn-generate"
-            type="button"
-            :disabled="isGenerating || !canGenerate"
-            @click="handleGenerate"
-          >
-            <span v-if="!isGenerating" class="gmkb-btn-icon">✨</span>
-            <span v-if="isGenerating" class="gmkb-btn-spinner"></span>
-            {{ isGenerating ? generatingText : generateButtonText }}
-          </button>
-        </div>
+        <!-- Generate Action (hidden in single column mode when results showing) -->
+        <template v-if="!(singleColumn && hasGenerated)">
+          <div class="tool-context__actions">
+            <button
+              class="gmkb-btn-generate"
+              type="button"
+              :disabled="isGenerating || !canGenerate"
+              @click="handleGenerate"
+            >
+              <span v-if="!isGenerating" class="gmkb-btn-icon">✨</span>
+              <span v-if="isGenerating" class="gmkb-btn-spinner"></span>
+              {{ isGenerating ? generatingText : generateButtonText }}
+            </button>
+          </div>
 
-        <!-- Rate Limit / Progressive Friction (guests only) -->
-        <p v-if="!isLoggedIn" class="tool-context__limit-text">
-          <span v-if="generationCount < 3">
-            {{ remainingGenerations }} free generation{{ remainingGenerations !== 1 ? 's' : '' }} remaining today.
-          </span>
-          <span v-else class="limit-reached">
-            ⚡ Daily limit reached.
-          </span>
-          <br />
-          <strong>{{ upgradeText }}</strong>
-        </p>
-        <!-- Logged-in users get unlimited -->
-        <p v-else class="tool-context__limit-text tool-context__limit-text--unlimited">
-          <span>✓ Unlimited generations with your account</span>
-        </p>
+          <!-- Rate Limit / Progressive Friction (guests only) -->
+          <p v-if="!isLoggedIn" class="tool-context__limit-text">
+            <span v-if="generationCount < 3">
+              {{ remainingGenerations }} free generation{{ remainingGenerations !== 1 ? 's' : '' }} remaining today.
+            </span>
+            <span v-else class="limit-reached">
+              ⚡ Daily limit reached.
+            </span>
+            <br />
+            <strong>{{ upgradeText }}</strong>
+          </p>
+          <!-- Logged-in users get unlimited -->
+          <p v-else class="tool-context__limit-text tool-context__limit-text--unlimited">
+            <span>✓ Unlimited generations with your account</span>
+          </p>
+        </template>
       </div>
 
       <!-- Right: Preview Area (hidden in single column mode) -->
