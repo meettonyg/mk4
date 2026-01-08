@@ -618,10 +618,9 @@ defineExpose({
   text-align: center;
 }
 
-/* RESULTS SECTION - Force full width when embedded */
+/* RESULTS SECTION */
 .gfy-results {
-  width: 100% !important;
-  max-width: none !important;
+  width: 100%;
 }
 
 .gfy-results__header {

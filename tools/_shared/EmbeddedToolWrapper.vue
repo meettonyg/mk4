@@ -25,7 +25,7 @@
     <!-- Tool Stage (2-column layout, or single column if singleColumn prop is true) -->
     <div class="gmkb-tool-stage" :class="{ 'has-generated': hasGenerated, 'gmkb-tool-stage--single': singleColumn }">
       <!-- Left: Context & Form -->
-      <div class="tool-context">
+      <div class="tool-context" :class="{ 'tool-context--expanded': singleColumn && hasGenerated }">
         <!-- Dynamic Context Header (hidden in single column mode when results showing) -->
         <template v-if="!(singleColumn && hasGenerated)">
           <h3 class="tool-context__heading">{{ currentIntent?.contextHeading || defaultHeading }}</h3>
@@ -874,23 +874,12 @@ watch(() => props.previewContent, (newVal) => {
   margin: 0 auto;
 }
 
-/* When results are generated in single column, expand to full width */
-.gmkb-tool-stage--single.has-generated .tool-context {
-  max-width: none !important;
-  width: 100% !important;
-  padding: 40px;
-  margin: 0;
-}
-
-/* Also target the form container inside */
-.gmkb-tool-stage--single.has-generated .tool-context__form {
-  max-width: none !important;
-  width: 100% !important;
-}
-
-/* Expanded state - remove outer container constraint */
-.gmkb-tool-embed.gmkb-tool-embed--expanded {
+/* Expanded state - when results are shown in single column mode */
+.tool-context--expanded {
   max-width: none;
+  width: 100%;
+  margin: 0;
+  border-right: none;
 }
 
 /* Left Column: Context & Form */
