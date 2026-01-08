@@ -77,7 +77,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:can-generate', 'authority-hook-update']);
+const emit = defineEmits(['update:can-generate', 'authority-hook-update', 'generated']);
 
 // Use composables
 const {
@@ -151,6 +151,9 @@ const handleGenerate = async () => {
     authorityHook: generatedHookSummary.value,
     count: 10
   });
+
+  // Emit generated event for parent (EmbeddedToolApp) to handle
+  emit('generated', { topics: topics.value });
 
   return { topics: topics.value };
 };
