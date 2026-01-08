@@ -436,19 +436,21 @@ defineExpose({
 
 .gfy-builder__input {
   width: 100%;
-  padding: 0.6rem;
-  border: 1px solid var(--gfy-border-color);
+  padding: 0.75rem;
+  border: 1px solid #cbd5e1;
   border-radius: var(--gfy-radius-md);
   font-size: 0.9rem;
-  background: var(--gfy-bg-color);
+  background: #ffffff;
   box-sizing: border-box;
   font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .gfy-builder__input:focus {
   outline: none;
   border-color: var(--gfy-primary-color);
-  background: var(--gfy-white);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px var(--gfy-primary-light);
 }
 
 .gfy-builder__input::placeholder {
