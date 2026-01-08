@@ -876,9 +876,16 @@ watch(() => props.previewContent, (newVal) => {
 
 /* When results are generated in single column, expand to full width */
 .gmkb-tool-stage--single.has-generated .tool-context {
-  max-width: none;
-  width: 100%;
+  max-width: none !important;
+  width: 100% !important;
   padding: 40px;
+  margin: 0;
+}
+
+/* Also target the form container inside */
+.gmkb-tool-stage--single.has-generated .tool-context__form {
+  max-width: none !important;
+  width: 100% !important;
 }
 
 /* Expanded state - remove outer container constraint */

@@ -171,6 +171,15 @@
     max-width: none;
 }
 
+/* Force all inner containers to expand when showing results */
+.gmkb-plg-tool-embed:has(.has-generated) .tool-context,
+.gmkb-plg-tool-embed:has(.has-generated) .tool-context__form,
+.gmkb-plg-tool-embed:has(.has-generated) .gfy-topics-generator,
+.gmkb-plg-tool-embed:has(.has-generated) .gfy-results {
+    max-width: none !important;
+    width: 100% !important;
+}
+
 /* Noscript Fallback */
 .gmkb-plg-noscript {
     padding: 60px 40px;
