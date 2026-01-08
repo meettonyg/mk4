@@ -288,8 +288,9 @@
   </AiWidgetFrame>
 
   <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
-  <div v-else class="gmkb-embedded-form">
-    <div class="gmkb-embedded-fields">
+  <div v-else class="gmkb-embedded-form" :class="{ 'has-results': showResults }">
+    <!-- Form Section (hidden after generation) -->
+    <div v-if="showForm || !hasTopics" class="gmkb-embedded-fields">
       <!-- Authority Hook Section (collapsible) -->
       <AuthorityHookSection
         :hook-text="authorityHookSummary"
@@ -300,124 +301,180 @@
         @toggle="(open) => isBuilderOpen = open"
       />
     </div>
-    <div v-if="error" class="gmkb-embedded-error">{{ error }}</div>
 
-    <!-- Results Section (embedded mode with singleColumn - results display inline) -->
-    <div v-if="hasTopics" class="gfy-results gfy-results--embedded is-visible">
-      <div class="gfy-results__header">
-        <div class="gfy-results__header-left">
-          <h2 class="gfy-results__title">Generated Topics</h2>
-          <span class="gfy-results__badge">{{ topics.length }} Ideas</span>
-        </div>
-        <div class="gfy-results__header-right">
-          <div class="gfy-view-toggle">
-            <button
-              class="gfy-view-toggle__btn"
-              :class="{ 'is-active': viewMode === 'grid' }"
-              @click="setViewMode('grid')"
-              title="Grid View"
-            >
-              <i class="fa-solid fa-grid-2"></i>
-            </button>
-            <button
-              class="gfy-view-toggle__btn"
-              :class="{ 'is-active': viewMode === 'list' }"
-              @click="setViewMode('list')"
-              title="List View"
-            >
-              <i class="fa-solid fa-list"></i>
-            </button>
-          </div>
-          <button class="gfy-btn gfy-btn-secondary" @click="copySelectedTopics">
-            <i class="fa-regular fa-copy"></i>
-            Copy Selected
+    <!-- Compact Controls (shown after generation) -->
+    <div v-if="showResults" class="gfy-compact-controls">
+      <div class="gfy-compact-input-wrapper">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="M21 21l-4.35-4.35"></path>
+        </svg>
+        <input
+          type="text"
+          class="gfy-compact-input"
+          :value="authorityHookSummary?.substring(0, 50) + '...'"
+          readonly
+        />
+      </div>
+      <button
+        class="gfy-btn gfy-btn-primary"
+        :disabled="isGenerating"
+        @click="handleGenerate"
+      >
+        <svg v-if="!isGenerating" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 4v6h-6M1 20v-6h6M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+        </svg>
+        {{ isGenerating ? 'Generating...' : 'Regenerate' }}
+      </button>
+      <button class="gfy-btn gfy-btn-secondary" @click="resetToForm">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+        Edit
+      </button>
+    </div>
+
+    <div v-if="error" class="gmkb-embedded-error">{{ error }}</div>
+  </div>
+
+  <!-- Results Section (embedded mode - renders outside form for full width) -->
+  <div v-if="mode === 'embedded' && showResults" class="gfy-results gfy-results--embedded is-visible">
+    <div class="gfy-results__header">
+      <div class="gfy-results__header-left">
+        <h2 class="gfy-results__title">Generated Topics</h2>
+        <span class="gfy-results__badge">{{ topics.length }} Ideas</span>
+      </div>
+      <div class="gfy-results__header-right">
+        <div class="gfy-view-toggle">
+          <button
+            class="gfy-view-toggle__btn"
+            :class="{ 'is-active': viewMode === 'grid' }"
+            @click.stop="viewMode = 'grid'"
+            title="Grid View"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+              <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+              <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+              <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+            </svg>
+          </button>
+          <button
+            class="gfy-view-toggle__btn"
+            :class="{ 'is-active': viewMode === 'list' }"
+            @click.stop="viewMode = 'list'"
+            title="List View"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="3" y="4" width="18" height="4" rx="1"></rect>
+              <rect x="3" y="10" width="18" height="4" rx="1"></rect>
+              <rect x="3" y="16" width="18" height="4" rx="1"></rect>
+            </svg>
           </button>
         </div>
-      </div>
-
-      <!-- Selection Banner -->
-      <div class="gfy-selection-banner">
-        <div class="gfy-selection-banner__text">
-          <div class="gfy-selection-banner__icon">
-            <i class="fa-solid fa-hand-pointer"></i>
-          </div>
-          <div>
-            <div class="gfy-selection-banner__label">
-              Select <span class="gfy-selection-banner__count">5 topics</span> to save to your Media Kit
-            </div>
-            <div class="gfy-selection-banner__label" style="margin-top: 4px;">
-              {{ selectedTopics.size }} of 5 selected
-            </div>
-          </div>
-        </div>
-        <button
-          class="gfy-btn gfy-btn-success"
-          @click="handleEmbeddedSave"
-          :disabled="selectedTopics.size === 0 || isSaving"
-        >
-          <i class="fa-solid fa-bookmark"></i>
-          Save to Media Kit
+        <button class="gfy-btn gfy-btn-secondary" @click="copySelectedTopics">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          Copy Selected
         </button>
       </div>
+    </div>
 
-      <!-- Save Authority Hook Checkbox -->
-      <label v-if="authorityHookSummary" class="gfy-authority-hook-checkbox">
-        <input
-          type="checkbox"
-          v-model="saveAuthorityHookToProfile"
-        />
-        <span>Also save Authority Hook to profile</span>
-      </label>
-
-      <!-- Topics Container -->
-      <div
-        class="gfy-topics"
-        :class="viewMode === 'grid' ? 'gfy-topics--grid' : 'gfy-topics--list'"
+    <!-- Selection Banner -->
+    <div class="gfy-selection-banner">
+      <div class="gfy-selection-banner__text">
+        <div class="gfy-selection-banner__icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M7 2v11h3v9l7-12h-4l4-8z"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="gfy-selection-banner__label">
+            Select <span class="gfy-selection-banner__count">5 topics</span> to save to your Media Kit
+          </div>
+          <div class="gfy-selection-banner__label" style="margin-top: 4px;">
+            {{ selectedTopics.size }} of 5 selected
+          </div>
+        </div>
+      </div>
+      <button
+        class="gfy-btn gfy-btn-success"
+        @click="handleEmbeddedSave"
+        :disabled="selectedTopics.size === 0 || isSaving"
       >
-        <div
-          v-for="(topic, index) in topics"
-          :key="index"
-          class="gfy-topic-card"
-          :class="{ 'is-selected': selectedTopics.has(index) }"
-          @click="toggleTopicSelect(index)"
-        >
-          <div class="gfy-topic-card__header">
-            <div class="gfy-topic-card__number">{{ index + 1 }}</div>
-            <div class="gfy-topic-card__checkbox">
-              <i class="fa-solid fa-check"></i>
-            </div>
-          </div>
-          <div class="gfy-topic-card__body">
-            <span class="gfy-topic-card__category">{{ getTopicCategory(topic) }}</span>
-            <h3 class="gfy-topic-card__title">{{ getTopicTitle(topic) }}</h3>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+        </svg>
+        Save to Media Kit
+      </button>
+    </div>
+
+    <!-- Save Authority Hook Checkbox -->
+    <label v-if="authorityHookSummary" class="gfy-authority-hook-checkbox">
+      <input
+        type="checkbox"
+        v-model="saveAuthorityHookToProfile"
+      />
+      <span>Also save Authority Hook to profile</span>
+    </label>
+
+    <!-- Topics Container -->
+    <div
+      class="gfy-topics"
+      :class="viewMode === 'grid' ? 'gfy-topics--grid' : 'gfy-topics--list'"
+    >
+      <div
+        v-for="(topic, index) in topics"
+        :key="index"
+        class="gfy-topic-card"
+        :class="{
+          'is-selected': selectedTopics.has(index),
+          'is-disabled': selectedTopics.size >= 5 && !selectedTopics.has(index)
+        }"
+        @click="toggleTopicSelect(index)"
+      >
+        <div class="gfy-topic-card__header">
+          <div class="gfy-topic-card__number">{{ index + 1 }}</div>
+          <div class="gfy-topic-card__checkbox">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <polyline points="20 6 9 17 4 12" stroke="currentColor" stroke-width="3" fill="none"></polyline>
+            </svg>
           </div>
         </div>
-      </div>
-
-      <!-- Status Messages -->
-      <div v-if="saveSuccess" class="gfy-status-message gfy-status-message--success">
-        <i class="fa-solid fa-check-circle"></i>
-        Saved successfully!
-      </div>
-      <div v-if="saveError" class="gfy-status-message gfy-status-message--error">
-        <i class="fa-solid fa-exclamation-circle"></i>
-        {{ saveError }}
-      </div>
-
-      <!-- Testimonial -->
-      <div class="gfy-testimonial">
-        <div class="gfy-testimonial__stars">
-          <i class="fa-solid fa-star"></i>
-          <i class="fa-solid fa-star"></i>
-          <i class="fa-solid fa-star"></i>
-          <i class="fa-solid fa-star"></i>
-          <i class="fa-solid fa-star"></i>
+        <div class="gfy-topic-card__body">
+          <span class="gfy-topic-card__category">{{ getTopicCategory(topic) }}</span>
+          <h3 class="gfy-topic-card__title">{{ getTopicTitle(topic) }}</h3>
         </div>
-        <p class="gfy-testimonial__quote">
-          "Generated 10 topic ideas in 30 seconds. Three of them got me booked on podcasts within the week."
-        </p>
-        <p class="gfy-testimonial__author">David K., Leadership Speaker</p>
       </div>
+    </div>
+
+    <!-- Status Messages -->
+    <div v-if="saveSuccess" class="gfy-status-message gfy-status-message--success">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01" stroke="currentColor" stroke-width="2" fill="none"></polyline>
+      </svg>
+      Saved successfully!
+    </div>
+    <div v-if="saveError" class="gfy-status-message gfy-status-message--error">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12" stroke="white" stroke-width="2"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16" stroke="white" stroke-width="2"></line>
+      </svg>
+      {{ saveError }}
+    </div>
+
+    <!-- Testimonial -->
+    <div class="gfy-testimonial">
+      <div class="gfy-testimonial__stars">★★★★★</div>
+      <p class="gfy-testimonial__quote">
+        "Generated 10 topic ideas in 30 seconds. Three of them got me booked on podcasts within the week."
+      </p>
+      <p class="gfy-testimonial__author">David K., Leadership Speaker</p>
     </div>
   </div>
 </template>
@@ -522,6 +579,20 @@ const isBuilderOpen = ref(false);
 const saveAuthorityHookToProfile = ref(true); // Default to saving authority hook
 const viewMode = ref('grid'); // 'grid' or 'list'
 const selectedTopics = ref(new Set()); // Set of selected topic indices
+const showForm = ref(true); // Controls form vs results view in embedded mode
+
+/**
+ * Computed: show results in embedded mode
+ */
+const showResults = computed(() => !showForm.value && hasTopics.value);
+
+/**
+ * Reset to form view (Edit button handler)
+ */
+const resetToForm = () => {
+  showForm.value = true;
+  selectedTopics.value = new Set();
+};
 
 /**
  * Handle authority hook component updates from AuthorityHookSection
@@ -637,6 +708,11 @@ const handleGenerate = async () => {
       authorityHook: authorityHookSummary.value,
       count: 10
     });
+
+    // Switch to results view in embedded mode
+    if (props.mode === 'embedded') {
+      showForm.value = false;
+    }
 
     emit('generated', {
       topics: topics.value
@@ -1416,16 +1492,70 @@ defineExpose({
 .gmkb-embedded-textarea { resize: vertical; min-height: 80px; }
 .gmkb-embedded-error { margin-top: 16px; padding: 12px 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #991b1b; font-size: 14px; }
 
-/* Embedded Results Section - display inline within embedded form */
+/* Compact Controls (shown after generation) */
+.gfy-compact-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  flex-wrap: wrap;
+}
+
+.gfy-compact-input-wrapper {
+  flex: 1;
+  min-width: 200px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.gfy-compact-input-wrapper svg {
+  position: absolute;
+  left: 14px;
+  color: var(--mkcg-text-light, #94a3b8);
+  pointer-events: none;
+}
+
+.gfy-compact-input {
+  width: 100%;
+  padding: 12px 14px 12px 40px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--mkcg-bg-secondary, #f9fafb);
+  color: var(--mkcg-text-primary, #2c3e50);
+  font-family: inherit;
+}
+
+.gfy-compact-input:focus {
+  outline: none;
+  border-color: var(--mkcg-primary, #3b82f6);
+}
+
+/* Topic Card Disabled State */
+.gfy-topic-card.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.gfy-topic-card.is-disabled:hover {
+  transform: none;
+  border-color: var(--mkcg-border-light, #e9ecef);
+  box-shadow: none;
+}
+
+/* Embedded Results Section - full width outside form container */
 .gfy-results--embedded {
   margin-top: 30px;
-  margin-left: -40px;
-  margin-right: -40px;
-  margin-bottom: -40px;
-  padding: 30px 40px;
+  padding: 30px 40px 40px;
   background: var(--mkcg-bg-secondary, #f9fafb);
   border-top: 1px solid var(--mkcg-border, #e2e8f0);
-  border-radius: 0 0 16px 16px;
+}
+
+/* Embedded form with results state */
+.gmkb-embedded-form.has-results {
+  margin-bottom: 0;
 }
 
 /* Responsive */
