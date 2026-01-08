@@ -161,6 +161,16 @@
     min-height: 450px;
 }
 
+/* Expanded state when results are showing - remove width constraints */
+.gmkb-plg-tool-embed:has(.gmkb-tool-embed--expanded) {
+    max-width: none;
+}
+
+/* Also expand the parent container when tool is expanded */
+.gmkb-plg-container:has(.gmkb-tool-embed--expanded) {
+    max-width: none;
+}
+
 /* Noscript Fallback */
 .gmkb-plg-noscript {
     padding: 60px 40px;
