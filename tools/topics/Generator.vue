@@ -301,6 +301,124 @@
       />
     </div>
     <div v-if="error" class="gmkb-embedded-error">{{ error }}</div>
+
+    <!-- Results Section (embedded mode with singleColumn - results display inline) -->
+    <div v-if="hasTopics" class="gfy-results gfy-results--embedded is-visible">
+      <div class="gfy-results__header">
+        <div class="gfy-results__header-left">
+          <h2 class="gfy-results__title">Generated Topics</h2>
+          <span class="gfy-results__badge">{{ topics.length }} Ideas</span>
+        </div>
+        <div class="gfy-results__header-right">
+          <div class="gfy-view-toggle">
+            <button
+              class="gfy-view-toggle__btn"
+              :class="{ 'is-active': viewMode === 'grid' }"
+              @click="setViewMode('grid')"
+              title="Grid View"
+            >
+              <i class="fa-solid fa-grid-2"></i>
+            </button>
+            <button
+              class="gfy-view-toggle__btn"
+              :class="{ 'is-active': viewMode === 'list' }"
+              @click="setViewMode('list')"
+              title="List View"
+            >
+              <i class="fa-solid fa-list"></i>
+            </button>
+          </div>
+          <button class="gfy-btn gfy-btn-secondary" @click="copySelectedTopics">
+            <i class="fa-regular fa-copy"></i>
+            Copy Selected
+          </button>
+        </div>
+      </div>
+
+      <!-- Selection Banner -->
+      <div class="gfy-selection-banner">
+        <div class="gfy-selection-banner__text">
+          <div class="gfy-selection-banner__icon">
+            <i class="fa-solid fa-hand-pointer"></i>
+          </div>
+          <div>
+            <div class="gfy-selection-banner__label">
+              Select <span class="gfy-selection-banner__count">5 topics</span> to save to your Media Kit
+            </div>
+            <div class="gfy-selection-banner__label" style="margin-top: 4px;">
+              {{ selectedTopics.size }} of 5 selected
+            </div>
+          </div>
+        </div>
+        <button
+          class="gfy-btn gfy-btn-success"
+          @click="handleEmbeddedSave"
+          :disabled="selectedTopics.size === 0 || isSaving"
+        >
+          <i class="fa-solid fa-bookmark"></i>
+          Save to Media Kit
+        </button>
+      </div>
+
+      <!-- Save Authority Hook Checkbox -->
+      <label v-if="authorityHookSummary" class="gfy-authority-hook-checkbox">
+        <input
+          type="checkbox"
+          v-model="saveAuthorityHookToProfile"
+        />
+        <span>Also save Authority Hook to profile</span>
+      </label>
+
+      <!-- Topics Container -->
+      <div
+        class="gfy-topics"
+        :class="viewMode === 'grid' ? 'gfy-topics--grid' : 'gfy-topics--list'"
+      >
+        <div
+          v-for="(topic, index) in topics"
+          :key="index"
+          class="gfy-topic-card"
+          :class="{ 'is-selected': selectedTopics.has(index) }"
+          @click="toggleTopicSelect(index)"
+        >
+          <div class="gfy-topic-card__header">
+            <div class="gfy-topic-card__number">{{ index + 1 }}</div>
+            <div class="gfy-topic-card__checkbox">
+              <i class="fa-solid fa-check"></i>
+            </div>
+          </div>
+          <div class="gfy-topic-card__body">
+            <span class="gfy-topic-card__category">{{ getTopicCategory(topic) }}</span>
+            <h3 class="gfy-topic-card__title">{{ getTopicTitle(topic) }}</h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Messages -->
+      <div v-if="saveSuccess" class="gfy-status-message gfy-status-message--success">
+        <i class="fa-solid fa-check-circle"></i>
+        Saved successfully!
+      </div>
+      <div v-if="saveError" class="gfy-status-message gfy-status-message--error">
+        <i class="fa-solid fa-exclamation-circle"></i>
+        {{ saveError }}
+      </div>
+
+      <!-- Testimonial -->
+      <div class="gfy-testimonial">
+        <div class="gfy-testimonial__stars">
+          <i class="fa-solid fa-star"></i>
+          <i class="fa-solid fa-star"></i>
+          <i class="fa-solid fa-star"></i>
+          <i class="fa-solid fa-star"></i>
+          <i class="fa-solid fa-star"></i>
+        </div>
+        <p class="gfy-testimonial__quote">
+          "Generated 10 topic ideas in 30 seconds. Three of them got me booked on podcasts within the week."
+        </p>
+        <p class="gfy-testimonial__author">David K., Leadership Speaker</p>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -643,6 +761,64 @@ const handleSaveToProfile = async () => {
     }
   } catch (err) {
     console.error('[TopicsGenerator] Failed to save to profile:', err);
+  }
+};
+
+/**
+ * Handle save to profile (embedded mode)
+ * Uses injected profile data from EmbeddedToolWrapper
+ */
+const handleEmbeddedSave = async () => {
+  const profileId = injectedProfileData.value?.id;
+  if (!profileId || !hasTopics.value || selectedTopics.value.size === 0) return;
+
+  saveSuccess.value = false;
+
+  try {
+    // Get selected topics
+    const selectedTopicsList = Array.from(selectedTopics.value)
+      .sort((a, b) => a - b)
+      .map(index => topics.value[index]);
+
+    // Save selected topics
+    const topicsResult = await saveToProfile('topics', selectedTopicsList, {
+      profileId
+    });
+
+    // Save authority hook if checkbox is checked and we have data
+    let authorityHookResult = { success: true, saved: {} };
+    if (saveAuthorityHookToProfile.value && authorityHookSummary.value) {
+      authorityHookResult = await saveToProfile('authority_hook', {
+        who: authorityHook.value.who,
+        what: authorityHook.value.what,
+        when: authorityHook.value.when,
+        how: authorityHook.value.how,
+        summary: authorityHookSummary.value
+      }, {
+        profileId
+      });
+    }
+
+    if (topicsResult.success) {
+      saveSuccess.value = true;
+
+      // Auto-hide success message after 3 seconds
+      setTimeout(() => {
+        saveSuccess.value = false;
+      }, 3000);
+
+      emit('saved', {
+        profileId,
+        topics: selectedTopicsList,
+        fields: {
+          ...topicsResult.saved,
+          ...(authorityHookResult.saved || {})
+        },
+        authorityHookSaved: saveAuthorityHookToProfile.value && authorityHookResult.success
+      });
+    }
+  } catch (err) {
+    console.error('[TopicsGenerator] Failed to save to profile (embedded):', err);
   }
 };
 
@@ -1239,6 +1415,18 @@ defineExpose({
 .gmkb-embedded-input::placeholder { color: var(--mkcg-text-light, #94a3b8); }
 .gmkb-embedded-textarea { resize: vertical; min-height: 80px; }
 .gmkb-embedded-error { margin-top: 16px; padding: 12px 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #991b1b; font-size: 14px; }
+
+/* Embedded Results Section - display inline within embedded form */
+.gfy-results--embedded {
+  margin-top: 30px;
+  margin-left: -40px;
+  margin-right: -40px;
+  margin-bottom: -40px;
+  padding: 30px 40px;
+  background: var(--mkcg-bg-secondary, #f9fafb);
+  border-top: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 0 0 16px 16px;
+}
 
 /* Responsive */
 @media (max-width: 768px) {
