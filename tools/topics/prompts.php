@@ -34,37 +34,30 @@ return [
         $expertise = $params['expertise'] ?? '';
         $authorityHook = $params['authorityHook'] ?? '';
         $count = $params['count'] ?? 10;
-        $includeDescriptions = $params['includeDescriptions'] ?? true;
 
-        $prompt = "Generate exactly {$count} compelling speaking/podcast topics for someone with the following expertise:\n\n";
-        $prompt .= "EXPERTISE: {$expertise}\n";
+        $prompt = "Generate {$count} compelling podcast interview topics based on this expert's authority:\n\n";
 
+        // Use authority hook as primary input (legacy approach)
         if (!empty($authorityHook)) {
-            $prompt .= "\nAUTHORITY HOOK: {$authorityHook}\n";
+            $prompt .= "Expert Authority: {$authorityHook}\n\n";
+        } else {
+            $prompt .= "Expert Authority: {$expertise}\n\n";
         }
 
-        $prompt .= "\nRequirements:\n";
-        $prompt .= "- Topics should be specific and actionable, not generic\n";
-        $prompt .= "- Each topic title should be compelling and attention-grabbing (15 words max)\n";
-        $prompt .= "- Topics should position the speaker as an authority\n";
-        $prompt .= "- Mix of evergreen and timely topics\n";
+        $prompt .= "Requirements:\n";
+        $prompt .= "- Topics must directly relate to the expert's authority area\n";
+        $prompt .= "- Make topics intriguing and results-driven to attract podcast hosts\n";
+        $prompt .= "- Use specific strategies, frameworks, or proven methods\n";
+        $prompt .= "- Each topic should be a compelling title (not a full description)\n";
+        $prompt .= "- Topics should position the speaker as the go-to expert\n\n";
 
-        $prompt .= "\nIMPORTANT FORMATTING RULES:\n";
-        $prompt .= "- Do NOT use markdown, asterisks, bold, or quotes in your response\n";
-        $prompt .= "- Do NOT number the topics\n";
-        $prompt .= "- Follow the EXACT format below for each topic\n\n";
+        $prompt .= "Format: Return as a numbered list (1., 2., 3., etc.) with just the topic titles.\n";
+        $prompt .= "Do not include descriptions, categories, or bullet points - just the topic titles.\n\n";
 
-        $prompt .= "Format each topic EXACTLY like this (use these exact labels):\n\n";
-        $prompt .= "TOPIC: The Art of Scaling Without Burnout\n";
-        $prompt .= "CATEGORY: Growth\n";
-        $prompt .= "HOOK: Learn the counterintuitive strategies that let founders 10x their business while working less.\n";
-        $prompt .= "KEY POINTS:\n";
-        $prompt .= "- First key takeaway the audience will learn\n";
-        $prompt .= "- Second key takeaway the audience will learn\n";
-        $prompt .= "- Third key takeaway the audience will learn\n\n";
-
-        $prompt .= "Use only these categories: Strategy, Mistakes, Case Study, Framework, Mindset, Revenue, Leadership, Hiring, Funding, Trends, Growth, Innovation, Marketing, Sales, Operations\n";
-        $prompt .= "\nNow generate exactly {$count} topics following this exact format:";
+        $prompt .= "Example format:\n";
+        $prompt .= "1. The 3-Step Framework for Landing High-Profile Podcast Interviews\n";
+        $prompt .= "2. Why Most Experts Fail at Podcast Outreach (And How to Fix It)\n";
+        $prompt .= "3. Converting Podcast Appearances into High-Ticket Clients\n";
 
         return $prompt;
     },
@@ -72,17 +65,14 @@ return [
     'parser' => function($response_content) {
         $topics = [];
         $lines = explode("\n", trim($response_content));
-        $current_topic = null;
 
-        // Helper to clean up text - remove markdown, quotes, asterisks
+        // Helper to clean up text
         $cleanText = function($text) {
             $text = trim($text);
             // Remove markdown bold/italic
             $text = preg_replace('/\*+/', '', $text);
             // Remove leading/trailing quotes
             $text = preg_replace('/^["\'"]+|["\'"]+$/', '', $text);
-            // Remove numbered prefixes like "1. " or "1) "
-            $text = preg_replace('/^\d+[\.\)]\s*/', '', $text);
             return trim($text);
         };
 
@@ -90,30 +80,18 @@ return [
             $line = trim($line);
             if (empty($line)) continue;
 
-            // Match TOPIC: line (with or without number prefix)
-            if (preg_match('/^(?:\d+[\.\)]\s*)?TOPIC:\s*(.+)$/i', $line, $matches)) {
-                if ($current_topic && !empty($current_topic['title'])) {
-                    $topics[] = $current_topic;
+            // Match numbered format: "1.", "1)", "1:" etc.
+            if (preg_match('/^\d+[\.\)\:]\s*(.+)/', $line, $matches)) {
+                $title = $cleanText($matches[1]);
+                if (!empty($title)) {
+                    $topics[] = [
+                        'title' => $title,
+                        'category' => 'Topic',
+                        'hook' => '',
+                        'keyPoints' => []
+                    ];
                 }
-                $current_topic = [
-                    'title' => $cleanText($matches[1]),
-                    'category' => '',
-                    'hook' => '',
-                    'keyPoints' => []
-                ];
-            } elseif (preg_match('/^CATEGORY:\s*(.+)$/i', $line, $matches) && $current_topic) {
-                $current_topic['category'] = $cleanText($matches[1]);
-            } elseif (preg_match('/^HOOK:\s*(.+)$/i', $line, $matches) && $current_topic) {
-                $current_topic['hook'] = $cleanText($matches[1]);
-            } elseif (preg_match('/^KEY\s*POINTS?:/i', $line)) {
-                // Key points header, skip
-            } elseif (preg_match('/^[-•*]\s*(.+)$/', $line, $matches) && $current_topic) {
-                $current_topic['keyPoints'][] = $cleanText($matches[1]);
             }
-        }
-
-        if ($current_topic && !empty($current_topic['title'])) {
-            $topics[] = $current_topic;
         }
 
         return $topics;
