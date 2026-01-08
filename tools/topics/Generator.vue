@@ -266,7 +266,7 @@ const expertise = ref('');
 const selectedTopics = ref([]);
 const saveSuccess = ref(false);
 const selectedProfileId = ref(null);
-const viewMode = ref('card'); // 'card' or 'list'
+const viewMode = ref('list'); // 'card' or 'list' - default to list for single-column display
 const saveAuthorityHook = ref(true); // Whether to also save authority hook fields
 
 // Use context profile ID if available
@@ -717,10 +717,10 @@ defineExpose({
   color: var(--gfy-primary-color);
 }
 
-/* TOPICS GRID */
+/* TOPICS GRID - responsive auto-fill for wider screens */
 .gfy-topics-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 0.75rem;
   margin-bottom: 1.5rem;
 }
