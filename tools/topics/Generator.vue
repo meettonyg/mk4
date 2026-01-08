@@ -1785,6 +1785,11 @@ defineExpose({
   padding: 30px 40px 40px;
   background: var(--mkcg-bg-secondary, #f9fafb);
   border-top: 1px solid var(--mkcg-border, #e2e8f0);
+  /* Break out of .tool-context padding to fill full width */
+  margin-left: -40px;
+  margin-right: -40px;
+  width: calc(100% + 80px);
+  box-sizing: border-box;
 }
 
 /* Embedded form with results state */
@@ -1811,5 +1816,13 @@ defineExpose({
   .gfy-topics--grid {
     grid-template-columns: 1fr;
   }
+}
+</style>
+
+<!-- Non-scoped styles to affect parent containers -->
+<style>
+/* Override tool-context max-width when topics results are shown */
+.gmkb-tool-stage--single .tool-context:has(.gfy-results--embedded) {
+  max-width: none;
 }
 </style>
