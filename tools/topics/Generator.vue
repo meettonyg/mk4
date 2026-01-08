@@ -1790,6 +1790,7 @@ defineExpose({
   margin-right: -40px;
   width: calc(100% + 80px);
   box-sizing: border-box;
+  max-width: none;
 }
 
 /* Embedded form with results state */
@@ -1822,7 +1823,10 @@ defineExpose({
 <!-- Non-scoped styles to affect parent containers -->
 <style>
 /* Override tool-context max-width when topics results are shown */
+/* Use !important to override scoped styles from EmbeddedToolWrapper */
 .gmkb-tool-stage--single .tool-context:has(.gfy-results--embedded) {
-  max-width: none;
+  max-width: none !important;
+  padding-left: 40px !important;
+  padding-right: 40px !important;
 }
 </style>
