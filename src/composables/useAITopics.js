@@ -77,7 +77,8 @@ export function useAITopics() {
     const params = {
       expertise: overrides.expertise || expertise.value,
       authorityHook: overrides.authorityHook || aiStore.authorityHook,
-      customContext: overrides.customContext || customContext.value
+      customContext: overrides.customContext || customContext.value,
+      count: overrides.count || 10 // Default to 10 topics
     };
 
     return generator.generate(params);

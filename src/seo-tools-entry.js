@@ -18,6 +18,7 @@ import './styles/ai-shared.css';
 import {
   toolModules,
   buildComponentRegistry,
+  resolveSlug,
   EmbeddedToolApp
 } from '@tools';
 
@@ -147,14 +148,21 @@ function initializeEmbeddedTool(container) {
 
   ensureNonce();
 
-  // Parse data attributes
-  let intents = [], meta = {};
+  // Parse data attributes and merge with tool module meta
+  let intents = [], dataMeta = {};
   try {
     intents = JSON.parse(container.dataset.intents || '[]');
-    meta = JSON.parse(container.dataset.meta || '{}');
+    dataMeta = JSON.parse(container.dataset.meta || '{}');
   } catch (e) {
     console.error('[GMKBSeoTools] Failed to parse tool data:', e);
   }
+
+  // Get meta from tool module (includes singleColumn, etc.) and merge with data attributes
+  // Use resolveSlug to convert meta.json slug (e.g., 'topics-generator') to directory slug (e.g., 'topics')
+  const canonicalSlug = resolveSlug(toolSlug);
+  const toolModule = toolModules[canonicalSlug];
+  const moduleMeta = toolModule?.meta || {};
+  const meta = { ...moduleMeta, ...dataMeta };
 
   const isLoggedIn = !!(window.gmkbStandaloneTools?.isLoggedIn || window.gmkbUserData?.isLoggedIn);
   const socialLoginHtml = window.gmkbSocialLogin?.html || '';

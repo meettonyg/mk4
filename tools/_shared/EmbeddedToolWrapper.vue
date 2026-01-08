@@ -22,8 +22,8 @@
       </button>
     </div>
 
-    <!-- Tool Stage (2-column layout) -->
-    <div class="gmkb-tool-stage" :class="{ 'has-generated': hasGenerated }">
+    <!-- Tool Stage (2-column layout, or single column if singleColumn prop is true) -->
+    <div class="gmkb-tool-stage" :class="{ 'has-generated': hasGenerated, 'gmkb-tool-stage--single': singleColumn }">
       <!-- Left: Context & Form -->
       <div class="tool-context">
         <!-- Dynamic Context Header -->
@@ -73,8 +73,8 @@
         </p>
       </div>
 
-      <!-- Right: Preview Area -->
-      <div class="tool-preview-area">
+      <!-- Right: Preview Area (hidden in single column mode) -->
+      <div v-if="!singleColumn" class="tool-preview-area">
         <!-- Default Preview Card (before generation) -->
         <div v-if="!hasGenerated" class="preview-card">
           <div class="preview-label">{{ previewLabel }}</div>
@@ -454,6 +454,14 @@ const props = defineProps({
   authorityHookData: {
     type: Object,
     default: null
+  },
+  /**
+   * Single column mode - hides the preview area for a full-width form
+   * Use this for tools that handle their own results display
+   */
+  singleColumn: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -837,6 +845,17 @@ watch(() => props.isGenerating, (newVal, oldVal) => {
 /* Keep consistent layout after generation - no column collapse */
 .gmkb-tool-stage.has-generated {
   grid-template-columns: 1.2fr 0.8fr;
+}
+
+/* Single column mode - full width form, no preview */
+.gmkb-tool-stage--single {
+  grid-template-columns: 1fr;
+}
+
+.gmkb-tool-stage--single .tool-context {
+  border-right: none;
+  max-width: 700px;
+  margin: 0 auto;
 }
 
 /* Left Column: Context & Form */

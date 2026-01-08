@@ -17,7 +17,7 @@ return [
     'validation' => [
         'required' => ['expertise'],
         'defaults' => [
-            'count' => 5,
+            'count' => 10,
             'includeDescriptions' => true
         ]
     ],
@@ -33,30 +33,31 @@ return [
     'user_prompt' => function($params) {
         $expertise = $params['expertise'] ?? '';
         $authorityHook = $params['authorityHook'] ?? '';
-        $count = $params['count'] ?? 5;
-        $includeDescriptions = $params['includeDescriptions'] ?? true;
+        $count = $params['count'] ?? 10;
 
-        $prompt = "Generate {$count} compelling speaking/podcast topics for someone with the following expertise:\n\n";
-        $prompt .= "EXPERTISE: {$expertise}\n";
+        $prompt = "Generate {$count} compelling podcast interview topics based on this expert's authority:\n\n";
 
+        // Use authority hook as primary input (legacy approach)
         if (!empty($authorityHook)) {
-            $prompt .= "\nAUTHORITY HOOK: {$authorityHook}\n";
-        }
-
-        $prompt .= "\nRequirements:\n";
-        $prompt .= "- Topics should be specific and actionable, not generic\n";
-        $prompt .= "- Each topic should have a compelling hook that grabs attention\n";
-        $prompt .= "- Topics should position the speaker as an authority\n";
-        $prompt .= "- Mix of evergreen and timely topics\n";
-
-        if ($includeDescriptions) {
-            $prompt .= "\nFormat each topic as:\n";
-            $prompt .= "TOPIC: [Compelling title]\n";
-            $prompt .= "HOOK: [One sentence that makes people want to learn more]\n";
-            $prompt .= "KEY POINTS: [3 bullet points of what will be covered]\n";
+            $prompt .= "Expert Authority: {$authorityHook}\n\n";
         } else {
-            $prompt .= "\nProvide just the topic titles, one per line.";
+            $prompt .= "Expert Authority: {$expertise}\n\n";
         }
+
+        $prompt .= "Requirements:\n";
+        $prompt .= "- Topics must directly relate to the expert's authority area\n";
+        $prompt .= "- Make topics intriguing and results-driven to attract podcast hosts\n";
+        $prompt .= "- Use specific strategies, frameworks, or proven methods\n";
+        $prompt .= "- Each topic should be a compelling title (not a full description)\n";
+        $prompt .= "- Topics should position the speaker as the go-to expert\n\n";
+
+        $prompt .= "Format: Return as a numbered list (1., 2., 3., etc.) with just the topic titles.\n";
+        $prompt .= "Do not include descriptions, categories, or bullet points - just the topic titles.\n\n";
+
+        $prompt .= "Example format:\n";
+        $prompt .= "1. The 3-Step Framework for Landing High-Profile Podcast Interviews\n";
+        $prompt .= "2. Why Most Experts Fail at Podcast Outreach (And How to Fix It)\n";
+        $prompt .= "3. Converting Podcast Appearances into High-Ticket Clients\n";
 
         return $prompt;
     },
@@ -64,35 +65,33 @@ return [
     'parser' => function($response_content) {
         $topics = [];
         $lines = explode("\n", trim($response_content));
-        $current_topic = null;
+
+        // Helper to clean up text
+        $cleanText = function($text) {
+            $text = trim($text);
+            // Remove markdown bold/italic
+            $text = preg_replace('/\*+/', '', $text);
+            // Remove leading/trailing quotes
+            $text = preg_replace('/^["\'"]+|["\'"]+$/', '', $text);
+            return trim($text);
+        };
 
         foreach ($lines as $line) {
             $line = trim($line);
             if (empty($line)) continue;
 
-            if (preg_match('/^TOPIC:\s*(.+)$/i', $line, $matches)) {
-                if ($current_topic) {
-                    $topics[] = $current_topic;
+            // Match numbered format: "1.", "1)", "1:" etc.
+            if (preg_match('/^\d+[\.\)\:]\s*(.+)/', $line, $matches)) {
+                $title = $cleanText($matches[1]);
+                if (!empty($title)) {
+                    $topics[] = [
+                        'title' => $title,
+                        'category' => 'Topic',
+                        'hook' => '',
+                        'keyPoints' => []
+                    ];
                 }
-                $current_topic = [
-                    'title' => trim($matches[1]),
-                    'hook' => '',
-                    'keyPoints' => []
-                ];
-            } elseif (preg_match('/^HOOK:\s*(.+)$/i', $line, $matches) && $current_topic) {
-                $current_topic['hook'] = trim($matches[1]);
-            } elseif (preg_match('/^KEY POINTS:/i', $line)) {
-                // Key points header, skip
-            } elseif (preg_match('/^[-•]\s*(.+)$/', $line, $matches) && $current_topic) {
-                $current_topic['keyPoints'][] = trim($matches[1]);
-            } elseif ($current_topic === null && !empty($line)) {
-                // Simple title-only format
-                $topics[] = ['title' => $line, 'hook' => '', 'keyPoints' => []];
             }
-        }
-
-        if ($current_topic) {
-            $topics[] = $current_topic;
         }
 
         return $topics;
