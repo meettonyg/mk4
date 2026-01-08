@@ -76,6 +76,39 @@
           <span class="gfy-results__count">{{ topics.length }} Ideas</span>
         </div>
         <div class="gfy-results__actions">
+          <!-- View Toggle -->
+          <div class="gfy-view-toggle">
+            <button
+              type="button"
+              class="gfy-view-toggle__btn"
+              :class="{ 'gfy-view-toggle__btn--active': viewMode === 'card' }"
+              @click="viewMode = 'card'"
+              title="Card View"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7" rx="1"/>
+                <rect x="14" y="3" width="7" height="7" rx="1"/>
+                <rect x="3" y="14" width="7" height="7" rx="1"/>
+                <rect x="14" y="14" width="7" height="7" rx="1"/>
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="gfy-view-toggle__btn"
+              :class="{ 'gfy-view-toggle__btn--active': viewMode === 'list' }"
+              @click="viewMode = 'list'"
+              title="List View"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="8" y1="6" x2="21" y2="6"/>
+                <line x1="8" y1="12" x2="21" y2="12"/>
+                <line x1="8" y1="18" x2="21" y2="18"/>
+                <circle cx="4" cy="6" r="1.5" fill="currentColor"/>
+                <circle cx="4" cy="12" r="1.5" fill="currentColor"/>
+                <circle cx="4" cy="18" r="1.5" fill="currentColor"/>
+              </svg>
+            </button>
+          </div>
           <button type="button" class="gfy-btn gfy-btn--outline" @click="handleRegenerate">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M23 4v6h-6M1 20v-6h6"/>
@@ -103,8 +136,8 @@
         </span>
       </div>
 
-      <!-- Topics Grid -->
-      <div class="gfy-topics-grid">
+      <!-- Topics Grid (Card View) -->
+      <div v-if="viewMode === 'card'" class="gfy-topics-grid">
         <div
           v-for="(topic, index) in topics"
           :key="index"
@@ -125,8 +158,42 @@
         </div>
       </div>
 
+      <!-- Topics List (List View) -->
+      <div v-else class="gfy-topics-list">
+        <div
+          v-for="(topic, index) in topics"
+          :key="index"
+          class="gfy-topic-row"
+          :class="{ 'gfy-topic-row--selected': isSelected(index) }"
+          @click="toggleSelection(index)"
+        >
+          <div class="gfy-topic-row__checkbox">
+            <svg v-if="isSelected(index)" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+            </svg>
+          </div>
+          <div class="gfy-topic-row__number">{{ index + 1 }}.</div>
+          <p class="gfy-topic-row__title">{{ typeof topic === 'string' ? topic : topic.title || topic }}</p>
+        </div>
+      </div>
+
       <!-- Save Actions -->
       <div class="gfy-results__footer">
+        <!-- Authority Hook Save Option -->
+        <label v-if="hasAuthorityHookData" class="gfy-checkbox-option">
+          <input
+            v-model="saveAuthorityHook"
+            type="checkbox"
+            class="gfy-checkbox-option__input"
+          />
+          <span class="gfy-checkbox-option__box">
+            <svg v-if="saveAuthorityHook" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+            </svg>
+          </span>
+          <span class="gfy-checkbox-option__label">Also save Authority Hook to profile</span>
+        </label>
+
         <div class="gfy-save-section">
           <button
             type="button"
@@ -199,6 +266,8 @@ const expertise = ref('');
 const selectedTopics = ref([]);
 const saveSuccess = ref(false);
 const selectedProfileId = ref(null);
+const viewMode = ref('card'); // 'card' or 'list'
+const saveAuthorityHook = ref(true); // Whether to also save authority hook fields
 
 // Use context profile ID if available
 watch(contextProfileId, (newId) => {
@@ -241,6 +310,13 @@ const generatedHookSummary = computed(() => {
 const canGenerate = computed(() => {
   return (expertise.value && expertise.value.trim().length > 0) ||
          (hookWho.value && hookWhat.value);
+});
+
+/**
+ * Check if user has entered any authority hook data
+ */
+const hasAuthorityHookData = computed(() => {
+  return !!(hookWho.value || hookWhat.value || hookWhen.value || hookHow.value);
 });
 
 /**
@@ -325,9 +401,9 @@ const handleSaveToMediaKit = async () => {
       profileId: selectedProfileId.value
     });
 
-    // Save authority hook if we have data
+    // Save authority hook only if checkbox is checked and we have data
     let hookResult = { success: true };
-    if (generatedHookSummary.value) {
+    if (saveAuthorityHook.value && hasAuthorityHookData.value) {
       hookResult = await saveToProfile('authority_hook', {
         who: hookWho.value,
         what: hookWhat.value,
@@ -346,7 +422,7 @@ const handleSaveToMediaKit = async () => {
       emit('saved', {
         profileId: selectedProfileId.value,
         topics: selectedTopicsList,
-        authorityHookSaved: generatedHookSummary.value && hookResult.success
+        authorityHookSaved: saveAuthorityHook.value && hasAuthorityHookData.value && hookResult.success
       });
     }
   } catch (err) {
@@ -580,7 +656,42 @@ defineExpose({
 
 .gfy-results__actions {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
+}
+
+/* VIEW TOGGLE */
+.gfy-view-toggle {
+  display: flex;
+  background: var(--gfy-bg-color);
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-md);
+  padding: 2px;
+  margin-right: 0.5rem;
+}
+
+.gfy-view-toggle__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--gfy-text-muted);
+  transition: all 0.15s ease;
+}
+
+.gfy-view-toggle__btn:hover {
+  color: var(--gfy-text-secondary);
+}
+
+.gfy-view-toggle__btn--active {
+  background: var(--gfy-white);
+  color: var(--gfy-primary-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* SELECTION BANNER */
@@ -698,6 +809,70 @@ defineExpose({
   color: var(--gfy-white);
 }
 
+/* TOPICS LIST VIEW */
+.gfy-topics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.gfy-topic-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: var(--gfy-white);
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gfy-topic-row:hover {
+  border-color: var(--gfy-primary-color);
+  background: var(--gfy-bg-color);
+}
+
+.gfy-topic-row--selected {
+  border-color: var(--gfy-primary-color);
+  background: var(--gfy-primary-light);
+}
+
+.gfy-topic-row__checkbox {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--gfy-border-color);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gfy-white);
+}
+
+.gfy-topic-row--selected .gfy-topic-row__checkbox {
+  background: var(--gfy-primary-color);
+  border-color: var(--gfy-primary-color);
+  color: var(--gfy-white);
+}
+
+.gfy-topic-row__number {
+  flex-shrink: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--gfy-text-secondary);
+  min-width: 24px;
+}
+
+.gfy-topic-row__title {
+  flex: 1;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--gfy-text-primary);
+  margin: 0;
+}
+
 /* BUTTONS */
 .gfy-btn {
   display: inline-flex;
@@ -757,11 +932,54 @@ defineExpose({
 /* RESULTS FOOTER */
 .gfy-results__footer {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
   gap: 1rem;
   padding-top: 1rem;
   border-top: 1px solid var(--gfy-border-color);
+}
+
+/* CHECKBOX OPTION */
+.gfy-checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.gfy-checkbox-option__input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.gfy-checkbox-option__box {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--gfy-border-color);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gfy-white);
+  transition: all 0.15s ease;
+}
+
+.gfy-checkbox-option__input:checked + .gfy-checkbox-option__box {
+  background: var(--gfy-primary-color);
+  border-color: var(--gfy-primary-color);
+  color: var(--gfy-white);
+}
+
+.gfy-checkbox-option__input:focus + .gfy-checkbox-option__box {
+  box-shadow: 0 0 0 3px var(--gfy-primary-light);
+}
+
+.gfy-checkbox-option__label {
+  font-size: 0.9rem;
+  color: var(--gfy-text-secondary);
 }
 
 .gfy-save-section {
