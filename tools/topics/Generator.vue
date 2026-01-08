@@ -96,10 +96,10 @@
       <!-- Selection Banner -->
       <div class="gfy-selection-banner">
         <span class="gfy-selection-banner__text">
-          Select up to 5 topics to save to your Media Kit
+          Select up to {{ MAX_SELECTED_TOPICS }} topics to save to your Media Kit
         </span>
         <span class="gfy-selection-banner__count">
-          {{ selectedTopics.length }} of 5 selected
+          {{ selectedTopics.length }} of {{ MAX_SELECTED_TOPICS }} selected
         </span>
       </div>
 
@@ -127,22 +127,33 @@
 
       <!-- Save Actions -->
       <div class="gfy-results__footer">
-        <button
-          type="button"
-          class="gfy-btn gfy-btn--primary gfy-btn--large"
-          :disabled="selectedTopics.length === 0"
-          @click="handleSaveToMediaKit"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
-            <polyline points="17 21 17 13 7 13 7 21"/>
-            <polyline points="7 3 7 8 15 8"/>
-          </svg>
-          Save to Media Kit
-        </button>
-        <button type="button" class="gfy-btn gfy-btn--text" @click="handleStartOver">
-          Start Over
-        </button>
+        <div class="gfy-save-section">
+          <button
+            type="button"
+            class="gfy-btn gfy-btn--primary gfy-btn--large"
+            :disabled="selectedTopics.length === 0 || isSaving"
+            @click="handleSaveToMediaKit"
+          >
+            <svg v-if="!isSaving" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            <span v-if="isSaving" class="gfy-spinner"></span>
+            {{ isSaving ? 'Saving...' : 'Save to Media Kit' }}
+          </button>
+          <button type="button" class="gfy-btn gfy-btn--text" @click="handleStartOver">
+            Start Over
+          </button>
+        </div>
+        <!-- Save Success Message -->
+        <span v-if="saveSuccess" class="gfy-save-success">
+          ✓ Saved successfully!
+        </span>
+        <!-- Save Error Message -->
+        <span v-if="saveError" class="gfy-save-error">
+          {{ saveError }}
+        </span>
       </div>
     </div>
   </div>
@@ -151,6 +162,10 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { useAITopics } from '../../src/composables/useAITopics';
+import { useProfileContext } from '../../src/composables/useProfileContext';
+
+// Constants
+const MAX_SELECTED_TOPICS = 5;
 
 const props = defineProps({
   profileData: {
@@ -159,7 +174,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:can-generate', 'authority-hook-update', 'generated', 'save']);
+const emit = defineEmits(['update:can-generate', 'authority-hook-update', 'generated', 'saved']);
 
 // Use composables
 const {
@@ -172,9 +187,25 @@ const {
   reset
 } = useAITopics();
 
+const {
+  profileId: contextProfileId,
+  isSaving,
+  saveError,
+  saveToProfile
+} = useProfileContext();
+
 // Local state
 const expertise = ref('');
 const selectedTopics = ref([]);
+const saveSuccess = ref(false);
+const selectedProfileId = ref(null);
+
+// Use context profile ID if available
+watch(contextProfileId, (newId) => {
+  if (newId && !selectedProfileId.value) {
+    selectedProfileId.value = newId;
+  }
+}, { immediate: true });
 
 // Authority Hook Builder fields
 const hookWho = ref('');
@@ -218,13 +249,13 @@ const canGenerate = computed(() => {
 const isSelected = (index) => selectedTopics.value.includes(index);
 
 /**
- * Toggle topic selection (max 5)
+ * Toggle topic selection (max MAX_SELECTED_TOPICS)
  */
 const toggleSelection = (index) => {
   const idx = selectedTopics.value.indexOf(index);
   if (idx > -1) {
     selectedTopics.value.splice(idx, 1);
-  } else if (selectedTopics.value.length < 5) {
+  } else if (selectedTopics.value.length < MAX_SELECTED_TOPICS) {
     selectedTopics.value.push(index);
   }
 };
@@ -276,11 +307,52 @@ const handleCopyAll = async () => {
 };
 
 /**
- * Handle save to media kit
+ * Handle save to media kit - saves topics and optionally authority hook
  */
-const handleSaveToMediaKit = () => {
-  const selected = selectedTopics.value.map(idx => topics.value[idx]);
-  emit('save', { topics: selected });
+const handleSaveToMediaKit = async () => {
+  if (!selectedProfileId.value) {
+    return;
+  }
+
+  const selectedTopicsList = selectedTopics.value.map(idx => {
+    const topic = topics.value[idx];
+    return typeof topic === 'string' ? topic : topic.title || topic;
+  });
+
+  try {
+    // Save topics
+    const topicsResult = await saveToProfile('topics', selectedTopicsList, {
+      profileId: selectedProfileId.value
+    });
+
+    // Save authority hook if we have data
+    let hookResult = { success: true };
+    if (generatedHookSummary.value) {
+      hookResult = await saveToProfile('authority_hook', {
+        who: hookWho.value,
+        what: hookWhat.value,
+        when: hookWhen.value,
+        how: hookHow.value,
+        summary: generatedHookSummary.value
+      }, {
+        profileId: selectedProfileId.value
+      });
+    }
+
+    // Only show success if both operations succeeded
+    if (topicsResult.success && hookResult.success) {
+      saveSuccess.value = true;
+      setTimeout(() => { saveSuccess.value = false; }, 3000);
+      emit('saved', {
+        profileId: selectedProfileId.value,
+        topics: selectedTopicsList,
+        authorityHookSaved: generatedHookSummary.value && hookResult.success
+      });
+    }
+  } catch (err) {
+    console.error('[Topics Generator] Save failed:', err);
+    // saveError is automatically set by useProfileContext
+  }
 };
 
 /**
@@ -685,10 +757,43 @@ defineExpose({
 /* RESULTS FOOTER */
 .gfy-results__footer {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 1rem;
   padding-top: 1rem;
   border-top: 1px solid var(--gfy-border-color);
+}
+
+.gfy-save-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.gfy-save-success {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--gfy-success-color);
+}
+
+.gfy-save-error {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #dc2626;
+}
+
+.gfy-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* RESPONSIVE */
