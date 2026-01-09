@@ -79,6 +79,7 @@ function loadTools() {
             toolsMap.set(slug, {
                 ...meta,
                 slug: slug,
+                published: true, // Legacy tools are always published
                 _source: 'legacy',
                 _path: path,
             });
@@ -96,6 +97,9 @@ function loadTools() {
             const toolConfigPath = path.replace('meta.json', 'tool.json');
             const toolConfig = toolsConfigModules[toolConfigPath]?.default || toolsConfigModules[toolConfigPath] || {};
 
+            // Default published to true if not specified
+            const isPublished = toolConfig.published !== undefined ? toolConfig.published : true;
+
             toolsMap.set(slug, {
                 ...meta,
                 slug: slug,
@@ -104,6 +108,7 @@ function loadTools() {
                 category: toolConfig.category || meta.category,
                 component: toolConfig.component || null,
                 supports: toolConfig.supports || {},
+                published: isPublished,
                 _source: 'tools',
                 _path: path,
             });
@@ -138,19 +143,37 @@ if (import.meta.env.DEV) {
  */
 const ToolRegistry = {
     /**
-     * Get all tools
-     * @returns {Array} All tool metadata objects
+     * Get all published tools
+     * @returns {Array} All published tool metadata objects
      */
     getAllTools() {
+        return allTools.filter((tool) => tool.published !== false);
+    },
+
+    /**
+     * Get all tools including unpublished (for admin purposes)
+     * @returns {Array} All tool metadata objects
+     */
+    getAllToolsIncludingUnpublished() {
         return allTools;
     },
 
     /**
-     * Get only tools from the new /tools/ directory
-     * @returns {Array} Tools from /tools/ directory
+     * Check if a tool is published
+     * @param {string} slugOrId - The tool slug or ID
+     * @returns {boolean} True if the tool is published
+     */
+    isToolPublished(slugOrId) {
+        const tool = allTools.find((t) => t.slug === slugOrId || t.id === slugOrId);
+        return tool ? tool.published !== false : false;
+    },
+
+    /**
+     * Get only published tools from the new /tools/ directory
+     * @returns {Array} Published tools from /tools/ directory
      */
     getNewTools() {
-        return allTools.filter((tool) => tool._source === 'tools');
+        return allTools.filter((tool) => tool._source === 'tools' && tool.published !== false);
     },
 
     /**
@@ -158,7 +181,7 @@ const ToolRegistry = {
      * @returns {Array} Tools from legacy generators directory
      */
     getLegacyTools() {
-        return allTools.filter((tool) => tool._source === 'legacy');
+        return allTools.filter((tool) => tool._source === 'legacy' && tool.published !== false);
     },
 
     /**
@@ -180,16 +203,16 @@ const ToolRegistry = {
     },
 
     /**
-     * Get all tools in a specific category
+     * Get all published tools in a specific category
      * @param {string} category - The category slug (e.g., 'message-builder')
-     * @returns {Array} Tools in the specified category
+     * @returns {Array} Published tools in the specified category
      */
     getToolsByCategory(category) {
-        return allTools.filter((tool) => tool.category === category);
+        return allTools.filter((tool) => tool.category === category && tool.published !== false);
     },
 
     /**
-     * Get tools organized by category
+     * Get published tools organized by category
      * @returns {Object} Object with category slugs as keys and tool arrays as values
      */
     getToolsGroupedByCategory() {
@@ -206,8 +229,13 @@ const ToolRegistry = {
                 };
             });
 
-        // Assign tools to categories
+        // Assign only published tools to categories
         allTools.forEach((tool) => {
+            // Skip unpublished tools
+            if (tool.published === false) {
+                return;
+            }
+
             if (grouped[tool.category]) {
                 grouped[tool.category].tools.push(tool);
             } else {
@@ -252,13 +280,17 @@ const ToolRegistry = {
     },
 
     /**
-     * Search tools by keyword
+     * Search published tools by keyword
      * @param {string} query - Search query
-     * @returns {Array} Matching tools
+     * @returns {Array} Matching published tools
      */
     searchTools(query) {
         const lowerQuery = query.toLowerCase();
         return allTools.filter((tool) => {
+            // Skip unpublished tools
+            if (tool.published === false) {
+                return false;
+            }
             return (
                 tool.name.toLowerCase().includes(lowerQuery) ||
                 tool.shortDescription?.toLowerCase().includes(lowerQuery) ||
@@ -268,11 +300,11 @@ const ToolRegistry = {
     },
 
     /**
-     * Get total tool count
-     * @returns {number} Total number of tools
+     * Get total published tool count
+     * @returns {number} Total number of published tools
      */
     getToolCount() {
-        return allTools.length;
+        return allTools.filter((tool) => tool.published !== false).length;
     },
 
     /**
