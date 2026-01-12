@@ -858,8 +858,9 @@ watch(() => props.previewContent, (newVal) => {
   grid-template-columns: 1.2fr 0.8fr;
 }
 
-/* Single column mode - full width form, no preview */
-.gmkb-tool-stage--single {
+/* Single column mode - ALWAYS 1fr regardless of has-generated state */
+.gmkb-tool-stage--single,
+.gmkb-tool-stage--single.has-generated {
   grid-template-columns: 1fr;
 }
 
