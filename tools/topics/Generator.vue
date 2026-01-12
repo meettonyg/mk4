@@ -276,6 +276,17 @@ watch(contextProfileId, (newId) => {
   }
 }, { immediate: true });
 
+// Also use profile ID from props (for embedded mode via slot)
+watch(
+  () => props.profileData?.id,
+  (newId) => {
+    if (newId) {
+      selectedProfileId.value = newId;
+    }
+  },
+  { immediate: true }
+);
+
 // Authority Hook Builder fields
 const hookWho = ref('');
 const hookWhat = ref('');
@@ -665,9 +676,9 @@ defineExpose({
 /* VIEW TOGGLE */
 .gfy-view-toggle {
   display: flex;
-  background: var(--gfy-bg-color);
-  border: 1px solid var(--gfy-border-color);
-  border-radius: var(--gfy-radius-md);
+  background: var(--gfy-bg-color, #f8fafc);
+  border: 1px solid var(--gfy-border-color, #e2e8f0);
+  border-radius: var(--gfy-radius-md, 6px);
   padding: 3px;
 }
 
@@ -681,18 +692,26 @@ defineExpose({
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  color: var(--gfy-text-muted);
+  color: var(--gfy-text-muted, #94a3b8);
   transition: all 0.15s ease;
 }
 
+.gfy-view-toggle__btn svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+
 .gfy-view-toggle__btn:hover:not(.gfy-view-toggle__btn--active) {
-  color: var(--gfy-text-secondary);
+  color: var(--gfy-text-secondary, #64748b);
   background: rgba(0, 0, 0, 0.04);
 }
 
 .gfy-view-toggle__btn--active {
-  background: var(--gfy-white);
-  color: var(--gfy-primary-color);
+  background: var(--gfy-white, #ffffff);
+  color: var(--gfy-primary-color, #2563eb);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
