@@ -857,12 +857,12 @@ watch(() => props.previewContent, (newVal) => {
   grid-template-columns: 1.2fr 0.8fr;
 }
 
-/* Single column mode - completely separate from two-column logic */
-.gmkb-tool-stage--single {
+/* Single column mode - use double class selector for equal specificity with :not() rule */
+.gmkb-tool-stage.gmkb-tool-stage--single {
   grid-template-columns: 1fr;
 }
 
-.gmkb-tool-stage--single .tool-context {
+.gmkb-tool-stage.gmkb-tool-stage--single .tool-context {
   border-right: none;
   max-width: none;
   width: 100%;
