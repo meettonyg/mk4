@@ -212,6 +212,11 @@ class GMKB_Tool_Pages {
             return;
         }
 
+        // Don't enqueue assets for unpublished tools
+        if (!$this->discovery->is_tool_published($tool_slug)) {
+            return;
+        }
+
         // Check if this is a PLG landing page (has embedded tool)
         $meta = $this->discovery->get_tool_metadata($tool_slug);
         $landing = isset($meta['landingContent']) ? $meta['landingContent'] : array();
@@ -365,6 +370,12 @@ class GMKB_Tool_Pages {
         // Get tool configuration
         $tool = $this->discovery->get_tool($tool_slug);
         if (!$tool) {
+            $wp_query->set_404();
+            return get_404_template();
+        }
+
+        // Block access to unpublished tools (return 404)
+        if (!$this->discovery->is_tool_published($tool_slug)) {
             $wp_query->set_404();
             return get_404_template();
         }

@@ -151,6 +151,11 @@ class GMKB_Tool_Discovery {
                     $tool_config['_has_meta'] = file_exists($dir . '/meta.json');
                     $tool_config['_has_component'] = file_exists($dir . '/' . ($tool_config['component'] ?? 'Component.vue'));
 
+                    // Default published to true if not specified
+                    if (!isset($tool_config['published'])) {
+                        $tool_config['published'] = true;
+                    }
+
                     $this->tools_cache[$tool_config['id']] = $tool_config;
 
                     // Also map directory name to tool ID for slug resolution
@@ -166,12 +171,39 @@ class GMKB_Tool_Discovery {
     }
 
     /**
-     * Get all discovered tools
+     * Get all discovered tools (only published tools)
+     *
+     * @return array Array of all published tool configurations
+     */
+    public function get_all_tools() {
+        $tools = $this->discover_tools();
+
+        // Filter to only published tools
+        $published_tools = array_filter($tools, function($tool) {
+            return !empty($tool['published']);
+        });
+
+        return array_values($published_tools);
+    }
+
+    /**
+     * Get all discovered tools including unpublished ones (for admin purposes)
      *
      * @return array Array of all tool configurations
      */
-    public function get_all_tools() {
+    public function get_all_tools_including_unpublished() {
         return array_values($this->discover_tools());
+    }
+
+    /**
+     * Check if a tool is published
+     *
+     * @param string $tool_id The tool ID or directory slug
+     * @return bool True if the tool is published, false otherwise
+     */
+    public function is_tool_published($tool_id) {
+        $tool = $this->get_tool($tool_id);
+        return $tool ? !empty($tool['published']) : false;
     }
 
     /**
