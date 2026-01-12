@@ -1,1805 +1,1056 @@
 <template>
-  <!-- Standalone Mode: Single column layout -->
-  <div
-    v-if="mode === 'standalone'"
-    class="generator__container gmkb-generator-root topics-generator"
-  >
-    <!-- Header -->
-    <div class="generator__header">
-      <h1 class="generator__title">Speaking Topics Generator</h1>
-      <p class="generator__subtitle">Generate compelling interview and speaking topics that showcase your expertise</p>
-    </div>
+  <div class="gfy-topics-generator">
+    <!-- Form Section -->
+    <div v-if="!hasTopics" class="gfy-topics-form">
+      <!-- Expertise Field -->
+      <div class="gfy-input-group">
+        <label class="gfy-label">Your Area of Expertise *</label>
+        <textarea
+          v-model="expertise"
+          class="gfy-textarea"
+          rows="2"
+          placeholder="e.g. Digital Marketing Strategies"
+        ></textarea>
+      </div>
 
-    <!-- Main Content Area - Single Column -->
-    <div class="generator__content generator__content--single">
-      <!-- Form Panel -->
-      <div class="generator__panel generator__panel--full">
-        <!-- Intro Text -->
-        <p class="generator__intro">
-          Generate 10 compelling speaking and interview topics based on your expertise and authority hook.
-          Each topic will be designed to position you as a thought leader, showcase your unique perspective,
-          and attract the right audiences for podcasts, interviews, and speaking engagements.
-        </p>
-
-        <!-- Profile Selector (standalone mode only) -->
-        <div v-if="showProfileSelector" class="generator__section">
-          <ProfileSelector
-            v-model="selectedProfileId"
-            mode="dropdown"
-            label="Save to Profile"
-            placeholder="Select a profile to save topics to..."
-            :show-current-profile="true"
-            @select="handleProfileSelect"
-          />
+      <!-- Authority Hook Builder -->
+      <div class="gfy-authority-hook">
+        <div class="gfy-authority-hook__header">
+          <span class="gfy-authority-hook__icon">&#9733;</span>
+          <h3 class="gfy-authority-hook__title">Your Authority Hook</h3>
         </div>
 
-        <!-- Authority Hook Section (collapsible) -->
-        <AuthorityHookSection
-          :hook-text="authorityHookSummary"
-          :components="authorityHook"
-          :show-badge="false"
-          :initially-open="isBuilderOpen"
-          @update:components="handleAuthorityHookUpdate"
-          @toggle="(open) => isBuilderOpen = open"
-        />
-
-        <!-- Generate Button -->
-        <div class="generator__actions">
-          <button
-            type="button"
-            class="generator__button generator__button--call-to-action"
-            :class="{ 'generator__button--loading': isGenerating }"
-            :disabled="!canGenerate || isGenerating"
-            @click="handleGenerate"
-          >
-            <svg v-if="!isGenerating" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-            </svg>
-            {{ isGenerating ? 'Generating...' : 'Generate 10 Topics with AI' }}
-          </button>
+        <!-- Builder Grid -->
+        <div class="gfy-builder">
+          <div class="gfy-builder__field">
+            <label class="gfy-builder__label">WHO do you help?</label>
+            <input
+              v-model="hookWho"
+              type="text"
+              class="gfy-builder__input"
+              placeholder="e.g. SaaS Founders"
+            />
+          </div>
+          <div class="gfy-builder__field">
+            <label class="gfy-builder__label">WHAT is the result?</label>
+            <input
+              v-model="hookWhat"
+              type="text"
+              class="gfy-builder__input"
+              placeholder="e.g. Increase revenue by 40%"
+            />
+          </div>
+          <div class="gfy-builder__field">
+            <label class="gfy-builder__label">WHEN do they need it?</label>
+            <input
+              v-model="hookWhen"
+              type="text"
+              class="gfy-builder__input"
+              placeholder="e.g. When scaling rapidly"
+            />
+          </div>
+          <div class="gfy-builder__field">
+            <label class="gfy-builder__label">HOW do you do it?</label>
+            <input
+              v-model="hookHow"
+              type="text"
+              class="gfy-builder__input"
+              placeholder="e.g. My proven 90-day system"
+            />
+          </div>
         </div>
 
-        <!-- Error Display -->
-        <div v-if="error" class="generator__error">
-          <p>{{ error }}</p>
-          <button type="button" class="generator__button generator__button--outline" @click="handleGenerate">
-            Try Again
-          </button>
+        <!-- Live Preview -->
+        <div class="gfy-live-preview">
+          "{{ hookPreview }}"
         </div>
       </div>
     </div>
 
     <!-- Results Section -->
-    <div v-if="hasTopics" class="gfy-results is-visible" id="resultsSection">
+    <div v-if="hasTopics" class="gfy-results">
+      <!-- Results Header -->
       <div class="gfy-results__header">
-        <div class="gfy-results__header-left">
-          <h2 class="gfy-results__title">Generated Topics</h2>
-          <span class="gfy-results__badge">{{ topics.length }} Ideas</span>
+        <div class="gfy-results__title-row">
+          <h3 class="gfy-results__title">Generated Topics</h3>
+          <span class="gfy-results__count">{{ topics.length }} Ideas</span>
         </div>
-        <div class="gfy-results__header-right">
+        <div class="gfy-results__actions">
+          <!-- View Toggle -->
           <div class="gfy-view-toggle">
             <button
+              type="button"
               class="gfy-view-toggle__btn"
-              :class="{ 'is-active': viewMode === 'grid' }"
-              @click="setViewMode('grid')"
-              title="Grid View"
+              :class="{ 'gfy-view-toggle__btn--active': viewMode === 'card' }"
+              @click="viewMode = 'card'"
+              title="Card View"
             >
-              <i class="fa-solid fa-grid-2"></i>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7" rx="1"/>
+                <rect x="14" y="3" width="7" height="7" rx="1"/>
+                <rect x="3" y="14" width="7" height="7" rx="1"/>
+                <rect x="14" y="14" width="7" height="7" rx="1"/>
+              </svg>
             </button>
             <button
+              type="button"
               class="gfy-view-toggle__btn"
-              :class="{ 'is-active': viewMode === 'list' }"
-              @click="setViewMode('list')"
+              :class="{ 'gfy-view-toggle__btn--active': viewMode === 'list' }"
+              @click="viewMode = 'list'"
               title="List View"
             >
-              <i class="fa-solid fa-list"></i>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="8" y1="6" x2="21" y2="6"/>
+                <line x1="8" y1="12" x2="21" y2="12"/>
+                <line x1="8" y1="18" x2="21" y2="18"/>
+                <circle cx="4" cy="6" r="1.5" fill="currentColor"/>
+                <circle cx="4" cy="12" r="1.5" fill="currentColor"/>
+                <circle cx="4" cy="18" r="1.5" fill="currentColor"/>
+              </svg>
             </button>
           </div>
-          <button class="gfy-btn gfy-btn-secondary" @click="copySelectedTopics">
-            <i class="fa-regular fa-copy"></i>
-            Copy Selected
+          <button type="button" class="gfy-btn gfy-btn--outline" @click="handleRegenerate">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 4v6h-6M1 20v-6h6"/>
+              <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+            </svg>
+            Regenerate
+          </button>
+          <button type="button" class="gfy-btn gfy-btn--outline" @click="handleCopyAll">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+            </svg>
+            Copy All
           </button>
         </div>
       </div>
 
       <!-- Selection Banner -->
       <div class="gfy-selection-banner">
-        <div class="gfy-selection-banner__text">
-          <div class="gfy-selection-banner__icon">
-            <i class="fa-solid fa-hand-pointer"></i>
-          </div>
-          <div>
-            <div class="gfy-selection-banner__label">
-              Select <span class="gfy-selection-banner__count">5 topics</span> to save to your Media Kit
-            </div>
-            <div class="gfy-selection-banner__label" style="margin-top: 4px;">
-              <span id="selectionCount">{{ selectedTopics.size }}</span> of 5 selected
-            </div>
-          </div>
-        </div>
-        <button
-          class="gfy-btn gfy-btn-success"
-          @click="handleSaveToProfile"
-          :disabled="selectedTopics.size === 0 || isSaving || !selectedProfileId"
-        >
-          <i class="fa-solid fa-bookmark"></i>
-          Save to Media Kit
-        </button>
+        <span class="gfy-selection-banner__text">
+          Select up to {{ MAX_SELECTED_TOPICS }} topics to save to your Media Kit
+        </span>
+        <span class="gfy-selection-banner__count">
+          {{ selectedTopics.length }} of {{ MAX_SELECTED_TOPICS }} selected
+        </span>
       </div>
 
-      <!-- Save Authority Hook Checkbox -->
-      <label v-if="authorityHookSummary && showSaveToProfile" class="gfy-authority-hook-checkbox">
-        <input
-          type="checkbox"
-          v-model="saveAuthorityHookToProfile"
-        />
-        <span>Also save Authority Hook to profile</span>
-      </label>
-
-      <!-- Topics Container -->
-      <div
-        class="gfy-topics"
-        :class="viewMode === 'grid' ? 'gfy-topics--grid' : 'gfy-topics--list'"
-        id="topicsContainer"
-      >
+      <!-- Topics Grid (Card View) -->
+      <div v-if="viewMode === 'card'" class="gfy-topics-grid">
         <div
           v-for="(topic, index) in topics"
           :key="index"
           class="gfy-topic-card"
-          :class="{ 'is-selected': selectedTopics.has(index) }"
-          @click="toggleTopicSelect(index)"
-          :data-topic="index + 1"
+          :class="{ 'gfy-topic-card--selected': isSelected(index) }"
+          @click="toggleSelection(index)"
         >
-          <div class="gfy-topic-card__header">
-            <div class="gfy-topic-card__number">{{ index + 1 }}</div>
-            <div class="gfy-topic-card__checkbox">
-              <i class="fa-solid fa-check"></i>
-            </div>
-          </div>
-          <div class="gfy-topic-card__body">
-            <span class="gfy-topic-card__category">{{ getTopicCategory(topic) }}</span>
-            <h3 class="gfy-topic-card__title">{{ getTopicTitle(topic) }}</h3>
-          </div>
-        </div>
-      </div>
-
-      <!-- Status Messages -->
-      <div v-if="!selectedProfileId && showSaveToProfile" class="gfy-status-message gfy-status-message--info">
-        <i class="fa-solid fa-info-circle"></i>
-        Select a profile above to enable saving
-      </div>
-      <div v-if="saveSuccess" class="gfy-status-message gfy-status-message--success">
-        <i class="fa-solid fa-check-circle"></i>
-        Saved successfully!
-      </div>
-      <div v-if="saveError" class="gfy-status-message gfy-status-message--error">
-        <i class="fa-solid fa-exclamation-circle"></i>
-        {{ saveError }}
-      </div>
-
-      <!-- Testimonial -->
-      <div class="gfy-testimonial">
-        <div class="gfy-testimonial__stars">
-          <i class="fa-solid fa-star"></i>
-          <i class="fa-solid fa-star"></i>
-          <i class="fa-solid fa-star"></i>
-          <i class="fa-solid fa-star"></i>
-          <i class="fa-solid fa-star"></i>
-        </div>
-        <p class="gfy-testimonial__quote">
-          "Generated 10 topic ideas in 30 seconds. Three of them got me booked on podcasts within the week."
-        </p>
-        <p class="gfy-testimonial__author">David K., Leadership Speaker</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Integrated Mode: Compact widget -->
-  <AiWidgetFrame
-    v-else-if="mode === 'integrated'"
-    title="Speaking Topics Generator"
-    description="Generate compelling interview and speaking topics that showcase your expertise."
-    :mode="mode"
-    :is-loading="isGenerating || isSaving"
-    :has-results="hasTopics"
-    :error="error || saveError"
-    :usage-remaining="usageRemaining"
-    :reset-time="resetTime"
-    target-component="Topics"
-    :show-cta="!hasTopics"
-    :cta-variant="usageRemaining === 0 ? 'exhausted' : 'default'"
-    @apply="handleApply"
-    @regenerate="handleGenerate"
-    @copy="handleCopy"
-    @retry="handleGenerate"
-  >
-    <!-- Profile Selector (standalone mode only) -->
-    <div v-if="showProfileSelector" class="gmkb-ai-profile-selector">
-      <ProfileSelector
-        v-model="selectedProfileId"
-        mode="dropdown"
-        label="Save to Profile"
-        placeholder="Select a profile to save topics to..."
-        :show-current-profile="true"
-        @select="handleProfileSelect"
-      />
-    </div>
-
-    <!-- Input Form -->
-    <div class="gmkb-ai-form">
-      <!-- Authority Hook Section (collapsible) -->
-      <AuthorityHookSection
-        :hook-text="authorityHookSummary"
-        :components="authorityHook"
-        :show-badge="false"
-        :initially-open="isBuilderOpen"
-        @update:components="handleAuthorityHookUpdate"
-        @toggle="(open) => isBuilderOpen = open"
-      />
-
-      <!-- Generate Button -->
-      <AiGenerateButton
-        text="Generate 10 Topics"
-        loading-text="Generating topics..."
-        :loading="isGenerating"
-        :disabled="!canGenerate"
-        full-width
-        @click="handleGenerate"
-      />
-    </div>
-
-    <!-- Results -->
-    <template #results>
-      <AiResultsDisplay
-        v-if="topics.length > 0"
-        :content="topics"
-        format="cards"
-        :selected-index="selectedTopicIndex"
-        @select="handleSelectTopic"
-      />
-
-      <!-- Save to Profile Button (standalone mode) -->
-      <div v-if="hasTopics && showSaveToProfile" class="gmkb-ai-save-actions">
-        <button
-          type="button"
-          class="gmkb-ai-btn gmkb-ai-btn--primary"
-          :disabled="!canSaveToProfile || isSaving"
-          @click="handleSaveToProfile"
-        >
-          <span v-if="isSaving" class="gmkb-ai-btn__spinner"></span>
-          <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-            <polyline points="17 21 17 13 7 13 7 21"/>
-            <polyline points="7 3 7 8 15 8"/>
-          </svg>
-          {{ isSaving ? 'Saving...' : 'Save to Profile' }}
-        </button>
-        <span v-if="!selectedProfileId" class="gmkb-ai-save-hint">
-          Select a profile above to enable saving
-        </span>
-        <span v-if="saveSuccess" class="gmkb-ai-save-success">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
-          Saved successfully!
-        </span>
-      </div>
-    </template>
-  </AiWidgetFrame>
-
-  <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
-  <div v-else class="gmkb-embedded-form" :class="{ 'has-results': showResults }">
-    <!-- Form Section (hidden after generation) -->
-    <div v-if="showForm || !hasTopics" class="gmkb-embedded-fields">
-      <!-- Authority Hook Section (collapsible) -->
-      <AuthorityHookSection
-        :hook-text="authorityHookSummary"
-        :components="authorityHook"
-        :show-badge="false"
-        :initially-open="false"
-        @update:components="handleAuthorityHookUpdate"
-        @toggle="(open) => isBuilderOpen = open"
-      />
-    </div>
-
-    <!-- Compact Controls (shown after generation) -->
-    <div v-if="showResults" class="gfy-compact-controls">
-      <div class="gfy-compact-input-wrapper">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"></circle>
-          <path d="M21 21l-4.35-4.35"></path>
-        </svg>
-        <input
-          type="text"
-          class="gfy-compact-input"
-          :value="authorityHookSummary?.substring(0, 50) + '...'"
-          readonly
-        />
-      </div>
-      <button
-        class="gfy-btn gfy-btn-primary"
-        :disabled="isGenerating"
-        @click="handleGenerate"
-      >
-        <svg v-if="!isGenerating" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M23 4v6h-6M1 20v-6h6M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
-        </svg>
-        {{ isGenerating ? 'Generating...' : 'Regenerate' }}
-      </button>
-      <button class="gfy-btn gfy-btn-secondary" @click="resetToForm">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-        </svg>
-        Edit
-      </button>
-    </div>
-
-    <div v-if="error" class="gmkb-embedded-error">{{ error }}</div>
-  </div>
-
-  <!-- Results Section (embedded mode - renders outside form for full width) -->
-  <div v-if="mode === 'embedded' && showResults" class="gfy-results gfy-results--embedded is-visible">
-    <div class="gfy-results__header">
-      <div class="gfy-results__header-left">
-        <h2 class="gfy-results__title">Generated Topics</h2>
-        <span class="gfy-results__badge">{{ topics.length }} Ideas</span>
-      </div>
-      <div class="gfy-results__header-right">
-        <div class="gfy-view-toggle">
-          <button
-            class="gfy-view-toggle__btn"
-            :class="{ 'is-active': viewMode === 'grid' }"
-            @click.stop="viewMode = 'grid'"
-            title="Grid View"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="3" y="3" width="7" height="7" rx="1"></rect>
-              <rect x="14" y="3" width="7" height="7" rx="1"></rect>
-              <rect x="3" y="14" width="7" height="7" rx="1"></rect>
-              <rect x="14" y="14" width="7" height="7" rx="1"></rect>
-            </svg>
-          </button>
-          <button
-            class="gfy-view-toggle__btn"
-            :class="{ 'is-active': viewMode === 'list' }"
-            @click.stop="viewMode = 'list'"
-            title="List View"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="3" y="4" width="18" height="4" rx="1"></rect>
-              <rect x="3" y="10" width="18" height="4" rx="1"></rect>
-              <rect x="3" y="16" width="18" height="4" rx="1"></rect>
-            </svg>
-          </button>
-        </div>
-        <button class="gfy-btn gfy-btn-secondary" @click="copySelectedTopics">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-          </svg>
-          Copy Selected
-        </button>
-      </div>
-    </div>
-
-    <!-- Selection Banner -->
-    <div class="gfy-selection-banner">
-      <div class="gfy-selection-banner__text">
-        <div class="gfy-selection-banner__icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M7 2v11h3v9l7-12h-4l4-8z"></path>
-          </svg>
-        </div>
-        <div>
-          <div class="gfy-selection-banner__label">
-            Select <span class="gfy-selection-banner__count">5 topics</span> to save to your Media Kit
-          </div>
-          <div class="gfy-selection-banner__label" style="margin-top: 4px;">
-            {{ selectedTopics.size }} of 5 selected
-          </div>
-        </div>
-      </div>
-      <button
-        class="gfy-btn gfy-btn-success"
-        :class="{ 'is-loading': isSaving }"
-        @click="handleEmbeddedSave"
-        :disabled="selectedTopics.size === 0 || isSaving"
-      >
-        <span v-if="isSaving" class="gfy-btn__spinner"></span>
-        <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-        </svg>
-        {{ isSaving ? 'Saving...' : 'Save to Media Kit' }}
-      </button>
-    </div>
-
-    <!-- Save Authority Hook Checkbox -->
-    <label v-if="authorityHookSummary" class="gfy-authority-hook-checkbox">
-      <input
-        type="checkbox"
-        v-model="saveAuthorityHookToProfile"
-      />
-      <span>Also save Authority Hook to profile</span>
-    </label>
-
-    <!-- Topics Container -->
-    <div
-      class="gfy-topics"
-      :class="viewMode === 'grid' ? 'gfy-topics--grid' : 'gfy-topics--list'"
-    >
-      <div
-        v-for="(topic, index) in topics"
-        :key="index"
-        class="gfy-topic-card"
-        :class="{
-          'is-selected': selectedTopics.has(index),
-          'is-disabled': selectedTopics.size >= 5 && !selectedTopics.has(index),
-          'is-editing': editingTopicIndex === index,
-          'is-edited': editedTopics.has(index)
-        }"
-        @click="handleTopicCardClick(index, $event)"
-      >
-        <div class="gfy-topic-card__header">
           <div class="gfy-topic-card__number">{{ index + 1 }}</div>
-          <div class="gfy-topic-card__actions">
-            <!-- Edited badge -->
-            <span v-if="editedTopics.has(index) && editingTopicIndex !== index" class="gfy-topic-card__edited-badge">
-              Edited
-            </span>
-            <button
-              v-if="editingTopicIndex !== index"
-              class="gfy-topic-card__edit-btn"
-              @click.stop="startEditingTopic(index)"
-              title="Edit topic"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-              </svg>
-            </button>
-            <div class="gfy-topic-card__checkbox">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                <polyline points="20 6 9 17 4 12" stroke="currentColor" stroke-width="3" fill="none"></polyline>
-              </svg>
-            </div>
+          <div class="gfy-topic-card__content">
+            <span v-if="topic.category" class="gfy-topic-card__category">{{ topic.category }}</span>
+            <p class="gfy-topic-card__title">{{ typeof topic === 'string' ? topic : topic.title || topic }}</p>
           </div>
-        </div>
-        <div class="gfy-topic-card__body">
-          <span class="gfy-topic-card__category">{{ getTopicCategory(topic) }}</span>
-          <!-- Editing mode -->
-          <div v-if="editingTopicIndex === index" class="gfy-topic-card__edit-form" @click.stop>
-            <textarea
-              ref="editTextarea"
-              v-model="editingTopicText"
-              class="gfy-topic-card__edit-input"
-              rows="3"
-              @keydown.enter.prevent="saveTopicEdit(index)"
-              @keydown.escape="cancelTopicEdit"
-            ></textarea>
-            <div class="gfy-topic-card__edit-actions">
-              <button class="gfy-btn gfy-btn-sm gfy-btn-primary" @click.stop="saveTopicEdit(index)">
-                Save
-              </button>
-              <button class="gfy-btn gfy-btn-sm gfy-btn-secondary" @click.stop="cancelTopicEdit">
-                Cancel
-              </button>
-            </div>
+          <div class="gfy-topic-card__checkbox">
+            <svg v-if="isSelected(index)" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+            </svg>
           </div>
-          <!-- Display mode -->
-          <h3 v-else class="gfy-topic-card__title">{{ getEditedTopicTitle(index, topic) }}</h3>
         </div>
       </div>
-    </div>
 
-    <!-- Status Messages -->
-    <div v-if="saveSuccess" class="gfy-status-message gfy-status-message--success">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-        <polyline points="22 4 12 14.01 9 11.01" stroke="currentColor" stroke-width="2" fill="none"></polyline>
-      </svg>
-      Saved successfully!
-    </div>
-    <div v-if="saveError" class="gfy-status-message gfy-status-message--error">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="8" x2="12" y2="12" stroke="white" stroke-width="2"></line>
-        <line x1="12" y1="16" x2="12.01" y2="16" stroke="white" stroke-width="2"></line>
-      </svg>
-      {{ saveError }}
-    </div>
+      <!-- Topics List (List View) -->
+      <div v-else class="gfy-topics-list">
+        <div
+          v-for="(topic, index) in topics"
+          :key="index"
+          class="gfy-topic-row"
+          :class="{ 'gfy-topic-row--selected': isSelected(index) }"
+          @click="toggleSelection(index)"
+        >
+          <div class="gfy-topic-row__checkbox">
+            <svg v-if="isSelected(index)" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+            </svg>
+          </div>
+          <div class="gfy-topic-row__number">{{ index + 1 }}.</div>
+          <p class="gfy-topic-row__title">{{ typeof topic === 'string' ? topic : topic.title || topic }}</p>
+        </div>
+      </div>
 
-    <!-- Testimonial -->
-    <div class="gfy-testimonial">
-      <div class="gfy-testimonial__stars">★★★★★</div>
-      <p class="gfy-testimonial__quote">
-        "Generated 10 topic ideas in 30 seconds. Three of them got me booked on podcasts within the week."
-      </p>
-      <p class="gfy-testimonial__author">David K., Leadership Speaker</p>
+      <!-- Save Actions -->
+      <div class="gfy-results__footer">
+        <!-- Authority Hook Save Option -->
+        <label v-if="hasAuthorityHookData" class="gfy-checkbox-option">
+          <input
+            v-model="saveAuthorityHook"
+            type="checkbox"
+            class="gfy-checkbox-option__input"
+          />
+          <span class="gfy-checkbox-option__box">
+            <svg v-if="saveAuthorityHook" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+            </svg>
+          </span>
+          <span class="gfy-checkbox-option__label">Also save Authority Hook to profile</span>
+        </label>
+
+        <div class="gfy-save-section">
+          <button
+            type="button"
+            class="gfy-btn gfy-btn--primary gfy-btn--large"
+            :disabled="selectedTopics.length === 0 || isSaving"
+            @click="handleSaveToMediaKit"
+          >
+            <svg v-if="!isSaving" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            <span v-if="isSaving" class="gfy-spinner"></span>
+            {{ isSaving ? 'Saving...' : 'Save to Media Kit' }}
+          </button>
+          <button type="button" class="gfy-btn gfy-btn--text" @click="handleStartOver">
+            Start Over
+          </button>
+        </div>
+        <!-- Save Success Message -->
+        <span v-if="saveSuccess" class="gfy-save-success">
+          ✓ Saved successfully!
+        </span>
+        <!-- Save Error Message -->
+        <span v-if="saveError" class="gfy-save-error">
+          {{ saveError }}
+        </span>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, inject, nextTick } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useAITopics } from '../../src/composables/useAITopics';
-import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 
-// Compact widget components (integrated mode)
-import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
-import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
-import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
-import ProfileSelector from '../../src/vue/components/shared/ProfileSelector.vue';
-
-// Full layout components (standalone mode)
-import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
-import AuthorityHookSection from '../_shared/AuthorityHookSection.vue';
+// Constants
+const MAX_SELECTED_TOPICS = 5;
 
 const props = defineProps({
-  /**
-   * Mode: 'integrated' or 'standalone'
-   */
-  mode: {
-    type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
-  },
-
-  /**
-   * Component ID to apply results to (integrated mode)
-   */
-  componentId: {
-    type: String,
-    default: null
-  },
-
-  /**
-   * Intent configuration (embedded mode)
-   */
-  intent: {
-    type: Object,
-    default: null
-  },
-
-  /**
-   * Profile data (embedded mode)
-   */
   profileData: {
     type: Object,
-    default: null
-  },
-
-  /**
-   * Pre-selected profile ID (optional)
-   */
-  profileId: {
-    type: Number,
     default: null
   }
 });
 
-const emit = defineEmits(['applied', 'generated', 'saved', 'preview-update', 'update:can-generate', 'authority-hook-update']);
+const emit = defineEmits(['update:can-generate', 'authority-hook-update', 'generated', 'saved']);
 
 // Use composables
 const {
   isGenerating,
   error,
-  usageRemaining,
-  resetTime,
   topics,
   hasTopics,
   generate,
-  copyToClipboard
+  copyToClipboard,
+  reset
 } = useAITopics();
 
 const {
-  authorityHook,
-  authorityHookSummary,
-  setAll,
-  syncFromStore,
-  loadFromProfileData
-} = useAuthorityHook();
-
-// Profile context integration
-const {
   profileId: contextProfileId,
-  isInBuilder,
   isSaving,
   saveError,
-  saveToProfile,
-  saveToComponent
+  saveToProfile
 } = useProfileContext();
 
 // Local state
 const expertise = ref('');
-const selectedTopicIndex = ref(-1);
-const selectedProfileId = ref(props.profileId || null);
+const selectedTopics = ref([]);
 const saveSuccess = ref(false);
-const isBuilderOpen = ref(false);
-const saveAuthorityHookToProfile = ref(true); // Default to saving authority hook
-const viewMode = ref('grid'); // 'grid' or 'list'
-const selectedTopics = ref(new Set()); // Set of selected topic indices
-const showForm = ref(true); // Controls form vs results view in embedded mode
-const editingTopicIndex = ref(-1); // Which topic is being edited (-1 = none)
-const editingTopicText = ref(''); // Current text in edit textarea
-const editedTopics = ref(new Map()); // Map of index -> edited title
-const editTextarea = ref(null); // Ref for textarea element
+const selectedProfileId = ref(null);
+const viewMode = ref('list'); // 'card' or 'list' - default to list for single-column display
+const saveAuthorityHook = ref(true); // Whether to also save authority hook fields
+
+// Use context profile ID if available
+watch(contextProfileId, (newId) => {
+  if (newId && !selectedProfileId.value) {
+    selectedProfileId.value = newId;
+  }
+}, { immediate: true });
+
+// Also use profile ID from props (for embedded mode via slot)
+watch(
+  () => props.profileData?.id,
+  (newId) => {
+    if (newId) {
+      selectedProfileId.value = newId;
+    }
+  },
+  { immediate: true }
+);
+
+// Authority Hook Builder fields
+const hookWho = ref('');
+const hookWhat = ref('');
+const hookWhen = ref('');
+const hookHow = ref('');
 
 /**
- * Computed: show results in embedded mode
+ * Computed: Live preview of authority hook
  */
-const showResults = computed(() => !showForm.value && hasTopics.value);
+const hookPreview = computed(() => {
+  const who = hookWho.value || '[WHO]';
+  const what = hookWhat.value || '[WHAT]';
+  const when = hookWhen.value || '[WHEN]';
+  const how = hookHow.value || '[HOW]';
+  return `I help ${who} ${what} ${when} through ${how}.`;
+});
 
 /**
- * Reset to form view (Edit button handler)
+ * Computed: Generated authority hook summary
  */
-const resetToForm = () => {
-  showForm.value = true;
-  selectedTopics.value = new Set();
+const generatedHookSummary = computed(() => {
+  if (!hookWho.value && !hookWhat.value) return '';
+  let summary = `I help ${hookWho.value || ''} ${hookWhat.value || ''}`;
+  if (hookWhen.value) summary += ` ${hookWhen.value}`;
+  if (hookHow.value) summary += ` through ${hookHow.value}`;
+  return summary.trim() + '.';
+});
+
+/**
+ * Can generate check
+ */
+const canGenerate = computed(() => {
+  return (expertise.value && expertise.value.trim().length > 0) ||
+         (hookWho.value && hookWhat.value);
+});
+
+/**
+ * Check if user has entered any authority hook data
+ */
+const hasAuthorityHookData = computed(() => {
+  return !!(hookWho.value || hookWhat.value || hookWhen.value || hookHow.value);
+});
+
+/**
+ * Check if topic is selected
+ */
+const isSelected = (index) => selectedTopics.value.includes(index);
+
+/**
+ * Toggle topic selection (max MAX_SELECTED_TOPICS)
+ */
+const toggleSelection = (index) => {
+  const idx = selectedTopics.value.indexOf(index);
+  if (idx > -1) {
+    selectedTopics.value.splice(idx, 1);
+  } else if (selectedTopics.value.length < MAX_SELECTED_TOPICS) {
+    selectedTopics.value.push(index);
+  }
 };
 
 /**
- * Handle authority hook component updates from AuthorityHookSection
- */
-const handleAuthorityHookUpdate = (components) => {
-  setAll(components);
-};
-
-// Inject profile data from EmbeddedToolWrapper (for embedded mode)
-const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
-
-/**
- * Populate form fields from profile data
+ * Populate from profile data
  */
 function populateFromProfile(profileData) {
   if (!profileData) return;
-
-  // Populate expertise from hook_what or expertise field
-  if (profileData.hook_what && !expertise.value) {
-    expertise.value = profileData.hook_what;
-  }
-
-  // Populate authority hook fields from profile data
-  loadFromProfileData(profileData);
+  if (profileData.hook_who) hookWho.value = profileData.hook_who;
+  if (profileData.hook_what) hookWhat.value = profileData.hook_what;
+  if (profileData.hook_when) hookWhen.value = profileData.hook_when;
+  if (profileData.hook_how) hookHow.value = profileData.hook_how;
+  if (profileData.expertise) expertise.value = profileData.expertise;
 }
 
 /**
- * Show profile selector in standalone mode when not in builder
- */
-const showProfileSelector = computed(() => {
-  return props.mode === 'standalone' && !isInBuilder.value;
-});
-
-/**
- * Show save to profile button
- */
-const showSaveToProfile = computed(() => {
-  return props.mode === 'standalone' && !isInBuilder.value;
-});
-
-/**
- * Can save to profile check
- */
-const canSaveToProfile = computed(() => {
-  return selectedProfileId.value && hasTopics.value && !isSaving.value && selectedTopics.value.size > 0;
-});
-
-/**
- * Can generate check - authority hook must have content
- */
-const canGenerate = computed(() => {
-  return authorityHookSummary.value && authorityHookSummary.value.trim().length > 0;
-});
-
-/**
- * Set view mode
- */
-const setViewMode = (mode) => {
-  viewMode.value = mode;
-};
-
-/**
- * Toggle topic selection
- */
-const toggleTopicSelect = (index) => {
-  if (selectedTopics.value.has(index)) {
-    selectedTopics.value.delete(index);
-  } else {
-    // Only allow 5 selections max
-    if (selectedTopics.value.size < 5) {
-      selectedTopics.value.add(index);
-    }
-  }
-};
-
-/**
- * Get topic title (handles both string and object formats)
- * Local helper to keep this tool self-contained
- */
-const getTopicTitle = (topic) => {
-  if (!topic) return '';
-  if (typeof topic === 'string') return topic;
-  return topic.title || topic.text || '';
-};
-
-/**
- * Get topic category
- * Local helper to keep this tool self-contained
- */
-const getTopicCategory = (topic) => {
-  if (!topic || typeof topic === 'string') return 'Topic';
-  return topic.category || 'Topic';
-};
-
-/**
- * Get edited topic title (returns edited version if exists, otherwise original)
- */
-const getEditedTopicTitle = (index, topic) => {
-  if (editedTopics.value.has(index)) {
-    return editedTopics.value.get(index);
-  }
-  return getTopicTitle(topic);
-};
-
-/**
- * Start editing a topic
- */
-const startEditingTopic = (index) => {
-  const topic = topics.value[index];
-  editingTopicIndex.value = index;
-  editingTopicText.value = getEditedTopicTitle(index, topic);
-  // Focus textarea after Vue updates the DOM
-  nextTick(() => {
-    if (editTextarea.value) {
-      editTextarea.value.focus();
-      editTextarea.value.select();
-    }
-  });
-};
-
-/**
- * Save topic edit
- */
-const saveTopicEdit = (index) => {
-  if (editingTopicText.value.trim()) {
-    editedTopics.value.set(index, editingTopicText.value.trim());
-  }
-  editingTopicIndex.value = -1;
-  editingTopicText.value = '';
-};
-
-/**
- * Cancel topic edit
- */
-const cancelTopicEdit = () => {
-  editingTopicIndex.value = -1;
-  editingTopicText.value = '';
-};
-
-/**
- * Handle topic card click - select/deselect unless editing
- */
-const handleTopicCardClick = (index, event) => {
-  // Don't toggle selection if we're editing
-  if (editingTopicIndex.value === index) return;
-  toggleTopicSelect(index);
-};
-
-/**
- * Handle topic selection (for integrated mode)
- */
-const handleSelectTopic = (index) => {
-  selectedTopicIndex.value = selectedTopicIndex.value === index ? -1 : index;
-};
-
-/**
- * Handle generate button click
+ * Handle generate - exposed for parent to call
  */
 const handleGenerate = async () => {
-  selectedTopicIndex.value = -1;
-  selectedTopics.value = new Set(); // Clear selections
-  editedTopics.value = new Map(); // Clear edited topics
-  editingTopicIndex.value = -1; // Cancel any active editing
+  selectedTopics.value = [];
+  const contextText = expertise.value || generatedHookSummary.value;
 
-  try {
-    // Generate with count: 10
-    await generate({
-      expertise: authorityHookSummary.value,
-      authorityHook: authorityHookSummary.value,
-      count: 10
-    });
+  await generate({
+    expertise: contextText,
+    authorityHook: generatedHookSummary.value,
+    count: 10
+  });
 
-    // Switch to results view in embedded mode
-    if (props.mode === 'embedded') {
-      showForm.value = false;
-    }
+  // Emit generated event for parent (EmbeddedToolApp) to handle
+  emit('generated', { topics: topics.value });
 
-    emit('generated', {
-      topics: topics.value
-    });
-  } catch (err) {
-    console.error('[TopicsGenerator] Generation failed:', err);
-    throw err; // Re-throw to allow parent component to handle it
-  }
+  return { topics: topics.value };
 };
 
 /**
- * Handle copy to clipboard (all topics)
+ * Handle regenerate
  */
-const handleCopy = async () => {
+const handleRegenerate = async () => {
+  selectedTopics.value = [];
+  await handleGenerate();
+};
+
+/**
+ * Handle copy all topics
+ */
+const handleCopyAll = async () => {
   await copyToClipboard();
 };
 
 /**
- * Copy selected topics to clipboard
+ * Handle save to media kit - saves topics and optionally authority hook
  */
-const copySelectedTopics = async () => {
-  const selected = Array.from(selectedTopics.value)
-    .sort((a, b) => a - b)
-    .map(index => getTopicTitle(topics.value[index]))
-    .filter(Boolean);
-
-  if (selected.length === 0) {
-    // Copy all if none selected
-    await copyToClipboard();
+const handleSaveToMediaKit = async () => {
+  if (!selectedProfileId.value) {
     return;
   }
 
-  try {
-    await navigator.clipboard.writeText(selected.join('\n\n'));
-    console.log('[TopicsGenerator] Copied selected topics to clipboard');
-  } catch (err) {
-    console.error('[TopicsGenerator] Failed to copy:', err);
-  }
-};
-
-/**
- * Handle apply (integrated mode - save to component)
- */
-const handleApply = () => {
-  // In integrated mode, save to component via AISaveBridge
-  if (props.mode === 'integrated' && props.componentId) {
-    try {
-      saveToComponent(props.componentId, 'topics', topics.value);
-      emit('applied', {
-        componentId: props.componentId,
-        topics: topics.value
-      });
-    } catch (err) {
-      console.error('[TopicsGenerator] Failed to save to component:', err);
-    }
-  } else {
-    emit('applied', {
-      componentId: props.componentId,
-      topics: topics.value
-    });
-  }
-};
-
-/**
- * Handle profile selection
- */
-const handleProfileSelect = (profileId) => {
-  selectedProfileId.value = profileId;
-  saveSuccess.value = false;
-};
-
-/**
- * Handle save to profile (standalone mode)
- */
-const handleSaveToProfile = async () => {
-  if (!selectedProfileId.value || !hasTopics.value) return;
-
-  saveSuccess.value = false;
+  const selectedTopicsList = selectedTopics.value.map(idx => {
+    const topic = topics.value[idx];
+    return typeof topic === 'string' ? topic : topic.title || topic;
+  });
 
   try {
-    // Get selected topics with edited titles applied
-    const selectedTopicsList = Array.from(selectedTopics.value)
-      .sort((a, b) => a - b)
-      .map(index => {
-        const topic = topics.value[index];
-        const editedTitle = editedTopics.value.get(index);
-        if (editedTitle) {
-          // Return topic object with edited title
-          if (typeof topic === 'string') {
-            return editedTitle;
-          }
-          return { ...topic, title: editedTitle };
-        }
-        return topic;
-      });
-
-    // Save selected topics
+    // Save topics
     const topicsResult = await saveToProfile('topics', selectedTopicsList, {
       profileId: selectedProfileId.value
     });
 
-    // Save authority hook if checkbox is checked and we have data
-    let authorityHookResult = { success: true, saved: {} };
-    if (saveAuthorityHookToProfile.value && authorityHookSummary.value) {
-      authorityHookResult = await saveToProfile('authority_hook', {
-        who: authorityHook.value.who,
-        what: authorityHook.value.what,
-        when: authorityHook.value.when,
-        how: authorityHook.value.how,
-        summary: authorityHookSummary.value
+    // Save authority hook only if checkbox is checked and we have data
+    let hookResult = { success: true };
+    if (saveAuthorityHook.value && hasAuthorityHookData.value) {
+      hookResult = await saveToProfile('authority_hook', {
+        who: hookWho.value,
+        what: hookWhat.value,
+        when: hookWhen.value,
+        how: hookHow.value,
+        summary: generatedHookSummary.value
       }, {
         profileId: selectedProfileId.value
       });
     }
 
-    if (topicsResult.success) {
+    // Only show success if both operations succeeded
+    if (topicsResult.success && hookResult.success) {
       saveSuccess.value = true;
-
-      // Auto-hide success message after 3 seconds
-      setTimeout(() => {
-        saveSuccess.value = false;
-      }, 3000);
-
+      setTimeout(() => { saveSuccess.value = false; }, 3000);
       emit('saved', {
         profileId: selectedProfileId.value,
         topics: selectedTopicsList,
-        fields: {
-          ...topicsResult.saved,
-          ...(authorityHookResult.saved || {})
-        },
-        authorityHookSaved: saveAuthorityHookToProfile.value && authorityHookResult.success
+        authorityHookSaved: saveAuthorityHook.value && hasAuthorityHookData.value && hookResult.success
       });
     }
   } catch (err) {
-    console.error('[TopicsGenerator] Failed to save to profile:', err);
+    console.error('[Topics Generator] Save failed:', err);
+    // saveError is automatically set by useProfileContext
   }
 };
 
 /**
- * Handle save to profile (embedded mode)
- * Uses injected profile data from EmbeddedToolWrapper
+ * Handle start over - reset and show form
  */
-const handleEmbeddedSave = async () => {
-  const profileId = injectedProfileData.value?.id;
-  if (!profileId || !hasTopics.value || selectedTopics.value.size === 0) return;
-
-  saveSuccess.value = false;
-
-  try {
-    // Get selected topics with edited titles applied
-    const selectedTopicsList = Array.from(selectedTopics.value)
-      .sort((a, b) => a - b)
-      .map(index => {
-        const topic = topics.value[index];
-        const editedTitle = editedTopics.value.get(index);
-        if (editedTitle) {
-          // Return topic object with edited title
-          if (typeof topic === 'string') {
-            return editedTitle;
-          }
-          return { ...topic, title: editedTitle };
-        }
-        return topic;
-      });
-
-    // Save selected topics
-    const topicsResult = await saveToProfile('topics', selectedTopicsList, {
-      profileId
-    });
-
-    // Save authority hook if checkbox is checked and we have data
-    let authorityHookResult = { success: true, saved: {} };
-    if (saveAuthorityHookToProfile.value && authorityHookSummary.value) {
-      authorityHookResult = await saveToProfile('authority_hook', {
-        who: authorityHook.value.who,
-        what: authorityHook.value.what,
-        when: authorityHook.value.when,
-        how: authorityHook.value.how,
-        summary: authorityHookSummary.value
-      }, {
-        profileId
-      });
-    }
-
-    if (topicsResult.success) {
-      saveSuccess.value = true;
-
-      // Auto-hide success message after 3 seconds
-      setTimeout(() => {
-        saveSuccess.value = false;
-      }, 3000);
-
-      emit('saved', {
-        profileId,
-        topics: selectedTopicsList,
-        fields: {
-          ...topicsResult.saved,
-          ...(authorityHookResult.saved || {})
-        },
-        authorityHookSaved: saveAuthorityHookToProfile.value && authorityHookResult.success
-      });
-    }
-  } catch (err) {
-    console.error('[TopicsGenerator] Failed to save to profile (embedded):', err);
+const handleStartOver = () => {
+  selectedTopics.value = [];
+  if (reset) {
+    reset();
   }
 };
 
-/**
- * Sync authority hook from store on mount
- */
-onMounted(() => {
-  syncFromStore();
+// Watch for canGenerate changes
+watch(canGenerate, (newValue) => {
+  emit('update:can-generate', !!newValue);
+}, { immediate: true });
 
-  // Use context profile ID if available and no prop provided
-  if (!selectedProfileId.value && contextProfileId.value) {
-    selectedProfileId.value = contextProfileId.value;
-  }
-});
-
-/**
- * Watch for context profile changes
- */
-watch(contextProfileId, (newVal) => {
-  if (newVal && !selectedProfileId.value) {
-    selectedProfileId.value = newVal;
-  }
-});
-
-/**
- * Watch for injected profile data changes (embedded mode)
- */
+// Watch authority hook changes
 watch(
-  injectedProfileData,
-  (newData) => {
-    if (newData && props.mode === 'embedded') {
-      populateFromProfile(newData);
-    }
-  },
-  { immediate: true }
+  [hookWho, hookWhat, hookWhen, hookHow],
+  () => {
+    emit('authority-hook-update', {
+      who: hookWho.value,
+      what: hookWhat.value,
+      when: hookWhen.value,
+      how: hookHow.value,
+      summary: generatedHookSummary.value
+    });
+  }
 );
 
-/**
- * Current intent (embedded mode)
- */
-const currentIntent = computed(() => props.intent || null);
-
-/**
- * Embedded preview text
- */
-const embeddedPreviewText = computed(() => {
-  if (!authorityHookSummary.value) return null;
-  return `<strong>Podcast topics</strong> based on <strong>${authorityHookSummary.value.substring(0, 50)}...</strong>`;
-});
-
-/**
- * Watch for profileData prop changes (embedded mode)
- */
+// Watch profile data prop
 watch(
   () => props.profileData,
   (newData) => {
-    if (newData && props.mode === 'embedded') {
-      populateFromProfile(newData);
-    }
+    if (newData) populateFromProfile(newData);
   },
   { immediate: true }
 );
 
-/**
- * Watch expertise changes for preview updates (embedded mode)
- */
-watch(
-  () => authorityHookSummary.value,
-  () => {
-    if (props.mode === 'embedded') {
-      emit('preview-update', {
-        previewHtml: embeddedPreviewText.value,
-        fields: { authorityHook: authorityHookSummary.value }
-      });
-    }
-  }
-);
-
-/**
- * Watch canGenerate for validation updates (embedded mode)
- */
-watch(canGenerate, (newValue) => {
-  if (props.mode === 'embedded') {
-    emit('update:can-generate', !!newValue);
-  }
-}, { immediate: true });
-
-/**
- * Watch authority hook changes and emit to parent (embedded mode)
- */
-watch(
-  () => authorityHook.value,
-  (hookData) => {
-    if (props.mode === 'embedded' && hookData) {
-      emit('authority-hook-update', {
-        who: hookData.who || '',
-        what: hookData.what || '',
-        when: hookData.when || '',
-        how: hookData.how || '',
-        summary: authorityHookSummary.value || ''
-      });
-    }
-  },
-  { deep: true, immediate: true }
-);
-
-/**
- * Expose methods for parent component access (embedded mode)
- */
+// Expose for parent
 defineExpose({
-  handleGenerate
+  handleGenerate,
+  topics,
+  hasTopics,
+  isGenerating,
+  error,
+  copyToClipboard
 });
 </script>
 
 <style scoped>
-/* Single Column Layout Override - use :deep to override global styles */
-.topics-generator :deep(.generator__content--single) {
+.gfy-topics-generator {
+  --gfy-primary-color: #2563eb;
+  --gfy-primary-light: #eff6ff;
+  --gfy-primary-dark: #1d4ed8;
+  --gfy-text-primary: #0f172a;
+  --gfy-text-secondary: #64748b;
+  --gfy-text-muted: #94a3b8;
+  --gfy-bg-color: #f8fafc;
+  --gfy-white: #ffffff;
+  --gfy-border-color: #e2e8f0;
+  --gfy-warning-color: #f59e0b;
+  --gfy-success-color: #10b981;
+  --gfy-radius-md: 6px;
+  --gfy-radius-lg: 12px;
+
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* INPUT STYLES */
+.gfy-input-group {
+  margin-bottom: 1.5rem;
+}
+
+.gfy-label {
   display: block;
-  flex-direction: unset;
-  flex-wrap: unset;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--gfy-text-primary);
 }
 
-.topics-generator :deep(.generator__panel--full) {
-  flex: unset;
-  min-width: unset;
-  max-width: 800px;
-  margin: 0 auto;
+.gfy-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-md);
+  font-family: inherit;
+  font-size: 0.95rem;
+  background: var(--gfy-white);
+  box-sizing: border-box;
+  transition: border-color 0.2s;
 }
 
-/* Standalone Mode Styles */
-.generator__section {
-  margin-bottom: var(--mkcg-space-lg, 30px);
+.gfy-textarea:focus {
+  outline: none;
+  border-color: var(--gfy-primary-color);
+  box-shadow: 0 0 0 3px var(--gfy-primary-light);
 }
 
-.generator__section-title {
-  font-size: var(--mkcg-font-size-lg, 18px);
-  font-weight: var(--mkcg-font-weight-semibold, 600);
-  color: var(--mkcg-text-primary, #2c3e50);
-  margin: 0 0 var(--mkcg-space-md, 20px) 0;
+.gfy-textarea::placeholder {
+  color: var(--gfy-text-muted);
 }
 
-.generator__actions {
-  margin-top: var(--mkcg-space-lg, 30px);
+/* AUTHORITY HOOK BLOCK */
+.gfy-authority-hook {
+  background: var(--gfy-white);
+  border: 1px solid var(--gfy-border-color);
+  border-left: 4px solid var(--gfy-primary-color);
+  padding: 1.5rem;
+  border-radius: var(--gfy-radius-md);
+}
+
+.gfy-authority-hook__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.gfy-authority-hook__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gfy-text-primary);
+  margin: 0;
+}
+
+.gfy-authority-hook__icon {
+  color: var(--gfy-warning-color);
+  font-size: 1.2rem;
+}
+
+/* BUILDER GRID */
+.gfy-builder {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.gfy-builder__field {
+  margin-bottom: 0.5rem;
+}
+
+.gfy-builder__label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--gfy-text-secondary);
+  margin-bottom: 0.4rem;
+}
+
+.gfy-builder__input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--gfy-radius-md);
+  font-size: 0.9rem;
+  background: #ffffff;
+  box-sizing: border-box;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.gfy-builder__input:focus {
+  outline: none;
+  border-color: var(--gfy-primary-color);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px var(--gfy-primary-light);
+}
+
+.gfy-builder__input::placeholder {
+  color: var(--gfy-text-muted);
+}
+
+/* LIVE PREVIEW */
+.gfy-live-preview {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--gfy-primary-light);
+  border-radius: var(--gfy-radius-md);
+  border: 1px solid #bfdbfe;
+  color: var(--gfy-primary-dark);
+  font-size: 0.95rem;
+  font-style: italic;
   text-align: center;
 }
 
-.generator__error {
-  margin-top: var(--mkcg-space-md, 20px);
-  padding: var(--mkcg-space-md, 20px);
-  background-color: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: var(--mkcg-radius, 8px);
-  text-align: center;
-}
-
-.generator__error p {
-  color: #991b1b;
-  margin: 0 0 var(--mkcg-space-sm, 12px) 0;
-}
-
-/* ============================================
-   GFY Results Section Styles
-   ============================================ */
-
+/* RESULTS SECTION */
 .gfy-results {
-  margin-top: var(--mkcg-space-xl, 40px);
-  padding: var(--mkcg-space-lg, 30px);
-  background: var(--mkcg-bg-primary, #ffffff);
-  border-radius: var(--mkcg-radius-lg, 12px);
-  border: 1px solid var(--mkcg-border-light, #e9ecef);
+  width: 100%;
 }
 
 .gfy-results__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--mkcg-space-md, 20px);
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--gfy-border-color);
   flex-wrap: wrap;
-  gap: var(--mkcg-space-sm, 12px);
+  gap: 1rem;
 }
 
-.gfy-results__header-left {
+.gfy-results__title-row {
   display: flex;
   align-items: center;
-  gap: var(--mkcg-space-sm, 12px);
+  gap: 0.75rem;
 }
 
 .gfy-results__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--gfy-text-primary);
   margin: 0;
-  font-size: var(--mkcg-font-size-xl, 24px);
-  font-weight: var(--mkcg-font-weight-bold, 700);
-  color: var(--mkcg-text-primary, #2c3e50);
 }
 
-.gfy-results__badge {
-  background: linear-gradient(135deg, var(--mkcg-primary, #1a9bdc), var(--mkcg-primary-dark, #0d8ecf));
-  color: white;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: var(--mkcg-font-size-sm, 14px);
-  font-weight: var(--mkcg-font-weight-semibold, 600);
+.gfy-results__count {
+  background: var(--gfy-primary-light);
+  color: var(--gfy-primary-color);
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
-.gfy-results__header-right {
+.gfy-results__actions {
   display: flex;
   align-items: center;
-  gap: var(--mkcg-space-sm, 12px);
+  gap: 0.75rem;
 }
 
-/* View Toggle */
+/* VIEW TOGGLE */
 .gfy-view-toggle {
   display: flex;
-  background: var(--mkcg-bg-tertiary, #f5f7fa);
-  border-radius: var(--mkcg-radius-sm, 4px);
-  padding: 4px;
+  background: var(--gfy-bg-color, #f8fafc);
+  border: 1px solid var(--gfy-border-color, #e2e8f0);
+  border-radius: var(--gfy-radius-md, 6px);
+  padding: 3px;
 }
 
 .gfy-view-toggle__btn {
-  padding: 8px 12px;
-  border: none;
-  background: transparent;
-  color: var(--mkcg-text-secondary, #5a6d7e);
-  cursor: pointer;
-  border-radius: var(--mkcg-radius-sm, 4px);
-  transition: var(--mkcg-transition-fast, 0.15s ease);
-}
-
-.gfy-view-toggle__btn:hover {
-  color: var(--mkcg-text-primary, #2c3e50);
-}
-
-.gfy-view-toggle__btn.is-active {
-  background: var(--mkcg-bg-primary, #ffffff);
-  color: var(--mkcg-primary, #1a9bdc);
-  box-shadow: var(--mkcg-shadow-sm, 0 2px 4px rgba(0,0,0,0.05));
-}
-
-/* Buttons */
-.gfy-btn {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: transparent;
   border: none;
-  border-radius: var(--mkcg-radius, 8px);
-  font-size: var(--mkcg-font-size-sm, 14px);
-  font-weight: var(--mkcg-font-weight-medium, 500);
+  border-radius: 5px;
   cursor: pointer;
-  transition: var(--mkcg-transition-fast, 0.15s ease);
-  font-family: inherit;
+  color: var(--gfy-text-muted, #94a3b8);
+  transition: all 0.15s ease;
 }
 
-.gfy-btn-secondary {
-  background: var(--mkcg-bg-tertiary, #f5f7fa);
-  color: var(--mkcg-text-primary, #2c3e50);
-  border: 1px solid var(--mkcg-border-medium, #dce1e5);
-}
-
-.gfy-btn-secondary:hover {
-  background: var(--mkcg-bg-quaternary, #edf2f7);
-}
-
-.gfy-btn-success {
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white;
-}
-
-.gfy-btn-success:hover:not(:disabled) {
-  background: linear-gradient(135deg, #059669, #047857);
-  transform: translateY(-1px);
-}
-
-.gfy-btn-success:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* Button Loading Spinner */
-.gfy-btn__spinner {
+.gfy-view-toggle__btn svg {
   width: 16px;
   height: 16px;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
-  border-radius: 50%;
-  animation: gfy-spin 0.75s linear infinite;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
 }
 
-.gfy-btn.is-loading {
-  pointer-events: none;
+.gfy-view-toggle__btn:hover:not(.gfy-view-toggle__btn--active) {
+  color: var(--gfy-text-secondary, #64748b);
+  background: rgba(0, 0, 0, 0.04);
 }
 
-@keyframes gfy-spin {
-  to { transform: rotate(360deg); }
+.gfy-view-toggle__btn--active {
+  background: var(--gfy-white, #ffffff);
+  color: var(--gfy-primary-color, #2563eb);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
-/* Selection Banner */
+/* SELECTION BANNER */
 .gfy-selection-banner {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--mkcg-space-md, 20px);
-  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-  border: 1px solid #bae6fd;
-  border-radius: var(--mkcg-radius, 8px);
-  margin-bottom: var(--mkcg-space-md, 20px);
-  flex-wrap: wrap;
-  gap: var(--mkcg-space-sm, 12px);
+  background: var(--gfy-primary-light);
+  border: 1px solid #bfdbfe;
+  border-radius: var(--gfy-radius-md);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
 }
 
 .gfy-selection-banner__text {
-  display: flex;
-  align-items: center;
-  gap: var(--mkcg-space-sm, 12px);
-}
-
-.gfy-selection-banner__icon {
-  width: 40px;
-  height: 40px;
-  background: var(--mkcg-primary, #1a9bdc);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 18px;
-}
-
-.gfy-selection-banner__label {
-  font-size: var(--mkcg-font-size-sm, 14px);
-  color: var(--mkcg-text-primary, #2c3e50);
+  font-size: 0.9rem;
+  color: var(--gfy-text-secondary);
 }
 
 .gfy-selection-banner__count {
-  font-weight: var(--mkcg-font-weight-bold, 700);
-  color: var(--mkcg-primary, #1a9bdc);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--gfy-primary-color);
 }
 
-/* Authority Hook Checkbox */
-.gfy-authority-hook-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: var(--mkcg-space-md, 20px);
-  font-size: var(--mkcg-font-size-sm, 14px);
-  color: var(--mkcg-text-secondary, #5a6d7e);
-  cursor: pointer;
-}
-
-.gfy-authority-hook-checkbox:hover {
-  color: var(--mkcg-text-primary, #2c3e50);
-}
-
-.gfy-authority-hook-checkbox input {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--mkcg-primary, #1a9bdc);
-  cursor: pointer;
-}
-
-/* Topics Container */
-.gfy-topics {
-  margin-bottom: var(--mkcg-space-lg, 30px);
-}
-
-.gfy-topics--grid {
+/* TOPICS GRID - exactly 2 columns on desktop */
+.gfy-topics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--mkcg-space-md, 20px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
 }
 
-.gfy-topics--list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--mkcg-space-sm, 12px);
-}
-
-/* Topic Card */
 .gfy-topic-card {
-  background: var(--mkcg-bg-primary, #ffffff);
-  border: 2px solid var(--mkcg-border-light, #e9ecef);
-  border-radius: var(--mkcg-radius, 8px);
-  padding: var(--mkcg-space-md, 20px);
-  cursor: pointer;
-  transition: var(--mkcg-transition-fast, 0.15s ease);
-  position: relative;
-}
-
-.gfy-topic-card:hover {
-  border-color: var(--mkcg-primary, #1a9bdc);
-  box-shadow: 0 4px 12px rgba(26, 155, 220, 0.15);
-  transform: translateY(-2px);
-}
-
-.gfy-topic-card.is-selected {
-  border-color: var(--mkcg-primary, #1a9bdc);
-  background: rgba(26, 155, 220, 0.05);
-}
-
-.gfy-topic-card.is-selected .gfy-topic-card__checkbox {
-  opacity: 1;
-  background: var(--mkcg-primary, #1a9bdc);
-  color: white;
-}
-
-.gfy-topic-card__header {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: var(--mkcg-space-sm, 12px);
-}
-
-.gfy-topic-card__number {
-  width: 28px;
-  height: 28px;
-  background: var(--mkcg-bg-tertiary, #f5f7fa);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--mkcg-font-size-sm, 14px);
-  font-weight: var(--mkcg-font-weight-bold, 700);
-  color: var(--mkcg-text-secondary, #5a6d7e);
-}
-
-.gfy-topic-card__checkbox {
-  width: 24px;
-  height: 24px;
-  border: 2px solid var(--mkcg-border-medium, #dce1e5);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  opacity: 0.5;
-  transition: var(--mkcg-transition-fast, 0.15s ease);
-}
-
-.gfy-topic-card:hover .gfy-topic-card__checkbox {
-  opacity: 1;
-  border-color: var(--mkcg-primary, #1a9bdc);
-}
-
-/* Topic Card Actions (edit button + checkbox) */
-.gfy-topic-card__actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Edited Badge */
-.gfy-topic-card__edited-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: white;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-radius: 10px;
-}
-
-.gfy-topic-card__edit-btn {
-  width: 28px;
-  height: 28px;
-  border: none;
-  background: var(--mkcg-bg-tertiary, #f5f7fa);
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  opacity: 0.6;
-  transition: var(--mkcg-transition-fast, 0.15s ease);
-  color: var(--mkcg-text-secondary, #5a6d7e);
-}
-
-.gfy-topic-card:hover .gfy-topic-card__edit-btn,
-.gfy-topic-card__edit-btn:focus {
-  opacity: 1;
-}
-
-.gfy-topic-card__edit-btn:hover {
-  background: var(--mkcg-primary, #1a9bdc);
-  color: white;
-}
-
-/* Topic Card Editing State */
-.gfy-topic-card.is-editing {
-  cursor: default;
-  border-color: var(--mkcg-primary, #1a9bdc);
-  box-shadow: 0 4px 12px rgba(26, 155, 220, 0.2);
-}
-
-.gfy-topic-card.is-editing:hover {
-  transform: none;
-}
-
-.gfy-topic-card__edit-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.gfy-topic-card__edit-input {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid var(--mkcg-border, #e2e8f0);
-  border-radius: 6px;
-  font-size: var(--mkcg-font-size-md, 16px);
-  font-family: inherit;
-  line-height: var(--mkcg-line-height-relaxed, 1.6);
-  resize: vertical;
-  min-height: 60px;
-}
-
-.gfy-topic-card__edit-input:focus {
-  outline: none;
-  border-color: var(--mkcg-primary, #1a9bdc);
-  box-shadow: 0 0 0 3px rgba(26, 155, 220, 0.1);
-}
-
-.gfy-topic-card__edit-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-}
-
-/* Small button variant */
-.gfy-btn-sm {
-  padding: 6px 12px;
-  font-size: 13px;
-}
-
-.gfy-topic-card__body {
-  /* Body styling */
-}
-
-.gfy-topic-card__category {
-  display: inline-block;
-  background: var(--mkcg-bg-tertiary, #f5f7fa);
-  color: var(--mkcg-text-secondary, #5a6d7e);
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: var(--mkcg-font-size-xs, 12px);
-  font-weight: var(--mkcg-font-weight-medium, 500);
-  margin-bottom: var(--mkcg-space-xs, 8px);
-  text-transform: capitalize;
-}
-
-.gfy-topic-card__title {
-  margin: 0;
-  font-size: var(--mkcg-font-size-md, 16px);
-  font-weight: var(--mkcg-font-weight-semibold, 600);
-  color: var(--mkcg-text-primary, #2c3e50);
-  line-height: var(--mkcg-line-height-relaxed, 1.6);
-}
-
-/* Status Messages */
-.gfy-status-message {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: var(--mkcg-space-sm, 12px) var(--mkcg-space-md, 20px);
-  border-radius: var(--mkcg-radius, 8px);
-  font-size: var(--mkcg-font-size-sm, 14px);
-  margin-bottom: var(--mkcg-space-md, 20px);
-}
-
-.gfy-status-message--info {
-  background: #f0f9ff;
-  color: #0369a1;
-  border: 1px solid #bae6fd;
-}
-
-.gfy-status-message--success {
-  background: #f0fdf4;
-  color: #15803d;
-  border: 1px solid #bbf7d0;
-}
-
-.gfy-status-message--error {
-  background: #fef2f2;
-  color: #b91c1c;
-  border: 1px solid #fecaca;
-}
-
-/* Testimonial */
-.gfy-testimonial {
-  background: var(--mkcg-bg-secondary, #f9fafb);
-  border-radius: var(--mkcg-radius, 8px);
-  padding: var(--mkcg-space-lg, 30px);
-  text-align: center;
-  margin-top: var(--mkcg-space-lg, 30px);
-}
-
-.gfy-testimonial__stars {
-  color: #fbbf24;
-  font-size: 20px;
-  margin-bottom: var(--mkcg-space-sm, 12px);
-}
-
-.gfy-testimonial__stars i {
-  margin: 0 2px;
-}
-
-.gfy-testimonial__quote {
-  font-size: var(--mkcg-font-size-lg, 18px);
-  font-style: italic;
-  color: var(--mkcg-text-primary, #2c3e50);
-  margin: 0 0 var(--mkcg-space-sm, 12px) 0;
-  line-height: var(--mkcg-line-height-relaxed, 1.6);
-}
-
-.gfy-testimonial__author {
-  font-size: var(--mkcg-font-size-sm, 14px);
-  color: var(--mkcg-text-secondary, #5a6d7e);
-  font-weight: var(--mkcg-font-weight-medium, 500);
-  margin: 0;
-}
-
-/* Integrated Mode Styles (kept from original) */
-.gmkb-ai-profile-selector {
-  margin-bottom: 20px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.gmkb-ai-save-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #e2e8f0;
-  flex-wrap: wrap;
-}
-
-.gmkb-ai-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  font-size: 14px;
-  font-weight: 600;
-  border: none;
-  border-radius: 8px;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--gfy-white);
+  border: 2px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-md);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.gmkb-ai-btn--primary {
-  color: white;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
+.gfy-topic-card:hover {
+  border-color: var(--gfy-primary-color);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
 }
 
-.gmkb-ai-btn--primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-  transform: translateY(-1px);
+.gfy-topic-card--selected {
+  border-color: var(--gfy-primary-color);
+  background: var(--gfy-primary-light);
 }
 
-.gmkb-ai-btn--primary:disabled {
+.gfy-topic-card__number {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  background: var(--gfy-bg-color);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--gfy-text-secondary);
+}
+
+.gfy-topic-card--selected .gfy-topic-card__number {
+  background: var(--gfy-primary-color);
+  color: var(--gfy-white);
+}
+
+.gfy-topic-card__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.gfy-topic-card__category {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--gfy-primary-color);
+  background: var(--gfy-primary-light);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 0.4rem;
+}
+
+.gfy-topic-card__title {
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--gfy-text-primary);
+  margin: 0;
+}
+
+.gfy-topic-card__checkbox {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--gfy-border-color);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gfy-white);
+}
+
+.gfy-topic-card--selected .gfy-topic-card__checkbox {
+  background: var(--gfy-primary-color);
+  border-color: var(--gfy-primary-color);
+  color: var(--gfy-white);
+}
+
+/* TOPICS LIST VIEW */
+.gfy-topics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.gfy-topic-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: var(--gfy-white);
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gfy-topic-row:hover {
+  border-color: var(--gfy-primary-color);
+  background: var(--gfy-bg-color);
+}
+
+.gfy-topic-row--selected {
+  border-color: var(--gfy-primary-color);
+  background: var(--gfy-primary-light);
+}
+
+.gfy-topic-row__checkbox {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--gfy-border-color);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gfy-white);
+}
+
+.gfy-topic-row--selected .gfy-topic-row__checkbox {
+  background: var(--gfy-primary-color);
+  border-color: var(--gfy-primary-color);
+  color: var(--gfy-white);
+}
+
+.gfy-topic-row__number {
+  flex-shrink: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--gfy-text-secondary);
+  min-width: 24px;
+}
+
+.gfy-topic-row__title {
+  flex: 1;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--gfy-text-primary);
+  margin: 0;
+}
+
+/* BUTTONS */
+.gfy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: var(--gfy-radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+  white-space: nowrap;
+}
+
+.gfy-btn svg {
+  flex-shrink: 0;
+}
+
+.gfy-btn--outline {
+  background: var(--gfy-white);
+  border: 1px solid var(--gfy-border-color);
+  color: var(--gfy-text-secondary);
+}
+
+.gfy-btn--outline:hover {
+  border-color: var(--gfy-primary-color);
+  color: var(--gfy-primary-color);
+  background: var(--gfy-primary-light);
+}
+
+.gfy-btn--primary {
+  background: var(--gfy-primary-color);
+  color: var(--gfy-white);
+}
+
+.gfy-btn--primary:hover:not(:disabled) {
+  background: var(--gfy-primary-dark);
+}
+
+.gfy-btn--primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.gmkb-ai-btn__spinner {
+.gfy-btn--large {
+  padding: 0.875rem 1.5rem;
+  font-size: 1rem;
+}
+
+.gfy-btn--text {
+  background: transparent;
+  color: var(--gfy-text-secondary);
+  padding: 0.6rem 1rem;
+}
+
+.gfy-btn--text:hover {
+  color: var(--gfy-text-primary);
+}
+
+/* RESULTS FOOTER */
+.gfy-results__footer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gfy-border-color);
+}
+
+/* CHECKBOX OPTION */
+.gfy-checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.gfy-checkbox-option__input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.gfy-checkbox-option__box {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--gfy-border-color);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gfy-white);
+  transition: all 0.15s ease;
+}
+
+.gfy-checkbox-option__input:checked + .gfy-checkbox-option__box {
+  background: var(--gfy-primary-color);
+  border-color: var(--gfy-primary-color);
+  color: var(--gfy-white);
+}
+
+.gfy-checkbox-option__input:focus + .gfy-checkbox-option__box {
+  box-shadow: 0 0 0 3px var(--gfy-primary-light);
+}
+
+.gfy-checkbox-option__label {
+  font-size: 0.9rem;
+  color: var(--gfy-text-secondary);
+}
+
+.gfy-save-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.gfy-save-success {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--gfy-success-color);
+}
+
+.gfy-save-error {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #dc2626;
+}
+
+.gfy-spinner {
+  display: inline-block;
   width: 16px;
   height: 16px;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;
-  animation: spin 0.75s linear infinite;
+  border-top-color: #fff;
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-.gmkb-ai-save-hint {
-  font-size: 13px;
-  color: #64748b;
-  font-style: italic;
-}
-
-.gmkb-ai-save-success {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #10b981;
-}
-
-/* Embedded Mode Styles (for landing page) */
-.gmkb-embedded-form { width: 100%; }
-.gmkb-embedded-fields { display: flex; flex-direction: column; gap: 20px; }
-.gmkb-embedded-field { display: flex; flex-direction: column; }
-.gmkb-embedded-label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 8px; color: var(--mkcg-text-primary, #0f172a); }
-.gmkb-embedded-input { width: 100%; padding: 14px; border: 1px solid var(--mkcg-border, #e2e8f0); border-radius: 8px; background: var(--mkcg-bg-secondary, #f9fafb); box-sizing: border-box; font-size: 15px; font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s; }
-.gmkb-embedded-input:focus { outline: none; border-color: var(--mkcg-primary, #3b82f6); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-.gmkb-embedded-input::placeholder { color: var(--mkcg-text-light, #94a3b8); }
-.gmkb-embedded-textarea { resize: vertical; min-height: 80px; }
-.gmkb-embedded-error { margin-top: 16px; padding: 12px 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #991b1b; font-size: 14px; }
-
-/* Compact Controls (shown after generation) */
-.gfy-compact-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 0;
-  flex-wrap: wrap;
-}
-
-.gfy-compact-input-wrapper {
-  flex: 1;
-  min-width: 200px;
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.gfy-compact-input-wrapper svg {
-  position: absolute;
-  left: 14px;
-  color: var(--mkcg-text-light, #94a3b8);
-  pointer-events: none;
-}
-
-.gfy-compact-input {
-  width: 100%;
-  padding: 12px 14px 12px 40px;
-  border: 1px solid var(--mkcg-border, #e2e8f0);
-  border-radius: 8px;
-  font-size: 14px;
-  background: var(--mkcg-bg-secondary, #f9fafb);
-  color: var(--mkcg-text-primary, #2c3e50);
-  font-family: inherit;
-}
-
-.gfy-compact-input:focus {
-  outline: none;
-  border-color: var(--mkcg-primary, #3b82f6);
-}
-
-/* Topic Card Disabled State */
-.gfy-topic-card.is-disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  pointer-events: none;
-}
-
-.gfy-topic-card.is-disabled:hover {
-  transform: none;
-  border-color: var(--mkcg-border-light, #e9ecef);
-  box-shadow: none;
-}
-
-/* Embedded Results Section - full width outside form container */
-.gfy-results--embedded {
-  margin-top: 30px;
-  padding: 30px 40px 40px;
-  background: var(--mkcg-bg-secondary, #f9fafb);
-  border-top: 1px solid var(--mkcg-border, #e2e8f0);
-  /* Break out of .tool-context padding to fill full width */
-  margin-left: -40px;
-  margin-right: -40px;
-  width: calc(100% + 80px);
-  box-sizing: border-box;
-  max-width: none;
-}
-
-/* Embedded form with results state */
-.gmkb-embedded-form.has-results {
-  margin-bottom: 0;
-}
-
-/* Responsive */
+/* RESPONSIVE */
 @media (max-width: 768px) {
+  .gfy-builder {
+    grid-template-columns: 1fr;
+  }
+
+  .gfy-topics-grid {
+    grid-template-columns: 1fr;
+  }
+
   .gfy-results__header {
     flex-direction: column;
     align-items: flex-start;
@@ -1807,26 +1058,8 @@ defineExpose({
 
   .gfy-selection-banner {
     flex-direction: column;
-    text-align: center;
+    align-items: flex-start;
+    gap: 0.5rem;
   }
-
-  .gfy-selection-banner__text {
-    flex-direction: column;
-  }
-
-  .gfy-topics--grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>
-
-<!-- Non-scoped styles to affect parent containers -->
-<style>
-/* Override tool-context max-width when topics results are shown */
-/* Use !important to override scoped styles from EmbeddedToolWrapper */
-.gmkb-tool-stage--single .tool-context:has(.gfy-results--embedded) {
-  max-width: none !important;
-  padding-left: 40px !important;
-  padding-right: 40px !important;
 }
 </style>

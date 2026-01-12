@@ -7,8 +7,8 @@
       @profile-cleared="handleProfileCleared"
     />
 
-    <!-- Intent Tabs -->
-    <div v-if="intents && intents.length > 0" class="gmkb-intent-tabs" role="tablist">
+    <!-- Intent Tabs (hidden when showing results in single column mode) -->
+    <div v-if="intents && intents.length > 0 && !(singleColumn && hasGenerated)" class="gmkb-intent-tabs" role="tablist">
       <button
         v-for="intent in intents"
         :key="intent.id"
@@ -26,9 +26,11 @@
     <div class="gmkb-tool-stage" :class="{ 'has-generated': hasGenerated, 'gmkb-tool-stage--single': singleColumn }">
       <!-- Left: Context & Form -->
       <div class="tool-context">
-        <!-- Dynamic Context Header -->
-        <h3 class="tool-context__heading">{{ currentIntent?.contextHeading || defaultHeading }}</h3>
-        <p class="tool-context__description">{{ currentIntent?.contextDescription || defaultDescription }}</p>
+        <!-- Dynamic Context Header (hidden in single column mode when results showing) -->
+        <template v-if="!(singleColumn && hasGenerated)">
+          <h3 class="tool-context__heading">{{ currentIntent?.contextHeading || defaultHeading }}</h3>
+          <p class="tool-context__description">{{ currentIntent?.contextDescription || defaultDescription }}</p>
+        </template>
 
         <!-- Generator Form Slot -->
         <div class="tool-context__form">
@@ -42,35 +44,37 @@
           ></slot>
         </div>
 
-        <!-- Generate Action -->
-        <div class="tool-context__actions">
-          <button
-            class="gmkb-btn-generate"
-            type="button"
-            :disabled="isGenerating || !canGenerate"
-            @click="handleGenerate"
-          >
-            <span v-if="!isGenerating" class="gmkb-btn-icon">✨</span>
-            <span v-if="isGenerating" class="gmkb-btn-spinner"></span>
-            {{ isGenerating ? generatingText : generateButtonText }}
-          </button>
-        </div>
+        <!-- Generate Action (hidden in single column mode when results showing) -->
+        <template v-if="!(singleColumn && hasGenerated)">
+          <div class="tool-context__actions">
+            <button
+              class="gmkb-btn-generate"
+              type="button"
+              :disabled="isGenerating || !canGenerate"
+              @click="handleGenerate"
+            >
+              <span v-if="!isGenerating" class="gmkb-btn-icon">✨</span>
+              <span v-if="isGenerating" class="gmkb-btn-spinner"></span>
+              {{ isGenerating ? generatingText : generateButtonText }}
+            </button>
+          </div>
 
-        <!-- Rate Limit / Progressive Friction (guests only) -->
-        <p v-if="!isLoggedIn" class="tool-context__limit-text">
-          <span v-if="generationCount < 3">
-            {{ remainingGenerations }} free generation{{ remainingGenerations !== 1 ? 's' : '' }} remaining today.
-          </span>
-          <span v-else class="limit-reached">
-            ⚡ Daily limit reached.
-          </span>
-          <br />
-          <strong>{{ upgradeText }}</strong>
-        </p>
-        <!-- Logged-in users get unlimited -->
-        <p v-else class="tool-context__limit-text tool-context__limit-text--unlimited">
-          <span>✓ Unlimited generations with your account</span>
-        </p>
+          <!-- Rate Limit / Progressive Friction (guests only) -->
+          <p v-if="!isLoggedIn" class="tool-context__limit-text">
+            <span v-if="generationCount < 3">
+              {{ remainingGenerations }} free generation{{ remainingGenerations !== 1 ? 's' : '' }} remaining today.
+            </span>
+            <span v-else class="limit-reached">
+              ⚡ Daily limit reached.
+            </span>
+            <br />
+            <strong>{{ upgradeText }}</strong>
+          </p>
+          <!-- Logged-in users get unlimited -->
+          <p v-else class="tool-context__limit-text tool-context__limit-text--unlimited">
+            <span>✓ Unlimited generations with your account</span>
+          </p>
+        </template>
       </div>
 
       <!-- Right: Preview Area (hidden in single column mode) -->
@@ -783,6 +787,13 @@ watch(() => props.isGenerating, (newVal, oldVal) => {
     hasGenerated.value = true;
   }
 });
+
+// Also watch previewContent directly - handles timing issues where content arrives after isGenerating changes
+watch(() => props.previewContent, (newVal) => {
+  if (newVal && !props.isGenerating && !hasGenerated.value) {
+    hasGenerated.value = true;
+  }
+});
 </script>
 
 <style scoped>
@@ -793,7 +804,7 @@ watch(() => props.isGenerating, (newVal, oldVal) => {
   border: 1px solid var(--mkcg-border, #e2e8f0);
   overflow: hidden;
   text-align: left;
-  max-width: 960px;
+  width: 100%;
   margin: 0 auto;
   box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 }
@@ -835,27 +846,27 @@ watch(() => props.isGenerating, (newVal, oldVal) => {
   position: relative;
 }
 
-/* Tool Stage (2-column) */
+/* Tool Stage - Base */
 .gmkb-tool-stage {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
   min-height: 450px;
 }
 
-/* Keep consistent layout after generation - no column collapse */
-.gmkb-tool-stage.has-generated {
+/* Two-column mode (default) */
+.gmkb-tool-stage:not(.gmkb-tool-stage--single) {
   grid-template-columns: 1.2fr 0.8fr;
 }
 
-/* Single column mode - full width form, no preview */
-.gmkb-tool-stage--single {
+/* Single column mode - use double class selector for equal specificity with :not() rule */
+.gmkb-tool-stage.gmkb-tool-stage--single {
   grid-template-columns: 1fr;
 }
 
-.gmkb-tool-stage--single .tool-context {
+.gmkb-tool-stage.gmkb-tool-stage--single .tool-context {
   border-right: none;
-  max-width: 700px;
-  margin: 0 auto;
+  max-width: none;
+  width: 100%;
+  margin: 0;
 }
 
 /* Left Column: Context & Form */

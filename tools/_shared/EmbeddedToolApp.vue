@@ -68,6 +68,7 @@ const currentIntent = ref(props.intents[0] || null);
 const previewContent = ref('');
 const isGenerating = ref(false);
 const canGenerate = ref(false);
+const hasGenerated = ref(false);
 const generator = ref(null);
 const authorityHookData = ref(null);
 
@@ -112,17 +113,24 @@ function handleGenerate() {
 }
 
 function handleGenerated(data) {
-  isGenerating.value = false;
+  hasGenerated.value = true;
 
-  // Update preview content based on generated data
+  // Update preview content based on generated data BEFORE setting isGenerating = false
+  // (so the wrapper's watcher sees previewContent when checking)
   if (data) {
     // Escape HTML to prevent XSS from AI-generated content
-    const escapeHtml = (unsafe) => unsafe
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+    const escapeHtml = (unsafe) => {
+      if (typeof unsafe !== 'string') {
+        // Handle objects (topics come as { title: "..." })
+        unsafe = unsafe?.title || String(unsafe);
+      }
+      return unsafe
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
 
     // Format array items as numbered HTML list
     const formatArrayToHtmlList = (arr) =>
@@ -143,6 +151,10 @@ function handleGenerated(data) {
       previewContent.value = formatArrayToHtmlList(data.questions);
     }
   }
+
+  // Set isGenerating = false AFTER previewContent is set
+  // This ensures the wrapper's watcher sees the new previewContent
+  isGenerating.value = false;
 
   emit('generated', data);
 }

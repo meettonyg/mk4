@@ -409,6 +409,12 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-frontend-display.php'
     require_once GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-frontend-display.php';
 }
 
+// AGENCY INTEGRATION: Guestify Core multi-tenant agency management
+// Bridges Media Kit Builder with agency scoping for profiles and media kits
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-agency-bridge.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-agency-bridge.php';
+}
+
 // ADMIN TOOLS: Load essential admin functionality only
 if (is_admin()) {
     // ROOT FIX: Load comprehensive diagnostic tool

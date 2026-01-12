@@ -417,7 +417,8 @@ class GMKB_AI_Service {
                 return $this->format_biography_response($content, $params);
 
             case 'topics':
-                return $this->format_list_response($content, 5);
+                $count = isset($params['count']) ? intval($params['count']) : 10;
+                return $this->format_topics_response($content, $count);
 
             case 'questions':
                 return $this->format_list_response($content, 25);
@@ -467,6 +468,54 @@ class GMKB_AI_Service {
         }
 
         return $biographies;
+    }
+
+    /**
+     * Format topics response - extracts SHORT titles only
+     *
+     * @param string $content Raw content
+     * @param int $expected_count Expected number of items
+     * @return array Topic items as objects with title property
+     */
+    private function format_topics_response($content, $expected_count = 10) {
+        $topics = array();
+        $lines = explode("\n", trim($content));
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line)) continue;
+
+            // Match numbered format: "1.", "1)", "1:" etc.
+            if (preg_match('/^\d+[\.\)\:]\s*(.+)/', $line, $matches)) {
+                $title = trim($matches[1]);
+
+                // Clean up the title
+                // Remove markdown bold/italic markers
+                $title = preg_replace('/\*+/', '', $title);
+                // Remove leading/trailing quotes
+                $title = preg_replace('/^["\'"]+|["\'"]+$/', '', $title);
+                // Remove any description after " - " or " – " or ":"
+                $title = preg_replace('/\s*[-–:]\s+[A-Z].*$/', '', $title);
+                // Remove anything in parentheses at the end that looks like a description
+                $title = preg_replace('/\s*\([^)]{30,}\)\s*$/', '', $title);
+                // Trim again
+                $title = trim($title, " \t\n\r\0\x0B\"'");
+
+                if (!empty($title) && strlen($title) > 5) {
+                    $topics[] = array(
+                        'title' => $title,
+                        'category' => 'Topic'
+                    );
+                }
+            }
+
+            // Stop if we have enough
+            if (count($topics) >= $expected_count) {
+                break;
+            }
+        }
+
+        return $topics;
     }
 
     /**
