@@ -1,4 +1,5 @@
 {
+  "published": false,
   "id": "podcast-details-extractor",
   "name": "Podcast Details Extractor",
   "version": "2.0.0",
