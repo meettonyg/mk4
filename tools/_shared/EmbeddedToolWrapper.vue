@@ -846,25 +846,22 @@ watch(() => props.previewContent, (newVal) => {
   position: relative;
 }
 
-/* Tool Stage (2-column) */
+/* Tool Stage - Base */
 .gmkb-tool-stage {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
   min-height: 450px;
 }
 
-/* Keep consistent layout after generation - no column collapse */
-.gmkb-tool-stage.has-generated {
+/* Two-column mode (default) */
+.gmkb-tool-stage:not(.gmkb-tool-stage--single) {
   grid-template-columns: 1.2fr 0.8fr;
 }
 
-/* Single column mode - ALWAYS 1fr regardless of has-generated state */
-.gmkb-tool-stage--single,
-.gmkb-tool-stage--single.has-generated {
+/* Single column mode - completely separate from two-column logic */
+.gmkb-tool-stage--single {
   grid-template-columns: 1fr;
 }
 
-/* Remove width cap - let content fill container */
 .gmkb-tool-stage--single .tool-context {
   border-right: none;
   max-width: none;
