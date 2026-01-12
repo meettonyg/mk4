@@ -397,17 +397,13 @@ const handleCopyAll = async () => {
  * Handle save to media kit - saves topics and optionally authority hook
  */
 const handleSaveToMediaKit = async () => {
-  if (!selectedProfileId.value) {
-    return;
-  }
-
   const selectedTopicsList = selectedTopics.value.map(idx => {
     const topic = topics.value[idx];
     return typeof topic === 'string' ? topic : topic.title || topic;
   });
 
   try {
-    // Save topics
+    // Save topics - saveToProfile will throw if no profile ID
     const topicsResult = await saveToProfile('topics', selectedTopicsList, {
       profileId: selectedProfileId.value
     });

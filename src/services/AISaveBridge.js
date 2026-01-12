@@ -402,7 +402,7 @@ class AISaveBridge {
           'X-WP-Nonce': window.gmkbData?.nonce || window.wpApiSettings?.nonce || ''
         },
         credentials: 'same-origin',
-        body: JSON.stringify({ fields })
+        body: JSON.stringify(fields)
       });
 
       if (!response.ok) {
