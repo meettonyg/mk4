@@ -25,7 +25,7 @@
     <!-- Tool Stage (2-column layout, or single column if singleColumn prop is true) -->
     <div class="gmkb-tool-stage" :class="{ 'has-generated': hasGenerated, 'gmkb-tool-stage--single': singleColumn }">
       <!-- Left: Context & Form -->
-      <div class="tool-context" :class="{ 'tool-context--expanded': singleColumn && hasGenerated }">
+      <div class="tool-context">
         <!-- Dynamic Context Header (hidden in single column mode when results showing) -->
         <template v-if="!(singleColumn && hasGenerated)">
           <h3 class="tool-context__heading">{{ currentIntent?.contextHeading || defaultHeading }}</h3>
@@ -868,18 +868,12 @@ watch(() => props.previewContent, (newVal) => {
   grid-template-columns: 1fr;
 }
 
+/* Remove width cap - let content fill container */
 .gmkb-tool-stage--single .tool-context {
   border-right: none;
-  max-width: 700px;
-  margin: 0 auto;
-}
-
-/* Expanded state - when results are shown in single column mode */
-.tool-context--expanded {
   max-width: none;
   width: 100%;
   margin: 0;
-  border-right: none;
 }
 
 /* Left Column: Context & Form */

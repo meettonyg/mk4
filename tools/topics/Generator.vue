@@ -717,10 +717,10 @@ defineExpose({
   color: var(--gfy-primary-color);
 }
 
-/* TOPICS GRID - responsive auto-fill for wider screens */
+/* TOPICS GRID - exactly 2 columns on desktop */
 .gfy-topics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
   margin-bottom: 1.5rem;
 }
