@@ -98,7 +98,7 @@ function loadTools() {
             const toolConfig = toolsConfigModules[toolConfigPath]?.default || toolsConfigModules[toolConfigPath] || {};
 
             // Default published to true if not specified
-            const isPublished = toolConfig.published !== undefined ? toolConfig.published : true;
+            const isPublished = toolConfig.published ?? true;
 
             toolsMap.set(slug, {
                 ...meta,
@@ -304,7 +304,7 @@ const ToolRegistry = {
      * @returns {number} Total number of published tools
      */
     getToolCount() {
-        return allTools.filter((tool) => tool.published !== false).length;
+        return this.getAllTools().length;
     },
 
     /**

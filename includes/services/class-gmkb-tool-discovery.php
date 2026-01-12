@@ -202,20 +202,8 @@ class GMKB_Tool_Discovery {
      * @return bool True if the tool is published, false otherwise
      */
     public function is_tool_published($tool_id) {
-        $tools = $this->discover_tools();
-
-        // Direct ID lookup
-        if (isset($tools[$tool_id])) {
-            return !empty($tools[$tool_id]['published']);
-        }
-
-        // Directory name fallback
-        if (isset($this->dir_to_id_map[$tool_id])) {
-            $canonical_id = $this->dir_to_id_map[$tool_id];
-            return isset($tools[$canonical_id]) && !empty($tools[$canonical_id]['published']);
-        }
-
-        return false;
+        $tool = $this->get_tool($tool_id);
+        return $tool ? !empty($tool['published']) : false;
     }
 
     /**
