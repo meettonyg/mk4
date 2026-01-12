@@ -701,7 +701,11 @@ defineExpose({
   height: 16px;
   stroke: currentColor;
   stroke-width: 2;
-  fill: none;
+}
+
+.gfy-view-toggle__btn svg circle {
+  fill: currentColor;
+  stroke: none;
 }
 
 .gfy-view-toggle__btn:hover:not(.gfy-view-toggle__btn--active) {
