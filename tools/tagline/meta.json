@@ -53,6 +53,8 @@
     "canonicalPath": "/tools/tagline-generator/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Tagline",
+    "guidanceSubtitle": "Your tagline distills your expertise into a memorable phrase that sticks with audiences. A great tagline communicates who you help, what you do, and why you're uniquely qualified.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Tagline Generator",
@@ -141,7 +143,7 @@
       "content": "A tagline is a short, memorable phrase that captures the essence of your brand, product, or message. The best taglines are under 10 words, focus on transformation rather than features, and use language your audience immediately understands."
     },
     "formulaLabel": "TAGLINE FORMULA",
-    "formula": "**[WHO you help]** + **[WHAT you do]** + **[HOW you're unique]**",
+    "formula": "[WHO you help] + [WHAT you do] + [HOW you're unique]",
     "tips": [
       "Keep it short - the best taglines are under 10 words",
       "Focus on transformation, not features - what changes for your client?",
@@ -169,20 +171,20 @@
     "howItWorks": [
       {
         "step": 1,
-        "title": "Describe Your Offering",
-        "description": "Enter what you do and who you help.",
+        "title": "Define Your Value",
+        "description": "Share who you help and the transformation you deliver. Your Authority Hook is the perfect starting point for a memorable tagline.",
         "icon": "PencilSquareIcon"
       },
       {
         "step": 2,
-        "title": "Choose Your Style",
-        "description": "Select benefit-focused, action-oriented, question, or statement style.",
+        "title": "Generate Options",
+        "description": "Our AI creates multiple tagline styles: problem-focused, solution-focused, outcome-focused, and authority-focused. Get options across all categories.",
         "icon": "SwatchIcon"
       },
       {
         "step": 3,
-        "title": "Pick Your Favorite",
-        "description": "Review multiple options and choose the one that resonates.",
+        "title": "Use It Everywhere",
+        "description": "Deploy your tagline across LinkedIn, email signatures, business cards, website headers, and podcast introductions for consistent messaging.",
         "icon": "CheckCircleIcon"
       }
     ],

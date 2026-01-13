@@ -75,6 +75,8 @@
     "canonicalPath": "/tools/biography-generator/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Biography",
+    "guidanceSubtitle": "Your professional biography is your most versatile marketing asset. A powerful bio combines your Authority Hook and Impact Intro into a compelling narrative that establishes credibility and connects with your audience.",
     "hero": {
       "badge": "✨ Free AI Tool",
       "h1": "Free Biography Generator",
@@ -145,7 +147,7 @@
       "content": "A professional biography is a concise summary of your career, expertise, and achievements written to establish credibility with your target audience. Unlike a resume, a bio tells your story in a way that connects with readers and positions you as an authority in your field."
     },
     "formulaLabel": "FORMULA",
-    "formula": "I help **[WHO]** achieve **[RESULT]** when **[WHEN]** through **[HOW]**. I've **[WHERE]**. My mission is to **[WHY]**.",
+    "formula": "I help [WHO] achieve [RESULT] when [WHEN] through [HOW]. I've [WHERE]. My mission is to [WHY].",
     "tips": [
       "Start with your Authority Hook - clearly identify WHO you help and WHAT results you deliver",
       "Include specific, quantifiable achievements rather than vague claims",
@@ -169,20 +171,20 @@
     "howItWorks": [
       {
         "step": 1,
-        "title": "Enter Your Details",
-        "description": "Provide your name, expertise, and notable achievements.",
+        "title": "Share Your Story",
+        "description": "Enter your name, expertise, and key achievements. Include your Authority Hook and Impact Intro if you have them for the most compelling bio.",
         "icon": "PencilSquareIcon"
       },
       {
         "step": 2,
-        "title": "Choose Your Style",
-        "description": "Select tone, length, and point of view preferences.",
+        "title": "Customize Your Bio",
+        "description": "Choose your preferred length, tone, and point of view. Get short, medium, and long versions for different contexts.",
         "icon": "AdjustmentsHorizontalIcon"
       },
       {
         "step": 3,
-        "title": "Generate & Refine",
-        "description": "Review your bio and regenerate until it's perfect.",
+        "title": "Use It Everywhere",
+        "description": "Deploy your bio across media kits, LinkedIn, speaker profiles, and anywhere you need to establish instant credibility.",
         "icon": "DocumentCheckIcon"
       }
     ],

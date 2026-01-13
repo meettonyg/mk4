@@ -53,6 +53,8 @@
     "canonicalPath": "/tools/impact-intro-builder/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Impact Intro",
+    "guidanceSubtitle": "Your Impact Intro extends your Authority Hook with credentials and mission. Lead with proven results and share the deeper purpose that drives your work.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Impact Intro Builder",
@@ -141,7 +143,7 @@
       "content": "An impact intro is a brief statement that leads with the transformation you create rather than your title or credentials. It answers 'what have you accomplished?' before 'what do you do?' to immediately establish credibility and relevance."
     },
     "formulaLabel": "FORMULA",
-    "formula": "I've **[WHERE]**. My mission is **[WHY]**.",
+    "formula": "I've [WHERE]. My mission is [WHY].",
     "tips": [
       "Lead with impact - start with the transformation you create, not your title",
       "Quantify when possible - numbers make results tangible and memorable",
@@ -169,20 +171,20 @@
     "howItWorks": [
       {
         "step": 1,
-        "title": "Share Your Results",
-        "description": "Enter the outcomes and transformations you create.",
+        "title": "Quantify Your Impact",
+        "description": "Share your most impressive results and achievements. Numbers make your credibility tangible and memorable.",
         "icon": "ChartBarIcon"
       },
       {
         "step": 2,
-        "title": "Add Context",
-        "description": "Include who you help and how you achieve results.",
-        "icon": "InformationCircleIcon"
+        "title": "Define Your Mission",
+        "description": "Explain the deeper purpose behind your work. A compelling mission connects your expertise to something bigger.",
+        "icon": "HeartIcon"
       },
       {
         "step": 3,
-        "title": "Generate Your Intro",
-        "description": "Get a powerful, impact-focused introduction.",
+        "title": "Complete Your Story",
+        "description": "Your Impact Intro pairs with your Authority Hook to form a complete positioning statement that opens doors everywhere.",
         "icon": "SparklesIcon"
       }
     ],

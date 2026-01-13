@@ -77,6 +77,8 @@
     "canonicalPath": "/tools/guest-intro-generator/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Guest Introduction",
+    "guidanceSubtitle": "A polished guest introduction sets the stage for a great interview. Give hosts a ready-to-read script that hooks their audience, establishes your credibility, and builds anticipation before you say a word.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Guest Intro Generator",
@@ -165,7 +167,7 @@
       "content": "A guest introduction is a brief, polished script that hosts read to welcome you to their show or event. The best introductions hook the audience, establish your credibility, and create anticipation—all before you say a word."
     },
     "formulaLabel": "FORMULA",
-    "formula": "**[Opening Hook]** + **[Guest Credentials]** + **[Relevance to Audience]** + **[Warm Welcome]**",
+    "formula": "[Opening Hook] + [Guest Credentials] + [Relevance to Audience] + [Warm Welcome]",
     "tips": [
       "Start with an engaging hook - a question, statistic, or statement that captures attention",
       "Establish credibility - highlight the most compelling credentials relevant to the topic",
@@ -189,20 +191,20 @@
     "howItWorks": [
       {
         "step": 1,
-        "title": "Add Your Details",
-        "description": "Enter your name, title, achievements, and discussion topic.",
+        "title": "Share Your Credentials",
+        "description": "Enter your name, key achievements, and the topic you'll discuss. Your biography and Authority Hook make great starting points.",
         "icon": "PencilSquareIcon"
       },
       {
         "step": 2,
-        "title": "Set the Tone",
-        "description": "Choose energetic, professional, or casual to match the show.",
+        "title": "Match the Show's Style",
+        "description": "Choose energetic, professional, or casual tone. Select your preferred length from brief (30 sec) to extended (2+ min).",
         "icon": "MusicalNoteIcon"
       },
       {
         "step": 3,
-        "title": "Copy & Share",
-        "description": "Copy your intro and send it to your host before the show.",
+        "title": "Make Hosting Easy",
+        "description": "Send your intro to hosts 24+ hours before recording. A ready-to-read script makes their job easier and ensures you're introduced perfectly.",
         "icon": "ClipboardDocumentIcon"
       }
     ],

@@ -54,6 +54,8 @@
     "canonicalPath": "/tools/questions-generator/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Interview Questions",
+    "guidanceSubtitle": "Well-crafted questions help podcast hosts guide the conversation while giving you opportunities to showcase your expertise and deliver value to listeners.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Interview Questions Generator",
@@ -142,7 +144,7 @@
       "content": "The best interview guests don't wing it—they prepare. By anticipating questions and crafting thoughtful answers, you deliver more value, stay on message, and transform every appearance into an opportunity to build authority."
     },
     "formulaLabel": "APPROACH",
-    "formula": "Balance **specific questions** that demonstrate your expertise with **story-based questions** that engage the audience.",
+    "formula": "Balance specific questions that demonstrate your expertise with story-based questions that engage the audience.",
     "tips": [
       "Frame questions for stories - listeners connect with narratives, not lectures",
       "Show range and depth - mix strategic big-picture questions with tactical details",
@@ -166,20 +168,20 @@
     "howItWorks": [
       {
         "step": 1,
-        "title": "Define Your Context",
-        "description": "Enter your expertise and interview type (podcast, press, panel).",
+        "title": "Share Your Expertise",
+        "description": "Enter your area of expertise and key topics. Include your Authority Hook to generate questions that highlight your unique perspective.",
         "icon": "PencilSquareIcon"
       },
       {
         "step": 2,
-        "title": "Set Preferences",
-        "description": "Choose question count, difficulty level, and whether to include answers.",
-        "icon": "AdjustmentsHorizontalIcon"
+        "title": "Generate Your Questions",
+        "description": "Our AI creates a mix of origin, process, and results questions. Each question is designed to let you showcase your expertise and share compelling stories.",
+        "icon": "SparklesIcon"
       },
       {
         "step": 3,
-        "title": "Review & Prepare",
-        "description": "Practice with your generated questions and refine your answers.",
+        "title": "Send to Your Host",
+        "description": "Include these questions in your media kit or send directly to podcast hosts. Great questions make interviews flow naturally and deliver maximum value.",
         "icon": "ClipboardDocumentCheckIcon"
       }
     ],

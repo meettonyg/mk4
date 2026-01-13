@@ -74,6 +74,8 @@
     "canonicalPath": "/tools/offers-generator/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Interview Offers",
+    "guidanceSubtitle": "Strategic offers turn podcast appearances into business opportunities. Create a natural path from listener to lead with a tiered offer structure that captures interest at every level.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Offers Generator",
@@ -162,7 +164,7 @@
       "content": "A compelling offer clearly communicates the transformation you deliver, not just what you do. It speaks to your ideal client's pain points, presents a clear path to their desired outcome, and removes friction from taking the next step."
     },
     "formulaLabel": "FORMULA",
-    "formula": "**[FREE OFFER]** → **[LOW-TICKET OFFER]** → **[PREMIUM OFFER]** = Complete Value Ladder for Podcast Audiences",
+    "formula": "[FREE OFFER] → [LOW-TICKET OFFER] → [PREMIUM OFFER] = Complete Value Ladder for Podcast Audiences",
     "tips": [
       "Lead with value - focus on transformation, not transaction",
       "Create natural progression - each offer should lead to the next",
@@ -186,21 +188,21 @@
     "howItWorks": [
       {
         "step": 1,
-        "title": "Describe Your Offer",
-        "description": "Enter what you provide and who it's for.",
+        "title": "Define Your Value Ladder",
+        "description": "Tell us about your services and who you help. Include your free lead magnet, entry-level offer, and premium service.",
         "icon": "DocumentTextIcon"
       },
       {
         "step": 2,
-        "title": "Add Key Details",
-        "description": "Include deliverables, outcomes, and unique benefits.",
-        "icon": "PlusCircleIcon"
+        "title": "Generate Your Offers",
+        "description": "Our AI creates compelling descriptions for each tier, focusing on transformation and outcomes that resonate with podcast listeners.",
+        "icon": "SparklesIcon"
       },
       {
         "step": 3,
-        "title": "Generate & Polish",
-        "description": "Review your offer description and refine as needed.",
-        "icon": "DocumentCheckIcon"
+        "title": "Add to Your Interviews",
+        "description": "Use your offers naturally during podcast appearances. Include memorable URLs or text codes to track which shows drive conversions.",
+        "icon": "MicrophoneIcon"
       }
     ],
     "features": [
