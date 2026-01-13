@@ -270,7 +270,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['saved', 'change', 'preview-update', 'update:can-generate']);
+const emit = defineEmits(['update:can-generate', 'generated', 'saved', 'change', 'preview-update']);
 
 // Use composables - useAIImpactIntros parses string API response into array of intro objects
 const {
@@ -370,16 +370,40 @@ function populateFromProfile(profileData) {
 }
 
 /**
+ * Handle generate - exposed for parent to call
+ */
+const handleGenerate = async () => {
+  selectedIntroIndex.value = null;
+
+  try {
+    await generate({
+      where: introWhere.value,
+      why: introWhy.value,
+      count: 5
+    });
+
+    // Emit generated event for parent (EmbeddedToolApp) to handle
+    // Include 'intro' (singular) for previewContent compatibility
+    const firstIntro = intros.value?.[0]?.text || '';
+    emit('generated', {
+      intros: intros.value,
+      intro: firstIntro,
+      content: firstIntro
+    });
+
+    return { intros: intros.value };
+  } catch (err) {
+    console.error('[Impact Intro Generator] Generation failed:', err);
+    throw err;
+  }
+};
+
+/**
  * Handle regenerate button
  */
 const handleRegenerate = async () => {
   if (!canGenerate.value) return;
-  selectedIntroIndex.value = null;
-  await generate({
-    where: introWhere.value,
-    why: introWhy.value,
-    count: 5
-  });
+  await handleGenerate();
 };
 
 /**
@@ -508,28 +532,22 @@ watch(
 );
 
 /**
- * Emit can-generate status changes to parent
+ * Watch for canGenerate changes
  */
 watch(canGenerate, (newValue) => {
-  if (props.mode === 'embedded') {
-    emit('update:can-generate', !!newValue);
-  }
+  emit('update:can-generate', !!newValue);
 }, { immediate: true });
 
 /**
  * Exposed for parent component (EmbeddedToolWrapper)
  */
 defineExpose({
-  generate: async () => {
-    if (!canGenerate.value) return;
-    await generate({
-      where: introWhere.value,
-      why: introWhy.value,
-      count: 5
-    });
-  },
-  canGenerate,
-  isGenerating
+  handleGenerate,
+  intros,
+  hasIntros,
+  isGenerating,
+  error,
+  copyToClipboard
 });
 </script>
 
