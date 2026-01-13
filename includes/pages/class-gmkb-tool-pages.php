@@ -2411,6 +2411,8 @@ get_footer();
         if (is_user_logged_in()) {
             $classes[] = 'gmkb-user-logged-in';
             $classes[] = 'gmkb-show-app-nav';
+            // Add theme's app page class for full-width styling
+            $classes[] = 'guestify-app-page';
         } else {
             $classes[] = 'gmkb-user-logged-out';
             $classes[] = 'gmkb-show-frontend-nav';
