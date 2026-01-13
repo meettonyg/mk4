@@ -2152,24 +2152,89 @@ get_footer();
     }
 
     /**
-     * Get Font Awesome icon class for a tool
+     * Convert Heroicon name from tool metadata to Font Awesome class
      *
-     * @param string $tool_id Tool ID
+     * @param string $heroicon_name Heroicon name (e.g., "SparklesIcon")
      * @return string Font Awesome icon class
      */
-    private function get_tool_icon($tool_id) {
-        $icons = array(
-            'authority-hook-builder' => 'fa-solid fa-anchor',
-            'biography-generator' => 'fa-solid fa-user',
-            'questions-generator' => 'fa-solid fa-comments',
-            'tagline-generator' => 'fa-solid fa-bullhorn',
-            'topics-generator' => 'fa-solid fa-list-ul',
-            'elevator-pitch-generator' => 'fa-solid fa-bolt',
-            'guest-intro-generator' => 'fa-solid fa-volume-high',
-            'impact-intro-builder' => 'fa-solid fa-wand-magic-sparkles',
-            'offers-generator' => 'fa-solid fa-briefcase',
+    private function heroicon_to_fontawesome($heroicon_name) {
+        $mapping = array(
+            'SparklesIcon' => 'fa-solid fa-wand-magic-sparkles',
+            'BoltIcon' => 'fa-solid fa-bolt',
+            'UserCircleIcon' => 'fa-solid fa-user',
+            'UserIcon' => 'fa-solid fa-user',
+            'UsersIcon' => 'fa-solid fa-users',
+            'UserGroupIcon' => 'fa-solid fa-user-group',
+            'ChatBubbleBottomCenterTextIcon' => 'fa-solid fa-comment-dots',
+            'ChatBubbleLeftRightIcon' => 'fa-solid fa-comments',
+            'ChatBubbleOvalLeftIcon' => 'fa-solid fa-comment',
+            'QuestionMarkCircleIcon' => 'fa-solid fa-circle-question',
+            'DocumentTextIcon' => 'fa-solid fa-file-lines',
+            'PencilSquareIcon' => 'fa-solid fa-pen-to-square',
+            'EnvelopeIcon' => 'fa-solid fa-envelope',
+            'EnvelopeOpenIcon' => 'fa-solid fa-envelope-open',
+            'SpeakerWaveIcon' => 'fa-solid fa-volume-high',
+            'MicrophoneIcon' => 'fa-solid fa-microphone',
+            'GiftIcon' => 'fa-solid fa-gift',
+            'TrophyIcon' => 'fa-solid fa-trophy',
+            'RocketLaunchIcon' => 'fa-solid fa-rocket',
+            'ArrowTrendingUpIcon' => 'fa-solid fa-arrow-trend-up',
+            'ChartBarIcon' => 'fa-solid fa-chart-bar',
+            'PresentationChartLineIcon' => 'fa-solid fa-chart-line',
+            'LightBulbIcon' => 'fa-solid fa-lightbulb',
+            'BookOpenIcon' => 'fa-solid fa-book-open',
+            'NewspaperIcon' => 'fa-solid fa-newspaper',
+            'ShareIcon' => 'fa-solid fa-share-nodes',
+            'LinkIcon' => 'fa-solid fa-link',
+            'TagIcon' => 'fa-solid fa-tag',
+            'HashtagIcon' => 'fa-solid fa-hashtag',
+            'MagnifyingGlassIcon' => 'fa-solid fa-magnifying-glass',
+            'MagnifyingGlassCircleIcon' => 'fa-solid fa-magnifying-glass',
+            'ShieldCheckIcon' => 'fa-solid fa-shield-halved',
+            'CheckCircleIcon' => 'fa-solid fa-circle-check',
+            'CheckBadgeIcon' => 'fa-solid fa-certificate',
+            'StarIcon' => 'fa-solid fa-star',
+            'HeartIcon' => 'fa-solid fa-heart',
+            'ClipboardDocumentListIcon' => 'fa-solid fa-clipboard-list',
+            'ClipboardDocumentIcon' => 'fa-solid fa-clipboard',
+            'ClipboardDocumentCheckIcon' => 'fa-solid fa-clipboard-check',
+            'ListBulletIcon' => 'fa-solid fa-list',
+            'QueueListIcon' => 'fa-solid fa-list-ol',
+            'Bars3BottomLeftIcon' => 'fa-solid fa-bars',
+            'InboxStackIcon' => 'fa-solid fa-inbox',
+            'PlayCircleIcon' => 'fa-solid fa-circle-play',
+            'ArrowsRightLeftIcon' => 'fa-solid fa-arrows-left-right',
+            'CubeTransparentIcon' => 'fa-solid fa-cube',
+            'FingerPrintIcon' => 'fa-solid fa-fingerprint',
+            'AcademicCapIcon' => 'fa-solid fa-graduation-cap',
+            'GlobeAltIcon' => 'fa-solid fa-globe',
+            'CurrencyDollarIcon' => 'fa-solid fa-dollar-sign',
+            'CalculatorIcon' => 'fa-solid fa-calculator',
+            'ClockIcon' => 'fa-solid fa-clock',
+            'BellIcon' => 'fa-solid fa-bell',
+            'PhotoIcon' => 'fa-solid fa-image',
+            'MusicalNoteIcon' => 'fa-solid fa-music',
+            'LanguageIcon' => 'fa-solid fa-language',
+            'KeyIcon' => 'fa-solid fa-key',
+            'PhoneIcon' => 'fa-solid fa-phone',
+            'DevicePhoneMobileIcon' => 'fa-solid fa-mobile',
+            'SignalIcon' => 'fa-solid fa-signal',
+            'SwatchIcon' => 'fa-solid fa-swatchbook',
+            'Squares2X2Icon' => 'fa-solid fa-grip',
+            'RectangleStackIcon' => 'fa-solid fa-layer-group',
+            'DocumentDuplicateIcon' => 'fa-solid fa-copy',
+            'DocumentCheckIcon' => 'fa-solid fa-file-circle-check',
+            'AdjustmentsHorizontalIcon' => 'fa-solid fa-sliders',
+            'CursorArrowRaysIcon' => 'fa-solid fa-arrow-pointer',
+            'ArrowPathIcon' => 'fa-solid fa-arrows-rotate',
+            'ArrowRightCircleIcon' => 'fa-solid fa-circle-arrow-right',
+            'PlusCircleIcon' => 'fa-solid fa-circle-plus',
+            'InformationCircleIcon' => 'fa-solid fa-circle-info',
+            'ExclamationTriangleIcon' => 'fa-solid fa-triangle-exclamation',
+            'HandRaisedIcon' => 'fa-solid fa-hand',
         );
-        return $icons[$tool_id] ?? 'fa-solid fa-wrench';
+
+        return $mapping[$heroicon_name] ?? 'fa-solid fa-wrench';
     }
 
     /**
@@ -2181,11 +2246,14 @@ get_footer();
     private function get_category_icon($category_slug) {
         $icons = array(
             'messaging' => 'fa-solid fa-comment-dots',
+            'message-builder' => 'fa-solid fa-comment-dots',
             'value-builder' => 'fa-solid fa-chart-line',
             'profile-content' => 'fa-solid fa-id-card',
             'media-kit' => 'fa-solid fa-photo-film',
             'outreach' => 'fa-solid fa-paper-plane',
             'seo-tools' => 'fa-solid fa-magnifying-glass',
+            'content-creation' => 'fa-solid fa-pen-nib',
+            'social-media' => 'fa-solid fa-share-nodes',
         );
         return $icons[$category_slug] ?? 'fa-solid fa-folder';
     }
@@ -2232,7 +2300,7 @@ get_footer();
                                 ?>
                                 <div class="gmkb-dir-tool-card">
                                     <div class="gmkb-dir-tool-icon">
-                                        <i class="<?php echo esc_attr($this->get_tool_icon($tool['id'])); ?>"></i>
+                                        <i class="<?php echo esc_attr($this->heroicon_to_fontawesome($meta['icon'] ?? '')); ?>"></i>
                                     </div>
                                     <h3><?php echo esc_html($meta['name'] ?? $tool['name']); ?></h3>
                                     <p><?php echo esc_html($meta['shortDescription'] ?? ''); ?></p>
