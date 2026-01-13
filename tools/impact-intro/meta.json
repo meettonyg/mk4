@@ -10,13 +10,14 @@
     "sourceKeys": ["text", "value", "content", "intro"]
   },
   "validation": {
-    "anyOf": ["results", "achievement", "impact"],
-    "errorMessage": "Results or impact details are required for impact intro generation"
+    "anyOf": ["where", "why"],
+    "errorMessage": "Where (results) or Why (mission) is required for impact intro generation"
   },
   "longDescription": "The Impact Intro Builder helps you craft introductions that lead with the transformation you create, not just your credentials. Perfect for networking, speaking engagements, and professional profiles that need to make an immediate impression.",
   "category": "value-builder",
   "buttonText": "Create Intro",
   "supportsProfileSave": true,
+  "singleColumn": true,
   "icon": "ArrowTrendingUpIcon",
   "componentName": "ImpactIntroBuilder",
   "useCases": [
