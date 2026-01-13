@@ -212,7 +212,7 @@
 
 <script setup>
 import { ref, computed, watch, inject } from 'vue';
-import { useAIGenerator } from '../../src/composables/useAIGenerator';
+import { useAIAuthorityHooks } from '../../src/composables/useAIAuthorityHooks';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
@@ -226,15 +226,16 @@ const props = defineProps({
 
 const emit = defineEmits(['update:can-generate', 'generated', 'saved']);
 
-// Use composables
+// Use composables - useAIAuthorityHooks parses string API response into array of hook objects
 const {
   isGenerating,
   error,
-  generatedContent: hooks,
+  hooks,
+  hasHooks,
   generate,
   copyToClipboard,
   reset
-} = useAIGenerator('authority_hook');
+} = useAIAuthorityHooks();
 
 const {
   profileId: contextProfileId,
@@ -298,12 +299,8 @@ const canGenerate = computed(() => {
          (hookWhat.value && hookWhat.value.trim().length > 0);
 });
 
-/**
- * Check if we have generated hooks
- */
-const hasHooks = computed(() => {
-  return hooks.value && Array.isArray(hooks.value) && hooks.value.length > 0;
-});
+// hasHooks is now provided by useAIAuthorityHooks composable
+// which properly parses string API responses into an array of hook objects
 
 /**
  * Check if profile has a current hook
