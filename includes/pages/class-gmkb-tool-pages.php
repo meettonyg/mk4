@@ -2173,15 +2173,25 @@ get_footer();
         </div>
 
         <style>
+            /* Outer wrapper - full width for app layout */
             .gmkb-tools-directory-page {
+                width: 100%;
+            }
+            /* Content container - constrained width */
+            .gmkb-tools-directory-page .gmkb-container {
                 max-width: 1200px;
                 margin: 0 auto;
-                padding: 2rem 1rem;
+                padding: 0 1rem;
             }
             .gmkb-directory-hero {
                 text-align: center;
-                padding: 3rem 0;
-                margin-bottom: 2rem;
+                padding: 2rem 0;
+                margin-bottom: 1rem;
+            }
+            .gmkb-directory-hero .gmkb-container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 0 1rem;
             }
             .gmkb-directory-hero h1 {
                 font-size: 2.5rem;
