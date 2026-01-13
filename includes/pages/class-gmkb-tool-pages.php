@@ -2152,6 +2152,45 @@ get_footer();
     }
 
     /**
+     * Get Font Awesome icon class for a tool
+     *
+     * @param string $tool_id Tool ID
+     * @return string Font Awesome icon class
+     */
+    private function get_tool_icon($tool_id) {
+        $icons = array(
+            'authority-hook-builder' => 'fa-solid fa-anchor',
+            'biography-generator' => 'fa-solid fa-user',
+            'questions-generator' => 'fa-solid fa-comments',
+            'tagline-generator' => 'fa-solid fa-bullhorn',
+            'topics-generator' => 'fa-solid fa-list-ul',
+            'elevator-pitch-generator' => 'fa-solid fa-bolt',
+            'guest-intro-generator' => 'fa-solid fa-volume-high',
+            'impact-intro-builder' => 'fa-solid fa-wand-magic-sparkles',
+            'offers-generator' => 'fa-solid fa-briefcase',
+        );
+        return $icons[$tool_id] ?? 'fa-solid fa-wrench';
+    }
+
+    /**
+     * Get Font Awesome icon class for a category
+     *
+     * @param string $category_slug Category slug
+     * @return string Font Awesome icon class
+     */
+    private function get_category_icon($category_slug) {
+        $icons = array(
+            'messaging' => 'fa-solid fa-comment-dots',
+            'value-builder' => 'fa-solid fa-chart-line',
+            'profile-content' => 'fa-solid fa-id-card',
+            'media-kit' => 'fa-solid fa-photo-film',
+            'outreach' => 'fa-solid fa-paper-plane',
+            'seo-tools' => 'fa-solid fa-magnifying-glass',
+        );
+        return $icons[$category_slug] ?? 'fa-solid fa-folder';
+    }
+
+    /**
      * Render the tools directory page content
      */
     public function render_directory_page() {
@@ -2163,109 +2202,273 @@ get_footer();
         $grouped = $this->discovery->get_tools_grouped_by_category();
 
         ?>
-        <div class="gmkb-tools-directory-page">
-            <section class="gmkb-directory-hero">
-                <div class="gmkb-container">
+        <div class="gmkb-tools-directory">
+            <!-- Hero Section -->
+            <section class="gmkb-dir-hero">
+                <div class="gmkb-dir-container">
                     <h1>Free AI Tools for Speakers & Authors</h1>
-                    <p>Professional content generation tools to build your brand and grow your audience.</p>
+                    <p>Professional content generation tools designed to amplify your authority, build your brand, and grow your audience.</p>
                 </div>
             </section>
 
-            <div class="gmkb-container">
-                <?php foreach ($grouped as $category_slug => $category): ?>
-                    <?php if (!empty($category['tools'])): ?>
-                    <section class="gmkb-directory-category">
-                        <h2><?php echo esc_html($category['name']); ?></h2>
-                        <p class="gmkb-category-description"><?php echo esc_html($category['description']); ?></p>
+            <!-- Tools Categories -->
+            <div class="gmkb-dir-content">
+                <div class="gmkb-dir-container">
+                    <?php foreach ($grouped as $category_slug => $category): ?>
+                        <?php if (!empty($category['tools'])): ?>
+                        <section class="gmkb-dir-category">
+                            <div class="gmkb-dir-category-header">
+                                <i class="<?php echo esc_attr($this->get_category_icon($category_slug)); ?> gmkb-dir-category-icon"></i>
+                                <div>
+                                    <h2><?php echo esc_html($category['name']); ?></h2>
+                                    <p><?php echo esc_html($category['description']); ?></p>
+                                </div>
+                            </div>
+                            <div class="gmkb-dir-category-divider"></div>
 
-                        <div class="gmkb-tools-grid">
-                            <?php foreach ($category['tools'] as $tool):
-                                $meta = $this->discovery->get_tool_metadata($tool['id']);
-                            ?>
-                                <a href="<?php echo esc_url(home_url('/' . $this->get_base_path() . '/' . $tool['id'] . '/')); ?>"
-                                   class="gmkb-tool-card">
+                            <div class="gmkb-dir-tools-grid">
+                                <?php foreach ($category['tools'] as $tool):
+                                    $meta = $this->discovery->get_tool_metadata($tool['id']);
+                                ?>
+                                <div class="gmkb-dir-tool-card">
+                                    <div class="gmkb-dir-tool-icon">
+                                        <i class="<?php echo esc_attr($this->get_tool_icon($tool['id'])); ?>"></i>
+                                    </div>
                                     <h3><?php echo esc_html($meta['name'] ?? $tool['name']); ?></h3>
                                     <p><?php echo esc_html($meta['shortDescription'] ?? ''); ?></p>
-                                </a>
-                            <?php endforeach; ?>
-                        </div>
-                    </section>
-                    <?php endif; ?>
-                <?php endforeach; ?>
+                                    <a href="<?php echo esc_url(home_url('/' . $this->get_base_path() . '/' . $tool['id'] . '/')); ?>" class="gmkb-dir-tool-link">
+                                        LAUNCH TOOL <i class="fa-solid fa-arrow-right"></i>
+                                    </a>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </section>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </div>
             </div>
+
+            <!-- CTA Section -->
+            <section class="gmkb-dir-cta">
+                <div class="gmkb-dir-container">
+                    <div class="gmkb-dir-cta-box">
+                        <h2>Ready to elevate your speaking career?</h2>
+                        <p>These tools are free to help you scale your impact. Sign up for our newsletter to get more resources delivered to your inbox.</p>
+                        <form class="gmkb-dir-cta-form" action="<?php echo esc_url(home_url('/newsletter/')); ?>" method="get">
+                            <input type="email" name="email" placeholder="Enter your email" required>
+                            <button type="submit">Subscribe Now</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
         </div>
 
         <style>
-            /* Outer wrapper - full width for app layout */
-            .gmkb-tools-directory-page {
+            /* Directory Page Styles */
+            .gmkb-tools-directory {
                 width: 100%;
+                background: #fff;
             }
-            /* Content container - constrained width */
-            .gmkb-tools-directory-page .gmkb-container {
-                max-width: 1200px;
+            .gmkb-dir-container {
+                max-width: 1140px;
                 margin: 0 auto;
-                padding: 0 1rem;
+                padding: 0 1.5rem;
             }
-            .gmkb-directory-hero {
+
+            /* Hero */
+            .gmkb-dir-hero {
                 text-align: center;
-                padding: 2rem 0;
-                margin-bottom: 1rem;
+                padding: 3rem 0 2rem;
             }
-            .gmkb-directory-hero .gmkb-container {
-                max-width: 1200px;
-                margin: 0 auto;
-                padding: 0 1rem;
-            }
-            .gmkb-directory-hero h1 {
-                font-size: 2.5rem;
-                font-weight: 700;
+            .gmkb-dir-hero h1 {
+                font-size: 2.75rem;
+                font-weight: 800;
+                color: #111827;
                 margin: 0 0 1rem;
+                line-height: 1.2;
             }
-            .gmkb-directory-hero p {
-                font-size: 1.25rem;
+            .gmkb-dir-hero p {
+                font-size: 1.125rem;
                 color: #6b7280;
-                margin: 0;
+                margin: 0 auto;
+                max-width: 600px;
+                line-height: 1.6;
             }
-            .gmkb-directory-category {
+
+            /* Content area */
+            .gmkb-dir-content {
+                padding: 1rem 0 3rem;
+            }
+
+            /* Category */
+            .gmkb-dir-category {
                 margin-bottom: 3rem;
             }
-            .gmkb-directory-category h2 {
-                font-size: 1.5rem;
-                margin: 0 0 0.5rem;
+            .gmkb-dir-category-header {
+                display: flex;
+                align-items: flex-start;
+                gap: 0.75rem;
+                margin-bottom: 0.5rem;
             }
-            .gmkb-category-description {
+            .gmkb-dir-category-icon {
+                color: #3b82f6;
+                font-size: 1.25rem;
+                margin-top: 0.25rem;
+            }
+            .gmkb-dir-category-header h2 {
+                font-size: 1.375rem;
+                font-weight: 700;
+                color: #111827;
+                margin: 0 0 0.25rem;
+            }
+            .gmkb-dir-category-header p {
+                font-size: 0.9375rem;
                 color: #6b7280;
-                margin: 0 0 1.5rem;
+                margin: 0;
             }
-            .gmkb-tools-grid {
+            .gmkb-dir-category-divider {
+                height: 1px;
+                background: linear-gradient(to right, #e5e7eb 0%, #e5e7eb 30%, transparent 100%);
+                margin: 1rem 0 1.5rem;
+            }
+
+            /* Tools Grid */
+            .gmkb-dir-tools-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                grid-template-columns: repeat(4, 1fr);
                 gap: 1rem;
             }
-            .gmkb-tool-card {
-                display: block;
+            @media (max-width: 1024px) {
+                .gmkb-dir-tools-grid {
+                    grid-template-columns: repeat(3, 1fr);
+                }
+            }
+            @media (max-width: 768px) {
+                .gmkb-dir-tools-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+            }
+            @media (max-width: 480px) {
+                .gmkb-dir-tools-grid {
+                    grid-template-columns: 1fr;
+                }
+                .gmkb-dir-hero h1 {
+                    font-size: 2rem;
+                }
+            }
+
+            /* Tool Card */
+            .gmkb-dir-tool-card {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 12px;
                 padding: 1.5rem;
-                background: #f9fafb;
-                border-radius: 8px;
-                text-decoration: none;
-                color: inherit;
-                transition: all 0.2s;
-                border: 1px solid transparent;
+                display: flex;
+                flex-direction: column;
+                transition: all 0.2s ease;
             }
-            .gmkb-tool-card:hover {
-                background: white;
+            .gmkb-dir-tool-card:hover {
                 border-color: #3b82f6;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
             }
-            .gmkb-tool-card h3 {
-                font-size: 1.125rem;
-                margin: 0 0 0.5rem;
+            .gmkb-dir-tool-icon {
+                width: 40px;
+                height: 40px;
+                background: #eff6ff;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 1rem;
+            }
+            .gmkb-dir-tool-icon i {
                 color: #3b82f6;
+                font-size: 1.125rem;
             }
-            .gmkb-tool-card p {
-                margin: 0;
+            .gmkb-dir-tool-card h3 {
+                font-size: 1rem;
+                font-weight: 600;
+                color: #3b82f6;
+                margin: 0 0 0.5rem;
+            }
+            .gmkb-dir-tool-card p {
                 font-size: 0.875rem;
                 color: #6b7280;
+                margin: 0 0 1rem;
+                flex-grow: 1;
+                line-height: 1.5;
+            }
+            .gmkb-dir-tool-link {
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: #6b7280;
+                text-decoration: none;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                transition: color 0.2s;
+            }
+            .gmkb-dir-tool-link:hover {
+                color: #3b82f6;
+            }
+            .gmkb-dir-tool-link i {
+                font-size: 0.625rem;
+            }
+
+            /* CTA Section */
+            .gmkb-dir-cta {
+                padding: 2rem 0 3rem;
+            }
+            .gmkb-dir-cta-box {
+                background: #f1f5f9;
+                border-radius: 16px;
+                padding: 3rem 2rem;
+                text-align: center;
+            }
+            .gmkb-dir-cta-box h2 {
+                font-size: 1.5rem;
+                font-weight: 700;
+                color: #111827;
+                margin: 0 0 0.75rem;
+            }
+            .gmkb-dir-cta-box > p {
+                font-size: 0.9375rem;
+                color: #6b7280;
+                margin: 0 auto 1.5rem;
+                max-width: 450px;
+            }
+            .gmkb-dir-cta-form {
+                display: flex;
+                gap: 0.75rem;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            .gmkb-dir-cta-form input[type="email"] {
+                padding: 0.75rem 1rem;
+                border: 1px solid #d1d5db;
+                border-radius: 9999px;
+                font-size: 0.9375rem;
+                width: 280px;
+                max-width: 100%;
+                outline: none;
+            }
+            .gmkb-dir-cta-form input[type="email"]:focus {
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            }
+            .gmkb-dir-cta-form button {
+                padding: 0.75rem 1.5rem;
+                background: #3b82f6;
+                color: white;
+                border: none;
+                border-radius: 9999px;
+                font-size: 0.9375rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: background 0.2s;
+            }
+            .gmkb-dir-cta-form button:hover {
+                background: #2563eb;
             }
         </style>
         <?php
