@@ -43,6 +43,8 @@
     "canonicalPath": "/tools/content-repurposer/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Repurpose Your Content",
+    "guidanceSubtitle": "Content repurposing multiplies your reach without multiplying your effort. Transform one piece of long-form content into 5-10 platform-native pieces that perform well everywhere.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Content Repurposer",
@@ -153,18 +155,21 @@
     "howItWorks": [
       {
         "step": 1,
-        "title": "Paste Your Content",
-        "description": "Add your existing blog, transcript, or script."
+        "title": "Add Your Source Content",
+        "description": "Paste your blog post, podcast transcript, or video script. Long-form content works best as the source for repurposing.",
+        "icon": "DocumentTextIcon"
       },
       {
         "step": 2,
-        "title": "Choose Output Format",
-        "description": "Select what you want to create."
+        "title": "Choose Your Formats",
+        "description": "Select output formats: LinkedIn posts, Twitter threads, Instagram carousels, email newsletters, or YouTube descriptions. Each is optimized for that platform.",
+        "icon": "RectangleStackIcon"
       },
       {
         "step": 3,
-        "title": "Get New Content",
-        "description": "Receive platform-optimized versions."
+        "title": "Multiply Your Reach",
+        "description": "Get 5-10 pieces from one source. Deploy across platforms throughout the week for consistent visibility without constant content creation.",
+        "icon": "ArrowsPointingOutIcon"
       }
     ],
     "features": [

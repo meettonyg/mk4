@@ -43,6 +43,8 @@
     "canonicalPath": "/tools/newsletter-writer/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Newsletter",
+    "guidanceSubtitle": "Great newsletters feel like a note from a smart friend. They have a compelling subject line, deliver clear value, and respect the reader's time with consistent, scannable content.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Newsletter Writer",
@@ -154,17 +156,20 @@
       {
         "step": 1,
         "title": "Choose Your Format",
-        "description": "Select newsletter type and structure."
+        "description": "Select weekly insight, curated links, welcome email, or promotional. Each format has a proven structure that drives engagement.",
+        "icon": "Squares2X2Icon"
       },
       {
         "step": 2,
         "title": "Add Your Content",
-        "description": "Include main topic and key takeaways."
+        "description": "Enter your main topic, key takeaway, and any links to include. The AI creates a scannable structure with compelling hook and clear CTA.",
+        "icon": "PencilSquareIcon"
       },
       {
         "step": 3,
-        "title": "Generate & Send",
-        "description": "Get a formatted newsletter ready to publish."
+        "title": "Build Subscriber Loyalty",
+        "description": "Consistent newsletters build relationships over time. Use your generated content as a foundation and add personality to make it yours.",
+        "icon": "HeartIcon"
       }
     ],
     "features": [

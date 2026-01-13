@@ -43,6 +43,8 @@
     "canonicalPath": "/tools/blog-generator/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Blog Post",
+    "guidanceSubtitle": "Great blog posts solve specific problems for specific audiences. Lead with a compelling hook, deliver clear value, and end with a next step for readers.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Blog Generator",
@@ -153,18 +155,21 @@
     "howItWorks": [
       {
         "step": 1,
-        "title": "Choose Your Topic",
-        "description": "Enter your topic and target keywords."
+        "title": "Define Your Topic",
+        "description": "Enter your topic, target keywords, and the specific problem you're solving. The more focused your angle, the better your post will perform.",
+        "icon": "PencilSquareIcon"
       },
       {
         "step": 2,
-        "title": "Set Parameters",
-        "description": "Select length, tone, and content type."
+        "title": "Generate Your Draft",
+        "description": "Our AI creates a structured post with compelling hook, clear sections, and engaging conclusion. Choose how-to, thought leadership, or list format.",
+        "icon": "SparklesIcon"
       },
       {
         "step": 3,
-        "title": "Generate & Edit",
-        "description": "Review the draft and add your voice."
+        "title": "Add Your Voice",
+        "description": "The best content blends AI efficiency with human insight. Add personal stories, specific examples, and your unique perspective to make it yours.",
+        "icon": "UserCircleIcon"
       }
     ],
     "features": [

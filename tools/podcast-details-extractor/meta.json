@@ -43,6 +43,8 @@
     "canonicalPath": "/tools/podcast-details-extractor/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Extract Podcast Details",
+    "guidanceSubtitle": "Research is the foundation of great podcast pitches. Extract owner emails, show descriptions, and key details from any podcast URL to craft personalized outreach that gets responses.",
     "hero": {
       "badge": "Free Tool",
       "h1": "Podcast Details Extractor",
@@ -113,17 +115,20 @@
       {
         "step": 1,
         "title": "Paste Podcast URL",
-        "description": "Enter an Apple Podcasts or Google Podcasts URL."
+        "description": "Enter an Apple Podcasts or Google Podcasts URL. We support both platforms and extract directly from the RSS feed.",
+        "icon": "LinkIcon"
       },
       {
         "step": 2,
-        "title": "Extract Details",
-        "description": "We fetch the podcast's RSS feed and extract key information."
+        "title": "Get Instant Details",
+        "description": "Our tool extracts owner email, show description, categories, episode count, and last publish date—everything you need for personalized outreach.",
+        "icon": "MagnifyingGlassIcon"
       },
       {
         "step": 3,
-        "title": "Use the Data",
-        "description": "Copy the owner email and details for your outreach."
+        "title": "Craft Better Pitches",
+        "description": "Use the extracted details to personalize your pitch. Mention specific episodes, align with their categories, and email the decision-maker directly.",
+        "icon": "EnvelopeIcon"
       }
     ],
     "features": [
