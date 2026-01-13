@@ -165,12 +165,12 @@ class GMKB_Tool_Pages {
          * for logged-in users on those pages we also examine the request URI
          * whenever no query vars are available.
          */
+        $is_tool_or_dir_page = $this->is_tool_or_directory_page();
         $is_tools_request = false;
-        if (!$this->is_tool_or_directory_page()) {
-            // Inspect the raw request path to see if it begins with the tools base path
-            $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
-            if (!empty($request_uri)) {
-                $path = trim(parse_url($request_uri, PHP_URL_PATH), '/');
+
+        if (!$is_tool_or_dir_page) {
+            $path = $this->get_relative_request_path();
+            if ($path !== null) {
                 $base = trim($this->base_path, '/');
                 // e.g. path: "tools" or "tools/slug"
                 if (strpos($path, $base) === 0) {
@@ -179,12 +179,35 @@ class GMKB_Tool_Pages {
             }
         }
 
-        if ($this->is_tool_or_directory_page() || $is_tools_request) {
+        if ($is_tool_or_dir_page || $is_tools_request) {
             // Logged-in users get app navigation; visitors see the frontend nav
             return is_user_logged_in();
         }
 
         return $is_app_page;
+    }
+
+    /**
+     * Get the request path relative to WordPress installation.
+     * Handles subdirectory installs (e.g., example.com/blog/tools/).
+     *
+     * @return string|null Relative path or null if unavailable
+     */
+    private function get_relative_request_path() {
+        $request_uri = $_SERVER['REQUEST_URI'] ?? '';
+        if (empty($request_uri)) {
+            return null;
+        }
+
+        $request_path = trim(parse_url($request_uri, PHP_URL_PATH), '/');
+
+        // Make path relative to WordPress installation to support subdirectory installs
+        $home_path = trim(parse_url(home_url('/'), PHP_URL_PATH), '/');
+        if (!empty($home_path) && strpos($request_path, $home_path) === 0) {
+            $request_path = substr($request_path, strlen($home_path));
+        }
+
+        return trim($request_path, '/');
     }
 
     /**
@@ -2470,10 +2493,9 @@ get_footer();
             return true;
         }
 
-        // Fallback: inspect request URI for early filter calls
-        $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
-        if (!empty($request_uri)) {
-            $path = trim(parse_url($request_uri, PHP_URL_PATH), '/');
+        // Fallback: inspect request URI for early filter calls (supports subdirectory installs)
+        $path = $this->get_relative_request_path();
+        if ($path !== null) {
             $base = trim($this->base_path, '/');
             // Exact match for directory (e.g., "tools" or "tools/")
             if ($path === $base) {
