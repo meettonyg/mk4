@@ -116,12 +116,17 @@
             </svg>
             Regenerate
           </button>
-          <button type="button" class="gfy-btn gfy-btn--outline" @click="handleCopyAll">
+          <button
+            type="button"
+            class="gfy-btn gfy-btn--outline"
+            :disabled="selectedTopics.length === 0"
+            @click="handleCopySelected"
+          >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
               <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
             </svg>
-            Copy All
+            Copy Selected
           </button>
         </div>
       </div>
@@ -223,9 +228,10 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, inject } from 'vue';
 import { useAITopics } from '../../src/composables/useAITopics';
 import { useProfileContext } from '../../src/composables/useProfileContext';
+import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
 
 // Constants
 const MAX_SELECTED_TOPICS = 5;
@@ -239,6 +245,9 @@ const props = defineProps({
 
 const emit = defineEmits(['update:can-generate', 'authority-hook-update', 'generated', 'saved']);
 
+// Inject profile data from EmbeddedToolWrapper (if present)
+const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+
 // Use composables
 const {
   isGenerating,
@@ -246,7 +255,6 @@ const {
   topics,
   hasTopics,
   generate,
-  copyToClipboard,
   reset
 } = useAITopics();
 
@@ -275,6 +283,17 @@ watch(contextProfileId, (newId) => {
 // Also use profile ID from props (for embedded mode via slot)
 watch(
   () => props.profileData?.id,
+  (newId) => {
+    if (newId) {
+      selectedProfileId.value = newId;
+    }
+  },
+  { immediate: true }
+);
+
+// Also use profile ID from injected data (from EmbeddedToolWrapper)
+watch(
+  () => injectedProfileData.value?.id,
   (newId) => {
     if (newId) {
       selectedProfileId.value = newId;
@@ -391,10 +410,21 @@ const handleRegenerate = async () => {
 };
 
 /**
- * Handle copy all topics
+ * Copy selected topics to clipboard as plain text (one per line)
  */
-const handleCopyAll = async () => {
-  await copyToClipboard();
+const handleCopySelected = async () => {
+  if (selectedTopics.value.length === 0) return;
+
+  const selectedTopicsList = selectedTopics.value.map(idx => {
+    const topic = topics.value[idx];
+    return typeof topic === 'string' ? topic : topic.title || topic;
+  });
+
+  try {
+    await navigator.clipboard.writeText(selectedTopicsList.join('\n'));
+  } catch (err) {
+    console.error('[Topics Generator] Failed to copy:', err);
+  }
 };
 
 /**
@@ -701,6 +731,12 @@ defineExpose({
   height: 16px;
   stroke: currentColor;
   stroke-width: 2;
+}
+
+.gfy-view-toggle__btn svg rect,
+.gfy-view-toggle__btn svg line,
+.gfy-view-toggle__btn svg path {
+  fill: none;
 }
 
 .gfy-view-toggle__btn svg circle {
