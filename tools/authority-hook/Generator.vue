@@ -180,16 +180,16 @@
               <button
                 type="button"
                 class="gfy-btn gfy-btn--primary gfy-btn--large"
-                :disabled="selectedHookIndex === null || isSaving"
+                :disabled="selectedHookIndex === null || localIsSaving || !selectedProfileId"
                 @click="handleSaveToProfile"
               >
-                <svg v-if="!isSaving" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg v-if="!localIsSaving" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
                   <polyline points="17 21 17 13 7 13 7 21"/>
                   <polyline points="7 3 7 8 15 8"/>
                 </svg>
-                <span v-if="isSaving" class="gfy-spinner"></span>
-                {{ isSaving ? 'Saving...' : 'Save to Media Kit' }}
+                <span v-if="localIsSaving" class="gfy-spinner"></span>
+                {{ localIsSaving ? 'Saving...' : 'Save to Media Kit' }}
               </button>
               <button type="button" class="gfy-btn gfy-btn--text" @click="handleStartOver">
                 Start Over
@@ -200,8 +200,8 @@
               ✓ Saved successfully!
             </span>
             <!-- Save Error Message -->
-            <span v-if="saveError" class="gfy-save-error">
-              {{ saveError }}
+            <span v-if="localSaveError" class="gfy-save-error">
+              {{ localSaveError }}
             </span>
           </div>
         </main>
@@ -237,8 +237,6 @@ const {
 
 const {
   profileId: contextProfileId,
-  isSaving,
-  saveError,
   saveToProfile
 } = useProfileContext();
 
@@ -250,6 +248,8 @@ const selectedHookIndex = ref(null);
 const saveSuccess = ref(false);
 const selectedProfileId = ref(null);
 const viewMode = ref('list'); // 'card' or 'list' - default to list
+const localIsSaving = ref(false);
+const localSaveError = ref(null);
 
 // Authority Hook Builder fields
 const hookWho = ref('');
@@ -391,17 +391,24 @@ const handleCopy = async () => {
  */
 const handleSaveToProfile = async () => {
   if (selectedHookIndex.value === null) return;
+  if (!selectedProfileId.value) {
+    localSaveError.value = 'Please select a profile first';
+    return;
+  }
 
   const selectedHook = hooks.value[selectedHookIndex.value];
+  localIsSaving.value = true;
+  localSaveError.value = null;
 
   try {
     // Save authority hook fields and statement
+    // Field mapping in meta.json: statement -> authority_statement
     const result = await saveToProfile('authority_hook', {
       who: hookWho.value,
       what: hookWhat.value,
       when: hookWhen.value,
       how: hookHow.value,
-      summary: selectedHook.text
+      statement: selectedHook.text
     }, {
       profileId: selectedProfileId.value
     });
@@ -421,9 +428,14 @@ const handleSaveToProfile = async () => {
           how: hookHow.value
         }
       });
+    } else {
+      localSaveError.value = result.errors?.join(', ') || 'Failed to save';
     }
   } catch (err) {
     console.error('[Authority Hook Generator] Save failed:', err);
+    localSaveError.value = err.message || 'Failed to save to profile';
+  } finally {
+    localIsSaving.value = false;
   }
 };
 
