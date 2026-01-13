@@ -152,9 +152,35 @@ class GMKB_Tool_Pages {
      * @return bool Modified value
      */
     public function filter_is_app_page($is_app_page) {
-        if ($this->is_tool_or_directory_page()) {
-            // Logged-in users get app navigation
-            // Public users get frontend navigation
+        /*
+         * Determine whether the current request should be treated as a tool or
+         * directory page. Historically this logic relied solely on the
+         * presence of query vars, which are only available after the rewrite
+         * rules have been processed. Some themes (including Guestify) invoke
+         * the `guestify_is_app_page` filter very early in the request
+         * lifecycle, before WP_Query has parsed the request and populated
+         * custom query variables. In that case `is_tool_or_directory_page()`
+         * returns false even when the request is for `/tools/` or an
+         * individual tool URL. To avoid falling back to the front-end header
+         * for logged-in users on those pages we also examine the request URI
+         * whenever no query vars are available.
+         */
+        $is_tools_request = false;
+        if (!$this->is_tool_or_directory_page()) {
+            // Inspect the raw request path to see if it begins with the tools base path
+            $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+            if (!empty($request_uri)) {
+                $path = trim(parse_url($request_uri, PHP_URL_PATH), '/');
+                $base = trim($this->base_path, '/');
+                // e.g. path: "tools" or "tools/slug"
+                if (strpos($path, $base) === 0) {
+                    $is_tools_request = true;
+                }
+            }
+        }
+
+        if ($this->is_tool_or_directory_page() || $is_tools_request) {
+            // Logged-in users get app navigation; visitors see the frontend nav
             return is_user_logged_in();
         }
 
