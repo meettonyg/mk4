@@ -141,26 +141,7 @@ class GMKB_Tool_Pages {
      * @return bool True if on a tool or directory page
      */
     private function is_tool_or_directory_page() {
-        // Check if we have a current tool loaded
-        if ($this->current_tool) {
-            return true;
-        }
-
-        // Check query var for directory page
-        if (get_query_var($this->directory_var)) {
-            return true;
-        }
-
-        // Fallback: check URL path directly (for early filter calls before query vars are set)
-        $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
-        $path = trim(wp_parse_url($request_uri, PHP_URL_PATH), '/');
-
-        // Check if URL matches /tools/ or /tools/{slug}/ pattern
-        if ($path === $this->base_path || strpos($path, $this->base_path . '/') === 0) {
-            return true;
-        }
-
-        return false;
+        return $this->current_tool || get_query_var($this->directory_var);
     }
 
     /**
