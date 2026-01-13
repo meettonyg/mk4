@@ -2496,12 +2496,19 @@ class Media_Kit_Content_Generator {
             var ajaxurl = "<?php echo admin_url('admin-ajax.php'); ?>";
             // CRITICAL FIX: Ensure nonce is available globally
             var mkcg_nonce = "<?php echo wp_create_nonce('mkcg_nonce'); ?>";
-            
+
             // Make sure mkcg_vars exists with nonce
             window.mkcg_vars = window.mkcg_vars || {};
             window.mkcg_vars.nonce = window.mkcg_vars.nonce || mkcg_nonce;
             window.mkcg_vars.ajax_url = window.mkcg_vars.ajax_url || ajaxurl;
-            
+
+            // REST API nonce for wp-json endpoints (needed by new Vue components)
+            <?php if (is_user_logged_in()) : ?>
+            window.mkcg_vars.restNonce = "<?php echo wp_create_nonce('wp_rest'); ?>";
+            window.wpApiSettings = window.wpApiSettings || {};
+            window.wpApiSettings.nonce = window.wpApiSettings.nonce || window.mkcg_vars.restNonce;
+            <?php endif; ?>
+
             console.log('MKCG: AJAX URL set to:', ajaxurl);
             console.log('MKCG: Nonce set:', mkcg_nonce.substring(0, 10) + '...');
         </script>
