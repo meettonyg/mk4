@@ -196,10 +196,11 @@ function mapToFields(type, data) {
 
 /**
  * Helper to get REST API base URL and nonce
+ * Supports multiple WordPress configurations (builder, standalone tools, etc.)
  */
 const getApiConfig = () => ({
-  baseUrl: window.gmkbData?.restUrl || '/wp-json/',
-  nonce: window.gmkbData?.restNonce || window.wpApiSettings?.nonce || ''
+  baseUrl: window.gmkbData?.restUrl || window.gmkbStandaloneTools?.restUrl || '/wp-json/',
+  nonce: window.gmkbData?.restNonce || window.gmkbData?.nonce || window.gmkbStandaloneTools?.restNonce || window.wpApiSettings?.nonce || ''
 });
 
 class AISaveBridge {
@@ -395,11 +396,14 @@ class AISaveBridge {
     console.log(`[AISaveBridge] Saving ${type} to profile #${profileId}:`, fields);
 
     try {
-      const response = await fetch(`/wp-json/gmkb/v2/profile/${profileId}/fields`, {
+      const { baseUrl, nonce } = getApiConfig();
+      const apiBase = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+
+      const response = await fetch(`${apiBase}gmkb/v2/profile/${profileId}/fields`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-WP-Nonce': window.gmkbData?.nonce || window.wpApiSettings?.nonce || ''
+          'X-WP-Nonce': nonce
         },
         credentials: 'same-origin',
         body: JSON.stringify(fields)
