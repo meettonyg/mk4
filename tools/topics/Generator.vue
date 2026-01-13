@@ -69,8 +69,11 @@
 
     <!-- Results Section -->
     <div v-if="hasTopics" class="gfy-results">
-      <!-- Current Topics Section (Lock/Pin Feature) - Only for logged-in users with a profile -->
-      <div v-if="hasCurrentTopics && selectedProfileId" class="gfy-current-topics">
+      <!-- Layout wrapper for side-by-side on desktop -->
+      <div class="gfy-results-layout">
+        <!-- LEFT SIDEBAR: Current Topics (Lock/Pin Feature) - Only for logged-in users with a profile -->
+        <aside v-if="hasCurrentTopics && selectedProfileId" class="gfy-layout-sidebar">
+          <div class="gfy-current-topics">
         <div class="gfy-current-topics__header">
           <h3 class="gfy-current-topics__title">Your Current Topics</h3>
           <span class="gfy-current-topics__hint">Click lock to keep, unlock to replace</span>
@@ -103,9 +106,12 @@
             {{ availableSlots }} slot{{ availableSlots !== 1 ? 's' : '' }} available for new topics
           </span>
         </div>
-      </div>
+          </div>
+        </aside>
 
-      <!-- Results Header -->
+        <!-- RIGHT MAIN: Generated Topics and Actions -->
+        <main class="gfy-layout-main">
+          <!-- Results Header -->
       <div class="gfy-results__header">
         <div class="gfy-results__title-row">
           <h3 class="gfy-results__title">Generated Topics</h3>
@@ -246,6 +252,8 @@
         <span v-if="saveError" class="gfy-save-error">
           {{ saveError }}
         </span>
+      </div>
+        </main>
       </div>
     </div>
   </div>
@@ -907,6 +915,74 @@ defineExpose({
 /* RESULTS SECTION */
 .gfy-results {
   width: 100%;
+}
+
+/* SIDE-BY-SIDE LAYOUT */
+.gfy-results-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Desktop: side-by-side */
+@media (min-width: 900px) {
+  .gfy-results-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .gfy-layout-sidebar {
+    position: sticky;
+    top: 1rem;
+    flex: 0 0 280px;
+  }
+
+  .gfy-layout-main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Adjust grid columns for narrower main area */
+  .gfy-layout-main .gfy-topics-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+}
+
+/* Sidebar panel styling */
+.gfy-layout-sidebar .gfy-current-topics {
+  background: var(--gfy-bg-secondary, #f8fafc);
+  border: 1px solid var(--gfy-border-color, #e2e8f0);
+  border-radius: var(--gfy-radius-lg, 12px);
+  padding: 1rem;
+}
+
+.gfy-layout-sidebar .gfy-current-topic {
+  background: white;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+  border-radius: var(--gfy-radius-md, 8px);
+}
+
+.gfy-layout-sidebar .gfy-current-topics__header {
+  margin-bottom: 0.75rem;
+}
+
+.gfy-layout-sidebar .gfy-current-topics__title {
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--gfy-text-secondary, #64748b);
+}
+
+.gfy-layout-sidebar .gfy-current-topics__hint {
+  font-size: 0.75rem;
+}
+
+.gfy-layout-sidebar .gfy-current-topics__summary {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  font-size: 0.8rem;
 }
 
 .gfy-results__header {
