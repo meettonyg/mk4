@@ -69,202 +69,191 @@
 
     <!-- Results Section -->
     <div v-if="hasTopics" class="gfy-results">
-      <!-- Current Topics Section (Lock/Pin Feature) - Only for logged-in users with a profile -->
-      <div v-if="hasCurrentTopics && selectedProfileId" class="gfy-current-topics">
-        <div class="gfy-current-topics__header">
-          <h3 class="gfy-current-topics__title">Your Current Topics</h3>
-          <span class="gfy-current-topics__hint">Click lock to keep, unlock to replace</span>
-        </div>
-        <div class="gfy-current-topics__list">
-          <div
-            v-for="topic in currentTopics"
-            :key="topic.position"
-            class="gfy-current-topic"
-            :class="{ 'gfy-current-topic--locked': topic.locked, 'gfy-current-topic--empty': !topic.text }"
-          >
-            <span class="gfy-current-topic__position">{{ topic.position + 1 }}</span>
-            <span class="gfy-current-topic__text">{{ topic.text || '(empty)' }}</span>
-            <button
-              v-if="topic.text"
-              type="button"
-              class="gfy-current-topic__lock"
-              :title="topic.locked ? 'Unlock to replace' : 'Lock to keep'"
-              @click="toggleLock(topic.position)"
+      <!-- Layout wrapper for side-by-side on desktop -->
+      <div class="gfy-results-layout">
+        <!-- LEFT SIDEBAR: Current Topics (Lock/Pin Feature) - Only for logged-in users with a profile -->
+        <aside v-if="hasCurrentTopics && selectedProfileId" class="gfy-layout-sidebar">
+          <div class="gfy-current-topics">
+            <div class="gfy-current-topics__header">
+              <h3 class="gfy-current-topics__title">Your Current Topics</h3>
+              <span class="gfy-current-topics__hint">Click lock to keep, unlock to replace</span>
+            </div>
+            <div class="gfy-current-topics__list">
+              <div
+                v-for="topic in currentTopics"
+                :key="topic.position"
+                class="gfy-current-topic"
+                :class="{ 'gfy-current-topic--locked': topic.locked, 'gfy-current-topic--empty': !topic.text }"
+              >
+                <span class="gfy-current-topic__position">{{ topic.position + 1 }}</span>
+                <span class="gfy-current-topic__text">{{ topic.text || '(empty)' }}</span>
+                <button
+                  v-if="topic.text"
+                  type="button"
+                  class="gfy-current-topic__lock"
+                  :title="topic.locked ? 'Unlock to replace' : 'Lock to keep'"
+                  @click="toggleLock(topic.position)"
+                >
+                  <i :class="topic.locked ? 'fas fa-lock' : 'fas fa-lock-open'"></i>
+                </button>
+              </div>
+            </div>
+            <div class="gfy-current-topics__summary">
+              <span class="gfy-current-topics__locked-count">
+                🔒 {{ lockedTopics.length }} locked
+              </span>
+              <span class="gfy-current-topics__available">
+                {{ availableSlots }} slot{{ availableSlots !== 1 ? 's' : '' }} available for new topics
+              </span>
+            </div>
+          </div>
+        </aside>
+
+        <!-- RIGHT MAIN: Generated Topics and Actions -->
+        <main class="gfy-layout-main">
+          <!-- Results Header -->
+          <div class="gfy-results__header">
+            <div class="gfy-results__title-row">
+              <h3 class="gfy-results__title">Generated Topics</h3>
+              <span class="gfy-results__count">{{ topics.length }} Ideas</span>
+            </div>
+            <div class="gfy-results__actions">
+              <!-- View Toggle -->
+              <div class="gfy-view-toggle">
+                <button
+                  type="button"
+                  class="gfy-view-toggle__btn"
+                  :class="{ 'gfy-view-toggle__btn--active': viewMode === 'card' }"
+                  @click="viewMode = 'card'"
+                  title="Card View"
+                >
+                  <i class="fas fa-th-large"></i>
+                </button>
+                <button
+                  type="button"
+                  class="gfy-view-toggle__btn"
+                  :class="{ 'gfy-view-toggle__btn--active': viewMode === 'list' }"
+                  @click="viewMode = 'list'"
+                  title="List View"
+                >
+                  <i class="fas fa-list"></i>
+                </button>
+              </div>
+              <button type="button" class="gfy-btn gfy-btn--outline" @click="handleRegenerate">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 4v6h-6M1 20v-6h6"/>
+                  <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                </svg>
+                Regenerate
+              </button>
+              <button type="button" class="gfy-btn gfy-btn--outline" @click="handleCopyAll">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                </svg>
+                {{ selectedTopics.length > 0 ? 'Copy Selected' : 'Copy All' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Selection Banner -->
+          <div class="gfy-selection-banner">
+            <span class="gfy-selection-banner__text">
+              <template v-if="lockedTopics.length > 0">
+                Select up to {{ availableSlots }} new topic{{ availableSlots !== 1 ? 's' : '' }} ({{ lockedTopics.length }} locked)
+              </template>
+              <template v-else>
+                Select up to {{ MAX_SELECTED_TOPICS }} topics (click order = save order)
+              </template>
+            </span>
+            <span class="gfy-selection-banner__count">
+              {{ selectedTopics.length }} of {{ availableSlots }} selected
+            </span>
+          </div>
+
+          <!-- Topics Grid (Card View) -->
+          <div v-if="viewMode === 'card'" class="gfy-topics-grid">
+            <div
+              v-for="(topic, index) in topics"
+              :key="index"
+              class="gfy-topic-card"
+              :class="{ 'gfy-topic-card--selected': isSelected(index) }"
+              @click="toggleSelection(index)"
             >
-              <svg v-if="topic.locked" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0110 0v4"/>
-              </svg>
-              <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 019.9-1"/>
-              </svg>
-            </button>
+              <div class="gfy-topic-card__number">{{ index + 1 }}</div>
+              <div class="gfy-topic-card__content">
+                <span v-if="topic.category" class="gfy-topic-card__category">{{ topic.category }}</span>
+                <p class="gfy-topic-card__title">{{ typeof topic === 'string' ? topic : topic.title || topic }}</p>
+              </div>
+              <div class="gfy-topic-card__checkbox">
+                <span v-if="isSelected(index)" class="gfy-position-badge">{{ getSelectionPosition(index) }}</span>
+              </div>
+            </div>
           </div>
-        </div>
-        <div class="gfy-current-topics__summary">
-          <span class="gfy-current-topics__locked-count">
-            🔒 {{ lockedTopics.length }} locked
-          </span>
-          <span class="gfy-current-topics__available">
-            {{ availableSlots }} slot{{ availableSlots !== 1 ? 's' : '' }} available for new topics
-          </span>
-        </div>
-      </div>
 
-      <!-- Results Header -->
-      <div class="gfy-results__header">
-        <div class="gfy-results__title-row">
-          <h3 class="gfy-results__title">Generated Topics</h3>
-          <span class="gfy-results__count">{{ topics.length }} Ideas</span>
-        </div>
-        <div class="gfy-results__actions">
-          <!-- View Toggle -->
-          <div class="gfy-view-toggle">
-            <button
-              type="button"
-              class="gfy-view-toggle__btn"
-              :class="{ 'gfy-view-toggle__btn--active': viewMode === 'card' }"
-              @click="viewMode = 'card'"
-              title="Card View"
+          <!-- Topics List (List View) -->
+          <div v-else class="gfy-topics-list">
+            <div
+              v-for="(topic, index) in topics"
+              :key="index"
+              class="gfy-topic-row"
+              :class="{ 'gfy-topic-row--selected': isSelected(index) }"
+              @click="toggleSelection(index)"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="7" height="7" rx="1"/>
-                <rect x="14" y="3" width="7" height="7" rx="1"/>
-                <rect x="3" y="14" width="7" height="7" rx="1"/>
-                <rect x="14" y="14" width="7" height="7" rx="1"/>
-              </svg>
-            </button>
-            <button
-              type="button"
-              class="gfy-view-toggle__btn"
-              :class="{ 'gfy-view-toggle__btn--active': viewMode === 'list' }"
-              @click="viewMode = 'list'"
-              title="List View"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="8" y1="6" x2="21" y2="6"/>
-                <line x1="8" y1="12" x2="21" y2="12"/>
-                <line x1="8" y1="18" x2="21" y2="18"/>
-                <circle cx="4" cy="6" r="1.5" fill="currentColor"/>
-                <circle cx="4" cy="12" r="1.5" fill="currentColor"/>
-                <circle cx="4" cy="18" r="1.5" fill="currentColor"/>
-              </svg>
-            </button>
+              <div class="gfy-topic-row__checkbox">
+                <span v-if="isSelected(index)" class="gfy-position-badge gfy-position-badge--small">{{ getSelectionPosition(index) }}</span>
+              </div>
+              <div class="gfy-topic-row__number">{{ index + 1 }}.</div>
+              <p class="gfy-topic-row__title">{{ typeof topic === 'string' ? topic : topic.title || topic }}</p>
+            </div>
           </div>
-          <button type="button" class="gfy-btn gfy-btn--outline" @click="handleRegenerate">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M23 4v6h-6M1 20v-6h6"/>
-              <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
-            </svg>
-            Regenerate
-          </button>
-          <button type="button" class="gfy-btn gfy-btn--outline" @click="handleCopyAll">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-            </svg>
-            {{ selectedTopics.length > 0 ? 'Copy Selected' : 'Copy All' }}
-          </button>
-        </div>
-      </div>
 
-      <!-- Selection Banner -->
-      <div class="gfy-selection-banner">
-        <span class="gfy-selection-banner__text">
-          <template v-if="lockedTopics.length > 0">
-            Select up to {{ availableSlots }} new topic{{ availableSlots !== 1 ? 's' : '' }} ({{ lockedTopics.length }} locked)
-          </template>
-          <template v-else>
-            Select up to {{ MAX_SELECTED_TOPICS }} topics (click order = save order)
-          </template>
-        </span>
-        <span class="gfy-selection-banner__count">
-          {{ selectedTopics.length }} of {{ availableSlots }} selected
-        </span>
-      </div>
+          <!-- Save Actions -->
+          <div class="gfy-results__footer">
+            <!-- Authority Hook Save Option -->
+            <label v-if="hasAuthorityHookData" class="gfy-checkbox-option">
+              <input
+                v-model="saveAuthorityHook"
+                type="checkbox"
+                class="gfy-checkbox-option__input"
+              />
+              <span class="gfy-checkbox-option__box">
+                <svg v-if="saveAuthorityHook" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                </svg>
+              </span>
+              <span class="gfy-checkbox-option__label">Also save Authority Hook to profile</span>
+            </label>
 
-      <!-- Topics Grid (Card View) -->
-      <div v-if="viewMode === 'card'" class="gfy-topics-grid">
-        <div
-          v-for="(topic, index) in topics"
-          :key="index"
-          class="gfy-topic-card"
-          :class="{ 'gfy-topic-card--selected': isSelected(index) }"
-          @click="toggleSelection(index)"
-        >
-          <div class="gfy-topic-card__number">{{ index + 1 }}</div>
-          <div class="gfy-topic-card__content">
-            <span v-if="topic.category" class="gfy-topic-card__category">{{ topic.category }}</span>
-            <p class="gfy-topic-card__title">{{ typeof topic === 'string' ? topic : topic.title || topic }}</p>
+            <div class="gfy-save-section">
+              <button
+                type="button"
+                class="gfy-btn gfy-btn--primary gfy-btn--large"
+                :disabled="selectedTopics.length === 0 || isSaving"
+                @click="handleSaveToMediaKit"
+              >
+                <svg v-if="!isSaving" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                <span v-if="isSaving" class="gfy-spinner"></span>
+                {{ isSaving ? 'Saving...' : 'Save to Media Kit' }}
+              </button>
+              <button type="button" class="gfy-btn gfy-btn--text" @click="handleStartOver">
+                Start Over
+              </button>
+            </div>
+            <!-- Save Success Message -->
+            <span v-if="saveSuccess" class="gfy-save-success">
+              ✓ Saved successfully!
+            </span>
+            <!-- Save Error Message -->
+            <span v-if="saveError" class="gfy-save-error">
+              {{ saveError }}
+            </span>
           </div>
-          <div class="gfy-topic-card__checkbox">
-            <span v-if="isSelected(index)" class="gfy-position-badge">{{ getSelectionPosition(index) }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Topics List (List View) -->
-      <div v-else class="gfy-topics-list">
-        <div
-          v-for="(topic, index) in topics"
-          :key="index"
-          class="gfy-topic-row"
-          :class="{ 'gfy-topic-row--selected': isSelected(index) }"
-          @click="toggleSelection(index)"
-        >
-          <div class="gfy-topic-row__checkbox">
-            <span v-if="isSelected(index)" class="gfy-position-badge gfy-position-badge--small">{{ getSelectionPosition(index) }}</span>
-          </div>
-          <div class="gfy-topic-row__number">{{ index + 1 }}.</div>
-          <p class="gfy-topic-row__title">{{ typeof topic === 'string' ? topic : topic.title || topic }}</p>
-        </div>
-      </div>
-
-      <!-- Save Actions -->
-      <div class="gfy-results__footer">
-        <!-- Authority Hook Save Option -->
-        <label v-if="hasAuthorityHookData" class="gfy-checkbox-option">
-          <input
-            v-model="saveAuthorityHook"
-            type="checkbox"
-            class="gfy-checkbox-option__input"
-          />
-          <span class="gfy-checkbox-option__box">
-            <svg v-if="saveAuthorityHook" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
-            </svg>
-          </span>
-          <span class="gfy-checkbox-option__label">Also save Authority Hook to profile</span>
-        </label>
-
-        <div class="gfy-save-section">
-          <button
-            type="button"
-            class="gfy-btn gfy-btn--primary gfy-btn--large"
-            :disabled="selectedTopics.length === 0 || isSaving"
-            @click="handleSaveToMediaKit"
-          >
-            <svg v-if="!isSaving" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
-              <polyline points="17 21 17 13 7 13 7 21"/>
-              <polyline points="7 3 7 8 15 8"/>
-            </svg>
-            <span v-if="isSaving" class="gfy-spinner"></span>
-            {{ isSaving ? 'Saving...' : 'Save to Media Kit' }}
-          </button>
-          <button type="button" class="gfy-btn gfy-btn--text" @click="handleStartOver">
-            Start Over
-          </button>
-        </div>
-        <!-- Save Success Message -->
-        <span v-if="saveSuccess" class="gfy-save-success">
-          ✓ Saved successfully!
-        </span>
-        <!-- Save Error Message -->
-        <span v-if="saveError" class="gfy-save-error">
-          {{ saveError }}
-        </span>
+        </main>
       </div>
     </div>
   </div>
@@ -781,15 +770,8 @@ defineExpose({
   background: var(--gfy-primary-dark);
 }
 
-.gfy-current-topic__lock svg {
-  width: 16px;
-  height: 16px;
-}
-
-.gfy-current-topic__lock svg rect,
-.gfy-current-topic__lock svg path {
-  stroke: currentColor;
-  stroke-width: 2;
+.gfy-current-topic__lock i {
+  font-size: 14px;
 }
 
 .gfy-current-topics__summary {
@@ -935,6 +917,81 @@ defineExpose({
   width: 100%;
 }
 
+/* SIDE-BY-SIDE LAYOUT */
+.gfy-results-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Desktop: side-by-side */
+@media (min-width: 900px) {
+  .gfy-results-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .gfy-layout-sidebar {
+    position: sticky;
+    top: 1rem;
+    flex: 0 0 280px;
+  }
+
+  .gfy-layout-main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Adjust grid columns for narrower main area */
+  .gfy-layout-main .gfy-topics-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+
+  /* Stack header vertically when sidebar is present */
+  .gfy-layout-main .gfy-results__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* Sidebar panel styling */
+.gfy-layout-sidebar .gfy-current-topics {
+  background: var(--gfy-bg-secondary, #f8fafc);
+  border: 1px solid var(--gfy-border-color, #e2e8f0);
+  border-radius: var(--gfy-radius-lg, 12px);
+  padding: 1rem;
+  margin-bottom: 0;
+}
+
+.gfy-layout-sidebar .gfy-current-topic {
+  background: white;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+  border-radius: var(--gfy-radius-md, 8px);
+}
+
+.gfy-layout-sidebar .gfy-current-topics__header {
+  margin-bottom: 0.75rem;
+}
+
+.gfy-layout-sidebar .gfy-current-topics__title {
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--gfy-text-secondary, #64748b);
+}
+
+.gfy-layout-sidebar .gfy-current-topics__hint {
+  font-size: 0.75rem;
+}
+
+.gfy-layout-sidebar .gfy-current-topics__summary {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  font-size: 0.8rem;
+}
+
 .gfy-results__header {
   display: flex;
   justify-content: space-between;
@@ -972,6 +1029,7 @@ defineExpose({
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  flex-shrink: 0;
 }
 
 /* VIEW TOGGLE */
@@ -997,21 +1055,8 @@ defineExpose({
   transition: all 0.15s ease;
 }
 
-.gfy-view-toggle__btn svg {
-  width: 16px;
-  height: 16px;
-}
-
-.gfy-view-toggle__btn svg rect,
-.gfy-view-toggle__btn svg line,
-.gfy-view-toggle__btn svg path {
-  stroke: currentColor;
-  stroke-width: 2;
-}
-
-.gfy-view-toggle__btn svg circle {
-  fill: currentColor;
-  stroke: none;
+.gfy-view-toggle__btn i {
+  font-size: 14px;
 }
 
 .gfy-view-toggle__btn:hover:not(.gfy-view-toggle__btn--active) {
