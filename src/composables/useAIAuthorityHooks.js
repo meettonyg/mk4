@@ -60,8 +60,15 @@ export function useAIAuthorityHooks() {
       if (matches && matches.length > 0) {
         return matches.map(m => {
           // Remove the number prefix (e.g., "1. ")
-          const text = m.replace(/^\d+\.\s*/, '').trim();
-          return { text };
+          const fullContent = m.replace(/^\d+\.\s*/, '').trim();
+
+          // Check if content has HOOK:/ANGLE: format (for structured responses)
+          // e.g., "HOOK: I help... ANGLE: Results-focused"
+          const parts = fullContent.split(/\nANGLE:\s*/i);
+          const text = parts[0].replace(/^HOOK:\s*/i, '').trim();
+          const angle = parts.length > 1 ? parts[1].trim() : '';
+
+          return { text, angle };
         });
       }
 
@@ -71,7 +78,8 @@ export function useAIAuthorityHooks() {
         .filter(t => t.length > 0);
 
       if (lines.length > 0) {
-        return lines.map(text => ({ text }));
+        // Return a consistent object shape even for the fallback
+        return lines.map(text => ({ text, angle: '' }));
       }
     }
 
