@@ -1979,8 +1979,8 @@ get_footer();
                     <div class="gmkb-plg-guidance-layout">
                         <!-- Left Column: Formula & Steps -->
                         <div class="gmkb-plg-guidance-content">
-                            <h2>How to Create Your <?php echo esc_html($meta['name']); ?></h2>
-                            <p class="intro"><?php echo esc_html($meta['shortDescription'] ?? ''); ?></p>
+                            <h2><?php echo esc_html(!empty($landing['guidanceTitle']) ? $landing['guidanceTitle'] : 'How to Create Your ' . $meta['name']); ?></h2>
+                            <p class="intro"><?php echo esc_html(!empty($landing['guidanceSubtitle']) ? $landing['guidanceSubtitle'] : ($meta['shortDescription'] ?? '')); ?></p>
 
                             <!-- FORMULA BOX -->
                             <?php if (!empty($landing['formula'])): ?>
@@ -2000,6 +2000,19 @@ get_footer();
                                         <h3 class="gmkb-plg-process-title"><?php echo esc_html($step['title']); ?></h3>
                                         <p class="gmkb-plg-process-desc"><?php echo esc_html($step['description']); ?></p>
                                     </div>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <?php endif; ?>
+
+                            <!-- EXAMPLES -->
+                            <?php if (!empty($landing['examples'])): ?>
+                            <div class="gmkb-plg-examples">
+                                <h3 class="gmkb-plg-examples-title">Example Authority Hooks</h3>
+                                <?php foreach ($landing['examples'] as $example): ?>
+                                <div class="gmkb-plg-example-item">
+                                    <span class="gmkb-plg-example-label"><?php echo esc_html($example['title']); ?>:</span>
+                                    <p class="gmkb-plg-example-text">"<?php echo esc_html($example['content']); ?>"</p>
                                 </div>
                                 <?php endforeach; ?>
                             </div>

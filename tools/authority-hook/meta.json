@@ -1,7 +1,7 @@
 {
   "name": "Authority Hook Builder",
   "slug": "authority-hook-builder",
-  "shortDescription": "Build your \"Authority Hook\" - a framework for positioning yourself as an expert using the 6 W's.",
+  "shortDescription": "Build your \"Authority Hook\" - a framework for positioning yourself as an expert using the 4 W's.",
   "emoji": "🎯",
   "apiType": "authority_hook",
   "fieldMapping": {
@@ -19,10 +19,11 @@
     "anyOf": ["who", "what"],
     "errorMessage": "At least \"who\" or \"what\" is required for authority hook generation"
   },
-  "longDescription": "The Authority Hook Builder uses the proven 6 W's framework (Who, What, When, How, Where, Why) to create a powerful positioning statement that establishes your expertise. This structured approach ensures you communicate your unique value proposition clearly and memorably.",
+  "longDescription": "The Authority Hook Builder uses the proven 4 W's framework (Who, What, When, How) to create a powerful positioning statement that establishes your expertise. This structured approach ensures you communicate your unique value proposition clearly and memorably.",
   "category": "value-builder",
   "buttonText": "Build Hook",
   "supportsProfileSave": true,
+  "singleColumn": true,
   "icon": "TrophyIcon",
   "componentName": "AuthorityHookBuilder",
   "useCases": [
@@ -47,22 +48,24 @@
   ],
   "seoMeta": {
     "title": "Free AI Authority Hook Builder | Position Yourself as an Expert",
-    "description": "Build your Authority Hook using the 6 W's framework with our free AI tool. Create expert positioning statements that differentiate you.",
+    "description": "Build your Authority Hook using the 4 W's framework with our free AI tool. Create expert positioning statements that differentiate you.",
     "keywords": [
       "authority hook",
       "expert positioning",
       "thought leader",
       "personal branding",
       "positioning statement",
-      "6 W's framework"
+      "4 W's framework"
     ],
     "canonicalPath": "/tools/authority-hook-builder/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Authority Hook",
+    "guidanceSubtitle": "Your Authority Hook is the opening line that establishes your credibility. A powerful hook immediately communicates who you help, what results you deliver, when they need you, and how you do it.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Authority Hook Generator",
-      "subhead": "Generate a positioning statement that establishes your expertise using the 6 W's framework.",
+      "subhead": "Generate a positioning statement that establishes your expertise using the 4 W's framework.",
       "microProof": [
         {
           "icon": "\u2713",
@@ -81,7 +84,7 @@
     "heroLoggedIn": {
       "badge": "\u2728 AI Tool",
       "h1": "Authority Hook Generator",
-      "subhead": "Generate a positioning statement that establishes your expertise using the 6 W's framework.",
+      "subhead": "Generate a positioning statement that establishes your expertise using the 4 W's framework.",
       "microProof": [
         {
           "icon": "\u2713",
@@ -144,10 +147,10 @@
     "definition": {
       "title": "Crafting Your Perfect Authority Hook",
       "subtitle": "Your Authority Hook is the opening line that establishes your credibility when reaching out to podcast hosts. A powerful hook immediately communicates who you help, what results you deliver, when they need you, and how you do it.",
-      "content": "An Authority Hook is a specialized positioning statement that instantly communicates your value. Unlike a generic bio, it uses the 6 W's framework to answer the listener's subconscious question: 'Why should I listen to you?'"
+      "content": "An Authority Hook is a specialized positioning statement that instantly communicates your value. Unlike a generic bio, it uses the 4 W's framework to answer the listener's subconscious question: 'Why should I listen to you?'"
     },
     "formulaLabel": "FORMULA",
-    "formula": "I help **[WHO]** achieve **[RESULT]** when **[WHEN]** through **[HOW]**.",
+    "formula": "I help [WHO] achieve [WHAT] when [WHEN] through [HOW].",
     "tips": [
       "Be specific about WHO - 'busy entrepreneurs' beats 'business owners'",
       "Focus on tangible RESULTS, not just activities",
@@ -171,26 +174,26 @@
     "howItWorks": [
       {
         "step": 1,
-        "title": "Answer the 6 W's",
-        "description": "Fill in Who, What, When, How, Where, and Why.",
+        "title": "Define Your 4 W's",
+        "description": "Tell us WHO you help, WHAT results you deliver, WHEN they need you, and HOW you achieve it. Be specific - precision is power.",
         "icon": "DocumentTextIcon"
       },
       {
         "step": 2,
-        "title": "Generate Your Hook",
-        "description": "Watch your answers transform into a powerful statement.",
+        "title": "Generate Hook Variations",
+        "description": "Our AI creates multiple hook variations, each with a unique angle. Pick the one that resonates most with your brand voice.",
         "icon": "SparklesIcon"
       },
       {
         "step": 3,
-        "title": "Apply Everywhere",
-        "description": "Use your hook in bios, pitches, and introductions.",
+        "title": "Use It Everywhere",
+        "description": "Deploy your hook in podcast pitches, social bios, speaker intros, and anywhere you need to establish instant credibility.",
         "icon": "ShareIcon"
       }
     ],
     "features": [
       {
-        "title": "6 W's Framework",
+        "title": "4 W's Framework",
         "description": "Structured approach that covers all positioning essentials.",
         "icon": "Squares2X2Icon"
       },
@@ -212,8 +215,8 @@
     ],
     "faq": [
       {
-        "question": "What are the 6 W's?",
-        "answer": "WHO (who you help), WHAT (results you deliver), WHEN (in what situations), HOW (your unique method), WHERE (context), and WHY (why it matters)."
+        "question": "What are the 4 W's?",
+        "answer": "WHO (who you help), WHAT (results you deliver), WHEN (in what situations), and HOW (your unique method). These four elements create a complete positioning statement."
       },
       {
         "question": "How specific should I be?",
