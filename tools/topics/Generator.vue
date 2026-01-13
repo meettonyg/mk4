@@ -121,7 +121,7 @@
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
               <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
             </svg>
-            Copy All
+            {{ selectedTopics.length > 0 ? 'Copy Selected' : 'Copy All' }}
           </button>
         </div>
       </div>
@@ -223,9 +223,10 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, inject } from 'vue';
 import { useAITopics } from '../../src/composables/useAITopics';
 import { useProfileContext } from '../../src/composables/useProfileContext';
+import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
 
 // Constants
 const MAX_SELECTED_TOPICS = 5;
@@ -257,6 +258,9 @@ const {
   saveToProfile
 } = useProfileContext();
 
+// Inject profile data from parent (EmbeddedToolWrapper provides this)
+const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+
 // Local state
 const expertise = ref('');
 const selectedTopics = ref([]);
@@ -265,23 +269,21 @@ const selectedProfileId = ref(null);
 const viewMode = ref('list'); // 'card' or 'list' - default to list for single-column display
 const saveAuthorityHook = ref(true); // Whether to also save authority hook fields
 
-// Use context profile ID if available
-watch(contextProfileId, (newId) => {
-  if (newId && !selectedProfileId.value) {
+// Computed: resolved profile ID from all available sources
+const resolvedProfileId = computed(() => {
+  // Priority: props > injected > context service
+  return props.profileData?.id
+    || injectedProfileData.value?.id
+    || contextProfileId.value
+    || null;
+});
+
+// Keep selectedProfileId in sync with resolved ID
+watch(resolvedProfileId, (newId) => {
+  if (newId) {
     selectedProfileId.value = newId;
   }
 }, { immediate: true });
-
-// Also use profile ID from props (for embedded mode via slot)
-watch(
-  () => props.profileData?.id,
-  (newId) => {
-    if (newId) {
-      selectedProfileId.value = newId;
-    }
-  },
-  { immediate: true }
-);
 
 // Authority Hook Builder fields
 const hookWho = ref('');
@@ -391,10 +393,27 @@ const handleRegenerate = async () => {
 };
 
 /**
- * Handle copy all topics
+ * Handle copy - copies selected topics (or all if none selected) as a user-friendly numbered list
  */
 const handleCopyAll = async () => {
-  await copyToClipboard();
+  // Determine which topics to copy: selected ones if any, otherwise all
+  const topicsToUse = selectedTopics.value.length > 0
+    ? selectedTopics.value.map(idx => topics.value[idx])
+    : topics.value;
+
+  // Format as numbered list (user-friendly, not JSON)
+  const formattedText = topicsToUse
+    .map((topic, index) => {
+      const text = typeof topic === 'string' ? topic : topic.title || topic;
+      return `${index + 1}. ${text}`;
+    })
+    .join('\n');
+
+  try {
+    await navigator.clipboard.writeText(formattedText);
+  } catch (err) {
+    console.error('[Topics Generator] Failed to copy:', err);
+  }
 };
 
 /**
@@ -471,11 +490,12 @@ watch(
   }
 );
 
-// Watch profile data prop
+// Watch profile data from both props and inject
 watch(
-  () => props.profileData,
-  (newData) => {
-    if (newData) populateFromProfile(newData);
+  [() => props.profileData, injectedProfileData],
+  ([propsData, injectedData]) => {
+    const data = propsData || injectedData;
+    if (data) populateFromProfile(data);
   },
   { immediate: true }
 );
@@ -933,6 +953,12 @@ defineExpose({
 
 .gfy-btn svg {
   flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
 }
 
 .gfy-btn--outline {

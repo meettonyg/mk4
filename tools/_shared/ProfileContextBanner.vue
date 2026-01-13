@@ -203,9 +203,10 @@ watch(selectedProfileId, (newVal) => {
 });
 
 // Emit loaded event when profile data is available
+// Include the profile ID explicitly since API response may not include it
 watch(profileData, (newData) => {
   if (newData) {
-    emit('profile-loaded', newData);
+    emit('profile-loaded', { ...newData, id: selectedId.value });
   }
 });
 </script>
