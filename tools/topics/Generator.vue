@@ -946,6 +946,12 @@ defineExpose({
   .gfy-layout-main .gfy-topics-grid {
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   }
+
+  /* Stack header vertically when sidebar is present */
+  .gfy-layout-main .gfy-results__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 /* Sidebar panel styling */
@@ -1022,6 +1028,7 @@ defineExpose({
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  flex-shrink: 0;
 }
 
 /* VIEW TOGGLE */
