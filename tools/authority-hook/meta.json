@@ -59,6 +59,8 @@
     "canonicalPath": "/tools/authority-hook-builder/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Authority Hook",
+    "guidanceSubtitle": "Your Authority Hook is the opening line that establishes your credibility. A powerful hook immediately communicates who you help, what results you deliver, when they need you, and how you do it.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Authority Hook Generator",
@@ -147,7 +149,7 @@
       "content": "An Authority Hook is a specialized positioning statement that instantly communicates your value. Unlike a generic bio, it uses the 4 W's framework to answer the listener's subconscious question: 'Why should I listen to you?'"
     },
     "formulaLabel": "FORMULA",
-    "formula": "I help **[WHO]** achieve **[RESULT]** when **[WHEN]** through **[HOW]**.",
+    "formula": "I help [WHO] achieve [WHAT] when [WHEN] through [HOW].",
     "tips": [
       "Be specific about WHO - 'busy entrepreneurs' beats 'business owners'",
       "Focus on tangible RESULTS, not just activities",
@@ -171,20 +173,20 @@
     "howItWorks": [
       {
         "step": 1,
-        "title": "Answer the 4 W's",
-        "description": "Fill in Who, What, When, and How.",
+        "title": "Define Your 4 W's",
+        "description": "Tell us WHO you help, WHAT results you deliver, WHEN they need you, and HOW you achieve it. Be specific - precision is power.",
         "icon": "DocumentTextIcon"
       },
       {
         "step": 2,
-        "title": "Generate Your Hook",
-        "description": "Watch your answers transform into a powerful statement.",
+        "title": "Generate Hook Variations",
+        "description": "Our AI creates multiple hook variations, each with a unique angle. Pick the one that resonates most with your brand voice.",
         "icon": "SparklesIcon"
       },
       {
         "step": 3,
-        "title": "Apply Everywhere",
-        "description": "Use your hook in bios, pitches, and introductions.",
+        "title": "Use It Everywhere",
+        "description": "Deploy your hook in podcast pitches, social bios, speaker intros, and anywhere you need to establish instant credibility.",
         "icon": "ShareIcon"
       }
     ],
