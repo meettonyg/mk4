@@ -433,9 +433,11 @@ const toggleLock = (position) => {
   const topic = currentTopics.value.find(t => t.position === position);
   if (topic) {
     topic.locked = !topic.locked;
-    // If we're unlocking and have too many selected, deselect the last one
-    if (!topic.locked && selectedTopics.value.length > availableSlots.value) {
-      selectedTopics.value.pop();
+    // If we're locking and have too many selected, deselect until within limit
+    if (topic.locked) {
+      while (selectedTopics.value.length > availableSlots.value) {
+        selectedTopics.value.pop();
+      }
     }
   }
 };
