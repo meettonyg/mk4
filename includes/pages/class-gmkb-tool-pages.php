@@ -152,13 +152,62 @@ class GMKB_Tool_Pages {
      * @return bool Modified value
      */
     public function filter_is_app_page($is_app_page) {
-        if ($this->is_tool_or_directory_page()) {
-            // Logged-in users get app navigation
-            // Public users get frontend navigation
+        /*
+         * Determine whether the current request should be treated as a tool or
+         * directory page. Historically this logic relied solely on the
+         * presence of query vars, which are only available after the rewrite
+         * rules have been processed. Some themes (including Guestify) invoke
+         * the `guestify_is_app_page` filter very early in the request
+         * lifecycle, before WP_Query has parsed the request and populated
+         * custom query variables. In that case `is_tool_or_directory_page()`
+         * returns false even when the request is for `/tools/` or an
+         * individual tool URL. To avoid falling back to the front-end header
+         * for logged-in users on those pages we also examine the request URI
+         * whenever no query vars are available.
+         */
+        $is_tool_or_dir_page = $this->is_tool_or_directory_page();
+        $is_tools_request = false;
+
+        if (!$is_tool_or_dir_page) {
+            $path = $this->get_relative_request_path();
+            if ($path !== null) {
+                $base = trim($this->base_path, '/');
+                // e.g. path: "tools" or "tools/slug"
+                if (strpos($path, $base) === 0) {
+                    $is_tools_request = true;
+                }
+            }
+        }
+
+        if ($is_tool_or_dir_page || $is_tools_request) {
+            // Logged-in users get app navigation; visitors see the frontend nav
             return is_user_logged_in();
         }
 
         return $is_app_page;
+    }
+
+    /**
+     * Get the request path relative to WordPress installation.
+     * Handles subdirectory installs (e.g., example.com/blog/tools/).
+     *
+     * @return string|null Relative path or null if unavailable
+     */
+    private function get_relative_request_path() {
+        $request_uri = $_SERVER['REQUEST_URI'] ?? '';
+        if (empty($request_uri)) {
+            return null;
+        }
+
+        $request_path = trim(parse_url($request_uri, PHP_URL_PATH), '/');
+
+        // Make path relative to WordPress installation to support subdirectory installs
+        $home_path = trim(parse_url(home_url('/'), PHP_URL_PATH), '/');
+        if (!empty($home_path) && strpos($request_path, $home_path) === 0) {
+            $request_path = substr($request_path, strlen($home_path));
+        }
+
+        return trim($request_path, '/');
     }
 
     /**
@@ -2103,6 +2152,113 @@ get_footer();
     }
 
     /**
+     * Convert Heroicon name from tool metadata to Font Awesome class
+     *
+     * @param string $heroicon_name Heroicon name (e.g., "SparklesIcon")
+     * @return string Font Awesome icon class
+     */
+    private function heroicon_to_fontawesome($heroicon_name) {
+        $mapping = array(
+            'SparklesIcon' => 'fa-solid fa-wand-magic-sparkles',
+            'BoltIcon' => 'fa-solid fa-bolt',
+            'UserCircleIcon' => 'fa-solid fa-user',
+            'UserIcon' => 'fa-solid fa-user',
+            'UsersIcon' => 'fa-solid fa-users',
+            'UserGroupIcon' => 'fa-solid fa-user-group',
+            'ChatBubbleBottomCenterTextIcon' => 'fa-solid fa-comment-dots',
+            'ChatBubbleLeftRightIcon' => 'fa-solid fa-comments',
+            'ChatBubbleOvalLeftIcon' => 'fa-solid fa-comment',
+            'QuestionMarkCircleIcon' => 'fa-solid fa-circle-question',
+            'DocumentTextIcon' => 'fa-solid fa-file-lines',
+            'PencilSquareIcon' => 'fa-solid fa-pen-to-square',
+            'EnvelopeIcon' => 'fa-solid fa-envelope',
+            'EnvelopeOpenIcon' => 'fa-solid fa-envelope-open',
+            'SpeakerWaveIcon' => 'fa-solid fa-volume-high',
+            'MicrophoneIcon' => 'fa-solid fa-microphone',
+            'GiftIcon' => 'fa-solid fa-gift',
+            'TrophyIcon' => 'fa-solid fa-trophy',
+            'RocketLaunchIcon' => 'fa-solid fa-rocket',
+            'ArrowTrendingUpIcon' => 'fa-solid fa-arrow-trend-up',
+            'ChartBarIcon' => 'fa-solid fa-chart-bar',
+            'PresentationChartLineIcon' => 'fa-solid fa-chart-line',
+            'LightBulbIcon' => 'fa-solid fa-lightbulb',
+            'BookOpenIcon' => 'fa-solid fa-book-open',
+            'NewspaperIcon' => 'fa-solid fa-newspaper',
+            'ShareIcon' => 'fa-solid fa-share-nodes',
+            'LinkIcon' => 'fa-solid fa-link',
+            'TagIcon' => 'fa-solid fa-tag',
+            'HashtagIcon' => 'fa-solid fa-hashtag',
+            'MagnifyingGlassIcon' => 'fa-solid fa-magnifying-glass',
+            'MagnifyingGlassCircleIcon' => 'fa-solid fa-magnifying-glass',
+            'ShieldCheckIcon' => 'fa-solid fa-shield-halved',
+            'CheckCircleIcon' => 'fa-solid fa-circle-check',
+            'CheckBadgeIcon' => 'fa-solid fa-certificate',
+            'StarIcon' => 'fa-solid fa-star',
+            'HeartIcon' => 'fa-solid fa-heart',
+            'ClipboardDocumentListIcon' => 'fa-solid fa-clipboard-list',
+            'ClipboardDocumentIcon' => 'fa-solid fa-clipboard',
+            'ClipboardDocumentCheckIcon' => 'fa-solid fa-clipboard-check',
+            'ListBulletIcon' => 'fa-solid fa-list',
+            'QueueListIcon' => 'fa-solid fa-list-ol',
+            'Bars3BottomLeftIcon' => 'fa-solid fa-bars',
+            'InboxStackIcon' => 'fa-solid fa-inbox',
+            'PlayCircleIcon' => 'fa-solid fa-circle-play',
+            'ArrowsRightLeftIcon' => 'fa-solid fa-arrows-left-right',
+            'CubeTransparentIcon' => 'fa-solid fa-cube',
+            'FingerPrintIcon' => 'fa-solid fa-fingerprint',
+            'AcademicCapIcon' => 'fa-solid fa-graduation-cap',
+            'GlobeAltIcon' => 'fa-solid fa-globe',
+            'CurrencyDollarIcon' => 'fa-solid fa-dollar-sign',
+            'CalculatorIcon' => 'fa-solid fa-calculator',
+            'ClockIcon' => 'fa-solid fa-clock',
+            'BellIcon' => 'fa-solid fa-bell',
+            'PhotoIcon' => 'fa-solid fa-image',
+            'MusicalNoteIcon' => 'fa-solid fa-music',
+            'LanguageIcon' => 'fa-solid fa-language',
+            'KeyIcon' => 'fa-solid fa-key',
+            'PhoneIcon' => 'fa-solid fa-phone',
+            'DevicePhoneMobileIcon' => 'fa-solid fa-mobile',
+            'SignalIcon' => 'fa-solid fa-signal',
+            'SwatchIcon' => 'fa-solid fa-swatchbook',
+            'Squares2X2Icon' => 'fa-solid fa-grip',
+            'RectangleStackIcon' => 'fa-solid fa-layer-group',
+            'DocumentDuplicateIcon' => 'fa-solid fa-copy',
+            'DocumentCheckIcon' => 'fa-solid fa-file-circle-check',
+            'AdjustmentsHorizontalIcon' => 'fa-solid fa-sliders',
+            'CursorArrowRaysIcon' => 'fa-solid fa-arrow-pointer',
+            'ArrowPathIcon' => 'fa-solid fa-arrows-rotate',
+            'ArrowRightCircleIcon' => 'fa-solid fa-circle-arrow-right',
+            'PlusCircleIcon' => 'fa-solid fa-circle-plus',
+            'InformationCircleIcon' => 'fa-solid fa-circle-info',
+            'ExclamationTriangleIcon' => 'fa-solid fa-triangle-exclamation',
+            'HandRaisedIcon' => 'fa-solid fa-hand',
+        );
+
+        return $mapping[$heroicon_name] ?? 'fa-solid fa-wrench';
+    }
+
+    /**
+     * Get Font Awesome icon class for a category
+     *
+     * @param string $category_slug Category slug
+     * @return string Font Awesome icon class
+     */
+    private function get_category_icon($category_slug) {
+        $icons = array(
+            'messaging' => 'fa-solid fa-comment-dots',
+            'message-builder' => 'fa-solid fa-comment-dots',
+            'value-builder' => 'fa-solid fa-chart-line',
+            'profile-content' => 'fa-solid fa-id-card',
+            'media-kit' => 'fa-solid fa-photo-film',
+            'outreach' => 'fa-solid fa-paper-plane',
+            'seo-tools' => 'fa-solid fa-magnifying-glass',
+            'content-creation' => 'fa-solid fa-pen-nib',
+            'social-media' => 'fa-solid fa-share-nodes',
+        );
+        return $icons[$category_slug] ?? 'fa-solid fa-folder';
+    }
+
+    /**
      * Render the tools directory page content
      */
     public function render_directory_page() {
@@ -2114,99 +2270,273 @@ get_footer();
         $grouped = $this->discovery->get_tools_grouped_by_category();
 
         ?>
-        <div class="gmkb-tools-directory-page">
-            <section class="gmkb-directory-hero">
-                <div class="gmkb-container">
+        <div class="gmkb-tools-directory">
+            <!-- Hero Section -->
+            <section class="gmkb-dir-hero">
+                <div class="gmkb-dir-container">
                     <h1>Free AI Tools for Speakers & Authors</h1>
-                    <p>Professional content generation tools to build your brand and grow your audience.</p>
+                    <p>Professional content generation tools designed to amplify your authority, build your brand, and grow your audience.</p>
                 </div>
             </section>
 
-            <div class="gmkb-container">
-                <?php foreach ($grouped as $category_slug => $category): ?>
-                    <?php if (!empty($category['tools'])): ?>
-                    <section class="gmkb-directory-category">
-                        <h2><?php echo esc_html($category['name']); ?></h2>
-                        <p class="gmkb-category-description"><?php echo esc_html($category['description']); ?></p>
+            <!-- Tools Categories -->
+            <div class="gmkb-dir-content">
+                <div class="gmkb-dir-container">
+                    <?php foreach ($grouped as $category_slug => $category): ?>
+                        <?php if (!empty($category['tools'])): ?>
+                        <section class="gmkb-dir-category">
+                            <div class="gmkb-dir-category-header">
+                                <i class="<?php echo esc_attr($this->get_category_icon($category_slug)); ?> gmkb-dir-category-icon"></i>
+                                <div>
+                                    <h2><?php echo esc_html($category['name']); ?></h2>
+                                    <p><?php echo esc_html($category['description']); ?></p>
+                                </div>
+                            </div>
+                            <div class="gmkb-dir-category-divider"></div>
 
-                        <div class="gmkb-tools-grid">
-                            <?php foreach ($category['tools'] as $tool):
-                                $meta = $this->discovery->get_tool_metadata($tool['id']);
-                            ?>
-                                <a href="<?php echo esc_url(home_url('/' . $this->get_base_path() . '/' . $tool['id'] . '/')); ?>"
-                                   class="gmkb-tool-card">
+                            <div class="gmkb-dir-tools-grid">
+                                <?php foreach ($category['tools'] as $tool):
+                                    $meta = $this->discovery->get_tool_metadata($tool['id']);
+                                ?>
+                                <div class="gmkb-dir-tool-card">
+                                    <div class="gmkb-dir-tool-icon">
+                                        <i class="<?php echo esc_attr($this->heroicon_to_fontawesome($meta['icon'] ?? '')); ?>"></i>
+                                    </div>
                                     <h3><?php echo esc_html($meta['name'] ?? $tool['name']); ?></h3>
                                     <p><?php echo esc_html($meta['shortDescription'] ?? ''); ?></p>
-                                </a>
-                            <?php endforeach; ?>
-                        </div>
-                    </section>
-                    <?php endif; ?>
-                <?php endforeach; ?>
+                                    <a href="<?php echo esc_url(home_url('/' . $this->get_base_path() . '/' . $tool['id'] . '/')); ?>" class="gmkb-dir-tool-link">
+                                        LAUNCH TOOL <i class="fa-solid fa-arrow-right"></i>
+                                    </a>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </section>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </div>
             </div>
+
+            <!-- CTA Section -->
+            <section class="gmkb-dir-cta">
+                <div class="gmkb-dir-container">
+                    <div class="gmkb-dir-cta-box">
+                        <h2>Ready to elevate your speaking career?</h2>
+                        <p>These tools are free to help you scale your impact. Sign up for our newsletter to get more resources delivered to your inbox.</p>
+                        <form class="gmkb-dir-cta-form" action="<?php echo esc_url(home_url('/newsletter/')); ?>" method="get">
+                            <input type="email" name="email" placeholder="Enter your email" required>
+                            <button type="submit">Subscribe Now</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
         </div>
 
         <style>
-            .gmkb-tools-directory-page {
-                max-width: 1200px;
+            /* Directory Page Styles */
+            .gmkb-tools-directory {
+                width: 100%;
+                background: #fff;
+            }
+            .gmkb-dir-container {
+                max-width: 1140px;
                 margin: 0 auto;
-                padding: 2rem 1rem;
+                padding: 0 1.5rem;
             }
-            .gmkb-directory-hero {
+
+            /* Hero */
+            .gmkb-dir-hero {
                 text-align: center;
-                padding: 3rem 0;
-                margin-bottom: 2rem;
+                padding: 3rem 0 2rem;
             }
-            .gmkb-directory-hero h1 {
-                font-size: 2.5rem;
-                font-weight: 700;
+            .gmkb-dir-hero h1 {
+                font-size: 2.75rem;
+                font-weight: 800;
+                color: #111827;
                 margin: 0 0 1rem;
+                line-height: 1.2;
             }
-            .gmkb-directory-hero p {
-                font-size: 1.25rem;
+            .gmkb-dir-hero p {
+                font-size: 1.125rem;
                 color: #6b7280;
-                margin: 0;
+                margin: 0 auto;
+                max-width: 600px;
+                line-height: 1.6;
             }
-            .gmkb-directory-category {
+
+            /* Content area */
+            .gmkb-dir-content {
+                padding: 1rem 0 3rem;
+            }
+
+            /* Category */
+            .gmkb-dir-category {
                 margin-bottom: 3rem;
             }
-            .gmkb-directory-category h2 {
-                font-size: 1.5rem;
-                margin: 0 0 0.5rem;
+            .gmkb-dir-category-header {
+                display: flex;
+                align-items: flex-start;
+                gap: 0.75rem;
+                margin-bottom: 0.5rem;
             }
-            .gmkb-category-description {
+            .gmkb-dir-category-icon {
+                color: #3b82f6;
+                font-size: 1.25rem;
+                margin-top: 0.25rem;
+            }
+            .gmkb-dir-category-header h2 {
+                font-size: 1.375rem;
+                font-weight: 700;
+                color: #111827;
+                margin: 0 0 0.25rem;
+            }
+            .gmkb-dir-category-header p {
+                font-size: 0.9375rem;
                 color: #6b7280;
-                margin: 0 0 1.5rem;
+                margin: 0;
             }
-            .gmkb-tools-grid {
+            .gmkb-dir-category-divider {
+                height: 1px;
+                background: linear-gradient(to right, #e5e7eb 0%, #e5e7eb 30%, transparent 100%);
+                margin: 1rem 0 1.5rem;
+            }
+
+            /* Tools Grid */
+            .gmkb-dir-tools-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                grid-template-columns: repeat(4, 1fr);
                 gap: 1rem;
             }
-            .gmkb-tool-card {
-                display: block;
+            @media (max-width: 1024px) {
+                .gmkb-dir-tools-grid {
+                    grid-template-columns: repeat(3, 1fr);
+                }
+            }
+            @media (max-width: 768px) {
+                .gmkb-dir-tools-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+            }
+            @media (max-width: 480px) {
+                .gmkb-dir-tools-grid {
+                    grid-template-columns: 1fr;
+                }
+                .gmkb-dir-hero h1 {
+                    font-size: 2rem;
+                }
+            }
+
+            /* Tool Card */
+            .gmkb-dir-tool-card {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 12px;
                 padding: 1.5rem;
-                background: #f9fafb;
-                border-radius: 8px;
-                text-decoration: none;
-                color: inherit;
-                transition: all 0.2s;
-                border: 1px solid transparent;
+                display: flex;
+                flex-direction: column;
+                transition: all 0.2s ease;
             }
-            .gmkb-tool-card:hover {
-                background: white;
+            .gmkb-dir-tool-card:hover {
                 border-color: #3b82f6;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
             }
-            .gmkb-tool-card h3 {
-                font-size: 1.125rem;
-                margin: 0 0 0.5rem;
+            .gmkb-dir-tool-icon {
+                width: 40px;
+                height: 40px;
+                background: #eff6ff;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 1rem;
+            }
+            .gmkb-dir-tool-icon i {
                 color: #3b82f6;
+                font-size: 1.125rem;
             }
-            .gmkb-tool-card p {
-                margin: 0;
+            .gmkb-dir-tool-card h3 {
+                font-size: 1rem;
+                font-weight: 600;
+                color: #3b82f6;
+                margin: 0 0 0.5rem;
+            }
+            .gmkb-dir-tool-card p {
                 font-size: 0.875rem;
                 color: #6b7280;
+                margin: 0 0 1rem;
+                flex-grow: 1;
+                line-height: 1.5;
+            }
+            .gmkb-dir-tool-link {
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: #6b7280;
+                text-decoration: none;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                transition: color 0.2s;
+            }
+            .gmkb-dir-tool-link:hover {
+                color: #3b82f6;
+            }
+            .gmkb-dir-tool-link i {
+                font-size: 0.625rem;
+            }
+
+            /* CTA Section */
+            .gmkb-dir-cta {
+                padding: 2rem 0 3rem;
+            }
+            .gmkb-dir-cta-box {
+                background: #f1f5f9;
+                border-radius: 16px;
+                padding: 3rem 2rem;
+                text-align: center;
+            }
+            .gmkb-dir-cta-box h2 {
+                font-size: 1.5rem;
+                font-weight: 700;
+                color: #111827;
+                margin: 0 0 0.75rem;
+            }
+            .gmkb-dir-cta-box > p {
+                font-size: 0.9375rem;
+                color: #6b7280;
+                margin: 0 auto 1.5rem;
+                max-width: 450px;
+            }
+            .gmkb-dir-cta-form {
+                display: flex;
+                gap: 0.75rem;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            .gmkb-dir-cta-form input[type="email"] {
+                padding: 0.75rem 1rem;
+                border: 1px solid #d1d5db;
+                border-radius: 9999px;
+                font-size: 0.9375rem;
+                width: 280px;
+                max-width: 100%;
+                outline: none;
+            }
+            .gmkb-dir-cta-form input[type="email"]:focus {
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            }
+            .gmkb-dir-cta-form button {
+                padding: 0.75rem 1.5rem;
+                background: #3b82f6;
+                color: white;
+                border: none;
+                border-radius: 9999px;
+                font-size: 0.9375rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: background 0.2s;
+            }
+            .gmkb-dir-cta-form button:hover {
+                background: #2563eb;
             }
         </style>
         <?php
@@ -2385,6 +2715,8 @@ get_footer();
         if (is_user_logged_in()) {
             $classes[] = 'gmkb-user-logged-in';
             $classes[] = 'gmkb-show-app-nav';
+            // Add theme's app page class for full-width styling
+            $classes[] = 'guestify-app-page';
         } else {
             $classes[] = 'gmkb-user-logged-out';
             $classes[] = 'gmkb-show-frontend-nav';
@@ -2412,12 +2744,37 @@ get_footer();
             } else {
                 $classes[] = 'gmkb-tool-landing-view';
             }
-        } elseif (get_query_var($this->directory_var)) {
+        } elseif ($this->is_directory_request()) {
             $classes[] = 'gmkb-tools-directory-page';
 
             $this->add_login_status_classes($classes);
         }
         return $classes;
+    }
+
+    /**
+     * Check if current request is for the tools directory
+     * Uses query var when available, falls back to URL inspection
+     *
+     * @return bool
+     */
+    private function is_directory_request() {
+        // First check query var (works after rewrite rules processed)
+        if (get_query_var($this->directory_var)) {
+            return true;
+        }
+
+        // Fallback: inspect request URI for early filter calls (supports subdirectory installs)
+        $path = $this->get_relative_request_path();
+        if ($path !== null) {
+            $base = trim($this->base_path, '/');
+            // Exact match for directory (e.g., "tools" or "tools/")
+            if ($path === $base) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
