@@ -270,7 +270,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:can-generate', 'generated', 'saved', 'change', 'preview-update']);
+const emit = defineEmits(['update:can-generate', 'generated', 'saved']);
 
 // Use composables - useAIImpactIntros parses string API response into array of intro objects
 const {
@@ -510,25 +510,6 @@ watch(
     }
   },
   { immediate: true }
-);
-
-/**
- * Watch for form changes and emit preview update (embedded mode)
- */
-watch(
-  [introWhere, introWhy],
-  () => {
-    if (props.mode === 'embedded') {
-      emit('preview-update', {
-        previewHtml: introPreview.value,
-        data: {
-          where: introWhere.value,
-          why: introWhy.value
-        }
-      });
-    }
-  },
-  { deep: true }
 );
 
 /**
