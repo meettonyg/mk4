@@ -233,20 +233,30 @@ Requirements:
 
 Format: Structure each package with a name, description, deliverables, and ideal client.',
 
-            'authority_hook' => 'Create a compelling authority hook statement using this information:
+            'authority_hook' => 'Generate {{count}} compelling authority hook variations using this EXACT information:
 
-Who I help: {{who}}
-What outcome I help them achieve: {{what}}
-When they typically need help: {{when}}
-How I help them (my unique method): {{how}}
-Where this applies (context/situation): {{where}}
-Why this matters: {{why}}
+WHO I help: {{who}}
+WHAT result I deliver: {{what}}
+WHEN they need help: {{when}}
+HOW I help them (my method): {{how}}
 
-Create a single, powerful statement that combines these elements into a memorable positioning statement. The statement should:
-- Be conversational and natural to say out loud
-- Clearly communicate unique value
-- Create emotional resonance with the target audience
-- Be under 50 words total'
+CRITICAL REQUIREMENTS:
+1. Each hook MUST incorporate the specific details provided above
+2. Use the core structure: "I help [WHO] [achieve WHAT] [WHEN context] through [HOW method]"
+3. Create {{count}} DIFFERENT variations with different angles/phrasings
+4. Each hook should be 1-2 sentences, under 50 words
+5. Make them conversational and natural to say out loud
+6. Vary the emphasis: some lead with WHO, some with WHAT, some with HOW
+
+FORMAT: Return as a numbered list (1-{{count}}), with ONLY the hook statement on each line.
+
+GOOD example using the provided info:
+1. I help [actual WHO value] [actual WHAT value] [actual WHEN value] through [actual HOW value].
+
+BAD example (DO NOT make up different info):
+1. I help overwhelmed entrepreneurs regain focus... (WRONG - uses made up data, not the provided WHO/WHAT/WHEN/HOW)
+
+Generate {{count}} hook variations NOW using ONLY the information provided above:'
         );
     }
 
@@ -273,7 +283,7 @@ Create a single, powerful statement that combines these elements into a memorabl
             'tagline' => 300,
             'guest_intro' => 400,
             'offers' => 1500,
-            'authority_hook' => 200
+            'authority_hook' => 600  // Increased for 5 variations
         );
     }
 
