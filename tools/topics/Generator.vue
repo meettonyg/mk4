@@ -332,9 +332,7 @@ const resolvedProfileId = computed(() => {
 
 // Keep selectedProfileId in sync with resolved ID
 watch(resolvedProfileId, (newId) => {
-  if (newId) {
-    selectedProfileId.value = newId;
-  }
+  selectedProfileId.value = newId;
 }, { immediate: true });
 
 // Authority Hook Builder fields
