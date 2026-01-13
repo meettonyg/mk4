@@ -91,14 +91,7 @@
               :title="topic.locked ? 'Unlock to replace' : 'Lock to keep'"
               @click="toggleLock(topic.position)"
             >
-              <svg v-if="topic.locked" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0110 0v4"/>
-              </svg>
-              <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 019.9-1"/>
-              </svg>
+              <i :class="topic.locked ? 'fas fa-lock' : 'fas fa-lock-open'"></i>
             </button>
           </div>
         </div>
@@ -128,12 +121,7 @@
               @click="viewMode = 'card'"
               title="Card View"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="7" height="7" rx="1"/>
-                <rect x="14" y="3" width="7" height="7" rx="1"/>
-                <rect x="3" y="14" width="7" height="7" rx="1"/>
-                <rect x="14" y="14" width="7" height="7" rx="1"/>
-              </svg>
+              <i class="fas fa-th-large"></i>
             </button>
             <button
               type="button"
@@ -142,14 +130,7 @@
               @click="viewMode = 'list'"
               title="List View"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="8" y1="6" x2="21" y2="6"/>
-                <line x1="8" y1="12" x2="21" y2="12"/>
-                <line x1="8" y1="18" x2="21" y2="18"/>
-                <circle cx="4" cy="6" r="1.5" fill="currentColor"/>
-                <circle cx="4" cy="12" r="1.5" fill="currentColor"/>
-                <circle cx="4" cy="18" r="1.5" fill="currentColor"/>
-              </svg>
+              <i class="fas fa-list"></i>
             </button>
           </div>
           <button type="button" class="gfy-btn gfy-btn--outline" @click="handleRegenerate">
@@ -781,15 +762,8 @@ defineExpose({
   background: var(--gfy-primary-dark);
 }
 
-.gfy-current-topic__lock svg {
-  width: 16px;
-  height: 16px;
-}
-
-.gfy-current-topic__lock svg rect,
-.gfy-current-topic__lock svg path {
-  stroke: currentColor;
-  stroke-width: 2;
+.gfy-current-topic__lock i {
+  font-size: 14px;
 }
 
 .gfy-current-topics__summary {
@@ -997,21 +971,8 @@ defineExpose({
   transition: all 0.15s ease;
 }
 
-.gfy-view-toggle__btn svg {
-  width: 16px;
-  height: 16px;
-}
-
-.gfy-view-toggle__btn svg rect,
-.gfy-view-toggle__btn svg line,
-.gfy-view-toggle__btn svg path {
-  stroke: currentColor;
-  stroke-width: 2;
-}
-
-.gfy-view-toggle__btn svg circle {
-  fill: currentColor;
-  stroke: none;
+.gfy-view-toggle__btn i {
+  font-size: 14px;
 }
 
 .gfy-view-toggle__btn:hover:not(.gfy-view-toggle__btn--active) {
