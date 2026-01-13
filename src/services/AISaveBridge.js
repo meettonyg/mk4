@@ -196,11 +196,11 @@ function mapToFields(type, data) {
 
 /**
  * Helper to get REST API base URL and nonce
- * Supports multiple WordPress configurations (builder, standalone tools, legacy MKCG, etc.)
+ * Supports multiple WordPress configurations (builder, standalone tools, etc.)
  */
 const getApiConfig = () => ({
   baseUrl: window.gmkbData?.restUrl || window.gmkbStandaloneTools?.restUrl || '/wp-json/',
-  nonce: window.gmkbData?.restNonce || window.gmkbData?.nonce || window.gmkbStandaloneTools?.restNonce || window.mkcg_vars?.restNonce || window.wpApiSettings?.nonce || ''
+  nonce: window.gmkbData?.restNonce || window.gmkbData?.nonce || window.gmkbStandaloneTools?.restNonce || window.wpApiSettings?.nonce || ''
 });
 
 class AISaveBridge {
