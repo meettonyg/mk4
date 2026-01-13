@@ -43,6 +43,8 @@
     "canonicalPath": "/tools/persona-generator/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Persona",
+    "guidanceSubtitle": "Customer personas reveal your ideal clients' pain points, desires, and the language that moves them to action. A detailed persona ensures every piece of content speaks directly to the people you want to reach.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Persona Generator",
@@ -154,17 +156,20 @@
       {
         "step": 1,
         "title": "Describe Your Audience",
-        "description": "Enter who you serve and what problems you solve."
+        "description": "Share who you serve and what problems you solve. The more specific you are, the more actionable your persona will be.",
+        "icon": "UserGroupIcon"
       },
       {
         "step": 2,
-        "title": "Add Details",
-        "description": "Include industry, role, and any known characteristics."
+        "title": "Generate Your Persona",
+        "description": "Our AI creates a detailed profile with demographics, pain points, desires, objections, and the exact language your audience uses.",
+        "icon": "SparklesIcon"
       },
       {
         "step": 3,
-        "title": "Get Your Persona",
-        "description": "Receive a comprehensive profile with actionable insights."
+        "title": "Improve Everything",
+        "description": "Use your persona to write better copy, create targeted content, and build offers that resonate with the people you want to reach.",
+        "icon": "ArrowTrendingUpIcon"
       }
     ],
     "features": [

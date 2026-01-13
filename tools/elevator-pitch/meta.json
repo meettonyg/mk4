@@ -53,6 +53,8 @@
     "canonicalPath": "/tools/elevator-pitch-generator/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Elevator Pitch",
+    "guidanceSubtitle": "A compelling elevator pitch communicates your value in 30 seconds flat. The best pitches hook attention, explain your unique value, and open the door to deeper conversation.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Elevator Pitch Generator",
@@ -165,17 +167,20 @@
       {
         "step": 1,
         "title": "Define Your Value",
-        "description": "Enter who you help and the results you deliver."
+        "description": "Share who you help and the transformation you deliver. Your Authority Hook is the perfect starting point for a compelling pitch.",
+        "icon": "PencilSquareIcon"
       },
       {
         "step": 2,
-        "title": "Add Your Hook",
-        "description": "Include what makes your approach unique."
+        "title": "Generate Your Pitch",
+        "description": "Our AI creates a structured pitch with hook, problem, solution, proof, and call-to-action. Get 30-second and 60-second versions.",
+        "icon": "SparklesIcon"
       },
       {
         "step": 3,
-        "title": "Practice & Perfect",
-        "description": "Rehearse your pitch until it feels natural."
+        "title": "Use It Everywhere",
+        "description": "Deploy your pitch at networking events, conferences, interviews, and anywhere you need to make a memorable first impression.",
+        "icon": "UserGroupIcon"
       }
     ],
     "features": [

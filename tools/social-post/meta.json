@@ -43,6 +43,8 @@
     "canonicalPath": "/tools/social-post-generator/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Social Posts",
+    "guidanceSubtitle": "High-performing social posts have a strong hook that stops the scroll, valuable content that earns engagement, and a clear call-to-action. Format for each platform to maximize reach.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Social Post Generator",
@@ -154,17 +156,20 @@
       {
         "step": 1,
         "title": "Choose Your Platform",
-        "description": "Select LinkedIn, Twitter, Instagram, or others."
+        "description": "Select LinkedIn, Twitter, Instagram, or Facebook. Each platform has different optimal formats, lengths, and tones.",
+        "icon": "DevicePhoneMobileIcon"
       },
       {
         "step": 2,
-        "title": "Enter Your Topic",
-        "description": "Share what you want to post about."
+        "title": "Generate Your Post",
+        "description": "Our AI creates scroll-stopping hooks, valuable content, and engagement-driving CTAs optimized for your chosen platform.",
+        "icon": "SparklesIcon"
       },
       {
         "step": 3,
-        "title": "Generate & Post",
-        "description": "Get ready-to-publish content."
+        "title": "Grow Your Following",
+        "description": "Post consistently with content that resonates. Build thought leadership and turn followers into clients and opportunities.",
+        "icon": "ArrowTrendingUpIcon"
       }
     ],
     "features": [

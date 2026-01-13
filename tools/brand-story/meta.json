@@ -53,6 +53,8 @@
     "canonicalPath": "/tools/brand-story-generator/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Brand Story",
+    "guidanceSubtitle": "Your brand story explains why you do what you do, building emotional connection with your audience. A compelling narrative transforms credentials into trust and visitors into believers.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Brand Story Generator",
@@ -163,18 +165,21 @@
     "howItWorks": [
       {
         "step": 1,
-        "title": "Share Your Journey",
-        "description": "Enter your origin story and key moments."
+        "title": "Share Your Origin",
+        "description": "Tell us about the challenge, moment, or experience that inspired your work. Vulnerability builds connection more than perfection.",
+        "icon": "HeartIcon"
       },
       {
         "step": 2,
-        "title": "Define Your Purpose",
-        "description": "Explain why you do what you do."
+        "title": "Define Your Mission",
+        "description": "Explain why you do what you do. A clear purpose connects your story to your audience's journey and makes them want to work with you.",
+        "icon": "FlagIcon"
       },
       {
         "step": 3,
-        "title": "Generate Your Story",
-        "description": "Get a polished narrative ready to share."
+        "title": "Use It Everywhere",
+        "description": "Deploy your brand story on your About page, media kit, LinkedIn profile, and anywhere you need to explain why you do what you do.",
+        "icon": "GlobeAltIcon"
       }
     ],
     "features": [

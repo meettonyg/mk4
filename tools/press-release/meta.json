@@ -43,6 +43,8 @@
     "canonicalPath": "/tools/press-release-generator/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Press Release",
+    "guidanceSubtitle": "Press releases follow AP style and lead with the news. Include quotable quotes, keep it under 500 words, and make it easy for journalists to write their story.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Press Release Generator",
@@ -153,18 +155,21 @@
     "howItWorks": [
       {
         "step": 1,
-        "title": "Enter Your News",
-        "description": "Describe your announcement and key details."
+        "title": "Share Your News",
+        "description": "Describe your announcement, key details, and why it matters. Product launches, partnerships, funding, and awards all work great.",
+        "icon": "MegaphoneIcon"
       },
       {
         "step": 2,
-        "title": "Add Quotes",
-        "description": "Include quotes from key stakeholders."
+        "title": "Add Quotable Quotes",
+        "description": "Include quotes from key stakeholders. These are often what journalists use directly, so make them compelling and specific.",
+        "icon": "ChatBubbleBottomCenterTextIcon"
       },
       {
         "step": 3,
-        "title": "Generate & Distribute",
-        "description": "Get a formatted press release ready to send."
+        "title": "Get Media-Ready Copy",
+        "description": "Receive a properly formatted AP-style press release with headline, dateline, lead, body, and boilerplate—ready to send to journalists.",
+        "icon": "NewspaperIcon"
       }
     ],
     "features": [

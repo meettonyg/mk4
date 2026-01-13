@@ -56,6 +56,8 @@
     "canonicalPath": "/tools/topics-generator/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Interview Topics",
+    "guidanceSubtitle": "Strong interview topics showcase your expertise while providing real value to listeners. The best topics focus on one actionable concept that hosts can build an engaging conversation around.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Topics Generator",
@@ -144,7 +146,7 @@
       "content": "A great speaking topic combines your unique expertise with your audience's pressing needs. It's specific enough to deliver real value, yet broad enough to explore deeply. The best topics promise transformation—a clear before and after for your audience."
     },
     "formulaLabel": "APPROACH",
-    "formula": "Provide **solutions** that focus on **one concept** per topic while remaining **general enough** to expand upon.",
+    "formula": "Provide [solutions] that focus on [one concept] per topic while remaining [general enough] to expand upon.",
     "tips": [
       "Focus on value for listeners - great topics provide actionable solutions, not promotion",
       "One concept per topic - each topic should focus on a single idea, like a blog post",
@@ -168,20 +170,20 @@
     "howItWorks": [
       {
         "step": 1,
-        "title": "Enter Your Expertise",
-        "description": "Tell us about your area of expertise and the audience you want to reach.",
+        "title": "Define Your Expertise",
+        "description": "Share your area of expertise and who you help. The more specific you are, the more targeted your topics will be.",
         "icon": "PencilSquareIcon"
       },
       {
         "step": 2,
-        "title": "Set Your Preferences",
-        "description": "Choose the number of topics and format (titles only or with descriptions).",
-        "icon": "AdjustmentsHorizontalIcon"
+        "title": "Generate Topic Ideas",
+        "description": "Our AI creates multiple topics tailored to your expertise. Each topic is designed to showcase your authority while delivering listener value.",
+        "icon": "SparklesIcon"
       },
       {
         "step": 3,
-        "title": "Generate & Select",
-        "description": "Review AI-generated topics and select the ones that resonate most.",
+        "title": "Use in Your Pitches",
+        "description": "Add your best topics to podcast pitches and media kits. Great topics make hosts eager to have you on their show.",
         "icon": "CheckCircleIcon"
       }
     ],

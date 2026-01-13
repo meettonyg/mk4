@@ -54,6 +54,8 @@
     "canonicalPath": "/tools/sound-bite-generator/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Sound Bites",
+    "guidanceSubtitle": "Sound bites are quotable phrases that journalists share and audiences remember. The best sound bites stand alone without context and express a clear point of view in under 25 words.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Sound Bite Generator",
@@ -140,7 +142,7 @@
       "title": "What is a Sound Bite?",
       "content": "A sound bite is a short, memorable phrase that captures a key insight in a quotable format. The best sound bites are 10-25 words, stand alone without context, and express a clear point of view that's easy to share."
     },
-    "formula": "10-25 words + Tweet-worthy + Stands alone without context + Memorable and quotable",
+    "formula": "[10-25 words] + [Tweet-worthy] + [Stands alone] without context + [Memorable and quotable]",
     "tips": [
       "Keep it short - 10-25 words maximum for maximum impact",
       "Make it shareable - write for Twitter, not for textbooks",
@@ -168,18 +170,21 @@
     "howItWorks": [
       {
         "step": 1,
-        "title": "Share Your Message",
-        "description": "Enter your key insight or perspective."
+        "title": "Share Your Perspective",
+        "description": "Enter your topic and unique point of view. The best sound bites express clear opinions, not generic observations.",
+        "icon": "LightBulbIcon"
       },
       {
         "step": 2,
-        "title": "Choose Your Style",
-        "description": "Select punchy, insightful, or provocative tone."
+        "title": "Generate Options",
+        "description": "Our AI creates multiple sound bites using proven rhetorical techniques. Get punchy, insightful, and provocative variations.",
+        "icon": "SparklesIcon"
       },
       {
         "step": 3,
-        "title": "Pick Your Best",
-        "description": "Review options and save your favorites."
+        "title": "Get Quoted Everywhere",
+        "description": "Use your sound bites in interviews, keynotes, social posts, and anywhere you want to be the expert everyone remembers.",
+        "icon": "MicrophoneIcon"
       }
     ],
     "features": [

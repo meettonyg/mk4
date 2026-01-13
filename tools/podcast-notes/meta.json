@@ -43,6 +43,8 @@
     "canonicalPath": "/tools/podcast-notes-generator/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Show Notes",
+    "guidanceSubtitle": "Show notes are how podcast episodes get discovered. Search engines can't index audio, so your written notes are the key to SEO and helping listeners decide to press play.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Podcast Show Notes Generator",
@@ -154,17 +156,20 @@
       {
         "step": 1,
         "title": "Add Episode Details",
-        "description": "Enter title, topic, and main discussion points."
+        "description": "Enter your title, topic, and main discussion points. Include guest info if it's an interview episode.",
+        "icon": "MicrophoneIcon"
       },
       {
         "step": 2,
-        "title": "Include Guest Info",
-        "description": "Add guest bio and relevant links."
+        "title": "Generate Your Notes",
+        "description": "Our AI creates a compelling summary, key takeaways, timestamps, and resource links that help listeners find and engage with your episode.",
+        "icon": "SparklesIcon"
       },
       {
         "step": 3,
-        "title": "Generate Notes",
-        "description": "Get formatted show notes for your episode page."
+        "title": "Boost Discoverability",
+        "description": "Search engines can't index audio. Your show notes are how episodes get found and how browsers become listeners.",
+        "icon": "MagnifyingGlassIcon"
       }
     ],
     "features": [

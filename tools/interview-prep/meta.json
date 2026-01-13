@@ -43,6 +43,8 @@
     "canonicalPath": "/tools/interview-prep-generator/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Interview Prep",
+    "guidanceSubtitle": "The best media guests don't wing it. Prepare your key messages, anticipate questions, and have bridge phrases ready so you can be confidently authentic in any interview.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Interview Prep Generator",
@@ -154,17 +156,20 @@
       {
         "step": 1,
         "title": "Set the Context",
-        "description": "Enter the show, topic, and your key messages."
+        "description": "Enter the show, topic, and your key messages. Include the host's style if you know it to get tailored preparation.",
+        "icon": "ClipboardDocumentListIcon"
       },
       {
         "step": 2,
-        "title": "Define Your Goals",
-        "description": "Specify what you want to achieve from the interview."
+        "title": "Get Your Prep Guide",
+        "description": "Our AI creates anticipated questions, strategic answers, key messages, and bridge phrases to keep you on message.",
+        "icon": "SparklesIcon"
       },
       {
         "step": 3,
-        "title": "Get Your Prep Guide",
-        "description": "Receive a complete preparation document."
+        "title": "Show Up Prepared",
+        "description": "Walk into every interview confident. Hosts will comment on how polished and prepared you are compared to other guests.",
+        "icon": "MicrophoneIcon"
       }
     ],
     "features": [

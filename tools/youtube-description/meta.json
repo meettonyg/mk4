@@ -43,6 +43,8 @@
     "canonicalPath": "/tools/youtube-description-generator/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your YouTube Description",
+    "guidanceSubtitle": "YouTube descriptions help the algorithm understand your content. Front-load keywords in the first 2-3 sentences, use timestamps for chapters, and include clear calls-to-action.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free YouTube Description Generator",
@@ -154,17 +156,20 @@
       {
         "step": 1,
         "title": "Describe Your Video",
-        "description": "Enter the video topic and main points."
+        "description": "Enter your video topic, main points, and target keywords. Include guest info for interviews or learning outcomes for tutorials.",
+        "icon": "PlayCircleIcon"
       },
       {
         "step": 2,
         "title": "Add Timestamps",
-        "description": "Include chapter markers if available."
+        "description": "Include chapter markers if available. Timestamps enable YouTube's chapter feature which improves watch time and user experience.",
+        "icon": "ClockIcon"
       },
       {
         "step": 3,
-        "title": "Generate & Publish",
-        "description": "Get a complete, optimized description."
+        "title": "Boost Discovery",
+        "description": "Get an optimized description with front-loaded keywords, structured sections, resource links, and clear CTAs—everything YouTube's algorithm loves.",
+        "icon": "ChartBarIcon"
       }
     ],
     "features": [

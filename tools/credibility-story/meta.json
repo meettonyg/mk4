@@ -53,6 +53,8 @@
     "canonicalPath": "/tools/credibility-story-generator/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Credibility Story",
+    "guidanceSubtitle": "Credibility stories demonstrate expertise through evidence rather than claims. Show your authority in action through results, recognition, or experience that prospects can verify.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Credibility Story Generator",
@@ -163,18 +165,21 @@
     "howItWorks": [
       {
         "step": 1,
-        "title": "Choose Your Proof",
-        "description": "Select the type of credibility (results, recognition, experience)."
+        "title": "Choose Your Evidence",
+        "description": "Select what type of credibility to highlight—client results, external recognition, or depth of experience. Each builds trust differently.",
+        "icon": "ShieldCheckIcon"
       },
       {
         "step": 2,
-        "title": "Add Details",
-        "description": "Include specifics, numbers, and outcomes."
+        "title": "Add Specific Details",
+        "description": "Include numbers, names, and outcomes. Vague results feel fabricated; specific details build instant trust with skeptical prospects.",
+        "icon": "CalculatorIcon"
       },
       {
         "step": 3,
-        "title": "Get Your Story",
-        "description": "Receive a polished credibility narrative."
+        "title": "Deploy in Conversations",
+        "description": "Use your credibility stories in sales calls, proposals, podcast interviews, and anywhere you need to overcome skepticism quickly.",
+        "icon": "ChatBubbleLeftRightIcon"
       }
     ],
     "features": [
