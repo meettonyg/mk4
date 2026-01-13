@@ -23,6 +23,7 @@
   "category": "value-builder",
   "buttonText": "Build Hook",
   "supportsProfileSave": true,
+  "singleColumn": true,
   "icon": "TrophyIcon",
   "componentName": "AuthorityHookBuilder",
   "useCases": [
