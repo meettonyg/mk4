@@ -784,6 +784,10 @@ defineExpose({
 .gfy-current-topic__lock svg {
   width: 16px;
   height: 16px;
+}
+
+.gfy-current-topic__lock svg rect,
+.gfy-current-topic__lock svg path {
   stroke: currentColor;
   stroke-width: 2;
 }
@@ -996,6 +1000,11 @@ defineExpose({
 .gfy-view-toggle__btn svg {
   width: 16px;
   height: 16px;
+}
+
+.gfy-view-toggle__btn svg rect,
+.gfy-view-toggle__btn svg line,
+.gfy-view-toggle__btn svg path {
   stroke: currentColor;
   stroke-width: 2;
 }
