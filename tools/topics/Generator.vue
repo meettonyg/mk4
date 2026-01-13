@@ -246,7 +246,8 @@ const props = defineProps({
 const emit = defineEmits(['update:can-generate', 'authority-hook-update', 'generated', 'saved']);
 
 // Inject profile data from EmbeddedToolWrapper (if present)
-const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+// Default to null if no provider (standalone mode)
+const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, null);
 
 // Use composables
 const {
@@ -293,7 +294,7 @@ watch(
 
 // Also use profile ID from injected data (from EmbeddedToolWrapper)
 watch(
-  () => injectedProfileData.value?.id,
+  () => injectedProfileData?.value?.id,
   (newId) => {
     if (newId) {
       selectedProfileId.value = newId;
