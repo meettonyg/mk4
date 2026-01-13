@@ -129,7 +129,7 @@
       <!-- Selection Banner -->
       <div class="gfy-selection-banner">
         <span class="gfy-selection-banner__text">
-          Select up to {{ MAX_SELECTED_TOPICS }} topics to save to your Media Kit
+          Select up to {{ MAX_SELECTED_TOPICS }} topics (click order = save order)
         </span>
         <span class="gfy-selection-banner__count">
           {{ selectedTopics.length }} of {{ MAX_SELECTED_TOPICS }} selected
@@ -151,9 +151,7 @@
             <p class="gfy-topic-card__title">{{ typeof topic === 'string' ? topic : topic.title || topic }}</p>
           </div>
           <div class="gfy-topic-card__checkbox">
-            <svg v-if="isSelected(index)" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
-            </svg>
+            <span v-if="isSelected(index)" class="gfy-position-badge">{{ getSelectionPosition(index) }}</span>
           </div>
         </div>
       </div>
@@ -168,9 +166,7 @@
           @click="toggleSelection(index)"
         >
           <div class="gfy-topic-row__checkbox">
-            <svg v-if="isSelected(index)" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
-            </svg>
+            <span v-if="isSelected(index)" class="gfy-position-badge gfy-position-badge--small">{{ getSelectionPosition(index) }}</span>
           </div>
           <div class="gfy-topic-row__number">{{ index + 1 }}.</div>
           <p class="gfy-topic-row__title">{{ typeof topic === 'string' ? topic : topic.title || topic }}</p>
@@ -336,6 +332,14 @@ const hasAuthorityHookData = computed(() => {
 const isSelected = (index) => selectedTopics.value.includes(index);
 
 /**
+ * Get the selection position (1-based) for a topic, or null if not selected
+ */
+const getSelectionPosition = (index) => {
+  const position = selectedTopics.value.indexOf(index);
+  return position > -1 ? position + 1 : null;
+};
+
+/**
  * Toggle topic selection (max MAX_SELECTED_TOPICS)
  */
 const toggleSelection = (index) => {
@@ -397,17 +401,13 @@ const handleCopyAll = async () => {
  * Handle save to media kit - saves topics and optionally authority hook
  */
 const handleSaveToMediaKit = async () => {
-  if (!selectedProfileId.value) {
-    return;
-  }
-
   const selectedTopicsList = selectedTopics.value.map(idx => {
     const topic = topics.value[idx];
     return typeof topic === 'string' ? topic : topic.title || topic;
   });
 
   try {
-    // Save topics
+    // Save topics - saveToProfile will throw if no profile ID
     const topicsResult = await saveToProfile('topics', selectedTopicsList, {
       profileId: selectedProfileId.value
     });
@@ -701,7 +701,11 @@ defineExpose({
   height: 16px;
   stroke: currentColor;
   stroke-width: 2;
-  fill: none;
+}
+
+.gfy-view-toggle__btn svg circle {
+  fill: currentColor;
+  stroke: none;
 }
 
 .gfy-view-toggle__btn:hover:not(.gfy-view-toggle__btn--active) {
@@ -892,6 +896,22 @@ defineExpose({
   line-height: 1.4;
   color: var(--gfy-text-primary);
   margin: 0;
+}
+
+/* POSITION BADGE */
+.gfy-position-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--gfy-white);
+}
+
+.gfy-position-badge--small {
+  font-size: 0.75rem;
 }
 
 /* BUTTONS */
