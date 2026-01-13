@@ -214,6 +214,7 @@
 import { ref, computed, watch, inject } from 'vue';
 import { useAIGenerator } from '../../src/composables/useAIGenerator';
 import { useProfileContext } from '../../src/composables/useProfileContext';
+import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
 
 const props = defineProps({
@@ -240,6 +241,16 @@ const {
   saveToProfile
 } = useProfileContext();
 
+// Use Authority Hook composable for state persistence
+const {
+  who: hookWho,
+  what: hookWhat,
+  when: hookWhen,
+  how: hookHow,
+  loadFromProfileData,
+  reset: resetAuthorityHook
+} = useAuthorityHook();
+
 // Inject profile data from parent (EmbeddedToolWrapper provides this)
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
 
@@ -250,12 +261,6 @@ const selectedProfileId = ref(null);
 const viewMode = ref('list'); // 'card' or 'list' - default to list
 const localIsSaving = ref(false);
 const localSaveError = ref(null);
-
-// Authority Hook Builder fields
-const hookWho = ref('');
-const hookWhat = ref('');
-const hookWhen = ref('');
-const hookHow = ref('');
 
 // Current hook from profile
 const currentHookText = ref('');
@@ -286,11 +291,11 @@ const hookPreview = computed(() => {
 });
 
 /**
- * Can generate check
+ * Can generate check - matches meta.json anyOf validation (who OR what)
  */
 const canGenerate = computed(() => {
-  return hookWho.value && hookWho.value.trim().length > 0 &&
-         hookWhat.value && hookWhat.value.trim().length > 0;
+  return (hookWho.value && hookWho.value.trim().length > 0) ||
+         (hookWhat.value && hookWhat.value.trim().length > 0);
 });
 
 /**
@@ -308,14 +313,13 @@ const hasCurrentHook = computed(() => {
 });
 
 /**
- * Populate from profile data
+ * Populate from profile data - uses composable for state persistence
  */
 function populateFromProfile(profileData) {
   if (!profileData) return;
-  if (profileData.hook_who) hookWho.value = profileData.hook_who;
-  if (profileData.hook_what) hookWhat.value = profileData.hook_what;
-  if (profileData.hook_when) hookWhen.value = profileData.hook_when;
-  if (profileData.hook_how) hookHow.value = profileData.hook_how;
+
+  // Use composable's loadFromProfileData for state persistence
+  loadFromProfileData(profileData);
 
   // Load current authority statement if exists
   if (profileData.authority_statement) {
@@ -451,13 +455,16 @@ const handleSaveToProfile = async () => {
 };
 
 /**
- * Handle start over - reset and show form
+ * Handle start over - reset generated hooks and clear form
  */
 const handleStartOver = () => {
   selectedHookIndex.value = null;
+  // Reset generated hooks from useAIGenerator
   if (reset) {
     reset();
   }
+  // Clear form fields using composable (also clears store for persistence)
+  resetAuthorityHook();
 };
 
 // Watch for canGenerate changes
