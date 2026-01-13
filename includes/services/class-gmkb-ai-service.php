@@ -440,6 +440,9 @@ class GMKB_AI_Service {
             case 'authority_hook':
                 return $this->format_authority_hook_response($content, $params);
 
+            case 'impact_intro':
+                return $this->format_impact_intro_response($content, $params);
+
             case 'guest_intro':
             default:
                 return trim($content);
@@ -695,6 +698,69 @@ class GMKB_AI_Service {
         }
 
         return $hooks;
+    }
+
+    /**
+     * Format impact intro response - extracts multiple intro variations
+     *
+     * @param string $content Raw content
+     * @param array $params Original parameters
+     * @return array Impact intro variations as objects with text property
+     */
+    private function format_impact_intro_response($content, $params) {
+        $intros = array();
+        $expected_count = isset($params['count']) ? intval($params['count']) : 5;
+        $lines = explode("\n", trim($content));
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line)) continue;
+
+            // Match numbered format: "1.", "1)", "1:" etc.
+            if (preg_match('/^\d+[\.\)\:]\s*(.+)/', $line, $matches)) {
+                $text = trim($matches[1]);
+
+                // Clean up the text
+                // Remove markdown bold/italic markers
+                $text = preg_replace('/\*+/', '', $text);
+                // Remove leading/trailing quotes
+                $text = preg_replace('/^["\'"]+|["\'"]+$/', '', $text);
+                // Trim again
+                $text = trim($text, " \t\n\r\0\x0B\"'");
+
+                if (!empty($text) && strlen($text) > 10) {
+                    $intros[] = array(
+                        'text' => $text
+                    );
+                }
+            }
+
+            // Stop if we have enough
+            if (count($intros) >= $expected_count) {
+                break;
+            }
+        }
+
+        // Fallback: if no numbered list found, try splitting by double newlines
+        if (empty($intros)) {
+            $paragraphs = preg_split('/\n\n+/', $content);
+            foreach ($paragraphs as $para) {
+                $para = trim($para);
+                if (!empty($para) && strlen($para) > 10) {
+                    $intros[] = array('text' => $para);
+                }
+                if (count($intros) >= $expected_count) {
+                    break;
+                }
+            }
+        }
+
+        // Last fallback: return the whole content as a single intro
+        if (empty($intros) && !empty(trim($content))) {
+            $intros[] = array('text' => trim($content));
+        }
+
+        return $intros;
     }
 
     /**

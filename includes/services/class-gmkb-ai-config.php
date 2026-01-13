@@ -119,7 +119,16 @@ Create offers that make the decision to work together feel obvious and valuable.
 - Create emotional resonance
 - Are concise yet comprehensive
 
-Create hooks that immediately establish expertise and relevance.'
+Create hooks that immediately establish expertise and relevance.',
+
+            'impact_intro' => 'You are a personal branding expert who creates powerful impact introductions that lead with results and mission. Your impact intros:
+- Lead with specific, quantifiable achievements and results
+- Connect achievements to a compelling mission or purpose
+- Create immediate credibility through demonstrated impact
+- Are conversational and memorable when spoken aloud
+- Follow the formula: "I\'ve [WHERE/results]. My mission is [WHY/purpose]."
+
+Create impact introductions that make people want to know more about how you achieved your results.'
         );
     }
 
@@ -256,7 +265,31 @@ GOOD example using the provided info:
 BAD example (DO NOT make up different info):
 1. I help overwhelmed entrepreneurs regain focus... (WRONG - uses made up data, not the provided WHO/WHAT/WHEN/HOW)
 
-Generate {{count}} hook variations NOW using ONLY the information provided above:'
+Generate {{count}} hook variations NOW using ONLY the information provided above:',
+
+            'impact_intro' => 'Generate {{count}} compelling impact introduction variations using this EXACT information:
+
+WHERE (My results/achievements): {{where}}
+WHY (My mission/purpose): {{why}}
+
+CRITICAL REQUIREMENTS:
+1. Each intro MUST use the specific results and mission provided above
+2. Use the core structure: "I\'ve [WHERE - results/achievements]. My mission is [WHY - purpose]."
+3. Create {{count}} DIFFERENT variations with different angles/phrasings
+4. Each intro should be 2-3 sentences, under 75 words
+5. Make them conversational and powerful when spoken aloud
+6. Lead with impact - start with results, not credentials
+7. Vary the emphasis: some highlight scale, some transformation, some innovation
+
+FORMAT: Return as a numbered list (1-{{count}}), with ONLY the intro statement on each line.
+
+GOOD example using the provided info:
+1. I\'ve [actual WHERE value]. My mission is [actual WHY value].
+
+BAD example (DO NOT make up different info):
+1. I\'ve helped thousands of people achieve success... (WRONG - uses made up data, not the provided WHERE/WHY)
+
+Generate {{count}} impact intro variations NOW using ONLY the information provided above:'
         );
     }
 
@@ -283,7 +316,8 @@ Generate {{count}} hook variations NOW using ONLY the information provided above
             'tagline' => 300,
             'guest_intro' => 400,
             'offers' => 1500,
-            'authority_hook' => 600  // Increased for 5 variations
+            'authority_hook' => 600,  // Increased for 5 variations
+            'impact_intro' => 700     // 5 variations, slightly longer format
         );
     }
 
