@@ -129,9 +129,9 @@
                     </template>
                 </EditablePanel>
 
-                <!-- Authority Hook Panel -->
+                <!-- Authority Hook (6 W's) Panel -->
                 <EditablePanel
-                    title="Authority Hook"
+                    title="Authority Hook (6 W's)"
                     section-id="authority-hook"
                     :is-editing="editingSection === 'authority-hook'"
                     :is-saving="isSaving"
@@ -146,23 +146,88 @@
                     </template>
 
                     <template #display>
-                        <div class="text-area">
-                            <div v-if="store.fields.authority_hook" class="preserve-lines" v-html="formatWithLineBreaks(store.fields.authority_hook)"></div>
-                            <div v-else class="empty-text">
-                                <p>No authority hook defined</p>
+                        <div class="hook-fields">
+                            <div class="hook-field">
+                                <span class="hook-label">WHO (Target):</span>
+                                <span class="hook-value">{{ store.fields.hook_who || '—' }}</span>
+                            </div>
+                            <div class="hook-field">
+                                <span class="hook-label">WHAT (Result):</span>
+                                <span class="hook-value">{{ store.fields.hook_what || '—' }}</span>
+                            </div>
+                            <div class="hook-field">
+                                <span class="hook-label">WHEN (Situation):</span>
+                                <span class="hook-value">{{ store.fields.hook_when || '—' }}</span>
+                            </div>
+                            <div class="hook-field">
+                                <span class="hook-label">HOW (Method):</span>
+                                <span class="hook-value">{{ store.fields.hook_how || '—' }}</span>
+                            </div>
+                            <div class="hook-field">
+                                <span class="hook-label">WHERE (Results):</span>
+                                <span class="hook-value">{{ store.fields.hook_where || '—' }}</span>
+                            </div>
+                            <div class="hook-field">
+                                <span class="hook-label">WHY (Mission):</span>
+                                <span class="hook-value">{{ store.fields.hook_why || '—' }}</span>
                             </div>
                         </div>
                     </template>
 
                     <template #edit>
                         <div class="form-group">
-                            <label class="form-label">Authority Hook</label>
-                            <textarea
-                                class="form-input textarea"
-                                v-model="editFields.authority_hook"
-                                rows="4"
-                                placeholder="I help [audience] achieve [result] when they need [timing] through [method]..."
-                            ></textarea>
+                            <label class="form-label">WHO do you help?</label>
+                            <input
+                                type="text"
+                                class="form-input"
+                                v-model="editFields.hook_who"
+                                placeholder="e.g. SaaS founders, busy entrepreneurs..."
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">WHAT result do they get?</label>
+                            <input
+                                type="text"
+                                class="form-input"
+                                v-model="editFields.hook_what"
+                                placeholder="e.g. Scale to $1M ARR, double their client base..."
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">WHEN (in what situation)?</label>
+                            <input
+                                type="text"
+                                class="form-input"
+                                v-model="editFields.hook_when"
+                                placeholder="e.g. When stuck at a growth plateau..."
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">HOW (your unique method)?</label>
+                            <input
+                                type="text"
+                                class="form-input"
+                                v-model="editFields.hook_how"
+                                placeholder="e.g. Through AI-driven marketing systems..."
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">WHERE (your results/credentials)?</label>
+                            <input
+                                type="text"
+                                class="form-input"
+                                v-model="editFields.hook_where"
+                                placeholder="e.g. Helped 200+ SaaS founders, grew businesses to $10M..."
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">WHY (your mission/purpose)?</label>
+                            <input
+                                type="text"
+                                class="form-input"
+                                v-model="editFields.hook_why"
+                                placeholder="e.g. To make sustainable growth accessible to all..."
+                            />
                         </div>
                     </template>
                 </EditablePanel>
@@ -274,7 +339,7 @@ const sectionFields = {
     biography: ['biography'],
     'guest-intro': ['podcast_intro'],
     tagline: ['tagline'],
-    'authority-hook': ['authority_hook'],
+    'authority-hook': ['hook_who', 'hook_what', 'hook_when', 'hook_how', 'hook_where', 'hook_why'],
     'impact-intro': ['impact_intro'],
 };
 
@@ -443,5 +508,30 @@ const saveSection = async (sectionId) => {
 
 .textarea.tall {
     min-height: 200px;
+}
+
+/* Hook fields styling */
+.hook-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.hook-field {
+    display: flex;
+    gap: 8px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.hook-label {
+    font-weight: 600;
+    color: #64748b;
+    min-width: 140px;
+    flex-shrink: 0;
+}
+
+.hook-value {
+    color: #334155;
 }
 </style>

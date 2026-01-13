@@ -5,9 +5,15 @@
   "emoji": "💫",
   "apiType": "impact_intro",
   "fieldMapping": {
-    "type": "simple",
-    "targetField": "impact_intro",
-    "sourceKeys": ["text", "value", "content", "intro"]
+    "type": "object",
+    "fields": {
+      "where": "hook_where",
+      "why": "hook_why",
+      "statement": "impact_intro",
+      "text": "impact_intro",
+      "content": "impact_intro",
+      "intro": "impact_intro"
+    }
   },
   "validation": {
     "anyOf": ["where", "why"],
