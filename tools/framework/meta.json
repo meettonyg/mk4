@@ -57,6 +57,8 @@
     "canonicalPath": "/tools/framework-builder/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Framework",
+    "guidanceSubtitle": "A proprietary framework packages your expertise into a memorable, teachable system. The best frameworks have 3-5 steps, a catchy name, and clear outcomes that differentiate you from competitors.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Framework Builder",
@@ -168,17 +170,20 @@
       {
         "step": 1,
         "title": "Describe Your Process",
-        "description": "Explain how you achieve results for clients."
+        "description": "Share how you achieve results for clients. The AI identifies patterns in your approach that can become a repeatable system.",
+        "icon": "CogIcon"
       },
       {
         "step": 2,
-        "title": "Identify Key Steps",
-        "description": "Break down your approach into phases or stages."
+        "title": "Name Your Framework",
+        "description": "Get catchy, memorable names using acronyms, alliteration, or metaphors. A great name makes your methodology ownable and quotable.",
+        "icon": "TagIcon"
       },
       {
         "step": 3,
-        "title": "Get Your Framework",
-        "description": "Receive a structured, nameable methodology."
+        "title": "Teach It Everywhere",
+        "description": "Use your framework in sales conversations, coaching programs, courses, and keynotes. It becomes your calling card and intellectual property.",
+        "icon": "AcademicCapIcon"
       }
     ],
     "features": [

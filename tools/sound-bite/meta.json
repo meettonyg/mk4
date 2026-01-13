@@ -54,6 +54,8 @@
     "canonicalPath": "/tools/sound-bite-generator/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Sound Bites",
+    "guidanceSubtitle": "Sound bites are quotable phrases that journalists share and audiences remember. The best sound bites stand alone without context and express a clear point of view in under 25 words.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Sound Bite Generator",
@@ -168,18 +170,21 @@
     "howItWorks": [
       {
         "step": 1,
-        "title": "Share Your Message",
-        "description": "Enter your key insight or perspective."
+        "title": "Share Your Perspective",
+        "description": "Enter your topic and unique point of view. The best sound bites express clear opinions, not generic observations.",
+        "icon": "LightBulbIcon"
       },
       {
         "step": 2,
-        "title": "Choose Your Style",
-        "description": "Select punchy, insightful, or provocative tone."
+        "title": "Generate Options",
+        "description": "Our AI creates multiple sound bites using proven rhetorical techniques. Get punchy, insightful, and provocative variations.",
+        "icon": "SparklesIcon"
       },
       {
         "step": 3,
-        "title": "Pick Your Best",
-        "description": "Review options and save your favorites."
+        "title": "Get Quoted Everywhere",
+        "description": "Use your sound bites in interviews, keynotes, social posts, and anywhere you want to be the expert everyone remembers.",
+        "icon": "MicrophoneIcon"
       }
     ],
     "features": [

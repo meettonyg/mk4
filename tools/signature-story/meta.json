@@ -53,6 +53,8 @@
     "canonicalPath": "/tools/signature-story-generator/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Signature Story",
+    "guidanceSubtitle": "Your signature story is your go-to illustration that demonstrates expertise through real experience. A powerful story makes your methodology memorable and sells without being salesy.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Signature Story Generator",
@@ -163,18 +165,21 @@
     "howItWorks": [
       {
         "step": 1,
-        "title": "Share the Situation",
-        "description": "Describe the challenge or starting point."
+        "title": "Share the Challenge",
+        "description": "Describe the situation or problem that sets the stage. The more specific and relatable, the more your audience will lean in.",
+        "icon": "ExclamationCircleIcon"
       },
       {
         "step": 2,
-        "title": "Explain Your Approach",
-        "description": "Detail what you did differently."
+        "title": "Reveal Your Insight",
+        "description": "Our AI helps you structure the turning point—what you discovered or did differently that changed everything.",
+        "icon": "LightBulbIcon"
       },
       {
         "step": 3,
-        "title": "Reveal the Result",
-        "description": "Share the transformation and outcome."
+        "title": "Tell It Everywhere",
+        "description": "Use your signature story in keynotes, podcast interviews, sales conversations, and anywhere you need to illustrate your methodology.",
+        "icon": "MicrophoneIcon"
       }
     ],
     "features": [

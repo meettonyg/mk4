@@ -43,6 +43,8 @@
     "canonicalPath": "/tools/email-writer/"
   },
   "landingContent": {
+    "guidanceTitle": "How to Create Your Emails",
+    "guidanceSubtitle": "Response-worthy emails have a personalized hook, clear value proposition, one specific ask, and an easy way to respond. Keep them short, scannable, and make the next step obvious.",
     "hero": {
       "badge": "\u2728 Free AI Tool",
       "h1": "Free Email Writer",
@@ -154,17 +156,20 @@
       {
         "step": 1,
         "title": "Define Your Goal",
-        "description": "Choose email type and desired outcome."
+        "description": "Choose your email type—cold outreach, follow-up, or proposal. Each has a different structure that maximizes response rates.",
+        "icon": "EnvelopeIcon"
       },
       {
         "step": 2,
-        "title": "Add Context",
-        "description": "Include recipient details and key points."
+        "title": "Generate Your Email",
+        "description": "Our AI creates personalized hooks, clear value propositions, one specific ask, and easy next steps that get responses.",
+        "icon": "SparklesIcon"
       },
       {
         "step": 3,
-        "title": "Generate & Send",
-        "description": "Get a polished email ready to send."
+        "title": "Get More Responses",
+        "description": "Send emails that get opened, read, and responded to. Track what works and refine your approach over time.",
+        "icon": "InboxArrowDownIcon"
       }
     ],
     "features": [
