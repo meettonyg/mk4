@@ -69,6 +69,49 @@
 
     <!-- Results Section -->
     <div v-if="hasTopics" class="gfy-results">
+      <!-- Current Topics Section (Lock/Pin Feature) - Only for logged-in users with a profile -->
+      <div v-if="hasCurrentTopics && selectedProfileId" class="gfy-current-topics">
+        <div class="gfy-current-topics__header">
+          <h3 class="gfy-current-topics__title">Your Current Topics</h3>
+          <span class="gfy-current-topics__hint">Click lock to keep, unlock to replace</span>
+        </div>
+        <div class="gfy-current-topics__list">
+          <div
+            v-for="topic in currentTopics"
+            :key="topic.position"
+            class="gfy-current-topic"
+            :class="{ 'gfy-current-topic--locked': topic.locked, 'gfy-current-topic--empty': !topic.text }"
+          >
+            <span class="gfy-current-topic__position">{{ topic.position + 1 }}</span>
+            <span class="gfy-current-topic__text">{{ topic.text || '(empty)' }}</span>
+            <button
+              v-if="topic.text"
+              type="button"
+              class="gfy-current-topic__lock"
+              :title="topic.locked ? 'Unlock to replace' : 'Lock to keep'"
+              @click="toggleLock(topic.position)"
+            >
+              <svg v-if="topic.locked" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0110 0v4"/>
+              </svg>
+              <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 019.9-1"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="gfy-current-topics__summary">
+          <span class="gfy-current-topics__locked-count">
+            🔒 {{ lockedTopics.length }} locked
+          </span>
+          <span class="gfy-current-topics__available">
+            {{ availableSlots }} slot{{ availableSlots !== 1 ? 's' : '' }} available for new topics
+          </span>
+        </div>
+      </div>
+
       <!-- Results Header -->
       <div class="gfy-results__header">
         <div class="gfy-results__title-row">
@@ -121,7 +164,7 @@
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
               <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
             </svg>
-            Copy All
+            {{ selectedTopics.length > 0 ? 'Copy Selected' : 'Copy All' }}
           </button>
         </div>
       </div>
@@ -129,10 +172,15 @@
       <!-- Selection Banner -->
       <div class="gfy-selection-banner">
         <span class="gfy-selection-banner__text">
-          Select up to {{ MAX_SELECTED_TOPICS }} topics (click order = save order)
+          <template v-if="lockedTopics.length > 0">
+            Select up to {{ availableSlots }} new topic{{ availableSlots !== 1 ? 's' : '' }} ({{ lockedTopics.length }} locked)
+          </template>
+          <template v-else>
+            Select up to {{ MAX_SELECTED_TOPICS }} topics (click order = save order)
+          </template>
         </span>
         <span class="gfy-selection-banner__count">
-          {{ selectedTopics.length }} of {{ MAX_SELECTED_TOPICS }} selected
+          {{ selectedTopics.length }} of {{ availableSlots }} selected
         </span>
       </div>
 
@@ -223,9 +271,10 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, inject } from 'vue';
 import { useAITopics } from '../../src/composables/useAITopics';
 import { useProfileContext } from '../../src/composables/useProfileContext';
+import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
 
 // Constants
 const MAX_SELECTED_TOPICS = 5;
@@ -257,6 +306,9 @@ const {
   saveToProfile
 } = useProfileContext();
 
+// Inject profile data from parent (EmbeddedToolWrapper provides this)
+const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+
 // Local state
 const expertise = ref('');
 const selectedTopics = ref([]);
@@ -265,23 +317,23 @@ const selectedProfileId = ref(null);
 const viewMode = ref('list'); // 'card' or 'list' - default to list for single-column display
 const saveAuthorityHook = ref(true); // Whether to also save authority hook fields
 
-// Use context profile ID if available
-watch(contextProfileId, (newId) => {
-  if (newId && !selectedProfileId.value) {
-    selectedProfileId.value = newId;
-  }
-}, { immediate: true });
+// Locked topics from profile (Lock/Pin feature)
+// Each item: { position: 0-4, text: string, locked: boolean }
+const currentTopics = ref([]);
 
-// Also use profile ID from props (for embedded mode via slot)
-watch(
-  () => props.profileData?.id,
-  (newId) => {
-    if (newId) {
-      selectedProfileId.value = newId;
-    }
-  },
-  { immediate: true }
-);
+// Computed: resolved profile ID from all available sources
+const resolvedProfileId = computed(() => {
+  // Priority: props > injected > context service
+  return props.profileData?.id
+    || injectedProfileData.value?.id
+    || contextProfileId.value
+    || null;
+});
+
+// Keep selectedProfileId in sync with resolved ID
+watch(resolvedProfileId, (newId) => {
+  selectedProfileId.value = newId;
+}, { immediate: true });
 
 // Authority Hook Builder fields
 const hookWho = ref('');
@@ -327,6 +379,27 @@ const hasAuthorityHookData = computed(() => {
 });
 
 /**
+ * Check if profile has any existing topics
+ */
+const hasCurrentTopics = computed(() => {
+  return currentTopics.value.some(t => t.text);
+});
+
+/**
+ * Get locked topics (topics user wants to keep)
+ */
+const lockedTopics = computed(() => {
+  return currentTopics.value.filter(t => t.locked && t.text);
+});
+
+/**
+ * Get number of available slots (unlocked positions)
+ */
+const availableSlots = computed(() => {
+  return MAX_SELECTED_TOPICS - lockedTopics.value.length;
+});
+
+/**
  * Check if topic is selected
  */
 const isSelected = (index) => selectedTopics.value.includes(index);
@@ -340,14 +413,30 @@ const getSelectionPosition = (index) => {
 };
 
 /**
- * Toggle topic selection (max MAX_SELECTED_TOPICS)
+ * Toggle topic selection (respects locked slots)
  */
 const toggleSelection = (index) => {
   const idx = selectedTopics.value.indexOf(index);
   if (idx > -1) {
     selectedTopics.value.splice(idx, 1);
-  } else if (selectedTopics.value.length < MAX_SELECTED_TOPICS) {
+  } else if (selectedTopics.value.length < availableSlots.value) {
     selectedTopics.value.push(index);
+  }
+};
+
+/**
+ * Toggle lock status for a current topic
+ */
+const toggleLock = (position) => {
+  const topic = currentTopics.value.find(t => t.position === position);
+  if (topic) {
+    topic.locked = !topic.locked;
+    // If we're locking and have too many selected, deselect until within limit
+    if (topic.locked) {
+      while (selectedTopics.value.length > availableSlots.value) {
+        selectedTopics.value.pop();
+      }
+    }
   }
 };
 
@@ -361,6 +450,18 @@ function populateFromProfile(profileData) {
   if (profileData.hook_when) hookWhen.value = profileData.hook_when;
   if (profileData.hook_how) hookHow.value = profileData.hook_how;
   if (profileData.expertise) expertise.value = profileData.expertise;
+
+  // Load existing topics with locked status (all locked by default)
+  const loadedTopics = [];
+  for (let i = 1; i <= MAX_SELECTED_TOPICS; i++) {
+    const topicText = profileData[`topic_${i}`] || '';
+    loadedTopics.push({
+      position: i - 1,
+      text: topicText,
+      locked: !!topicText // Lock if has content
+    });
+  }
+  currentTopics.value = loadedTopics;
 }
 
 /**
@@ -391,24 +492,65 @@ const handleRegenerate = async () => {
 };
 
 /**
- * Handle copy all topics
+ * Handle copy - copies selected topics (or all if none selected) as a user-friendly numbered list
  */
 const handleCopyAll = async () => {
-  await copyToClipboard();
+  // Determine which topics to copy: selected ones if any, otherwise all
+  const topicsToUse = selectedTopics.value.length > 0
+    ? selectedTopics.value.map(idx => topics.value[idx])
+    : topics.value;
+
+  // Format as numbered list (user-friendly, not JSON)
+  const formattedText = topicsToUse
+    .map((topic, index) => {
+      const text = typeof topic === 'string' ? topic : topic.title || topic;
+      return `${index + 1}. ${text}`;
+    })
+    .join('\n');
+
+  try {
+    await navigator.clipboard.writeText(formattedText);
+  } catch (err) {
+    console.error('[Topics Generator] Failed to copy:', err);
+  }
 };
 
 /**
  * Handle save to media kit - saves topics and optionally authority hook
+ * Merges locked topics with newly selected topics
  */
 const handleSaveToMediaKit = async () => {
-  const selectedTopicsList = selectedTopics.value.map(idx => {
+  // Build final topics array: locked topics in their positions + new selections in unlocked slots
+  const finalTopics = [];
+
+  // First, place locked topics in their positions
+  const lockedByPosition = {};
+  lockedTopics.value.forEach(t => {
+    lockedByPosition[t.position] = t.text;
+  });
+
+  // Get new selections
+  const newSelections = selectedTopics.value.map(idx => {
     const topic = topics.value[idx];
     return typeof topic === 'string' ? topic : topic.title || topic;
   });
 
+  // Build final array: locked topics stay in position, new ones fill gaps
+  let newSelectionIndex = 0;
+  for (let i = 0; i < MAX_SELECTED_TOPICS; i++) {
+    if (lockedByPosition[i]) {
+      finalTopics.push(lockedByPosition[i]);
+    } else if (newSelectionIndex < newSelections.length) {
+      finalTopics.push(newSelections[newSelectionIndex]);
+      newSelectionIndex++;
+    } else {
+      finalTopics.push(''); // Empty slot
+    }
+  }
+
   try {
     // Save topics - saveToProfile will throw if no profile ID
-    const topicsResult = await saveToProfile('topics', selectedTopicsList, {
+    const topicsResult = await saveToProfile('topics', finalTopics, {
       profileId: selectedProfileId.value
     });
 
@@ -430,9 +572,20 @@ const handleSaveToMediaKit = async () => {
     if (topicsResult.success && hookResult.success) {
       saveSuccess.value = true;
       setTimeout(() => { saveSuccess.value = false; }, 3000);
+
+      // Update currentTopics to reflect saved state (all now locked)
+      currentTopics.value = finalTopics.map((text, idx) => ({
+        position: idx,
+        text: text,
+        locked: !!text
+      }));
+
+      // Clear selections since they're now saved
+      selectedTopics.value = [];
+
       emit('saved', {
         profileId: selectedProfileId.value,
-        topics: selectedTopicsList,
+        topics: finalTopics,
         authorityHookSaved: saveAuthorityHook.value && hasAuthorityHookData.value && hookResult.success
       });
     }
@@ -471,11 +624,12 @@ watch(
   }
 );
 
-// Watch profile data prop
+// Watch profile data from both props and inject
 watch(
-  () => props.profileData,
-  (newData) => {
-    if (newData) populateFromProfile(newData);
+  [() => props.profileData, injectedProfileData],
+  ([propsData, injectedData]) => {
+    const data = propsData || injectedData;
+    if (data) populateFromProfile(data);
   },
   { immediate: true }
 );
@@ -508,6 +662,153 @@ defineExpose({
   --gfy-radius-lg: 12px;
 
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* CURRENT TOPICS (Lock/Pin Feature) */
+.gfy-current-topics {
+  background: var(--gfy-white);
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-lg);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.gfy-current-topics__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.gfy-current-topics__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gfy-text-primary);
+  margin: 0;
+}
+
+.gfy-current-topics__hint {
+  font-size: 0.8rem;
+  color: var(--gfy-text-muted);
+}
+
+.gfy-current-topics__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.gfy-current-topic {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--gfy-bg-color);
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-md);
+  transition: all 0.15s ease;
+}
+
+.gfy-current-topic--locked {
+  background: var(--gfy-primary-light);
+  border-color: var(--gfy-primary-color);
+}
+
+.gfy-current-topic--empty {
+  opacity: 0.5;
+}
+
+.gfy-current-topic__position {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  background: var(--gfy-white);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gfy-text-secondary);
+}
+
+.gfy-current-topic--locked .gfy-current-topic__position {
+  background: var(--gfy-primary-color);
+  color: var(--gfy-white);
+}
+
+.gfy-current-topic__text {
+  flex: 1;
+  font-size: 0.9rem;
+  color: var(--gfy-text-primary);
+}
+
+.gfy-current-topic--empty .gfy-current-topic__text {
+  font-style: italic;
+  color: var(--gfy-text-muted);
+}
+
+.gfy-current-topic__lock {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-md);
+  cursor: pointer;
+  color: var(--gfy-text-muted);
+  transition: all 0.15s ease;
+}
+
+.gfy-current-topic__lock:hover {
+  border-color: var(--gfy-primary-color);
+  color: var(--gfy-primary-color);
+  background: var(--gfy-primary-light);
+}
+
+.gfy-current-topic--locked .gfy-current-topic__lock {
+  background: var(--gfy-primary-color);
+  border-color: var(--gfy-primary-color);
+  color: var(--gfy-white);
+}
+
+.gfy-current-topic--locked .gfy-current-topic__lock:hover {
+  background: var(--gfy-primary-dark);
+}
+
+.gfy-current-topic__lock svg {
+  width: 16px;
+  height: 16px;
+}
+
+.gfy-current-topic__lock svg rect,
+.gfy-current-topic__lock svg path {
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.gfy-current-topics__summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--gfy-border-color);
+  font-size: 0.85rem;
+}
+
+.gfy-current-topics__locked-count {
+  color: var(--gfy-primary-color);
+  font-weight: 600;
+}
+
+.gfy-current-topics__available {
+  color: var(--gfy-text-secondary);
 }
 
 /* INPUT STYLES */
@@ -699,6 +1000,11 @@ defineExpose({
 .gfy-view-toggle__btn svg {
   width: 16px;
   height: 16px;
+}
+
+.gfy-view-toggle__btn svg rect,
+.gfy-view-toggle__btn svg line,
+.gfy-view-toggle__btn svg path {
   stroke: currentColor;
   stroke-width: 2;
 }
@@ -933,6 +1239,12 @@ defineExpose({
 
 .gfy-btn svg {
   flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
 }
 
 .gfy-btn--outline {
