@@ -2438,12 +2438,38 @@ get_footer();
             } else {
                 $classes[] = 'gmkb-tool-landing-view';
             }
-        } elseif (get_query_var($this->directory_var)) {
+        } elseif ($this->is_directory_request()) {
             $classes[] = 'gmkb-tools-directory-page';
 
             $this->add_login_status_classes($classes);
         }
         return $classes;
+    }
+
+    /**
+     * Check if current request is for the tools directory
+     * Uses query var when available, falls back to URL inspection
+     *
+     * @return bool
+     */
+    private function is_directory_request() {
+        // First check query var (works after rewrite rules processed)
+        if (get_query_var($this->directory_var)) {
+            return true;
+        }
+
+        // Fallback: inspect request URI for early filter calls
+        $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+        if (!empty($request_uri)) {
+            $path = trim(parse_url($request_uri, PHP_URL_PATH), '/');
+            $base = trim($this->base_path, '/');
+            // Exact match for directory (e.g., "tools" or "tools/")
+            if ($path === $base) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
