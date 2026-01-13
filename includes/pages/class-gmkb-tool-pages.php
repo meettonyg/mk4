@@ -2431,12 +2431,31 @@ get_footer();
             } else {
                 $classes[] = 'gmkb-tool-landing-view';
             }
-        } elseif (get_query_var($this->directory_var)) {
+        } elseif ($this->is_directory_page()) {
             $classes[] = 'gmkb-tools-directory-page';
 
             $this->add_login_status_classes($classes);
         }
         return $classes;
+    }
+
+    /**
+     * Check if current page is the tools directory page
+     *
+     * @return bool True if on the directory page
+     */
+    private function is_directory_page() {
+        // Check query var first
+        if (get_query_var($this->directory_var)) {
+            return true;
+        }
+
+        // Fallback: check URL path directly
+        $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
+        $path = trim(wp_parse_url($request_uri, PHP_URL_PATH), '/');
+
+        // Match exactly /tools/ (not /tools/something/)
+        return $path === $this->base_path;
     }
 
     /**
