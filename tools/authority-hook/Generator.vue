@@ -193,15 +193,17 @@
               :class="{ 'gfy-hook-card--selected': selectedHookIndex === index }"
               @click="selectHook(index)"
             >
-              <div class="gfy-hook-card__number">{{ index + 1 }}</div>
+              <div class="gfy-hook-card__header">
+                <div class="gfy-hook-card__number">{{ index + 1 }}</div>
+                <div class="gfy-hook-card__checkbox">
+                  <svg v-if="selectedHookIndex === index" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                  </svg>
+                </div>
+              </div>
               <div class="gfy-hook-card__content">
                 <span v-if="hook.angle" class="gfy-hook-card__angle">{{ hook.angle }}</span>
                 <p class="gfy-hook-card__text">{{ hook.text }}</p>
-              </div>
-              <div class="gfy-hook-card__checkbox">
-                <svg v-if="selectedHookIndex === index" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
-                </svg>
               </div>
             </div>
           </div>
@@ -751,11 +753,6 @@ defineExpose({
     min-width: 0;
   }
 
-  /* Adjust grid columns for narrower main area */
-  .gfy-layout-main .gfy-hooks-grid {
-    grid-template-columns: 1fr;
-  }
-
   /* Stack header vertically when sidebar is present */
   .gfy-layout-main .gfy-results__header {
     flex-direction: column;
@@ -999,24 +996,32 @@ defineExpose({
   color: var(--gfy-primary-color);
 }
 
-/* HOOKS GRID */
+/* HOOKS GRID - Card View */
 .gfy-hooks-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.75rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
   margin-bottom: 1.5rem;
+}
+
+/* Single column on mobile */
+@media (max-width: 768px) {
+  .gfy-hooks-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .gfy-hook-card {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 0.75rem;
-  padding: 1rem;
+  padding: 1.25rem;
   background: var(--gfy-white);
   border: 2px solid var(--gfy-border-color);
-  border-radius: var(--gfy-radius-md);
+  border-radius: var(--gfy-radius-lg);
   cursor: pointer;
   transition: all 0.15s ease;
+  min-height: 120px;
 }
 
 .gfy-hook-card:hover {
@@ -1029,17 +1034,23 @@ defineExpose({
   background: var(--gfy-primary-light);
 }
 
+.gfy-hook-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
 .gfy-hook-card__number {
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   background: var(--gfy-bg-color);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 0.9rem;
+  font-weight: 700;
   color: var(--gfy-text-secondary);
 }
 
@@ -1050,7 +1061,6 @@ defineExpose({
 
 .gfy-hook-card__content {
   flex: 1;
-  min-width: 0;
 }
 
 .gfy-hook-card__angle {
