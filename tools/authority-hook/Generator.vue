@@ -340,18 +340,29 @@ const selectHook = (index) => {
 const handleGenerate = async () => {
   selectedHookIndex.value = null;
 
-  await generate({
-    who: hookWho.value,
-    what: hookWhat.value,
-    when: hookWhen.value,
-    how: hookHow.value,
-    count: 5
-  });
+  try {
+    await generate({
+      who: hookWho.value,
+      what: hookWhat.value,
+      when: hookWhen.value,
+      how: hookHow.value,
+      count: 5
+    });
 
-  // Emit generated event for parent (EmbeddedToolApp) to handle
-  emit('generated', { hooks: hooks.value });
+    // Emit generated event for parent (EmbeddedToolApp) to handle
+    // Include 'hook' (singular) for previewContent compatibility
+    const firstHook = hooks.value?.[0]?.text || '';
+    emit('generated', {
+      hooks: hooks.value,
+      hook: firstHook,
+      content: firstHook
+    });
 
-  return { hooks: hooks.value };
+    return { hooks: hooks.value };
+  } catch (err) {
+    console.error('[Authority Hook Generator] Generation failed:', err);
+    throw err;
+  }
 };
 
 /**
