@@ -1,48 +1,5 @@
 <template>
   <div class="gfy-topics-generator">
-    <!-- Current Topics Section (Lock/Pin Feature) -->
-    <div v-if="hasCurrentTopics" class="gfy-current-topics">
-      <div class="gfy-current-topics__header">
-        <h3 class="gfy-current-topics__title">Your Current Topics</h3>
-        <span class="gfy-current-topics__hint">Click lock to keep, unlock to replace</span>
-      </div>
-      <div class="gfy-current-topics__list">
-        <div
-          v-for="topic in currentTopics"
-          :key="topic.position"
-          class="gfy-current-topic"
-          :class="{ 'gfy-current-topic--locked': topic.locked, 'gfy-current-topic--empty': !topic.text }"
-        >
-          <span class="gfy-current-topic__position">{{ topic.position + 1 }}</span>
-          <span class="gfy-current-topic__text">{{ topic.text || '(empty)' }}</span>
-          <button
-            v-if="topic.text"
-            type="button"
-            class="gfy-current-topic__lock"
-            :title="topic.locked ? 'Unlock to replace' : 'Lock to keep'"
-            @click="toggleLock(topic.position)"
-          >
-            <svg v-if="topic.locked" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-              <path d="M7 11V7a5 5 0 0110 0v4"/>
-            </svg>
-            <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-              <path d="M7 11V7a5 5 0 019.9-1"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-      <div class="gfy-current-topics__summary">
-        <span class="gfy-current-topics__locked-count">
-          🔒 {{ lockedTopics.length }} locked
-        </span>
-        <span class="gfy-current-topics__available">
-          {{ availableSlots }} slot{{ availableSlots !== 1 ? 's' : '' }} available for new topics
-        </span>
-      </div>
-    </div>
-
     <!-- Form Section -->
     <div v-if="!hasTopics" class="gfy-topics-form">
       <!-- Expertise Field -->
@@ -112,6 +69,49 @@
 
     <!-- Results Section -->
     <div v-if="hasTopics" class="gfy-results">
+      <!-- Current Topics Section (Lock/Pin Feature) - Only for logged-in users with a profile -->
+      <div v-if="hasCurrentTopics && selectedProfileId" class="gfy-current-topics">
+        <div class="gfy-current-topics__header">
+          <h3 class="gfy-current-topics__title">Your Current Topics</h3>
+          <span class="gfy-current-topics__hint">Click lock to keep, unlock to replace</span>
+        </div>
+        <div class="gfy-current-topics__list">
+          <div
+            v-for="topic in currentTopics"
+            :key="topic.position"
+            class="gfy-current-topic"
+            :class="{ 'gfy-current-topic--locked': topic.locked, 'gfy-current-topic--empty': !topic.text }"
+          >
+            <span class="gfy-current-topic__position">{{ topic.position + 1 }}</span>
+            <span class="gfy-current-topic__text">{{ topic.text || '(empty)' }}</span>
+            <button
+              v-if="topic.text"
+              type="button"
+              class="gfy-current-topic__lock"
+              :title="topic.locked ? 'Unlock to replace' : 'Lock to keep'"
+              @click="toggleLock(topic.position)"
+            >
+              <svg v-if="topic.locked" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0110 0v4"/>
+              </svg>
+              <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 019.9-1"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="gfy-current-topics__summary">
+          <span class="gfy-current-topics__locked-count">
+            🔒 {{ lockedTopics.length }} locked
+          </span>
+          <span class="gfy-current-topics__available">
+            {{ availableSlots }} slot{{ availableSlots !== 1 ? 's' : '' }} available for new topics
+          </span>
+        </div>
+      </div>
+
       <!-- Results Header -->
       <div class="gfy-results__header">
         <div class="gfy-results__title-row">
