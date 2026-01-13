@@ -115,6 +115,7 @@ class GMKB_Tool_Pages {
 
         // Backward compatibility redirect for ?use=1 to /tool/
         add_action('template_redirect', array($this, 'redirect_legacy_use_param'));
+        add_action('template_redirect', array($this, 'redirect_legacy_tool_urls'), 5);
 
         // Enqueue scripts early for tool pages
         add_action('wp_enqueue_scripts', array($this, 'enqueue_tool_assets'));
@@ -186,6 +187,63 @@ class GMKB_Tool_Pages {
             $new_url = home_url('/' . $this->get_base_path() . '/' . $tool_slug . '/tool/');
             wp_redirect($new_url, 301);
             exit;
+        }
+    }
+
+    /**
+     * Redirect legacy tool URLs to new /tools/ structure
+     *
+     * Handles URLs like /topics-generator/ → /tools/topics-generator/
+     * This ensures all traffic goes through the new Vue-based system.
+     */
+    public function redirect_legacy_tool_urls() {
+        // Skip if already on a tool page
+        if (get_query_var($this->query_var) || get_query_var($this->directory_var)) {
+            return;
+        }
+
+        // Skip admin, REST API, and AJAX requests
+        if (is_admin() || wp_doing_ajax() || (defined('REST_REQUEST') && REST_REQUEST)) {
+            return;
+        }
+
+        // Get the current URL path
+        $request_uri = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
+
+        // Map of legacy slugs to new tool directory names
+        // Format: 'legacy-url-slug' => 'tool-directory-name'
+        $legacy_redirects = array(
+            'topics-generator'       => 'topics',
+            'biography-generator'    => 'biography',
+            'tagline-generator'      => 'tagline',
+            'elevator-pitch'         => 'elevator-pitch',
+            'authority-hook'         => 'authority-hook',
+            'questions-generator'    => 'questions',
+            'sound-bites'            => 'sound-bite',
+            'framework-builder'      => 'framework',
+            'brand-story'            => 'brand-story',
+            'credibility-story'      => 'credibility-story',
+            'signature-story'        => 'signature-story',
+            'impact-intro'           => 'impact-intro',
+            'guest-intro'            => 'guest-intro',
+            'offers-generator'       => 'offers',
+        );
+
+        // Check if current URL matches a legacy pattern
+        foreach ($legacy_redirects as $legacy_slug => $new_slug) {
+            if ($request_uri === $legacy_slug || strpos($request_uri, $legacy_slug . '/') === 0) {
+                // Build new URL, preserving any sub-path
+                $sub_path = str_replace($legacy_slug, '', $request_uri);
+                $new_url = home_url('/' . $this->get_base_path() . '/' . $new_slug . $sub_path);
+
+                // Preserve query string
+                if (!empty($_SERVER['QUERY_STRING'])) {
+                    $new_url .= '?' . $_SERVER['QUERY_STRING'];
+                }
+
+                wp_redirect($new_url, 301);
+                exit;
+            }
         }
     }
 
