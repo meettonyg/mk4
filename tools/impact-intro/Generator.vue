@@ -42,8 +42,8 @@
           <!-- Credentials List with Checkboxes -->
           <div v-if="credentials.length > 0" class="gfy-credential-manager__list">
             <div
-              v-for="(credential, index) in credentials"
-              :key="index"
+              v-for="credential in credentials"
+              :key="credential"
               class="gfy-credential-tag"
               :class="{ 'gfy-credential-tag--selected': isCredentialSelected(credential) }"
             >
@@ -387,7 +387,9 @@ const {
   isCredentialSelected,
   addCredential,
   removeCredentialByValue,
-  toggleCredentialSelection
+  toggleCredentialSelection,
+  setCredentials,
+  selectAllCredentials
 } = useImpactIntro();
 
 // Inject profile data from parent (EmbeddedToolWrapper provides this)
@@ -457,8 +459,19 @@ function populateFromProfile(profileData) {
   // Set profile ID for saving
   selectedProfileId.value = profileData.id;
 
-  // Populate WHERE from profile impact_where or similar
-  if (profileData.impact_where && !introWhere.value) {
+  // Load credentials from profile (independent field, reusable across tools)
+  if (profileData.credentials && credentials.value.length === 0) {
+    const creds = Array.isArray(profileData.credentials)
+      ? profileData.credentials
+      : profileData.credentials.split(',').map(c => c.trim()).filter(c => c);
+    if (creds.length > 0) {
+      setCredentials(creds);
+      selectAllCredentials(); // Select all loaded credentials by default
+    }
+  }
+
+  // Populate WHERE from profile impact_where (only if no credentials loaded)
+  if (profileData.impact_where && !introWhere.value && credentials.value.length === 0) {
     introWhere.value = profileData.impact_where;
   }
 
@@ -565,6 +578,11 @@ const handleSaveToProfile = async () => {
       saveData.why = introWhy.value;
     }
 
+    // Always save credentials if we have any (independent field, reusable across tools)
+    if (credentials.value.length > 0) {
+      saveData.credentials = credentials.value;
+    }
+
     const result = await saveToProfile('impact_intro', saveData, {
       profileId: selectedProfileId.value
     });
@@ -581,7 +599,8 @@ const handleSaveToProfile = async () => {
         fields: saveIntroFields.value ? {
           where: introWhere.value,
           why: introWhy.value
-        } : null
+        } : null,
+        credentials: credentials.value
       });
     } else {
       localSaveError.value = result.errors?.join(', ') || 'Failed to save';
@@ -628,7 +647,7 @@ watch(canGenerate, (newValue) => {
  * This auto-populates the WHERE field based on checked credentials
  */
 watch(selectedCredentialsText, (newText) => {
-  if (newText && credentials.value.length > 0) {
+  if (newText) {
     introWhere.value = newText;
   }
 }, { immediate: true });
@@ -637,9 +656,7 @@ watch(selectedCredentialsText, (newText) => {
  * Handle adding a credential from input
  */
 const handleAddCredential = () => {
-  if (newCredential.value.trim()) {
-    addCredential(newCredential.value.trim());
-  }
+  addCredential(newCredential.value);
 };
 
 /**

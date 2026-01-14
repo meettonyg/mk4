@@ -98,14 +98,10 @@ export function useImpactIntro() {
   });
 
   // Computed: Format selected credentials for WHERE field
-  // Uses "and" for natural language formatting
+  // Uses Intl.ListFormat for robust, localized list formatting
   const selectedCredentialsText = computed(() => {
-    const selected = selectedCredentials.value;
-    if (selected.length === 0) return '';
-    if (selected.length === 1) return selected[0];
-    if (selected.length === 2) return selected.join(' and ');
-    // 3+ items: "A, B, and C"
-    return selected.slice(0, -1).join(', ') + ', and ' + selected[selected.length - 1];
+    const formatter = new Intl.ListFormat('en', { style: 'long', type: 'conjunction' });
+    return formatter.format(selectedCredentials.value);
   });
 
   // Computed: Combined summary for guest intro
@@ -161,15 +157,15 @@ export function useImpactIntro() {
    */
   const toggleCredentialSelection = (credential) => {
     const newSet = new Set(selectedCredentialSet.value);
-    if (newSet.has(credential)) {
+    const isSelected = newSet.has(credential);
+
+    if (isSelected) {
       newSet.delete(credential);
-      selectedCredentialSet.value = newSet;
-      return false;
     } else {
       newSet.add(credential);
-      selectedCredentialSet.value = newSet;
-      return true;
     }
+    selectedCredentialSet.value = newSet;
+    return !isSelected;
   };
 
   /**
@@ -336,7 +332,7 @@ export function useImpactIntro() {
   const reset = () => {
     credentials.value = [];
     achievements.value = [];
-    selectedCredentialSet.value.clear();
+    selectedCredentialSet.value = new Set();
     newCredential.value = '';
     newAchievement.value = '';
   };
