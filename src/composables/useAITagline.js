@@ -111,7 +111,7 @@ export function useAITagline() {
         }
         return {
           ...item,
-          text: item.text || item,
+          text: item.text ?? '',
           selected: index === selectedIndex.value
         };
       });
