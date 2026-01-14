@@ -193,13 +193,6 @@
                 </svg>
                 Copy
               </button>
-              <button
-                type="button"
-                class="gfy-btn gfy-btn--text gfy-btn--small"
-                @click="unlockTagline"
-              >
-                Unlock
-              </button>
             </div>
           </div>
         </aside>
@@ -262,10 +255,10 @@
           <!-- Selection Banner -->
           <div class="gfy-selection-banner">
             <span class="gfy-selection-banner__text">
-              Click a tagline to select it, then lock your favorite
+              Click a tagline to lock it as your Master Tagline
             </span>
-            <span v-if="selectedIndex >= 0" class="gfy-selection-banner__count">
-              1 selected
+            <span v-if="lockedTaglineIndex >= 0" class="gfy-selection-banner__count">
+              1 locked
             </span>
           </div>
 
@@ -275,32 +268,26 @@
               v-for="(tagline, index) in taglines"
               :key="index"
               class="gfy-tagline-row"
-              :class="{
-                'gfy-tagline-row--selected': selectedIndex === index,
-                'gfy-tagline-row--locked': lockedTaglineIndex === index
-              }"
-              @click="selectTagline(index)"
+              :class="{ 'gfy-tagline-row--locked': lockedTaglineIndex === index }"
+              @click="toggleTaglineLock(index)"
             >
-              <div
-                class="gfy-tagline-row__checkbox"
-                :class="{ 'gfy-tagline-row__checkbox--checked': selectedIndex === index || lockedTaglineIndex === index }"
-              >
-                <svg v-if="selectedIndex === index || lockedTaglineIndex === index" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                  <polyline points="20 6 9 17 4 12"/>
-                </svg>
-              </div>
               <p class="gfy-tagline-row__text">{{ tagline.text || tagline }}</p>
               <button
-                v-if="selectedIndex === index && lockedTaglineIndex !== index"
                 type="button"
-                class="gfy-btn gfy-btn--primary gfy-btn--small"
-                @click.stop="lockTagline(index)"
+                class="gfy-tagline-row__lock-btn"
+                :class="{ 'gfy-tagline-row__lock-btn--locked': lockedTaglineIndex === index }"
+                :title="lockedTaglineIndex === index ? 'Click to unlock' : 'Click to lock'"
+                @click.stop="toggleTaglineLock(index)"
               >
-                Lock
+                <!-- Locked icon -->
+                <svg v-if="lockedTaglineIndex === index" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                </svg>
+                <!-- Unlocked icon -->
+                <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="gfy-lock-open">
+                  <path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10z"/>
+                </svg>
               </button>
-              <svg v-if="lockedTaglineIndex === index" class="gfy-tagline-row__lock-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
-              </svg>
             </div>
           </div>
 
@@ -393,8 +380,7 @@ const selectedProfileId = ref(null);
 const saveAuthorityHook = ref(true);
 const refinementFeedback = ref('');
 
-// Selection and locking state
-const selectedIndex = ref(-1);
+// Locking state (simplified single-click pattern)
 const lockedTagline = ref(null);
 const lockedTaglineIndex = ref(-1);
 const profileTagline = ref(null); // Track tagline from profile separately
@@ -532,7 +518,6 @@ function populateFromProfile(profileData) {
  * Handle generate - exposed for parent to call
  */
 const handleGenerate = async () => {
-  selectedIndex.value = -1;
   previousTaglines.value = [];
 
   const params = {
@@ -562,7 +547,6 @@ const handleGenerate = async () => {
  * Handle regenerate
  */
 const handleRegenerate = async () => {
-  selectedIndex.value = -1;
   lockedTagline.value = null;
   lockedTaglineIndex.value = -1;
   await handleGenerate();
@@ -607,40 +591,32 @@ const handleRefine = async () => {
 };
 
 /**
- * Select a tagline
+ * Toggle lock on a tagline (single-click pattern)
+ * - Click unlocked tagline → locks it (and unlocks previous)
+ * - Click locked tagline → unlocks it
  */
-const selectTagline = (index) => {
-  selectedIndex.value = index;
-};
+const toggleTaglineLock = (index) => {
+  if (index < 0 || index >= taglines.value.length) return;
 
-/**
- * Lock a tagline as the master tagline
- */
-const lockTagline = (index) => {
-  if (index >= 0 && index < taglines.value.length) {
+  if (lockedTaglineIndex.value === index) {
+    // Clicking the already-locked tagline unlocks it
+    lockedTagline.value = null;
+    lockedTaglineIndex.value = -1;
+  } else {
+    // Clicking a different tagline locks it (auto-unlocks previous)
     lockedTagline.value = taglines.value[index].text;
     lockedTaglineIndex.value = index;
-    selectedIndex.value = index;
   }
-};
-
-/**
- * Unlock the master tagline
- */
-const unlockTagline = () => {
-  lockedTagline.value = null;
-  lockedTaglineIndex.value = -1;
 };
 
 /**
  * Handle copy to clipboard
  */
 const handleCopy = async () => {
-  const textToCopy = lockedTagline.value || (selectedIndex.value >= 0 ? taglines.value[selectedIndex.value].text : '');
-  if (!textToCopy) return;
+  if (!lockedTagline.value) return;
 
   try {
-    await navigator.clipboard.writeText(textToCopy);
+    await navigator.clipboard.writeText(lockedTagline.value);
   } catch (err) {
     console.error('[TaglineGenerator] Failed to copy:', err);
   }
@@ -703,7 +679,6 @@ const handleSaveToProfile = async () => {
  */
 const handleStartOver = () => {
   generator.reset();
-  selectedIndex.value = -1;
   lockedTagline.value = null;
   lockedTaglineIndex.value = -1;
   refinementFeedback.value = '';
@@ -1180,32 +1155,10 @@ defineExpose({
   background: var(--mkcg-bg-secondary, #f8fafc);
 }
 
-.gfy-tagline-row--selected {
-  border-color: var(--mkcg-primary, #3b82f6);
-  background: rgba(59, 130, 246, 0.05);
-}
-
 .gfy-tagline-row--locked {
   border-color: var(--mkcg-primary, #3b82f6);
-  background: rgba(59, 130, 246, 0.1);
-}
-
-.gfy-tagline-row__checkbox {
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--mkcg-border-light, #e2e8f0);
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-}
-
-.gfy-tagline-row__checkbox--checked {
-  background: var(--mkcg-primary, #3b82f6);
-  border-color: var(--mkcg-primary, #3b82f6);
-  color: white;
+  background: rgba(59, 130, 246, 0.08);
+  border-width: 2px;
 }
 
 .gfy-tagline-row__text {
@@ -1217,9 +1170,44 @@ defineExpose({
   line-height: 1.4;
 }
 
-.gfy-tagline-row__lock-icon {
-  color: var(--mkcg-primary, #3b82f6);
+/* Lock button in each row */
+.gfy-tagline-row__lock-btn {
   flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--mkcg-text-tertiary, #94a3b8);
+}
+
+.gfy-tagline-row__lock-btn:hover {
+  background: var(--mkcg-bg-secondary, #f1f5f9);
+  color: var(--mkcg-primary, #3b82f6);
+}
+
+.gfy-tagline-row__lock-btn--locked {
+  color: var(--mkcg-primary, #3b82f6);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.gfy-tagline-row__lock-btn--locked:hover {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+/* Show open lock icon only on hover for unlocked rows */
+.gfy-tagline-row__lock-btn .gfy-lock-open {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.gfy-tagline-row:hover .gfy-tagline-row__lock-btn .gfy-lock-open {
+  opacity: 1;
 }
 
 /* Buttons */
