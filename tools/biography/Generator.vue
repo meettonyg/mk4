@@ -80,170 +80,165 @@
   </AiWidgetFrame>
 
   <!-- Embedded Mode: Form fields for EmbeddedToolWrapper (Landing Pages) -->
-  <div v-else-if="mode === 'embedded'" class="gfy-bio-embedded">
-    <!-- SECTION 1: BASIC INFO -->
-    <div class="gfy-input-group">
-      <label class="gfy-label">Step 1: Basic Information</label>
-      <div class="gfy-builder gfy-builder--3col">
-        <div class="gfy-builder__field">
-          <label class="gfy-builder__label">Full Name *</label>
-          <input
-            v-model="name"
-            type="text"
-            class="gfy-builder__input"
-            placeholder="e.g. Tony Guarnaccia"
-          />
-        </div>
-        <div class="gfy-builder__field">
-          <label class="gfy-builder__label">Professional Title</label>
-          <input
-            v-model="optionalFields.title"
-            type="text"
-            class="gfy-builder__input"
-            placeholder="e.g. CEO"
-          />
-        </div>
-        <div class="gfy-builder__field">
-          <label class="gfy-builder__label">Organization (Optional)</label>
-          <input
-            v-model="optionalFields.organization"
-            type="text"
-            class="gfy-builder__input"
-            placeholder="e.g. Guestify.ai"
-          />
-        </div>
-      </div>
-    </div>
-
-    <div class="section-divider"><span>Core Authority</span></div>
-
-    <!-- SECTION 2: AUTHORITY HOOK -->
-    <div class="gfy-input-group">
-      <label class="gfy-label">Step 2: Define Your Authority Hook</label>
-      <div class="gfy-highlight-box gfy-highlight-box--blue">
-        <div class="gfy-highlight-box__header">
-          <span class="gfy-highlight-box__icon-star">&#9733;</span>
-          <h3 class="gfy-highlight-box__title">Who-What-When-How</h3>
-        </div>
-        <div class="gfy-builder">
-          <div class="gfy-builder__field">
-            <label class="gfy-builder__label">WHO do you help?</label>
+  <div v-else-if="mode === 'embedded'" class="gmkb-embedded-form">
+    <div class="gmkb-embedded-fields">
+      <!-- STEP 1: BASIC INFO -->
+      <div class="gmkb-embedded-section">
+        <div class="gmkb-embedded-section-header">Step 1: Basic Information</div>
+        <div class="gmkb-embedded-row gmkb-embedded-row--3col">
+          <div class="gmkb-embedded-field">
+            <label class="gmkb-embedded-label">Full Name *</label>
             <input
-              v-model="authorityHook.who"
+              v-model="name"
               type="text"
-              class="gfy-builder__input"
-              placeholder="e.g. SaaS Founders"
+              class="gmkb-embedded-input"
+              :placeholder="intent?.formPlaceholders?.name || 'e.g. Tony Guarnaccia'"
             />
           </div>
-          <div class="gfy-builder__field">
-            <label class="gfy-builder__label">WHAT is the result?</label>
+          <div class="gmkb-embedded-field">
+            <label class="gmkb-embedded-label">Professional Title</label>
             <input
-              v-model="authorityHook.what"
+              v-model="optionalFields.title"
               type="text"
-              class="gfy-builder__input"
-              placeholder="e.g. Increase revenue by 40%"
+              class="gmkb-embedded-input"
+              placeholder="e.g. CEO, Founder, Consultant"
             />
           </div>
-          <div class="gfy-builder__field">
-            <label class="gfy-builder__label">WHEN do they need it?</label>
+          <div class="gmkb-embedded-field">
+            <label class="gmkb-embedded-label">Organization</label>
             <input
-              v-model="authorityHook.when"
+              v-model="optionalFields.organization"
               type="text"
-              class="gfy-builder__input"
-              placeholder="e.g. Scaling rapidly"
-            />
-          </div>
-          <div class="gfy-builder__field">
-            <label class="gfy-builder__label">HOW do you do it?</label>
-            <input
-              v-model="authorityHook.how"
-              type="text"
-              class="gfy-builder__input"
-              placeholder="e.g. Proven 90-day system"
+              class="gmkb-embedded-input"
+              placeholder="e.g. Guestify.ai"
             />
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- SECTION 3: IMPACT INTRO -->
-    <div class="gfy-input-group">
-      <label class="gfy-label">Step 3: Establish Impact & Credibility</label>
-      <div class="gfy-highlight-box gfy-highlight-box--green">
-        <div class="gfy-highlight-box__header">
-          <span class="gfy-highlight-box__icon-target">&#127919;</span>
-          <h3 class="gfy-highlight-box__title">Impact Intro (Where & Why)</h3>
+      <!-- STEP 2: AUTHORITY HOOK -->
+      <div class="gmkb-embedded-section">
+        <div class="gmkb-embedded-section-header">Step 2: Define Your Authority Hook</div>
+        <div class="gmkb-embedded-highlight gmkb-embedded-highlight--blue">
+          <div class="gmkb-embedded-highlight-header">
+            <span class="gmkb-embedded-highlight-icon">⭐</span>
+            <span class="gmkb-embedded-highlight-title">Who-What-When-How</span>
+          </div>
+          <div class="gmkb-embedded-row">
+            <div class="gmkb-embedded-field">
+              <label class="gmkb-embedded-label">WHO do you help?</label>
+              <input
+                v-model="authorityHook.who"
+                type="text"
+                class="gmkb-embedded-input"
+                placeholder="e.g. SaaS Founders scaling to $10M ARR"
+              />
+            </div>
+            <div class="gmkb-embedded-field">
+              <label class="gmkb-embedded-label">WHAT is the result?</label>
+              <input
+                v-model="authorityHook.what"
+                type="text"
+                class="gmkb-embedded-input"
+                placeholder="e.g. Increase revenue by 40% in 90 days"
+              />
+            </div>
+          </div>
+          <div class="gmkb-embedded-row">
+            <div class="gmkb-embedded-field">
+              <label class="gmkb-embedded-label">WHEN do they need it?</label>
+              <input
+                v-model="authorityHook.when"
+                type="text"
+                class="gmkb-embedded-input"
+                placeholder="e.g. When stuck at a growth plateau"
+              />
+            </div>
+            <div class="gmkb-embedded-field">
+              <label class="gmkb-embedded-label">HOW do you do it?</label>
+              <input
+                v-model="authorityHook.how"
+                type="text"
+                class="gmkb-embedded-input"
+                placeholder="e.g. My proven Revenue Acceleration System"
+              />
+            </div>
+          </div>
         </div>
-        <div class="gfy-builder">
-          <div class="gfy-builder__field gfy-builder__field--full">
-            <label class="gfy-builder__label">WHERE is your authority (Credentials/Results)?</label>
-            <input
+      </div>
+
+      <!-- STEP 3: IMPACT INTRO -->
+      <div class="gmkb-embedded-section">
+        <div class="gmkb-embedded-section-header">Step 3: Establish Impact & Credibility</div>
+        <div class="gmkb-embedded-highlight gmkb-embedded-highlight--green">
+          <div class="gmkb-embedded-highlight-header">
+            <span class="gmkb-embedded-highlight-icon">🎯</span>
+            <span class="gmkb-embedded-highlight-title">Impact Intro (Where & Why)</span>
+          </div>
+          <div class="gmkb-embedded-field">
+            <label class="gmkb-embedded-label">WHERE - Credentials & Achievements</label>
+            <textarea
               v-model="impactIntro.where"
-              type="text"
-              class="gfy-builder__input"
-              placeholder="e.g. Helped 200+ startups achieve 7-figure milestones"
-            />
+              class="gmkb-embedded-textarea"
+              rows="2"
+              placeholder="e.g. Featured in Forbes, Inc., Entrepreneur. Keynoted at 50+ conferences worldwide."
+            ></textarea>
           </div>
-          <div class="gfy-builder__field gfy-builder__field--full">
-            <label class="gfy-builder__label">WHY do you do it (Mission/Purpose)?</label>
-            <input
+          <div class="gmkb-embedded-field">
+            <label class="gmkb-embedded-label">WHY - Your Mission or Purpose</label>
+            <textarea
               v-model="impactIntro.why"
-              type="text"
-              class="gfy-builder__input"
-              placeholder="e.g. Democratize access to elite scaling strategies"
-            />
+              class="gmkb-embedded-textarea"
+              rows="2"
+              placeholder="e.g. Help every founder achieve sustainable growth without sacrificing their health."
+            ></textarea>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="section-divider"><span>Additional Content</span></div>
-
-    <!-- SECTION 4: ADDITIONAL CONTENT & NOTES -->
-    <div class="gfy-input-group">
-      <label class="gfy-label">Step 4: Enhance Your Bio (Optional)</label>
-      <div class="gfy-builder">
-        <div class="gfy-builder__field gfy-builder__field--full">
-          <label class="gfy-builder__label">Existing Biography (Optional)</label>
+      <!-- STEP 4: ADDITIONAL CONTENT -->
+      <div class="gmkb-embedded-section">
+        <div class="gmkb-embedded-section-header">Step 4: Additional Content <span class="gmkb-embedded-optional">(Optional)</span></div>
+        <div class="gmkb-embedded-field">
+          <label class="gmkb-embedded-label">Existing Biography</label>
           <textarea
             v-model="optionalFields.existingBio"
-            class="gfy-textarea"
+            class="gmkb-embedded-textarea"
             rows="3"
             placeholder="Paste your current biography here to improve it with AI..."
           ></textarea>
         </div>
-        <div class="gfy-builder__field gfy-builder__field--full">
-          <label class="gfy-builder__label">Additional Notes (Optional)</label>
+        <div class="gmkb-embedded-field">
+          <label class="gmkb-embedded-label">Additional Notes</label>
           <textarea
             v-model="optionalFields.additionalNotes"
-            class="gfy-textarea"
+            class="gmkb-embedded-textarea"
             rows="2"
             placeholder="Any specific achievements, awards, or personal details you want included?"
           ></textarea>
         </div>
       </div>
-    </div>
 
-    <div class="section-divider"><span>Settings</span></div>
-
-    <!-- SECTION 5: SETTINGS -->
-    <div class="gfy-input-group">
-      <div class="gfy-builder">
-        <div class="gfy-builder__field">
-          <label class="gfy-builder__label">Tone of Voice</label>
-          <select v-model="tone" class="gfy-select">
-            <option v-for="opt in TONE_OPTIONS" :key="opt.value" :value="opt.value">
-              {{ opt.label }}
-            </option>
-          </select>
-        </div>
-        <div class="gfy-builder__field">
-          <label class="gfy-builder__label">Point of View</label>
-          <select v-model="pov" class="gfy-select">
-            <option v-for="opt in POV_OPTIONS" :key="opt.value" :value="opt.value">
-              {{ opt.label }}
-            </option>
-          </select>
+      <!-- STEP 5: SETTINGS -->
+      <div class="gmkb-embedded-section">
+        <div class="gmkb-embedded-section-header">Step 5: Settings</div>
+        <div class="gmkb-embedded-row">
+          <div class="gmkb-embedded-field">
+            <label class="gmkb-embedded-label">Tone of Voice</label>
+            <select v-model="tone" class="gmkb-embedded-select">
+              <option v-for="opt in TONE_OPTIONS" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
+          <div class="gmkb-embedded-field">
+            <label class="gmkb-embedded-label">Point of View</label>
+            <select v-model="pov" class="gmkb-embedded-select">
+              <option v-for="opt in POV_OPTIONS" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
         </div>
       </div>
     </div>
@@ -1887,153 +1882,148 @@ defineExpose({
 }
 
 /* ============================================
-   EMBEDDED MODE STYLES
+   EMBEDDED MODE STYLES (for landing page)
    ============================================ */
 
-.gfy-bio-embedded {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+.gmkb-embedded-form {
+  width: 100%;
 }
 
-.gfy-input-group {
-  margin-bottom: 2rem;
+.gmkb-embedded-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
 }
 
-.gfy-label {
-  display: block;
-  font-size: 0.95rem;
+.gmkb-embedded-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gmkb-embedded-section-header {
+  font-size: 14px;
   font-weight: 700;
-  margin-bottom: 1rem;
-  color: var(--gfy-text-primary);
+  color: var(--mkcg-text-primary, #0f172a);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--mkcg-border, #e2e8f0);
 }
 
-.gfy-builder {
+.gmkb-embedded-optional {
+  font-weight: 400;
+  text-transform: none;
+  color: var(--mkcg-text-light, #94a3b8);
+}
+
+.gmkb-embedded-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
+  gap: 16px;
 }
 
-.gfy-builder--3col {
+.gmkb-embedded-row--3col {
   grid-template-columns: repeat(3, 1fr);
 }
 
 @media (max-width: 768px) {
-  .gfy-builder,
-  .gfy-builder--3col {
+  .gmkb-embedded-row,
+  .gmkb-embedded-row--3col {
     grid-template-columns: 1fr;
   }
 }
 
-.gfy-builder__field {
-  margin-bottom: 0;
+.gmkb-embedded-field {
+  display: flex;
+  flex-direction: column;
 }
 
-.gfy-builder__field--full {
-  grid-column: 1 / -1;
-}
-
-.gfy-builder__label {
+.gmkb-embedded-label {
   display: block;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--gfy-text-secondary);
-  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: var(--mkcg-text-primary, #0f172a);
 }
 
-.gfy-builder__input,
-.gfy-select,
-.gfy-textarea {
+.gmkb-embedded-input,
+.gmkb-embedded-textarea,
+.gmkb-embedded-select {
   width: 100%;
-  padding: 12px;
-  border: 1px solid var(--gfy-border-color);
-  border-radius: 6px;
-  font-size: 14px;
-  background: #fff;
-  font-family: inherit;
+  padding: 14px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  background: var(--mkcg-bg-secondary, #f9fafb);
   box-sizing: border-box;
+  font-size: 15px;
+  font-family: inherit;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.gfy-textarea {
+.gmkb-embedded-textarea {
   resize: vertical;
   min-height: 80px;
 }
 
-.gfy-builder__input:focus,
-.gfy-select:focus,
-.gfy-textarea:focus {
+.gmkb-embedded-input:focus,
+.gmkb-embedded-textarea:focus,
+.gmkb-embedded-select:focus {
   outline: none;
-  border-color: var(--gfy-primary-color);
-  box-shadow: 0 0 0 3px var(--gfy-primary-light);
+  border-color: var(--mkcg-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.gfy-builder__input::placeholder,
-.gfy-textarea::placeholder {
-  color: var(--gfy-text-muted);
+.gmkb-embedded-input::placeholder,
+.gmkb-embedded-textarea::placeholder {
+  color: var(--mkcg-text-light, #94a3b8);
+}
+
+.gmkb-embedded-error {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 14px;
 }
 
 /* Highlight boxes for embedded mode */
-.gfy-bio-embedded .gfy-highlight-box {
+.gmkb-embedded-highlight {
   background: #fff;
-  border: 1px solid var(--gfy-border-color);
-  padding: 1.5rem;
-  border-radius: 8px;
-  margin-bottom: 0;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  padding: 20px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.gfy-bio-embedded .gfy-highlight-box--blue {
-  border-left: 4px solid var(--gfy-primary-color);
-  background: linear-gradient(to right, var(--gfy-primary-light), #fff);
+.gmkb-embedded-highlight--blue {
+  border-left: 4px solid var(--mkcg-primary, #3b82f6);
+  background: linear-gradient(to right, #eff6ff, #fff);
 }
 
-.gfy-bio-embedded .gfy-highlight-box--green {
-  border-left: 4px solid var(--gfy-success-color);
-  background: linear-gradient(to right, var(--gfy-success-light), #fff);
+.gmkb-embedded-highlight--green {
+  border-left: 4px solid #10b981;
+  background: linear-gradient(to right, #d1fae5, #fff);
 }
 
-.gfy-bio-embedded .gfy-highlight-box__header {
+.gmkb-embedded-highlight-header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
-.gfy-bio-embedded .gfy-highlight-box__title {
-  font-size: 1rem;
+.gmkb-embedded-highlight-icon {
+  font-size: 18px;
+}
+
+.gmkb-embedded-highlight-title {
+  font-size: 15px;
   font-weight: 700;
-  margin: 0;
-  color: var(--gfy-text-primary);
-}
-
-.gfy-highlight-box__icon-star {
-  color: #f59e0b;
-  font-size: 1.1rem;
-}
-
-.gfy-highlight-box__icon-target {
-  font-size: 1.1rem;
-}
-
-/* Section dividers */
-.section-divider {
-  height: 1px;
-  background: var(--gfy-border-color);
-  margin: 2rem 0;
-  position: relative;
-}
-
-.section-divider span {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: #fff;
-  padding: 0 15px;
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--gfy-text-secondary);
-  text-transform: uppercase;
+  color: var(--mkcg-text-primary, #0f172a);
 }
 </style>
