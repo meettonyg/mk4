@@ -147,20 +147,21 @@ You understand the psychology of memorable messaging and create taglines that wo
         ];
         $prompt .= "Intent: " . ($intentGuidance[$intent] ?? $intentGuidance['brand']) . "\n\n";
 
-        // Refinement handling
+        // Requirements
+        $prompt .= "=== REQUIREMENTS ===\n";
+
+        // Refinement handling - user feedback overrides default word count
         if (!empty($refinementFeedback) && !empty($previousTaglines)) {
-            $prompt .= "=== REFINEMENT REQUEST ===\n";
+            $prompt .= "=== CRITICAL REFINEMENT REQUEST ===\n";
             $prompt .= "Previous taglines generated:\n";
             foreach ($previousTaglines as $i => $tagline) {
                 $prompt .= ($i + 1) . ". {$tagline}\n";
             }
-            $prompt .= "\nUser feedback for refinement: {$refinementFeedback}\n";
-            $prompt .= "\nGenerate {$count} NEW taglines that incorporate this feedback while maintaining the best elements of the previous options.\n\n";
+            $prompt .= "\n**USER FEEDBACK (MUST FOLLOW): {$refinementFeedback}**\n";
+            $prompt .= "\nGenerate {$count} NEW taglines that STRICTLY follow the user's feedback above. The user's instructions override any default requirements.\n\n";
+        } else {
+            $prompt .= "- Each tagline must be 5-10 words maximum\n";
         }
-
-        // Requirements
-        $prompt .= "=== REQUIREMENTS ===\n";
-        $prompt .= "- Each tagline must be 5-10 words maximum\n";
         $prompt .= "- Make them immediately memorable and repeatable\n";
         $prompt .= "- Focus on transformation, not features\n";
         $prompt .= "- Avoid cliches and generic phrases\n";
