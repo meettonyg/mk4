@@ -814,8 +814,8 @@ defineExpose({
 /* BUILDER GRID */
 .gfy-builder {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
+  grid-template-columns: 1fr;
+  gap: 1rem;
 }
 
 .gfy-builder__field {
@@ -1233,10 +1233,6 @@ defineExpose({
 
 /* RESPONSIVE */
 @media (max-width: 768px) {
-  .gfy-builder {
-    grid-template-columns: 1fr;
-  }
-
   .topic-selection-grid {
     grid-template-columns: 1fr;
   }
