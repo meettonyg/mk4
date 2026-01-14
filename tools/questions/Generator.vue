@@ -1,13 +1,13 @@
 <template>
   <div class="gfy-questions-generator">
-    <!-- Form Section -->
-    <div v-if="!hasQuestions" class="gfy-questions-form">
+    <!-- Form Section (always show in embedded mode, otherwise hide when has results) -->
+    <div v-if="isEmbedded || !hasQuestions" class="gfy-questions-form">
       <!-- STEP 1: Choose or Tweak Your Topic -->
       <div class="gfy-input-group">
-        <label class="gfy-label">Step 1: Choose or Tweak Your Topic</label>
+        <label class="gfy-label">{{ hasProfileTopics ? 'Step 1: Choose or Tweak Your Topic' : 'Topics You Discuss' }} {{ !hasProfileTopics ? '*' : '' }}</label>
 
-        <!-- Topic Selection Grid -->
-        <div class="topic-selection-grid">
+        <!-- Topic Selection Grid (only show if profile has topics) -->
+        <div v-if="hasProfileTopics" class="topic-selection-grid">
           <div
             v-for="(topic, index) in profileTopics"
             :key="index"
@@ -22,19 +22,22 @@
 
         <!-- Refine Selected Topic Textarea -->
         <div class="gfy-textarea-container">
-          <span class="gfy-textarea-hint">Refine Selected Topic</span>
+          <span v-if="hasProfileTopics" class="gfy-textarea-hint">Refine Selected Topic</span>
           <textarea
             v-model="refinedTopic"
             class="gfy-textarea"
-            rows="2"
-            placeholder="Select a topic above or enter a custom topic..."
+            :rows="hasProfileTopics ? 2 : 4"
+            :placeholder="hasProfileTopics ? 'Select a topic above or enter a custom topic...' : 'e.g., Leadership development, Building high-performance teams, Navigating career transitions...'"
           ></textarea>
+          <p v-if="!hasProfileTopics" class="gfy-hint">
+            List 3-5 topics you typically discuss in interviews. Be specific about the areas you want to explore.
+          </p>
         </div>
       </div>
 
       <!-- STEP 2: Authority Hook -->
       <div class="gfy-input-group">
-        <label class="gfy-label">Step 2: Confirm Your Authority Hook</label>
+        <label class="gfy-label">{{ hasProfileTopics ? 'Step 2: Confirm Your Authority Hook' : 'Your Background (Optional)' }}</label>
         <div class="gfy-authority-hook">
           <div class="gfy-authority-hook__header">
             <span class="gfy-authority-hook__icon">&#9733;</span>
@@ -85,8 +88,8 @@
       </div>
     </div>
 
-    <!-- Results Section -->
-    <div v-if="hasQuestions" class="gfy-results">
+    <!-- Results Section (only in default mode, embedded mode uses wrapper's preview) -->
+    <div v-if="!isEmbedded && hasQuestions" class="gfy-results">
       <div class="gfy-results-layout">
         <!-- LEFT SIDEBAR: Current 5 Questions for the selected topic -->
         <aside v-if="selectedProfileId" class="gfy-layout-sidebar">
@@ -206,11 +209,27 @@ const MAX_QUESTIONS_PER_TOPIC = 5;
 const QUESTIONS_TO_GENERATE = 10;
 
 const props = defineProps({
+  /**
+   * Mode: 'embedded' or 'default'
+   * - embedded: Form only, results shown in wrapper's preview panel
+   * - default: Full form + results display
+   */
+  mode: {
+    type: String,
+    default: 'default'
+  },
   profileData: {
+    type: Object,
+    default: null
+  },
+  intent: {
     type: Object,
     default: null
   }
 });
+
+// Computed: Check if in embedded mode
+const isEmbedded = computed(() => props.mode === 'embedded');
 
 const emit = defineEmits(['update:can-generate', 'authority-hook-update', 'generated', 'saved']);
 
@@ -308,6 +327,13 @@ const generatedHookSummary = computed(() => {
  */
 const canGenerate = computed(() => {
   return refinedTopic.value.trim().length > 0;
+});
+
+/**
+ * Check if any profile topics exist
+ */
+const hasProfileTopics = computed(() => {
+  return profileTopics.value.some(t => t.title);
 });
 
 /**
@@ -735,6 +761,12 @@ defineExpose({
 }
 
 .gfy-textarea::placeholder {
+  color: var(--gfy-text-muted);
+}
+
+.gfy-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
   color: var(--gfy-text-muted);
 }
 
