@@ -44,22 +44,22 @@
           ></slot>
         </div>
 
-        <!-- Generate Action (hidden in single column mode when results showing) -->
-        <template v-if="!(singleColumn && hasGenerated)">
-          <div class="tool-context__actions">
-            <button
-              class="gmkb-btn-generate"
-              type="button"
-              :disabled="isGenerating || !canGenerate"
-              @click="handleGenerate"
-            >
-              <span v-if="!isGenerating" class="gmkb-btn-icon">✨</span>
-              <span v-if="isGenerating" class="gmkb-btn-spinner"></span>
-              {{ isGenerating ? generatingText : generateButtonText }}
-            </button>
-          </div>
+        <!-- Generate Action (always visible in single column mode) -->
+        <div class="tool-context__actions">
+          <button
+            class="gmkb-btn-generate"
+            type="button"
+            :disabled="isGenerating || !canGenerate"
+            @click="handleGenerate"
+          >
+            <span v-if="!isGenerating" class="gmkb-btn-icon">✨</span>
+            <span v-if="isGenerating" class="gmkb-btn-spinner"></span>
+            {{ isGenerating ? generatingText : generateButtonText }}
+          </button>
+        </div>
 
-          <!-- Rate Limit / Progressive Friction (guests only) -->
+        <!-- Rate Limit / Progressive Friction (guests only, hidden after generation in single column) -->
+        <template v-if="!(singleColumn && hasGenerated)">
           <p v-if="!isLoggedIn" class="tool-context__limit-text">
             <span v-if="generationCount < 3">
               {{ remainingGenerations }} free generation{{ remainingGenerations !== 1 ? 's' : '' }} remaining today.
