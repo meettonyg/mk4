@@ -234,52 +234,51 @@ export function useImpactIntro() {
   const loadFromProfileData = (profileData) => {
     if (!profileData) return;
 
-    // Load credentials from various possible sources
-    // Priority: credentials array > hook_where (6W's) > credential_1, credential_2, etc.
-    if (profileData.credentials) {
-      const creds = Array.isArray(profileData.credentials)
-        ? profileData.credentials
-        : profileData.credentials.split(',').map(c => c.trim()).filter(c => c);
-      credentials.value = creds;
-    } else if (profileData.hook_where) {
-      // Use hook_where from 6W's as credentials (single value becomes array)
-      credentials.value = [profileData.hook_where.trim()];
-    } else {
-      // Try numbered credential fields (credential_1, credential_2, etc.)
-      const creds = [];
+    // Helper function to extract values from various profile data fields
+    // Priority: plural array > hook field (6W's) > numbered fields (field_1, field_2, etc.)
+    // Returns null if no relevant fields found, empty array if fields exist but are empty
+    const extractValues = (pluralKey, hookKey, singularPrefix) => {
+      if (Object.prototype.hasOwnProperty.call(profileData, pluralKey)) {
+        const values = profileData[pluralKey];
+        return Array.isArray(values)
+          ? values.map(v => String(v || '').trim()).filter(Boolean)
+          : String(values || '').split(',').map(v => v.trim()).filter(Boolean);
+      }
+
+      if (Object.prototype.hasOwnProperty.call(profileData, hookKey)) {
+        const value = String(profileData[hookKey] || '').trim();
+        return value ? [value] : [];
+      }
+
+      const numberedValues = [];
+      let hasAnyNumberedField = false;
       for (let i = 1; i <= 5; i++) {
-        const cred = profileData[`credential_${i}`];
-        if (cred && cred.trim()) {
-          creds.push(cred.trim());
+        const fieldName = `${singularPrefix}_${i}`;
+        if (Object.prototype.hasOwnProperty.call(profileData, fieldName)) {
+          hasAnyNumberedField = true;
+          const value = profileData[fieldName];
+          if (value && String(value).trim()) {
+            numberedValues.push(String(value).trim());
+          }
         }
       }
-      if (creds.length > 0) {
-        credentials.value = creds;
+      if (hasAnyNumberedField) {
+        return numberedValues;
       }
+
+      return null; // No relevant fields found
+    };
+
+    // Load credentials from profile
+    const creds = extractValues('credentials', 'hook_where', 'credential');
+    if (creds !== null) {
+      credentials.value = creds;
     }
 
-    // Load achievements/mission from various possible sources
-    // Priority: achievements array > hook_why (6W's) > achievement_1, achievement_2, etc.
-    if (profileData.achievements) {
-      const achvs = Array.isArray(profileData.achievements)
-        ? profileData.achievements
-        : profileData.achievements.split(',').map(a => a.trim()).filter(a => a);
+    // Load achievements/mission from profile
+    const achvs = extractValues('achievements', 'hook_why', 'achievement');
+    if (achvs !== null) {
       achievements.value = achvs;
-    } else if (profileData.hook_why) {
-      // Use hook_why from 6W's as mission/achievements (single value becomes array)
-      achievements.value = [profileData.hook_why.trim()];
-    } else {
-      // Try numbered achievement fields (achievement_1, achievement_2, etc.)
-      const achvs = [];
-      for (let i = 1; i <= 5; i++) {
-        const achv = profileData[`achievement_${i}`];
-        if (achv && achv.trim()) {
-          achvs.push(achv.trim());
-        }
-      }
-      if (achvs.length > 0) {
-        achievements.value = achvs;
-      }
     }
   };
 
