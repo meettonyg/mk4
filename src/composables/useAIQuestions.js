@@ -97,7 +97,8 @@ export function useAIQuestions() {
     const params = {
       topics: overrides.topics || selectedTopics.value,
       authorityHook: overrides.authorityHook || aiStore.authorityHook,
-      customContext: overrides.customContext || customContext.value
+      customContext: overrides.customContext || customContext.value,
+      count: overrides.count || 10
     };
 
     return generator.generate(params);
