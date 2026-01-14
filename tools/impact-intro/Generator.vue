@@ -9,6 +9,97 @@
           <h3 class="gfy-impact-intro__title">Your Impact Intro</h3>
         </div>
 
+        <!-- Credential Manager -->
+        <div class="gfy-credential-manager">
+          <div class="gfy-credential-manager__header">
+            <span class="gfy-credential-manager__icon">&#128081;</span>
+            <span class="gfy-credential-manager__title">Credential Manager</span>
+            <span class="gfy-credential-manager__subtitle">- Add and Select Your Credentials:</span>
+          </div>
+          <p class="gfy-credential-manager__description">
+            This is where you manage your credentials. Add new ones and check the boxes to include them in your Impact Intro.
+          </p>
+
+          <!-- Add Credential Input -->
+          <div class="gfy-credential-manager__input-row">
+            <input
+              v-model="newCredential"
+              type="text"
+              class="gfy-credential-manager__input"
+              placeholder="Enter a credential or achievement..."
+              @keydown.enter.prevent="handleAddCredential"
+            />
+            <button
+              type="button"
+              class="gfy-btn gfy-btn--primary"
+              :disabled="!newCredential.trim()"
+              @click="handleAddCredential"
+            >
+              ADD
+            </button>
+          </div>
+
+          <!-- Credentials List with Checkboxes -->
+          <div v-if="credentials.length > 0" class="gfy-credential-manager__list">
+            <div
+              v-for="(credential, index) in credentials"
+              :key="index"
+              class="gfy-credential-tag"
+              :class="{ 'gfy-credential-tag--selected': isCredentialSelected(credential) }"
+            >
+              <label class="gfy-credential-tag__checkbox-wrapper">
+                <input
+                  type="checkbox"
+                  class="gfy-credential-tag__checkbox"
+                  :checked="isCredentialSelected(credential)"
+                  @change="toggleCredentialSelection(credential)"
+                />
+                <span class="gfy-credential-tag__checkmark"></span>
+              </label>
+              <span class="gfy-credential-tag__text">{{ credential }}</span>
+              <button
+                type="button"
+                class="gfy-credential-tag__remove"
+                @click="removeCredentialByValue(credential)"
+                title="Remove credential"
+              >
+                &times;
+              </button>
+            </div>
+          </div>
+
+          <!-- Empty State -->
+          <div v-else class="gfy-credential-manager__empty">
+            <span class="gfy-credential-manager__empty-icon">&#11088;</span>
+            <span class="gfy-credential-manager__empty-text">Your credentials will appear here. Add some using the field above!</span>
+          </div>
+
+          <!-- Credential Counter -->
+          <div class="gfy-credential-manager__counter">
+            <span class="gfy-credential-manager__counter-icon">&#128202;</span>
+            <span class="gfy-credential-manager__counter-text">
+              {{ credentials.length }} credentials added | {{ selectedCredentialsCount }} selected for Impact Intro
+            </span>
+          </div>
+        </div>
+
+        <!-- Examples Section -->
+        <div class="gfy-examples">
+          <div class="gfy-examples__header">Examples:</div>
+          <div class="gfy-examples__chips">
+            <button
+              v-for="(example, index) in CREDENTIAL_EXAMPLES"
+              :key="index"
+              type="button"
+              class="gfy-example-chip"
+              @click="handleAddExample(example.text)"
+            >
+              <span class="gfy-example-chip__text">{{ example.text }}</span>
+              <span class="gfy-example-chip__add">+ Add</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Builder Grid -->
         <div class="gfy-builder">
           <div class="gfy-builder__field gfy-builder__field--full">
@@ -249,6 +340,7 @@
 import { ref, computed, watch, inject } from 'vue';
 import { useAIImpactIntros } from '../../src/composables/useAIImpactIntros';
 import { useProfileContext } from '../../src/composables/useProfileContext';
+import { useImpactIntro, CREDENTIAL_EXAMPLES } from '../../src/composables/useImpactIntro';
 import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
 
 const props = defineProps({
@@ -285,6 +377,18 @@ const {
 
 // Profile context for saving
 const { saveToProfile } = useProfileContext();
+
+// Credential Manager composable
+const {
+  credentials,
+  newCredential,
+  selectedCredentialsCount,
+  selectedCredentialsText,
+  isCredentialSelected,
+  addCredential,
+  removeCredentialByValue,
+  toggleCredentialSelection
+} = useImpactIntro();
 
 // Inject profile data from parent (EmbeddedToolWrapper provides this)
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
@@ -520,6 +624,32 @@ watch(canGenerate, (newValue) => {
 }, { immediate: true });
 
 /**
+ * Watch selectedCredentialsText and sync to WHERE field
+ * This auto-populates the WHERE field based on checked credentials
+ */
+watch(selectedCredentialsText, (newText) => {
+  if (newText && credentials.value.length > 0) {
+    introWhere.value = newText;
+  }
+}, { immediate: true });
+
+/**
+ * Handle adding a credential from input
+ */
+const handleAddCredential = () => {
+  if (newCredential.value.trim()) {
+    addCredential(newCredential.value.trim());
+  }
+};
+
+/**
+ * Handle adding an example credential
+ */
+const handleAddExample = (exampleText) => {
+  addCredential(exampleText);
+};
+
+/**
  * Exposed for parent component (EmbeddedToolWrapper)
  */
 defineExpose({
@@ -638,6 +768,254 @@ defineExpose({
   font-size: 0.75rem;
   color: var(--gfy-text-secondary);
   font-style: italic;
+}
+
+/* CREDENTIAL MANAGER */
+.gfy-credential-manager {
+  background: var(--gfy-white);
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-md);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.gfy-credential-manager__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.gfy-credential-manager__icon {
+  font-size: 1.1rem;
+}
+
+.gfy-credential-manager__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--gfy-primary-color);
+}
+
+.gfy-credential-manager__subtitle {
+  font-size: 0.85rem;
+  color: var(--gfy-text-secondary);
+}
+
+.gfy-credential-manager__description {
+  font-size: 0.85rem;
+  color: var(--gfy-text-secondary);
+  margin: 0 0 1rem 0;
+  line-height: 1.4;
+}
+
+.gfy-credential-manager__input-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.gfy-credential-manager__input {
+  flex: 1;
+  padding: 0.6rem 0.875rem;
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-md);
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: var(--gfy-white);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.gfy-credential-manager__input:focus {
+  outline: none;
+  border-color: var(--gfy-primary-color);
+  box-shadow: 0 0 0 3px var(--gfy-primary-light);
+}
+
+.gfy-credential-manager__input::placeholder {
+  color: var(--gfy-text-muted);
+}
+
+.gfy-credential-manager__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* CREDENTIAL TAG */
+.gfy-credential-tag {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.875rem;
+  background: var(--gfy-bg-color);
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-md);
+  transition: all 0.15s ease;
+}
+
+.gfy-credential-tag--selected {
+  background: var(--gfy-primary-light);
+  border-color: var(--gfy-primary-color);
+}
+
+.gfy-credential-tag__checkbox-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.gfy-credential-tag__checkbox {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.gfy-credential-tag__checkmark {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--gfy-border-color);
+  border-radius: 4px;
+  background: var(--gfy-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.gfy-credential-tag__checkbox:checked + .gfy-credential-tag__checkmark {
+  background: var(--gfy-primary-color);
+  border-color: var(--gfy-primary-color);
+}
+
+.gfy-credential-tag__checkbox:checked + .gfy-credential-tag__checkmark::after {
+  content: '';
+  width: 5px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  margin-bottom: 2px;
+}
+
+.gfy-credential-tag__checkbox:focus + .gfy-credential-tag__checkmark {
+  box-shadow: 0 0 0 3px var(--gfy-primary-light);
+}
+
+.gfy-credential-tag__text {
+  flex: 1;
+  font-size: 0.9rem;
+  color: var(--gfy-text-primary);
+}
+
+.gfy-credential-tag__remove {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: var(--gfy-text-muted);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+.gfy-credential-tag__remove:hover {
+  color: var(--gfy-error-color);
+}
+
+/* CREDENTIAL MANAGER EMPTY STATE */
+.gfy-credential-manager__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--gfy-text-muted);
+  font-style: italic;
+}
+
+.gfy-credential-manager__empty-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.gfy-credential-manager__empty-text {
+  font-size: 0.85rem;
+}
+
+/* CREDENTIAL COUNTER */
+.gfy-credential-manager__counter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--gfy-bg-color);
+  border-radius: var(--gfy-radius-md);
+  border: 1px dashed var(--gfy-border-color);
+}
+
+.gfy-credential-manager__counter-icon {
+  font-size: 1rem;
+}
+
+.gfy-credential-manager__counter-text {
+  font-size: 0.85rem;
+  color: var(--gfy-primary-color);
+  font-weight: 500;
+}
+
+/* EXAMPLES SECTION */
+.gfy-examples {
+  margin-bottom: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gfy-border-color);
+}
+
+.gfy-examples__header {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--gfy-text-secondary);
+  margin-bottom: 0.75rem;
+}
+
+.gfy-examples__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* EXAMPLE CHIP */
+.gfy-example-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  background: var(--gfy-white);
+  border: 1px solid var(--gfy-border-color);
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gfy-example-chip:hover {
+  border-color: var(--gfy-primary-color);
+  background: var(--gfy-primary-light);
+}
+
+.gfy-example-chip__text {
+  color: var(--gfy-text-primary);
+}
+
+.gfy-example-chip__add {
+  color: var(--gfy-primary-color);
+  font-weight: 600;
 }
 
 /* LIVE PREVIEW */
