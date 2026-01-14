@@ -461,11 +461,11 @@ const props = defineProps({
   },
   /**
    * Single column mode - hides the preview area for a full-width form
-   * Use this for tools that handle their own results display
+   * Default is now true - preview area removed from all tools
    */
   singleColumn: {
     type: Boolean,
-    default: false
+    default: true
   }
 });
 

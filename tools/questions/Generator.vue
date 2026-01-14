@@ -668,9 +668,9 @@ defineExpose({
 
 /* TOPIC SELECTION GRID */
 .topic-selection-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   margin-bottom: 1.5rem;
 }
 
@@ -1233,10 +1233,6 @@ defineExpose({
 
 /* RESPONSIVE */
 @media (max-width: 768px) {
-  .topic-selection-grid {
-    grid-template-columns: 1fr;
-  }
-
   .gfy-results__header {
     flex-direction: column;
     align-items: flex-start;
