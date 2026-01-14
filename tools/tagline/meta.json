@@ -1,7 +1,7 @@
 {
   "name": "Tagline Generator",
   "slug": "tagline-generator",
-  "shortDescription": "Create compelling headlines, taglines, and value propositions that capture attention.",
+  "shortDescription": "Create compelling, memorable taglines that capture your authority using the 6 W's framework.",
   "emoji": "✨",
   "apiType": "tagline",
   "fieldMapping": {
@@ -10,86 +10,91 @@
     "sourceKeys": ["text", "value"]
   },
   "validation": {
-    "anyOf": ["authorityHook", "name"],
-    "errorMessage": "Authority hook or name is required for tagline generation"
+    "anyOf": ["who", "what", "authorityHook"],
+    "errorMessage": "At least WHO you help or WHAT you help them achieve is required"
   },
-  "longDescription": "The Tagline Generator helps you craft memorable headlines and value propositions that instantly communicate your unique value. Whether you need a punchy tagline for your brand, a compelling headline for your media kit, or a powerful value proposition, this tool delivers results that resonate.",
+  "longDescription": "The Tagline Generator helps you distill your expertise into memorable, powerful statements that stick with your audience. Using the complete 6 W's Authority Framework (Who, What, When, How, Where, Why), it generates 10 unique tagline variations that you can refine iteratively until you find the perfect fit.",
   "category": "message-builder",
-  "buttonText": "Create Tagline",
+  "buttonText": "Generate 10 Taglines",
   "supportsProfileSave": true,
+  "supportsRefinement": true,
   "icon": "SparklesIcon",
   "componentName": "TaglineGenerator",
   "useCases": [
-    "Create brand taglines and slogans",
+    "Create memorable brand taglines",
+    "Generate podcast hook lines",
+    "Craft course and book titles",
     "Write media kit headlines",
     "Develop value propositions",
-    "Craft social media bios",
-    "Design presentation titles"
+    "Design LinkedIn headlines"
   ],
   "keyBenefits": [
-    "Memorable messaging instantly",
-    "Multiple style options",
-    "Benefit-focused language",
-    "Generate multiple options"
+    "10 unique options per generation",
+    "Iterative refinement loop",
+    "Lock your favorite as 'Master Tagline'",
+    "Syncs with your profile data",
+    "Uses full 6 W's framework"
   ],
   "targetAudience": [
     "Personal brands",
     "Speakers and consultants",
-    "Small business owners",
-    "Coaches and creators",
+    "Course creators",
+    "Podcast guests",
+    "Coaches and entrepreneurs",
     "Marketing professionals"
   ],
   "seoMeta": {
-    "title": "Free AI Tagline Generator | Create Compelling Headlines & Value Props",
-    "description": "Generate memorable taglines, headlines, and value propositions with our free AI Tagline Generator. Create messaging that captures attention instantly.",
+    "title": "Free AI Tagline Generator | Create Memorable Headlines & Taglines",
+    "description": "Generate 10 memorable taglines using the 6 W's Authority Framework. Refine iteratively until you find the perfect tagline for your brand.",
     "keywords": [
       "tagline generator",
       "slogan generator",
       "headline generator",
-      "value proposition generator",
       "brand tagline",
+      "podcast hook",
+      "course title generator",
       "AI copywriting"
     ],
     "canonicalPath": "/tools/tagline-generator/"
   },
   "landingContent": {
-    "guidanceTitle": "How to Create Your Tagline",
-    "guidanceSubtitle": "Your tagline distills your expertise into a memorable phrase that sticks with audiences. A great tagline communicates who you help, what you do, and why you're uniquely qualified.",
+    "guidanceTitle": "Crafting Your Perfect Tagline",
+    "guidanceSubtitle": "Your tagline distills your expertise into a memorable phrase that sticks with audiences. Using the 6 W's framework, you'll create a statement that communicates who you help, what you do, and why you're uniquely qualified.",
     "hero": {
-      "badge": "\u2728 Free AI Tool",
+      "badge": "✨ Free AI Tool",
       "h1": "Free Tagline Generator",
-      "subhead": "Create compelling headlines, slogans, and value propositions that capture attention instantly.",
+      "subhead": "Distill your expertise into a memorable, powerful statement that sticks with your audience.",
       "microProof": [
         {
-          "icon": "\u2713",
-          "text": "Used by 15,000+ brands"
+          "icon": "✓",
+          "text": "10 Unique Options"
         },
         {
-          "icon": "\u2713",
-          "text": "No signup required"
+          "icon": "✓",
+          "text": "Memorability Focused"
         },
         {
-          "icon": "\u2713",
-          "text": "Free forever"
+          "icon": "✓",
+          "text": "Syncs with Profile"
         }
       ]
     },
     "heroLoggedIn": {
-      "badge": "\u2728 AI Tool",
+      "badge": "✨ AI Tool",
       "h1": "Tagline Generator",
-      "subhead": "Generate memorable taglines and value propositions that make your brand unforgettable.",
+      "subhead": "Generate memorable taglines using your Authority Framework. Refine until perfect.",
       "microProof": [
         {
-          "icon": "\u2713",
+          "icon": "✓",
           "text": "Unlimited generations"
         },
         {
-          "icon": "\u2713",
-          "text": "Saves to profile"
+          "icon": "✓",
+          "text": "Iterative refinement"
         },
         {
-          "icon": "\u2713",
-          "text": "Syncs across tools"
+          "icon": "✓",
+          "text": "Saves to profile"
         }
       ]
     },
@@ -97,162 +102,169 @@
       {
         "id": "brand",
         "label": "Brand Tagline",
-        "contextHeading": "Define your brand in one line",
+        "contextHeading": "Define your brand in one powerful line",
         "contextDescription": "Create a memorable tagline that captures your brand essence and sticks in people's minds long after they've heard it.",
         "formLabels": {
-          "business": "What does your business do?",
-          "audience": "Who do you serve?"
+          "who": "Who do you help?",
+          "what": "What transformation do you provide?"
         },
         "formPlaceholders": {
-          "business": "e.g. Help entrepreneurs scale",
-          "audience": "e.g. SaaS Founders"
+          "who": "e.g., SaaS Founders",
+          "what": "e.g., Scale to 7-figures in 90 days"
         }
       },
       {
-        "id": "headline",
-        "label": "Headline",
-        "contextHeading": "Stop the scroll with powerful headlines",
-        "contextDescription": "Generate attention-grabbing headlines for your website, landing pages, and marketing materials that convert visitors into customers.",
+        "id": "podcast",
+        "label": "Podcast Hook",
+        "contextHeading": "Make podcast hosts want to book you immediately",
+        "contextDescription": "Generate hook lines that position you as the must-have guest. Perfect for podcast pitches and speaker introductions.",
         "formLabels": {
-          "offer": "What are you promoting?",
-          "benefit": "Key benefit for your audience"
+          "who": "Who is your audience?",
+          "what": "What unique insight do you share?"
         },
         "formPlaceholders": {
-          "offer": "e.g. Marketing Course",
-          "benefit": "e.g. 10x their leads"
+          "who": "e.g., Entrepreneurs scaling past $1M",
+          "what": "e.g., The hidden revenue leaks killing growth"
         }
       },
       {
-        "id": "valueprop",
-        "label": "Value Prop",
-        "contextHeading": "Communicate your unique value",
-        "contextDescription": "Develop a clear value proposition that differentiates you from competitors and resonates with your ideal customers.",
+        "id": "course",
+        "label": "Course/Book Title",
+        "contextHeading": "Create titles that promise transformation",
+        "contextDescription": "Generate compelling titles for courses, books, workshops, or programs that intrigue and convert.",
         "formLabels": {
-          "solution": "What problem do you solve?",
-          "difference": "What makes you different?"
+          "who": "Who is this for?",
+          "what": "What outcome does it deliver?"
         },
         "formPlaceholders": {
-          "solution": "e.g. Lead generation struggles",
-          "difference": "e.g. AI-powered automation"
+          "who": "e.g., First-time managers",
+          "what": "e.g., Lead high-performing teams"
         }
       }
     ],
     "definition": {
-      "title": "Crafting Your Perfect Tagline",
-      "subtitle": "Your professional tagline is a powerful statement that distills your expertise into a memorable phrase that sticks with audiences long after your interview ends. A great tagline communicates who you help, what you do, and why you're uniquely qualified to do it.",
-      "content": "A tagline is a short, memorable phrase that captures the essence of your brand, product, or message. The best taglines are under 10 words, focus on transformation rather than features, and use language your audience immediately understands."
+      "title": "The Power of a Perfect Tagline",
+      "subtitle": "Your tagline is your brand's first impression distilled into a single memorable phrase. It appears everywhere—website headers, social media profiles, business cards, email signatures, and podcast intros.",
+      "content": "A great tagline is concise (5-10 words), focuses on transformation rather than features, and uses language your audience immediately understands. The best taglines are unique to you, benefit-focused, and emotionally resonant."
     },
     "formulaLabel": "TAGLINE FORMULA",
-    "formula": "[WHO you help] + [WHAT you do] + [HOW you're unique]",
+    "formula": "[WHO you help] + [WHAT transformation] + [HOW you're unique]",
     "tips": [
-      "Keep it short - the best taglines are under 10 words",
-      "Focus on transformation, not features - what changes for your client?",
-      "Avoid jargon - use language your ideal audience immediately understands",
-      "Make it memorable - use rhythm, alliteration, or unexpected phrasing"
+      "Keep it short - the best taglines are 5-10 words maximum",
+      "Focus on transformation, not features",
+      "Use the 6 W's framework for deeper context",
+      "Iterate with refinement until it feels perfect",
+      "Lock your favorite as your Master Tagline"
     ],
     "examples": [
       {
         "title": "Problem-Focused",
-        "content": "Profit Without Chaos \u2022 Ending Marketing Overwhelm \u2022 Scaling Without Sacrifice"
+        "content": "Stop Leaking Revenue. Start Scaling Sustainably."
       },
       {
         "title": "Solution-Focused",
-        "content": "The Scaling Framework \u2022 Systems That Stick \u2022 Growth Made Simple"
+        "content": "The 90-Day Blueprint for SaaS Growth"
       },
       {
         "title": "Outcome-Focused",
-        "content": "Freedom Through Systems \u2022 Million-Dollar Results \u2022 Revenue on Repeat"
+        "content": "Turning Overwhelmed Owners Into Strategic CEOs"
       },
       {
         "title": "Authority-Focused",
-        "content": "The Growth Expert \u2022 Trusted by 500+ CEOs \u2022 The Go-To Strategy Partner"
+        "content": "Trusted by 500+ CEOs to Scale Without Sacrifice"
       }
     ],
     "howItWorks": [
       {
         "step": 1,
-        "title": "Define Your Value",
-        "description": "Share who you help and the transformation you deliver. Your Authority Hook is the perfect starting point for a memorable tagline.",
+        "title": "Complete Your Authority Framework",
+        "description": "Fill in the 6 W's: Who you help, What you help them achieve, When they need it, How you deliver, Where your authority comes from, and Why this is your mission.",
         "icon": "PencilSquareIcon"
       },
       {
         "step": 2,
-        "title": "Generate Options",
-        "description": "Our AI creates multiple tagline styles: problem-focused, solution-focused, outcome-focused, and authority-focused. Get options across all categories.",
-        "icon": "SwatchIcon"
+        "title": "Generate 10 Variations",
+        "description": "Our AI creates 10 diverse taglines across different styles: problem-focused, solution-focused, outcome-focused, and authority-focused.",
+        "icon": "SparklesIcon"
       },
       {
         "step": 3,
-        "title": "Use It Everywhere",
-        "description": "Deploy your tagline across LinkedIn, email signatures, business cards, website headers, and podcast introductions for consistent messaging.",
-        "icon": "CheckCircleIcon"
+        "title": "Refine & Lock Your Favorite",
+        "description": "Use the refinement loop to iterate ('Make them shorter', 'Focus on the 90-day timeline'). Lock your champion as your Master Tagline.",
+        "icon": "LockClosedIcon"
       }
     ],
     "features": [
       {
-        "title": "Multiple Styles",
-        "description": "Choose from benefit-focused, action-oriented, question, or statement formats.",
+        "title": "6 W's Framework",
+        "description": "Leverages Authority Hook + Impact Intro for deep context",
+        "icon": "CubeIcon"
+      },
+      {
+        "title": "Refinement Loop",
+        "description": "Iterate with feedback until your tagline is perfect",
+        "icon": "ArrowPathIcon"
+      },
+      {
+        "title": "Master Tagline Lock",
+        "description": "Lock your favorite to use across your Media Kit",
+        "icon": "LockClosedIcon"
+      },
+      {
+        "title": "Style Focus Options",
+        "description": "Choose problem, solution, outcome, or authority focus",
         "icon": "SwatchIcon"
-      },
-      {
-        "title": "Bulk Generation",
-        "description": "Generate 3, 5, or 10 options at once to find the perfect fit.",
-        "icon": "RectangleStackIcon"
-      },
-      {
-        "title": "Audience Focus",
-        "description": "Taglines crafted with your target audience in mind.",
-        "icon": "UserGroupIcon"
-      },
-      {
-        "title": "Transformation-Driven",
-        "description": "Messaging that emphasizes the results you deliver.",
-        "icon": "ArrowTrendingUpIcon"
       }
     ],
     "faq": [
       {
-        "question": "What makes a good tagline?",
-        "answer": "A good tagline is short (under 10 words), memorable, and focuses on the transformation or benefit you provide rather than what you do."
+        "question": "What makes a tagline memorable?",
+        "answer": "Memorable taglines are concise (5-10 words), focus on transformation, avoid cliches, and use rhythm or unexpected phrasing. They should work standalone without explanation."
       },
       {
-        "question": "Which style should I choose?",
-        "answer": "Benefit-focused works for most uses. Use action-oriented for calls-to-action, questions to engage curiosity, and statements for authority positioning."
+        "question": "What is the 6 W's framework?",
+        "answer": "The 6 W's framework combines your Authority Hook (Who, What, When, How) with your Impact Intro (Where your authority comes from, Why this is your mission) to create deeply contextual taglines."
       },
       {
-        "question": "How many options should I generate?",
-        "answer": "Generate at least 5 options. More choices help you find the perfect fit and may inspire variations you hadn't considered."
+        "question": "How does the refinement loop work?",
+        "answer": "After generating 10 taglines, you can provide feedback like 'Make them shorter' or 'Focus more on the transformation'. The AI uses your previous taglines plus feedback to generate refined options."
       },
       {
-        "question": "Can I combine elements from different taglines?",
-        "answer": "Absolutely! Use the generated options as inspiration and mix elements to create your perfect tagline."
+        "question": "What is the Master Tagline?",
+        "answer": "The Master Tagline is your locked, chosen tagline that appears in the sidebar and syncs to your Media Kit profile. It becomes your primary brand statement across all tools."
+      },
+      {
+        "question": "Can I save multiple taglines?",
+        "answer": "Yes! While you can only lock one Master Tagline at a time, all generated taglines can be copied and saved. Your Master Tagline syncs to your profile for use across the platform."
       }
     ],
     "socialProof": {
       "testimonial": {
-        "quote": "Created my new brand tagline in 2 minutes. It perfectly captures what I do and clients comment on it all the time.",
-        "author": "Lisa M.",
-        "role": "Brand Strategist",
+        "quote": "The refinement loop is game-changing. I went from 'meh' to 'perfect' in just 2 iterations. My new tagline gets compliments constantly.",
+        "author": "Sarah K.",
+        "role": "Executive Coach",
         "rating": "4.9"
       }
     },
     "platformCta": {
-      "heading": "Manage your entire podcast guesting system",
-      "description": "Don't just generate taglines. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "heading": "Build your complete Media Kit",
+      "description": "Your tagline is just the beginning. Create bios, one-sheets, and more with Guestify's full Media Kit Builder.",
       "buttonText": "Try Guestify Free",
       "buttonUrl": "/register/"
     },
     "compatibility": [
-      "LinkedIn",
-      "Twitter/X",
-      "Website",
-      "Business Cards"
+      "LinkedIn Headline",
+      "Website Header",
+      "Email Signature",
+      "Business Cards",
+      "Podcast Intros",
+      "Speaker Bios"
     ],
     "relatedToolSlugs": [
-      "biography-generator",
-      "elevator-pitch-generator",
       "authority-hook-builder",
-      "brand-story-generator"
+      "impact-intro-builder",
+      "biography-generator",
+      "elevator-pitch-generator"
     ],
     "usageLocations": [
       {
@@ -260,24 +272,24 @@
         "description": "Your tagline becomes the first thing prospects see on your profile"
       },
       {
+        "location": "Website Header",
+        "description": "Capture visitor attention immediately above the fold"
+      },
+      {
         "location": "Email Signature",
         "description": "Reinforce your value proposition in every email you send"
       },
       {
-        "location": "Website Hero Section",
-        "description": "Capture visitor attention immediately above the fold"
+        "location": "Podcast Intros",
+        "description": "Give hosts a memorable way to introduce you to listeners"
       },
       {
         "location": "Business Cards",
         "description": "Leave a memorable impression during networking events"
       },
       {
-        "location": "Social Media Bios",
-        "description": "Consistent messaging across Twitter, Instagram, and other platforms"
-      },
-      {
-        "location": "Podcast Intros",
-        "description": "Give hosts a memorable way to introduce you to listeners"
+        "location": "Speaker Introductions",
+        "description": "Give event hosts a punchy line to introduce you with"
       }
     ]
   }
