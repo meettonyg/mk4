@@ -28,7 +28,7 @@ return [
     'settings' => [
         'model' => 'gpt-4o-mini',
         'temperature' => 0.9,
-        'max_tokens' => 1200
+        'max_tokens' => 2000
     ],
 
     'system_prompt' => 'You are a world-class branding strategist and copywriter who creates memorable, impactful taglines that distill complex expertise into powerful statements. Your taglines are:
@@ -168,10 +168,12 @@ You understand the psychology of memorable messaging and create taglines that wo
         $prompt .= "- Vary the structure across all {$count} options\n";
         $prompt .= "- Include a mix of: statements, questions (if appropriate), and action-oriented phrases\n\n";
 
+        $prompt .= "IMPORTANT: You MUST generate exactly {$count} taglines, numbered 1 through {$count}.\n\n";
         $prompt .= "Format as a numbered list:\n";
         $prompt .= "1. [Tagline]\n";
         $prompt .= "2. [Tagline]\n";
         $prompt .= "...\n";
+        $prompt .= "{$count}. [Tagline]\n";
 
         return $prompt;
     },

@@ -376,9 +376,13 @@ const generator = useAIGenerator('tagline');
 const {
   profileId: contextProfileId,
   isSaving,
-  saveError,
+  saveError: composableSaveError,
   saveToProfile
 } = useProfileContext();
+
+// Local save error (fallback for when composable error doesn't apply)
+const localSaveError = ref(null);
+const saveError = computed(() => localSaveError.value || composableSaveError.value);
 
 // Inject profile data from parent (EmbeddedToolWrapper provides this)
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
@@ -393,6 +397,7 @@ const refinementFeedback = ref('');
 const selectedIndex = ref(-1);
 const lockedTagline = ref(null);
 const lockedTaglineIndex = ref(-1);
+const profileTagline = ref(null); // Track tagline from profile separately
 
 // Refinement history
 const previousTaglines = ref([]);
@@ -512,9 +517,14 @@ function populateFromProfile(profileData) {
   if (profileData.impact_where) impactWhere.value = profileData.impact_where;
   if (profileData.impact_why) impactWhy.value = profileData.impact_why;
 
-  // Existing tagline
+  // Existing tagline from profile (only set if not already unlocked by user)
   if (profileData.tagline) {
-    lockedTagline.value = profileData.tagline;
+    profileTagline.value = profileData.tagline;
+    // Only auto-lock profile tagline if user hasn't manually unlocked
+    if (lockedTagline.value === null || lockedTagline.value === profileTagline.value) {
+      lockedTagline.value = profileData.tagline;
+      lockedTaglineIndex.value = -1; // -1 means from profile, not generated list
+    }
   }
 }
 
@@ -640,31 +650,51 @@ const handleCopy = async () => {
  * Handle save to profile
  */
 const handleSaveToProfile = async () => {
-  if (!lockedTagline.value || !resolvedProfileId.value) return;
+  localSaveError.value = null;
+
+  if (!lockedTagline.value) {
+    localSaveError.value = 'Please lock a tagline first.';
+    return;
+  }
+
+  if (!resolvedProfileId.value) {
+    localSaveError.value = 'No profile selected. Please select a profile first.';
+    return;
+  }
 
   saveSuccess.value = false;
 
-  const dataToSave = {
-    tagline: lockedTagline.value
-  };
+  try {
+    // Save tagline
+    const taglineResult = await saveToProfile('tagline', lockedTagline.value, {
+      profileId: resolvedProfileId.value
+    });
 
-  // Optionally save authority hook fields too
-  if (saveAuthorityHook.value && hasAuthorityHookData.value) {
-    dataToSave.hook_who = hookWho.value;
-    dataToSave.hook_what = hookWhat.value;
-    dataToSave.hook_when = hookWhen.value;
-    dataToSave.hook_how = hookHow.value;
-  }
+    // Optionally save authority hook fields too
+    if (saveAuthorityHook.value && hasAuthorityHookData.value) {
+      await saveToProfile('authority_hook', {
+        who: hookWho.value,
+        what: hookWhat.value,
+        when: hookWhen.value,
+        how: hookHow.value
+      }, {
+        profileId: resolvedProfileId.value
+      });
+    }
 
-  const success = await saveToProfile(resolvedProfileId.value, dataToSave);
+    if (taglineResult?.success !== false) {
+      saveSuccess.value = true;
+      // Update profile tagline to match what was saved
+      profileTagline.value = lockedTagline.value;
+      emit('saved', { tagline: lockedTagline.value });
 
-  if (success) {
-    saveSuccess.value = true;
-    emit('saved', { tagline: lockedTagline.value });
-
-    setTimeout(() => {
-      saveSuccess.value = false;
-    }, 3000);
+      setTimeout(() => {
+        saveSuccess.value = false;
+      }, 3000);
+    }
+  } catch (err) {
+    console.error('[TaglineGenerator] Save failed:', err);
+    localSaveError.value = err.message || 'Failed to save';
   }
 };
 
@@ -679,6 +709,7 @@ const handleStartOver = () => {
   refinementFeedback.value = '';
   previousTaglines.value = [];
   saveSuccess.value = false;
+  localSaveError.value = null;
 };
 
 // Watch for injected profile data
