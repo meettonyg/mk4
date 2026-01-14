@@ -195,26 +195,10 @@
             >
               <div class="gfy-bio-slot__header">
                 <span class="gfy-bio-slot__label">{{ config.label }}</span>
-                <i
-                  v-if="slots[slotId].lockedIntro"
-                  class="fas fa-lock"
-                  style="color: var(--gfy-primary-color);"
-                ></i>
-                <i
-                  v-else-if="slots[slotId].status === 'generating'"
-                  class="fas fa-spinner fa-spin"
-                  style="color: var(--gfy-primary-color);"
-                ></i>
-                <i
-                  v-else-if="slots[slotId].status === 'ready'"
-                  class="fas fa-check-circle"
-                  style="color: var(--gfy-success-color);"
-                ></i>
-                <i
-                  v-else
-                  class="fas fa-plus"
-                  style="color: var(--gfy-text-muted);"
-                ></i>
+                <svg v-if="slots[slotId].lockedIntro" width="14" height="14" viewBox="0 0 24 24" fill="var(--gfy-primary-color)"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                <svg v-else-if="slots[slotId].status === 'generating'" class="gfy-icon--spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gfy-primary-color)" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+                <svg v-else-if="slots[slotId].status === 'ready'" width="14" height="14" viewBox="0 0 24 24" fill="var(--gfy-success-color)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gfy-text-muted)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               </div>
               <div class="gfy-bio-slot__preview">{{ slots[slotId].preview }}</div>
             </button>
@@ -255,7 +239,9 @@
           <!-- Refinement Box -->
           <div class="gfy-refinement-box">
             <div class="gfy-refinement-header">
-              <i class="fas fa-magic" style="color: var(--gfy-primary-color); font-size: 14px;"></i>
+              <svg class="gfy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              </svg>
               <span class="gfy-refinement-title">Refine Script</span>
             </div>
             <div class="gfy-refinement-input-wrapper">
@@ -269,15 +255,20 @@
               <button
                 type="button"
                 class="gfy-btn-refine"
-                :disabled="!refinementText.trim() || isRefining || !selectedVariationIndex"
+                :disabled="!refinementText.trim() || isRefining || selectedVariationIndex === null"
                 @click="handleRefine"
               >
-                <i v-if="isRefining" class="fas fa-spinner fa-spin"></i>
-                <i v-else class="fas fa-sync-alt"></i>
+                <svg v-if="isRefining" class="gfy-icon gfy-icon--spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                </svg>
+                <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 4v6h-6M1 20v-6h6"/>
+                  <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                </svg>
                 {{ isRefining ? 'Refining...' : 'Refine' }}
               </button>
             </div>
-            <p v-if="!selectedVariationIndex" class="gfy-refinement-hint">
+            <p v-if="selectedVariationIndex === null" class="gfy-refinement-hint">
               Select a variation below to refine it
             </p>
           </div>
@@ -285,7 +276,8 @@
           <!-- Locked Intro Display -->
           <div v-if="currentSlot.lockedIntro" class="gfy-intro-script gfy-intro-script--locked">
             <div class="gfy-script-badge gfy-script-badge--locked">
-              <i class="fas fa-lock"></i> LOCKED INTRO
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+              LOCKED INTRO
             </div>
             <p class="gfy-script-text">{{ currentSlot.lockedIntro.text }}</p>
             <div class="gfy-script-actions">
@@ -294,14 +286,16 @@
                 class="gfy-btn gfy-btn--outline"
                 @click="handleUnlock"
               >
-                <i class="fas fa-lock-open"></i> Unlock
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg>
+                Unlock
               </button>
               <button
                 type="button"
                 class="gfy-btn gfy-btn--outline"
                 @click="handleCopyLocked"
               >
-                <i class="fas fa-copy"></i> Copy Script
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                Copy Script
               </button>
             </div>
           </div>
@@ -328,14 +322,16 @@
                   class="gfy-btn gfy-btn--primary"
                   @click.stop="handleLock(index)"
                 >
-                  <i class="fas fa-lock"></i> Lock as {{ activeSlotConfig.label.split(' ')[0] }} Intro
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                  Lock as {{ activeSlotConfig.label.split(' ')[0] }} Intro
                 </button>
                 <button
                   type="button"
                   class="gfy-btn gfy-btn--outline"
                   @click.stop="handleCopy(index)"
                 >
-                  <i class="fas fa-copy"></i> Copy Script
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                  Copy Script
                 </button>
               </div>
             </div>
@@ -348,7 +344,9 @@
           </div>
 
           <div v-else class="gfy-empty-state">
-            <i class="fas fa-file-alt" style="font-size: 48px; color: var(--gfy-text-muted); margin-bottom: 16px;"></i>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--gfy-text-muted)" stroke-width="1.5" style="margin-bottom: 16px;">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+            </svg>
             <p>No variations generated yet for this length.</p>
             <button
               type="button"
@@ -367,8 +365,12 @@
               :disabled="!hasAnyLocked || isSaving"
               @click="handleSaveToProfile"
             >
-              <i v-if="isSaving" class="fas fa-spinner fa-spin"></i>
-              <i v-else class="fas fa-save"></i>
+              <svg v-if="isSaving" class="gfy-icon gfy-icon--spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12a9 9 0 11-6.219-8.56"/>
+              </svg>
+              <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+              </svg>
               {{ isSaving ? 'Saving...' : 'Save All to Profile' }}
             </button>
             <button
@@ -382,7 +384,8 @@
 
           <!-- Save Success Message -->
           <div v-if="saveSuccess" class="gfy-save-success">
-            <i class="fas fa-check-circle"></i> Saved successfully!
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--gfy-success-color)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            Saved successfully!
           </div>
         </main>
       </div>
@@ -454,7 +457,10 @@ const {
 
 // Impact Intro composable
 const {
+  credentials: impactCredentials,
+  achievements: impactAchievements,
   credentialsSummary,
+  achievementsSummary,
   loadFromProfileData: loadImpactIntroFromProfile
 } = useImpactIntro();
 
@@ -466,12 +472,29 @@ const {
 } = useProfileContext();
 
 // Local state
-const credentials = ref('');
-const mission = ref('');
 const showResults = ref(false);
 const saveSuccess = ref(false);
 const selectedVariationIndex = ref(null);
 const selectedProfileId = ref(null);
+
+// Local form fields for credentials/mission (synced with composable)
+const credentials = computed({
+  get: () => credentialsSummary.value,
+  set: (val) => {
+    // Parse comma-separated string into array
+    const arr = val ? val.split(',').map(s => s.trim()).filter(s => s) : [];
+    impactCredentials.value = arr;
+  }
+});
+
+const mission = computed({
+  get: () => achievementsSummary.value,
+  set: (val) => {
+    // Parse comma-separated string into array
+    const arr = val ? val.split(',').map(s => s.trim()).filter(s => s) : [];
+    impactAchievements.value = arr;
+  }
+});
 
 // Computed: resolved profile ID
 const resolvedProfileId = computed(() => {
@@ -496,22 +519,15 @@ const lockedCount = computed(() => {
 function populateFromProfile(profileData) {
   if (!profileData) return;
 
+  // Load guest intro data (name, title, existing intros)
   loadFromProfileData(profileData);
-  loadAuthorityHookFromProfile(profileData);
-  loadImpactIntroFromProfile(profileData);
 
-  // Load credentials/mission for Impact Intro
-  if (profileData.credentials) {
-    credentials.value = Array.isArray(profileData.credentials)
-      ? profileData.credentials.join(', ')
-      : profileData.credentials;
-  }
-  if (profileData.mission || profileData.achievements) {
-    mission.value = profileData.mission ||
-      (Array.isArray(profileData.achievements)
-        ? profileData.achievements.join(', ')
-        : profileData.achievements || '');
-  }
+  // Load Authority Hook fields (who/what/when/how)
+  loadAuthorityHookFromProfile(profileData);
+
+  // Load Impact Intro fields (credentials/achievements)
+  // This syncs to the store and our computed credentials/mission will reflect the values
+  loadImpactIntroFromProfile(profileData);
 }
 
 /**
@@ -625,8 +641,9 @@ function handleStartOver() {
   reset();
   showResults.value = false;
   selectedVariationIndex.value = null;
-  credentials.value = '';
-  mission.value = '';
+  // Clear credentials/mission by clearing the arrays
+  impactCredentials.value = [];
+  impactAchievements.value = [];
 }
 
 // Watch canGenerate changes
@@ -1223,6 +1240,11 @@ defineExpose({
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* SVG Icon spin animation */
+.gfy-icon--spin {
+  animation: spin 0.8s linear infinite;
 }
 
 /* Responsive */
