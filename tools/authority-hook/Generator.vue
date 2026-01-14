@@ -1,6 +1,6 @@
 <template>
   <div class="gfy-authority-hook-generator">
-    <!-- Form Section -->
+    <!-- Form Section (shown when no results) -->
     <div v-if="!hasHooks" class="gfy-authority-hook-form">
       <!-- Authority Hook Builder -->
       <div class="gfy-authority-hook">
@@ -56,16 +56,70 @@
       </div>
     </div>
 
-    <!-- Results Section -->
+    <!-- Results Section - 2 Column Layout -->
     <div v-if="hasHooks" class="gfy-results">
       <!-- Layout wrapper for side-by-side on desktop -->
       <div class="gfy-results-layout">
-        <!-- LEFT SIDEBAR: Current Hook (for logged-in users with a profile) -->
-        <aside v-if="hasCurrentHook && selectedProfileId" class="gfy-layout-sidebar">
-          <div class="gfy-current-hook">
+        <!-- LEFT SIDEBAR: Authority Hook Inputs + Preview -->
+        <aside class="gfy-layout-sidebar">
+          <!-- Authority Hook Builder (Compact) -->
+          <div class="gfy-sidebar-hook">
+            <div class="gfy-sidebar-hook__header">
+              <span class="gfy-sidebar-hook__icon">&#9733;</span>
+              <h3 class="gfy-sidebar-hook__title">Your Inputs</h3>
+            </div>
+
+            <!-- Compact Builder -->
+            <div class="gfy-sidebar-builder">
+              <div class="gfy-sidebar-builder__field">
+                <label class="gfy-sidebar-builder__label">WHO</label>
+                <input
+                  v-model="hookWho"
+                  type="text"
+                  class="gfy-sidebar-builder__input"
+                  placeholder="e.g. SaaS Founders"
+                />
+              </div>
+              <div class="gfy-sidebar-builder__field">
+                <label class="gfy-sidebar-builder__label">WHAT</label>
+                <input
+                  v-model="hookWhat"
+                  type="text"
+                  class="gfy-sidebar-builder__input"
+                  placeholder="e.g. Increase revenue by 40%"
+                />
+              </div>
+              <div class="gfy-sidebar-builder__field">
+                <label class="gfy-sidebar-builder__label">WHEN</label>
+                <input
+                  v-model="hookWhen"
+                  type="text"
+                  class="gfy-sidebar-builder__input"
+                  placeholder="e.g. When scaling rapidly"
+                />
+              </div>
+              <div class="gfy-sidebar-builder__field">
+                <label class="gfy-sidebar-builder__label">HOW</label>
+                <input
+                  v-model="hookHow"
+                  type="text"
+                  class="gfy-sidebar-builder__input"
+                  placeholder="e.g. My proven 90-day system"
+                />
+              </div>
+            </div>
+
+            <!-- Base Hook Preview -->
+            <div class="gfy-sidebar-preview">
+              <div class="gfy-sidebar-preview__label">Base Hook</div>
+              <div class="gfy-sidebar-preview__text">"{{ hookPreview }}"</div>
+            </div>
+          </div>
+
+          <!-- Current Hook from Profile (if logged in) -->
+          <div v-if="hasCurrentHook && selectedProfileId" class="gfy-current-hook">
             <div class="gfy-current-hook__header">
-              <h3 class="gfy-current-hook__title">Your Current Hook</h3>
-              <span class="gfy-current-hook__hint">Select a new hook to replace</span>
+              <h4 class="gfy-current-hook__title">Current Saved Hook</h4>
             </div>
             <div class="gfy-current-hook__content">
               <p class="gfy-current-hook__text">{{ currentHookText }}</p>
@@ -139,15 +193,17 @@
               :class="{ 'gfy-hook-card--selected': selectedHookIndex === index }"
               @click="selectHook(index)"
             >
-              <div class="gfy-hook-card__number">{{ index + 1 }}</div>
+              <div class="gfy-hook-card__header">
+                <div class="gfy-hook-card__number">{{ index + 1 }}</div>
+                <div class="gfy-hook-card__checkbox">
+                  <svg v-if="selectedHookIndex === index" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                  </svg>
+                </div>
+              </div>
               <div class="gfy-hook-card__content">
                 <span v-if="hook.angle" class="gfy-hook-card__angle">{{ hook.angle }}</span>
                 <p class="gfy-hook-card__text">{{ hook.text }}</p>
-              </div>
-              <div class="gfy-hook-card__checkbox">
-                <svg v-if="selectedHookIndex === index" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
-                </svg>
               </div>
             </div>
           </div>
@@ -176,6 +232,21 @@
 
           <!-- Save Actions -->
           <div class="gfy-results__footer">
+            <!-- Save Authority Hook Fields Option -->
+            <label v-if="hasAuthorityHookData" class="gfy-checkbox-option">
+              <input
+                v-model="saveHookFields"
+                type="checkbox"
+                class="gfy-checkbox-option__input"
+              />
+              <span class="gfy-checkbox-option__box">
+                <svg v-if="saveHookFields" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                </svg>
+              </span>
+              <span class="gfy-checkbox-option__label">Also save WHO/WHAT/WHEN/HOW fields to profile</span>
+            </label>
+
             <div class="gfy-save-section">
               <button
                 type="button"
@@ -197,7 +268,7 @@
             </div>
             <!-- Save Success Message -->
             <span v-if="saveSuccess" class="gfy-save-success">
-              ✓ Saved successfully!
+              Saved successfully!
             </span>
             <!-- Save Error Message -->
             <span v-if="localSaveError" class="gfy-save-error">
@@ -212,7 +283,7 @@
 
 <script setup>
 import { ref, computed, watch, inject } from 'vue';
-import { useAIGenerator } from '../../src/composables/useAIGenerator';
+import { useAIAuthorityHooks } from '../../src/composables/useAIAuthorityHooks';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
@@ -226,15 +297,16 @@ const props = defineProps({
 
 const emit = defineEmits(['update:can-generate', 'generated', 'saved']);
 
-// Use composables
+// Use composables - useAIAuthorityHooks parses string API response into array of hook objects
 const {
   isGenerating,
   error,
-  generatedContent: hooks,
+  hooks,
+  hasHooks,
   generate,
   copyToClipboard,
   reset
-} = useAIGenerator('authority_hook');
+} = useAIAuthorityHooks();
 
 const {
   profileId: contextProfileId,
@@ -261,6 +333,7 @@ const selectedProfileId = ref(null);
 const viewMode = ref('list'); // 'card' or 'list' - default to list
 const localIsSaving = ref(false);
 const localSaveError = ref(null);
+const saveHookFields = ref(true); // Whether to also save WHO/WHAT/WHEN/HOW fields
 
 // Current hook from profile
 const currentHookText = ref('');
@@ -298,11 +371,14 @@ const canGenerate = computed(() => {
          (hookWhat.value && hookWhat.value.trim().length > 0);
 });
 
+// hasHooks is now provided by useAIAuthorityHooks composable
+// which properly parses string API responses into an array of hook objects
+
 /**
- * Check if we have generated hooks
+ * Check if user has entered any authority hook data
  */
-const hasHooks = computed(() => {
-  return hooks.value && Array.isArray(hooks.value) && hooks.value.length > 0;
+const hasAuthorityHookData = computed(() => {
+  return !!(hookWho.value || hookWhat.value || hookWhen.value || hookHow.value);
 });
 
 /**
@@ -402,7 +478,7 @@ const handleCopy = async () => {
 };
 
 /**
- * Handle save to media kit - saves selected hook and hook fields
+ * Handle save to media kit - saves selected hook and optionally hook fields
  */
 const handleSaveToProfile = async () => {
   if (selectedHookIndex.value === null) return;
@@ -416,15 +492,20 @@ const handleSaveToProfile = async () => {
   localSaveError.value = null;
 
   try {
-    // Save authority hook fields and statement
-    // Field mapping in meta.json: statement -> authority_statement
-    const result = await saveToProfile('authority_hook', {
-      who: hookWho.value,
-      what: hookWhat.value,
-      when: hookWhen.value,
-      how: hookHow.value,
+    // Build save data - always include statement, conditionally include fields
+    const saveData = {
       statement: selectedHook.text
-    }, {
+    };
+
+    // Only include WHO/WHAT/WHEN/HOW fields if checkbox is checked
+    if (saveHookFields.value && hasAuthorityHookData.value) {
+      saveData.who = hookWho.value;
+      saveData.what = hookWhat.value;
+      saveData.when = hookWhen.value;
+      saveData.how = hookHow.value;
+    }
+
+    const result = await saveToProfile('authority_hook', saveData, {
       profileId: selectedProfileId.value
     });
 
@@ -436,12 +517,13 @@ const handleSaveToProfile = async () => {
       emit('saved', {
         profileId: selectedProfileId.value,
         hook: selectedHook.text,
-        fields: {
+        fieldsSaved: saveHookFields.value && hasAuthorityHookData.value,
+        fields: saveHookFields.value ? {
           who: hookWho.value,
           what: hookWhat.value,
           when: hookWhen.value,
           how: hookHow.value
-        }
+        } : null
       });
     } else {
       localSaveError.value = result.errors?.join(', ') || 'Failed to save';
@@ -663,17 +745,12 @@ defineExpose({
   .gfy-layout-sidebar {
     position: sticky;
     top: 1rem;
-    flex: 0 0 280px;
+    flex: 0 0 320px;
   }
 
   .gfy-layout-main {
     flex: 1;
     min-width: 0;
-  }
-
-  /* Adjust grid columns for narrower main area */
-  .gfy-layout-main .gfy-hooks-grid {
-    grid-template-columns: 1fr;
   }
 
   /* Stack header vertically when sidebar is present */
@@ -683,28 +760,139 @@ defineExpose({
   }
 }
 
+/* SIDEBAR HOOK BUILDER */
+.gfy-sidebar-hook {
+  background: var(--gfy-white);
+  border: 1px solid var(--gfy-border-color);
+  border-left: 4px solid var(--gfy-primary-color);
+  border-radius: var(--gfy-radius-md);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.gfy-sidebar-hook__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.gfy-sidebar-hook__title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--gfy-text-primary);
+  margin: 0;
+}
+
+.gfy-sidebar-hook__icon {
+  color: var(--gfy-warning-color);
+  font-size: 1rem;
+}
+
+/* SIDEBAR BUILDER - Compact stacked layout */
+.gfy-sidebar-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.gfy-sidebar-builder__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.gfy-sidebar-builder__label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--gfy-primary-color);
+}
+
+.gfy-sidebar-builder__input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-md);
+  font-size: 0.85rem;
+  background: var(--gfy-white);
+  box-sizing: border-box;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.gfy-sidebar-builder__input:focus {
+  outline: none;
+  border-color: var(--gfy-primary-color);
+  box-shadow: 0 0 0 2px var(--gfy-primary-light);
+}
+
+.gfy-sidebar-builder__input::placeholder {
+  color: var(--gfy-text-muted);
+  font-size: 0.8rem;
+}
+
+/* SIDEBAR PREVIEW */
+.gfy-sidebar-preview {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: var(--gfy-primary-light);
+  border-radius: var(--gfy-radius-md);
+  border: 1px solid #bfdbfe;
+}
+
+.gfy-sidebar-preview__label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--gfy-text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.gfy-sidebar-preview__text {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--gfy-primary-dark);
+  font-style: italic;
+}
+
 /* Sidebar panel styling */
 .gfy-layout-sidebar .gfy-current-hook {
-  background: var(--gfy-bg-secondary, #f8fafc);
-  border: 1px solid var(--gfy-border-color, #e2e8f0);
-  border-radius: var(--gfy-radius-lg, 12px);
+  background: var(--gfy-bg-color);
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-md);
   padding: 1rem;
   margin-bottom: 0;
 }
 
 .gfy-layout-sidebar .gfy-current-hook__header {
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .gfy-layout-sidebar .gfy-current-hook__title {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: var(--gfy-text-secondary, #64748b);
+  color: var(--gfy-text-secondary);
+  margin: 0;
 }
 
-.gfy-layout-sidebar .gfy-current-hook__hint {
-  font-size: 0.75rem;
+.gfy-layout-sidebar .gfy-current-hook__content {
+  padding: 0.75rem;
+  background: var(--gfy-white);
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-md);
+}
+
+.gfy-layout-sidebar .gfy-current-hook__text {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--gfy-text-primary);
+  font-style: italic;
+  margin: 0;
 }
 
 .gfy-results__header {
@@ -808,24 +996,32 @@ defineExpose({
   color: var(--gfy-primary-color);
 }
 
-/* HOOKS GRID */
+/* HOOKS GRID - Card View */
 .gfy-hooks-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.75rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
   margin-bottom: 1.5rem;
+}
+
+/* Single column on mobile */
+@media (max-width: 768px) {
+  .gfy-hooks-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .gfy-hook-card {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 0.75rem;
-  padding: 1rem;
+  padding: 1.25rem;
   background: var(--gfy-white);
   border: 2px solid var(--gfy-border-color);
-  border-radius: var(--gfy-radius-md);
+  border-radius: var(--gfy-radius-lg);
   cursor: pointer;
   transition: all 0.15s ease;
+  min-height: 120px;
 }
 
 .gfy-hook-card:hover {
@@ -838,17 +1034,23 @@ defineExpose({
   background: var(--gfy-primary-light);
 }
 
+.gfy-hook-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
 .gfy-hook-card__number {
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   background: var(--gfy-bg-color);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 0.9rem;
+  font-weight: 700;
   color: var(--gfy-text-secondary);
 }
 
@@ -859,7 +1061,6 @@ defineExpose({
 
 .gfy-hook-card__content {
   flex: 1;
-  min-width: 0;
 }
 
 .gfy-hook-card__angle {
@@ -1042,6 +1243,50 @@ defineExpose({
 
 .gfy-btn--text:hover {
   color: var(--gfy-text-primary);
+}
+
+/* CHECKBOX OPTION */
+.gfy-checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.gfy-checkbox-option__input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.gfy-checkbox-option__box {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--gfy-border-color);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gfy-white);
+  transition: all 0.15s ease;
+}
+
+.gfy-checkbox-option__input:checked + .gfy-checkbox-option__box {
+  background: var(--gfy-primary-color);
+  border-color: var(--gfy-primary-color);
+  color: var(--gfy-white);
+}
+
+.gfy-checkbox-option__input:focus + .gfy-checkbox-option__box {
+  box-shadow: 0 0 0 3px var(--gfy-primary-light);
+}
+
+.gfy-checkbox-option__label {
+  font-size: 0.9rem;
+  color: var(--gfy-text-secondary);
 }
 
 /* RESULTS FOOTER */

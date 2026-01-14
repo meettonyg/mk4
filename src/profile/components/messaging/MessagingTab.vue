@@ -90,6 +90,117 @@
                         </div>
                     </template>
                 </EditablePanel>
+
+                <!-- 6 W's Panel -->
+                <EditablePanel
+                    title="6 W's"
+                    section-id="six-ws"
+                    :is-editing="editingSection === 'six-ws'"
+                    :is-saving="isSaving"
+                    @edit="startEditing"
+                    @save="saveSection"
+                    @cancel="cancelEditing"
+                >
+                    <template #header-action>
+                        <a :href="authorityHookBuilderUrl" target="_blank" class="header-ai-link" title="Generate with AI">
+                            <AiSparkleIcon :size="14" />
+                        </a>
+                    </template>
+
+                    <template #display>
+                        <div class="six-ws-grid">
+                            <div class="six-ws-item">
+                                <span class="six-ws-label">WHO</span>
+                                <span class="six-ws-sublabel">Target Audience</span>
+                                <span class="six-ws-value">{{ store.fields.hook_who || '—' }}</span>
+                            </div>
+                            <div class="six-ws-item">
+                                <span class="six-ws-label">WHAT</span>
+                                <span class="six-ws-sublabel">Result They Get</span>
+                                <span class="six-ws-value">{{ store.fields.hook_what || '—' }}</span>
+                            </div>
+                            <div class="six-ws-item">
+                                <span class="six-ws-label">WHEN</span>
+                                <span class="six-ws-sublabel">Situation</span>
+                                <span class="six-ws-value">{{ store.fields.hook_when || '—' }}</span>
+                            </div>
+                            <div class="six-ws-item">
+                                <span class="six-ws-label">HOW</span>
+                                <span class="six-ws-sublabel">Your Method</span>
+                                <span class="six-ws-value">{{ store.fields.hook_how || '—' }}</span>
+                            </div>
+                            <div class="six-ws-item">
+                                <span class="six-ws-label">WHERE</span>
+                                <span class="six-ws-sublabel">Your Results</span>
+                                <span class="six-ws-value">{{ store.fields.hook_where || '—' }}</span>
+                            </div>
+                            <div class="six-ws-item">
+                                <span class="six-ws-label">WHY</span>
+                                <span class="six-ws-sublabel">Your Mission</span>
+                                <span class="six-ws-value">{{ store.fields.hook_why || '—' }}</span>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template #edit>
+                        <div class="six-ws-edit-grid">
+                            <div class="form-group">
+                                <label class="form-label">WHO do you help?</label>
+                                <input
+                                    type="text"
+                                    class="form-input"
+                                    v-model="editFields.hook_who"
+                                    placeholder="e.g. SaaS founders, busy entrepreneurs..."
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">WHAT result do they get?</label>
+                                <input
+                                    type="text"
+                                    class="form-input"
+                                    v-model="editFields.hook_what"
+                                    placeholder="e.g. Scale to $1M ARR, double their client base..."
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">WHEN (in what situation)?</label>
+                                <input
+                                    type="text"
+                                    class="form-input"
+                                    v-model="editFields.hook_when"
+                                    placeholder="e.g. When stuck at a growth plateau..."
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">HOW (your unique method)?</label>
+                                <input
+                                    type="text"
+                                    class="form-input"
+                                    v-model="editFields.hook_how"
+                                    placeholder="e.g. Through AI-driven marketing systems..."
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">WHERE (your results/credentials)?</label>
+                                <input
+                                    type="text"
+                                    class="form-input"
+                                    v-model="editFields.hook_where"
+                                    placeholder="e.g. Helped 200+ SaaS founders..."
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">WHY (your mission/purpose)?</label>
+                                <input
+                                    type="text"
+                                    class="form-input"
+                                    v-model="editFields.hook_why"
+                                    placeholder="e.g. To make sustainable growth accessible..."
+                                />
+                            </div>
+                        </div>
+                    </template>
+                </EditablePanel>
             </div>
 
             <!-- Sidebar -->
@@ -147,21 +258,25 @@
 
                     <template #display>
                         <div class="text-area">
-                            <div v-if="store.fields.authority_hook" class="preserve-lines" v-html="formatWithLineBreaks(store.fields.authority_hook)"></div>
+                            <div v-if="store.fields.authority_statement" class="preserve-lines" v-html="formatWithLineBreaks(store.fields.authority_statement)"></div>
                             <div v-else class="empty-text">
-                                <p>No authority hook defined</p>
+                                <p>
+                                    <span class="info-icon">i</span>
+                                    Your Authority Hook is a positioning statement that establishes your expertise.
+                                    Use the AI tool to generate one from your 6 W's.
+                                </p>
                             </div>
                         </div>
                     </template>
 
                     <template #edit>
                         <div class="form-group">
-                            <label class="form-label">Authority Hook</label>
+                            <label class="form-label">Authority Hook Statement</label>
                             <textarea
                                 class="form-input textarea"
-                                v-model="editFields.authority_hook"
+                                v-model="editFields.authority_statement"
                                 rows="4"
-                                placeholder="I help [audience] achieve [result] when they need [timing] through [method]..."
+                                placeholder="I help [WHO] achieve [WHAT] when [WHEN] through [HOW]..."
                             ></textarea>
                         </div>
                     </template>
@@ -273,8 +388,9 @@ const editFields = reactive({});
 const sectionFields = {
     biography: ['biography'],
     'guest-intro': ['podcast_intro'],
+    'six-ws': ['hook_who', 'hook_what', 'hook_when', 'hook_how', 'hook_where', 'hook_why'],
     tagline: ['tagline'],
-    'authority-hook': ['authority_hook'],
+    'authority-hook': ['authority_statement'],
     'impact-intro': ['impact_intro'],
 };
 
@@ -443,5 +559,64 @@ const saveSection = async (sectionId) => {
 
 .textarea.tall {
     min-height: 200px;
+}
+
+/* 6 W's Grid Layout */
+.six-ws-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+@media (max-width: 640px) {
+    .six-ws-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.six-ws-item {
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.six-ws-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #14b8a6;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.six-ws-sublabel {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-bottom: 4px;
+}
+
+.six-ws-value {
+    font-size: 14px;
+    color: #334155;
+    line-height: 1.4;
+}
+
+/* 6 W's Edit Grid */
+.six-ws-edit-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+@media (max-width: 640px) {
+    .six-ws-edit-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.six-ws-edit-grid .form-group {
+    margin-bottom: 0;
 }
 </style>
