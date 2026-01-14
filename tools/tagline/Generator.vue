@@ -734,16 +734,10 @@ const handleSaveToProfile = async () => {
 };
 
 /**
- * Handle start over
+ * Handle start over - simple page refresh
  */
 const handleStartOver = () => {
-  generator.reset();
-  lockedTagline.value = null;
-  lockedTaglineIndex.value = -1;
-  refinementFeedback.value = '';
-  previousTaglines.value = [];
-  saveSuccess.value = false;
-  localSaveError.value = null;
+  window.location.reload();
 };
 
 // Watch for injected profile data
