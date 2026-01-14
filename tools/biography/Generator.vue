@@ -79,7 +79,177 @@
     </template>
   </AiWidgetFrame>
 
-  <!-- Default Mode: Full Biography Toolkit (Landing Pages) -->
+  <!-- Embedded Mode: Form fields for EmbeddedToolWrapper (Landing Pages) -->
+  <div v-else-if="mode === 'embedded'" class="gfy-bio-embedded">
+    <!-- SECTION 1: BASIC INFO -->
+    <div class="gfy-input-group">
+      <label class="gfy-label">Step 1: Basic Information</label>
+      <div class="gfy-builder gfy-builder--3col">
+        <div class="gfy-builder__field">
+          <label class="gfy-builder__label">Full Name *</label>
+          <input
+            v-model="name"
+            type="text"
+            class="gfy-builder__input"
+            placeholder="e.g. Tony Guarnaccia"
+          />
+        </div>
+        <div class="gfy-builder__field">
+          <label class="gfy-builder__label">Professional Title</label>
+          <input
+            v-model="optionalFields.title"
+            type="text"
+            class="gfy-builder__input"
+            placeholder="e.g. CEO"
+          />
+        </div>
+        <div class="gfy-builder__field">
+          <label class="gfy-builder__label">Organization (Optional)</label>
+          <input
+            v-model="optionalFields.organization"
+            type="text"
+            class="gfy-builder__input"
+            placeholder="e.g. Guestify.ai"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="section-divider"><span>Core Authority</span></div>
+
+    <!-- SECTION 2: AUTHORITY HOOK -->
+    <div class="gfy-input-group">
+      <label class="gfy-label">Step 2: Define Your Authority Hook</label>
+      <div class="gfy-highlight-box gfy-highlight-box--blue">
+        <div class="gfy-highlight-box__header">
+          <span class="gfy-highlight-box__icon-star">&#9733;</span>
+          <h3 class="gfy-highlight-box__title">Who-What-When-How</h3>
+        </div>
+        <div class="gfy-builder">
+          <div class="gfy-builder__field">
+            <label class="gfy-builder__label">WHO do you help?</label>
+            <input
+              v-model="authorityHook.who"
+              type="text"
+              class="gfy-builder__input"
+              placeholder="e.g. SaaS Founders"
+            />
+          </div>
+          <div class="gfy-builder__field">
+            <label class="gfy-builder__label">WHAT is the result?</label>
+            <input
+              v-model="authorityHook.what"
+              type="text"
+              class="gfy-builder__input"
+              placeholder="e.g. Increase revenue by 40%"
+            />
+          </div>
+          <div class="gfy-builder__field">
+            <label class="gfy-builder__label">WHEN do they need it?</label>
+            <input
+              v-model="authorityHook.when"
+              type="text"
+              class="gfy-builder__input"
+              placeholder="e.g. Scaling rapidly"
+            />
+          </div>
+          <div class="gfy-builder__field">
+            <label class="gfy-builder__label">HOW do you do it?</label>
+            <input
+              v-model="authorityHook.how"
+              type="text"
+              class="gfy-builder__input"
+              placeholder="e.g. Proven 90-day system"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 3: IMPACT INTRO -->
+    <div class="gfy-input-group">
+      <label class="gfy-label">Step 3: Establish Impact & Credibility</label>
+      <div class="gfy-highlight-box gfy-highlight-box--green">
+        <div class="gfy-highlight-box__header">
+          <span class="gfy-highlight-box__icon-target">&#127919;</span>
+          <h3 class="gfy-highlight-box__title">Impact Intro (Where & Why)</h3>
+        </div>
+        <div class="gfy-builder">
+          <div class="gfy-builder__field gfy-builder__field--full">
+            <label class="gfy-builder__label">WHERE is your authority (Credentials/Results)?</label>
+            <input
+              v-model="impactIntro.where"
+              type="text"
+              class="gfy-builder__input"
+              placeholder="e.g. Helped 200+ startups achieve 7-figure milestones"
+            />
+          </div>
+          <div class="gfy-builder__field gfy-builder__field--full">
+            <label class="gfy-builder__label">WHY do you do it (Mission/Purpose)?</label>
+            <input
+              v-model="impactIntro.why"
+              type="text"
+              class="gfy-builder__input"
+              placeholder="e.g. Democratize access to elite scaling strategies"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-divider"><span>Additional Content</span></div>
+
+    <!-- SECTION 4: ADDITIONAL CONTENT & NOTES -->
+    <div class="gfy-input-group">
+      <label class="gfy-label">Step 4: Enhance Your Bio (Optional)</label>
+      <div class="gfy-builder">
+        <div class="gfy-builder__field gfy-builder__field--full">
+          <label class="gfy-builder__label">Existing Biography (Optional)</label>
+          <textarea
+            v-model="optionalFields.existingBio"
+            class="gfy-textarea"
+            rows="3"
+            placeholder="Paste your current biography here to improve it with AI..."
+          ></textarea>
+        </div>
+        <div class="gfy-builder__field gfy-builder__field--full">
+          <label class="gfy-builder__label">Additional Notes (Optional)</label>
+          <textarea
+            v-model="optionalFields.additionalNotes"
+            class="gfy-textarea"
+            rows="2"
+            placeholder="Any specific achievements, awards, or personal details you want included?"
+          ></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-divider"><span>Settings</span></div>
+
+    <!-- SECTION 5: SETTINGS -->
+    <div class="gfy-input-group">
+      <div class="gfy-builder">
+        <div class="gfy-builder__field">
+          <label class="gfy-builder__label">Tone of Voice</label>
+          <select v-model="tone" class="gfy-select">
+            <option v-for="opt in TONE_OPTIONS" :key="opt.value" :value="opt.value">
+              {{ opt.label }}
+            </option>
+          </select>
+        </div>
+        <div class="gfy-builder__field">
+          <label class="gfy-builder__label">Point of View</label>
+          <select v-model="pov" class="gfy-select">
+            <option v-for="opt in POV_OPTIONS" :key="opt.value" :value="opt.value">
+              {{ opt.label }}
+            </option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Default Mode: Full Biography Toolkit (Standalone Pages) -->
   <div v-else class="gfy-bio-generator">
     <!-- Phase 1: Input Form -->
     <div v-if="!showResults" class="gfy-bio-form">
@@ -576,7 +746,12 @@ const props = defineProps({
   mode: {
     type: String,
     default: 'default',
-    validator: (v) => ['default', 'integrated'].includes(v)
+    // 'embedded' mode is used by EmbeddedToolWrapper and renders like 'default'
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
+  },
+  intent: {
+    type: Object,
+    default: null
   },
   profileData: {
     type: Object,
@@ -680,6 +855,29 @@ const handleApply = () => {
     content: currentBio.value,
     length: activeSlot.value
   });
+};
+
+/**
+ * Handle generate for embedded mode (called by EmbeddedToolWrapper)
+ */
+const handleGenerate = async () => {
+  try {
+    // Generate medium bio by default for embedded mode
+    await generateForSlot('medium');
+
+    // Emit the generated result
+    const bio = currentBio.value;
+    emit('generated', {
+      content: bio,
+      hook: bio,
+      result: bio
+    });
+
+    return bio;
+  } catch (err) {
+    console.error('[Biography Generator] Generation failed:', err);
+    throw err;
+  }
 };
 
 /**
@@ -819,9 +1017,11 @@ watch(canGenerate, (newValue) => {
 // Expose for parent
 defineExpose({
   handleStartGeneration,
+  handleGenerate,
   showResults,
   isGenerating,
-  error
+  error,
+  canGenerate
 });
 </script>
 
@@ -1684,5 +1884,156 @@ defineExpose({
   background: var(--gfy-primary-color);
   border-color: var(--gfy-primary-color);
   color: white;
+}
+
+/* ============================================
+   EMBEDDED MODE STYLES
+   ============================================ */
+
+.gfy-bio-embedded {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.gfy-input-group {
+  margin-bottom: 2rem;
+}
+
+.gfy-label {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--gfy-text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.gfy-builder {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.gfy-builder--3col {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 768px) {
+  .gfy-builder,
+  .gfy-builder--3col {
+    grid-template-columns: 1fr;
+  }
+}
+
+.gfy-builder__field {
+  margin-bottom: 0;
+}
+
+.gfy-builder__field--full {
+  grid-column: 1 / -1;
+}
+
+.gfy-builder__label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--gfy-text-secondary);
+  margin-bottom: 6px;
+}
+
+.gfy-builder__input,
+.gfy-select,
+.gfy-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--gfy-border-color);
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.gfy-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.gfy-builder__input:focus,
+.gfy-select:focus,
+.gfy-textarea:focus {
+  outline: none;
+  border-color: var(--gfy-primary-color);
+  box-shadow: 0 0 0 3px var(--gfy-primary-light);
+}
+
+.gfy-builder__input::placeholder,
+.gfy-textarea::placeholder {
+  color: var(--gfy-text-muted);
+}
+
+/* Highlight boxes for embedded mode */
+.gfy-bio-embedded .gfy-highlight-box {
+  background: #fff;
+  border: 1px solid var(--gfy-border-color);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 0;
+}
+
+.gfy-bio-embedded .gfy-highlight-box--blue {
+  border-left: 4px solid var(--gfy-primary-color);
+  background: linear-gradient(to right, var(--gfy-primary-light), #fff);
+}
+
+.gfy-bio-embedded .gfy-highlight-box--green {
+  border-left: 4px solid var(--gfy-success-color);
+  background: linear-gradient(to right, var(--gfy-success-light), #fff);
+}
+
+.gfy-bio-embedded .gfy-highlight-box__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.gfy-bio-embedded .gfy-highlight-box__title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--gfy-text-primary);
+}
+
+.gfy-highlight-box__icon-star {
+  color: #f59e0b;
+  font-size: 1.1rem;
+}
+
+.gfy-highlight-box__icon-target {
+  font-size: 1.1rem;
+}
+
+/* Section dividers */
+.section-divider {
+  height: 1px;
+  background: var(--gfy-border-color);
+  margin: 2rem 0;
+  position: relative;
+}
+
+.section-divider span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  padding: 0 15px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--gfy-text-secondary);
+  text-transform: uppercase;
 }
 </style>

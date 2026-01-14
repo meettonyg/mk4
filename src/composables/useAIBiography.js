@@ -123,6 +123,7 @@ export function useAIBiography() {
 
   // Optional fields
   const optionalFields = reactive({
+    title: '',
     organization: '',
     existingBio: '',
     additionalNotes: ''
