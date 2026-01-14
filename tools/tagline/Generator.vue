@@ -531,9 +531,9 @@ function populateFromProfile(profileData) {
   if (profileData.hook_when) hookWhen.value = profileData.hook_when;
   if (profileData.hook_how) hookHow.value = profileData.hook_how;
 
-  // Impact Intro fields
-  if (profileData.impact_where) impactWhere.value = profileData.impact_where;
-  if (profileData.impact_why) impactWhy.value = profileData.impact_why;
+  // Impact Intro fields (stored as hook_where/hook_why in profile)
+  if (profileData.hook_where) impactWhere.value = profileData.hook_where;
+  if (profileData.hook_why) impactWhy.value = profileData.hook_why;
 
   // Existing tagline from profile (only set if not already unlocked by user)
   if (profileData.tagline) {
