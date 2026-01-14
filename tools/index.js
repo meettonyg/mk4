@@ -20,6 +20,7 @@ import * as tagline from './tagline';
 import * as guestIntro from './guest-intro';
 import * as authorityHook from './authority-hook';
 import * as offers from './offers';
+import * as conversionOffers from './conversion-offers';
 import * as elevatorPitch from './elevator-pitch';
 import * as soundBite from './sound-bite';
 import * as persona from './persona';
@@ -51,6 +52,7 @@ export const toolModules = {
   'guest-intro': guestIntro,
   'authority-hook': authorityHook,
   offers,
+  'conversion-offers': conversionOffers,
   'elevator-pitch': elevatorPitch,
   'sound-bite': soundBite,
   persona,

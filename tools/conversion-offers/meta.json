@@ -1,0 +1,300 @@
+{
+  "name": "Conversion Offer Generator",
+  "slug": "conversion-offers-generator",
+  "shortDescription": "Generate high-converting lead magnets and tiered service offers for your funnel.",
+  "emoji": "🎯",
+  "apiType": "conversion-offers",
+  "singleColumn": true,
+  "fieldMapping": {
+    "type": "object",
+    "fields": {
+      "leadMagnet": "offer_free",
+      "leadMagnetDescription": "offer_free_description",
+      "coreOffer": "offer_1",
+      "coreOfferDescription": "offer_1_description",
+      "highTicket": "offer_2",
+      "highTicketDescription": "offer_2_description"
+    },
+    "offerTiers": {
+      "lead-magnet": {
+        "targetField": "offer_free",
+        "descriptionField": "offer_free_description",
+        "linkField": "offer_free_link",
+        "label": "Lead Magnet",
+        "description": "Free resource to capture listener interest",
+        "priceHint": "Free"
+      },
+      "core-offer": {
+        "targetField": "offer_1",
+        "descriptionField": "offer_1_description",
+        "linkField": "offer_1_link",
+        "label": "Core Offer",
+        "description": "Main service or product offering",
+        "priceHint": "$500-$2,500"
+      },
+      "high-ticket": {
+        "targetField": "offer_2",
+        "descriptionField": "offer_2_description",
+        "linkField": "offer_2_link",
+        "label": "High-Ticket Upgrade",
+        "description": "Premium consulting or VIP experience",
+        "priceHint": "$5,000+"
+      }
+    }
+  },
+  "validation": {
+    "anyOf": ["authorityHook", "audienceChallenges"],
+    "errorMessage": "Authority hook or audience challenges are required for offer generation"
+  },
+  "longDescription": "The Conversion Offer Generator helps you create a complete tiered funnel of offers - from lead magnets to high-ticket services. Based on your Authority Hook framework, it generates strategic offers designed to move podcast listeners from hearing you to hiring you.",
+  "category": "message-builder",
+  "buttonText": "Generate Offers",
+  "supportsProfileSave": true,
+  "icon": "SparklesIcon",
+  "componentName": "ConversionOffersGenerator",
+  "useCases": [
+    "Create lead magnets that capture listener interest",
+    "Design core service offerings with clear value propositions",
+    "Develop high-ticket consulting or VIP packages",
+    "Build a complete funnel from free to premium",
+    "Generate conversion-focused copy for each tier"
+  ],
+  "keyBenefits": [
+    "Tiered funnel structure for maximum conversion",
+    "Authority Hook integration for aligned messaging",
+    "Investment and duration recommendations",
+    "Refinement loop for perfect offers"
+  ],
+  "targetAudience": [
+    "Consultants and coaches",
+    "Service providers",
+    "Speakers and trainers",
+    "Course creators",
+    "Agency owners"
+  ],
+  "seoMeta": {
+    "title": "Free AI Conversion Offer Generator | Create High-Converting Funnels",
+    "description": "Generate lead magnets, core offers, and high-ticket services with our free AI Conversion Offer Generator. Build a complete funnel that converts listeners to clients.",
+    "keywords": [
+      "conversion offer generator",
+      "lead magnet generator",
+      "service funnel",
+      "high-ticket offers",
+      "consulting packages",
+      "offer suite generator",
+      "AI offer creator"
+    ],
+    "canonicalPath": "/tools/conversion-offers-generator/"
+  },
+  "landingContent": {
+    "guidanceTitle": "How to Build Your Offer Funnel",
+    "guidanceSubtitle": "Strategic offers create a natural path from listener to lead to client. Each tier of your funnel should address a specific level of commitment and investment.",
+    "hero": {
+      "badge": "AI Business Tool",
+      "h1": "Conversion Offer Generator",
+      "subhead": "Turn your authority into revenue. Generate high-converting lead magnets, core offers, and premium services.",
+      "microProof": [
+        {
+          "icon": "check",
+          "text": "Funnel-Ready Ideas"
+        },
+        {
+          "icon": "check",
+          "text": "Strategic Pricing"
+        },
+        {
+          "icon": "check",
+          "text": "Instant Value Proposition"
+        }
+      ]
+    },
+    "heroLoggedIn": {
+      "badge": "AI Tool",
+      "h1": "Conversion Offer Generator",
+      "subhead": "Build your complete offer funnel - from free lead magnets to high-ticket services.",
+      "microProof": [
+        {
+          "icon": "check",
+          "text": "Unlimited generations"
+        },
+        {
+          "icon": "check",
+          "text": "Saves to profile"
+        },
+        {
+          "icon": "check",
+          "text": "Syncs across tools"
+        }
+      ]
+    },
+    "intents": [
+      {
+        "id": "consulting",
+        "label": "Consulting",
+        "contextHeading": "Create your consulting funnel",
+        "contextDescription": "Generate a tiered suite of consulting offers from free strategy calls to VIP retainers.",
+        "formLabels": {
+          "service": "Your consulting specialty",
+          "audience": "Who you help"
+        },
+        "formPlaceholders": {
+          "service": "e.g. Business Strategy",
+          "audience": "e.g. SaaS Founders"
+        }
+      },
+      {
+        "id": "coaching",
+        "label": "Coaching",
+        "contextHeading": "Build your coaching packages",
+        "contextDescription": "Create coaching offers from group programs to 1:1 intensive packages.",
+        "formLabels": {
+          "service": "Your coaching focus",
+          "audience": "Who you coach"
+        },
+        "formPlaceholders": {
+          "service": "e.g. Executive Leadership",
+          "audience": "e.g. C-Suite Executives"
+        }
+      },
+      {
+        "id": "courses",
+        "label": "Courses & Programs",
+        "contextHeading": "Design your course ladder",
+        "contextDescription": "Generate a progression from free resources to premium programs.",
+        "formLabels": {
+          "service": "Your teaching topic",
+          "audience": "Your students"
+        },
+        "formPlaceholders": {
+          "service": "e.g. Digital Marketing",
+          "audience": "e.g. Small Business Owners"
+        }
+      }
+    ],
+    "definition": {
+      "title": "The Strategic Offer Funnel",
+      "subtitle": "A well-designed offer funnel meets prospects where they are and guides them toward transformation at their own pace.",
+      "content": "Lead magnets capture interest with immediate value. Core offers deliver your main transformation at accessible investment. High-ticket offers provide premium, personalized experiences for committed clients."
+    },
+    "formulaLabel": "FUNNEL FORMULA",
+    "formula": "[FREE LEAD MAGNET] → [CORE OFFER $500-$2,500] → [HIGH-TICKET $5,000+] = Complete Value Ladder",
+    "tips": [
+      "Lead magnets should solve one specific problem immediately",
+      "Core offers should deliver your signature transformation",
+      "High-ticket offers should include personalization and access",
+      "Each tier should naturally lead to the next"
+    ],
+    "examples": [
+      {
+        "title": "Business Consultant",
+        "content": "Free: Revenue Leaks Assessment • Core: 90-Day Growth Sprint ($2,500) • Premium: Fractional COO Retainer ($10,000/mo)"
+      },
+      {
+        "title": "Executive Coach",
+        "content": "Free: Leadership Style Quiz • Core: Group Coaching Circle ($1,500) • Premium: 1:1 Executive Intensive ($15,000)"
+      },
+      {
+        "title": "Course Creator",
+        "content": "Free: 7-Day Email Challenge • Core: Self-Paced Masterclass ($497) • Premium: Done-With-You Implementation ($5,000)"
+      }
+    ],
+    "howItWorks": [
+      {
+        "step": 1,
+        "title": "Define Your Authority",
+        "description": "Enter your Authority Hook - who you help, what results you deliver, and how you do it uniquely.",
+        "icon": "UserCircleIcon"
+      },
+      {
+        "step": 2,
+        "title": "Set Business Context",
+        "description": "Specify your business type, price range, and delivery method for tailored offer suggestions.",
+        "icon": "AdjustmentsHorizontalIcon"
+      },
+      {
+        "step": 3,
+        "title": "Generate & Refine",
+        "description": "Generate tier-specific offers, refine with AI feedback, and lock your final selections.",
+        "icon": "SparklesIcon"
+      }
+    ],
+    "features": [
+      {
+        "title": "Tiered Generation",
+        "description": "Generate offers specific to each funnel tier - lead magnet, core, or premium.",
+        "icon": "ChartBarIcon"
+      },
+      {
+        "title": "Refinement Loop",
+        "description": "Iterate on generated offers with AI-powered refinement suggestions.",
+        "icon": "ArrowPathIcon"
+      },
+      {
+        "title": "Lock & Save",
+        "description": "Lock your favorite offers and save your complete funnel to your profile.",
+        "icon": "LockClosedIcon"
+      },
+      {
+        "title": "Authority Aligned",
+        "description": "Every offer is aligned with your Authority Hook for consistent messaging.",
+        "icon": "LinkIcon"
+      }
+    ],
+    "faq": [
+      {
+        "question": "How is this different from the regular Offers Generator?",
+        "answer": "The Conversion Offer Generator focuses on building a complete tiered funnel (Lead Magnet → Core Offer → High-Ticket), while the regular Offers Generator creates individual service packages. This tool helps you create a strategic pathway from free to premium."
+      },
+      {
+        "question": "What if I only need one type of offer?",
+        "answer": "You can generate and lock just the tiers you need. The tool works for creating individual offers or a complete funnel."
+      },
+      {
+        "question": "Can I refine the generated offers?",
+        "answer": "Yes! Use the refinement box to give AI feedback like 'make it more exclusive' or 'focus on the speed of results' to iterate on your offers."
+      },
+      {
+        "question": "Are the pricing suggestions binding?",
+        "answer": "No, pricing is suggested based on your selected price range and tier. You can adjust all details to match your actual offerings."
+      }
+    ],
+    "socialProof": {
+      "testimonial": {
+        "quote": "Created my entire funnel in 15 minutes. The lead magnet alone brought in 50 new leads in the first week.",
+        "author": "Marcus T.",
+        "role": "Business Strategist",
+        "rating": "4.9"
+      }
+    },
+    "platformCta": {
+      "heading": "Manage your entire podcast guesting system",
+      "description": "Don't just create offers. Track your pitches, manage interviews, and grow your authority with Guestify.",
+      "buttonText": "Try Guestify Free",
+      "buttonUrl": "/register/"
+    },
+    "compatibility": [
+      "Website",
+      "Media Kit",
+      "LinkedIn",
+      "Sales Pages"
+    ],
+    "relatedToolSlugs": [
+      "offers-generator",
+      "authority-hook-builder",
+      "elevator-pitch-generator",
+      "email-writer"
+    ],
+    "additionalGuidance": [
+      {
+        "title": "Pricing Your Tiers",
+        "icon": "CurrencyDollarIcon",
+        "content": "Lead magnets should be free or ultra-low cost ($7-$27 tripwire). Core offers typically range from $500-$2,500 for most service businesses. High-ticket starts at $5,000+ and often includes personalized access to you."
+      },
+      {
+        "title": "Mentioning Offers on Podcasts",
+        "icon": "MicrophoneIcon",
+        "content": "Lead with your free offer during podcast interviews - it's the lowest friction way to convert listeners. Mention your lead magnet URL and let your funnel do the rest."
+      }
+    ]
+  }
+}
