@@ -68,6 +68,9 @@ export function useAIQuestions() {
   // Questions count
   const questionsCount = computed(() => questions.value.length);
 
+  // Has questions check (alias for hasContent but specific to questions)
+  const hasQuestions = computed(() => questions.value.length > 0);
+
   // Questions by category
   const introductoryQuestions = computed(() =>
     questions.value.slice(QUESTION_CATEGORIES.introductory.start - 1, QUESTION_CATEGORIES.introductory.end)
@@ -190,6 +193,7 @@ export function useAIQuestions() {
     // Questions-specific computed
     questions,
     questionsCount,
+    hasQuestions,
     introductoryQuestions,
     expertiseQuestions,
     storyQuestions,
