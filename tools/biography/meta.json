@@ -16,18 +16,24 @@
     "lengthVariants": {
       "short": {
         "targetField": "biography_short",
-        "label": "Short Bio (50-75 words)",
-        "description": "Perfect for social media profiles and quick introductions"
+        "label": "Short Bio (50 words)",
+        "description": "Perfect for social media profiles and quick introductions",
+        "wordCount": 50,
+        "variations": 5
       },
       "medium": {
         "targetField": "biography",
-        "label": "Medium Bio (100-150 words)",
-        "description": "Ideal for speaker introductions and media kits"
+        "label": "Medium Bio (150 words)",
+        "description": "Ideal for speaker introductions and media kits",
+        "wordCount": 150,
+        "variations": 3
       },
       "long": {
         "targetField": "biography_long",
-        "label": "Long Bio (200-300 words)",
-        "description": "Comprehensive bio for detailed profiles and publications"
+        "label": "Long Bio (300 words)",
+        "description": "Comprehensive bio for detailed profiles and publications",
+        "wordCount": 300,
+        "variations": 2
       }
     }
   },
@@ -39,7 +45,85 @@
   "category": "message-builder",
   "buttonText": "Generate Bio",
   "supportsProfileSave": true,
+  "supportsSlotBasedGeneration": true,
+  "supportsRefinement": true,
   "icon": "UserCircleIcon",
+  "inputFields": {
+    "basicInfo": {
+      "name": {
+        "label": "Your Name",
+        "type": "text",
+        "required": true,
+        "placeholder": "e.g., Dr. Jane Smith"
+      },
+      "organization": {
+        "label": "Organization / Company",
+        "type": "text",
+        "required": false,
+        "placeholder": "e.g., Acme Corporation"
+      }
+    },
+    "authorityHook": {
+      "who": {
+        "label": "WHO do you help?",
+        "type": "text",
+        "required": false,
+        "placeholder": "e.g., SaaS Founders scaling to $10M ARR",
+        "profileField": "hook_who"
+      },
+      "what": {
+        "label": "WHAT is the result?",
+        "type": "text",
+        "required": false,
+        "placeholder": "e.g., Increase revenue by 40% in 90 days",
+        "profileField": "hook_what"
+      },
+      "when": {
+        "label": "WHEN do they need it?",
+        "type": "text",
+        "required": false,
+        "placeholder": "e.g., When they're stuck at a growth plateau",
+        "profileField": "hook_when"
+      },
+      "how": {
+        "label": "HOW do you do it?",
+        "type": "text",
+        "required": false,
+        "placeholder": "e.g., My proven Revenue Acceleration System",
+        "profileField": "hook_how"
+      }
+    },
+    "impactIntro": {
+      "where": {
+        "label": "WHERE - Credentials & Achievements",
+        "type": "textarea",
+        "required": false,
+        "placeholder": "e.g., Featured in Forbes, Inc., and Entrepreneur. Keynoted at 50+ conferences worldwide.",
+        "profileField": "impact_where"
+      },
+      "why": {
+        "label": "WHY - Your Mission or Purpose",
+        "type": "textarea",
+        "required": false,
+        "placeholder": "e.g., Help every founder achieve sustainable growth without sacrificing their health or relationships.",
+        "profileField": "impact_why"
+      }
+    },
+    "optionalContext": {
+      "existingBio": {
+        "label": "Existing Biography",
+        "type": "textarea",
+        "required": false,
+        "placeholder": "Paste your current bio here if you want to improve upon it..."
+      },
+      "additionalNotes": {
+        "label": "Additional Notes",
+        "type": "textarea",
+        "required": false,
+        "placeholder": "Any specific achievements, tone preferences, or details to include..."
+      }
+    }
+  },
   "useCases": [
     "Create speaker bios for conference submissions",
     "Write author bios for book jackets and articles",
@@ -51,7 +135,9 @@
     "Professional quality in seconds",
     "Multiple length options available",
     "First or third person perspective",
-    "Customizable tone and style"
+    "Customizable tone and style",
+    "Slot-based generation for efficiency",
+    "Refinement feedback loop"
   ],
   "targetAudience": [
     "Speakers and presenters",
@@ -78,23 +164,23 @@
     "guidanceTitle": "How to Create Your Biography",
     "guidanceSubtitle": "Your professional biography is your most versatile marketing asset. A powerful bio combines your Authority Hook and Impact Intro into a compelling narrative that establishes credibility and connects with your audience.",
     "hero": {
-      "badge": "✨ Free AI Tool",
+      "badge": "Free AI Tool",
       "h1": "Free Biography Generator",
       "subhead": "Create professional biographies for speaker profiles, media kits, and author pages in seconds.",
       "microProof": [
-        { "icon": "✓", "text": "Used by 10,000+ professionals" },
-        { "icon": "✓", "text": "No signup required" },
-        { "icon": "✓", "text": "Free forever" }
+        { "icon": "check", "text": "Used by 10,000+ professionals" },
+        { "icon": "check", "text": "No signup required" },
+        { "icon": "check", "text": "Free forever" }
       ]
     },
     "heroLoggedIn": {
-      "badge": "✨ AI Tool",
+      "badge": "AI Tool",
       "h1": "Biography Generator",
       "subhead": "Create professional biographies that showcase your expertise and achievements.",
       "microProof": [
-        { "icon": "✓", "text": "Unlimited generations" },
-        { "icon": "✓", "text": "Saves to profile" },
-        { "icon": "✓", "text": "Syncs across tools" }
+        { "icon": "check", "text": "Unlimited generations" },
+        { "icon": "check", "text": "Saves to profile" },
+        { "icon": "check", "text": "Syncs across tools" }
       ]
     },
     "intents": [
@@ -147,12 +233,12 @@
       "content": "A professional biography is a concise summary of your career, expertise, and achievements written to establish credibility with your target audience. Unlike a resume, a bio tells your story in a way that connects with readers and positions you as an authority in your field."
     },
     "formulaLabel": "FORMULA",
-    "formula": "I help [WHO] achieve [RESULT] when [WHEN] through [HOW]. I've [WHERE]. My mission is to [WHY].",
+    "formula": "I help [WHO] achieve [WHAT] when [WHEN] through [HOW]. I've [WHERE]. My mission is to [WHY].",
     "tips": [
       "Start with your Authority Hook - clearly identify WHO you help and WHAT results you deliver",
       "Include specific, quantifiable achievements rather than vague claims",
       "Connect your work to a larger purpose or mission",
-      "Short bio (50-75 words) for social; Medium (100-150) for speaker intros; Long (200-300) for detailed profiles"
+      "Short bio (50 words) for social; Medium (150 words) for speaker intros; Long (300 words) for detailed profiles"
     ],
     "examples": [
       {
@@ -177,37 +263,37 @@
       },
       {
         "step": 2,
-        "title": "Customize Your Bio",
-        "description": "Choose your preferred length, tone, and point of view. Get short, medium, and long versions for different contexts.",
+        "title": "Generate & Refine",
+        "description": "Generate variations for each length (Short, Medium, Long). Use the refinement loop to iterate until each bio is perfect.",
         "icon": "AdjustmentsHorizontalIcon"
       },
       {
         "step": 3,
-        "title": "Use It Everywhere",
-        "description": "Deploy your bio across media kits, LinkedIn, speaker profiles, and anywhere you need to establish instant credibility.",
+        "title": "Lock & Save",
+        "description": "Lock your favorite version for each length and save your complete Biography Toolkit to your Media Kit.",
         "icon": "DocumentCheckIcon"
       }
     ],
     "features": [
       {
-        "title": "Multiple Lengths",
-        "description": "Generate short (50 words), medium (100 words), or long (200 words) bios.",
+        "title": "Slot-Based Generation",
+        "description": "Generate variations only for the length you need - saving tokens and time.",
         "icon": "Bars3BottomLeftIcon"
       },
       {
-        "title": "Tone Options",
-        "description": "Choose professional, casual, or formal tone to match your brand.",
-        "icon": "SpeakerWaveIcon"
+        "title": "Refinement Loop",
+        "description": "Iterate on your drafts with natural language feedback until they're perfect.",
+        "icon": "ArrowPathIcon"
       },
       {
-        "title": "POV Flexibility",
-        "description": "Write in first person (\"I am...\") or third person (\"Jane is...\").",
-        "icon": "UserIcon"
+        "title": "Lock & Compare",
+        "description": "Lock your favorites and compare variations side-by-side.",
+        "icon": "LockClosedIcon"
       },
       {
-        "title": "Achievement Focus",
-        "description": "Highlight your credentials, press features, and accomplishments.",
-        "icon": "TrophyIcon"
+        "title": "6 W's Framework",
+        "description": "Built on the proven Authority Hook (WHO, WHAT, WHEN, HOW) and Impact Intro (WHERE, WHY) frameworks.",
+        "icon": "StarIcon"
       }
     ],
     "faq": [
@@ -221,11 +307,15 @@
       },
       {
         "question": "Can I edit the generated bio?",
-        "answer": "Absolutely! We recommend reviewing and personalizing all AI-generated content to match your unique voice and verify accuracy."
+        "answer": "Absolutely! Use the refinement feedback loop to iterate on any variation, or copy and edit manually."
       },
       {
         "question": "What's the best length for a speaker bio?",
-        "answer": "Medium (100 words) works well for most speaking applications. Short bios are great for quick intros, while long bios suit detailed media kits."
+        "answer": "Medium (150 words) works well for most speaking applications. Short bios are great for quick intros, while long bios suit detailed media kits."
+      },
+      {
+        "question": "How does slot-based generation work?",
+        "answer": "We only generate variations for the length you're actively working on. This saves tokens and lets you focus on one bio at a time."
       }
     ],
     "socialProof": {
