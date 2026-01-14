@@ -1,5 +1,5 @@
 <template>
-  <div class="gfy-guest-intro-generator">
+  <div ref="containerRef" class="gfy-guest-intro-generator">
     <!-- ============================================
          FORM VIEW (When no results yet)
          ============================================ -->
@@ -394,7 +394,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject } from 'vue';
+import { ref, computed, watch, inject, nextTick } from 'vue';
 import { useAIGuestIntro, LENGTH_SLOTS, TONE_OPTIONS, HOOK_STYLE_OPTIONS } from '../../src/composables/useAIGuestIntro';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useImpactIntro } from '../../src/composables/useImpactIntro';
@@ -476,6 +476,7 @@ const showResults = ref(false);
 const saveSuccess = ref(false);
 const selectedVariationIndex = ref(null);
 const selectedProfileId = ref(null);
+const containerRef = ref(null);
 
 // Local form fields for credentials/mission (synced with composable)
 const credentials = computed({
@@ -555,6 +556,13 @@ function selectVariation(index) {
  */
 async function handleGenerate() {
   showResults.value = true;
+
+  // Scroll to top of results after DOM updates
+  await nextTick();
+  if (containerRef.value) {
+    containerRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   await generateForSlot('short');
   emit('generated', { slots });
 }
