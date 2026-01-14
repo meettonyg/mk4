@@ -176,19 +176,34 @@
           </div>
 
           <div class="gfy-results__footer">
-            <button
-              type="button"
-              class="gfy-btn gfy-btn--primary gfy-btn--large"
-              :disabled="selectedQuestionsCount === 0 || isSaving"
-              @click="handleSaveToMediaKit"
-            >
-              <i v-if="!isSaving" class="fas fa-save"></i>
-              <span v-if="isSaving" class="gfy-spinner"></span>
-              {{ isSaving ? 'Saving...' : 'Save to Media Kit' }}
-            </button>
-            <button type="button" class="gfy-btn gfy-btn--text" @click="handleStartOver">
-              Start Over
-            </button>
+            <!-- Update Topic Checkbox (show if topic was refined) -->
+            <label v-if="topicWasRefined && selectedTopicIndex !== null" class="gfy-checkbox-option">
+              <input
+                v-model="saveRefinedTopic"
+                type="checkbox"
+                class="gfy-checkbox-option__input"
+              />
+              <span class="gfy-checkbox-option__box">
+                <i v-if="saveRefinedTopic" class="fas fa-check"></i>
+              </span>
+              <span class="gfy-checkbox-option__label">Also update topic in profile</span>
+            </label>
+
+            <div class="gfy-save-section">
+              <button
+                type="button"
+                class="gfy-btn gfy-btn--primary gfy-btn--large"
+                :disabled="selectedQuestionsCount === 0 || isSaving"
+                @click="handleSaveToMediaKit"
+              >
+                <i v-if="!isSaving" class="fas fa-save"></i>
+                <span v-if="isSaving" class="gfy-spinner"></span>
+                {{ isSaving ? 'Saving...' : 'Save to Media Kit' }}
+              </button>
+              <button type="button" class="gfy-btn gfy-btn--text" @click="handleStartOver">
+                Start Over
+              </button>
+            </div>
             <!-- Save Success Message -->
             <span v-if="saveSuccess" class="gfy-save-success">
               Saved successfully!
@@ -263,9 +278,11 @@ const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
 // Local state
 const selectedTopicIndex = ref(null);
 const refinedTopic = ref('');
+const originalTopicText = ref(''); // Track original topic to detect refinements
 const selectedQuestions = ref([]); // Array of indices from generated questions
 const saveSuccess = ref(false);
 const selectedProfileId = ref(null);
+const saveRefinedTopic = ref(true); // Whether to also save refined topic to profile
 
 // Profile topics (loaded from profile data)
 const profileTopics = ref([
@@ -357,6 +374,14 @@ const hasProfileTopics = computed(() => {
 });
 
 /**
+ * Check if the topic was refined (different from original)
+ */
+const topicWasRefined = computed(() => {
+  if (!originalTopicText.value || !refinedTopic.value) return false;
+  return refinedTopic.value.trim() !== originalTopicText.value.trim();
+});
+
+/**
  * Get count of locked questions
  */
 const lockedQuestionsCount = computed(() => {
@@ -391,6 +416,7 @@ const selectTopic = (index) => {
 
   selectedTopicIndex.value = index;
   refinedTopic.value = topic.title;
+  originalTopicText.value = topic.title; // Track original for refinement detection
 
   // Load current questions for this topic
   loadCurrentQuestionsForTopic(index);
@@ -565,10 +591,18 @@ const handleSaveToMediaKit = async () => {
     // Calculate question field indices based on selected topic
     // topic_1 = questions 1-5, topic_2 = questions 6-10, etc.
     const startQ = selectedTopicIndex.value * 5 + 1;
-    const questionsData = {};
+    const fieldsToSave = {};
+
+    // Add questions
     finalQuestions.forEach((text, idx) => {
-      questionsData[`question_${startQ + idx}`] = text;
+      fieldsToSave[`question_${startQ + idx}`] = text;
     });
+
+    // Add refined topic if checkbox is checked and topic was actually refined
+    if (saveRefinedTopic.value && topicWasRefined.value) {
+      const topicFieldNum = selectedTopicIndex.value + 1; // topic_1, topic_2, etc.
+      fieldsToSave[`topic_${topicFieldNum}`] = refinedTopic.value.trim();
+    }
 
     // Call API directly since we have pre-mapped field names
     // (saveToProfile's mapToFields expects raw data, not pre-mapped fields)
@@ -583,7 +617,7 @@ const handleSaveToMediaKit = async () => {
         'X-WP-Nonce': nonce
       },
       credentials: 'same-origin',
-      body: JSON.stringify(questionsData)
+      body: JSON.stringify(fieldsToSave)
     });
 
     if (!response.ok) {
@@ -606,13 +640,21 @@ const handleSaveToMediaKit = async () => {
       // Update profileTopics with new questions
       profileTopics.value[selectedTopicIndex.value].questions = finalQuestions;
 
+      // Update topic title if it was refined and saved
+      if (saveRefinedTopic.value && topicWasRefined.value) {
+        profileTopics.value[selectedTopicIndex.value].title = refinedTopic.value.trim();
+        originalTopicText.value = refinedTopic.value.trim(); // Update original so checkbox hides
+      }
+
       // Clear selections since they're now saved
       selectedQuestions.value = [];
 
       emit('saved', {
         profileId: selectedProfileId.value,
         topicIndex: selectedTopicIndex.value,
-        questions: finalQuestions
+        questions: finalQuestions,
+        topicUpdated: saveRefinedTopic.value && topicWasRefined.value,
+        newTopicTitle: saveRefinedTopic.value && topicWasRefined.value ? refinedTopic.value.trim() : null
       });
     }
   } catch (err) {
@@ -1247,9 +1289,8 @@ defineExpose({
   padding-top: 1.5rem;
   border-top: 1px solid var(--gfy-border-color);
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .gfy-save-success {
@@ -1276,6 +1317,61 @@ defineExpose({
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* CHECKBOX OPTION */
+.gfy-checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--gfy-text-secondary);
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.gfy-checkbox-option__input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.gfy-checkbox-option__box {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--gfy-border-color);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  background: var(--gfy-white);
+  font-size: 10px;
+  color: white;
+}
+
+.gfy-checkbox-option__input:checked + .gfy-checkbox-option__box {
+  background: var(--gfy-primary-color);
+  border-color: var(--gfy-primary-color);
+}
+
+.gfy-checkbox-option__label {
+  color: var(--gfy-text-primary);
+  font-weight: 500;
+}
+
+.gfy-checkbox-option:hover .gfy-checkbox-option__box {
+  border-color: var(--gfy-primary-color);
+}
+
+/* SAVE SECTION */
+.gfy-save-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 /* RESPONSIVE */
