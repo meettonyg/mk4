@@ -734,7 +734,7 @@ const handleSaveToProfile = async () => {
 };
 
 /**
- * Handle start over - simple page refresh
+ * Handle startover - simple page refresh
  */
 const handleStartOver = () => {
   window.location.reload();
