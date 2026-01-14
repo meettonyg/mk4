@@ -488,6 +488,22 @@ const hasImpactIntroData = computed(() => {
 });
 
 /**
+ * Computed: Generated impact intro summary
+ */
+const generatedImpactSummary = computed(() => {
+  if (!impactWhere.value && !impactWhy.value) return '';
+  let summary = '';
+  if (impactWhere.value) {
+    summary = impactWhere.value;
+  }
+  if (impactWhy.value) {
+    if (summary) summary += '. ';
+    summary += `My mission is to ${impactWhy.value}`;
+  }
+  return summary.trim();
+});
+
+/**
  * Populate from profile data
  */
 function populateFromProfile(profileData) {
@@ -568,14 +584,15 @@ const handleRegenerate = async () => {
       authorityHook: generatedHookSummary.value,
       count: 10,
       previousTaglines: taglines.value.map(t => t.text),
-      refinementFeedback: refinementFeedback.value
+      refinementFeedback: refinementFeedback.value,
+      // Add timestamp to force unique cache key for refinement
+      _refineTimestamp: Date.now()
     };
 
     previousTaglines.value = params.previousTaglines;
 
-    // Generate with new params then bust cache to ensure fresh results
+    // Generate with new params (unique cache key due to timestamp)
     await generator.generate(params);
-    await generator.regenerate();
 
     // Keep locked tagline if still in new list
     if (lockedTaglineIndex.value >= taglines.value.length) {
@@ -652,24 +669,16 @@ const handleSaveToProfile = async () => {
       profileId: resolvedProfileId.value
     });
 
-    // Optionally save authority hook fields too
-    if (saveAuthorityHook.value && hasAuthorityHookData.value) {
-      await saveToProfile('authority_hook', {
-        who: hookWho.value,
-        what: hookWhat.value,
-        when: hookWhen.value,
-        how: hookHow.value
-      }, {
+    // Optionally save authority hook as generated string
+    if (saveAuthorityHook.value && hasAuthorityHookData.value && generatedHookSummary.value) {
+      await saveToProfile('authority_hook', generatedHookSummary.value, {
         profileId: resolvedProfileId.value
       });
     }
 
-    // Optionally save impact intro fields too
-    if (saveImpactIntro.value && hasImpactIntroData.value) {
-      await saveToProfile('impact_intro', {
-        where: impactWhere.value,
-        why: impactWhy.value
-      }, {
+    // Optionally save impact intro as generated string
+    if (saveImpactIntro.value && hasImpactIntroData.value && generatedImpactSummary.value) {
+      await saveToProfile('impact_intro', generatedImpactSummary.value, {
         profileId: resolvedProfileId.value
       });
     }
