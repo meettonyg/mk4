@@ -184,18 +184,18 @@ BAD example (DO NOT do this - too long):
 
 Generate 10 SHORT topic titles now:',
 
-            'questions' => 'Generate 25 interview questions for a podcast guest with this background:
+            'questions' => 'Generate {{count}} interview questions for a podcast guest with this background:
 
 Authority Hook: {{authorityHook}}
 Topics they discuss: {{topics}}
 
 Requirements:
-- Start with 5 introductory questions (background, journey, what led them here)
-- Include 10 expertise questions (diving deep into their methodology and insights)
-- Include 5 story-based questions (asking for specific examples and case studies)
-- End with 5 actionable questions (what listeners can do, resources, next steps)
+- Create open-ended questions that invite storytelling and insights
+- Include a mix of introductory, expertise, story-based, and actionable questions
+- Questions should showcase the guest\'s unique expertise and methodology
+- Avoid yes/no questions - make them conversation starters
 
-Format: Return as a numbered list (1-25), with each question on its own line.',
+Format: Return as a numbered list (1-{{count}}), with each question on its own line.',
 
             'tagline' => 'Create {{count}} powerful tagline options for someone with this positioning:
 

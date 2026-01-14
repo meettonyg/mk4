@@ -77,7 +77,7 @@ const supportsProfileSave = computed(() => props.meta.supportsProfileSave ?? tru
 const buttonText = computed(() => props.meta.buttonText || `Generate ${props.meta.name || 'Content'}`);
 const testimonial = computed(() => props.meta.socialProof?.testimonial || null);
 const relatedTools = computed(() => buildRelatedTools(props.meta.relatedToolSlugs || [], props.toolSlug));
-const singleColumn = computed(() => props.meta.singleColumn ?? false);
+const singleColumn = computed(() => props.meta.singleColumn ?? true);
 
 // Tool display name derivatives
 const toolDisplayName = computed(() => props.meta.name || 'Content');

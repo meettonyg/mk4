@@ -1,133 +1,34 @@
 <template>
-  <div class="gfy-tagline-generator">
-    <!-- Form Section -->
-    <div v-if="!hasTaglines" class="gfy-tagline-form">
-      <!-- STEP 1: Authority Framework -->
-      <div class="gfy-input-group">
-        <label class="gfy-label">Step 1: Your Authority Framework</label>
-
-        <!-- Authority Hook (Who, What, When, How) -->
-        <div class="gfy-highlight-box gfy-highlight-box--blue">
-          <div class="gfy-highlight-box__header">
-            <span class="gfy-highlight-box__icon gfy-highlight-box__icon--gold">&#9733;</span>
-            <h3 class="gfy-highlight-box__title">Your Authority Hook</h3>
-          </div>
-          <div class="gfy-builder">
-            <div class="gfy-builder__field">
-              <label class="gfy-builder__label">WHO do you help?</label>
-              <input
-                v-model="hookWho"
-                type="text"
-                class="gfy-builder__input"
-                placeholder="e.g. SaaS Founders"
-              />
-            </div>
-            <div class="gfy-builder__field">
-              <label class="gfy-builder__label">WHAT is the result?</label>
-              <input
-                v-model="hookWhat"
-                type="text"
-                class="gfy-builder__input"
-                placeholder="e.g. Scale to 7-figures"
-              />
-            </div>
-            <div class="gfy-builder__field">
-              <label class="gfy-builder__label">WHEN do they need it?</label>
-              <input
-                v-model="hookWhen"
-                type="text"
-                class="gfy-builder__input"
-                placeholder="e.g. Feeling plateaued"
-              />
-            </div>
-            <div class="gfy-builder__field">
-              <label class="gfy-builder__label">HOW do you do it?</label>
-              <input
-                v-model="hookHow"
-                type="text"
-                class="gfy-builder__input"
-                placeholder="e.g. 90-day framework"
-              />
-            </div>
-          </div>
-
-          <!-- Live Preview -->
-          <div class="gfy-live-preview">
-            "{{ hookPreview }}"
-          </div>
-        </div>
-
-        <!-- Impact Intro (Where, Why) -->
-        <div class="gfy-highlight-box gfy-highlight-box--green">
-          <div class="gfy-highlight-box__header">
-            <span class="gfy-highlight-box__icon gfy-highlight-box__icon--green">&#127919;</span>
-            <h3 class="gfy-highlight-box__title">Your Impact Intro</h3>
-          </div>
-          <div class="gfy-builder">
-            <div class="gfy-builder__field gfy-builder__field--full">
-              <label class="gfy-builder__label">WHERE is your authority?</label>
-              <input
-                v-model="impactWhere"
-                type="text"
-                class="gfy-builder__input"
-                placeholder="e.g. Helped 200+ startups achieve milestones"
-              />
-            </div>
-            <div class="gfy-builder__field gfy-builder__field--full">
-              <label class="gfy-builder__label">WHY is this your mission?</label>
-              <input
-                v-model="impactWhy"
-                type="text"
-                class="gfy-builder__input"
-                placeholder="e.g. Democratize elite growth strategies"
-              />
-            </div>
-          </div>
-
-          <!-- Live Preview -->
-          <div class="gfy-live-preview gfy-live-preview--green">
-            "{{ impactPreview }}"
-          </div>
-        </div>
-      </div>
-
-      <!-- Section Divider -->
-      <div class="gfy-section-divider">
-        <span>Context & Style</span>
-      </div>
-
-      <!-- STEP 2: Brand Context -->
-      <div class="gfy-input-group">
-        <label class="gfy-label">Step 2: Brand Context</label>
-        <div class="gfy-builder">
-          <div class="gfy-builder__field">
-            <label class="gfy-builder__label">Industry</label>
-            <input
-              v-model="industry"
-              type="text"
-              class="gfy-builder__input"
-              placeholder="e.g. SaaS, Consulting"
-            />
-          </div>
-          <div class="gfy-builder__field">
-            <label class="gfy-builder__label">Unique Factor</label>
-            <input
-              v-model="uniqueFactor"
-              type="text"
-              class="gfy-builder__input"
-              placeholder="e.g. No-BS approach, Zero-to-One focus"
-            />
-          </div>
-          <div class="gfy-builder__field gfy-builder__field--full">
-            <label class="gfy-builder__label">Existing Taglines (Optional)</label>
-            <textarea
-              v-model="existingTaglines"
-              class="gfy-textarea"
-              rows="2"
-              placeholder="List any slogans you currently use..."
-            ></textarea>
-          </div>
-        </div>
+  <!-- Integrated Mode: Compact widget for Media Kit Builder -->
+  <AiWidgetFrame
+    v-if="mode === 'integrated'"
+    title="Tagline Generator"
+    description="Create memorable taglines that capture your unique value proposition."
+    :mode="mode"
+    :is-loading="isGenerating"
+    :has-results="hasTaglines"
+    :error="error"
+    :usage-remaining="usageRemaining"
+    :reset-time="resetTime"
+    target-component="Tagline"
+    :show-cta="!hasTaglines"
+    :cta-variant="usageRemaining === 0 ? 'exhausted' : 'default'"
+    @apply="handleApply"
+    @regenerate="handleGenerate"
+    @copy="handleCopy"
+    @retry="handleGenerate"
+  >
+    <!-- Input Form -->
+    <div class="gmkb-ai-form">
+      <!-- Name Field -->
+      <div class="gmkb-ai-form-group">
+        <label class="gmkb-ai-label">Your Name (Optional)</label>
+        <input
+          v-model="name"
+          type="text"
+          class="gmkb-ai-input"
+          placeholder="e.g., Jane Smith"
+        />
       </div>
 
       <!-- STEP 3: Settings -->
@@ -156,185 +57,206 @@
       </div>
     </div>
 
+    <!-- Results -->
+    <template #results>
+      <div v-if="hasTaglines" class="gmkb-ai-taglines">
+        <p class="gmkb-ai-taglines__instruction">
+          Click a tagline to select it:
+        </p>
+        <AiResultsDisplay
+          :content="taglines"
+          format="cards"
+          :selected-index="selectedIndex"
+          @select="handleSelectTagline"
+        />
+
+        <!-- Selected Preview -->
+        <div v-if="selectedTagline" class="gmkb-ai-taglines__preview">
+          <span class="gmkb-ai-taglines__preview-label">Selected:</span>
+          <span class="gmkb-ai-taglines__preview-text">"{{ selectedTagline }}"</span>
+        </div>
+      </div>
+    </template>
+
+    <!-- Results Actions -->
+    <template #results-actions>
+      <div v-if="hasTaglines" class="gmkb-ai-taglines__nav">
+        <button
+          type="button"
+          class="gmkb-ai-button gmkb-ai-button--ghost"
+          :disabled="selectedIndex <= 0"
+          @click="selectPrevious"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <span class="gmkb-ai-taglines__nav-count">
+          {{ selectedIndex + 1 }} / {{ taglines.length }}
+        </span>
+        <button
+          type="button"
+          class="gmkb-ai-button gmkb-ai-button--ghost"
+          :disabled="selectedIndex >= taglines.length - 1"
+          @click="selectNext"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+      </div>
+    </template>
+  </AiWidgetFrame>
+
+  <!-- Default Mode: Simple inline form/results (for landing pages) -->
+  <div v-else class="gfy-tagline-generator">
+    <!-- Form Section -->
+    <div v-if="!hasTaglines" class="gfy-tagline-form">
+      <!-- Name Field -->
+      <div class="gfy-input-group">
+        <label class="gfy-label">Your Name (Optional)</label>
+        <input
+          v-model="name"
+          type="text"
+          class="gfy-input"
+          placeholder="e.g., Jane Smith"
+        />
+      </div>
+
+      <!-- Authority Hook Builder -->
+      <div class="gfy-authority-hook">
+        <div class="gfy-authority-hook__header">
+          <span class="gfy-authority-hook__icon">&#9733;</span>
+          <h3 class="gfy-authority-hook__title">Your Authority Hook</h3>
+        </div>
+
+        <!-- Builder Grid -->
+        <div class="gfy-builder">
+          <div class="gfy-builder__field">
+            <label class="gfy-builder__label">WHO do you help?</label>
+            <input
+              v-model="hookWho"
+              type="text"
+              class="gfy-builder__input"
+              placeholder="e.g., SaaS Founders"
+            />
+          </div>
+          <div class="gfy-builder__field">
+            <label class="gfy-builder__label">WHAT is the result?</label>
+            <input
+              v-model="hookWhat"
+              type="text"
+              class="gfy-builder__input"
+              placeholder="e.g., Increase revenue by 40%"
+            />
+          </div>
+          <div class="gfy-builder__field">
+            <label class="gfy-builder__label">WHEN do they need it?</label>
+            <input
+              v-model="hookWhen"
+              type="text"
+              class="gfy-builder__input"
+              placeholder="e.g., When scaling rapidly"
+            />
+          </div>
+          <div class="gfy-builder__field">
+            <label class="gfy-builder__label">HOW do you do it?</label>
+            <input
+              v-model="hookHow"
+              type="text"
+              class="gfy-builder__input"
+              placeholder="e.g., My proven 90-day system"
+            />
+          </div>
+        </div>
+
+        <!-- Live Preview -->
+        <div class="gfy-live-preview">
+          "{{ hookPreview }}"
+        </div>
+      </div>
+    </div>
+
     <!-- Results Section -->
     <div v-if="hasTaglines" class="gfy-results">
-      <div class="gfy-results-layout">
-        <!-- LEFT SIDEBAR: Master Tagline Slot -->
-        <aside class="gfy-layout-sidebar">
-          <div class="gfy-current-topics">
-            <div class="gfy-current-topics__header">
-              <h3 class="gfy-current-topics__title">Your Master Tagline</h3>
-            </div>
+      <!-- Results Header -->
+      <div class="gfy-results__header">
+        <div class="gfy-results__title-row">
+          <h3 class="gfy-results__title">Generated Taglines</h3>
+          <span class="gfy-results__count">{{ taglines.length }} Options</span>
+        </div>
+        <div class="gfy-results__actions">
+          <button type="button" class="gfy-btn gfy-btn--outline" @click="handleRegenerate">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 4v6h-6M1 20v-6h6"/>
+              <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+            </svg>
+            Regenerate
+          </button>
+          <button type="button" class="gfy-btn gfy-btn--outline" @click="handleCopy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+            </svg>
+            Copy Selected
+          </button>
+        </div>
+      </div>
 
-            <div
-              class="gfy-bio-slot"
-              :class="{ 'gfy-bio-slot--locked': lockedTagline }"
-            >
-              <div class="gfy-bio-slot__header">
-                <span class="gfy-bio-slot__label">{{ lockedTagline ? 'Active Tagline' : 'Not Selected' }}</span>
-                <svg v-if="lockedTagline" class="gfy-bio-slot__lock" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
-                </svg>
-              </div>
-              <div class="gfy-bio-slot__preview">
-                {{ lockedTagline || 'Select a tagline to lock it here' }}
-              </div>
-            </div>
+      <!-- Selection Banner -->
+      <div class="gfy-selection-banner">
+        <span class="gfy-selection-banner__text">Click to select your tagline</span>
+        <span class="gfy-selection-banner__count">
+          {{ selectedIndex !== null ? '1 selected' : 'None selected' }}
+        </span>
+      </div>
 
-            <p class="gfy-sidebar-hint">
-              This tagline will be used across your Media Kit and bio variations.
-            </p>
-
-            <!-- Actions for locked tagline -->
-            <div v-if="lockedTagline" class="gfy-sidebar-actions">
-              <button
-                type="button"
-                class="gfy-btn gfy-btn--outline gfy-btn--small"
-                @click="handleCopy"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                </svg>
-                Copy
-              </button>
-            </div>
+      <!-- Tagline Cards -->
+      <div class="gfy-tagline-list">
+        <div
+          v-for="(tagline, index) in taglines"
+          :key="index"
+          class="gfy-tagline-card"
+          :class="{ 'gfy-tagline-card--selected': selectedIndex === index }"
+          @click="handleSelectTagline(index)"
+        >
+          <div class="gfy-tagline-card__checkbox">
+            <span v-if="selectedIndex === index" class="gfy-check-icon">✓</span>
           </div>
-        </aside>
+          <div class="gfy-tagline-card__number">{{ index + 1 }}.</div>
+          <p class="gfy-tagline-card__text">{{ tagline }}</p>
+        </div>
+      </div>
 
-        <!-- RIGHT MAIN: Tagline Variations -->
-        <main class="gfy-layout-main">
-          <!-- Results Header -->
-          <div class="gfy-results__header">
-            <div class="gfy-results__title-row">
-              <h3 class="gfy-results__title">Generated Taglines</h3>
-              <span class="gfy-results__count">{{ taglines.length }} Ideas</span>
-            </div>
-          </div>
-
-          <!-- Regenerate Row (merged with feedback input) -->
-          <div class="gfy-regenerate-row">
-            <span class="gfy-regenerate-label">
-              <i class="fas fa-lightbulb"></i>
-              Want different results?
-            </span>
-            <div class="gfy-regenerate-input-group">
-              <input
-                v-model="refinementFeedback"
-                type="text"
-                class="gfy-regenerate-input"
-                placeholder="Optional feedback: e.g., 'shorter' or '3 words max'"
-                @keydown.enter.prevent="handleRegenerate"
-              />
-              <button
-                type="button"
-                class="gfy-btn gfy-btn--primary"
-                :disabled="isGenerating"
-                @click="handleRegenerate"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M23 4v6h-6M1 20v-6h6"/>
-                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                </svg>
-                Regenerate
-              </button>
-            </div>
-          </div>
-
-          <!-- Selection Banner -->
-          <div class="gfy-selection-banner">
-            <span class="gfy-selection-banner__text">
-              Click a tagline to lock it as your Master Tagline
-            </span>
-            <span v-if="lockedTaglineIndex >= 0" class="gfy-selection-banner__count">
-              1 locked
-            </span>
-          </div>
-
-          <!-- Tagline List -->
-          <div class="gfy-tagline-list">
-            <div
-              v-for="(tagline, index) in taglines"
-              :key="index"
-              class="gfy-tagline-row"
-              :class="{ 'gfy-tagline-row--locked': lockedTaglineIndex === index }"
-              @click="toggleTaglineLock(index)"
-            >
-              <p class="gfy-tagline-row__text">{{ tagline.text || tagline }}</p>
-              <button
-                type="button"
-                class="gfy-tagline-row__lock-btn"
-                :class="{ 'gfy-tagline-row__lock-btn--locked': lockedTaglineIndex === index }"
-                :title="lockedTaglineIndex === index ? 'Click to unlock' : 'Click to lock'"
-                @click.stop="toggleTaglineLock(index)"
-              >
-                <i :class="lockedTaglineIndex === index ? 'fas fa-lock' : 'fas fa-lock-open'"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- Save Actions -->
-          <div class="gfy-results__footer">
-            <!-- Authority Hook Save Option -->
-            <label v-if="hasAuthorityHookData" class="gfy-checkbox-option">
-              <input
-                v-model="saveAuthorityHook"
-                type="checkbox"
-                class="gfy-checkbox-option__input"
-              />
-              <span class="gfy-checkbox-option__box">
-                <svg v-if="saveAuthorityHook" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
-                </svg>
-              </span>
-              <span class="gfy-checkbox-option__label">Also save Authority Hook to profile</span>
-            </label>
-
-            <!-- Impact Intro Save Option -->
-            <label v-if="hasImpactIntroData" class="gfy-checkbox-option">
-              <input
-                v-model="saveImpactIntro"
-                type="checkbox"
-                class="gfy-checkbox-option__input"
-              />
-              <span class="gfy-checkbox-option__box">
-                <svg v-if="saveImpactIntro" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
-                </svg>
-              </span>
-              <span class="gfy-checkbox-option__label">Also save Impact Intro to profile</span>
-            </label>
-
-            <div class="gfy-save-section">
-              <button
-                type="button"
-                class="gfy-btn gfy-btn--primary gfy-btn--large"
-                :disabled="!lockedTagline || isSaving"
-                @click="handleSaveToProfile"
-              >
-                <svg v-if="!isSaving" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
-                  <polyline points="17 21 17 13 7 13 7 21"/>
-                  <polyline points="7 3 7 8 15 8"/>
-                </svg>
-                <span v-if="isSaving" class="gfy-spinner"></span>
-                {{ isSaving ? 'Saving...' : 'Save Tagline to Profile' }}
-              </button>
-              <button type="button" class="gfy-btn gfy-btn--text" @click="handleStartOver">
-                Start Over
-              </button>
-            </div>
-
-            <!-- Save Success Message -->
-            <span v-if="saveSuccess" class="gfy-save-success">
-              &#10003; Saved successfully!
-            </span>
-            <!-- Save Error Message -->
-            <span v-if="saveError" class="gfy-save-error">
-              {{ saveError }}
-            </span>
-          </div>
-        </main>
+      <!-- Save Actions -->
+      <div class="gfy-results__footer">
+        <div class="gfy-save-section">
+          <button
+            type="button"
+            class="gfy-btn gfy-btn--primary gfy-btn--large"
+            :disabled="selectedIndex === null || isSaving"
+            @click="handleSaveToProfile"
+          >
+            <svg v-if="!isSaving" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            <span v-if="isSaving" class="gfy-spinner"></span>
+            {{ isSaving ? 'Saving...' : 'Save to Media Kit' }}
+          </button>
+          <button type="button" class="gfy-btn gfy-btn--text" @click="handleStartOver">
+            Start Over
+          </button>
+        </div>
+        <!-- Save Success Message -->
+        <span v-if="saveSuccess" class="gfy-save-success">
+          ✓ Saved successfully!
+        </span>
+        <!-- Save Error Message -->
+        <span v-if="saveError" class="gfy-save-error">
+          {{ saveError }}
+        </span>
       </div>
     </div>
   </div>
@@ -342,51 +264,77 @@
 
 <script setup>
 import { ref, computed, watch, inject } from 'vue';
-import { useAIGenerator } from '../../src/composables/useAIGenerator';
+import { useAITagline } from '../../src/composables/useAITagline';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
 
+// Compact widget components (integrated mode only)
+import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
+import AiToneSelector from '../../src/vue/components/ai/AiToneSelector.vue';
+import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
+import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
+
 const props = defineProps({
+  mode: {
+    type: String,
+    default: 'default',
+    validator: (v) => ['default', 'integrated'].includes(v)
+  },
+  componentId: {
+    type: String,
+    default: null
+  },
   profileData: {
     type: Object,
     default: null
   }
 });
 
-const emit = defineEmits(['update:can-generate', 'authority-hook-update', 'generated', 'saved']);
+const emit = defineEmits(['applied', 'generated', 'update:can-generate', 'saved']);
 
 // Use composables
 const generator = useAIGenerator('tagline');
 const {
+  isGenerating,
+  error,
+  usageRemaining,
+  resetTime,
+  taglines,
+  hasTaglines,
+  selectedTagline,
+  selectedIndex,
+  selectTagline,
+  selectNext,
+  selectPrevious,
+  generate,
+  copyToClipboard,
+  tone,
+  reset
+} = useAITagline();
+
+const {
   profileId: contextProfileId,
   isSaving,
-  saveError: composableSaveError,
+  saveError,
   saveToProfile
 } = useProfileContext();
-
-// Local save error (fallback for when composable error doesn't apply)
-const localSaveError = ref(null);
-const saveError = computed(() => localSaveError.value || composableSaveError.value);
 
 // Inject profile data from parent (EmbeddedToolWrapper provides this)
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
 
 // Local state
+const name = ref('');
+const authorityHookText = ref('');
 const saveSuccess = ref(false);
 const selectedProfileId = ref(null);
-const saveAuthorityHook = ref(true);
-const saveImpactIntro = ref(true);
-const refinementFeedback = ref('');
 
-// Locking state (simplified single-click pattern)
-const lockedTagline = ref(null);
-const lockedTaglineIndex = ref(-1);
-const profileTagline = ref(null); // Track tagline from profile separately
+// Authority Hook Builder fields
+const hookWho = ref('');
+const hookWhat = ref('');
+const hookWhen = ref('');
+const hookHow = ref('');
 
-// Refinement history
-const previousTaglines = ref([]);
-
-// Computed: resolved profile ID from all available sources
+// Computed: resolved profile ID
 const resolvedProfileId = computed(() => {
   return props.profileData?.id
     || injectedProfileData.value?.id
@@ -394,32 +342,13 @@ const resolvedProfileId = computed(() => {
     || null;
 });
 
-// Keep selectedProfileId in sync with resolved ID
+// Keep selectedProfileId in sync
 watch(resolvedProfileId, (newId) => {
   selectedProfileId.value = newId;
 }, { immediate: true });
 
-// Authority Hook Builder fields (4 W's)
-const hookWho = ref('');
-const hookWhat = ref('');
-const hookWhen = ref('');
-const hookHow = ref('');
-
-// Impact Intro fields (2 W's)
-const impactWhere = ref('');
-const impactWhy = ref('');
-
-// Brand Context fields
-const industry = ref('');
-const uniqueFactor = ref('');
-const existingTaglines = ref('');
-
-// Settings
-const styleFocus = ref('outcome');
-const tone = ref('bold');
-
 /**
- * Computed: Live preview of authority hook
+ * Live preview of authority hook
  */
 const hookPreview = computed(() => {
   const who = hookWho.value || '[WHO]';
@@ -430,10 +359,10 @@ const hookPreview = computed(() => {
 });
 
 /**
- * Computed: Generated authority hook summary
+ * Generated authority hook summary
  */
 const generatedHookSummary = computed(() => {
-  if (!hookWho.value && !hookWhat.value) return '';
+  if (!hookWho.value && !hookWhat.value) return authorityHookText.value;
   let summary = `I help ${hookWho.value || ''} ${hookWhat.value || ''}`;
   if (hookWhen.value) summary += ` ${hookWhen.value}`;
   if (hookHow.value) summary += ` through ${hookHow.value}`;
@@ -441,50 +370,11 @@ const generatedHookSummary = computed(() => {
 });
 
 /**
- * Computed: Live preview of impact intro
- */
-const impactPreview = computed(() => {
-  const where = impactWhere.value || '[WHERE]';
-  const why = impactWhy.value || '[WHY]';
-  return `${where}. My mission is to ${why}.`;
-});
-
-/**
- * Computed: Taglines array from generator
- */
-const taglines = computed(() => {
-  const content = generator.generatedContent.value;
-  if (!content) return [];
-  if (Array.isArray(content)) {
-    return content.map((item) => {
-      if (typeof item === 'string') return { text: item };
-      return { text: item.text || item };
-    });
-  }
-  return [];
-});
-
-/**
- * Has taglines check
- */
-const hasTaglines = computed(() => taglines.value.length > 0);
-
-/**
- * Is generating check
- */
-const isGenerating = computed(() => generator.isGenerating.value);
-
-/**
- * Error from generator
- */
-const error = computed(() => generator.error.value);
-
-/**
  * Can generate check
  */
 const canGenerate = computed(() => {
-  return (hookWho.value && hookWho.value.trim().length > 0) ||
-         (hookWhat.value && hookWhat.value.trim().length > 0);
+  return authorityHookText.value.trim().length > 0 ||
+         (hookWho.value && hookWhat.value);
 });
 
 /**
@@ -495,84 +385,83 @@ const hasAuthorityHookData = computed(() => {
 });
 
 /**
- * Check if user has entered any impact intro data
- */
-const hasImpactIntroData = computed(() => {
-  return !!(impactWhere.value || impactWhy.value);
-});
-
-/**
- * Computed: Generated impact intro summary (for saving to profile)
- * Uses same format as impactPreview but only when data exists
- */
-const generatedImpactSummary = computed(() => {
-  if (!impactWhere.value && !impactWhy.value) return '';
-  const where = impactWhere.value || '';
-  const why = impactWhy.value || '';
-  if (where && why) {
-    return `${where}. My mission is to ${why}.`;
-  } else if (where) {
-    return where;
-  } else if (why) {
-    return `My mission is to ${why}.`;
-  }
-  return '';
-});
-
-/**
  * Populate from profile data
  */
 function populateFromProfile(profileData) {
   if (!profileData) return;
 
-  // Authority Hook fields
+  const firstName = profileData.first_name || '';
+  const lastName = profileData.last_name || '';
+  const fullName = [firstName, lastName].filter(Boolean).join(' ');
+  if (fullName) name.value = fullName;
+
+  if (profileData.authority_hook) authorityHookText.value = profileData.authority_hook;
   if (profileData.hook_who) hookWho.value = profileData.hook_who;
   if (profileData.hook_what) hookWhat.value = profileData.hook_what;
   if (profileData.hook_when) hookWhen.value = profileData.hook_when;
   if (profileData.hook_how) hookHow.value = profileData.hook_how;
-
-  // Impact Intro fields (stored as hook_where/hook_why in profile)
-  if (profileData.hook_where) impactWhere.value = profileData.hook_where;
-  if (profileData.hook_why) impactWhy.value = profileData.hook_why;
-
-  // Existing tagline from profile (only set if not already unlocked by user)
-  if (profileData.tagline) {
-    profileTagline.value = profileData.tagline;
-    // Only auto-lock profile tagline if user hasn't manually unlocked
-    if (lockedTagline.value === null || lockedTagline.value === profileTagline.value) {
-      lockedTagline.value = profileData.tagline;
-      lockedTaglineIndex.value = -1; // -1 means from profile, not generated list
-    }
-  }
 }
 
 /**
  * Handle generate - exposed for parent to call
  */
 const handleGenerate = async () => {
-  previousTaglines.value = [];
+  const hookText = generatedHookSummary.value || authorityHookText.value;
 
-  const params = {
-    who: hookWho.value,
-    what: hookWhat.value,
-    when: hookWhen.value,
-    how: hookHow.value,
-    where: impactWhere.value,
-    why: impactWhy.value,
-    industry: industry.value,
-    uniqueFactor: uniqueFactor.value,
-    existingTaglines: existingTaglines.value,
-    styleFocus: styleFocus.value,
-    tone: tone.value,
-    authorityHook: generatedHookSummary.value,
-    count: 10
-  };
-
-  await generator.generate(params);
+  await generate({
+    name: name.value,
+    authorityHook: hookText
+  }, props.mode === 'integrated' ? 'builder' : 'public');
 
   emit('generated', { taglines: taglines.value });
-
   return { taglines: taglines.value };
+};
+
+/**
+ * Handle regenerate
+ */
+const handleRegenerate = async () => {
+  await handleGenerate();
+};
+
+/**
+ * Handle copy
+ */
+const handleCopy = async () => {
+  if (selectedTagline.value) {
+    try {
+      await navigator.clipboard.writeText(selectedTagline.value);
+    } catch (err) {
+      console.error('[Tagline Generator] Failed to copy:', err);
+    }
+  } else {
+    await copyToClipboard();
+  }
+};
+
+/**
+ * Handle save to profile
+ */
+const handleSaveToProfile = async () => {
+  if (selectedIndex.value === null) return;
+
+  try {
+    const result = await saveToProfile('tagline', selectedTagline.value, {
+      profileId: selectedProfileId.value
+    });
+
+    if (result.success) {
+      saveSuccess.value = true;
+      setTimeout(() => { saveSuccess.value = false; }, 3000);
+
+      emit('saved', {
+        profileId: selectedProfileId.value,
+        tagline: selectedTagline.value
+      });
+    }
+  } catch (err) {
+    console.error('[Tagline Generator] Save failed:', err);
+  }
 };
 
 /**
