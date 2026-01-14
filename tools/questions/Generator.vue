@@ -1,7 +1,7 @@
 <template>
   <div class="gfy-questions-generator">
-    <!-- Form Section (always show in embedded mode, otherwise hide when has results) -->
-    <div v-if="isEmbedded || !hasQuestions" class="gfy-questions-form">
+    <!-- Form Section -->
+    <div v-if="!hasQuestions" class="gfy-questions-form">
       <!-- STEP 1: Choose or Tweak Your Topic -->
       <div class="gfy-input-group">
         <label class="gfy-label">{{ hasProfileTopics ? 'Step 1: Choose or Tweak Your Topic' : 'Topics You Discuss' }} {{ !hasProfileTopics ? '*' : '' }}</label>
@@ -88,8 +88,8 @@
       </div>
     </div>
 
-    <!-- Results Section (only in default mode, embedded mode uses wrapper's preview) -->
-    <div v-if="!isEmbedded && hasQuestions" class="gfy-results">
+    <!-- Results Section -->
+    <div v-if="hasQuestions" class="gfy-results">
       <div class="gfy-results-layout">
         <!-- LEFT SIDEBAR: Current 5 Questions for the selected topic -->
         <aside v-if="selectedProfileId" class="gfy-layout-sidebar">
