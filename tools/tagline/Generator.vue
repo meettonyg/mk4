@@ -83,6 +83,11 @@
               />
             </div>
           </div>
+
+          <!-- Live Preview -->
+          <div class="gfy-live-preview gfy-live-preview--green">
+            "{{ impactPreview }}"
+          </div>
         </div>
       </div>
 
@@ -436,6 +441,15 @@ const generatedHookSummary = computed(() => {
 });
 
 /**
+ * Computed: Live preview of impact intro
+ */
+const impactPreview = computed(() => {
+  const where = impactWhere.value || '[WHERE]';
+  const why = impactWhy.value || '[WHY]';
+  return `${where}. My mission is to ${why}.`;
+});
+
+/**
  * Computed: Taglines array from generator
  */
 const taglines = computed(() => {
@@ -488,19 +502,21 @@ const hasImpactIntroData = computed(() => {
 });
 
 /**
- * Computed: Generated impact intro summary
+ * Computed: Generated impact intro summary (for saving to profile)
+ * Uses same format as impactPreview but only when data exists
  */
 const generatedImpactSummary = computed(() => {
   if (!impactWhere.value && !impactWhy.value) return '';
-  let summary = '';
-  if (impactWhere.value) {
-    summary = impactWhere.value;
+  const where = impactWhere.value || '';
+  const why = impactWhy.value || '';
+  if (where && why) {
+    return `${where}. My mission is to ${why}.`;
+  } else if (where) {
+    return where;
+  } else if (why) {
+    return `My mission is to ${why}.`;
   }
-  if (impactWhy.value) {
-    if (summary) summary += '. ';
-    summary += `My mission is to ${impactWhy.value}`;
-  }
-  return summary.trim();
+  return '';
 });
 
 /**
@@ -887,6 +903,11 @@ defineExpose({
   color: var(--mkcg-primary, #3b82f6);
   font-weight: 500;
   text-align: center;
+}
+
+.gfy-live-preview--green {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  color: #059669;
 }
 
 /* Section Divider */
