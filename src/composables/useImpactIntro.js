@@ -234,20 +234,52 @@ export function useImpactIntro() {
   const loadFromProfileData = (profileData) => {
     if (!profileData) return;
 
-    // Load credentials
+    // Load credentials from various possible sources
+    // Priority: credentials array > hook_where (6W's) > credential_1, credential_2, etc.
     if (profileData.credentials) {
       const creds = Array.isArray(profileData.credentials)
         ? profileData.credentials
         : profileData.credentials.split(',').map(c => c.trim()).filter(c => c);
       credentials.value = creds;
+    } else if (profileData.hook_where) {
+      // Use hook_where from 6W's as credentials (single value becomes array)
+      credentials.value = [profileData.hook_where.trim()];
+    } else {
+      // Try numbered credential fields (credential_1, credential_2, etc.)
+      const creds = [];
+      for (let i = 1; i <= 5; i++) {
+        const cred = profileData[`credential_${i}`];
+        if (cred && cred.trim()) {
+          creds.push(cred.trim());
+        }
+      }
+      if (creds.length > 0) {
+        credentials.value = creds;
+      }
     }
 
-    // Load achievements
+    // Load achievements/mission from various possible sources
+    // Priority: achievements array > hook_why (6W's) > achievement_1, achievement_2, etc.
     if (profileData.achievements) {
       const achvs = Array.isArray(profileData.achievements)
         ? profileData.achievements
         : profileData.achievements.split(',').map(a => a.trim()).filter(a => a);
       achievements.value = achvs;
+    } else if (profileData.hook_why) {
+      // Use hook_why from 6W's as mission/achievements (single value becomes array)
+      achievements.value = [profileData.hook_why.trim()];
+    } else {
+      // Try numbered achievement fields (achievement_1, achievement_2, etc.)
+      const achvs = [];
+      for (let i = 1; i <= 5; i++) {
+        const achv = profileData[`achievement_${i}`];
+        if (achv && achv.trim()) {
+          achvs.push(achv.trim());
+        }
+      }
+      if (achvs.length > 0) {
+        achievements.value = achvs;
+      }
     }
   };
 
