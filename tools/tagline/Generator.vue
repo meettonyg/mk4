@@ -221,35 +221,19 @@
             </div>
           </div>
 
-          <!-- Refinement Box -->
-          <div class="gfy-refinement-box">
-            <div class="gfy-refinement-header">
-              <svg class="gfy-refinement-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M7.5 5.6L10 7 8.6 4.5 10 2 7.5 3.4 5 2l1.4 2.5L5 7zm12 9.8L17 14l1.4 2.5L17 19l2.5-1.4L22 19l-1.4-2.5L22 14zM22 2l-2.5 1.4L17 2l1.4 2.5L17 7l2.5-1.4L22 7l-1.4-2.5zm-7.63 5.29a.996.996 0 0 0-1.41 0L1.29 18.96a.996.996 0 0 0 0 1.41l2.34 2.34c.39.39 1.02.39 1.41 0L16.7 11.05a.996.996 0 0 0 0-1.41l-2.33-2.35z"/>
-              </svg>
-              <span class="gfy-refinement-title">Refine Taglines</span>
-            </div>
-            <div class="gfy-refinement-input-wrapper">
-              <textarea
-                v-model="refinementFeedback"
-                class="gfy-refinement-textarea"
-                rows="1"
-                placeholder="e.g. Make them shorter or more focused on the 90-day timeline..."
-                @keydown.enter.prevent="handleRefine"
-              ></textarea>
-              <button
-                type="button"
-                class="gfy-btn-refine"
-                :disabled="!refinementFeedback.trim() || isGenerating"
-                @click="handleRefine"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M23 4v6h-6M1 20v-6h6"/>
-                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                </svg>
-                Refine
-              </button>
-            </div>
+          <!-- Optional Feedback Input (merged regenerate + refine) -->
+          <div class="gfy-feedback-row">
+            <span class="gfy-feedback-label">
+              <i class="fas fa-lightbulb"></i>
+              Want different results?
+            </span>
+            <input
+              v-model="refinementFeedback"
+              type="text"
+              class="gfy-feedback-input"
+              placeholder="Optional: e.g., 'shorter' or 'more bold'"
+              @keydown.enter.prevent="handleRegenerate"
+            />
           </div>
 
           <!-- Selection Banner -->
@@ -537,55 +521,53 @@ const handleGenerate = async () => {
 };
 
 /**
- * Handle regenerate - uses generator.regenerate() to bust cache
+ * Handle regenerate - merged with refine functionality
+ * If feedback is provided, sends it with previous taglines for refinement
+ * If no feedback, generates fresh results (cache bust)
  */
 const handleRegenerate = async () => {
-  lockedTagline.value = null;
-  lockedTaglineIndex.value = -1;
-  previousTaglines.value = [];
+  const hasFeedback = refinementFeedback.value.trim().length > 0;
 
-  // Use regenerate() to clear cache and get fresh results
-  await generator.regenerate();
+  if (hasFeedback && taglines.value.length > 0) {
+    // REFINE: Include previous taglines and feedback
+    const params = {
+      who: hookWho.value,
+      what: hookWhat.value,
+      when: hookWhen.value,
+      how: hookHow.value,
+      where: impactWhere.value,
+      why: impactWhy.value,
+      industry: industry.value,
+      uniqueFactor: uniqueFactor.value,
+      existingTaglines: existingTaglines.value,
+      styleFocus: styleFocus.value,
+      tone: tone.value,
+      authorityHook: generatedHookSummary.value,
+      count: 10,
+      previousTaglines: taglines.value.map(t => t.text),
+      refinementFeedback: refinementFeedback.value
+    };
 
-  emit('generated', { taglines: taglines.value });
-};
+    previousTaglines.value = params.previousTaglines;
+    await generator.generate(params);
 
-/**
- * Handle refine - send previous taglines with feedback
- */
-const handleRefine = async () => {
-  if (!refinementFeedback.value.trim() || taglines.value.length === 0) return;
-
-  // Store current taglines for context
-  previousTaglines.value = taglines.value.map(t => t.text);
-
-  const params = {
-    who: hookWho.value,
-    what: hookWhat.value,
-    when: hookWhen.value,
-    how: hookHow.value,
-    where: impactWhere.value,
-    why: impactWhy.value,
-    industry: industry.value,
-    uniqueFactor: uniqueFactor.value,
-    existingTaglines: existingTaglines.value,
-    styleFocus: styleFocus.value,
-    tone: tone.value,
-    authorityHook: generatedHookSummary.value,
-    count: 10,
-    previousTaglines: previousTaglines.value,
-    refinementFeedback: refinementFeedback.value
-  };
-
-  await generator.generate(params);
-
-  // Keep locked tagline if still valid
-  if (lockedTaglineIndex.value >= taglines.value.length) {
+    // Keep locked tagline if still in new list
+    if (lockedTaglineIndex.value >= taglines.value.length) {
+      lockedTaglineIndex.value = -1;
+      lockedTagline.value = null;
+    }
+  } else {
+    // FRESH REGENERATE: Clear and bust cache
+    lockedTagline.value = null;
     lockedTaglineIndex.value = -1;
+    previousTaglines.value = [];
+    await generator.regenerate();
   }
 
+  // Clear feedback after successful regeneration
   refinementFeedback.value = '';
-  emit('generated', { taglines: taglines.value, refined: true });
+
+  emit('generated', { taglines: taglines.value, refined: hasFeedback });
 };
 
 /**
@@ -1029,82 +1011,62 @@ defineExpose({
   gap: 8px;
 }
 
-/* Refinement Box */
-.gfy-refinement-box {
-  background: linear-gradient(to bottom right, var(--mkcg-bg-primary, #ffffff), var(--mkcg-bg-secondary, #f8fafc));
-  border: 1px solid var(--mkcg-border-light, #e2e8f0);
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 1.5rem;
-}
-
-.gfy-refinement-header {
+/* Feedback Row (merged regenerate + refine) */
+.gfy-feedback-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.gfy-refinement-icon {
-  color: var(--mkcg-primary, #3b82f6);
-}
-
-.gfy-refinement-title {
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--mkcg-primary, #3b82f6);
-  text-transform: uppercase;
-}
-
-.gfy-refinement-input-wrapper {
-  position: relative;
-}
-
-.gfy-refinement-textarea {
-  width: 100%;
-  padding: 12px 100px 12px 14px;
-  border: 2px solid var(--mkcg-border-light, #e2e8f0);
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border: 1px solid var(--mkcg-border-light, #e2e8f0);
   border-radius: 8px;
-  font-family: inherit;
-  font-size: 14px;
-  background: var(--mkcg-bg-primary, #ffffff);
-  box-sizing: border-box;
-  resize: none;
-  transition: border-color 0.2s;
+  margin-bottom: 1rem;
 }
 
-.gfy-refinement-textarea:focus {
-  outline: none;
-  border-color: var(--mkcg-primary, #3b82f6);
-}
-
-.gfy-btn-refine {
-  position: absolute;
-  right: 6px;
-  top: 6px;
-  bottom: 6px;
-  padding: 0 14px;
-  background: var(--mkcg-primary, #3b82f6);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-weight: 700;
-  font-size: 12px;
-  cursor: pointer;
+.gfy-feedback-label {
   display: flex;
   align-items: center;
   gap: 6px;
+  font-size: 13px;
+  color: var(--mkcg-text-secondary, #64748b);
+  white-space: nowrap;
+}
+
+.gfy-feedback-label i {
+  color: #f59e0b;
+}
+
+.gfy-feedback-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--mkcg-border-light, #e2e8f0);
+  border-radius: 6px;
   font-family: inherit;
-  transition: background 0.2s;
+  font-size: 13px;
+  background: var(--mkcg-bg-primary, #ffffff);
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.gfy-btn-refine:hover:not(:disabled) {
-  background: var(--mkcg-primary-dark, #2563eb);
+.gfy-feedback-input:focus {
+  outline: none;
+  border-color: var(--mkcg-primary, #3b82f6);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
-.gfy-btn-refine:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.gfy-feedback-input::placeholder {
+  color: var(--mkcg-text-tertiary, #94a3b8);
+}
+
+@media (max-width: 640px) {
+  .gfy-feedback-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .gfy-feedback-label {
+    justify-content: center;
+  }
 }
 
 /* Selection Banner */
