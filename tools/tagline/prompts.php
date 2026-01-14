@@ -191,6 +191,9 @@ You understand the psychology of memorable messaging and create taglines that wo
                 $tagline = trim($matches[1]);
                 // Remove surrounding quotes if present
                 $tagline = preg_replace('/^["\']+|["\']+$/', '', $tagline);
+                // Remove markdown bold markers **
+                $tagline = str_replace('**', '', $tagline);
+                $tagline = trim($tagline);
                 if (!empty($tagline) && strlen($tagline) > 3) {
                     $taglines[] = [
                         'text' => $tagline,

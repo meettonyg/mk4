@@ -616,11 +616,29 @@ const handleRegenerate = async () => {
       lockedTagline.value = null;
     }
   } else {
-    // FRESH REGENERATE: Clear and bust cache
+    // FRESH REGENERATE: Use current form values with cache bust
     lockedTagline.value = null;
     lockedTaglineIndex.value = -1;
     previousTaglines.value = [];
-    await generator.regenerate();
+
+    const params = {
+      who: hookWho.value,
+      what: hookWhat.value,
+      when: hookWhen.value,
+      how: hookHow.value,
+      where: impactWhere.value,
+      why: impactWhy.value,
+      industry: industry.value,
+      uniqueFactor: uniqueFactor.value,
+      existingTaglines: existingTaglines.value,
+      styleFocus: styleFocus.value,
+      tone: tone.value,
+      authorityHook: generatedHookSummary.value,
+      count: 10,
+      _regenerateTimestamp: Date.now() // Force cache bust
+    };
+
+    await generator.generate(params);
   }
 
   // Clear feedback after successful regeneration
