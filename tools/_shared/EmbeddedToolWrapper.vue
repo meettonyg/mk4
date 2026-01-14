@@ -44,8 +44,8 @@
           ></slot>
         </div>
 
-        <!-- Generate Action (always visible in single column mode) -->
-        <div class="tool-context__actions">
+        <!-- Generate Action (hidden after generation in single column mode - Generator has its own buttons) -->
+        <div v-if="!singleColumn || !hasGenerated" class="tool-context__actions">
           <button
             class="gmkb-btn-generate"
             type="button"
