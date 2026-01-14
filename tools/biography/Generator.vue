@@ -1,5 +1,86 @@
 <template>
-  <div class="gfy-bio-generator">
+  <!-- Integrated Mode: Compact widget for Media Kit Builder -->
+  <AiWidgetFrame
+    v-if="mode === 'integrated'"
+    title="Biography Generator"
+    description="Create a professional biography that establishes your credibility and expertise."
+    :mode="mode"
+    :is-loading="isGenerating"
+    :has-results="hasVariations"
+    :error="error"
+    target-component="Biography"
+    :show-cta="!hasVariations"
+    @apply="handleApply"
+    @regenerate="() => generateForSlot(activeSlot)"
+    @copy="() => copyBio(currentBio)"
+    @retry="() => generateForSlot(activeSlot)"
+  >
+    <!-- Compact Input Form -->
+    <div class="gmkb-ai-form">
+      <div class="gmkb-ai-form-group">
+        <label class="gmkb-ai-label gmkb-ai-label--required">Your Name</label>
+        <input
+          v-model="name"
+          type="text"
+          class="gmkb-ai-input"
+          placeholder="e.g., Dr. Jane Smith"
+        />
+      </div>
+
+      <div class="gmkb-ai-form-group">
+        <label class="gmkb-ai-label gmkb-ai-label--required">What do you do?</label>
+        <textarea
+          v-model="authorityHookTextCompact"
+          class="gmkb-ai-input gmkb-ai-textarea"
+          placeholder="e.g., I help busy executives achieve work-life balance through proven mindfulness techniques..."
+          rows="3"
+        ></textarea>
+        <span class="gmkb-ai-hint">
+          Describe who you help and what transformation you provide.
+        </span>
+      </div>
+
+      <AiToneSelector v-model="tone" />
+      <AiLengthSelector v-model="integratedLength" />
+      <AiPovSelector v-model="pov" />
+
+      <AiGenerateButton
+        :loading="isGenerating"
+        :disabled="!canGenerateIntegrated"
+        full-width
+        @click="handleGenerateIntegrated"
+      />
+    </div>
+
+    <!-- Results -->
+    <template #results>
+      <AiResultsDisplay
+        v-if="currentBio"
+        :content="currentBio"
+        format="text"
+        show-count
+      />
+    </template>
+
+    <!-- Results Actions -->
+    <template #results-actions>
+      <div class="gmkb-ai-results__tabs" v-if="lockedCount > 0 || hasVariations">
+        <button
+          v-for="len in ['short', 'medium', 'long']"
+          :key="len"
+          type="button"
+          class="gmkb-ai-results__tab"
+          :class="{ 'gmkb-ai-results__tab--active': activeSlot === len }"
+          @click="setActiveSlot(len)"
+        >
+          {{ len }}
+        </button>
+      </div>
+    </template>
+  </AiWidgetFrame>
+
+  <!-- Default Mode: Full Biography Toolkit (Landing Pages) -->
+  <div v-else class="gfy-bio-generator">
     <!-- Phase 1: Input Form -->
     <div v-if="!showResults" class="gfy-bio-form">
       <!-- Hero Section -->
@@ -483,19 +564,31 @@ import { useAIBiography, SLOT_STATUS, LENGTH_OPTIONS, getVariationCount } from '
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
 
+// Integrated mode components
+import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
+import AiToneSelector from '../../src/vue/components/ai/AiToneSelector.vue';
+import AiLengthSelector from '../../src/vue/components/ai/AiLengthSelector.vue';
+import AiPovSelector from '../../src/vue/components/ai/AiPovSelector.vue';
+import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
+import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
+
 const props = defineProps({
   mode: {
     type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    validator: (v) => ['default', 'integrated'].includes(v)
   },
   profileData: {
     type: Object,
     default: null
+  },
+  componentId: {
+    type: String,
+    default: null
   }
 });
 
-const emit = defineEmits(['generated', 'saved', 'update:can-generate']);
+const emit = defineEmits(['generated', 'saved', 'applied', 'update:can-generate']);
 
 // Inject profile data from parent
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
@@ -548,6 +641,46 @@ const {
 const showResults = ref(false);
 const saveSuccess = ref(false);
 const copiedText = ref('');
+
+// Integrated mode specific state
+const authorityHookTextCompact = ref('');
+const integratedLength = ref('medium');
+
+/**
+ * Can generate check for integrated mode
+ */
+const canGenerateIntegrated = computed(() => {
+  return name.value.trim() && authorityHookTextCompact.value.trim();
+});
+
+/**
+ * Get current bio for integrated mode display
+ */
+const currentBio = computed(() => {
+  const slot = slots[activeSlot.value];
+  return slot?.lockedBio || (slot?.variations[0]?.text || null);
+});
+
+/**
+ * Handle generate for integrated mode
+ */
+const handleGenerateIntegrated = async () => {
+  // Parse the compact authority hook text into the structured format
+  authorityHook.who = authorityHookTextCompact.value;
+  setActiveSlot(integratedLength.value);
+  await generateForSlot(integratedLength.value);
+};
+
+/**
+ * Handle apply for integrated mode (applies to component)
+ */
+const handleApply = () => {
+  emit('applied', {
+    componentId: props.componentId,
+    content: currentBio.value,
+    length: activeSlot.value
+  });
+};
 
 /**
  * Get active slot label
@@ -1517,5 +1650,39 @@ defineExpose({
   border-radius: var(--gfy-radius-md);
   font-weight: 600;
   margin-top: 16px;
+}
+
+/* ============================================
+   INTEGRATED MODE STYLES
+   ============================================ */
+
+.gmkb-ai-results__tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.gmkb-ai-results__tab {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: transparent;
+  border: 1px solid var(--gfy-border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--gfy-text-secondary);
+}
+
+.gmkb-ai-results__tab:hover {
+  border-color: var(--gfy-primary-color);
+  color: var(--gfy-primary-color);
+}
+
+.gmkb-ai-results__tab--active {
+  background: var(--gfy-primary-color);
+  border-color: var(--gfy-primary-color);
+  color: white;
 }
 </style>
