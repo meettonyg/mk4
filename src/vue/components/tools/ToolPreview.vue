@@ -41,6 +41,7 @@
 <script setup>
 import { ref, computed, onMounted, shallowRef, defineAsyncComponent } from 'vue';
 import IconRenderer from '../common/IconRenderer.vue';
+import { toolModules, resolveSlug } from '../../../../tools';
 
 const props = defineProps({
   /**
@@ -74,41 +75,18 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+
+  /**
+   * Prefer Generator component over Widget when available
+   * Generator provides the full-featured form, Widget is simplified
+   */
+  preferGenerator: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 const emit = defineEmits(['generated', 'applied', 'activate']);
-
-/**
- * Map of component names to async component loaders
- * Loads Widget.vue from the /tools/ directory structure
- */
-const componentLoaders = {
-  TopicsGenerator: () => import('../../../../tools/topics/Widget.vue'),
-  BiographyGenerator: () => import('../../../../tools/biography/Widget.vue'),
-  QuestionsGenerator: () => import('../../../../tools/questions/Widget.vue'),
-  TaglineGenerator: () => import('../../../../tools/tagline/Generator.vue'),
-  GuestIntroGenerator: () => import('../../../../tools/guest-intro/Widget.vue'),
-  AuthorityHookBuilder: () => import('../../../../tools/authority-hook/Widget.vue'),
-  OffersGenerator: () => import('../../../../tools/offers/Widget.vue'),
-  ElevatorPitchGenerator: () => import('../../../../tools/elevator-pitch/Widget.vue'),
-  SoundBiteGenerator: () => import('../../../../tools/sound-bite/Widget.vue'),
-  PersonaGenerator: () => import('../../../../tools/persona/Widget.vue'),
-  ImpactIntroBuilder: () => import('../../../../tools/impact-intro/Widget.vue'),
-  BrandStoryGenerator: () => import('../../../../tools/brand-story/Widget.vue'),
-  SignatureStoryGenerator: () => import('../../../../tools/signature-story/Widget.vue'),
-  CredibilityStoryGenerator: () => import('../../../../tools/credibility-story/Widget.vue'),
-  FrameworkGenerator: () => import('../../../../tools/framework/Widget.vue'),
-  InterviewPrepGenerator: () => import('../../../../tools/interview-prep/Widget.vue'),
-  BlogGenerator: () => import('../../../../tools/blog/Widget.vue'),
-  ContentRepurposerGenerator: () => import('../../../../tools/content-repurpose/Widget.vue'),
-  PressReleaseGenerator: () => import('../../../../tools/press-release/Widget.vue'),
-  SocialPostGenerator: () => import('../../../../tools/social-post/Widget.vue'),
-  EmailWriterGenerator: () => import('../../../../tools/email/Widget.vue'),
-  NewsletterGenerator: () => import('../../../../tools/newsletter/Widget.vue'),
-  YoutubeDescriptionGenerator: () => import('../../../../tools/youtube-description/Widget.vue'),
-  PodcastNotesGenerator: () => import('../../../../tools/podcast-notes/Widget.vue'),
-  SeoOptimizerGenerator: () => import('../../../../tools/seo-optimizer/Widget.vue'),
-};
 
 /**
  * Resolved tool component
@@ -116,19 +94,67 @@ const componentLoaders = {
 const toolComponent = shallowRef(null);
 
 /**
+ * Get the tool slug from metadata
+ * Handles both direct slug and componentName-based lookup
+ */
+function getToolSlug() {
+  // If tool has a direct slug property, use it
+  if (props.tool.slug) {
+    return resolveSlug(props.tool.slug);
+  }
+
+  // Fall back to deriving from componentName if available
+  // e.g., "GuestIntroGenerator" -> "guest-intro"
+  if (props.tool.componentName) {
+    const name = props.tool.componentName
+      .replace(/Generator$|Builder$/, '')
+      .replace(/([a-z])([A-Z])/g, '$1-$2')
+      .toLowerCase();
+    return resolveSlug(name);
+  }
+
+  return null;
+}
+
+/**
  * Load the tool component on mount
+ * Dynamically loads from the tool's module - prefers Generator, falls back to Widget
  */
 onMounted(async () => {
-  const componentName = props.tool.componentName;
+  const slug = getToolSlug();
 
-  if (componentLoaders[componentName]) {
-    try {
-      toolComponent.value = defineAsyncComponent(componentLoaders[componentName]);
-    } catch (error) {
-      console.error(`[ToolPreview] Failed to load component: ${componentName}`, error);
+  if (!slug) {
+    console.warn('[ToolPreview] Could not determine tool slug from:', props.tool);
+    return;
+  }
+
+  const toolModule = toolModules[slug];
+
+  if (!toolModule) {
+    console.warn(`[ToolPreview] Unknown tool module: ${slug}`);
+    return;
+  }
+
+  try {
+    // Prefer Generator component if available and preferGenerator is true
+    // Otherwise fall back to Widget or default export
+    let component = null;
+
+    if (props.preferGenerator && toolModule.Generator) {
+      component = toolModule.Generator;
+    } else if (toolModule.Widget) {
+      component = toolModule.Widget;
+    } else if (toolModule.default) {
+      component = toolModule.default;
     }
-  } else {
-    console.warn(`[ToolPreview] Unknown component: ${componentName}`);
+
+    if (component) {
+      toolComponent.value = component;
+    } else {
+      console.warn(`[ToolPreview] No component found for: ${slug}`);
+    }
+  } catch (error) {
+    console.error(`[ToolPreview] Failed to load component for: ${slug}`, error);
   }
 });
 
