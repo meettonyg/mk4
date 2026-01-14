@@ -205,10 +205,25 @@
               <h3 class="gfy-results__title">Generated Taglines</h3>
               <span class="gfy-results__count">{{ taglines.length }} Ideas</span>
             </div>
-            <div class="gfy-results__actions">
+          </div>
+
+          <!-- Regenerate Row (merged with feedback input) -->
+          <div class="gfy-regenerate-row">
+            <span class="gfy-regenerate-label">
+              <i class="fas fa-lightbulb"></i>
+              Want different results?
+            </span>
+            <div class="gfy-regenerate-input-group">
+              <input
+                v-model="refinementFeedback"
+                type="text"
+                class="gfy-regenerate-input"
+                placeholder="Optional feedback: e.g., 'shorter' or '3 words max'"
+                @keydown.enter.prevent="handleRegenerate"
+              />
               <button
                 type="button"
-                class="gfy-btn gfy-btn--outline"
+                class="gfy-btn gfy-btn--primary"
                 :disabled="isGenerating"
                 @click="handleRegenerate"
               >
@@ -219,21 +234,6 @@
                 Regenerate
               </button>
             </div>
-          </div>
-
-          <!-- Optional Feedback Input (merged regenerate + refine) -->
-          <div class="gfy-feedback-row">
-            <span class="gfy-feedback-label">
-              <i class="fas fa-lightbulb"></i>
-              Want different results?
-            </span>
-            <input
-              v-model="refinementFeedback"
-              type="text"
-              class="gfy-feedback-input"
-              placeholder="Optional: e.g., 'shorter' or 'more bold'"
-              @keydown.enter.prevent="handleRegenerate"
-            />
           </div>
 
           <!-- Selection Banner -->
@@ -283,6 +283,21 @@
                 </svg>
               </span>
               <span class="gfy-checkbox-option__label">Also save Authority Hook to profile</span>
+            </label>
+
+            <!-- Impact Intro Save Option -->
+            <label v-if="hasImpactIntroData" class="gfy-checkbox-option">
+              <input
+                v-model="saveImpactIntro"
+                type="checkbox"
+                class="gfy-checkbox-option__input"
+              />
+              <span class="gfy-checkbox-option__box">
+                <svg v-if="saveImpactIntro" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                </svg>
+              </span>
+              <span class="gfy-checkbox-option__label">Also save Impact Intro to profile</span>
             </label>
 
             <div class="gfy-save-section">
@@ -355,6 +370,7 @@ const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
 const saveSuccess = ref(false);
 const selectedProfileId = ref(null);
 const saveAuthorityHook = ref(true);
+const saveImpactIntro = ref(true);
 const refinementFeedback = ref('');
 
 // Locking state (simplified single-click pattern)
@@ -465,6 +481,13 @@ const hasAuthorityHookData = computed(() => {
 });
 
 /**
+ * Check if user has entered any impact intro data
+ */
+const hasImpactIntroData = computed(() => {
+  return !!(impactWhere.value || impactWhy.value);
+});
+
+/**
  * Populate from profile data
  */
 function populateFromProfile(profileData) {
@@ -549,7 +572,10 @@ const handleRegenerate = async () => {
     };
 
     previousTaglines.value = params.previousTaglines;
+
+    // Generate with new params then bust cache to ensure fresh results
     await generator.generate(params);
+    await generator.regenerate();
 
     // Keep locked tagline if still in new list
     if (lockedTaglineIndex.value >= taglines.value.length) {
@@ -633,6 +659,16 @@ const handleSaveToProfile = async () => {
         what: hookWhat.value,
         when: hookWhen.value,
         how: hookHow.value
+      }, {
+        profileId: resolvedProfileId.value
+      });
+    }
+
+    // Optionally save impact intro fields too
+    if (saveImpactIntro.value && hasImpactIntroData.value) {
+      await saveToProfile('impact_intro', {
+        where: impactWhere.value,
+        why: impactWhy.value
       }, {
         profileId: resolvedProfileId.value
       });
@@ -1006,39 +1042,40 @@ defineExpose({
   border-radius: 12px;
 }
 
-.gfy-results__actions {
+/* Regenerate Row (merged with feedback input) */
+.gfy-regenerate-row {
   display: flex;
+  flex-direction: column;
   gap: 8px;
-}
-
-/* Feedback Row (merged regenerate + refine) */
-.gfy-feedback-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  background: var(--mkcg-bg-secondary, #f8fafc);
-  border: 1px solid var(--mkcg-border-light, #e2e8f0);
-  border-radius: 8px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid var(--mkcg-primary, #3b82f6);
+  border-radius: 10px;
   margin-bottom: 1rem;
 }
 
-.gfy-feedback-label {
+.gfy-regenerate-label {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: var(--mkcg-text-secondary, #64748b);
-  white-space: nowrap;
+  font-weight: 600;
+  color: var(--mkcg-text-primary, #0f172a);
 }
 
-.gfy-feedback-label i {
+.gfy-regenerate-label i {
   color: #f59e0b;
 }
 
-.gfy-feedback-input {
+.gfy-regenerate-input-group {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.gfy-regenerate-input {
   flex: 1;
-  padding: 8px 12px;
+  padding: 10px 14px;
   border: 1px solid var(--mkcg-border-light, #e2e8f0);
   border-radius: 6px;
   font-family: inherit;
@@ -1047,25 +1084,19 @@ defineExpose({
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.gfy-feedback-input:focus {
+.gfy-regenerate-input:focus {
   outline: none;
   border-color: var(--mkcg-primary, #3b82f6);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
-.gfy-feedback-input::placeholder {
+.gfy-regenerate-input::placeholder {
   color: var(--mkcg-text-tertiary, #94a3b8);
 }
 
 @media (max-width: 640px) {
-  .gfy-feedback-row {
+  .gfy-regenerate-input-group {
     flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-
-  .gfy-feedback-label {
-    justify-content: center;
   }
 }
 
