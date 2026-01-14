@@ -68,6 +68,9 @@ export function useAIQuestions() {
   // Questions count
   const questionsCount = computed(() => questions.value.length);
 
+  // Has questions check (alias for hasContent but specific to questions)
+  const hasQuestions = computed(() => questions.value.length > 0);
+
   // Questions by category
   const introductoryQuestions = computed(() =>
     questions.value.slice(QUESTION_CATEGORIES.introductory.start - 1, QUESTION_CATEGORIES.introductory.end)
@@ -94,7 +97,8 @@ export function useAIQuestions() {
     const params = {
       topics: overrides.topics || selectedTopics.value,
       authorityHook: overrides.authorityHook || aiStore.authorityHook,
-      customContext: overrides.customContext || customContext.value
+      customContext: overrides.customContext || customContext.value,
+      count: overrides.count || 10
     };
 
     return generator.generate(params);
@@ -190,6 +194,7 @@ export function useAIQuestions() {
     // Questions-specific computed
     questions,
     questionsCount,
+    hasQuestions,
     introductoryQuestions,
     expertiseQuestions,
     storyQuestions,
