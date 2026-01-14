@@ -550,9 +550,27 @@ const handleSaveToMediaKit = async () => {
       questionsData[`question_${startQ + idx}`] = text;
     });
 
-    const result = await saveToProfile('questions', questionsData, {
-      profileId: selectedProfileId.value
+    // Call API directly since we have pre-mapped field names
+    // (saveToProfile's mapToFields expects raw data, not pre-mapped fields)
+    const baseUrl = window.gmkbData?.restUrl || window.gmkbStandaloneTools?.restUrl || '/wp-json/';
+    const apiBase = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+    const nonce = window.gmkbData?.restNonce || window.gmkbData?.nonce || window.gmkbStandaloneTools?.restNonce || '';
+
+    const response = await fetch(`${apiBase}gmkb/v2/profile/${selectedProfileId.value}/fields`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-WP-Nonce': nonce
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify(questionsData)
     });
+
+    if (!response.ok) {
+      throw new Error(`Save failed: ${response.status}`);
+    }
+
+    const result = { success: true };
 
     if (result.success) {
       saveSuccess.value = true;
