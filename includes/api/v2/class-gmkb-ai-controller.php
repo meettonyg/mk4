@@ -638,11 +638,18 @@ class GMKB_AI_Controller {
                 break;
 
             case 'guest_intro':
-                // Guest intro needs bio or credentials
-                if (empty($params['biography']) && empty($params['credentials'])) {
+                // Guest intro needs guest name and context (title, topic, or authority hook)
+                if (empty($params['guestName'])) {
                     return new WP_Error(
                         'missing_params',
-                        'Guest intro generation requires biography or credentials.',
+                        'Guest intro generation requires a guest name.',
+                        array('status' => 400)
+                    );
+                }
+                if (empty($params['guestTitle']) && empty($params['topic']) && empty($params['authorityHook'])) {
+                    return new WP_Error(
+                        'missing_params',
+                        'Guest intro generation requires title, topic, or authority hook data.',
                         array('status' => 400)
                     );
                 }
