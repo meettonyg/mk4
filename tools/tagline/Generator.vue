@@ -1,222 +1,164 @@
 <template>
-  <!-- Standalone Mode: Full two-panel layout with results dashboard -->
-  <GeneratorLayout
-    v-if="mode === 'standalone'"
-    title="Tagline Generator"
-    subtitle="Distill your expertise into a memorable, powerful statement that sticks with your audience."
-    intro-text="Generate 10 compelling taglines based on your Authority Framework. Each tagline is crafted to be memorable, concise, and aligned with your brand voice."
-    generator-type="tagline"
-    :has-results="hasTaglines"
-    :is-loading="isGenerating"
-  >
-    <!-- Left Panel: Form (shown when no results) -->
-    <template #left>
-      <div v-if="!hasTaglines" class="gfy-tagline-form">
-        <!-- Trust Strip -->
-        <div class="gfy-trust-strip">
-          <div class="gfy-trust-item"><span class="gfy-trust-check">&#10003;</span> 10 Unique Options</div>
-          <div class="gfy-trust-item"><span class="gfy-trust-check">&#10003;</span> Memorability Focused</div>
-          <div class="gfy-trust-item"><span class="gfy-trust-check">&#10003;</span> Syncs with Profile</div>
-        </div>
+  <div class="gfy-tagline-generator">
+    <!-- Form Section -->
+    <div v-if="!hasTaglines" class="gfy-tagline-form">
+      <!-- STEP 1: Authority Framework -->
+      <div class="gfy-input-group">
+        <label class="gfy-label">Step 1: Your Authority Framework</label>
 
-        <!-- Intent Tabs -->
-        <div class="gmkb-intent-tabs">
-          <button
-            v-for="opt in INTENT_OPTIONS"
-            :key="opt.value"
-            type="button"
-            class="gmkb-intent-tab"
-            :class="{ active: intent === opt.value }"
-            @click="setIntent(opt.value)"
-          >
-            {{ opt.label }}
-          </button>
-        </div>
-
-        <!-- STEP 1: Authority Framework -->
-        <div class="gfy-input-group">
-          <label class="gfy-label">Step 1: Your Authority Framework</label>
-
-          <!-- Authority Hook (Who, What, When, How) -->
-          <div class="gfy-highlight-box gfy-highlight-box--blue">
-            <div class="gfy-highlight-box__header">
-              <span class="gfy-highlight-box__icon gfy-highlight-box__icon--gold">&#9733;</span>
-              <h3 class="gfy-highlight-box__title">Your Authority Hook</h3>
-            </div>
-            <div class="gfy-builder">
-              <div class="gfy-builder__field">
-                <label class="gfy-builder__label">WHO</label>
-                <input
-                  v-model="authorityHook.who"
-                  type="text"
-                  class="gfy-builder__input"
-                  placeholder="e.g. SaaS Founders"
-                />
-              </div>
-              <div class="gfy-builder__field">
-                <label class="gfy-builder__label">WHAT</label>
-                <input
-                  v-model="authorityHook.what"
-                  type="text"
-                  class="gfy-builder__input"
-                  placeholder="e.g. Scale to 7-figures"
-                />
-              </div>
-              <div class="gfy-builder__field">
-                <label class="gfy-builder__label">WHEN</label>
-                <input
-                  v-model="authorityHook.when"
-                  type="text"
-                  class="gfy-builder__input"
-                  placeholder="e.g. Feeling plateaued"
-                />
-              </div>
-              <div class="gfy-builder__field">
-                <label class="gfy-builder__label">HOW</label>
-                <input
-                  v-model="authorityHook.how"
-                  type="text"
-                  class="gfy-builder__input"
-                  placeholder="e.g. 90-day framework"
-                />
-              </div>
-            </div>
+        <!-- Authority Hook (Who, What, When, How) -->
+        <div class="gfy-highlight-box gfy-highlight-box--blue">
+          <div class="gfy-highlight-box__header">
+            <span class="gfy-highlight-box__icon gfy-highlight-box__icon--gold">&#9733;</span>
+            <h3 class="gfy-highlight-box__title">Your Authority Hook</h3>
           </div>
-
-          <!-- Impact Intro (Where, Why) -->
-          <div class="gfy-highlight-box gfy-highlight-box--green">
-            <div class="gfy-highlight-box__header">
-              <span class="gfy-highlight-box__icon gfy-highlight-box__icon--green">&#127919;</span>
-              <h3 class="gfy-highlight-box__title">Your Impact Intro</h3>
-            </div>
-            <div class="gfy-builder">
-              <div class="gfy-builder__field gfy-builder__field--full">
-                <label class="gfy-builder__label">WHERE is your authority?</label>
-                <input
-                  v-model="impactIntro.where"
-                  type="text"
-                  class="gfy-builder__input"
-                  placeholder="e.g. Helped 200+ startups achieve milestones"
-                />
-              </div>
-              <div class="gfy-builder__field gfy-builder__field--full">
-                <label class="gfy-builder__label">WHY is this your mission?</label>
-                <input
-                  v-model="impactIntro.why"
-                  type="text"
-                  class="gfy-builder__input"
-                  placeholder="e.g. Democratize elite growth strategies"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Section Divider -->
-        <div class="gfy-section-divider">
-          <span>Context & Style</span>
-        </div>
-
-        <!-- STEP 2: Brand Context -->
-        <div class="gfy-input-group">
-          <label class="gfy-label">Step 2: Brand Context</label>
           <div class="gfy-builder">
             <div class="gfy-builder__field">
-              <label class="gfy-builder__label">Industry</label>
+              <label class="gfy-builder__label">WHO do you help?</label>
               <input
-                v-model="brandContext.industry"
+                v-model="hookWho"
                 type="text"
                 class="gfy-builder__input"
-                placeholder="e.g. SaaS, Consulting"
+                placeholder="e.g. SaaS Founders"
               />
             </div>
             <div class="gfy-builder__field">
-              <label class="gfy-builder__label">Unique Factor</label>
+              <label class="gfy-builder__label">WHAT is the result?</label>
               <input
-                v-model="brandContext.uniqueFactor"
+                v-model="hookWhat"
                 type="text"
                 class="gfy-builder__input"
-                placeholder="e.g. No-BS approach, Zero-to-One focus"
+                placeholder="e.g. Scale to 7-figures"
+              />
+            </div>
+            <div class="gfy-builder__field">
+              <label class="gfy-builder__label">WHEN do they need it?</label>
+              <input
+                v-model="hookWhen"
+                type="text"
+                class="gfy-builder__input"
+                placeholder="e.g. Feeling plateaued"
+              />
+            </div>
+            <div class="gfy-builder__field">
+              <label class="gfy-builder__label">HOW do you do it?</label>
+              <input
+                v-model="hookHow"
+                type="text"
+                class="gfy-builder__input"
+                placeholder="e.g. 90-day framework"
+              />
+            </div>
+          </div>
+
+          <!-- Live Preview -->
+          <div class="gfy-live-preview">
+            "{{ hookPreview }}"
+          </div>
+        </div>
+
+        <!-- Impact Intro (Where, Why) -->
+        <div class="gfy-highlight-box gfy-highlight-box--green">
+          <div class="gfy-highlight-box__header">
+            <span class="gfy-highlight-box__icon gfy-highlight-box__icon--green">&#127919;</span>
+            <h3 class="gfy-highlight-box__title">Your Impact Intro</h3>
+          </div>
+          <div class="gfy-builder">
+            <div class="gfy-builder__field gfy-builder__field--full">
+              <label class="gfy-builder__label">WHERE is your authority?</label>
+              <input
+                v-model="impactWhere"
+                type="text"
+                class="gfy-builder__input"
+                placeholder="e.g. Helped 200+ startups achieve milestones"
               />
             </div>
             <div class="gfy-builder__field gfy-builder__field--full">
-              <label class="gfy-builder__label">Existing Taglines (Optional)</label>
-              <textarea
-                v-model="brandContext.existingTaglines"
-                class="gfy-textarea"
-                rows="2"
-                placeholder="List any slogans you currently use..."
-              ></textarea>
+              <label class="gfy-builder__label">WHY is this your mission?</label>
+              <input
+                v-model="impactWhy"
+                type="text"
+                class="gfy-builder__input"
+                placeholder="e.g. Democratize elite growth strategies"
+              />
             </div>
           </div>
-        </div>
-
-        <!-- STEP 3: Settings -->
-        <div class="gfy-input-group">
-          <label class="gfy-label">Step 3: Tagline Settings</label>
-          <div class="gfy-builder">
-            <div class="gfy-builder__field">
-              <label class="gfy-builder__label">Style Focus</label>
-              <select v-model="styleFocus" class="gfy-select">
-                <option v-for="opt in STYLE_FOCUS_OPTIONS" :key="opt.value" :value="opt.value">
-                  {{ opt.label }}
-                </option>
-              </select>
-            </div>
-            <div class="gfy-builder__field">
-              <label class="gfy-builder__label">Tone</label>
-              <select v-model="tone" class="gfy-select">
-                <option v-for="opt in TONE_OPTIONS" :key="opt.value" :value="opt.value">
-                  {{ opt.label }}
-                </option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Generate Button -->
-        <button
-          type="button"
-          class="gmkb-btn-generate"
-          :class="{ 'gmkb-btn-generate--loading': isGenerating }"
-          :disabled="!canGenerate || isGenerating"
-          @click="handleGenerate"
-        >
-          <span v-if="!isGenerating" class="gmkb-btn-icon">&#10024;</span>
-          {{ isGenerating ? 'Generating...' : 'Generate 10 Taglines' }}
-        </button>
-
-        <!-- Error Display -->
-        <div v-if="error" class="gfy-error">
-          <p>{{ error }}</p>
-          <button type="button" class="gfy-btn gfy-btn--outline" @click="handleGenerate">
-            Try Again
-          </button>
         </div>
       </div>
-    </template>
 
-    <!-- Right Panel: Guidance (shown when no results) -->
-    <template #right>
-      <GuidancePanel
-        v-if="!hasTaglines"
-        title="Crafting Your Perfect Tagline"
-        subtitle="A powerful tagline distills your Authority Hook into a memorable phrase that sticks in people's minds."
-        :formula="taglineFormula"
-        :process-steps="processSteps"
-        :examples="examples"
-        examples-title="Example Taglines:"
-      />
-    </template>
+      <!-- Section Divider -->
+      <div class="gfy-section-divider">
+        <span>Context & Style</span>
+      </div>
 
-    <!-- Results Dashboard -->
-    <template #results>
+      <!-- STEP 2: Brand Context -->
+      <div class="gfy-input-group">
+        <label class="gfy-label">Step 2: Brand Context</label>
+        <div class="gfy-builder">
+          <div class="gfy-builder__field">
+            <label class="gfy-builder__label">Industry</label>
+            <input
+              v-model="industry"
+              type="text"
+              class="gfy-builder__input"
+              placeholder="e.g. SaaS, Consulting"
+            />
+          </div>
+          <div class="gfy-builder__field">
+            <label class="gfy-builder__label">Unique Factor</label>
+            <input
+              v-model="uniqueFactor"
+              type="text"
+              class="gfy-builder__input"
+              placeholder="e.g. No-BS approach, Zero-to-One focus"
+            />
+          </div>
+          <div class="gfy-builder__field gfy-builder__field--full">
+            <label class="gfy-builder__label">Existing Taglines (Optional)</label>
+            <textarea
+              v-model="existingTaglines"
+              class="gfy-textarea"
+              rows="2"
+              placeholder="List any slogans you currently use..."
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3: Settings -->
+      <div class="gfy-input-group">
+        <label class="gfy-label">Step 3: Tagline Settings</label>
+        <div class="gfy-builder">
+          <div class="gfy-builder__field">
+            <label class="gfy-builder__label">Style Focus</label>
+            <select v-model="styleFocus" class="gfy-select">
+              <option value="problem">Problem-Focused</option>
+              <option value="solution">Solution-Focused</option>
+              <option value="outcome">Outcome-Focused</option>
+              <option value="authority">Authority-Focused</option>
+            </select>
+          </div>
+          <div class="gfy-builder__field">
+            <label class="gfy-builder__label">Tone</label>
+            <select v-model="tone" class="gfy-select">
+              <option value="bold">Bold & Direct</option>
+              <option value="professional">Professional & Polished</option>
+              <option value="clever">Conversational & Clever</option>
+              <option value="inspirational">Inspirational</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Section -->
+    <div v-if="hasTaglines" class="gfy-results">
       <div class="gfy-results-layout">
-        <!-- Sidebar: Master Tagline Slot -->
+        <!-- LEFT SIDEBAR: Master Tagline Slot -->
         <aside class="gfy-layout-sidebar">
           <div class="gfy-current-topics">
-            <div class="gfy-sidebar-header">
-              <h3 class="gfy-sidebar-title">Your Master Tagline</h3>
+            <div class="gfy-current-topics__header">
+              <h3 class="gfy-current-topics__title">Your Master Tagline</h3>
             </div>
 
             <div
@@ -253,7 +195,7 @@
               </button>
               <button
                 type="button"
-                class="gfy-btn gfy-btn--ghost gfy-btn--small"
+                class="gfy-btn gfy-btn--text gfy-btn--small"
                 @click="unlockTagline"
               >
                 Unlock
@@ -262,10 +204,14 @@
           </div>
         </aside>
 
-        <!-- Main: Tagline Variations -->
+        <!-- RIGHT MAIN: Tagline Variations -->
         <main class="gfy-layout-main">
+          <!-- Results Header -->
           <div class="gfy-results__header">
-            <h3 class="gfy-results__title">10 AI Generated Ideas</h3>
+            <div class="gfy-results__title-row">
+              <h3 class="gfy-results__title">Generated Taglines</h3>
+              <span class="gfy-results__count">{{ taglines.length }} Ideas</span>
+            </div>
             <div class="gfy-results__actions">
               <button
                 type="button"
@@ -313,6 +259,16 @@
             </div>
           </div>
 
+          <!-- Selection Banner -->
+          <div class="gfy-selection-banner">
+            <span class="gfy-selection-banner__text">
+              Click a tagline to select it, then lock your favorite
+            </span>
+            <span v-if="selectedIndex >= 0" class="gfy-selection-banner__count">
+              1 selected
+            </span>
+          </div>
+
           <!-- Tagline List -->
           <div class="gfy-tagline-list">
             <div
@@ -323,7 +279,7 @@
                 'gfy-tagline-row--selected': selectedIndex === index,
                 'gfy-tagline-row--locked': lockedTaglineIndex === index
               }"
-              @click="handleSelectTagline(index)"
+              @click="selectTagline(index)"
             >
               <div
                 class="gfy-tagline-row__checkbox"
@@ -333,7 +289,7 @@
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
               </div>
-              <p class="gfy-tagline-row__text">{{ tagline.text }}</p>
+              <p class="gfy-tagline-row__text">{{ tagline.text || tagline }}</p>
               <button
                 v-if="selectedIndex === index && lockedTaglineIndex !== index"
                 type="button"
@@ -348,386 +304,384 @@
             </div>
           </div>
 
-          <!-- Footer Actions -->
-          <div class="gfy-results-footer">
-            <button
-              type="button"
-              class="gfy-btn gfy-btn--primary gfy-btn--large"
-              :disabled="!lockedTagline"
-              @click="handleSaveToProfile"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                <polyline points="17 21 17 13 7 13 7 21"/>
-                <polyline points="7 3 7 8 15 8"/>
-              </svg>
-              Save Tagline to Profile
-            </button>
-            <button
-              type="button"
-              class="gfy-btn gfy-btn--ghost"
-              @click="handleStartOver"
-            >
-              Start Over
-            </button>
+          <!-- Save Actions -->
+          <div class="gfy-results__footer">
+            <!-- Authority Hook Save Option -->
+            <label v-if="hasAuthorityHookData" class="gfy-checkbox-option">
+              <input
+                v-model="saveAuthorityHook"
+                type="checkbox"
+                class="gfy-checkbox-option__input"
+              />
+              <span class="gfy-checkbox-option__box">
+                <svg v-if="saveAuthorityHook" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                </svg>
+              </span>
+              <span class="gfy-checkbox-option__label">Also save Authority Hook to profile</span>
+            </label>
+
+            <div class="gfy-save-section">
+              <button
+                type="button"
+                class="gfy-btn gfy-btn--primary gfy-btn--large"
+                :disabled="!lockedTagline || isSaving"
+                @click="handleSaveToProfile"
+              >
+                <svg v-if="!isSaving" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                <span v-if="isSaving" class="gfy-spinner"></span>
+                {{ isSaving ? 'Saving...' : 'Save Tagline to Profile' }}
+              </button>
+              <button type="button" class="gfy-btn gfy-btn--text" @click="handleStartOver">
+                Start Over
+              </button>
+            </div>
+
+            <!-- Save Success Message -->
+            <span v-if="saveSuccess" class="gfy-save-success">
+              &#10003; Saved successfully!
+            </span>
+            <!-- Save Error Message -->
+            <span v-if="saveError" class="gfy-save-error">
+              {{ saveError }}
+            </span>
           </div>
         </main>
       </div>
-    </template>
-  </GeneratorLayout>
-
-  <!-- Integrated Mode: Compact widget -->
-  <AiWidgetFrame
-    v-else-if="mode === 'integrated'"
-    title="Tagline Generator"
-    description="Create memorable taglines that capture your unique value proposition."
-    :mode="mode"
-    :is-loading="isGenerating"
-    :has-results="hasTaglines"
-    :error="error"
-    :usage-remaining="usageRemaining"
-    :reset-time="resetTime"
-    target-component="Tagline"
-    :show-cta="!hasTaglines"
-    :cta-variant="usageRemaining === 0 ? 'exhausted' : 'default'"
-    @apply="handleApply"
-    @regenerate="handleGenerate"
-    @copy="handleCopy"
-    @retry="handleGenerate"
-  >
-    <!-- Input Form -->
-    <div class="gmkb-ai-form">
-      <!-- Authority Hook Fields -->
-      <div class="gmkb-ai-form-group">
-        <label class="gmkb-ai-label gmkb-ai-label--required">Who do you help?</label>
-        <input
-          v-model="authorityHook.who"
-          type="text"
-          class="gmkb-ai-input"
-          placeholder="e.g., SaaS founders, entrepreneurs..."
-        />
-      </div>
-
-      <div class="gmkb-ai-form-group">
-        <label class="gmkb-ai-label gmkb-ai-label--required">What do you help them achieve?</label>
-        <input
-          v-model="authorityHook.what"
-          type="text"
-          class="gmkb-ai-input"
-          placeholder="e.g., scale to 7-figures, build sustainable businesses..."
-        />
-      </div>
-
-      <!-- Tone Selector -->
-      <AiToneSelector v-model="tone" :options="TONE_OPTIONS" />
-
-      <!-- Generate Button -->
-      <AiGenerateButton
-        text="Generate 10 Taglines"
-        loading-text="Generating taglines..."
-        :loading="isGenerating"
-        :disabled="!canGenerate"
-        full-width
-        @click="handleGenerate"
-      />
     </div>
-
-    <!-- Results -->
-    <template #results>
-      <div v-if="hasTaglines" class="gmkb-ai-taglines">
-        <p class="gmkb-ai-taglines__instruction">
-          Click a tagline to select it:
-        </p>
-        <AiResultsDisplay
-          :content="taglinesText"
-          format="cards"
-          :selected-index="selectedIndex"
-          @select="handleSelectTagline"
-        />
-
-        <!-- Selected Preview -->
-        <div v-if="selectedTagline" class="gmkb-ai-taglines__preview">
-          <span class="gmkb-ai-taglines__preview-label">Selected:</span>
-          <span class="gmkb-ai-taglines__preview-text">"{{ selectedTagline }}"</span>
-        </div>
-      </div>
-    </template>
-
-    <!-- Results Actions -->
-    <template #results-actions>
-      <div v-if="hasTaglines" class="gmkb-ai-taglines__nav">
-        <button
-          type="button"
-          class="gmkb-ai-button gmkb-ai-button--ghost"
-          :disabled="selectedIndex <= 0"
-          @click="selectPrevious"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-        </button>
-        <span class="gmkb-ai-taglines__nav-count">
-          {{ selectedIndex + 1 }} / {{ taglines.length }}
-        </span>
-        <button
-          type="button"
-          class="gmkb-ai-button gmkb-ai-button--ghost"
-          :disabled="selectedIndex >= taglines.length - 1"
-          @click="selectNext"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-        </button>
-      </div>
-    </template>
-  </AiWidgetFrame>
-
-  <!-- Embedded Mode: Landing page form (simplified) -->
-  <div v-else class="gmkb-embedded-form">
-    <div class="gmkb-embedded-fields">
-      <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.name || 'Your Name or Brand' }} *</label>
-        <input
-          v-model="authorityHook.who"
-          type="text"
-          class="gmkb-embedded-input"
-          :placeholder="currentIntent?.formPlaceholders?.name || 'e.g., SaaS Founders'"
-        />
-      </div>
-      <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.background || 'What you help them achieve' }}</label>
-        <textarea
-          v-model="authorityHook.what"
-          class="gmkb-embedded-input gmkb-embedded-textarea"
-          :placeholder="currentIntent?.formPlaceholders?.background || 'e.g., Scale to 7-figures in 90 days...'"
-          rows="2"
-        ></textarea>
-      </div>
-    </div>
-    <div v-if="error" class="gmkb-embedded-error">{{ error }}</div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, inject } from 'vue';
-import { useAITagline, STYLE_FOCUS_OPTIONS, TONE_OPTIONS, INTENT_OPTIONS } from '../../src/composables/useAITagline';
-import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
-
-// Compact widget components (integrated mode)
-import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
-import AiToneSelector from '../../src/vue/components/ai/AiToneSelector.vue';
-import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
-import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
-
-// Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
-
-// Inject profile data from EmbeddedToolWrapper (for embedded mode)
-const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+import { ref, computed, watch, inject } from 'vue';
+import { useAIGenerator } from '../../src/composables/useAIGenerator';
+import { useProfileContext } from '../../src/composables/useProfileContext';
+import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
 
 const props = defineProps({
-  mode: {
-    type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
-  },
-  componentId: {
-    type: String,
-    default: null
-  },
-  intent: {
-    type: Object,
-    default: null
-  },
   profileData: {
     type: Object,
     default: null
   }
 });
 
-const emit = defineEmits(['applied', 'generated', 'preview-update', 'update:can-generate']);
+const emit = defineEmits(['update:can-generate', 'authority-hook-update', 'generated', 'saved']);
 
 // Use composables
+const generator = useAIGenerator('tagline');
 const {
-  isGenerating,
-  error,
-  usageRemaining,
-  resetTime,
-  taglines,
-  taglinesText,
-  hasTaglines,
-  selectedTagline,
-  selectedIndex,
-  lockedTagline,
-  lockedTaglineIndex,
-  refinementFeedback,
-  authorityHook,
-  impactIntro,
-  brandContext,
-  styleFocus,
-  tone,
-  intent,
-  canGenerate,
-  generate,
-  refine,
-  selectTagline,
-  lockTagline,
-  unlockTagline,
-  selectNext,
-  selectPrevious,
-  copyToClipboard,
-  setIntent,
-  loadFromProfile,
-  reset
-} = useAITagline();
+  profileId: contextProfileId,
+  isSaving,
+  saveError,
+  saveToProfile
+} = useProfileContext();
 
-const { syncFromStore, loadFromProfileData } = useAuthorityHook();
+// Inject profile data from parent (EmbeddedToolWrapper provides this)
+const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+
+// Local state
+const saveSuccess = ref(false);
+const selectedProfileId = ref(null);
+const saveAuthorityHook = ref(true);
+const refinementFeedback = ref('');
+
+// Selection and locking state
+const selectedIndex = ref(-1);
+const lockedTagline = ref(null);
+const lockedTaglineIndex = ref(-1);
+
+// Refinement history
+const previousTaglines = ref([]);
+
+// Computed: resolved profile ID from all available sources
+const resolvedProfileId = computed(() => {
+  return props.profileData?.id
+    || injectedProfileData.value?.id
+    || contextProfileId.value
+    || null;
+});
+
+// Keep selectedProfileId in sync with resolved ID
+watch(resolvedProfileId, (newId) => {
+  selectedProfileId.value = newId;
+}, { immediate: true });
+
+// Authority Hook Builder fields (4 W's)
+const hookWho = ref('');
+const hookWhat = ref('');
+const hookWhen = ref('');
+const hookHow = ref('');
+
+// Impact Intro fields (2 W's)
+const impactWhere = ref('');
+const impactWhy = ref('');
+
+// Brand Context fields
+const industry = ref('');
+const uniqueFactor = ref('');
+const existingTaglines = ref('');
+
+// Settings
+const styleFocus = ref('outcome');
+const tone = ref('bold');
 
 /**
- * Tagline formula for guidance panel
+ * Computed: Live preview of authority hook
  */
-const taglineFormula = '<span class="generator__highlight">[WHO]</span> + <span class="generator__highlight">[WHAT]</span> + <span class="generator__highlight">[UNIQUE VALUE]</span> = Memorable Tagline';
+const hookPreview = computed(() => {
+  const who = hookWho.value || '[WHO]';
+  const what = hookWhat.value || '[WHAT]';
+  const when = hookWhen.value || '[WHEN]';
+  const how = hookHow.value || '[HOW]';
+  return `I help ${who} ${what} ${when} through ${how}.`;
+});
 
 /**
- * Process steps for guidance panel
+ * Computed: Generated authority hook summary
  */
-const processSteps = [
-  {
-    title: 'Why Taglines Matter',
-    description: 'A great tagline is your brand\'s first impression distilled into a single memorable phrase. It appears everywhere - your website header, social media profiles, business cards, and email signatures.'
-  },
-  {
-    title: 'What Makes Taglines Stick',
-    description: 'The best taglines are concise (5-10 words), unique to you, benefit-focused (what clients gain), and emotionally resonant. They combine your promise with what makes you different.'
-  },
-  {
-    title: 'Where to Use Your Tagline',
-    description: 'Your tagline should appear consistently: website headers, email signatures, social media bios, LinkedIn headlines, business cards, podcast intros, and marketing materials.'
+const generatedHookSummary = computed(() => {
+  if (!hookWho.value && !hookWhat.value) return '';
+  let summary = `I help ${hookWho.value || ''} ${hookWhat.value || ''}`;
+  if (hookWhen.value) summary += ` ${hookWhen.value}`;
+  if (hookHow.value) summary += ` through ${hookHow.value}`;
+  return summary.trim() + '.';
+});
+
+/**
+ * Computed: Taglines array from generator
+ */
+const taglines = computed(() => {
+  const content = generator.generatedContent.value;
+  if (!content) return [];
+  if (Array.isArray(content)) {
+    return content.map((item) => {
+      if (typeof item === 'string') return { text: item };
+      return { text: item.text || item };
+    });
   }
-];
+  return [];
+});
 
 /**
- * Example taglines for guidance panel
+ * Has taglines check
  */
-const examples = [
-  {
-    title: 'Problem-Focused:',
-    description: '"Stop Leaking Revenue. Start Scaling Sustainably."'
-  },
-  {
-    title: 'Outcome-Focused:',
-    description: '"Turning Overwhelmed Owners Into Strategic CEOs"'
-  },
-  {
-    title: 'Authority-Focused:',
-    description: '"The 90-Day Blueprint for SaaS Growth"'
+const hasTaglines = computed(() => taglines.value.length > 0);
+
+/**
+ * Is generating check
+ */
+const isGenerating = computed(() => generator.isGenerating.value);
+
+/**
+ * Error from generator
+ */
+const error = computed(() => generator.error.value);
+
+/**
+ * Can generate check
+ */
+const canGenerate = computed(() => {
+  return (hookWho.value && hookWho.value.trim().length > 0) ||
+         (hookWhat.value && hookWhat.value.trim().length > 0);
+});
+
+/**
+ * Check if user has entered any authority hook data
+ */
+const hasAuthorityHookData = computed(() => {
+  return !!(hookWho.value || hookWhat.value || hookWhen.value || hookHow.value);
+});
+
+/**
+ * Populate from profile data
+ */
+function populateFromProfile(profileData) {
+  if (!profileData) return;
+
+  // Authority Hook fields
+  if (profileData.hook_who) hookWho.value = profileData.hook_who;
+  if (profileData.hook_what) hookWhat.value = profileData.hook_what;
+  if (profileData.hook_when) hookWhen.value = profileData.hook_when;
+  if (profileData.hook_how) hookHow.value = profileData.hook_how;
+
+  // Impact Intro fields
+  if (profileData.impact_where) impactWhere.value = profileData.impact_where;
+  if (profileData.impact_why) impactWhy.value = profileData.impact_why;
+
+  // Existing tagline
+  if (profileData.tagline) {
+    lockedTagline.value = profileData.tagline;
   }
-];
+}
 
 /**
- * Handle tagline selection
- */
-const handleSelectTagline = (index) => {
-  selectTagline(index);
-};
-
-/**
- * Handle generate button click
+ * Handle generate - exposed for parent to call
  */
 const handleGenerate = async () => {
-  try {
-    const context = props.mode === 'integrated' ? 'builder' : 'public';
-    await generate({}, context);
+  selectedIndex.value = -1;
+  previousTaglines.value = [];
 
-    emit('generated', {
-      taglines: taglinesText.value
-    });
-  } catch (err) {
-    console.error('[TaglineGenerator] Generation failed:', err);
-  }
+  const params = {
+    who: hookWho.value,
+    what: hookWhat.value,
+    when: hookWhen.value,
+    how: hookHow.value,
+    where: impactWhere.value,
+    why: impactWhy.value,
+    industry: industry.value,
+    uniqueFactor: uniqueFactor.value,
+    existingTaglines: existingTaglines.value,
+    styleFocus: styleFocus.value,
+    tone: tone.value,
+    authorityHook: generatedHookSummary.value,
+    count: 10
+  };
+
+  await generator.generate(params);
+
+  emit('generated', { taglines: taglines.value });
+
+  return { taglines: taglines.value };
 };
 
 /**
  * Handle regenerate
  */
 const handleRegenerate = async () => {
+  selectedIndex.value = -1;
+  lockedTagline.value = null;
+  lockedTaglineIndex.value = -1;
   await handleGenerate();
 };
 
 /**
- * Handle refine button click
+ * Handle refine - send previous taglines with feedback
  */
 const handleRefine = async () => {
-  if (!refinementFeedback.value.trim()) return;
+  if (!refinementFeedback.value.trim() || taglines.value.length === 0) return;
 
-  try {
-    const context = props.mode === 'integrated' ? 'builder' : 'public';
-    await refine(refinementFeedback.value, context);
+  // Store current taglines for context
+  previousTaglines.value = taglines.value.map(t => t.text);
 
-    emit('generated', {
-      taglines: taglinesText.value,
-      refined: true
-    });
-  } catch (err) {
-    console.error('[TaglineGenerator] Refinement failed:', err);
+  const params = {
+    who: hookWho.value,
+    what: hookWhat.value,
+    when: hookWhen.value,
+    how: hookHow.value,
+    where: impactWhere.value,
+    why: impactWhy.value,
+    industry: industry.value,
+    uniqueFactor: uniqueFactor.value,
+    existingTaglines: existingTaglines.value,
+    styleFocus: styleFocus.value,
+    tone: tone.value,
+    authorityHook: generatedHookSummary.value,
+    count: 10,
+    previousTaglines: previousTaglines.value,
+    refinementFeedback: refinementFeedback.value
+  };
+
+  await generator.generate(params);
+
+  // Keep locked tagline if still valid
+  if (lockedTaglineIndex.value >= taglines.value.length) {
+    lockedTaglineIndex.value = -1;
   }
+
+  refinementFeedback.value = '';
+  emit('generated', { taglines: taglines.value, refined: true });
+};
+
+/**
+ * Select a tagline
+ */
+const selectTagline = (index) => {
+  selectedIndex.value = index;
+};
+
+/**
+ * Lock a tagline as the master tagline
+ */
+const lockTagline = (index) => {
+  if (index >= 0 && index < taglines.value.length) {
+    lockedTagline.value = taglines.value[index].text;
+    lockedTaglineIndex.value = index;
+    selectedIndex.value = index;
+  }
+};
+
+/**
+ * Unlock the master tagline
+ */
+const unlockTagline = () => {
+  lockedTagline.value = null;
+  lockedTaglineIndex.value = -1;
 };
 
 /**
  * Handle copy to clipboard
  */
 const handleCopy = async () => {
-  await copyToClipboard();
-};
+  const textToCopy = lockedTagline.value || (selectedIndex.value >= 0 ? taglines.value[selectedIndex.value].text : '');
+  if (!textToCopy) return;
 
-/**
- * Handle apply (integrated mode)
- */
-const handleApply = () => {
-  emit('applied', {
-    componentId: props.componentId,
-    tagline: lockedTagline.value || selectedTagline.value,
-    allTaglines: taglinesText.value
-  });
+  try {
+    await navigator.clipboard.writeText(textToCopy);
+  } catch (err) {
+    console.error('[TaglineGenerator] Failed to copy:', err);
+  }
 };
 
 /**
  * Handle save to profile
  */
-const handleSaveToProfile = () => {
-  emit('applied', {
-    tagline: lockedTagline.value,
-    action: 'save'
-  });
+const handleSaveToProfile = async () => {
+  if (!lockedTagline.value || !resolvedProfileId.value) return;
+
+  saveSuccess.value = false;
+
+  const dataToSave = {
+    tagline: lockedTagline.value
+  };
+
+  // Optionally save authority hook fields too
+  if (saveAuthorityHook.value && hasAuthorityHookData.value) {
+    dataToSave.hook_who = hookWho.value;
+    dataToSave.hook_what = hookWhat.value;
+    dataToSave.hook_when = hookWhen.value;
+    dataToSave.hook_how = hookHow.value;
+  }
+
+  const success = await saveToProfile(resolvedProfileId.value, dataToSave);
+
+  if (success) {
+    saveSuccess.value = true;
+    emit('saved', { tagline: lockedTagline.value });
+
+    setTimeout(() => {
+      saveSuccess.value = false;
+    }, 3000);
+  }
 };
 
 /**
  * Handle start over
  */
 const handleStartOver = () => {
-  reset();
+  generator.reset();
+  selectedIndex.value = -1;
+  lockedTagline.value = null;
+  lockedTaglineIndex.value = -1;
+  refinementFeedback.value = '';
+  previousTaglines.value = [];
+  saveSuccess.value = false;
 };
 
-/**
- * Populate form fields from profile data
- */
-function populateFromProfile(profileData) {
-  if (!profileData) return;
-  loadFromProfile(profileData);
-  loadFromProfileData(profileData);
-}
-
-/**
- * Sync authority hook from store on mount
- */
-onMounted(() => {
-  syncFromStore();
-});
-
-/**
- * Watch for injected profile data from EmbeddedToolWrapper
- */
+// Watch for injected profile data
 watch(
   injectedProfileData,
   (newData) => {
@@ -738,112 +692,52 @@ watch(
   { immediate: true }
 );
 
-const currentIntent = computed(() => props.intent || null);
-
-const embeddedPreviewText = computed(() => {
-  if (!authorityHook.who) return null;
-  return `<strong>Professional tagline</strong> for <strong>${authorityHook.who}</strong>`;
-});
-
+// Watch for props profile data
 watch(
   () => props.profileData,
   (newData) => {
-    if (newData && props.mode === 'embedded') {
+    if (newData) {
       populateFromProfile(newData);
     }
   },
   { immediate: true }
 );
 
-watch(
-  () => authorityHook.who,
-  () => {
-    if (props.mode === 'embedded') {
-      emit('preview-update', {
-        previewHtml: embeddedPreviewText.value,
-        fields: { who: authorityHook.who }
-      });
-    }
-  }
-);
-
+// Emit canGenerate updates
 watch(canGenerate, (newValue) => {
-  if (props.mode === 'embedded') {
-    emit('update:can-generate', !!newValue);
-  }
+  emit('update:can-generate', !!newValue);
 }, { immediate: true });
+
+// Expose for parent to call
+defineExpose({
+  handleGenerate,
+  canGenerate,
+  isGenerating,
+  hasTaglines,
+  error
+});
 </script>
 
 <style scoped>
 /* ============================================================================
-   TAGLINE GENERATOR - FORM STYLES
-   Following gmkb- and gfy- naming conventions
+   TAGLINE GENERATOR - Simplified 2-mode architecture
+   Following gfy- prefix pattern from topics generator
    ============================================================================ */
 
-/* Trust Strip */
-.gfy-trust-strip {
+.gfy-tagline-generator {
+  width: 100%;
+}
+
+/* Form Section */
+.gfy-tagline-form {
   display: flex;
-  justify-content: center;
-  gap: 24px;
-  margin-bottom: 24px;
-  color: var(--mkcg-text-secondary, #64748b);
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.gfy-trust-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.gfy-trust-check {
-  color: var(--mkcg-success, #16a34a);
-  font-weight: 700;
-}
-
-/* Intent Tabs */
-.gmkb-intent-tabs {
-  display: flex;
-  background: var(--mkcg-bg-secondary, #f9fafb);
-  border-radius: 8px;
-  border: 1px solid var(--mkcg-border-light, #e2e8f0);
-  margin-bottom: 24px;
-  overflow: hidden;
-}
-
-.gmkb-intent-tab {
-  flex: 1;
-  padding: 16px 20px;
-  text-align: center;
-  background: transparent;
-  border: none;
-  border-right: 1px solid var(--mkcg-border-light, #e2e8f0);
-  cursor: pointer;
-  font-weight: 600;
-  color: var(--mkcg-text-secondary, #64748b);
-  transition: all 0.2s;
-  font-size: 14px;
-  font-family: inherit;
-}
-
-.gmkb-intent-tab:last-child {
-  border-right: none;
-}
-
-.gmkb-intent-tab:hover {
-  background: var(--mkcg-bg-primary, #ffffff);
-}
-
-.gmkb-intent-tab.active {
-  background: var(--mkcg-bg-primary, #ffffff);
-  color: var(--mkcg-primary, #3b82f6);
-  border-bottom: 3px solid var(--mkcg-primary, #3b82f6);
+  flex-direction: column;
+  gap: 0;
 }
 
 /* Input Groups */
 .gfy-input-group {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .gfy-label {
@@ -863,7 +757,7 @@ watch(canGenerate, (newValue) => {
   border-left: 4px solid var(--mkcg-primary, #3b82f6);
   padding: 1.5rem;
   border-radius: 8px;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .gfy-highlight-box--blue {
@@ -904,7 +798,7 @@ watch(canGenerate, (newValue) => {
 .gfy-builder {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
+  gap: 1rem;
 }
 
 .gfy-builder__field {
@@ -952,11 +846,23 @@ watch(canGenerate, (newValue) => {
   min-height: 80px;
 }
 
+/* Live Preview */
+.gfy-live-preview {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border-radius: 8px;
+  font-style: italic;
+  color: var(--mkcg-primary, #3b82f6);
+  font-weight: 500;
+  text-align: center;
+}
+
 /* Section Divider */
 .gfy-section-divider {
   height: 1px;
   background: var(--mkcg-border-light, #e2e8f0);
-  margin: 2.5rem 0;
+  margin: 2rem 0;
   position: relative;
 }
 
@@ -973,66 +879,18 @@ watch(canGenerate, (newValue) => {
   text-transform: uppercase;
 }
 
-/* Generate Button */
-.gmkb-btn-generate {
-  width: 100%;
-  padding: 18px;
-  background: var(--mkcg-primary, #3b82f6);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-weight: 700;
-  font-size: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  font-family: inherit;
-  transition: background 0.2s;
-}
-
-.gmkb-btn-generate:hover:not(:disabled) {
-  background: var(--mkcg-primary-dark, #2563eb);
-}
-
-.gmkb-btn-generate:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.gmkb-btn-generate--loading {
-  opacity: 0.8;
-}
-
-.gmkb-btn-icon {
-  font-size: 1.25rem;
-}
-
-/* Error Display */
-.gfy-error {
-  margin-top: 20px;
-  padding: 20px;
-  background-color: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  text-align: center;
-}
-
-.gfy-error p {
-  color: #991b1b;
-  margin: 0 0 12px 0;
-}
-
 /* ============================================================================
    RESULTS LAYOUT
    ============================================================================ */
+
+.gfy-results {
+  width: 100%;
+}
 
 .gfy-results-layout {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  padding: 40px;
 }
 
 @media (min-width: 900px) {
@@ -1044,7 +902,7 @@ watch(canGenerate, (newValue) => {
   .gfy-layout-sidebar {
     position: sticky;
     top: 1rem;
-    flex: 0 0 300px;
+    flex: 0 0 280px;
   }
 
   .gfy-layout-main {
@@ -1061,11 +919,11 @@ watch(canGenerate, (newValue) => {
   padding: 1.25rem;
 }
 
-.gfy-sidebar-header {
+.gfy-current-topics__header {
   margin-bottom: 1rem;
 }
 
-.gfy-sidebar-title {
+.gfy-current-topics__title {
   font-size: 0.875rem;
   text-transform: uppercase;
   font-weight: 700;
@@ -1074,13 +932,11 @@ watch(canGenerate, (newValue) => {
 }
 
 .gfy-bio-slot {
-  padding: 1.25rem;
+  padding: 1rem;
   background: var(--mkcg-bg-primary, #ffffff);
   border: 1px solid var(--mkcg-border-light, #e2e8f0);
   border-radius: 8px;
   transition: all 0.2s;
-  text-align: left;
-  width: 100%;
 }
 
 .gfy-bio-slot--locked {
@@ -1112,7 +968,7 @@ watch(canGenerate, (newValue) => {
 
 .gfy-bio-slot__preview {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.4;
   color: var(--mkcg-text-primary, #0f172a);
 }
@@ -1120,7 +976,7 @@ watch(canGenerate, (newValue) => {
 .gfy-sidebar-hint {
   font-size: 11px;
   color: var(--mkcg-text-tertiary, #94a3b8);
-  margin-top: 15px;
+  margin-top: 12px;
   font-style: italic;
   text-align: center;
 }
@@ -1131,20 +987,37 @@ watch(canGenerate, (newValue) => {
   margin-top: 12px;
 }
 
-/* Main Area */
+/* Results Header */
 .gfy-results__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--mkcg-border-light, #e2e8f0);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.gfy-results__title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .gfy-results__title {
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 700;
   margin: 0;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.gfy-results__count {
+  font-size: 0.875rem;
+  color: var(--mkcg-text-secondary, #64748b);
+  background: var(--mkcg-bg-secondary, #f1f5f9);
+  padding: 4px 10px;
+  border-radius: 12px;
 }
 
 .gfy-results__actions {
@@ -1157,15 +1030,15 @@ watch(canGenerate, (newValue) => {
   background: linear-gradient(to bottom right, var(--mkcg-bg-primary, #ffffff), var(--mkcg-bg-secondary, #f8fafc));
   border: 1px solid var(--mkcg-border-light, #e2e8f0);
   border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 2rem;
+  padding: 16px;
+  margin-bottom: 1.5rem;
 }
 
 .gfy-refinement-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .gfy-refinement-icon {
@@ -1173,7 +1046,7 @@ watch(canGenerate, (newValue) => {
 }
 
 .gfy-refinement-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
   color: var(--mkcg-primary, #3b82f6);
   text-transform: uppercase;
@@ -1185,9 +1058,9 @@ watch(canGenerate, (newValue) => {
 
 .gfy-refinement-textarea {
   width: 100%;
-  padding: 14px 110px 14px 16px;
+  padding: 12px 100px 12px 14px;
   border: 2px solid var(--mkcg-border-light, #e2e8f0);
-  border-radius: 10px;
+  border-radius: 8px;
   font-family: inherit;
   font-size: 14px;
   background: var(--mkcg-bg-primary, #ffffff);
@@ -1206,13 +1079,13 @@ watch(canGenerate, (newValue) => {
   right: 6px;
   top: 6px;
   bottom: 6px;
-  padding: 0 16px;
+  padding: 0 14px;
   background: var(--mkcg-primary, #3b82f6);
   color: white;
   border: none;
   border-radius: 6px;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1230,6 +1103,28 @@ watch(canGenerate, (newValue) => {
   cursor: not-allowed;
 }
 
+/* Selection Banner */
+.gfy-selection-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--mkcg-bg-secondary, #f1f5f9);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.gfy-selection-banner__text {
+  font-size: 13px;
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.gfy-selection-banner__count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mkcg-primary, #3b82f6);
+}
+
 /* Tagline List */
 .gfy-tagline-list {
   display: flex;
@@ -1240,8 +1135,8 @@ watch(canGenerate, (newValue) => {
 .gfy-tagline-row {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.25rem;
+  gap: 12px;
+  padding: 14px 16px;
   background: var(--mkcg-bg-primary, #ffffff);
   border: 1px solid var(--mkcg-border-light, #e2e8f0);
   border-radius: 8px;
@@ -1284,29 +1179,39 @@ watch(canGenerate, (newValue) => {
 
 .gfy-tagline-row__text {
   flex: 1;
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 0.9375rem;
+  font-weight: 500;
   color: var(--mkcg-text-primary, #0f172a);
   margin: 0;
+  line-height: 1.4;
 }
 
 .gfy-tagline-row__lock-icon {
   color: var(--mkcg-primary, #3b82f6);
+  flex-shrink: 0;
 }
 
 /* Buttons */
 .gfy-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1rem;
-  font-size: 0.875rem;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
   font-weight: 600;
   border-radius: 6px;
   cursor: pointer;
   border: 1px solid var(--mkcg-border-light, #e2e8f0);
   font-family: inherit;
   transition: all 0.15s;
+  background: var(--mkcg-bg-primary, #ffffff);
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.gfy-btn:hover {
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: var(--mkcg-primary, #3b82f6);
 }
 
 .gfy-btn--primary {
@@ -1329,40 +1234,105 @@ watch(canGenerate, (newValue) => {
   color: var(--mkcg-text-secondary, #64748b);
 }
 
-.gfy-btn--outline:hover {
-  background: var(--mkcg-bg-secondary, #f8fafc);
-  border-color: var(--mkcg-primary, #3b82f6);
-  color: var(--mkcg-primary, #3b82f6);
-}
-
-.gfy-btn--ghost {
+.gfy-btn--text {
   background: transparent;
   border: none;
   color: var(--mkcg-text-secondary, #64748b);
 }
 
-.gfy-btn--ghost:hover {
+.gfy-btn--text:hover {
   color: var(--mkcg-text-primary, #0f172a);
+  background: transparent;
+  border: none;
 }
 
 .gfy-btn--small {
-  padding: 0.375rem 0.75rem;
-  font-size: 0.75rem;
+  padding: 6px 10px;
+  font-size: 12px;
 }
 
 .gfy-btn--large {
-  padding: 12px 24px;
-  font-size: 1rem;
+  padding: 12px 20px;
+  font-size: 15px;
 }
 
 /* Footer */
-.gfy-results-footer {
-  margin-top: 2rem;
+.gfy-results__footer {
+  margin-top: 1.5rem;
   border-top: 1px solid var(--mkcg-border-light, #e2e8f0);
   padding-top: 1.5rem;
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.gfy-save-section {
+  display: flex;
   align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Checkbox Option */
+.gfy-checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.gfy-checkbox-option__input {
+  display: none;
+}
+
+.gfy-checkbox-option__box {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--mkcg-border-light, #e2e8f0);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  background: var(--mkcg-bg-primary, #ffffff);
+}
+
+.gfy-checkbox-option__input:checked + .gfy-checkbox-option__box {
+  background: var(--mkcg-primary, #3b82f6);
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: white;
+}
+
+.gfy-checkbox-option__label {
+  user-select: none;
+}
+
+/* Success/Error Messages */
+.gfy-save-success {
+  color: #16a34a;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.gfy-save-error {
+  color: #dc2626;
+  font-size: 14px;
+}
+
+/* Spinner */
+.gfy-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: gfy-spin 1s linear infinite;
+}
+
+@keyframes gfy-spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Responsive */
@@ -1375,128 +1345,14 @@ watch(canGenerate, (newValue) => {
     grid-column: span 1;
   }
 
-  .gfy-trust-strip {
+  .gfy-results__header {
     flex-direction: column;
-    align-items: center;
-    gap: 8px;
+    align-items: flex-start;
   }
 
-  .gmkb-intent-tabs {
+  .gfy-save-section {
     flex-direction: column;
+    align-items: stretch;
   }
-
-  .gmkb-intent-tab {
-    border-right: none;
-    border-bottom: 1px solid var(--mkcg-border-light, #e2e8f0);
-  }
-
-  .gfy-results-footer {
-    flex-direction: column;
-    gap: 12px;
-  }
-}
-
-/* Integrated Mode Styles */
-.gmkb-ai-taglines__instruction {
-  margin: 0 0 12px 0;
-  font-size: 13px;
-  color: var(--mkcg-text-secondary, #64748b);
-}
-
-.gmkb-ai-taglines__preview {
-  margin-top: 16px;
-  padding: 16px;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  border: 1px solid #7dd3fc;
-  border-radius: 8px;
-}
-
-.gmkb-ai-taglines__preview-label {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: #0369a1;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 4px;
-}
-
-.gmkb-ai-taglines__preview-text {
-  font-size: 18px;
-  font-weight: 500;
-  color: #0c4a6e;
-  font-style: italic;
-}
-
-.gmkb-ai-taglines__nav {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.gmkb-ai-taglines__nav-count {
-  font-size: 13px;
-  color: var(--mkcg-text-secondary, #64748b);
-}
-
-/* Embedded Mode Styles */
-.gmkb-embedded-form {
-  width: 100%;
-}
-
-.gmkb-embedded-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.gmkb-embedded-field {
-  display: flex;
-  flex-direction: column;
-}
-
-.gmkb-embedded-label {
-  display: block;
-  font-weight: 600;
-  font-size: 13px;
-  margin-bottom: 8px;
-  color: var(--mkcg-text-primary, #0f172a);
-}
-
-.gmkb-embedded-input {
-  width: 100%;
-  padding: 14px;
-  border: 1px solid var(--mkcg-border-light, #e2e8f0);
-  border-radius: 8px;
-  background: var(--mkcg-bg-secondary, #f9fafb);
-  box-sizing: border-box;
-  font-size: 15px;
-  font-family: inherit;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.gmkb-embedded-input:focus {
-  outline: none;
-  border-color: var(--mkcg-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.gmkb-embedded-input::placeholder {
-  color: var(--mkcg-text-tertiary, #94a3b8);
-}
-
-.gmkb-embedded-textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.gmkb-embedded-error {
-  margin-top: 16px;
-  padding: 12px 16px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  color: #991b1b;
-  font-size: 14px;
 }
 </style>
