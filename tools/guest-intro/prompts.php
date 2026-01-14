@@ -19,8 +19,8 @@ if (!defined('ABSPATH')) {
 
 return [
     'validation' => [
-        'required' => [],
-        'anyOf' => ['biography', 'credentials', 'authorityHook'],
+        'required' => ['guestName'],
+        'anyOf' => ['guestTitle', 'topic', 'authorityHook'],
         'defaults' => [
             'length' => 'short',
             'tone' => 'professional',
@@ -36,6 +36,12 @@ return [
 
     /**
      * Length slot configuration - defines variation counts for economical token usage
+     *
+     * TODO: Consider centralizing this configuration. Currently duplicated in:
+     * - src/composables/useAIGuestIntro.js (LENGTH_SLOTS constant)
+     * - tools/guest-intro/meta.json (lengthVariants)
+     * - This file (lengthSlots)
+     * The backend could potentially read from meta.json to reduce duplication.
      */
     'lengthSlots' => [
         'short' => [

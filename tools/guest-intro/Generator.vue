@@ -394,7 +394,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject, onMounted } from 'vue';
+import { ref, computed, watch, inject } from 'vue';
 import { useAIGuestIntro, LENGTH_SLOTS, TONE_OPTIONS, HOOK_STYLE_OPTIONS } from '../../src/composables/useAIGuestIntro';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useImpactIntro } from '../../src/composables/useImpactIntro';

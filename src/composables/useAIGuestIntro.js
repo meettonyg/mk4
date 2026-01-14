@@ -99,27 +99,24 @@ export function useAIGuestIntro() {
   // Active slot selection
   const activeSlot = ref('short');
 
+  /**
+   * Create initial slot state from LENGTH_SLOTS config
+   * This ensures slots stay in sync with the configuration
+   */
+  const createInitialSlotState = () => {
+    return Object.keys(LENGTH_SLOTS).reduce((acc, key) => {
+      acc[key] = {
+        status: 'empty', // 'empty', 'generating', 'ready', 'locked'
+        variations: [],
+        lockedIntro: null,
+        preview: `Click to generate ${LENGTH_SLOTS[key].variationCount} variations`
+      };
+      return acc;
+    }, {});
+  };
+
   // Slot state: variations, locked intro, and status per slot
-  const slots = reactive({
-    short: {
-      status: 'empty', // 'empty', 'generating', 'ready', 'locked'
-      variations: [],
-      lockedIntro: null,
-      preview: 'Click to generate 5 variations'
-    },
-    medium: {
-      status: 'empty',
-      variations: [],
-      lockedIntro: null,
-      preview: 'Click to generate 3 variations'
-    },
-    long: {
-      status: 'empty',
-      variations: [],
-      lockedIntro: null,
-      preview: 'Click to generate 2 variations'
-    }
-  });
+  const slots = reactive(createInitialSlotState());
 
   // Refinement state
   const refinementText = ref('');
@@ -411,44 +408,31 @@ export function useAIGuestIntro() {
       guestTitle.value = profileData.guest_title || profileData.title;
     }
 
-    // Load from authority hook fields if available
-    if (profileData.hook_who) {
-      // Don't overwrite if already set via store
-    }
+    // Note: Authority hook fields (hook_who, hook_what, etc.) are loaded
+    // by useAuthorityHook composable, not here, to avoid duplication
 
-    // Load any existing intros
-    if (profileData.introduction_short) {
-      slots.short.lockedIntro = {
-        id: 0,
-        label: 'From Profile',
-        text: profileData.introduction_short,
-        wordCount: profileData.introduction_short.split(/\s+/).length
-      };
-      slots.short.status = 'locked';
-      slots.short.preview = profileData.introduction_short.substring(0, 60) + '...';
-    }
+    /**
+     * Helper to load an intro from profile into a slot
+     * @param {string} slotId Slot to load into
+     * @param {string} profileKey Profile data key to read from
+     */
+    const loadIntroFromProfile = (slotId, profileKey) => {
+      if (profileData[profileKey]) {
+        slots[slotId].lockedIntro = {
+          id: 0,
+          label: 'From Profile',
+          text: profileData[profileKey],
+          wordCount: profileData[profileKey].split(/\s+/).length
+        };
+        slots[slotId].status = 'locked';
+        slots[slotId].preview = profileData[profileKey].substring(0, 60) + '...';
+      }
+    };
 
-    if (profileData.introduction) {
-      slots.medium.lockedIntro = {
-        id: 0,
-        label: 'From Profile',
-        text: profileData.introduction,
-        wordCount: profileData.introduction.split(/\s+/).length
-      };
-      slots.medium.status = 'locked';
-      slots.medium.preview = profileData.introduction.substring(0, 60) + '...';
-    }
-
-    if (profileData.introduction_long) {
-      slots.long.lockedIntro = {
-        id: 0,
-        label: 'From Profile',
-        text: profileData.introduction_long,
-        wordCount: profileData.introduction_long.split(/\s+/).length
-      };
-      slots.long.status = 'locked';
-      slots.long.preview = profileData.introduction_long.substring(0, 60) + '...';
-    }
+    // Load any existing intros from profile
+    loadIntroFromProfile('short', 'introduction_short');
+    loadIntroFromProfile('medium', 'introduction');
+    loadIntroFromProfile('long', 'introduction_long');
   };
 
   /**
@@ -518,7 +502,9 @@ export function useAIGuestIntro() {
       topic.value = params.biography;
     }
     if (params.credentials) {
-      // Store as impact intro
+      // Legacy compatibility: 'credentials' field from Widget.vue is mapped to
+      // guestTitle in the new model since Widget used credentials for the
+      // guest's primary professional title/position
       guestTitle.value = params.credentials;
     }
     if (params.tagline) notes.value = params.tagline;
