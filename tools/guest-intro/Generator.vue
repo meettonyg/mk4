@@ -162,25 +162,9 @@
         </div>
       </div>
 
-      <!-- Generate Button -->
-      <button
-        type="button"
-        class="gmkb-btn-generate"
-        :class="{ 'gmkb-btn-generate--loading': isGenerating }"
-        :disabled="!canGenerate || isGenerating"
-        @click="handleGenerate"
-      >
-        <span v-if="!isGenerating" class="gmkb-btn-icon">&#10024;</span>
-        <span v-if="isGenerating" class="gfy-spinner"></span>
-        {{ isGenerating ? 'Crafting introductions...' : 'Generate Introductions' }}
-      </button>
-
       <!-- Error Display -->
       <div v-if="error" class="gfy-error-box">
         <p>{{ error }}</p>
-        <button type="button" class="gfy-btn gfy-btn--outline" @click="handleGenerate">
-          Try Again
-        </button>
       </div>
     </div>
 
@@ -829,37 +813,6 @@ defineExpose({
 
 .gfy-highlight-box__icon--green {
   color: var(--gfy-success-color);
-}
-
-/* Generate Button */
-.gmkb-btn-generate {
-  width: 100%;
-  padding: 18px;
-  background: var(--gfy-primary-color);
-  color: var(--gfy-white);
-  border: none;
-  border-radius: var(--gfy-radius-md);
-  font-weight: 700;
-  font-size: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  transition: background 0.2s;
-}
-
-.gmkb-btn-generate:hover:not(:disabled) {
-  background: var(--gfy-primary-dark);
-}
-
-.gmkb-btn-generate:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.gmkb-btn-icon {
-  font-size: 18px;
 }
 
 /* Error Box */

@@ -72,6 +72,7 @@
   "category": "message-builder",
   "buttonText": "Generate Introduction",
   "supportsProfileSave": true,
+  "singleColumn": true,
   "icon": "MicrophoneIcon",
   "componentName": "GuestIntroGenerator",
   "useCases": [
