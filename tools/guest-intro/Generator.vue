@@ -418,10 +418,6 @@ const props = defineProps({
   profileData: {
     type: Object,
     default: null
-  },
-  mode: {
-    type: String,
-    default: 'standalone'
   }
 });
 
