@@ -12,8 +12,14 @@
             v-for="(topic, index) in profileTopics"
             :key="index"
             class="topic-card"
-            :class="{ 'topic-card--active': selectedTopicIndex === index, 'topic-card--empty': !topic.title }"
-            @click="selectTopic(index)"
+            :class="{
+              'topic-card--active': selectedTopicIndex === index && topic.title,
+              'topic-card--empty': !topic.title,
+              'topic-card--disabled': !topic.title
+            }"
+            @click="topic.title ? selectTopic(index) : null"
+            :tabindex="topic.title ? 0 : -1"
+            :aria-disabled="!topic.title"
           >
             <span class="topic-card__number">{{ index + 1 }}</span>
             <span class="topic-card__text">{{ topic.title || '(Empty topic slot)' }}</span>
@@ -68,7 +74,7 @@
                 v-model="hookWhen"
                 type="text"
                 class="gfy-builder__input"
-                placeholder="e.g., When scaling rapidly"
+                placeholder="e.g., scaling rapidly"
               />
             </div>
             <div class="gfy-builder__field">
@@ -306,18 +312,32 @@ watch(resolvedProfileId, (newId) => {
 const hookPreview = computed(() => {
   const who = hookWho.value || '[WHO]';
   const what = hookWhat.value || '[WHAT]';
-  const when = hookWhen.value || '[WHEN]';
   const how = hookHow.value || '[HOW]';
+
+  // Handle WHEN with proper "when" prefix
+  let when = '[WHEN]';
+  if (hookWhen.value) {
+    const whenValue = hookWhen.value.trim();
+    const startsWithWhen = /^when\s/i.test(whenValue);
+    when = startsWithWhen ? whenValue : `when ${whenValue}`;
+  }
+
   return `I help ${who} ${what} ${when} through ${how}.`;
 });
 
 /**
  * Computed: Generated authority hook summary
+ * Builds a grammatically correct sentence from authority hook fields
  */
 const generatedHookSummary = computed(() => {
   if (!hookWho.value && !hookWhat.value) return '';
   let summary = `I help ${hookWho.value || ''} ${hookWhat.value || ''}`;
-  if (hookWhen.value) summary += ` ${hookWhen.value}`;
+  if (hookWhen.value) {
+    // Add "when" prefix if not already present (case-insensitive)
+    const whenValue = hookWhen.value.trim();
+    const startsWithWhen = /^when\s/i.test(whenValue);
+    summary += startsWithWhen ? ` ${whenValue}` : ` when ${whenValue}`;
+  }
   if (hookHow.value) summary += ` through ${hookHow.value}`;
   return summary.trim() + '.';
 });
@@ -715,9 +735,12 @@ defineExpose({
   box-shadow: 0 0 0 2px var(--gfy-primary-color);
 }
 
-.topic-card--empty {
+.topic-card--empty,
+.topic-card--disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  pointer-events: none;
+  user-select: none;
 }
 
 .topic-card__number {
