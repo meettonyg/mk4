@@ -537,12 +537,17 @@ const handleGenerate = async () => {
 };
 
 /**
- * Handle regenerate
+ * Handle regenerate - uses generator.regenerate() to bust cache
  */
 const handleRegenerate = async () => {
   lockedTagline.value = null;
   lockedTaglineIndex.value = -1;
-  await handleGenerate();
+  previousTaglines.value = [];
+
+  // Use regenerate() to clear cache and get fresh results
+  await generator.regenerate();
+
+  emit('generated', { taglines: taglines.value });
 };
 
 /**

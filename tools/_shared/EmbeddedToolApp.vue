@@ -142,6 +142,10 @@ function handleGenerated(data) {
     if (data.topics && Array.isArray(data.topics)) {
       previewContent.value = formatArrayToHtmlList(data.topics);
     }
+    // Handle taglines array
+    else if (data.taglines && Array.isArray(data.taglines)) {
+      previewContent.value = formatArrayToHtmlList(data.taglines.map(t => t.text || t));
+    }
     // Handle single content (hook, bio, tagline, etc.)
     else if (data.hook || data.content || data.result) {
       previewContent.value = escapeHtml(data.hook || data.content || data.result);
