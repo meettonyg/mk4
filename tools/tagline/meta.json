@@ -4,6 +4,7 @@
   "shortDescription": "Create compelling, memorable taglines that capture your authority using the 6 W's framework.",
   "emoji": "✨",
   "apiType": "tagline",
+  "singleColumn": true,
   "fieldMapping": {
     "type": "simple",
     "targetField": "tagline",
