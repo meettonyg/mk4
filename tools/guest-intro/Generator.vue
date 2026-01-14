@@ -635,15 +635,26 @@ async function handleSaveToProfile() {
 }
 
 /**
- * Handle start over
+ * Handle start over - resets results but preserves profile-loaded form data
  */
 function handleStartOver() {
-  reset();
+  // Reset only the generation results, not the form
   showResults.value = false;
   selectedVariationIndex.value = null;
-  // Clear credentials/mission by clearing the arrays
-  impactCredentials.value = [];
-  impactAchievements.value = [];
+
+  // Reset slots to empty state (clears generated variations and locked intros)
+  Object.keys(slots).forEach(slotId => {
+    slots[slotId].status = 'empty';
+    slots[slotId].variations = [];
+    slots[slotId].lockedIntro = null;
+    slots[slotId].preview = `Click to generate ${slots[slotId].variationCount || 5} variations`;
+  });
+
+  // Re-populate form from profile data if available
+  const profileData = props.profileData || injectedProfileData.value;
+  if (profileData) {
+    populateFromProfile(profileData);
+  }
 }
 
 // Watch canGenerate changes
@@ -1009,19 +1020,23 @@ defineExpose({
 }
 
 .gfy-refinement-input-wrapper {
-  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
 }
 
 .gfy-refinement-textarea {
-  width: 100%;
-  padding: 14px 110px 14px 16px;
+  flex: 1;
+  min-height: 44px;
+  padding: 12px 16px;
   border: 2px solid var(--gfy-border-color);
   border-radius: 10px;
   font-family: inherit;
   font-size: 14px;
   background: var(--gfy-white);
   box-sizing: border-box;
-  resize: none;
+  resize: vertical;
+  line-height: 1.5;
 }
 
 .gfy-refinement-textarea:focus {
@@ -1030,10 +1045,8 @@ defineExpose({
 }
 
 .gfy-btn-refine {
-  position: absolute;
-  right: 6px;
-  top: 6px;
-  bottom: 6px;
+  flex-shrink: 0;
+  height: 44px;
   padding: 0 16px;
   background: var(--gfy-primary-color);
   color: white;
@@ -1046,6 +1059,7 @@ defineExpose({
   align-items: center;
   gap: 6px;
   transition: background 0.2s;
+  white-space: nowrap;
 }
 
 .gfy-btn-refine:hover:not(:disabled) {

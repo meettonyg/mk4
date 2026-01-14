@@ -553,19 +553,23 @@ export function useAIGuestIntro() {
 
   /**
    * Get data for saving to profile
+   * Keys match the source keys in meta.json fieldMapping:
+   * - short -> introduction_short
+   * - medium -> introduction
+   * - long -> introduction_long
    * @returns {object} Profile-saveable data
    */
   const getProfileSaveData = () => {
     const data = {};
 
     if (slots.short.lockedIntro) {
-      data.introduction_short = slots.short.lockedIntro.text;
+      data.short = slots.short.lockedIntro.text;
     }
     if (slots.medium.lockedIntro) {
-      data.introduction = slots.medium.lockedIntro.text;
+      data.medium = slots.medium.lockedIntro.text;
     }
     if (slots.long.lockedIntro) {
-      data.introduction_long = slots.long.lockedIntro.text;
+      data.long = slots.long.lockedIntro.text;
     }
 
     return data;

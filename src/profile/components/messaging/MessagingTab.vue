@@ -64,29 +64,73 @@
                     </template>
 
                     <template #display>
-                        <div class="text-area">
-                            <div v-if="store.fields.podcast_intro" class="preserve-lines" v-html="formatWithLineBreaks(store.fields.podcast_intro)"></div>
-                            <div v-else class="empty-text">
-                                <p>
-                                    <span class="info-icon">i</span>
-                                    Click edit to add your Podcast Intro to make it easy for hosts
-                                    to book and introduce you on their show.
-                                </p>
+                        <div v-if="hasAnyIntro" class="intro-versions">
+                            <div v-if="store.fields.introduction_short" class="intro-version">
+                                <div class="intro-version-header">
+                                    <span class="intro-version-badge">Short (30-45s)</span>
+                                </div>
+                                <div class="intro-version-text preserve-lines" v-html="formatWithLineBreaks(store.fields.introduction_short)"></div>
                             </div>
+                            <div v-if="store.fields.introduction || store.fields.podcast_intro" class="intro-version">
+                                <div class="intro-version-header">
+                                    <span class="intro-version-badge intro-version-badge--primary">Medium (60-90s)</span>
+                                </div>
+                                <div class="intro-version-text preserve-lines" v-html="formatWithLineBreaks(store.fields.introduction || store.fields.podcast_intro)"></div>
+                            </div>
+                            <div v-if="store.fields.introduction_long" class="intro-version">
+                                <div class="intro-version-header">
+                                    <span class="intro-version-badge">Long (2-3 min)</span>
+                                </div>
+                                <div class="intro-version-text preserve-lines" v-html="formatWithLineBreaks(store.fields.introduction_long)"></div>
+                            </div>
+                        </div>
+                        <div v-else class="empty-text">
+                            <p>
+                                <span class="info-icon">i</span>
+                                Click edit to add your Podcast Intro to make it easy for hosts
+                                to book and introduce you on their show.
+                            </p>
                         </div>
                     </template>
 
                     <template #edit>
-                        <div class="form-group">
-                            <label class="form-label">
-                                Podcast Intro (short bio, less than 50 words)
-                            </label>
-                            <textarea
-                                class="form-input textarea"
-                                v-model="editFields.podcast_intro"
-                                rows="4"
-                                placeholder="A brief introduction for podcast hosts..."
-                            ></textarea>
+                        <div class="intro-edit-sections">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <span class="intro-label-badge">Short</span>
+                                    30-45 seconds (50-80 words)
+                                </label>
+                                <textarea
+                                    class="form-input textarea"
+                                    v-model="editFields.introduction_short"
+                                    rows="3"
+                                    placeholder="A punchy intro for fast-paced podcasts..."
+                                ></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <span class="intro-label-badge intro-label-badge--primary">Medium</span>
+                                    60-90 seconds (100-150 words)
+                                </label>
+                                <textarea
+                                    class="form-input textarea"
+                                    v-model="editFields.introduction"
+                                    rows="4"
+                                    placeholder="A balanced intro with credibility..."
+                                ></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <span class="intro-label-badge">Long</span>
+                                    2-3 minutes (200-350 words)
+                                </label>
+                                <textarea
+                                    class="form-input textarea tall"
+                                    v-model="editFields.introduction_long"
+                                    rows="6"
+                                    placeholder="A comprehensive intro for keynotes..."
+                                ></textarea>
+                            </div>
                         </div>
                     </template>
                 </EditablePanel>
@@ -387,12 +431,22 @@ const editFields = reactive({});
 // Section field mappings
 const sectionFields = {
     biography: ['biography'],
-    'guest-intro': ['podcast_intro'],
+    'guest-intro': ['introduction_short', 'introduction', 'introduction_long'],
     'six-ws': ['hook_who', 'hook_what', 'hook_when', 'hook_how', 'hook_where', 'hook_why'],
     tagline: ['tagline'],
     'authority-hook': ['authority_statement'],
     'impact-intro': ['impact_intro'],
 };
+
+// Computed: Check if any intro version exists
+const hasAnyIntro = computed(() => {
+    return !!(
+        store.fields.introduction_short ||
+        store.fields.introduction ||
+        store.fields.podcast_intro ||
+        store.fields.introduction_long
+    );
+});
 
 // Methods
 const startEditing = (sectionId) => {
@@ -618,5 +672,70 @@ const saveSection = async (sectionId) => {
 
 .six-ws-edit-grid .form-group {
     margin-bottom: 0;
+}
+
+/* Guest Intro Versions */
+.intro-versions {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.intro-version {
+    padding: 16px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.intro-version-header {
+    margin-bottom: 8px;
+}
+
+.intro-version-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #e2e8f0;
+    color: #64748b;
+}
+
+.intro-version-badge--primary {
+    background: #dbeafe;
+    color: #2563eb;
+}
+
+.intro-version-text {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #334155;
+}
+
+/* Guest Intro Edit Sections */
+.intro-edit-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.intro-label-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: #e2e8f0;
+    color: #64748b;
+    margin-right: 8px;
+}
+
+.intro-label-badge--primary {
+    background: #dbeafe;
+    color: #2563eb;
 }
 </style>
