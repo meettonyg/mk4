@@ -260,8 +260,8 @@
               >
                 <div class="gfy-sidebar-slot__header">
                   <span class="gfy-sidebar-slot__label">Option {{ index + 1 }}</span>
-                  <i v-if="lockedIndex === index" class="fas fa-lock" style="color: var(--gfy-primary-color);"></i>
-                  <i v-else-if="selectedIndex === index" class="fas fa-check-circle" style="color: var(--gfy-success-color);"></i>
+                  <i v-if="lockedIndex === index" class="fas fa-lock gfy-sidebar-slot__icon--locked"></i>
+                  <i v-else-if="selectedIndex === index" class="fas fa-check-circle gfy-sidebar-slot__icon--selected"></i>
                 </div>
                 <div class="gfy-sidebar-slot__text">"{{ tagline }}"</div>
               </button>
@@ -279,7 +279,7 @@
             <!-- Results Header -->
             <div class="gfy-results__header">
               <h3 class="gfy-results__title">
-                <span style="color: var(--gfy-primary-color)">Selected Tagline</span>
+                <span class="gfy-results__title-highlight">Selected Tagline</span>
               </h3>
             </div>
 
@@ -423,19 +423,37 @@ import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
 
 const props = defineProps({
+  /**
+   * Mode: 'default', 'integrated', or 'embedded'
+   * - default: Full two-phase layout (form -> results dashboard)
+   * - integrated: Compact widget for embedding in Media Kit Builder
+   * - embedded: Landing page embed with simplified form
+   */
   mode: {
     type: String,
     default: 'default',
     validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
+  /**
+   * Component ID to apply results to (integrated mode)
+   * Used when embedding in Media Kit Builder to identify target component
+   */
   componentId: {
     type: String,
     default: null
   },
+  /**
+   * Intent object for embedded mode
+   * Contains: { id, label, contextHeading, contextDescription, formPlaceholders, formLabels }
+   */
   intent: {
     type: Object,
     default: null
   },
+  /**
+   * Profile data for pre-population (embedded mode)
+   * Passed from EmbeddedToolWrapper via scoped slot
+   */
   profileData: {
     type: Object,
     default: null
@@ -523,11 +541,19 @@ const handleGenerate = async () => {
   }
 };
 
+/**
+ * Show copy success feedback with auto-dismiss
+ * Extracted to reduce duplication across copy handlers
+ */
+const showCopySuccess = () => {
+  copySuccess.value = true;
+  setTimeout(() => { copySuccess.value = false; }, 2000);
+};
+
 // Handle copy to clipboard
 const handleCopy = async () => {
   await copyToClipboard();
-  copySuccess.value = true;
-  setTimeout(() => { copySuccess.value = false; }, 2000);
+  showCopySuccess();
 };
 
 // Handle apply (integrated mode)
@@ -633,6 +659,20 @@ defineExpose({
  * Only styles unique to this tool go here.
  * All common styles come from gfy-tool-base.css
  */
+
+/* Results title highlight */
+.gfy-results__title-highlight {
+  color: var(--gfy-primary-color);
+}
+
+/* Sidebar slot icon states */
+.gfy-sidebar-slot__icon--locked {
+  color: var(--gfy-primary-color);
+}
+
+.gfy-sidebar-slot__icon--selected {
+  color: var(--gfy-success-color);
+}
 
 /* Tagline-specific result card styling */
 .gfy-result-card--tagline {

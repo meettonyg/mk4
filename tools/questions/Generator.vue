@@ -251,7 +251,7 @@
             <!-- Results Header -->
             <div class="gfy-results__header">
               <h3 class="gfy-results__title">
-                <span style="color: var(--gfy-primary-color)">{{ activeCategoryLabel }}</span>
+                <span class="gfy-results__title-highlight">{{ activeCategoryLabel }}</span>
               </h3>
               <span class="gfy-results__count">{{ currentCategoryQuestions.length }} questions</span>
             </div>
@@ -346,19 +346,37 @@ import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
 import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 
 const props = defineProps({
+  /**
+   * Mode: 'default', 'integrated', or 'embedded'
+   * - default: Full two-phase layout (form -> results dashboard)
+   * - integrated: Compact widget for embedding in Media Kit Builder
+   * - embedded: Landing page embed with simplified form
+   */
   mode: {
     type: String,
     default: 'default',
     validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
+  /**
+   * Component ID to apply results to (integrated mode)
+   * Used when embedding in Media Kit Builder to identify target component
+   */
   componentId: {
     type: String,
     default: null
   },
+  /**
+   * Intent object for embedded mode
+   * Contains: { id, label, contextHeading, contextDescription, formPlaceholders, formLabels }
+   */
   intent: {
     type: Object,
     default: null
   },
+  /**
+   * Profile data for pre-population (embedded mode)
+   * Passed from EmbeddedToolWrapper via scoped slot
+   */
   profileData: {
     type: Object,
     default: null
@@ -481,19 +499,26 @@ const handleGenerate = async () => {
   }
 };
 
+/**
+ * Show copy success feedback with auto-dismiss
+ * Extracted to reduce duplication across copy handlers
+ */
+const showCopySuccess = () => {
+  copySuccess.value = true;
+  setTimeout(() => { copySuccess.value = false; }, 2000);
+};
+
 // Handle copy all to clipboard
 const handleCopy = async () => {
   await copyToClipboard();
-  copySuccess.value = true;
-  setTimeout(() => { copySuccess.value = false; }, 2000);
+  showCopySuccess();
 };
 
 // Handle copy single question
 const handleCopyQuestion = async (question) => {
   try {
     await navigator.clipboard.writeText(question);
-    copySuccess.value = true;
-    setTimeout(() => { copySuccess.value = false; }, 2000);
+    showCopySuccess();
   } catch (err) {
     console.error('Failed to copy:', err);
   }
@@ -593,6 +618,11 @@ defineExpose({
  * Only styles unique to this tool go here.
  * All common styles come from gfy-tool-base.css
  */
+
+/* Results title highlight */
+.gfy-results__title-highlight {
+  color: var(--gfy-primary-color);
+}
 
 /* Integrated Mode Styles */
 .gmkb-ai-questions__list {
