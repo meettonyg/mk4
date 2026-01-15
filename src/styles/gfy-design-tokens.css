@@ -1,0 +1,174 @@
+/**
+ * GFY Design Tokens - Shared CSS Variables
+ *
+ * This file contains ONLY CSS custom properties (variables).
+ * Tools import this file for consistent styling while remaining self-contained.
+ *
+ * ARCHITECTURE:
+ * - Each tool is SELF-CONTAINED with its own complete template
+ * - Tools SHARE these variables for visual consistency
+ * - NO component dependencies between tools
+ * - If one tool breaks, others are unaffected
+ *
+ * USAGE:
+ * In your tool's <style> section:
+ *   @import '@/styles/gfy-design-tokens.css';
+ *
+ * Then use variables like:
+ *   background: var(--gfy-primary-color);
+ *
+ * @package GMKB
+ * @subpackage Styles
+ * @version 1.0.0
+ */
+
+:root {
+  /* ============================================
+     COLOR PALETTE
+     ============================================ */
+
+  /* Primary - Blue */
+  --gfy-primary-color: #2563eb;
+  --gfy-primary-light: #eff6ff;
+  --gfy-primary-dark: #1d4ed8;
+  --gfy-primary-darker: #1e40af;
+
+  /* Success - Green */
+  --gfy-success-color: #10b981;
+  --gfy-success-light: #d1fae5;
+  --gfy-success-dark: #059669;
+
+  /* Warning - Yellow/Amber */
+  --gfy-warning-color: #f59e0b;
+  --gfy-warning-light: #fef3c7;
+  --gfy-warning-dark: #d97706;
+
+  /* Error - Red */
+  --gfy-error-color: #dc2626;
+  --gfy-error-light: #fef2f2;
+  --gfy-error-dark: #b91c1c;
+
+  /* Info - Cyan */
+  --gfy-info-color: #0891b2;
+  --gfy-info-light: #ecfeff;
+  --gfy-info-dark: #0e7490;
+
+  /* ============================================
+     TEXT COLORS
+     ============================================ */
+  --gfy-text-primary: #0f172a;
+  --gfy-text-secondary: #64748b;
+  --gfy-text-muted: #94a3b8;
+  --gfy-text-light: #cbd5e1;
+  --gfy-text-inverse: #ffffff;
+
+  /* ============================================
+     BACKGROUND COLORS
+     ============================================ */
+  --gfy-bg-primary: #ffffff;
+  --gfy-bg-secondary: #f8fafc;
+  --gfy-bg-tertiary: #f1f5f9;
+  --gfy-bg-dark: #0f172a;
+
+  /* ============================================
+     BORDER COLORS
+     ============================================ */
+  --gfy-border-color: #e2e8f0;
+  --gfy-border-light: #f1f5f9;
+  --gfy-border-dark: #cbd5e1;
+  --gfy-border-focus: var(--gfy-primary-color);
+
+  /* ============================================
+     SPACING SCALE
+     ============================================ */
+  --gfy-space-xs: 4px;
+  --gfy-space-sm: 8px;
+  --gfy-space-md: 16px;
+  --gfy-space-lg: 24px;
+  --gfy-space-xl: 32px;
+  --gfy-space-2xl: 40px;
+  --gfy-space-3xl: 48px;
+
+  /* ============================================
+     BORDER RADIUS
+     ============================================ */
+  --gfy-radius-sm: 4px;
+  --gfy-radius-md: 8px;
+  --gfy-radius-lg: 12px;
+  --gfy-radius-xl: 16px;
+  --gfy-radius-full: 9999px;
+
+  /* ============================================
+     SHADOWS
+     ============================================ */
+  --gfy-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --gfy-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --gfy-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --gfy-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --gfy-shadow-focus: 0 0 0 3px var(--gfy-primary-light);
+
+  /* ============================================
+     TYPOGRAPHY
+     ============================================ */
+  --gfy-font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  /* Font Sizes */
+  --gfy-font-xs: 12px;
+  --gfy-font-sm: 14px;
+  --gfy-font-base: 16px;
+  --gfy-font-lg: 18px;
+  --gfy-font-xl: 20px;
+  --gfy-font-2xl: 24px;
+  --gfy-font-3xl: 30px;
+  --gfy-font-4xl: 36px;
+
+  /* Font Weights */
+  --gfy-font-normal: 400;
+  --gfy-font-medium: 500;
+  --gfy-font-semibold: 600;
+  --gfy-font-bold: 700;
+  --gfy-font-extrabold: 800;
+
+  /* Line Heights */
+  --gfy-line-tight: 1.25;
+  --gfy-line-normal: 1.5;
+  --gfy-line-relaxed: 1.625;
+
+  /* ============================================
+     TRANSITIONS
+     ============================================ */
+  --gfy-transition-fast: 0.15s ease;
+  --gfy-transition-normal: 0.2s ease;
+  --gfy-transition-slow: 0.3s ease;
+
+  /* ============================================
+     LAYOUT
+     ============================================ */
+  --gfy-container-max: 1100px;
+  --gfy-sidebar-width: 320px;
+  --gfy-form-max-width: 600px;
+
+  /* ============================================
+     Z-INDEX SCALE
+     ============================================ */
+  --gfy-z-base: 0;
+  --gfy-z-dropdown: 10;
+  --gfy-z-sticky: 20;
+  --gfy-z-modal: 30;
+  --gfy-z-toast: 40;
+}
+
+/* ============================================
+   DARK MODE OVERRIDES (optional)
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+  :root.gfy-dark {
+    --gfy-text-primary: #f8fafc;
+    --gfy-text-secondary: #94a3b8;
+    --gfy-text-muted: #64748b;
+    --gfy-bg-primary: #0f172a;
+    --gfy-bg-secondary: #1e293b;
+    --gfy-bg-tertiary: #334155;
+    --gfy-border-color: #334155;
+  }
+}

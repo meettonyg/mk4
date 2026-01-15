@@ -1,210 +1,58 @@
 <template>
-  <!-- Use StandardAiTool wrapper for consistent layout -->
-  <StandardAiTool
+  <!-- Integrated Mode: Compact widget for Media Kit Builder -->
+  <AiWidgetFrame
+    v-if="mode === 'integrated'"
     title="Interview Questions Generator"
-    :subtitle="mode === 'default' ? 'Generate 25 professional interview questions organized into four strategic categories designed for engaging conversations.' : ''"
     description="Generate 25 thoughtful interview questions organized by category."
-    tool-type="questions"
-    target-component="Questions"
     :mode="mode"
     :is-loading="isGenerating"
     :has-results="hasQuestions"
-    :show-results="showResults"
-    :can-generate="canGenerate"
     :error="error"
-    :show-copy-success="copySuccess"
     :usage-remaining="usageRemaining"
     :reset-time="resetTime"
-    generate-button-text="Generate 25 Interview Questions"
-    loading-text="Generating your interview questions..."
-    generate-hint="We'll create questions across 4 categories: Introductory, Expertise, Story-Based, and Actionable"
-    :results-title="'Your Interview Questions'"
-    :results-subtitle="`${questions.length} questions across ${categoriesArray.length} categories. Select a category to explore.`"
-    :results-header="activeCategoryLabel"
-    @generate="handleStartGeneration"
-    @regenerate="handleGenerate"
+    target-component="Questions"
+    :show-cta="!hasQuestions"
+    :cta-variant="usageRemaining === 0 ? 'exhausted' : 'default'"
     @apply="handleApply"
+    @regenerate="handleGenerate"
     @copy="handleCopy"
     @retry="handleGenerate"
-    @start-over="handleStartOver"
   >
-    <!-- FORM SLOT: Tool-specific form fields -->
-    <template #form>
-      <!-- Topics Section -->
-      <div class="gfy-highlight-box gfy-highlight-box--blue">
-        <div class="gfy-highlight-box__header">
-          <span class="gfy-highlight-box__icon">
-            <i class="fas fa-comments"></i>
-          </span>
-          <div>
-            <h3 class="gfy-highlight-box__title">Interview Topics</h3>
-            <p class="gfy-highlight-box__subtitle">What subjects do you typically discuss in your interviews?</p>
-          </div>
-        </div>
-
-        <div class="gfy-form-group">
-          <label class="gfy-form-label gfy-form-label--required">Topics You Discuss</label>
-          <textarea
-            v-model="topicsText"
-            class="gfy-form-textarea"
-            placeholder="e.g., Leadership development, Building high-performance teams, Navigating career transitions, Entrepreneurship, Work-life balance..."
-            rows="4"
-          ></textarea>
-          <span class="gfy-form-hint">
-            List 3-5 topics you typically discuss in interviews. Be specific about the areas you want to explore.
-          </span>
-        </div>
-
-        <!-- Live Preview -->
-        <div v-if="topicsText.trim()" class="gfy-live-preview">
-          <span class="gfy-live-preview__label">Topics Preview:</span>
-          {{ topicsPreview }}
-        </div>
+    <!-- Input Form -->
+    <div class="gmkb-ai-form">
+      <div class="gmkb-ai-form-group">
+        <label class="gmkb-ai-label gmkb-ai-label--required">Topics You Discuss</label>
+        <textarea
+          v-model="topicsText"
+          class="gmkb-ai-input gmkb-ai-textarea"
+          placeholder="e.g., Leadership development, Building high-performance teams..."
+          rows="3"
+        ></textarea>
+        <span class="gmkb-ai-hint">List 3-5 topics you typically discuss.</span>
       </div>
 
-      <!-- Authority Context (using reusable component) -->
-      <AuthorityContext
-        :show-authority-hook="false"
-        :show-impact-intro="false"
-        :show-combined="true"
-        v-model:combined="authorityHookText"
-        combined-title="Your Background"
-        combined-subtitle="Add context for more tailored questions."
-        combined-label="Authority Hook"
-        :combined-required="false"
-        combined-placeholder="e.g., Former Fortune 500 executive turned leadership coach helping founders scale their impact..."
-        combined-hint="Providing your background helps generate questions that leverage your unique perspective and expertise."
-        :combined-rows="3"
+      <div class="gmkb-ai-form-group">
+        <label class="gmkb-ai-label">Your Background (Optional)</label>
+        <textarea
+          v-model="authorityHookText"
+          class="gmkb-ai-input gmkb-ai-textarea"
+          placeholder="e.g., Former Fortune 500 executive turned leadership coach..."
+          rows="2"
+        ></textarea>
+      </div>
+
+      <AiGenerateButton
+        text="Generate 25 Questions"
+        loading-text="Generating questions..."
+        :loading="isGenerating"
+        :disabled="!canGenerate"
+        full-width
+        @click="handleGenerate"
       />
-    </template>
+    </div>
 
-    <!-- INTEGRATED FORM SLOT: Compact form for widget mode -->
-    <template #integrated-form>
-      <div class="gmkb-ai-form">
-        <div class="gmkb-ai-form-group">
-          <label class="gmkb-ai-label gmkb-ai-label--required">Topics You Discuss</label>
-          <textarea
-            v-model="topicsText"
-            class="gmkb-ai-input gmkb-ai-textarea"
-            placeholder="e.g., Leadership development, Building high-performance teams..."
-            rows="3"
-          ></textarea>
-          <span class="gmkb-ai-hint">List 3-5 topics you typically discuss.</span>
-        </div>
-
-        <div class="gmkb-ai-form-group">
-          <label class="gmkb-ai-label">Your Background (Optional)</label>
-          <textarea
-            v-model="authorityHookText"
-            class="gmkb-ai-input gmkb-ai-textarea"
-            placeholder="e.g., Former Fortune 500 executive turned leadership coach..."
-            rows="2"
-          ></textarea>
-        </div>
-
-        <AiGenerateButton
-          text="Generate 25 Questions"
-          loading-text="Generating questions..."
-          :loading="isGenerating"
-          :disabled="!canGenerate"
-          full-width
-          @click="handleGenerate"
-        />
-      </div>
-    </template>
-
-    <!-- SIDEBAR SLOT: Category selection -->
-    <template #sidebar>
-      <div class="gfy-sidebar-panel">
-        <div class="gfy-sidebar-header">
-          <h3 class="gfy-sidebar-title">Question Categories</h3>
-        </div>
-
-        <!-- Category Slots -->
-        <button
-          v-for="category in categoriesArray"
-          :key="category.key"
-          type="button"
-          class="gfy-sidebar-slot"
-          :class="{
-            'gfy-sidebar-slot--active': activeCategory === category.key,
-            'gfy-sidebar-slot--has-content': getCategoryQuestions(category.key).length > 0
-          }"
-          @click="setActiveCategory(category.key)"
-        >
-          <div class="gfy-sidebar-slot__header">
-            <span class="gfy-sidebar-slot__label">{{ category.label }}</span>
-            <span class="gfy-sidebar-slot__badge">{{ getCategoryQuestions(category.key).length }}</span>
-          </div>
-          <div class="gfy-sidebar-slot__preview">
-            {{ getCategoryPreview(category.key) }}
-          </div>
-        </button>
-
-        <!-- Summary -->
-        <div class="gfy-sidebar-summary">
-          <i class="fas fa-check-circle"></i>
-          {{ questions.length }} total questions
-        </div>
-      </div>
-    </template>
-
-    <!-- RESULTS SLOT: Questions list -->
+    <!-- Results -->
     <template #results>
-      <template v-if="currentCategoryQuestions.length > 0">
-        <div
-          v-for="(question, index) in currentCategoryQuestions"
-          :key="index"
-          class="gfy-result-card"
-        >
-          <div class="gfy-result-card__number">{{ getCategoryStartIndex(activeCategory) + index }}</div>
-          <div class="gfy-result-card__content">
-            <p class="gfy-result-card__text">{{ question }}</p>
-            <div class="gfy-result-card__actions">
-              <button
-                type="button"
-                class="gfy-btn gfy-btn--ghost gfy-btn--sm"
-                @click="handleCopyQuestion(question)"
-              >
-                <i class="fas fa-copy"></i> Copy
-              </button>
-            </div>
-          </div>
-        </div>
-      </template>
-
-      <div v-else class="gfy-empty-state">
-        <i class="fas fa-question-circle"></i>
-        <p>No questions in this category yet.</p>
-      </div>
-    </template>
-
-    <!-- RESULTS COUNT SLOT -->
-    <template #results-count>
-      <span class="gfy-results-count">{{ currentCategoryQuestions.length }} questions</span>
-    </template>
-
-    <!-- FOOTER ACTIONS SLOT -->
-    <template #footer-actions>
-      <button
-        type="button"
-        class="gfy-btn gfy-btn--primary gfy-btn--large"
-        @click="handleCopy"
-      >
-        <i class="fas fa-copy"></i>
-        Copy All Questions
-      </button>
-      <button type="button" class="gfy-btn gfy-btn--outline" @click="handleGenerate">
-        <i class="fas fa-sync-alt"></i>
-        Regenerate
-      </button>
-      <button type="button" class="gfy-btn gfy-btn--ghost" @click="handleStartOver">
-        Start Over
-      </button>
-    </template>
-
-    <!-- INTEGRATED RESULTS SLOT -->
-    <template #integrated-results>
       <div v-if="hasQuestions" class="gmkb-ai-questions">
         <div class="gmkb-ai-accordion">
           <div
@@ -241,24 +89,260 @@
             </div>
           </div>
         </div>
-
         <div class="gmkb-ai-questions__summary">
           {{ questions.length }} questions generated across {{ categoriesArray.length }} categories
         </div>
       </div>
     </template>
-  </StandardAiTool>
+  </AiWidgetFrame>
+
+  <!-- Default/Standalone Mode: Full Self-Contained Tool -->
+  <div v-else class="gfy-tool gfy-tool--questions">
+    <!-- Phase 1: Input Form -->
+    <div v-if="!showResults" class="gfy-tool__form-phase">
+      <!-- Hero Section -->
+      <div v-if="mode === 'default'" class="gfy-tool__hero">
+        <h1 class="gfy-tool__title">Interview Questions Generator</h1>
+        <p class="gfy-tool__subtitle">
+          Generate 25 professional interview questions organized into four strategic categories designed for engaging conversations.
+        </p>
+      </div>
+
+      <!-- Form Container -->
+      <div class="gfy-tool__form-container" :class="{ 'gfy-tool__form-container--embedded': mode === 'embedded' }">
+        <!-- Topics Section -->
+        <div class="gfy-highlight-box gfy-highlight-box--blue">
+          <div class="gfy-highlight-box__header">
+            <span class="gfy-highlight-box__icon">
+              <i class="fas fa-comments"></i>
+            </span>
+            <div>
+              <h3 class="gfy-highlight-box__title">Interview Topics</h3>
+              <p class="gfy-highlight-box__subtitle">What subjects do you typically discuss in your interviews?</p>
+            </div>
+          </div>
+
+          <div class="gfy-form-group">
+            <label class="gfy-form-label gfy-form-label--required">Topics You Discuss</label>
+            <textarea
+              v-model="topicsText"
+              class="gfy-form-textarea"
+              placeholder="e.g., Leadership development, Building high-performance teams, Navigating career transitions, Entrepreneurship, Work-life balance..."
+              rows="4"
+            ></textarea>
+            <span class="gfy-form-hint">
+              List 3-5 topics you typically discuss in interviews. Be specific about the areas you want to explore.
+            </span>
+          </div>
+
+          <!-- Live Preview -->
+          <div v-if="topicsText.trim()" class="gfy-live-preview">
+            <span class="gfy-live-preview__label">Topics Preview:</span>
+            {{ topicsPreview }}
+          </div>
+        </div>
+
+        <!-- Context Section -->
+        <div class="gfy-highlight-box gfy-highlight-box--green">
+          <div class="gfy-highlight-box__header">
+            <span class="gfy-highlight-box__icon">
+              <i class="fas fa-user-tie"></i>
+            </span>
+            <div>
+              <h3 class="gfy-highlight-box__title">Your Background</h3>
+              <p class="gfy-highlight-box__subtitle">Add context for more tailored questions.</p>
+            </div>
+          </div>
+
+          <div class="gfy-form-group">
+            <label class="gfy-form-label">
+              Authority Hook
+              <span class="gfy-form-label__optional">Optional</span>
+            </label>
+            <textarea
+              v-model="authorityHookText"
+              class="gfy-form-textarea"
+              placeholder="e.g., Former Fortune 500 executive turned leadership coach helping founders scale their impact..."
+              rows="3"
+            ></textarea>
+            <span class="gfy-form-hint">
+              Providing your background helps generate questions that leverage your unique perspective and expertise.
+            </span>
+          </div>
+        </div>
+
+        <!-- Generate Button -->
+        <div v-if="mode === 'default'" class="gfy-tool__actions">
+          <button
+            type="button"
+            class="gfy-btn gfy-btn--primary gfy-btn--large gfy-btn--generate"
+            :disabled="!canGenerate || isGenerating"
+            @click="handleStartGeneration"
+          >
+            <i v-if="!isGenerating" class="fas fa-magic"></i>
+            <span v-if="isGenerating" class="gfy-spinner"></span>
+            {{ isGenerating ? 'Generating...' : 'Generate 25 Interview Questions' }}
+          </button>
+          <p class="gfy-tool__actions-hint">
+            We'll create questions across 4 categories: Introductory, Expertise, Story-Based, and Actionable
+          </p>
+        </div>
+
+        <!-- Error Display -->
+        <div v-if="error" class="gfy-error-box">
+          <i class="fas fa-exclamation-circle"></i>
+          <p>{{ error }}</p>
+          <button type="button" class="gfy-btn gfy-btn--outline" @click="handleStartGeneration">
+            Try Again
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 2: Results Dashboard -->
+    <div v-else class="gfy-tool__results-phase">
+      <!-- Results Hero -->
+      <div class="gfy-tool__hero gfy-tool__hero--compact">
+        <h1 class="gfy-tool__title">Your Interview Questions</h1>
+        <p class="gfy-tool__subtitle">
+          {{ questions.length }} questions across {{ categoriesArray.length }} categories. Select a category to explore.
+        </p>
+      </div>
+
+      <div class="gfy-results-container">
+        <div class="gfy-results-layout">
+          <!-- SIDEBAR: Category Selection -->
+          <aside class="gfy-results-layout__sidebar">
+            <div class="gfy-sidebar-panel">
+              <div class="gfy-sidebar-header">
+                <h3 class="gfy-sidebar-title">Question Categories</h3>
+              </div>
+
+              <!-- Category Slots -->
+              <button
+                v-for="category in categoriesArray"
+                :key="category.key"
+                type="button"
+                class="gfy-sidebar-slot"
+                :class="{
+                  'gfy-sidebar-slot--active': activeCategory === category.key
+                }"
+                @click="setActiveCategory(category.key)"
+              >
+                <div class="gfy-sidebar-slot__header">
+                  <span class="gfy-sidebar-slot__label">{{ category.label }}</span>
+                  <span class="gfy-sidebar-slot__badge">{{ getCategoryQuestions(category.key).length }}</span>
+                </div>
+                <div class="gfy-sidebar-slot__preview">
+                  {{ getCategoryPreview(category.key) }}
+                </div>
+              </button>
+
+              <!-- Summary -->
+              <div class="gfy-sidebar-summary">
+                <i class="fas fa-check-circle"></i>
+                {{ questions.length }} total questions
+              </div>
+            </div>
+          </aside>
+
+          <!-- MAIN: Questions List -->
+          <main class="gfy-results-layout__main">
+            <!-- Results Header -->
+            <div class="gfy-results__header">
+              <h3 class="gfy-results__title">
+                <span style="color: var(--gfy-primary-color)">{{ activeCategoryLabel }}</span>
+              </h3>
+              <span class="gfy-results__count">{{ currentCategoryQuestions.length }} questions</span>
+            </div>
+
+            <!-- Loading State -->
+            <div v-if="isGenerating" class="gfy-loading-state">
+              <div class="gfy-loading-spinner"></div>
+              <p>Generating your interview questions...</p>
+            </div>
+
+            <!-- Questions List -->
+            <template v-else-if="currentCategoryQuestions.length > 0">
+              <div
+                v-for="(question, index) in currentCategoryQuestions"
+                :key="index"
+                class="gfy-result-card"
+              >
+                <div class="gfy-result-card__number">{{ getCategoryStartIndex(activeCategory) + index }}</div>
+                <div class="gfy-result-card__content">
+                  <p class="gfy-result-card__text">{{ question }}</p>
+                  <div class="gfy-result-card__actions">
+                    <button
+                      type="button"
+                      class="gfy-btn gfy-btn--ghost gfy-btn--sm"
+                      @click="handleCopyQuestion(question)"
+                    >
+                      <i class="fas fa-copy"></i> Copy
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </template>
+
+            <!-- Empty State -->
+            <div v-else class="gfy-empty-state">
+              <i class="fas fa-question-circle"></i>
+              <p>No questions in this category yet.</p>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="gfy-tool__footer">
+              <button
+                type="button"
+                class="gfy-btn gfy-btn--primary gfy-btn--large"
+                @click="handleCopy"
+              >
+                <i class="fas fa-copy"></i>
+                Copy All Questions
+              </button>
+              <button type="button" class="gfy-btn gfy-btn--outline" @click="handleGenerate">
+                <i class="fas fa-sync-alt"></i>
+                Regenerate
+              </button>
+              <button type="button" class="gfy-btn gfy-btn--ghost" @click="handleStartOver">
+                Start Over
+              </button>
+            </div>
+
+            <!-- Copy Success -->
+            <div v-if="copySuccess" class="gfy-copy-success">
+              <i class="fas fa-check-circle"></i>
+              Copied to clipboard!
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
+/**
+ * Questions Generator - Self-Contained Tool
+ *
+ * ARCHITECTURE:
+ * - This component is FULLY SELF-CONTAINED
+ * - It imports shared CSS for styling consistency
+ * - NO component dependencies on other tools
+ * - If this tool breaks, other tools are unaffected
+ *
+ * @package GMKB
+ * @subpackage Tools/Questions
+ */
+
 import { ref, computed, onMounted, watch, inject } from 'vue';
 import { useAIQuestions, QUESTION_CATEGORIES } from '../../src/composables/useAIQuestions';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
+import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
 
-// Shared components
-import { StandardAiTool, AuthorityContext, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
-
-// Integrated mode components
+// Integrated mode components only
+import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
 import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 
 const props = defineProps({
@@ -493,14 +577,22 @@ defineExpose({
 });
 </script>
 
-<style scoped>
-/* Tool-specific styles only - base styles inherited from StandardAiTool */
+<style>
+/**
+ * SHARED CSS IMPORT
+ * Import design tokens and base styles for consistency.
+ * This tool remains self-contained - these are just CSS classes.
+ */
+@import '@/styles/gfy-design-tokens.css';
+@import '@/styles/gfy-tool-base.css';
+</style>
 
-/* Results count styling */
-.gfy-results-count {
-  font-size: 0.875rem;
-  color: var(--gfy-text-muted, #94a3b8);
-}
+<style scoped>
+/**
+ * TOOL-SPECIFIC STYLES
+ * Only styles unique to this tool go here.
+ * All common styles come from gfy-tool-base.css
+ */
 
 /* Integrated Mode Styles */
 .gmkb-ai-questions__list {

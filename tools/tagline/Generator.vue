@@ -1,259 +1,60 @@
 <template>
-  <!-- Use StandardAiTool wrapper for consistent layout -->
-  <StandardAiTool
+  <!-- Integrated Mode: Compact widget for Media Kit Builder -->
+  <AiWidgetFrame
+    v-if="mode === 'integrated'"
     title="Tagline Generator"
-    :subtitle="mode === 'default' ? 'Create memorable taglines that capture your unique value proposition and stick in people\\'s minds.' : ''"
     description="Create memorable taglines that capture your unique value proposition."
-    tool-type="tagline"
-    target-component="Tagline"
     :mode="mode"
     :is-loading="isGenerating"
     :has-results="hasTaglines"
-    :show-results="showResults"
-    :can-generate="canGenerate"
     :error="error"
-    :show-copy-success="copySuccess"
     :usage-remaining="usageRemaining"
     :reset-time="resetTime"
-    generate-button-text="Generate 5 Taglines"
-    loading-text="Generating your taglines..."
-    generate-hint="We'll create 5 unique taglines based on your value proposition"
-    :results-title="'Your Taglines'"
-    :results-subtitle="'Select your favorite tagline. Click to choose, then lock it in.'"
-    results-header="Selected Tagline"
-    @generate="handleStartGeneration"
-    @regenerate="handleGenerate"
+    target-component="Tagline"
+    :show-cta="!hasTaglines"
+    :cta-variant="usageRemaining === 0 ? 'exhausted' : 'default'"
     @apply="handleApply"
+    @regenerate="handleGenerate"
     @copy="handleCopy"
     @retry="handleGenerate"
-    @start-over="handleStartOver"
   >
-    <!-- FORM SLOT: Tool-specific form fields -->
-    <template #form>
-      <!-- Basic Information -->
-      <div class="gfy-form-section">
-        <div class="gfy-form-group">
-          <label class="gfy-form-label">Your Name or Brand</label>
-          <input
-            v-model="name"
-            type="text"
-            class="gfy-form-input"
-            placeholder="e.g., Jane Smith or Acme Coaching"
-          />
-          <span class="gfy-form-hint">Optional: Personalize your tagline with your name.</span>
-        </div>
-      </div>
-
-      <!-- Authority Context (using reusable component) -->
-      <AuthorityContext
-        :show-authority-hook="false"
-        :show-impact-intro="false"
-        :show-combined="true"
-        v-model:combined="authorityHookText"
-        combined-title="Your Value Proposition"
-        combined-subtitle="What transformation do you provide? Who do you help?"
-        combined-label="What You Do"
-        :combined-required="true"
-        combined-placeholder="e.g., I help entrepreneurs build sustainable businesses through strategic planning and mindset coaching. I work with founders who are stuck at a growth plateau and help them break through to their next level of success."
-        combined-hint="Describe your work, who you help, and the results you deliver. The more specific, the better your taglines will be."
-        :combined-rows="4"
-      />
-
-      <!-- Tone Selection -->
-      <div class="gfy-highlight-box gfy-highlight-box--green">
-        <div class="gfy-highlight-box__header">
-          <span class="gfy-highlight-box__icon">
-            <i class="fas fa-palette"></i>
-          </span>
-          <div>
-            <h3 class="gfy-highlight-box__title">Tagline Style</h3>
-            <p class="gfy-highlight-box__subtitle">Choose the voice and feel of your taglines.</p>
-          </div>
-        </div>
-
-        <div class="gfy-form-group">
-          <label class="gfy-form-label">Tone</label>
-          <select v-model="tone" class="gfy-form-select">
-            <option value="professional">Professional</option>
-            <option value="conversational">Conversational</option>
-            <option value="authoritative">Authoritative</option>
-            <option value="friendly">Friendly</option>
-          </select>
-        </div>
-      </div>
-    </template>
-
-    <!-- INTEGRATED FORM SLOT: Compact form for widget mode -->
-    <template #integrated-form>
-      <div class="gmkb-ai-form">
-        <div class="gmkb-ai-form-group">
-          <label class="gmkb-ai-label">Your Name (Optional)</label>
-          <input
-            v-model="name"
-            type="text"
-            class="gmkb-ai-input"
-            placeholder="e.g., Jane Smith"
-          />
-        </div>
-
-        <div class="gmkb-ai-form-group">
-          <label class="gmkb-ai-label gmkb-ai-label--required">What You Do</label>
-          <textarea
-            v-model="authorityHookText"
-            class="gmkb-ai-input gmkb-ai-textarea"
-            placeholder="e.g., I help entrepreneurs build sustainable businesses through strategic planning and mindset coaching..."
-            rows="3"
-          ></textarea>
-          <span class="gmkb-ai-hint">Describe your work and the transformation you provide.</span>
-        </div>
-
-        <AiToneSelector v-model="tone" />
-
-        <AiGenerateButton
-          text="Generate 5 Taglines"
-          loading-text="Generating taglines..."
-          :loading="isGenerating"
-          :disabled="!canGenerate"
-          full-width
-          @click="handleGenerate"
+    <!-- Input Form -->
+    <div class="gmkb-ai-form">
+      <div class="gmkb-ai-form-group">
+        <label class="gmkb-ai-label">Your Name (Optional)</label>
+        <input
+          v-model="name"
+          type="text"
+          class="gmkb-ai-input"
+          placeholder="e.g., Jane Smith"
         />
       </div>
-    </template>
 
-    <!-- SIDEBAR SLOT: Tagline selection -->
-    <template #sidebar>
-      <div class="gfy-sidebar-panel">
-        <div class="gfy-sidebar-header">
-          <h3 class="gfy-sidebar-title">Your Taglines</h3>
-        </div>
-
-        <!-- Tagline Slots -->
-        <button
-          v-for="(tagline, index) in taglines"
-          :key="index"
-          type="button"
-          class="gfy-sidebar-slot"
-          :class="{
-            'gfy-sidebar-slot--active': selectedIndex === index,
-            'gfy-sidebar-slot--locked': lockedIndex === index
-          }"
-          @click="handleSelectTagline(index)"
-        >
-          <div class="gfy-sidebar-slot__header">
-            <span class="gfy-sidebar-slot__label">Option {{ index + 1 }}</span>
-            <i v-if="lockedIndex === index" class="fas fa-lock" style="color: var(--gfy-primary-color);"></i>
-            <i v-else-if="selectedIndex === index" class="fas fa-check-circle" style="color: var(--gfy-success-color);"></i>
-          </div>
-          <div class="gfy-sidebar-slot__text">"{{ tagline }}"</div>
-        </button>
-
-        <!-- Locked Summary -->
-        <div v-if="lockedIndex !== null" class="gfy-sidebar-summary">
-          <i class="fas fa-lock"></i>
-          Tagline locked
-        </div>
+      <div class="gmkb-ai-form-group">
+        <label class="gmkb-ai-label gmkb-ai-label--required">What You Do</label>
+        <textarea
+          v-model="authorityHookText"
+          class="gmkb-ai-input gmkb-ai-textarea"
+          placeholder="e.g., I help entrepreneurs build sustainable businesses through strategic planning and mindset coaching..."
+          rows="3"
+        ></textarea>
+        <span class="gmkb-ai-hint">Describe your work and the transformation you provide.</span>
       </div>
-    </template>
 
-    <!-- RESULTS SLOT: Selected tagline display -->
+      <AiToneSelector v-model="tone" />
+
+      <AiGenerateButton
+        text="Generate 5 Taglines"
+        loading-text="Generating taglines..."
+        :loading="isGenerating"
+        :disabled="!canGenerate"
+        full-width
+        @click="handleGenerate"
+      />
+    </div>
+
+    <!-- Results -->
     <template #results>
-      <!-- Locked State -->
-      <div v-if="lockedIndex !== null" class="gfy-locked-content">
-        <div class="gfy-locked-content__badge">
-          <i class="fas fa-lock"></i>
-          LOCKED TAGLINE
-        </div>
-        <div class="gfy-locked-content__text">
-          "{{ taglines[lockedIndex] }}"
-        </div>
-        <div class="gfy-locked-content__actions">
-          <button type="button" class="gfy-btn gfy-btn--outline" @click="handleCopy">
-            <i class="fas fa-copy"></i> Copy
-          </button>
-          <button type="button" class="gfy-btn gfy-btn--ghost" @click="unlockTagline">
-            <i class="fas fa-unlock"></i> Unlock & Edit
-          </button>
-        </div>
-      </div>
-
-      <!-- Selected Preview -->
-      <template v-else-if="selectedTagline">
-        <div class="gfy-selected-content">
-          <div class="gfy-selected-content__badge">
-            Option {{ selectedIndex + 1 }}
-          </div>
-          <div class="gfy-selected-content__text">
-            "{{ selectedTagline }}"
-          </div>
-          <div class="gfy-selected-content__actions">
-            <button
-              type="button"
-              class="gfy-btn gfy-btn--primary"
-              @click="lockTagline(selectedIndex)"
-            >
-              <i class="fas fa-lock"></i>
-              Lock This Tagline
-            </button>
-            <button
-              type="button"
-              class="gfy-btn gfy-btn--outline"
-              @click="handleCopy"
-            >
-              <i class="fas fa-copy"></i> Copy
-            </button>
-          </div>
-        </div>
-
-        <!-- Navigation -->
-        <div class="gfy-nav">
-          <button
-            type="button"
-            class="gfy-btn gfy-btn--outline"
-            :disabled="selectedIndex <= 0"
-            @click="selectPrevious"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="15 18 9 12 15 6"/>
-            </svg>
-            Previous
-          </button>
-          <span class="gfy-nav__count">
-            {{ selectedIndex + 1 }} / {{ taglines.length }}
-          </span>
-          <button
-            type="button"
-            class="gfy-btn gfy-btn--outline"
-            :disabled="selectedIndex >= taglines.length - 1"
-            @click="selectNext"
-          >
-            Next
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </button>
-        </div>
-      </template>
-
-      <!-- Empty State -->
-      <div v-else class="gfy-empty-state">
-        <i class="fas fa-quote-left"></i>
-        <p>Select a tagline from the sidebar to preview it.</p>
-      </div>
-    </template>
-
-    <!-- FOOTER ACTIONS SLOT -->
-    <template #footer-actions>
-      <button type="button" class="gfy-btn gfy-btn--outline" @click="handleGenerate">
-        <i class="fas fa-sync-alt"></i>
-        Regenerate All
-      </button>
-      <button type="button" class="gfy-btn gfy-btn--ghost" @click="handleStartOver">
-        Start Over
-      </button>
-    </template>
-
-    <!-- INTEGRATED RESULTS SLOT -->
-    <template #integrated-results>
       <div v-if="hasTaglines" class="gmkb-ai-taglines">
         <p class="gmkb-ai-taglines__instruction">
           Click a tagline to select it:
@@ -270,49 +71,353 @@
           <span class="gmkb-ai-taglines__preview-label">Selected:</span>
           <span class="gmkb-ai-taglines__preview-text">"{{ selectedTagline }}"</span>
         </div>
-      </div>
-    </template>
 
-    <!-- INTEGRATED ACTIONS SLOT -->
-    <template #integrated-actions>
-      <div v-if="hasTaglines" class="gmkb-ai-taglines__nav">
-        <button
-          type="button"
-          class="gmkb-ai-button gmkb-ai-button--ghost"
-          :disabled="selectedIndex <= 0"
-          @click="selectPrevious"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-        </button>
-        <span class="gmkb-ai-taglines__nav-count">
-          {{ selectedIndex + 1 }} / {{ taglines.length }}
-        </span>
-        <button
-          type="button"
-          class="gmkb-ai-button gmkb-ai-button--ghost"
-          :disabled="selectedIndex >= taglines.length - 1"
-          @click="selectNext"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-        </button>
+        <!-- Navigation -->
+        <div class="gmkb-ai-taglines__nav">
+          <button
+            type="button"
+            class="gmkb-ai-button gmkb-ai-button--ghost"
+            :disabled="selectedIndex <= 0"
+            @click="selectPrevious"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </button>
+          <span class="gmkb-ai-taglines__nav-count">
+            {{ selectedIndex + 1 }} / {{ taglines.length }}
+          </span>
+          <button
+            type="button"
+            class="gmkb-ai-button gmkb-ai-button--ghost"
+            :disabled="selectedIndex >= taglines.length - 1"
+            @click="selectNext"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </template>
-  </StandardAiTool>
+  </AiWidgetFrame>
+
+  <!-- Default/Standalone Mode: Full Self-Contained Tool -->
+  <div v-else class="gfy-tool gfy-tool--tagline">
+    <!-- Phase 1: Input Form -->
+    <div v-if="!showResults" class="gfy-tool__form-phase">
+      <!-- Hero Section -->
+      <div v-if="mode === 'default'" class="gfy-tool__hero">
+        <h1 class="gfy-tool__title">Tagline Generator</h1>
+        <p class="gfy-tool__subtitle">
+          Create memorable taglines that capture your unique value proposition and stick in people's minds.
+        </p>
+      </div>
+
+      <!-- Form Container -->
+      <div class="gfy-tool__form-container" :class="{ 'gfy-tool__form-container--embedded': mode === 'embedded' }">
+        <!-- Basic Information Section -->
+        <div class="gfy-highlight-box gfy-highlight-box--blue">
+          <div class="gfy-highlight-box__header">
+            <span class="gfy-highlight-box__icon">
+              <i class="fas fa-user"></i>
+            </span>
+            <div>
+              <h3 class="gfy-highlight-box__title">Your Information</h3>
+              <p class="gfy-highlight-box__subtitle">Tell us about yourself and your work.</p>
+            </div>
+          </div>
+
+          <div class="gfy-form-group">
+            <label class="gfy-form-label">
+              Your Name or Brand
+              <span class="gfy-form-label__optional">Optional</span>
+            </label>
+            <input
+              v-model="name"
+              type="text"
+              class="gfy-form-input"
+              placeholder="e.g., Jane Smith or Acme Coaching"
+            />
+            <span class="gfy-form-hint">Personalize your tagline with your name or brand.</span>
+          </div>
+        </div>
+
+        <!-- Value Proposition Section -->
+        <div class="gfy-highlight-box gfy-highlight-box--green">
+          <div class="gfy-highlight-box__header">
+            <span class="gfy-highlight-box__icon">
+              <i class="fas fa-bullhorn"></i>
+            </span>
+            <div>
+              <h3 class="gfy-highlight-box__title">Your Value Proposition</h3>
+              <p class="gfy-highlight-box__subtitle">What transformation do you provide? Who do you help?</p>
+            </div>
+          </div>
+
+          <div class="gfy-form-group">
+            <label class="gfy-form-label gfy-form-label--required">What You Do</label>
+            <textarea
+              v-model="authorityHookText"
+              class="gfy-form-textarea"
+              placeholder="e.g., I help entrepreneurs build sustainable businesses through strategic planning and mindset coaching. I work with founders who are stuck at a growth plateau and help them break through to their next level of success."
+              rows="4"
+            ></textarea>
+            <span class="gfy-form-hint">
+              Describe your work, who you help, and the results you deliver. The more specific, the better your taglines will be.
+            </span>
+          </div>
+
+          <!-- Live Preview -->
+          <div v-if="authorityHookText.trim()" class="gfy-live-preview">
+            <span class="gfy-live-preview__label">Preview:</span>
+            {{ valuePropositionPreview }}
+          </div>
+        </div>
+
+        <!-- Tone Selection Section -->
+        <div class="gfy-highlight-box gfy-highlight-box--amber">
+          <div class="gfy-highlight-box__header">
+            <span class="gfy-highlight-box__icon">
+              <i class="fas fa-palette"></i>
+            </span>
+            <div>
+              <h3 class="gfy-highlight-box__title">Tagline Style</h3>
+              <p class="gfy-highlight-box__subtitle">Choose the voice and feel of your taglines.</p>
+            </div>
+          </div>
+
+          <div class="gfy-form-group">
+            <label class="gfy-form-label">Tone</label>
+            <select v-model="tone" class="gfy-form-select">
+              <option value="professional">Professional</option>
+              <option value="conversational">Conversational</option>
+              <option value="authoritative">Authoritative</option>
+              <option value="friendly">Friendly</option>
+            </select>
+            <span class="gfy-form-hint">This influences the mood and style of your taglines.</span>
+          </div>
+        </div>
+
+        <!-- Generate Button -->
+        <div v-if="mode === 'default'" class="gfy-tool__actions">
+          <button
+            type="button"
+            class="gfy-btn gfy-btn--primary gfy-btn--large gfy-btn--generate"
+            :disabled="!canGenerate || isGenerating"
+            @click="handleStartGeneration"
+          >
+            <i v-if="!isGenerating" class="fas fa-magic"></i>
+            <span v-if="isGenerating" class="gfy-spinner"></span>
+            {{ isGenerating ? 'Generating...' : 'Generate 5 Taglines' }}
+          </button>
+          <p class="gfy-tool__actions-hint">
+            We'll create 5 unique taglines based on your value proposition
+          </p>
+        </div>
+
+        <!-- Error Display -->
+        <div v-if="error" class="gfy-error-box">
+          <i class="fas fa-exclamation-circle"></i>
+          <p>{{ error }}</p>
+          <button type="button" class="gfy-btn gfy-btn--outline" @click="handleStartGeneration">
+            Try Again
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 2: Results Dashboard -->
+    <div v-else class="gfy-tool__results-phase">
+      <!-- Results Hero -->
+      <div class="gfy-tool__hero gfy-tool__hero--compact">
+        <h1 class="gfy-tool__title">Your Taglines</h1>
+        <p class="gfy-tool__subtitle">
+          Select your favorite tagline. Click to choose, then lock it in.
+        </p>
+      </div>
+
+      <div class="gfy-results-container">
+        <div class="gfy-results-layout">
+          <!-- SIDEBAR: Tagline Selection -->
+          <aside class="gfy-results-layout__sidebar">
+            <div class="gfy-sidebar-panel">
+              <div class="gfy-sidebar-header">
+                <h3 class="gfy-sidebar-title">Your Taglines</h3>
+              </div>
+
+              <!-- Tagline Slots -->
+              <button
+                v-for="(tagline, index) in taglines"
+                :key="index"
+                type="button"
+                class="gfy-sidebar-slot"
+                :class="{
+                  'gfy-sidebar-slot--active': selectedIndex === index,
+                  'gfy-sidebar-slot--locked': lockedIndex === index
+                }"
+                @click="handleSelectTagline(index)"
+              >
+                <div class="gfy-sidebar-slot__header">
+                  <span class="gfy-sidebar-slot__label">Option {{ index + 1 }}</span>
+                  <i v-if="lockedIndex === index" class="fas fa-lock" style="color: var(--gfy-primary-color);"></i>
+                  <i v-else-if="selectedIndex === index" class="fas fa-check-circle" style="color: var(--gfy-success-color);"></i>
+                </div>
+                <div class="gfy-sidebar-slot__text">"{{ tagline }}"</div>
+              </button>
+
+              <!-- Locked Summary -->
+              <div v-if="lockedIndex !== null" class="gfy-sidebar-summary">
+                <i class="fas fa-lock"></i>
+                Tagline locked
+              </div>
+            </div>
+          </aside>
+
+          <!-- MAIN: Selected Tagline Display -->
+          <main class="gfy-results-layout__main">
+            <!-- Results Header -->
+            <div class="gfy-results__header">
+              <h3 class="gfy-results__title">
+                <span style="color: var(--gfy-primary-color)">Selected Tagline</span>
+              </h3>
+            </div>
+
+            <!-- Loading State -->
+            <div v-if="isGenerating" class="gfy-loading-state">
+              <div class="gfy-loading-spinner"></div>
+              <p>Generating your taglines...</p>
+            </div>
+
+            <!-- Locked State -->
+            <template v-else-if="lockedIndex !== null">
+              <div class="gfy-locked-content">
+                <div class="gfy-locked-content__badge">
+                  <i class="fas fa-lock"></i>
+                  LOCKED TAGLINE
+                </div>
+                <div class="gfy-locked-content__text">
+                  "{{ taglines[lockedIndex] }}"
+                </div>
+                <div class="gfy-locked-content__actions">
+                  <button type="button" class="gfy-btn gfy-btn--outline" @click="handleCopy">
+                    <i class="fas fa-copy"></i> Copy
+                  </button>
+                  <button type="button" class="gfy-btn gfy-btn--ghost" @click="unlockTagline">
+                    <i class="fas fa-unlock"></i> Unlock & Edit
+                  </button>
+                </div>
+              </div>
+            </template>
+
+            <!-- Selected Preview -->
+            <template v-else-if="selectedTagline">
+              <div class="gfy-result-card gfy-result-card--tagline">
+                <div class="gfy-result-card__badge">Option {{ selectedIndex + 1 }}</div>
+                <div class="gfy-result-card__content">
+                  <p class="gfy-result-card__text gfy-result-card__text--tagline">
+                    "{{ selectedTagline }}"
+                  </p>
+                  <div class="gfy-result-card__actions">
+                    <button
+                      type="button"
+                      class="gfy-btn gfy-btn--primary"
+                      @click="lockTagline(selectedIndex)"
+                    >
+                      <i class="fas fa-lock"></i>
+                      Lock This Tagline
+                    </button>
+                    <button
+                      type="button"
+                      class="gfy-btn gfy-btn--outline"
+                      @click="handleCopy"
+                    >
+                      <i class="fas fa-copy"></i> Copy
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Navigation -->
+              <div class="gfy-nav">
+                <button
+                  type="button"
+                  class="gfy-btn gfy-btn--outline"
+                  :disabled="selectedIndex <= 0"
+                  @click="selectPrevious"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"/>
+                  </svg>
+                  Previous
+                </button>
+                <span class="gfy-nav__count">
+                  {{ selectedIndex + 1 }} / {{ taglines.length }}
+                </span>
+                <button
+                  type="button"
+                  class="gfy-btn gfy-btn--outline"
+                  :disabled="selectedIndex >= taglines.length - 1"
+                  @click="selectNext"
+                >
+                  Next
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </button>
+              </div>
+            </template>
+
+            <!-- Empty State -->
+            <div v-else class="gfy-empty-state">
+              <i class="fas fa-quote-left"></i>
+              <p>Select a tagline from the sidebar to preview it.</p>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="gfy-tool__footer">
+              <button type="button" class="gfy-btn gfy-btn--outline" @click="handleGenerate">
+                <i class="fas fa-sync-alt"></i>
+                Regenerate All
+              </button>
+              <button type="button" class="gfy-btn gfy-btn--ghost" @click="handleStartOver">
+                Start Over
+              </button>
+            </div>
+
+            <!-- Copy Success -->
+            <div v-if="copySuccess" class="gfy-copy-success">
+              <i class="fas fa-check-circle"></i>
+              Copied to clipboard!
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
+/**
+ * Tagline Generator - Self-Contained Tool
+ *
+ * ARCHITECTURE:
+ * - This component is FULLY SELF-CONTAINED
+ * - It imports shared CSS for styling consistency
+ * - NO component dependencies on other tools
+ * - If this tool breaks, other tools are unaffected
+ *
+ * @package GMKB
+ * @subpackage Tools/Tagline
+ */
+
 import { ref, computed, onMounted, watch, inject } from 'vue';
 import { useAITagline } from '../../src/composables/useAITagline';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
+import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
 
-// Shared components
-import { StandardAiTool, AuthorityContext, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
-
-// Integrated mode components
+// Integrated mode components only
+import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
 import AiToneSelector from '../../src/vue/components/ai/AiToneSelector.vue';
 import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
@@ -371,6 +476,14 @@ const copySuccess = ref(false);
 
 // Can generate check
 const canGenerate = computed(() => authorityHookText.value.trim().length > 0);
+
+// Value proposition preview for live preview
+const valuePropositionPreview = computed(() => {
+  const text = authorityHookText.value.trim();
+  if (!text) return '';
+  if (text.length <= 100) return text;
+  return text.substring(0, 100) + '...';
+});
 
 // Handle tagline selection
 const handleSelectTagline = (index) => {
@@ -504,12 +617,106 @@ defineExpose({
 });
 </script>
 
-<style scoped>
-/* Tool-specific styles only - base styles inherited from StandardAiTool */
+<style>
+/**
+ * SHARED CSS IMPORT
+ * Import design tokens and base styles for consistency.
+ * This tool remains self-contained - these are just CSS classes.
+ */
+@import '@/styles/gfy-design-tokens.css';
+@import '@/styles/gfy-tool-base.css';
+</style>
 
-/* Form section styling */
-.gfy-form-section {
+<style scoped>
+/**
+ * TOOL-SPECIFIC STYLES
+ * Only styles unique to this tool go here.
+ * All common styles come from gfy-tool-base.css
+ */
+
+/* Tagline-specific result card styling */
+.gfy-result-card--tagline {
+  text-align: center;
+  padding: 32px;
+}
+
+.gfy-result-card__badge {
+  display: inline-block;
+  background: var(--gfy-primary-light);
+  color: var(--gfy-primary-dark);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: var(--gfy-radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+}
+
+.gfy-result-card__text--tagline {
+  font-size: 24px;
+  font-weight: 600;
+  font-style: italic;
+  color: var(--gfy-text-primary);
+  line-height: 1.4;
   margin-bottom: 24px;
+}
+
+/* Locked content styling */
+.gfy-locked-content {
+  text-align: center;
+  padding: 40px;
+  background: linear-gradient(135deg, var(--gfy-primary-light) 0%, #dbeafe 100%);
+  border: 2px solid var(--gfy-primary-color);
+  border-radius: var(--gfy-radius-lg);
+}
+
+.gfy-locked-content__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--gfy-primary-color);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 16px;
+  border-radius: var(--gfy-radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 20px;
+}
+
+.gfy-locked-content__text {
+  font-size: 28px;
+  font-weight: 600;
+  font-style: italic;
+  color: var(--gfy-primary-darker);
+  line-height: 1.4;
+  margin-bottom: 24px;
+}
+
+.gfy-locked-content__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* Sidebar slot text styling for taglines */
+.gfy-sidebar-slot__text {
+  font-size: 13px;
+  color: var(--gfy-text-secondary);
+  font-style: italic;
+  line-height: 1.4;
+  margin-top: 8px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.gfy-sidebar-slot--active .gfy-sidebar-slot__text,
+.gfy-sidebar-slot--locked .gfy-sidebar-slot__text {
+  color: var(--gfy-text-primary);
 }
 
 /* Integrated Mode Styles */
@@ -548,6 +755,7 @@ defineExpose({
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-top: 16px;
 }
 
 .gmkb-ai-taglines__nav-count {
