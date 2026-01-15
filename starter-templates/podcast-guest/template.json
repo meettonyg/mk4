@@ -1,0 +1,332 @@
+{
+  "template_id": "podcast-guest",
+  "template_name": "Podcast Guest Media Kit",
+  "version": "1.0.0",
+  "description": "Optimized for podcast guests and interview subjects. Features episode player, suggested questions, topics, and easy booking for podcast hosts.",
+  "persona": {
+    "type": "podcast-guest",
+    "label": "Podcast Guests",
+    "icon": "fa-solid fa-podcast",
+    "use_cases": [
+      "Subject matter experts seeking podcast appearances",
+      "Authors promoting books",
+      "Entrepreneurs sharing their story",
+      "Thought leaders building audience",
+      "Anyone seeking podcast interviews"
+    ]
+  },
+  "metadata": {
+    "tags": ["podcast", "interview", "guest", "audio", "media", "appearance"],
+    "is_premium": false,
+    "sort_order": 30,
+    "recommended_themes": ["podcast-guest", "modern-dark", "creative-bold"]
+  },
+  "preview_image": "preview.jpg",
+  "sections": [
+    {
+      "id": "hero-section",
+      "type": "full_width",
+      "background": "gradient",
+      "components": [
+        {
+          "type": "hero",
+          "settings": {
+            "layout": "center_aligned",
+            "imageStyle": "circle",
+            "showCTA": true,
+            "minHeight": "550px"
+          },
+          "data": {
+            "headline": "Your Next Great Guest",
+            "subheadline": "Expert in [Topic] | Featured on 100+ Podcasts",
+            "description": "Engaging conversations that captivate your audience and boost your downloads.",
+            "cta_text": "Book Me on Your Show"
+          }
+        }
+      ]
+    },
+    {
+      "id": "stats-section",
+      "type": "full_width",
+      "background": "surface",
+      "components": [
+        {
+          "type": "stats",
+          "settings": {
+            "layout": "cards",
+            "columns": 4,
+            "showIcons": true,
+            "animateNumbers": true
+          },
+          "data": {
+            "items": [
+              { "value": "150+", "label": "Podcast Appearances", "icon": "microphone" },
+              { "value": "2M+", "label": "Combined Downloads", "icon": "headphones" },
+              { "value": "4.9", "label": "Average Host Rating", "icon": "star" },
+              { "value": "48hrs", "label": "Response Time", "icon": "clock" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "podcast-player-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "podcast-player",
+          "settings": {
+            "layout": "featured",
+            "showEpisodeList": true,
+            "maxEpisodes": 6,
+            "style": "cards",
+            "showPodcastName": true,
+            "showDuration": true
+          },
+          "data": {
+            "title": "Recent Appearances",
+            "subtitle": "Listen to some of my favorite conversations",
+            "episodes": [
+              {
+                "podcast_name": "Podcast Name",
+                "episode_title": "Episode Title",
+                "duration": "45 min",
+                "date": "2024"
+              },
+              {
+                "podcast_name": "Another Podcast",
+                "episode_title": "Great Conversation Topic",
+                "duration": "52 min",
+                "date": "2024"
+              },
+              {
+                "podcast_name": "Third Podcast",
+                "episode_title": "Insights and Stories",
+                "duration": "38 min",
+                "date": "2024"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "topics-section",
+      "type": "full_width",
+      "background": "primary",
+      "components": [
+        {
+          "type": "topics",
+          "settings": {
+            "layout": "grid",
+            "columns": 3,
+            "showDescriptions": true,
+            "showIcons": true,
+            "style": "cards"
+          },
+          "data": {
+            "title": "Topics I Love to Discuss",
+            "subtitle": "Expertise that resonates with diverse audiences",
+            "items": [
+              {
+                "title": "Industry Insights",
+                "description": "Breaking down complex trends into actionable insights.",
+                "icon": "chart-line"
+              },
+              {
+                "title": "Personal Journey",
+                "description": "Stories of failure, resilience, and breakthrough.",
+                "icon": "road"
+              },
+              {
+                "title": "Practical Strategies",
+                "description": "Step-by-step frameworks listeners can implement.",
+                "icon": "tools"
+              },
+              {
+                "title": "Future Predictions",
+                "description": "Where the industry is heading and how to prepare.",
+                "icon": "crystal-ball"
+              },
+              {
+                "title": "Behind the Scenes",
+                "description": "Insider perspectives and untold stories.",
+                "icon": "film"
+              },
+              {
+                "title": "Rapid Fire Q&A",
+                "description": "High-energy questions that keep audiences engaged.",
+                "icon": "bolt"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "questions-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "questions",
+          "settings": {
+            "layout": "cards",
+            "columns": 2,
+            "style": "interview",
+            "showNumbers": true
+          },
+          "data": {
+            "title": "Questions Hosts Love to Ask Me",
+            "subtitle": "Conversation starters that lead to great content",
+            "items": [
+              {
+                "question": "What's the biggest myth in your industry?",
+                "answer": "I love debunking common misconceptions with data and real examples."
+              },
+              {
+                "question": "What was your biggest failure and what did it teach you?",
+                "answer": "A vulnerable story that connects with audiences on a human level."
+              },
+              {
+                "question": "If you could give one piece of advice to your younger self?",
+                "answer": "Timeless wisdom that resonates across demographics."
+              },
+              {
+                "question": "What's something you believe that most people disagree with?",
+                "answer": "A contrarian take that sparks interesting debate."
+              },
+              {
+                "question": "What are you most excited about right now?",
+                "answer": "Current projects and passions that bring energy to the conversation."
+              },
+              {
+                "question": "How can listeners take action on what we discussed?",
+                "answer": "Clear, actionable next steps your audience can implement."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "bio-section",
+      "type": "two_column",
+      "columns": {
+        "ratio": "40-60",
+        "1": [
+          {
+            "type": "profile-photo",
+            "settings": {
+              "style": "rounded",
+              "size": "large"
+            },
+            "data": {
+              "alt": "Professional headshot"
+            }
+          },
+          {
+            "type": "social",
+            "settings": {
+              "layout": "horizontal",
+              "showLabels": false,
+              "iconSize": "medium"
+            },
+            "data": {}
+          }
+        ],
+        "2": [
+          {
+            "type": "biography",
+            "settings": {
+              "style": "storytelling",
+              "showTitle": true
+            },
+            "data": {
+              "title": "The Short Version",
+              "content": "Share your background in a conversational tone. What makes you interesting? What's your origin story? What unique perspective do you bring?\n\nInclude what hosts can expect: your energy level, preparation style, and why audiences respond to you.\n\n**What hosts say:** \"One of the most prepared and engaging guests we've ever had.\""
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "testimonials-section",
+      "type": "full_width",
+      "background": "surface",
+      "components": [
+        {
+          "type": "testimonials",
+          "settings": {
+            "layout": "cards",
+            "columns": 3,
+            "showPhotos": true,
+            "showCompany": true,
+            "quoteStyle": "standard"
+          },
+          "data": {
+            "title": "What Podcast Hosts Say",
+            "items": [
+              {
+                "quote": "Our episode together was our most downloaded of the year!",
+                "author": "Host Name",
+                "role": "Host",
+                "company": "Podcast Name"
+              },
+              {
+                "quote": "Incredibly well-prepared and brought amazing energy to the conversation.",
+                "author": "Host Name",
+                "role": "Host",
+                "company": "Another Podcast"
+              },
+              {
+                "quote": "A true professional who understands what makes great podcast content.",
+                "author": "Host Name",
+                "role": "Host",
+                "company": "Great Podcast"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "booking-section",
+      "type": "full_width",
+      "background": "gradient",
+      "components": [
+        {
+          "type": "call-to-action",
+          "settings": {
+            "style": "hero",
+            "alignment": "center"
+          },
+          "data": {
+            "title": "Let's Create Something Great Together",
+            "description": "I'm always excited to connect with new audiences. If you think I'd be a good fit for your show, let's chat!",
+            "cta_text": "Book a Pre-Interview Call",
+            "secondary_cta_text": "Download My One-Sheet"
+          }
+        }
+      ]
+    },
+    {
+      "id": "contact-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "contact",
+          "settings": {
+            "style": "podcast-booking",
+            "fields": ["name", "email", "podcast_name", "audience_size", "topics_of_interest", "message"],
+            "showLabels": true
+          },
+          "data": {
+            "title": "Podcast Booking Request",
+            "subtitle": "Tell me about your show and audience",
+            "button_text": "Submit Booking Request"
+          }
+        }
+      ]
+    }
+  ]
+}

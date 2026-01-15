@@ -1,0 +1,318 @@
+{
+  "template_id": "influencer",
+  "template_name": "Creator Media Kit",
+  "version": "1.0.0",
+  "description": "Built for content creators, influencers, and digital entrepreneurs. Features social stats, content samples, brand collaborations, and partnership inquiries.",
+  "persona": {
+    "type": "influencer",
+    "label": "Creators & Influencers",
+    "icon": "fa-solid fa-hashtag",
+    "use_cases": [
+      "Content creators",
+      "Social media influencers",
+      "YouTubers and streamers",
+      "Digital entrepreneurs",
+      "Brand ambassadors",
+      "Lifestyle bloggers"
+    ]
+  },
+  "metadata": {
+    "tags": ["creator", "influencer", "social", "content", "brand", "collaboration"],
+    "is_premium": false,
+    "sort_order": 50,
+    "recommended_themes": ["creative-bold", "modern-dark", "podcast-guest"]
+  },
+  "preview_image": "preview.jpg",
+  "sections": [
+    {
+      "id": "hero-section",
+      "type": "full_width",
+      "background": "gradient",
+      "components": [
+        {
+          "type": "hero",
+          "settings": {
+            "layout": "center_aligned",
+            "imageStyle": "circle",
+            "showCTA": true,
+            "minHeight": "550px"
+          },
+          "data": {
+            "headline": "Your Name",
+            "subheadline": "Content Creator | [Niche] Expert",
+            "description": "Creating content that inspires and engages [X]M+ followers across platforms.",
+            "cta_text": "Let's Collaborate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "stats-section",
+      "type": "full_width",
+      "background": "surface",
+      "components": [
+        {
+          "type": "stats",
+          "settings": {
+            "layout": "cards",
+            "columns": 4,
+            "showIcons": true,
+            "animateNumbers": true,
+            "colorScheme": "gradient"
+          },
+          "data": {
+            "items": [
+              { "value": "500K+", "label": "Total Followers", "icon": "users" },
+              { "value": "10M+", "label": "Monthly Reach", "icon": "eye" },
+              { "value": "8.5%", "label": "Engagement Rate", "icon": "heart" },
+              { "value": "50+", "label": "Brand Partners", "icon": "handshake" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "platforms-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "stats",
+          "settings": {
+            "layout": "grid",
+            "columns": 4,
+            "showIcons": true,
+            "style": "platform-cards"
+          },
+          "data": {
+            "title": "Where I Create",
+            "subtitle": "Platform breakdown and audience demographics",
+            "items": [
+              { "value": "250K", "label": "Instagram", "icon": "instagram" },
+              { "value": "150K", "label": "YouTube", "icon": "youtube" },
+              { "value": "75K", "label": "TikTok", "icon": "tiktok" },
+              { "value": "25K", "label": "Twitter", "icon": "twitter" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "content-section",
+      "type": "full_width",
+      "background": "dark",
+      "components": [
+        {
+          "type": "photo-gallery",
+          "settings": {
+            "layout": "masonry",
+            "columns": 3,
+            "style": "content-samples",
+            "showCaptions": true
+          },
+          "data": {
+            "title": "Content Samples",
+            "subtitle": "A selection of recent work",
+            "images": [
+              { "alt": "Content sample 1", "caption": "Brand Campaign" },
+              { "alt": "Content sample 2", "caption": "Lifestyle Post" },
+              { "alt": "Content sample 3", "caption": "Product Feature" },
+              { "alt": "Content sample 4", "caption": "Behind the Scenes" },
+              { "alt": "Content sample 5", "caption": "Tutorial" },
+              { "alt": "Content sample 6", "caption": "Collaboration" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "topics-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "topics",
+          "settings": {
+            "layout": "grid",
+            "columns": 3,
+            "showDescriptions": true,
+            "showIcons": true,
+            "style": "cards"
+          },
+          "data": {
+            "title": "Content Categories",
+            "subtitle": "What I create and talk about",
+            "items": [
+              {
+                "title": "Lifestyle & Wellness",
+                "description": "Daily routines, self-care, and living your best life.",
+                "icon": "heart"
+              },
+              {
+                "title": "Product Reviews",
+                "description": "Honest reviews and recommendations my audience trusts.",
+                "icon": "star"
+              },
+              {
+                "title": "Behind the Scenes",
+                "description": "Authentic glimpses into the creator life.",
+                "icon": "film"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "brands-section",
+      "type": "full_width",
+      "background": "surface",
+      "components": [
+        {
+          "type": "logo-grid",
+          "settings": {
+            "layout": "row",
+            "columns": 6,
+            "showLabels": false,
+            "grayscale": false
+          },
+          "data": {
+            "title": "Brands I've Worked With",
+            "logos": [
+              { "name": "Brand 1", "alt": "Brand logo" },
+              { "name": "Brand 2", "alt": "Brand logo" },
+              { "name": "Brand 3", "alt": "Brand logo" },
+              { "name": "Brand 4", "alt": "Brand logo" },
+              { "name": "Brand 5", "alt": "Brand logo" },
+              { "name": "Brand 6", "alt": "Brand logo" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "bio-section",
+      "type": "two_column",
+      "columns": {
+        "ratio": "40-60",
+        "1": [
+          {
+            "type": "profile-photo",
+            "settings": {
+              "style": "rounded",
+              "size": "large"
+            },
+            "data": {
+              "alt": "Creator photo"
+            }
+          },
+          {
+            "type": "social",
+            "settings": {
+              "layout": "horizontal",
+              "showLabels": false,
+              "iconSize": "large"
+            },
+            "data": {}
+          }
+        ],
+        "2": [
+          {
+            "type": "biography",
+            "settings": {
+              "style": "casual",
+              "showTitle": true
+            },
+            "data": {
+              "title": "Hey, I'm [Name]!",
+              "content": "Share your story in an authentic, conversational way. What got you started? What do you love creating? What makes your community special?\n\n**My audience:** Describe your demographics - age range, interests, what they're passionate about.\n\n**My values:** What matters to you? What kind of brands do you love working with?"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "testimonials-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "testimonials",
+          "settings": {
+            "layout": "cards",
+            "columns": 2,
+            "showPhotos": false,
+            "showCompany": true,
+            "quoteStyle": "standard"
+          },
+          "data": {
+            "title": "What Brands Say",
+            "items": [
+              {
+                "quote": "Working with [Name] exceeded all our campaign goals. The content was authentic and the engagement was incredible.",
+                "author": "Marketing Manager",
+                "company": "Brand Name"
+              },
+              {
+                "quote": "One of our most successful influencer partnerships. Professional, creative, and delivers real results.",
+                "author": "Brand Director",
+                "company": "Brand Name"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "services-section",
+      "type": "full_width",
+      "background": "primary",
+      "components": [
+        {
+          "type": "topics",
+          "settings": {
+            "layout": "grid",
+            "columns": 3,
+            "showDescriptions": true,
+            "style": "cards"
+          },
+          "data": {
+            "title": "Partnership Options",
+            "items": [
+              {
+                "title": "Sponsored Posts",
+                "description": "Feed posts, stories, and reels featuring your product or service."
+              },
+              {
+                "title": "Brand Ambassador",
+                "description": "Long-term partnerships with ongoing content and promotion."
+              },
+              {
+                "title": "Content Creation",
+                "description": "UGC and branded content for your channels."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "contact-section",
+      "type": "full_width",
+      "background": "gradient",
+      "components": [
+        {
+          "type": "contact",
+          "settings": {
+            "style": "brand-inquiry",
+            "fields": ["name", "email", "company", "campaign_type", "budget_range", "timeline", "message"],
+            "showLabels": true,
+            "maxWidth": "700px"
+          },
+          "data": {
+            "title": "Let's Create Together",
+            "subtitle": "Tell me about your brand and campaign goals",
+            "button_text": "Send Partnership Inquiry"
+          }
+        }
+      ]
+    }
+  ]
+}

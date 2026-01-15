@@ -1,0 +1,113 @@
+{
+  "theme_id": "minimal-elegant",
+  "theme_name": "Minimal Elegant",
+  "version": "3.0.0",
+  "description": "Sophisticated minimalism with generous whitespace. Perfect for a refined, luxury feel.",
+  "style": {
+    "variant": "minimal",
+    "label": "Minimal & Elegant",
+    "mood": "elegant"
+  },
+  "metadata": {
+    "tags": ["minimal", "elegant", "sophisticated", "luxury", "clean"],
+    "preview_colors": ["#18181b", "#a1a1aa", "#fafafa"],
+    "is_premium": false,
+    "is_dark": false,
+    "sort_order": 30,
+    "author": "Guestify"
+  },
+  "preview_image": "preview.jpg",
+  "thumbnail_image": "thumbnail.jpg",
+  "typography": {
+    "primary_font": {
+      "family": "Inter, sans-serif",
+      "weights": [300, 400, 500],
+      "fallback": "-apple-system, BlinkMacSystemFont, sans-serif"
+    },
+    "heading_font": {
+      "family": "Playfair Display, serif",
+      "weights": [400, 500, 600],
+      "fallback": "Georgia, serif"
+    },
+    "font_scale": 1.333,
+    "line_height": {
+      "body": 1.8,
+      "heading": 1.2
+    },
+    "letter_spacing": {
+      "body": "0.01em",
+      "heading": "-0.02em"
+    }
+  },
+  "colors": {
+    "primary": "#18181b",
+    "primary_hover": "#27272a",
+    "secondary": "#71717a",
+    "secondary_hover": "#52525b",
+    "accent": "#a1a1aa",
+    "accent_hover": "#d4d4d8",
+    "text": "#18181b",
+    "text_light": "#52525b",
+    "text_muted": "#a1a1aa",
+    "background": "#fafafa",
+    "surface": "#ffffff",
+    "surface_hover": "#f4f4f5",
+    "border": "#e4e4e7",
+    "border_focus": "#18181b",
+    "gradient_start": "#18181b",
+    "gradient_end": "#52525b",
+    "error": "#dc2626",
+    "success": "#16a34a",
+    "warning": "#ca8a04",
+    "info": "#0284c7"
+  },
+  "spacing": {
+    "base_unit": "8px",
+    "component_gap": "64px",
+    "section_gap": "120px",
+    "container_padding": "32px",
+    "content_max_width": "1000px"
+  },
+  "effects": {
+    "border_radius": "4px",
+    "border_radius_sm": "2px",
+    "border_radius_lg": "8px",
+    "border_radius_full": "9999px",
+    "shadow": "0 1px 3px rgba(0, 0, 0, 0.08)",
+    "shadow_sm": "0 1px 2px rgba(0, 0, 0, 0.04)",
+    "shadow_lg": "0 4px 12px rgba(0, 0, 0, 0.1)",
+    "transitions": "all 0.3s ease",
+    "transitions_slow": "all 0.4s ease",
+    "blur": "blur(8px)",
+    "gradient": "linear-gradient(135deg, #18181b, #52525b)"
+  },
+  "components": {
+    "button": {
+      "padding": "14px 32px",
+      "font_weight": "500",
+      "letter_spacing": "0.05em",
+      "text_transform": "uppercase",
+      "border_radius": "2px"
+    },
+    "card": {
+      "padding": "32px",
+      "shadow": "none",
+      "border_radius": "4px"
+    },
+    "input": {
+      "padding": "14px 16px",
+      "border_width": "1px",
+      "border_radius": "2px"
+    }
+  },
+  "responsive": {
+    "breakpoints": {
+      "sm": "640px",
+      "md": "768px",
+      "lg": "1024px",
+      "xl": "1200px"
+    },
+    "font_scale_mobile": 0.85,
+    "spacing_scale_mobile": 0.7
+  }
+}
