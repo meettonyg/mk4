@@ -298,8 +298,8 @@
           </div>
         </div>
 
-        <!-- Generate Button (show in default and standalone modes, hidden in integrated mode where wrapper provides button) -->
-        <div v-if="mode !== 'integrated'" class="gfy-form-actions">
+        <!-- Generate Button (only show in default mode - landing page provides its own button) -->
+        <div v-if="mode === 'default'" class="gfy-form-actions">
           <button
             type="button"
             class="gfy-btn gfy-btn--primary gfy-btn--large gfy-btn--generate"
