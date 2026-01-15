@@ -9,6 +9,14 @@
     :has-results="hasTaglines"
     :is-loading="isGenerating"
   >
+    <!-- Profile Context Banner (for logged-in users) -->
+    <template #profile-context>
+      <ProfileContextBanner
+        @profile-loaded="handleProfileLoaded"
+        @profile-cleared="handleProfileCleared"
+      />
+    </template>
+
     <!-- Left Panel: Form -->
     <template #left>
 
@@ -470,7 +478,7 @@ import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ImpactIntroBuilder, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
+import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ImpactIntroBuilder, ProfileContextBanner, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
 
 // Inject profile data from EmbeddedToolWrapper (for embedded mode)
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
@@ -699,6 +707,23 @@ function populateFromProfile(profileData) {
 
   // Also sync authority hook store
   loadFromProfileData(profileData);
+}
+
+/**
+ * Handle profile loaded from ProfileContextBanner (standalone mode)
+ */
+function handleProfileLoaded(data) {
+  if (data && props.mode === 'default') {
+    populateFromProfile(data);
+  }
+}
+
+/**
+ * Handle profile cleared from ProfileContextBanner (standalone mode)
+ */
+function handleProfileCleared() {
+  // Optionally clear form fields when profile is deselected
+  // For now, we keep the existing data to avoid losing user input
 }
 
 /**

@@ -9,6 +9,14 @@
     :has-results="hasOffers"
     :is-loading="isGenerating"
   >
+    <!-- Profile Context Banner (for logged-in users) -->
+    <template #profile-context>
+      <ProfileContextBanner
+        @profile-loaded="handleProfileLoaded"
+        @profile-cleared="handleProfileCleared"
+      />
+    </template>
+
     <!-- Left Panel: Form -->
     <template #left>
       <!-- Services Section -->
@@ -503,7 +511,7 @@ import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
 import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
+import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ProfileContextBanner, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
 
 // Options for select fields
 const PRICE_RANGE_OPTIONS = [
@@ -639,6 +647,23 @@ function populateFromProfile(profileData) {
 
   // Populate authority hook fields from profile data (for cross-tool sync)
   loadFromProfileData(profileData);
+}
+
+/**
+ * Handle profile loaded from ProfileContextBanner (standalone mode)
+ */
+function handleProfileLoaded(data) {
+  if (data && props.mode === 'default') {
+    populateFromProfile(data);
+  }
+}
+
+/**
+ * Handle profile cleared from ProfileContextBanner (standalone mode)
+ */
+function handleProfileCleared() {
+  // Optionally clear form fields when profile is deselected
+  // For now, we keep the existing data to avoid losing user input
 }
 
 /**

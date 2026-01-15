@@ -9,6 +9,14 @@
     :has-results="hasContent"
     :is-loading="isGenerating"
   >
+    <!-- Profile Context Banner (for logged-in users) -->
+    <template #profile-context>
+      <ProfileContextBanner
+        @profile-loaded="handleProfileLoaded"
+        @profile-cleared="handleProfileCleared"
+      />
+    </template>
+
     <!-- Left Panel: Form -->
     <template #left>
       <!-- Authority Hook Section -->
@@ -444,7 +452,7 @@ import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
+import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ProfileContextBanner, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
 
 // Awareness level options (Eugene Schwartz's 5 levels)
 const AWARENESS_OPTIONS = [
@@ -647,6 +655,23 @@ function populateFromProfile(profileData) {
   if (profileData.hook_how && !authorityHook.how) {
     authorityHook.how = profileData.hook_how;
   }
+}
+
+/**
+ * Handle profile loaded from ProfileContextBanner (standalone mode)
+ */
+function handleProfileLoaded(data) {
+  if (data && props.mode === 'default') {
+    populateFromProfile(data);
+  }
+}
+
+/**
+ * Handle profile cleared from ProfileContextBanner (standalone mode)
+ */
+function handleProfileCleared() {
+  // Optionally clear form fields when profile is deselected
+  // For now, we keep the existing data to avoid losing user input
 }
 
 // Use the generic AI generator
