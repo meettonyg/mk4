@@ -27,6 +27,19 @@ export const CREDENTIAL_TYPES = [
 ];
 
 /**
+ * Example credentials for the "Examples" section in the Credential Manager
+ * These are clickable chips that users can add to their credentials
+ */
+export const CREDENTIAL_EXAMPLES = [
+  { text: 'helped 200+ startups land funding', category: 'results' },
+  { text: 'my strategies have helped over 500 coaches generate six-figure businesses', category: 'results' },
+  { text: 'my latest book became an Amazon bestseller', category: 'achievement' },
+  { text: 'our organization has provided clean water to 200,000+ people', category: 'impact' },
+  { text: 'trained 10,000+ professionals worldwide', category: 'results' },
+  { text: 'built and sold 3 successful companies', category: 'achievement' }
+];
+
+/**
  * Impact Intro composable
  *
  * @returns {object} Reactive state and methods for credentials/achievements management
@@ -41,6 +54,10 @@ export function useImpactIntro() {
   // Create refs that sync with store
   const credentials = ref([...aiStore.impactIntro.credentials]);
   const achievements = ref([...aiStore.impactIntro.achievements]);
+
+  // Selection state for credentials (which ones are checked for WHERE field)
+  // Uses a Set of credential text values for efficient lookup
+  const selectedCredentialSet = ref(new Set(aiStore.impactIntro.credentials));
 
   // New credential/achievement input state
   const newCredential = ref('');
@@ -63,6 +80,28 @@ export function useImpactIntro() {
   // Computed: Achievements as formatted string
   const achievementsSummary = computed(() => {
     return achievements.value.join(', ');
+  });
+
+  // Computed: Selected credentials count
+  const selectedCredentialsCount = computed(() => {
+    return selectedCredentialSet.value.size;
+  });
+
+  // Computed: Check if a credential is selected
+  const isCredentialSelected = (credential) => {
+    return selectedCredentialSet.value.has(credential);
+  };
+
+  // Computed: Get selected credentials as array
+  const selectedCredentials = computed(() => {
+    return credentials.value.filter(c => selectedCredentialSet.value.has(c));
+  });
+
+  // Computed: Format selected credentials for WHERE field
+  // Uses Intl.ListFormat for robust, localized list formatting
+  const selectedCredentialsText = computed(() => {
+    const formatter = new Intl.ListFormat('en', { style: 'long', type: 'conjunction' });
+    return formatter.format(selectedCredentials.value);
   });
 
   // Computed: Combined summary for guest intro
@@ -90,16 +129,77 @@ export function useImpactIntro() {
   /**
    * Add a credential
    * @param {string} credential Credential to add
+   * @param {boolean} autoSelect Whether to auto-select the credential (default: true)
    * @returns {boolean} Success status
    */
-  const addCredential = (credential) => {
+  const addCredential = (credential, autoSelect = true) => {
     const value = credential || newCredential.value;
     if (value && value.trim() && !credentials.value.includes(value.trim())) {
-      credentials.value.push(value.trim());
+      const trimmedValue = value.trim();
+      credentials.value.push(trimmedValue);
+      // Auto-select new credentials by default (use Set reassignment for reactivity)
+      if (autoSelect) {
+        const newSet = new Set(selectedCredentialSet.value);
+        newSet.add(trimmedValue);
+        selectedCredentialSet.value = newSet;
+      }
       newCredential.value = '';
       return true;
     }
     return false;
+  };
+
+  /**
+   * Toggle credential selection (for checkbox behavior)
+   * Uses Set reassignment to trigger Vue reactivity
+   * @param {string} credential Credential to toggle
+   * @returns {boolean} New selection state
+   */
+  const toggleCredentialSelection = (credential) => {
+    const newSet = new Set(selectedCredentialSet.value);
+    const isSelected = newSet.has(credential);
+
+    if (isSelected) {
+      newSet.delete(credential);
+    } else {
+      newSet.add(credential);
+    }
+    selectedCredentialSet.value = newSet;
+    return !isSelected;
+  };
+
+  /**
+   * Select a credential
+   * @param {string} credential Credential to select
+   */
+  const selectCredential = (credential) => {
+    const newSet = new Set(selectedCredentialSet.value);
+    newSet.add(credential);
+    selectedCredentialSet.value = newSet;
+  };
+
+  /**
+   * Deselect a credential
+   * @param {string} credential Credential to deselect
+   */
+  const deselectCredential = (credential) => {
+    const newSet = new Set(selectedCredentialSet.value);
+    newSet.delete(credential);
+    selectedCredentialSet.value = newSet;
+  };
+
+  /**
+   * Select all credentials
+   */
+  const selectAllCredentials = () => {
+    selectedCredentialSet.value = new Set(credentials.value);
+  };
+
+  /**
+   * Deselect all credentials
+   */
+  const deselectAllCredentials = () => {
+    selectedCredentialSet.value = new Set();
   };
 
   /**
@@ -108,7 +208,12 @@ export function useImpactIntro() {
    */
   const removeCredential = (index) => {
     if (index >= 0 && index < credentials.value.length) {
+      const removed = credentials.value[index];
       credentials.value.splice(index, 1);
+      // Also remove from selection set (use reassignment for reactivity)
+      const newSet = new Set(selectedCredentialSet.value);
+      newSet.delete(removed);
+      selectedCredentialSet.value = newSet;
     }
   };
 
@@ -120,6 +225,10 @@ export function useImpactIntro() {
     const index = credentials.value.indexOf(credential);
     if (index > -1) {
       credentials.value.splice(index, 1);
+      // Also remove from selection set (use reassignment for reactivity)
+      const newSet = new Set(selectedCredentialSet.value);
+      newSet.delete(credential);
+      selectedCredentialSet.value = newSet;
     }
   };
 
@@ -223,6 +332,7 @@ export function useImpactIntro() {
   const reset = () => {
     credentials.value = [];
     achievements.value = [];
+    selectedCredentialSet.value = new Set();
     newCredential.value = '';
     newAchievement.value = '';
   };
@@ -273,6 +383,8 @@ export function useImpactIntro() {
     const creds = extractValues('credentials', 'hook_where', 'credential');
     if (creds !== null) {
       credentials.value = creds;
+      // Select all loaded credentials by default
+      selectedCredentialSet.value = new Set(creds);
     }
 
     // Load achievements/mission from profile
@@ -320,6 +432,12 @@ export function useImpactIntro() {
     hasMinimumData,
     totalItems,
 
+    // Selection state
+    selectedCredentials,
+    selectedCredentialsCount,
+    selectedCredentialsText,
+    isCredentialSelected,
+
     // Credential methods
     addCredential,
     removeCredential,
@@ -327,6 +445,13 @@ export function useImpactIntro() {
     updateCredential,
     reorderCredentials,
     setCredentials,
+
+    // Credential selection methods
+    toggleCredentialSelection,
+    selectCredential,
+    deselectCredential,
+    selectAllCredentials,
+    deselectAllCredentials,
 
     // Achievement methods
     addAchievement,
