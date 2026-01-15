@@ -17,11 +17,11 @@
       </div>
     </div>
 
-    <!-- Tool with Standalone Layout -->
+    <!-- Tool with Standalone Layout (full page - shows its own hero/button) -->
     <component
       v-else-if="toolConfig && toolConfig.hasStandaloneLayout"
       :is="toolComponent"
-      mode="standalone"
+      mode="default"
       v-bind="toolProps"
     />
 
@@ -37,7 +37,7 @@
       <template #left>
         <component
           :is="toolComponent"
-          mode="standalone"
+          mode="default"
           v-bind="toolProps"
         />
       </template>

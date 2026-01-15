@@ -594,8 +594,9 @@ const HOOK_STYLE_OPTIONS = [
 const props = defineProps({
   mode: {
     type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    // 'embedded' mode is used by EmbeddedToolWrapper and renders like 'default' but without hero/button
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
   intent: {
     type: Object,
