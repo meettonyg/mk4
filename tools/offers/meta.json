@@ -31,13 +31,14 @@
     }
   },
   "validation": {
-    "anyOf": ["services", "authorityHook"],
-    "errorMessage": "Services or authority hook is required for offers generation"
+    "anyOf": ["hookWho", "hookWhat", "audienceChallenges"],
+    "errorMessage": "Authority hook (WHO/WHAT) or audience challenges required for offers generation"
   },
   "longDescription": "The Offers Generator helps you articulate your services, products, and offerings in a way that resonates with potential clients. Create clear, compelling descriptions that showcase the value you provide and drive conversions.",
   "category": "message-builder",
-  "buttonText": "Create Offer",
+  "buttonText": "Generate Offer Suggestions",
   "supportsProfileSave": true,
+  "singleColumn": true,
   "icon": "GiftIcon",
   "componentName": "OffersGenerator",
   "useCases": [
@@ -77,9 +78,11 @@
     "guidanceTitle": "How to Create Your Service Offers",
     "guidanceSubtitle": "Strategic offers turn podcast appearances into business opportunities. Create a natural path from listener to lead with a tiered offer structure that captures interest at every level.",
     "hero": {
-      "badge": "\u2728 Free AI Tool",
-      "h1": "Free Offers Generator",
-      "subhead": "Generate professional service descriptions and product offerings that clearly communicate your value and drive conversions.",
+      "badge": "\u2728 AI Business Tool",
+      "h1": "Offers Generator",
+      "subhead": "Create compelling service offerings that convert prospects into paying clients.",
+      "contextHeading": "Build your offer suite",
+      "contextDescription": "Use the Authority Hook framework to define your expertise, then generate tiered service packages tailored to your business.",
       "microProof": [
         {
           "icon": "\u2713",
@@ -114,50 +117,7 @@
         }
       ]
     },
-    "intents": [
-      {
-        "id": "service",
-        "label": "Service Package",
-        "contextHeading": "Showcase your service value",
-        "contextDescription": "Create compelling descriptions for your consulting, coaching, or professional service packages that justify your pricing.",
-        "formLabels": {
-          "service": "What service do you offer?",
-          "audience": "Who is it for?"
-        },
-        "formPlaceholders": {
-          "service": "e.g. Business Strategy Consulting",
-          "audience": "e.g. Startup Founders"
-        }
-      },
-      {
-        "id": "product",
-        "label": "Product/Course",
-        "contextHeading": "Sell your digital products",
-        "contextDescription": "Generate descriptions for courses, templates, or digital products that highlight the transformation they deliver.",
-        "formLabels": {
-          "product": "What's your product?",
-          "outcome": "What outcome does it deliver?"
-        },
-        "formPlaceholders": {
-          "product": "e.g. Lead Generation Masterclass",
-          "outcome": "e.g. 10x qualified leads"
-        }
-      },
-      {
-        "id": "speaking",
-        "label": "Speaking Package",
-        "contextHeading": "Get booked at premium rates",
-        "contextDescription": "Create speaker fee packages that communicate your value and make it easy for event organizers to book you.",
-        "formLabels": {
-          "topic": "Your Speaking Topic",
-          "format": "Keynote, Workshop, or Both?"
-        },
-        "formPlaceholders": {
-          "topic": "e.g. Leadership in the AI Era",
-          "format": "e.g. 60-minute Keynote"
-        }
-      }
-    ],
+    "intents": [],
     "definition": {
       "title": "Crafting Perfect Interview Offers",
       "subtitle": "Strategic offers turn podcast interviews into business opportunities. Based on your Authority Hook, these offers create a natural bridge from listener to prospect, allowing you to capture value from each interview appearance.",
