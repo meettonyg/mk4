@@ -81,7 +81,8 @@
 
   <!-- Embedded Mode: Form fields for EmbeddedToolWrapper (Landing Pages) -->
   <div v-else-if="mode === 'embedded'" class="gmkb-embedded-form">
-    <div class="gmkb-embedded-fields">
+    <!-- Phase 1: Input Form (shown when no results) -->
+    <div v-if="!embeddedShowResults" class="gmkb-embedded-fields">
       <!-- STEP 1: BASIC INFO -->
       <div class="gmkb-embedded-section">
         <div class="gmkb-embedded-section-header">Step 1: Basic Information</div>
@@ -240,6 +241,51 @@
             </select>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Phase 2: Results (shown after generation in singleColumn embedded mode) -->
+    <div v-else class="gmkb-embedded-results">
+      <!-- Results Header -->
+      <div class="gmkb-embedded-results__header">
+        <h3 class="gmkb-embedded-results__title">Your Generated Biography</h3>
+        <p class="gmkb-embedded-results__subtitle">Medium length bio (150 words) - perfect for speaker profiles and media kits</p>
+      </div>
+
+      <!-- Generated Content -->
+      <div class="gmkb-embedded-results__content">
+        <p>{{ currentBio }}</p>
+      </div>
+
+      <!-- Actions -->
+      <div class="gmkb-embedded-results__actions">
+        <button
+          type="button"
+          class="gmkb-embedded-btn gmkb-embedded-btn--primary"
+          @click="handleEmbeddedCopy"
+        >
+          <span>📋</span> Copy to Clipboard
+        </button>
+        <button
+          type="button"
+          class="gmkb-embedded-btn gmkb-embedded-btn--outline"
+          @click="handleEmbeddedRegenerate"
+        >
+          <span>🔄</span> Regenerate
+        </button>
+        <button
+          type="button"
+          class="gmkb-embedded-btn gmkb-embedded-btn--ghost"
+          @click="handleEmbeddedStartOver"
+        >
+          Start Over
+        </button>
+      </div>
+
+      <!-- Tip -->
+      <div class="gmkb-embedded-results__tip">
+        <span>💡</span>
+        <span>Want more options? Create a free account to access Short (50w), Long (300w), and refinement features.</span>
       </div>
     </div>
   </div>
@@ -812,6 +858,9 @@ const showResults = ref(false);
 const saveSuccess = ref(false);
 const copiedText = ref('');
 
+// Embedded mode specific state
+const embeddedShowResults = ref(false);
+
 // Integrated mode specific state
 const authorityHookTextCompact = ref('');
 const integratedLength = ref('medium');
@@ -860,6 +909,9 @@ const handleGenerate = async () => {
     // Generate medium bio by default for embedded mode
     await generateForSlot('medium');
 
+    // Show results in embedded mode
+    embeddedShowResults.value = true;
+
     // Emit the generated result
     const bio = currentBio.value;
     emit('generated', {
@@ -873,6 +925,37 @@ const handleGenerate = async () => {
     console.error('[Biography Generator] Generation failed:', err);
     throw err;
   }
+};
+
+/**
+ * Handle copy for embedded mode
+ */
+const handleEmbeddedCopy = async () => {
+  const success = await copyBio(currentBio.value);
+  if (success) {
+    copiedText.value = currentBio.value;
+    setTimeout(() => { copiedText.value = ''; }, 2000);
+  }
+};
+
+/**
+ * Handle regenerate for embedded mode
+ */
+const handleEmbeddedRegenerate = async () => {
+  await generateForSlot('medium');
+  emit('generated', {
+    content: currentBio.value,
+    hook: currentBio.value,
+    result: currentBio.value
+  });
+};
+
+/**
+ * Handle start over for embedded mode
+ */
+const handleEmbeddedStartOver = () => {
+  embeddedShowResults.value = false;
+  reset();
 };
 
 /**
@@ -991,15 +1074,34 @@ const handleStartOver = () => {
  */
 function loadProfileData(data) {
   if (!data) return;
+  console.log('[Biography Generator] loadProfileData called with:', data);
+  console.log('[Biography Generator] impact_where:', data.impact_where);
+  console.log('[Biography Generator] impact_why:', data.impact_why);
+  console.log('[Biography Generator] where:', data.where);
+  console.log('[Biography Generator] why:', data.why);
   populateFromProfile(data);
 }
 
-// Watch for profile data changes
+// Watch for injected profile data changes (from EmbeddedToolWrapper)
 watch(
-  [() => props.profileData, injectedProfileData],
-  ([propsData, injectedData]) => {
-    const data = propsData || injectedData;
-    if (data) loadProfileData(data);
+  injectedProfileData,
+  (newData) => {
+    if (newData) {
+      console.log('[Biography Generator] injectedProfileData changed:', newData);
+      loadProfileData(newData);
+    }
+  },
+  { immediate: true }
+);
+
+// Watch for profile data prop changes
+watch(
+  () => props.profileData,
+  (newData) => {
+    if (newData) {
+      console.log('[Biography Generator] props.profileData changed:', newData);
+      loadProfileData(newData);
+    }
   },
   { immediate: true }
 );
@@ -2025,5 +2127,108 @@ defineExpose({
   font-size: 15px;
   font-weight: 700;
   color: var(--mkcg-text-primary, #0f172a);
+}
+
+/* Embedded Results Panel */
+.gmkb-embedded-results {
+  padding: 20px 0;
+}
+
+.gmkb-embedded-results__header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.gmkb-embedded-results__title {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--mkcg-text-primary, #0f172a);
+  margin: 0 0 8px;
+}
+
+.gmkb-embedded-results__subtitle {
+  font-size: 14px;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin: 0;
+}
+
+.gmkb-embedded-results__content {
+  background: #fff;
+  border: 2px solid #22c55e;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.gmkb-embedded-results__content p {
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--mkcg-text-primary, #0f172a);
+  margin: 0;
+}
+
+.gmkb-embedded-results__actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.gmkb-embedded-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.gmkb-embedded-btn--primary {
+  background: var(--mkcg-primary, #3b82f6);
+  color: white;
+  border: none;
+}
+
+.gmkb-embedded-btn--primary:hover {
+  background: var(--mkcg-primary-hover, #2563eb);
+}
+
+.gmkb-embedded-btn--outline {
+  background: white;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.gmkb-embedded-btn--outline:hover {
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: var(--mkcg-primary, #3b82f6);
+  background: #eff6ff;
+}
+
+.gmkb-embedded-btn--ghost {
+  background: transparent;
+  border: none;
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.gmkb-embedded-btn--ghost:hover {
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.gmkb-embedded-results__tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #92400e;
 }
 </style>

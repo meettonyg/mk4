@@ -566,8 +566,16 @@ export function useAIBiography() {
                    impactData.why || profileData.why ||
                    profileData.mission || profileData.purpose || '';
 
+    console.log('[useAIBiography] populateFromProfile - Profile data keys:', Object.keys(profileData));
+    console.log('[useAIBiography] populateFromProfile - impactData:', impactData);
+    console.log('[useAIBiography] populateFromProfile - whereVal resolved to:', whereVal);
+    console.log('[useAIBiography] populateFromProfile - whyVal resolved to:', whyVal);
+
     if (whereVal) impactIntro.where = whereVal;
     if (whyVal) impactIntro.why = whyVal;
+
+    console.log('[useAIBiography] populateFromProfile - Set impactIntro.where to:', impactIntro.where);
+    console.log('[useAIBiography] populateFromProfile - Set impactIntro.why to:', impactIntro.why);
 
     // Existing biography for reference
     const existingBio = profileData.biography || profileData.bio || '';
