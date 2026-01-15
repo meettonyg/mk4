@@ -344,21 +344,52 @@ export function useImpactIntro() {
   const loadFromProfileData = (profileData) => {
     if (!profileData) return;
 
-    // Load credentials
-    if (profileData.credentials) {
-      const creds = Array.isArray(profileData.credentials)
-        ? profileData.credentials
-        : profileData.credentials.split(',').map(c => c.trim()).filter(c => c);
+    // Helper function to extract values from various profile data fields
+    // Priority: plural array > hook field (6W's) > numbered fields (field_1, field_2, etc.)
+    // Returns null if no relevant fields found, empty array if fields exist but are empty
+    const extractValues = (pluralKey, hookKey, singularPrefix) => {
+      if (Object.prototype.hasOwnProperty.call(profileData, pluralKey)) {
+        const values = profileData[pluralKey];
+        return Array.isArray(values)
+          ? values.map(v => String(v || '').trim()).filter(Boolean)
+          : String(values || '').split(',').map(v => v.trim()).filter(Boolean);
+      }
+
+      if (Object.prototype.hasOwnProperty.call(profileData, hookKey)) {
+        const value = String(profileData[hookKey] || '').trim();
+        return value ? [value] : [];
+      }
+
+      const numberedValues = [];
+      let hasAnyNumberedField = false;
+      for (let i = 1; i <= 5; i++) {
+        const fieldName = `${singularPrefix}_${i}`;
+        if (Object.prototype.hasOwnProperty.call(profileData, fieldName)) {
+          hasAnyNumberedField = true;
+          const value = profileData[fieldName];
+          if (value && String(value).trim()) {
+            numberedValues.push(String(value).trim());
+          }
+        }
+      }
+      if (hasAnyNumberedField) {
+        return numberedValues;
+      }
+
+      return null; // No relevant fields found
+    };
+
+    // Load credentials from profile
+    const creds = extractValues('credentials', 'hook_where', 'credential');
+    if (creds !== null) {
       credentials.value = creds;
       // Select all loaded credentials by default
       selectedCredentialSet.value = new Set(creds);
     }
 
-    // Load achievements
-    if (profileData.achievements) {
-      const achvs = Array.isArray(profileData.achievements)
-        ? profileData.achievements
-        : profileData.achievements.split(',').map(a => a.trim()).filter(a => a);
+    // Load achievements/mission from profile
+    const achvs = extractValues('achievements', 'hook_why', 'achievement');
+    if (achvs !== null) {
       achievements.value = achvs;
     }
   };

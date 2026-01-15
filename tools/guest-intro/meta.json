@@ -1,46 +1,78 @@
 {
   "name": "Guest Intro Generator",
   "slug": "guest-intro-generator",
-  "shortDescription": "Create introductions for podcast hosts or event MCs to read when introducing you.",
+  "shortDescription": "Create script-ready introductions for podcast hosts and event MCs using the Authority Hook framework.",
   "emoji": "🎤",
   "apiType": "guest_intro",
+  "version": "3.0.0",
   "fieldMapping": {
     "type": "object",
     "targetField": "introduction",
-    "sourceKeys": ["text", "value"],
+    "sourceKeys": ["text", "value", "variations"],
     "fields": {
       "short": "introduction_short",
-      "standard": "introduction",
-      "extended": "introduction_long",
+      "medium": "introduction",
+      "long": "introduction_long",
       "content": "introduction",
       "introduction": "introduction"
     },
     "lengthVariants": {
       "short": {
         "targetField": "introduction_short",
-        "label": "Brief (30-45 sec)",
-        "description": "Quick intro for fast-paced podcasts"
+        "label": "Short (30-45s)",
+        "wordRange": "50-80",
+        "variationCount": 5,
+        "description": "Punchy, high-energy intro for fast-paced shows"
       },
-      "standard": {
+      "medium": {
         "targetField": "introduction",
-        "label": "Standard (60-90 sec)",
-        "description": "Ideal for most podcast and event introductions"
+        "label": "Medium (60-90s)",
+        "wordRange": "100-150",
+        "variationCount": 3,
+        "description": "Balanced intro with credibility and anticipation"
       },
-      "extended": {
+      "long": {
         "targetField": "introduction_long",
-        "label": "Extended (2-3 min)",
+        "label": "Long (2-3 min)",
+        "wordRange": "200-350",
+        "variationCount": 2,
         "description": "Comprehensive intro for keynotes and formal events"
       }
     }
   },
+  "formFields": {
+    "guestInfo": {
+      "guestName": { "required": true, "label": "Guest Name" },
+      "guestTitle": { "required": false, "label": "Guest Title & Company" },
+      "episodeTitle": { "required": false, "label": "Episode/Event Title" },
+      "topic": { "required": true, "label": "Main Discussion Topic" }
+    },
+    "authorityHook": {
+      "who": { "label": "WHO do you help?" },
+      "what": { "label": "WHAT is the result?" },
+      "when": { "label": "WHEN do they need it?" },
+      "how": { "label": "HOW do you do it?" }
+    },
+    "impactIntro": {
+      "credentials": { "label": "WHERE is your authority (Credentials)?" },
+      "mission": { "label": "WHY do you do it (Mission)?" }
+    },
+    "settings": {
+      "tone": { "label": "Tone of Intro", "default": "professional" },
+      "hookStyle": { "label": "Hook Style", "default": "question" },
+      "notes": { "label": "Additional Notes or Requests" }
+    }
+  },
   "validation": {
-    "anyOf": ["biography", "credentials"],
-    "errorMessage": "Biography or credentials is required for guest intro generation"
+    "anyOf": ["topic", "guestTitle", "authorityHook"],
+    "required": ["guestName"],
+    "errorMessage": "Guest name and at least one of topic, title, or authority hook is required"
   },
   "longDescription": "The Guest Intro Generator creates polished introductions that hosts can read verbatim when welcoming you to their show or event. From brief podcast intros to extended keynote introductions, this tool ensures you make a memorable first impression every time.",
   "category": "message-builder",
   "buttonText": "Generate Introduction",
   "supportsProfileSave": true,
+  "singleColumn": true,
   "icon": "MicrophoneIcon",
   "componentName": "GuestIntroGenerator",
   "useCases": [

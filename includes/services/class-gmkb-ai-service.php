@@ -379,6 +379,24 @@ class GMKB_AI_Service {
             $authority_hook = implode(' ', $parts);
         }
 
+        // Build refinement section if feedback provided
+        $refinement_section = '';
+        $word_count_requirement = '- Each tagline should be 5-10 words maximum';
+
+        if (!empty($params['refinementFeedback']) && !empty($params['previousTaglines'])) {
+            $refinement_section = "=== CRITICAL REFINEMENT REQUEST ===\n";
+            $refinement_section .= "Previous taglines generated:\n";
+            $prev_taglines = is_array($params['previousTaglines']) ? $params['previousTaglines'] : array();
+            foreach ($prev_taglines as $i => $tagline) {
+                $refinement_section .= ($i + 1) . ". {$tagline}\n";
+            }
+            $refinement_section .= "\n**USER FEEDBACK (MUST FOLLOW): " . $params['refinementFeedback'] . "**\n";
+            $refinement_section .= "\nGenerate NEW taglines that STRICTLY follow the user's feedback above. The user's instructions override any default requirements.";
+
+            // User feedback overrides default word count
+            $word_count_requirement = '- Follow the user feedback above for length/word count requirements';
+        }
+
         // Replace placeholders in template
         $replacements = array(
             '{{name}}' => $params['name'] ?? '',
@@ -399,7 +417,10 @@ class GMKB_AI_Service {
             '{{how}}' => $params['how'] ?? '',
             '{{where}}' => $params['where'] ?? '',
             '{{why}}' => $params['why'] ?? '',
-            '{{count}}' => $params['count'] ?? '5'
+            '{{count}}' => $params['count'] ?? '5',
+            // Refinement support
+            '{{refinementSection}}' => $refinement_section,
+            '{{wordCountRequirement}}' => $word_count_requirement
         );
 
         $prompt = str_replace(array_keys($replacements), array_values($replacements), $template);
@@ -576,7 +597,10 @@ class GMKB_AI_Service {
         if (preg_match_all('/(?:\d+\.\s*)?["\']?(.+?)["\']?(?=\n|$)/m', $content, $matches)) {
             foreach ($matches[1] as $tagline) {
                 $tagline = trim($tagline, " '\".-");
-                if (strlen($tagline) > 10 && strlen($tagline) < 200) {
+                // Remove markdown bold markers **
+                $tagline = str_replace('**', '', $tagline);
+                $tagline = trim($tagline);
+                if (strlen($tagline) > 3 && strlen($tagline) < 200) {
                     $taglines[] = $tagline;
                 }
             }
@@ -584,10 +608,12 @@ class GMKB_AI_Service {
 
         // If no multiple found, return the whole content as single
         if (empty($taglines)) {
-            $taglines[] = trim($content, " '\"");
+            $tagline = trim($content, " '\"");
+            $tagline = str_replace('**', '', $tagline);
+            $taglines[] = trim($tagline);
         }
 
-        return array_unique(array_slice($taglines, 0, 5));
+        return array_unique(array_slice($taglines, 0, 10));
     }
 
     /**
