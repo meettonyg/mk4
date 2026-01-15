@@ -5,7 +5,7 @@
             <div class="main-content">
                 <!-- Biography Panel -->
                 <EditablePanel
-                    title="Biography"
+                    title="Biography Toolkit"
                     section-id="biography"
                     :is-editing="editingSection === 'biography'"
                     :is-saving="isSaving"
@@ -20,29 +20,103 @@
                     </template>
 
                     <template #display>
-                        <div class="text-area">
-                            <div v-if="store.fields.biography" class="preserve-lines" v-html="formatWithLineBreaks(store.fields.biography)"></div>
-                            <div v-else class="empty-text">
-                                <p>
-                                    <span class="info-icon">i</span>
-                                    Your biography demonstrates your value to podcast hosts through your expertise,
-                                    stories and results that you share.
-                                </p>
+                        <div class="bio-toolkit">
+                            <!-- Bio Variant Tabs -->
+                            <div class="bio-tabs">
+                                <button
+                                    type="button"
+                                    class="bio-tab"
+                                    :class="{ 'bio-tab--active': activeBioTab === 'long' }"
+                                    @click="activeBioTab = 'long'"
+                                >
+                                    Long (300w)
+                                </button>
+                                <button
+                                    type="button"
+                                    class="bio-tab"
+                                    :class="{ 'bio-tab--active': activeBioTab === 'medium' }"
+                                    @click="activeBioTab = 'medium'"
+                                >
+                                    Medium (150w)
+                                </button>
+                                <button
+                                    type="button"
+                                    class="bio-tab"
+                                    :class="{ 'bio-tab--active': activeBioTab === 'short' }"
+                                    @click="activeBioTab = 'short'"
+                                >
+                                    Short (50w)
+                                </button>
+                            </div>
+
+                            <!-- Bio Content -->
+                            <div class="bio-content">
+                                <div v-if="activeBioTab === 'long'" class="text-area">
+                                    <div v-if="store.fields.biography_long" class="preserve-lines" v-html="formatWithLineBreaks(store.fields.biography_long)"></div>
+                                    <div v-else class="empty-text">
+                                        <p>
+                                            <span class="info-icon">i</span>
+                                            No long biography yet. Use the AI tool to generate one.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div v-else-if="activeBioTab === 'medium'" class="text-area">
+                                    <div v-if="store.fields.biography" class="preserve-lines" v-html="formatWithLineBreaks(store.fields.biography)"></div>
+                                    <div v-else class="empty-text">
+                                        <p>
+                                            <span class="info-icon">i</span>
+                                            No medium biography yet. Use the AI tool to generate one.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div v-else class="text-area">
+                                    <div v-if="store.fields.biography_short" class="preserve-lines" v-html="formatWithLineBreaks(store.fields.biography_short)"></div>
+                                    <div v-else class="empty-text">
+                                        <p>
+                                            <span class="info-icon">i</span>
+                                            No short biography yet. Use the AI tool to generate one.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </template>
 
                     <template #edit>
-                        <div class="form-group">
-                            <label class="form-label">
-                                Biography (300-500 words, written in third person)
-                            </label>
-                            <textarea
-                                class="form-input textarea tall"
-                                v-model="editFields.biography"
-                                rows="10"
-                                placeholder="Write your biography in third person..."
-                            ></textarea>
+                        <div class="bio-edit-sections">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    Long Biography (300 words)
+                                </label>
+                                <textarea
+                                    class="form-input textarea tall"
+                                    v-model="editFields.biography_long"
+                                    rows="8"
+                                    placeholder="Comprehensive bio for detailed profiles and publications..."
+                                ></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    Medium Biography (150 words)
+                                </label>
+                                <textarea
+                                    class="form-input textarea"
+                                    v-model="editFields.biography"
+                                    rows="5"
+                                    placeholder="Ideal for speaker introductions and media kits..."
+                                ></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    Short Biography (50 words)
+                                </label>
+                                <textarea
+                                    class="form-input textarea"
+                                    v-model="editFields.biography_short"
+                                    rows="3"
+                                    placeholder="Perfect for social media profiles and quick introductions..."
+                                ></textarea>
+                            </div>
                         </div>
                     </template>
                 </EditablePanel>
@@ -384,9 +458,12 @@ const editingSection = ref(null);
 const isSaving = ref(false);
 const editFields = reactive({});
 
+// Bio toolkit tab state
+const activeBioTab = ref('long');
+
 // Section field mappings
 const sectionFields = {
-    biography: ['biography'],
+    biography: ['biography', 'biography_short', 'biography_long'],
     'guest-intro': ['podcast_intro'],
     'six-ws': ['hook_who', 'hook_what', 'hook_when', 'hook_how', 'hook_where', 'hook_why'],
     tagline: ['tagline'],
@@ -617,6 +694,64 @@ const saveSection = async (sectionId) => {
 }
 
 .six-ws-edit-grid .form-group {
+    margin-bottom: 0;
+}
+
+/* Biography Toolkit Styles */
+.bio-toolkit {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.bio-tabs {
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 12px;
+}
+
+.bio-tab {
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+    background: transparent;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.bio-tab:hover {
+    color: #14b8a6;
+    border-color: #14b8a6;
+    background: #f0fdfa;
+}
+
+.bio-tab--active {
+    color: #ffffff;
+    background: #14b8a6;
+    border-color: #14b8a6;
+}
+
+.bio-tab--active:hover {
+    color: #ffffff;
+    background: #0d9488;
+    border-color: #0d9488;
+}
+
+.bio-content {
+    min-height: 100px;
+}
+
+.bio-edit-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.bio-edit-sections .form-group {
     margin-bottom: 0;
 }
 </style>
