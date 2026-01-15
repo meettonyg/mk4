@@ -47,7 +47,6 @@
   "supportsProfileSave": true,
   "supportsSlotBasedGeneration": true,
   "supportsRefinement": true,
-  "singleColumn": true,
   "icon": "UserCircleIcon",
   "inputFields": {
     "basicInfo": {
