@@ -1,5 +1,5 @@
 <template>
-  <!-- Standalone Mode: Full two-panel layout -->
+  <!-- Standalone Mode: Single column layout -->
   <GeneratorLayout
     v-if="mode === 'standalone'"
     title="Conversion Offer Generator"
@@ -8,6 +8,7 @@
     generator-type="conversion-offers"
     :has-results="hasOffers"
     :is-loading="!!generatingTier"
+    single-column
   >
     <!-- Left Panel: Form -->
     <template #left>
@@ -146,18 +147,6 @@
           Try Again
         </button>
       </div>
-    </template>
-
-    <!-- Right Panel: Guidance -->
-    <template #right>
-      <GuidancePanel
-        title="Building Your Offer Funnel"
-        subtitle="A strategic offer suite guides prospects from awareness to high-ticket commitment, maximizing lifetime value at every step."
-        :formula="offerFormula"
-        :process-steps="processSteps"
-        :examples="examples"
-        examples-title="Example Offer Suites:"
-      />
     </template>
 
     <!-- Results -->
@@ -527,7 +516,7 @@ import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
+import { GeneratorLayout, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
 
 // Tier configurations
 const tiers = [
@@ -618,37 +607,6 @@ const localIsSaving = ref(false);
 const localSaveError = ref(null);
 const saveSuccess = ref(false);
 const saveAuthorityHook = ref(true);
-
-/**
- * Guidance panel content
- */
-const offerFormula = '<span class="generator__highlight">[Lead Magnet]</span> → <span class="generator__highlight">[Core Offer]</span> → <span class="generator__highlight">[High-Ticket]</span> = Complete Funnel';
-
-const processSteps = [
-  {
-    title: 'Lead Magnet (Free)',
-    description: 'A valuable free resource that attracts your ideal prospects. This could be a guide, checklist, template, or mini-course that solves a specific problem and demonstrates your expertise.'
-  },
-  {
-    title: 'Core Offer ($500-$2,500)',
-    description: 'Your main service or product that delivers significant transformation. This is where most of your revenue comes from - a course, group program, or done-with-you service.'
-  },
-  {
-    title: 'High-Ticket Upgrade ($5,000+)',
-    description: 'Premium, high-touch offering for clients who want the best results. VIP days, private coaching, done-for-you services, or exclusive mastermind access.'
-  }
-];
-
-const examples = [
-  {
-    title: 'Business Coach Funnel:',
-    description: 'Lead Magnet: "5-Day Revenue Accelerator Challenge" → Core: "Scale to 7 Figures Group Coaching" ($2,497) → High-Ticket: "Private Strategy Intensives" ($15,000)'
-  },
-  {
-    title: 'Marketing Consultant Funnel:',
-    description: 'Lead Magnet: "LinkedIn Content Calendar Template" → Core: "Content Marketing Mastery Course" ($997) → High-Ticket: "Done-For-You Content Strategy" ($8,500)'
-  }
-];
 
 // Computed
 const resolvedProfileId = computed(() => {
