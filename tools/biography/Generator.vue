@@ -80,9 +80,7 @@
   </AiWidgetFrame>
 
   <!-- Embedded Mode: Form fields for EmbeddedToolWrapper (Landing Pages) -->
-  <div v-else-if="mode === 'embedded'" ref="embeddedWrapperRef" class="gmkb-embedded-mode">
-    <!-- Phase 1: Input Form (shown when no results) -->
-    <div v-if="!embeddedShowResults" class="gmkb-embedded-form">
+  <div v-else-if="mode === 'embedded'" class="gmkb-embedded-form">
       <!-- STEP 1: BASIC INFO -->
       <div class="gmkb-embedded-section">
         <div class="gmkb-embedded-section-header">Step 1: Basic Information</div>
@@ -242,245 +240,7 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Phase 2: Full Results Dashboard (shown after generation) -->
-    <div v-else class="gfy-bio-results gfy-bio-results--embedded">
-      <!-- Results Hero -->
-      <div class="gfy-bio-hero gfy-bio-hero--compact">
-        <h1 class="gfy-bio-hero__title">Biography Toolkit</h1>
-        <p class="gfy-bio-hero__subtitle">
-          Refine your professional presence. Select a slot and provide feedback to iterate with AI.
-        </p>
-      </div>
-
-      <div class="gmkb-tool-embed">
-        <div class="gfy-results-layout">
-          <!-- SIDEBAR: Slot Selection -->
-          <aside class="gfy-layout-sidebar">
-            <div class="gfy-current-topics">
-              <div class="gfy-sidebar-header">
-                <h3 class="gfy-sidebar-title">Select Length to Refine</h3>
-              </div>
-
-              <!-- Long Slot -->
-              <button
-                type="button"
-                class="gfy-bio-slot"
-                :class="{
-                  'gfy-bio-slot--active': activeSlot === 'long',
-                  'gfy-bio-slot--locked': slots.long.locked,
-                  'gfy-bio-slot--generating': slots.long.status === SLOT_STATUS.GENERATING
-                }"
-                @click="handleSlotClick('long')"
-              >
-                <div class="gfy-bio-slot__header">
-                  <span class="gfy-bio-slot__label">Long Version (300w)</span>
-                  <i v-if="slots.long.locked" class="fas fa-lock" style="color: var(--gfy-primary-color);"></i>
-                  <i v-else-if="slots.long.status === SLOT_STATUS.GENERATING" class="fas fa-spinner fa-spin" style="color: var(--gfy-primary-color);"></i>
-                  <i v-else-if="slots.long.variations.length > 0" class="fas fa-check-circle" style="color: var(--gfy-success-color);"></i>
-                  <i v-else class="fas fa-plus" style="color: var(--gfy-text-muted);"></i>
-                </div>
-                <div class="gfy-bio-slot__preview">{{ getSlotPreview('long') }}</div>
-              </button>
-
-              <!-- Medium Slot -->
-              <button
-                type="button"
-                class="gfy-bio-slot"
-                :class="{
-                  'gfy-bio-slot--active': activeSlot === 'medium',
-                  'gfy-bio-slot--locked': slots.medium.locked,
-                  'gfy-bio-slot--generating': slots.medium.status === SLOT_STATUS.GENERATING
-                }"
-                @click="handleSlotClick('medium')"
-              >
-                <div class="gfy-bio-slot__header">
-                  <span class="gfy-bio-slot__label">Medium Version (150w)</span>
-                  <i v-if="slots.medium.locked" class="fas fa-lock" style="color: var(--gfy-primary-color);"></i>
-                  <i v-else-if="slots.medium.status === SLOT_STATUS.GENERATING" class="fas fa-spinner fa-spin" style="color: var(--gfy-primary-color);"></i>
-                  <i v-else-if="slots.medium.variations.length > 0" class="fas fa-check-circle" style="color: var(--gfy-success-color);"></i>
-                  <i v-else class="fas fa-plus" style="color: var(--gfy-text-muted);"></i>
-                </div>
-                <div class="gfy-bio-slot__preview">{{ getSlotPreview('medium') }}</div>
-              </button>
-
-              <!-- Short Slot -->
-              <button
-                type="button"
-                class="gfy-bio-slot"
-                :class="{
-                  'gfy-bio-slot--active': activeSlot === 'short',
-                  'gfy-bio-slot--locked': slots.short.locked,
-                  'gfy-bio-slot--generating': slots.short.status === SLOT_STATUS.GENERATING
-                }"
-                @click="handleSlotClick('short')"
-              >
-                <div class="gfy-bio-slot__header">
-                  <span class="gfy-bio-slot__label">Short Version (50w)</span>
-                  <i v-if="slots.short.locked" class="fas fa-lock" style="color: var(--gfy-primary-color);"></i>
-                  <i v-else-if="slots.short.status === SLOT_STATUS.GENERATING" class="fas fa-spinner fa-spin" style="color: var(--gfy-primary-color);"></i>
-                  <i v-else-if="slots.short.variations.length > 0" class="fas fa-check-circle" style="color: var(--gfy-success-color);"></i>
-                  <i v-else class="fas fa-plus" style="color: var(--gfy-text-muted);"></i>
-                </div>
-                <div class="gfy-bio-slot__preview">{{ getSlotPreview('short') }}</div>
-              </button>
-
-              <!-- Locked Summary -->
-              <div v-if="lockedCount > 0" class="gfy-locked-summary">
-                <i class="fas fa-lock"></i>
-                {{ lockedCount }}/3 biographies locked
-              </div>
-            </div>
-          </aside>
-
-          <!-- MAIN: Variations + Feedback Loop -->
-          <main class="gfy-layout-main">
-            <!-- Results Header -->
-            <div class="gfy-results__header">
-              <h3 class="gfy-results__title">
-                AI Variations:
-                <span style="color: var(--gfy-primary-color)">{{ activeSlotLabel }} Biography</span>
-              </h3>
-            </div>
-
-            <!-- Refinement Loop Box -->
-            <div v-if="currentVariations.length > 0 && !currentSlot.locked" class="gfy-refinement-box">
-              <div class="gfy-refinement-header">
-                <i class="fas fa-magic" style="color: var(--gfy-primary-color); font-size: 14px;"></i>
-                <span class="gfy-refinement-title">Refine these results</span>
-              </div>
-              <div class="gfy-refinement-input-wrapper">
-                <textarea
-                  v-model="refinementFeedback"
-                  class="gfy-refinement-textarea"
-                  rows="1"
-                  placeholder="e.g. Make Option 1 more conversational or add my keynote experience..."
-                  @keydown.enter.prevent="handleRefine"
-                ></textarea>
-                <button
-                  type="button"
-                  class="gfy-btn-refine"
-                  :disabled="!refinementFeedback.trim() || isGenerating"
-                  @click="handleRefine"
-                >
-                  <i v-if="!isGenerating" class="fas fa-sync-alt"></i>
-                  <span v-else class="gfy-spinner gfy-spinner--small"></span>
-                  {{ isGenerating ? '' : 'Refine' }}
-                </button>
-              </div>
-              <span class="gfy-refinement-hint">AI will iterate on the drafts below based on your instructions.</span>
-            </div>
-
-            <!-- Loading State -->
-            <div v-if="currentSlot.status === SLOT_STATUS.GENERATING" class="gfy-loading-state">
-              <div class="gfy-loading-spinner"></div>
-              <p>Generating {{ getVariationCount(activeSlot) }} variations for your {{ activeSlotLabel }} biography...</p>
-            </div>
-
-            <!-- Locked State -->
-            <div v-else-if="currentSlot.locked" class="gfy-locked-state">
-              <div class="gfy-locked-bio">
-                <div class="gfy-locked-bio__badge">
-                  <i class="fas fa-lock"></i>
-                  LOCKED {{ activeSlotLabel.toUpperCase() }} BIO
-                </div>
-                <div class="gfy-locked-bio__text">
-                  <p v-for="(paragraph, pIdx) in currentSlot.lockedBio.split('\n\n').filter(p => p.trim())" :key="pIdx">
-                    {{ paragraph }}
-                  </p>
-                </div>
-                <div class="gfy-locked-bio__actions">
-                  <button type="button" class="gfy-btn gfy-btn--outline" @click="handleCopy(currentSlot.lockedBio)">
-                    <i class="fas fa-copy"></i> Copy
-                  </button>
-                  <button type="button" class="gfy-btn gfy-btn--ghost" @click="unlockBio(activeSlot)">
-                    <i class="fas fa-unlock"></i> Unlock & Edit
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Empty State -->
-            <div v-else-if="currentVariations.length === 0" class="gfy-empty-state">
-              <i class="fas fa-file-alt"></i>
-              <p>Click the button below to generate {{ getVariationCount(activeSlot) }} variations for your {{ activeSlotLabel }} biography.</p>
-              <button
-                type="button"
-                class="gfy-btn gfy-btn--primary"
-                :disabled="isGenerating"
-                @click="handleGenerateForSlot(activeSlot)"
-              >
-                <i class="fas fa-magic"></i>
-                Generate {{ activeSlotLabel }} Bio
-              </button>
-            </div>
-
-            <!-- Variations List -->
-            <template v-else>
-              <div
-                v-for="(variation, index) in currentVariations"
-                :key="variation.id"
-                class="gfy-bio-variation"
-              >
-                <div class="gfy-variation-badge">{{ variation.label }}</div>
-                <div class="gfy-variation-text">
-                  <p v-for="(paragraph, pIdx) in variation.text.split('\n\n').filter(p => p.trim())" :key="pIdx">
-                    {{ paragraph }}
-                  </p>
-                </div>
-                <div class="gfy-variation-footer">
-                  <button
-                    type="button"
-                    class="gfy-btn gfy-btn--primary"
-                    @click="handleLock(index)"
-                  >
-                    <i class="fas fa-lock"></i>
-                    Lock as {{ activeSlotLabel }} Bio
-                  </button>
-                  <button
-                    type="button"
-                    class="gfy-btn gfy-btn--outline"
-                    @click="handleCopy(variation.text)"
-                  >
-                    <i class="fas fa-copy"></i> Copy
-                  </button>
-                </div>
-              </div>
-            </template>
-
-            <!-- Footer Actions -->
-            <div class="gfy-results__footer">
-              <button
-                type="button"
-                class="gfy-btn gfy-btn--primary gfy-btn--large"
-                :disabled="lockedCount === 0 || isSaving"
-                @click="handleSaveAll"
-              >
-                <i v-if="!isSaving" class="fas fa-save"></i>
-                <span v-else class="gfy-spinner"></span>
-                {{ isSaving ? 'Saving...' : 'Save Entire Toolkit' }}
-              </button>
-              <button type="button" class="gfy-btn gfy-btn--ghost" @click="handleEmbeddedStartOver">
-                Start Over
-              </button>
-            </div>
-
-            <!-- Save Success -->
-            <div v-if="saveSuccess" class="gfy-save-success">
-              <i class="fas fa-check-circle"></i>
-              Biographies saved successfully!
-            </div>
-
-            <!-- Save Error -->
-            <div v-if="saveError" class="gfy-save-error">
-              <i class="fas fa-exclamation-triangle"></i>
-              {{ saveError }}
-            </div>
-          </main>
-        </div>
-      </div>
-    </div>
+    <div v-if="error" class="gmkb-embedded-error">{{ error }}</div>
   </div>
 
   <!-- Default Mode: Full Biography Toolkit (Standalone Pages) -->
@@ -971,7 +731,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject, nextTick } from 'vue';
+import { ref, computed, watch, inject } from 'vue';
 import { useAIBiography, SLOT_STATUS, LENGTH_OPTIONS, getVariationCount } from '../../src/composables/useAIBiography';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
@@ -1059,10 +819,6 @@ const showResults = ref(false);
 const saveSuccess = ref(false);
 const copiedText = ref('');
 
-// Embedded mode specific state
-const embeddedShowResults = ref(false);
-const embeddedWrapperRef = ref(null);
-
 // Integrated mode specific state
 const authorityHookTextCompact = ref('');
 const integratedLength = ref('medium');
@@ -1108,21 +864,14 @@ const handleApply = () => {
  */
 const handleGenerate = async () => {
   try {
-    // Generate long bio by default for embedded mode (like default mode)
-    setActiveSlot('long');
-    await generateForSlot('long');
+    // Generate medium bio for embedded mode (good balance of detail)
+    setActiveSlot('medium');
+    await generateForSlot('medium');
 
-    // Show full results dashboard in embedded mode
-    embeddedShowResults.value = true;
-
-    // Scroll results into view after DOM updates
-    await nextTick();
-    if (embeddedWrapperRef.value) {
-      embeddedWrapperRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    // Emit the generated result
+    // Get the generated bio
     const bio = currentBio.value;
+
+    // Emit the generated result for EmbeddedToolWrapper to display
     emit('generated', {
       content: bio,
       hook: bio,
@@ -1134,37 +883,6 @@ const handleGenerate = async () => {
     console.error('[Biography Generator] Generation failed:', err);
     throw err;
   }
-};
-
-/**
- * Handle copy for embedded mode
- */
-const handleEmbeddedCopy = async () => {
-  const success = await copyBio(currentBio.value);
-  if (success) {
-    copiedText.value = currentBio.value;
-    setTimeout(() => { copiedText.value = ''; }, 2000);
-  }
-};
-
-/**
- * Handle regenerate for embedded mode
- */
-const handleEmbeddedRegenerate = async () => {
-  await generateForSlot('medium');
-  emit('generated', {
-    content: currentBio.value,
-    hook: currentBio.value,
-    result: currentBio.value
-  });
-};
-
-/**
- * Handle start over for embedded mode
- */
-const handleEmbeddedStartOver = () => {
-  embeddedShowResults.value = false;
-  reset();
 };
 
 /**
