@@ -524,33 +524,59 @@ export function useAIBiography() {
 
   /**
    * Populate from profile data
+   * Handles multiple field name variations from different profile sources
    */
   const populateFromProfile = (profileData) => {
     if (!profileData) return;
 
-    // Name
-    const firstName = profileData.first_name || '';
-    const lastName = profileData.last_name || '';
-    name.value = [firstName, lastName].filter(Boolean).join(' ');
+    // Name - check multiple field variations
+    const firstName = profileData.first_name || profileData.firstName || '';
+    const lastName = profileData.last_name || profileData.lastName || '';
+    const fullName = profileData.full_name || profileData.fullName || profileData.name || '';
+    name.value = fullName || [firstName, lastName].filter(Boolean).join(' ');
 
-    // Authority Hook
-    if (profileData.hook_who) authorityHook.who = profileData.hook_who;
-    if (profileData.hook_what) authorityHook.what = profileData.hook_what;
-    if (profileData.hook_when) authorityHook.when = profileData.hook_when;
-    if (profileData.hook_how) authorityHook.how = profileData.hook_how;
+    // Title/Role
+    const title = profileData.guest_title || profileData.title || profileData.professional_title || '';
+    if (title) optionalFields.title = title;
 
-    // Impact Intro
-    if (profileData.impact_where) impactIntro.where = profileData.impact_where;
-    if (profileData.impact_why) impactIntro.why = profileData.impact_why;
+    // Organization/Company
+    const org = profileData.organization || profileData.company || profileData.org || '';
+    if (org) optionalFields.organization = org;
 
-    // Optional fields
-    if (profileData.organization) optionalFields.organization = profileData.organization;
-    if (profileData.biography) optionalFields.existingBio = profileData.biography;
+    // Authority Hook - check multiple field name patterns
+    const hookWho = profileData.hook_who || profileData.hookWho || profileData.who || '';
+    const hookWhat = profileData.hook_what || profileData.hookWhat || profileData.what || '';
+    const hookWhen = profileData.hook_when || profileData.hookWhen || profileData.when || '';
+    const hookHow = profileData.hook_how || profileData.hookHow || profileData.how || '';
+
+    if (hookWho) authorityHook.who = hookWho;
+    if (hookWhat) authorityHook.what = hookWhat;
+    if (hookWhen) authorityHook.when = hookWhen;
+    if (hookHow) authorityHook.how = hookHow;
+
+    // Impact Intro (WHERE & WHY) - check multiple field name patterns
+    // Primary: impact_where/impact_why (standard profile fields)
+    // Fallback: where/why (simplified names)
+    // Also check nested impact_intro object
+    const impactData = profileData.impact_intro || profileData.impactIntro || {};
+    const whereVal = profileData.impact_where || profileData.impactWhere ||
+                     impactData.where || profileData.where ||
+                     profileData.credentials || profileData.achievements || '';
+    const whyVal = profileData.impact_why || profileData.impactWhy ||
+                   impactData.why || profileData.why ||
+                   profileData.mission || profileData.purpose || '';
+
+    if (whereVal) impactIntro.where = whereVal;
+    if (whyVal) impactIntro.why = whyVal;
+
+    // Existing biography for reference
+    const existingBio = profileData.biography || profileData.bio || '';
+    if (existingBio) optionalFields.existingBio = existingBio;
 
     // Pre-populate locked bios if they exist
-    if (profileData.biography_short) {
+    if (profileData.biography_short || profileData.biographyShort) {
       slots.short.locked = true;
-      slots.short.lockedBio = profileData.biography_short;
+      slots.short.lockedBio = profileData.biography_short || profileData.biographyShort;
       slots.short.status = SLOT_STATUS.LOCKED;
     }
     if (profileData.biography) {
@@ -558,9 +584,9 @@ export function useAIBiography() {
       slots.medium.lockedBio = profileData.biography;
       slots.medium.status = SLOT_STATUS.LOCKED;
     }
-    if (profileData.biography_long) {
+    if (profileData.biography_long || profileData.biographyLong) {
       slots.long.locked = true;
-      slots.long.lockedBio = profileData.biography_long;
+      slots.long.lockedBio = profileData.biography_long || profileData.biographyLong;
       slots.long.status = SLOT_STATUS.LOCKED;
     }
   };
