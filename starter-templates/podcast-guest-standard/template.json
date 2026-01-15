@@ -1,8 +1,8 @@
 {
-  "template_id": "podcast-guest",
-  "template_name": "Podcast Guest Media Kit",
+  "template_id": "podcast-guest-standard",
+  "template_name": "Podcast Guest: Centered",
   "version": "1.0.0",
-  "description": "Optimized for podcast guests and interview subjects. Features episode player, suggested questions, topics, and easy booking for podcast hosts.",
+  "description": "Classic centered layout for podcast guests. Hero section with centered headshot, stats, episode player, and booking form. Best for building authority.",
   "persona": {
     "type": "podcast-guest",
     "label": "Podcast Guests",
@@ -18,7 +18,7 @@
     ]
   },
   "metadata": {
-    "tags": ["podcast", "interview", "guest", "audio", "media", "appearance"],
+    "tags": ["podcast", "interview", "guest", "audio", "media", "appearance", "centered"],
     "is_premium": false,
     "sort_order": 30,
     "recommended_themes": ["podcast-guest", "modern-dark", "creative-bold"]
