@@ -1,7 +1,7 @@
 <template>
   <!-- Standalone Mode: Full two-panel layout -->
   <GeneratorLayout
-    v-if="mode === 'standalone'"
+    v-if="mode === 'default'"
     title="Press Release Generator"
     subtitle="Create professional press releases for announcements and news using AI"
     intro-text="Generate compelling press releases that capture media attention and communicate your news effectively. Our AI helps you craft professional announcements with proper structure, newsworthy angles, and journalist-friendly formatting."
@@ -311,8 +311,8 @@ const props = defineProps({
    */
   mode: {
     type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
 
   /**

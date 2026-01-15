@@ -1,7 +1,7 @@
 <template>
   <!-- Standalone Mode: Full two-panel layout -->
   <GeneratorLayout
-    v-if="mode === 'standalone'"
+    v-if="mode === 'default'"
     title="YouTube Description Generator"
     subtitle="Create SEO-optimized YouTube video descriptions using AI"
     intro-text="Generate compelling YouTube descriptions that boost discoverability and engagement. Include timestamps, relevant keywords, and key links to maximize your video's reach and SEO performance."
@@ -280,8 +280,8 @@ const props = defineProps({
    */
   mode: {
     type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
 
   /**

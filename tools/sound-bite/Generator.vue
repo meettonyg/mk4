@@ -1,7 +1,7 @@
 <template>
   <!-- Standalone Mode: Full two-panel layout -->
   <GeneratorLayout
-    v-if="mode === 'standalone'"
+    v-if="mode === 'default'"
     title="Sound Bite Generator"
     subtitle="Create memorable quotes and one-liners for media appearances using AI"
     intro-text="Generate powerful, quotable sound bites designed for podcasts, interviews, and media appearances. Each sound bite combines a unique insight with an element of contrast or surprise to make your message memorable and shareable."
@@ -302,8 +302,8 @@ const props = defineProps({
    */
   mode: {
     type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
 
   /**

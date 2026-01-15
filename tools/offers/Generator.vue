@@ -1,7 +1,7 @@
 <template>
   <!-- Standalone Mode: Full two-panel layout -->
   <GeneratorLayout
-    v-if="mode === 'standalone'"
+    v-if="mode === 'default'"
     title="Service Packages Generator"
     subtitle="Create tiered service packages that communicate clear value and outcomes"
     intro-text="Generate three professionally-structured service packages (Entry, Signature, and Premium) based on your services and expertise. Each package will be designed to appeal to different client needs and budgets while showcasing the value and transformation you provide."
@@ -329,8 +329,8 @@ const props = defineProps({
    */
   mode: {
     type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
 
   /**

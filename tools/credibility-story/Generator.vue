@@ -1,7 +1,7 @@
 <template>
   <!-- Standalone Mode: Full two-panel layout -->
   <GeneratorLayout
-    v-if="mode === 'standalone'"
+    v-if="mode === 'default'"
     title="Credibility Story Generator"
     subtitle="Create compelling credibility stories that establish your expertise and authority"
     intro-text="Generate powerful credibility stories that demonstrate your expertise through real experiences. Each story combines a client challenge, your unique approach, and measurable results to build trust with your audience."
@@ -294,8 +294,8 @@ const props = defineProps({
    */
   mode: {
     type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
 
   /**

@@ -1,7 +1,7 @@
 <template>
   <!-- Standalone Mode: Full two-panel layout -->
   <GeneratorLayout
-    v-if="mode === 'standalone'"
+    v-if="mode === 'default'"
     title="Brand Story Generator"
     subtitle="Craft compelling origin stories that connect with your audience using AI"
     intro-text="Transform your journey into a powerful brand narrative. Share your background, pivotal transformation moment, and mission to create an authentic story that resonates with your ideal audience and establishes an emotional connection."
@@ -279,8 +279,8 @@ const props = defineProps({
    */
   mode: {
     type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
 
   /**

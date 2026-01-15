@@ -1,7 +1,7 @@
 <template>
   <!-- Standalone Mode: Full two-panel layout -->
   <GeneratorLayout
-    v-if="mode === 'standalone'"
+    v-if="mode === 'default'"
     title="Signature Story Generator"
     subtitle="Create powerful client success stories that showcase your impact using AI"
     intro-text="Generate compelling signature stories based on your client's background, the challenge they faced, your solution, and the results achieved. Your signature story demonstrates your expertise through real-world impact."
@@ -322,8 +322,8 @@ const props = defineProps({
    */
   mode: {
     type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
 
   /**

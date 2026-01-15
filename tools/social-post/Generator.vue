@@ -1,7 +1,7 @@
 <template>
   <!-- Standalone Mode: Full two-panel layout -->
   <GeneratorLayout
-    v-if="mode === 'standalone'"
+    v-if="mode === 'default'"
     title="Social Post Generator"
     subtitle="Create engaging social media posts for multiple platforms using AI"
     intro-text="Generate platform-optimized social media posts that capture attention and drive engagement. Whether you need content for LinkedIn, Twitter/X, Instagram, or Facebook, our AI crafts compelling posts tailored to each platform's unique style and audience."
@@ -353,8 +353,8 @@ const props = defineProps({
    */
   mode: {
     type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
 
   /**
@@ -508,7 +508,7 @@ const currentPost = computed(() => {
   if (displayPosts.value.length === 0) return null;
 
   // In standalone mode, use selectedPlatform
-  if (props.mode === 'standalone') {
+  if (props.mode === 'default') {
     const post = displayPosts.value.find(p =>
       p.platform.toLowerCase() === selectedPlatform.value.toLowerCase()
     );

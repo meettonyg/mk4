@@ -253,12 +253,12 @@ import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
 
 const props = defineProps({
   /**
-   * Mode: 'embedded' for landing page usage
+   * Mode: 'default', 'integrated', or 'embedded'
    */
   mode: {
     type: String,
     default: 'embedded',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
 
   /**

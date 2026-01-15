@@ -1,7 +1,7 @@
 <template>
   <!-- Standalone Mode: Full two-panel layout -->
   <GeneratorLayout
-    v-if="mode === 'standalone'"
+    v-if="mode === 'default'"
     title="Interview Questions Generator"
     subtitle="Generate 25 thoughtful interview questions organized by category using AI"
     intro-text="Generate 25 professional interview questions organized into four strategic categories: Introductory Questions, Expertise Deep-Dives, Story-Based Questions, and Actionable Takeaways. Each question is designed to help you have engaging, insightful conversations with your guests."
@@ -308,8 +308,8 @@ const props = defineProps({
    */
   mode: {
     type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
 
   /**

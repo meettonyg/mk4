@@ -1,7 +1,7 @@
 <template>
   <!-- Standalone Mode: Full two-panel layout -->
   <GeneratorLayout
-    v-if="mode === 'standalone'"
+    v-if="mode === 'default'"
     title="Elevator Pitch Generator"
     subtitle="Create compelling 30-60 second pitches that capture attention using AI"
     intro-text="Generate a powerful elevator pitch that clearly communicates who you help, what results you deliver, and how you achieve them. Perfect for networking events, introductions, and quick opportunities to make an impression."
@@ -303,8 +303,8 @@ const props = defineProps({
    */
   mode: {
     type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
 
   /**

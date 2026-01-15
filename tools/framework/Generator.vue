@@ -1,7 +1,7 @@
 <template>
   <!-- Standalone Mode: Full two-panel layout -->
   <GeneratorLayout
-    v-if="mode === 'standalone'"
+    v-if="mode === 'default'"
     title="Framework Builder"
     subtitle="Create a proprietary methodology or framework that showcases your unique approach"
     intro-text="Build a memorable framework that establishes you as a thought leader. Define the problem you solve, your unique approach, and the outcomes you deliver. Your framework will be presented in a clear, step-by-step format that positions you as an authority in your field."
@@ -300,8 +300,8 @@ const props = defineProps({
    */
   mode: {
     type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
 
   /**

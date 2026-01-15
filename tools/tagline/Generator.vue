@@ -1,7 +1,7 @@
 <template>
   <!-- Standalone Mode: Full two-panel layout -->
   <GeneratorLayout
-    v-if="mode === 'standalone'"
+    v-if="mode === 'default'"
     title="Tagline Generator"
     subtitle="Create memorable taglines that capture your unique value proposition using AI"
     intro-text="Generate five compelling taglines based on your unique value proposition and professional identity. Each tagline is crafted to be memorable, concise, and aligned with your brand voice."
@@ -333,8 +333,8 @@ const props = defineProps({
    */
   mode: {
     type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
 
   /**
