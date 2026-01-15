@@ -303,6 +303,7 @@ export function useAIBiography() {
 
   /**
    * Parse variations from API response
+   * Uses explicit delimiters to avoid issues with content containing "OPTION" text
    */
   function parseVariations(result, slotName) {
     // If result is already an array of variations
@@ -316,32 +317,82 @@ export function useAIBiography() {
 
     // If result is a string with delimiters
     if (typeof result === 'string') {
-      // Try to parse numbered variations (OPTION 1:, OPTION 2:, etc.)
-      const optionPattern = /OPTION\s*\d+[:\s]*([^O]+?)(?=OPTION\s*\d+|$)/gi;
-      const matches = [...result.matchAll(optionPattern)];
-
-      if (matches.length > 0) {
-        return matches.map((match, index) => ({
-          id: `${slotName}-${index}`,
-          text: match[1].trim(),
-          label: getVariationLabel(index, slotName)
-        }));
+      // Strategy 1: Look for explicit delimiter pattern "---" or "***" between variations
+      const explicitDelimiterPattern = /(?:^|\n)[-*]{3,}\s*\n/;
+      if (explicitDelimiterPattern.test(result)) {
+        const sections = result.split(explicitDelimiterPattern).filter(s => s.trim().length > 0);
+        if (sections.length > 1) {
+          return sections.map((text, index) => ({
+            id: `${slotName}-${index}`,
+            text: cleanVariationText(text),
+            label: getVariationLabel(index, slotName)
+          }));
+        }
       }
 
-      // Try splitting by double newlines
-      const paragraphs = result.split(/\n\n+/).filter(p => p.trim().length > 50);
+      // Strategy 2: Split by "OPTION X:" at the START of a line (more robust than mid-text matching)
+      // This avoids false positives when "option" appears in the biography content
+      const optionHeaderPattern = /(?:^|\n)\s*OPTION\s+(\d+)\s*[:\-]\s*/gi;
+      const optionMatches = [...result.matchAll(optionHeaderPattern)];
+
+      if (optionMatches.length > 1) {
+        const variations = [];
+        for (let i = 0; i < optionMatches.length; i++) {
+          const startIndex = optionMatches[i].index + optionMatches[i][0].length;
+          const endIndex = i < optionMatches.length - 1 ? optionMatches[i + 1].index : result.length;
+          const text = result.substring(startIndex, endIndex).trim();
+          if (text.length > 0) {
+            variations.push({
+              id: `${slotName}-${i}`,
+              text: cleanVariationText(text),
+              label: getVariationLabel(i, slotName)
+            });
+          }
+        }
+        if (variations.length > 0) {
+          return variations;
+        }
+      }
+
+      // Strategy 3: Split by numbered list pattern (1., 2., 3., etc.) at line start
+      const numberedPattern = /(?:^|\n)\s*(\d+)\.\s+/g;
+      const numberedMatches = [...result.matchAll(numberedPattern)];
+
+      if (numberedMatches.length > 1) {
+        const variations = [];
+        for (let i = 0; i < numberedMatches.length; i++) {
+          const startIndex = numberedMatches[i].index + numberedMatches[i][0].length;
+          const endIndex = i < numberedMatches.length - 1 ? numberedMatches[i + 1].index : result.length;
+          const text = result.substring(startIndex, endIndex).trim();
+          // Use a reasonable minimum (20 chars) to filter out false positives but not short valid bios
+          if (text.length >= 20) {
+            variations.push({
+              id: `${slotName}-${i}`,
+              text: cleanVariationText(text),
+              label: getVariationLabel(i, slotName)
+            });
+          }
+        }
+        if (variations.length > 0) {
+          return variations;
+        }
+      }
+
+      // Strategy 4: Split by double newlines (paragraph-based)
+      // Use a minimum of 20 characters to avoid filtering out legitimate short bios
+      const paragraphs = result.split(/\n\n+/).filter(p => p.trim().length >= 20);
       if (paragraphs.length > 1) {
         return paragraphs.map((text, index) => ({
           id: `${slotName}-${index}`,
-          text: text.trim(),
+          text: cleanVariationText(text),
           label: getVariationLabel(index, slotName)
         }));
       }
 
-      // Single variation
+      // Single variation fallback
       return [{
         id: `${slotName}-0`,
-        text: result.trim(),
+        text: cleanVariationText(result),
         label: getVariationLabel(0, slotName)
       }];
     }
@@ -360,17 +411,30 @@ export function useAIBiography() {
   }
 
   /**
-   * Get a label for a variation based on index
+   * Clean variation text by removing option headers and extra whitespace
+   */
+  function cleanVariationText(text) {
+    return text
+      .replace(/^OPTION\s+\d+\s*[:\-]\s*/i, '') // Remove leading "OPTION X:" if present
+      .replace(/^\d+\.\s*/, '') // Remove leading "1." if present
+      .trim();
+  }
+
+  /**
+   * Get a label for a variation based on index and slot type
+   * Generates dynamic labels based on the slot length
    */
   function getVariationLabel(index, slotName) {
-    const labels = {
-      0: 'THE STORY-DRIVEN EXECUTIVE',
-      1: 'THE RESULTS-FOCUSED STRATEGIST',
-      2: 'THE VISIONARY LEADER',
-      3: 'THE TRUSTED ADVISOR',
-      4: 'THE INDUSTRY PIONEER'
+    const slotLabels = {
+      short: ['CONCISE', 'PUNCHY', 'SNAPPY', 'BRIEF', 'COMPACT'],
+      medium: ['BALANCED', 'PROFESSIONAL', 'ENGAGING'],
+      long: ['COMPREHENSIVE', 'DETAILED']
     };
-    return `OPTION ${index + 1}: ${labels[index] || `VARIATION ${index + 1}`}`;
+
+    const labels = slotLabels[slotName] || slotLabels.medium;
+    const label = labels[index] || `STYLE ${index + 1}`;
+
+    return `OPTION ${index + 1}: ${label}`;
   }
 
   /**
