@@ -91,7 +91,7 @@
       </div>
 
       <!-- Form Container -->
-      <div class="gfy-intro-form__container">
+      <div class="gfy-intro-form__container" :class="{ 'gfy-intro-form__container--embedded': mode === 'embedded' }">
         <!-- STEP 1: Guest & Episode Information -->
         <div class="gfy-form-section">
           <div class="gfy-form-section__header">
@@ -1135,6 +1135,14 @@ defineExpose({
   border: 1px solid var(--gfy-border-color);
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   padding: 40px;
+}
+
+.gfy-intro-form__container--embedded {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
 }
 
 /* FORM SECTIONS */
