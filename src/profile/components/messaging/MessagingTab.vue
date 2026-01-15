@@ -65,21 +65,21 @@
 
                     <template #display>
                         <div v-if="hasAnyIntro" class="intro-versions">
-                            <div v-if="store.fields.introduction_short" class="intro-version">
+                            <div v-if="store.fields.introduction_short" class="intro-version intro-version--short">
                                 <div class="intro-version-header">
-                                    <span class="intro-version-badge">Short (30-45s)</span>
+                                    <span class="intro-version-badge intro-version-badge--short">Short (30-45s)</span>
                                 </div>
                                 <div class="intro-version-text preserve-lines" v-html="formatWithLineBreaks(store.fields.introduction_short)"></div>
                             </div>
-                            <div v-if="store.fields.introduction || store.fields.podcast_intro" class="intro-version">
+                            <div v-if="store.fields.introduction || store.fields.podcast_intro" class="intro-version intro-version--medium">
                                 <div class="intro-version-header">
-                                    <span class="intro-version-badge intro-version-badge--primary">Medium (60-90s)</span>
+                                    <span class="intro-version-badge intro-version-badge--medium">Medium (60-90s)</span>
                                 </div>
                                 <div class="intro-version-text preserve-lines" v-html="formatWithLineBreaks(store.fields.introduction || store.fields.podcast_intro)"></div>
                             </div>
-                            <div v-if="store.fields.introduction_long" class="intro-version">
+                            <div v-if="store.fields.introduction_long" class="intro-version intro-version--long">
                                 <div class="intro-version-header">
-                                    <span class="intro-version-badge">Long (2-3 min)</span>
+                                    <span class="intro-version-badge intro-version-badge--long">Long (2-3 min)</span>
                                 </div>
                                 <div class="intro-version-text preserve-lines" v-html="formatWithLineBreaks(store.fields.introduction_long)"></div>
                             </div>
@@ -683,9 +683,26 @@ const saveSection = async (sectionId) => {
 
 .intro-version {
     padding: 16px;
+    padding-left: 20px;
     background: #f8fafc;
     border-radius: 8px;
     border: 1px solid #e2e8f0;
+    border-left: 4px solid #94a3b8;
+}
+
+.intro-version--short {
+    border-left-color: #10b981;
+    background: linear-gradient(to right, #f0fdf4, #f8fafc 20%);
+}
+
+.intro-version--medium {
+    border-left-color: #3b82f6;
+    background: linear-gradient(to right, #eff6ff, #f8fafc 20%);
+}
+
+.intro-version--long {
+    border-left-color: #8b5cf6;
+    background: linear-gradient(to right, #f5f3ff, #f8fafc 20%);
 }
 
 .intro-version-header {
@@ -704,9 +721,19 @@ const saveSection = async (sectionId) => {
     color: #64748b;
 }
 
-.intro-version-badge--primary {
+.intro-version-badge--short {
+    background: #d1fae5;
+    color: #059669;
+}
+
+.intro-version-badge--medium {
     background: #dbeafe;
     color: #2563eb;
+}
+
+.intro-version-badge--long {
+    background: #ede9fe;
+    color: #7c3aed;
 }
 
 .intro-version-text {
