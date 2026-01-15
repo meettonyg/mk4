@@ -79,408 +79,29 @@
     </template>
   </AiWidgetFrame>
 
-  <!-- Embedded Mode: Form fields for EmbeddedToolWrapper (Landing Pages) -->
-  <div v-else-if="mode === 'embedded'" ref="embeddedWrapperRef" class="gmkb-embedded-mode">
-    <!-- Phase 1: Input Form (shown when no results) -->
-    <div v-if="!embeddedShowResults" class="gmkb-embedded-form">
-      <!-- STEP 1: BASIC INFO -->
-      <div class="gmkb-embedded-section">
-        <div class="gmkb-embedded-section-header">Step 1: Basic Information</div>
-        <div class="gmkb-embedded-row gmkb-embedded-row--3col">
-          <div class="gmkb-embedded-field">
-            <label class="gmkb-embedded-label">Full Name *</label>
-            <input
-              v-model="name"
-              type="text"
-              class="gmkb-embedded-input"
-              :placeholder="intent?.formPlaceholders?.name || 'e.g. Tony Guarnaccia'"
-            />
-          </div>
-          <div class="gmkb-embedded-field">
-            <label class="gmkb-embedded-label">Professional Title</label>
-            <input
-              v-model="optionalFields.title"
-              type="text"
-              class="gmkb-embedded-input"
-              placeholder="e.g. CEO, Founder, Consultant"
-            />
-          </div>
-          <div class="gmkb-embedded-field">
-            <label class="gmkb-embedded-label">Organization</label>
-            <input
-              v-model="optionalFields.organization"
-              type="text"
-              class="gmkb-embedded-input"
-              placeholder="e.g. Guestify.ai"
-            />
-          </div>
-        </div>
+  <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
+  <div v-else-if="mode === 'embedded'" class="gmkb-embedded-form">
+    <div class="gmkb-embedded-fields">
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">{{ intent?.formLabels?.name || 'Your Name' }} *</label>
+        <input
+          v-model="name"
+          type="text"
+          class="gmkb-embedded-input"
+          :placeholder="intent?.formPlaceholders?.name || 'e.g., Dr. Jane Smith'"
+        />
       </div>
-
-      <!-- STEP 2: AUTHORITY HOOK -->
-      <div class="gmkb-embedded-section">
-        <div class="gmkb-embedded-section-header">Step 2: Define Your Authority Hook</div>
-        <div class="gmkb-embedded-highlight gmkb-embedded-highlight--blue">
-          <div class="gmkb-embedded-highlight-header">
-            <span class="gmkb-embedded-highlight-icon">⭐</span>
-            <span class="gmkb-embedded-highlight-title">Who-What-When-How</span>
-          </div>
-          <div class="gmkb-embedded-row">
-            <div class="gmkb-embedded-field">
-              <label class="gmkb-embedded-label">WHO do you help?</label>
-              <input
-                v-model="authorityHook.who"
-                type="text"
-                class="gmkb-embedded-input"
-                placeholder="e.g. SaaS Founders scaling to $10M ARR"
-              />
-            </div>
-            <div class="gmkb-embedded-field">
-              <label class="gmkb-embedded-label">WHAT is the result?</label>
-              <input
-                v-model="authorityHook.what"
-                type="text"
-                class="gmkb-embedded-input"
-                placeholder="e.g. Increase revenue by 40% in 90 days"
-              />
-            </div>
-          </div>
-          <div class="gmkb-embedded-row">
-            <div class="gmkb-embedded-field">
-              <label class="gmkb-embedded-label">WHEN do they need it?</label>
-              <input
-                v-model="authorityHook.when"
-                type="text"
-                class="gmkb-embedded-input"
-                placeholder="e.g. When stuck at a growth plateau"
-              />
-            </div>
-            <div class="gmkb-embedded-field">
-              <label class="gmkb-embedded-label">HOW do you do it?</label>
-              <input
-                v-model="authorityHook.how"
-                type="text"
-                class="gmkb-embedded-input"
-                placeholder="e.g. My proven Revenue Acceleration System"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- STEP 3: IMPACT INTRO -->
-      <div class="gmkb-embedded-section">
-        <div class="gmkb-embedded-section-header">Step 3: Establish Impact & Credibility</div>
-        <div class="gmkb-embedded-highlight gmkb-embedded-highlight--green">
-          <div class="gmkb-embedded-highlight-header">
-            <span class="gmkb-embedded-highlight-icon">🎯</span>
-            <span class="gmkb-embedded-highlight-title">Impact Intro (Where & Why)</span>
-          </div>
-          <div class="gmkb-embedded-field">
-            <label class="gmkb-embedded-label">WHERE - Credentials & Achievements</label>
-            <textarea
-              v-model="impactIntro.where"
-              class="gmkb-embedded-textarea"
-              rows="2"
-              placeholder="e.g. Featured in Forbes, Inc., Entrepreneur. Keynoted at 50+ conferences worldwide."
-            ></textarea>
-          </div>
-          <div class="gmkb-embedded-field">
-            <label class="gmkb-embedded-label">WHY - Your Mission or Purpose</label>
-            <textarea
-              v-model="impactIntro.why"
-              class="gmkb-embedded-textarea"
-              rows="2"
-              placeholder="e.g. Help every founder achieve sustainable growth without sacrificing their health."
-            ></textarea>
-          </div>
-        </div>
-      </div>
-
-      <!-- STEP 4: ADDITIONAL CONTENT -->
-      <div class="gmkb-embedded-section">
-        <div class="gmkb-embedded-section-header">Step 4: Additional Content <span class="gmkb-embedded-optional">(Optional)</span></div>
-        <div class="gmkb-embedded-field">
-          <label class="gmkb-embedded-label">Existing Biography</label>
-          <textarea
-            v-model="optionalFields.existingBio"
-            class="gmkb-embedded-textarea"
-            rows="3"
-            placeholder="Paste your current biography here to improve it with AI..."
-          ></textarea>
-        </div>
-        <div class="gmkb-embedded-field">
-          <label class="gmkb-embedded-label">Additional Notes</label>
-          <textarea
-            v-model="optionalFields.additionalNotes"
-            class="gmkb-embedded-textarea"
-            rows="2"
-            placeholder="Any specific achievements, awards, or personal details you want included?"
-          ></textarea>
-        </div>
-      </div>
-
-      <!-- STEP 5: SETTINGS -->
-      <div class="gmkb-embedded-section">
-        <div class="gmkb-embedded-section-header">Step 5: Settings</div>
-        <div class="gmkb-embedded-row">
-          <div class="gmkb-embedded-field">
-            <label class="gmkb-embedded-label">Tone of Voice</label>
-            <select v-model="tone" class="gmkb-embedded-select">
-              <option v-for="opt in TONE_OPTIONS" :key="opt.value" :value="opt.value">
-                {{ opt.label }}
-              </option>
-            </select>
-          </div>
-          <div class="gmkb-embedded-field">
-            <label class="gmkb-embedded-label">Point of View</label>
-            <select v-model="pov" class="gmkb-embedded-select">
-              <option v-for="opt in POV_OPTIONS" :key="opt.value" :value="opt.value">
-                {{ opt.label }}
-              </option>
-            </select>
-          </div>
-        </div>
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">{{ intent?.formLabels?.expertise || 'Your Expertise / Authority Hook' }} *</label>
+        <textarea
+          v-model="authorityHookTextCompact"
+          class="gmkb-embedded-input gmkb-embedded-textarea"
+          :placeholder="intent?.formPlaceholders?.expertise || 'e.g., I help SaaS founders scale to $10M ARR through my Revenue Acceleration System...'"
+          rows="3"
+        ></textarea>
       </div>
     </div>
-
-    <!-- Phase 2: Full Results Dashboard (shown after generation) -->
-    <div v-else class="gfy-bio-results gfy-bio-results--embedded">
-      <!-- Results Hero -->
-      <div class="gfy-bio-hero gfy-bio-hero--compact">
-        <h1 class="gfy-bio-hero__title">Biography Toolkit</h1>
-        <p class="gfy-bio-hero__subtitle">
-          Refine your professional presence. Select a slot and provide feedback to iterate with AI.
-        </p>
-      </div>
-
-      <div class="gmkb-tool-embed">
-        <div class="gfy-results-layout">
-          <!-- SIDEBAR: Slot Selection -->
-          <aside class="gfy-layout-sidebar">
-            <div class="gfy-current-topics">
-              <div class="gfy-sidebar-header">
-                <h3 class="gfy-sidebar-title">Select Length to Refine</h3>
-              </div>
-
-              <!-- Long Slot -->
-              <button
-                type="button"
-                class="gfy-bio-slot"
-                :class="{
-                  'gfy-bio-slot--active': activeSlot === 'long',
-                  'gfy-bio-slot--locked': slots.long.locked,
-                  'gfy-bio-slot--generating': slots.long.status === SLOT_STATUS.GENERATING
-                }"
-                @click="handleSlotClick('long')"
-              >
-                <div class="gfy-bio-slot__header">
-                  <span class="gfy-bio-slot__label">Long Version (300w)</span>
-                  <i v-if="slots.long.locked" class="fas fa-lock" style="color: var(--gfy-primary-color);"></i>
-                  <i v-else-if="slots.long.status === SLOT_STATUS.GENERATING" class="fas fa-spinner fa-spin" style="color: var(--gfy-primary-color);"></i>
-                  <i v-else-if="slots.long.variations.length > 0" class="fas fa-check-circle" style="color: var(--gfy-success-color);"></i>
-                  <i v-else class="fas fa-plus" style="color: var(--gfy-text-muted);"></i>
-                </div>
-                <div class="gfy-bio-slot__preview">{{ getSlotPreview('long') }}</div>
-              </button>
-
-              <!-- Medium Slot -->
-              <button
-                type="button"
-                class="gfy-bio-slot"
-                :class="{
-                  'gfy-bio-slot--active': activeSlot === 'medium',
-                  'gfy-bio-slot--locked': slots.medium.locked,
-                  'gfy-bio-slot--generating': slots.medium.status === SLOT_STATUS.GENERATING
-                }"
-                @click="handleSlotClick('medium')"
-              >
-                <div class="gfy-bio-slot__header">
-                  <span class="gfy-bio-slot__label">Medium Version (150w)</span>
-                  <i v-if="slots.medium.locked" class="fas fa-lock" style="color: var(--gfy-primary-color);"></i>
-                  <i v-else-if="slots.medium.status === SLOT_STATUS.GENERATING" class="fas fa-spinner fa-spin" style="color: var(--gfy-primary-color);"></i>
-                  <i v-else-if="slots.medium.variations.length > 0" class="fas fa-check-circle" style="color: var(--gfy-success-color);"></i>
-                  <i v-else class="fas fa-plus" style="color: var(--gfy-text-muted);"></i>
-                </div>
-                <div class="gfy-bio-slot__preview">{{ getSlotPreview('medium') }}</div>
-              </button>
-
-              <!-- Short Slot -->
-              <button
-                type="button"
-                class="gfy-bio-slot"
-                :class="{
-                  'gfy-bio-slot--active': activeSlot === 'short',
-                  'gfy-bio-slot--locked': slots.short.locked,
-                  'gfy-bio-slot--generating': slots.short.status === SLOT_STATUS.GENERATING
-                }"
-                @click="handleSlotClick('short')"
-              >
-                <div class="gfy-bio-slot__header">
-                  <span class="gfy-bio-slot__label">Short Version (50w)</span>
-                  <i v-if="slots.short.locked" class="fas fa-lock" style="color: var(--gfy-primary-color);"></i>
-                  <i v-else-if="slots.short.status === SLOT_STATUS.GENERATING" class="fas fa-spinner fa-spin" style="color: var(--gfy-primary-color);"></i>
-                  <i v-else-if="slots.short.variations.length > 0" class="fas fa-check-circle" style="color: var(--gfy-success-color);"></i>
-                  <i v-else class="fas fa-plus" style="color: var(--gfy-text-muted);"></i>
-                </div>
-                <div class="gfy-bio-slot__preview">{{ getSlotPreview('short') }}</div>
-              </button>
-
-              <!-- Locked Summary -->
-              <div v-if="lockedCount > 0" class="gfy-locked-summary">
-                <i class="fas fa-lock"></i>
-                {{ lockedCount }}/3 biographies locked
-              </div>
-            </div>
-          </aside>
-
-          <!-- MAIN: Variations + Feedback Loop -->
-          <main class="gfy-layout-main">
-            <!-- Results Header -->
-            <div class="gfy-results__header">
-              <h3 class="gfy-results__title">
-                AI Variations:
-                <span style="color: var(--gfy-primary-color)">{{ activeSlotLabel }} Biography</span>
-              </h3>
-            </div>
-
-            <!-- Refinement Loop Box -->
-            <div v-if="currentVariations.length > 0 && !currentSlot.locked" class="gfy-refinement-box">
-              <div class="gfy-refinement-header">
-                <i class="fas fa-magic" style="color: var(--gfy-primary-color); font-size: 14px;"></i>
-                <span class="gfy-refinement-title">Refine these results</span>
-              </div>
-              <div class="gfy-refinement-input-wrapper">
-                <textarea
-                  v-model="refinementFeedback"
-                  class="gfy-refinement-textarea"
-                  rows="1"
-                  placeholder="e.g. Make Option 1 more conversational or add my keynote experience..."
-                  @keydown.enter.prevent="handleRefine"
-                ></textarea>
-                <button
-                  type="button"
-                  class="gfy-btn-refine"
-                  :disabled="!refinementFeedback.trim() || isGenerating"
-                  @click="handleRefine"
-                >
-                  <i v-if="!isGenerating" class="fas fa-sync-alt"></i>
-                  <span v-else class="gfy-spinner gfy-spinner--small"></span>
-                  {{ isGenerating ? '' : 'Refine' }}
-                </button>
-              </div>
-              <span class="gfy-refinement-hint">AI will iterate on the drafts below based on your instructions.</span>
-            </div>
-
-            <!-- Loading State -->
-            <div v-if="currentSlot.status === SLOT_STATUS.GENERATING" class="gfy-loading-state">
-              <div class="gfy-loading-spinner"></div>
-              <p>Generating {{ getVariationCount(activeSlot) }} variations for your {{ activeSlotLabel }} biography...</p>
-            </div>
-
-            <!-- Locked State -->
-            <div v-else-if="currentSlot.locked" class="gfy-locked-state">
-              <div class="gfy-locked-bio">
-                <div class="gfy-locked-bio__badge">
-                  <i class="fas fa-lock"></i>
-                  LOCKED {{ activeSlotLabel.toUpperCase() }} BIO
-                </div>
-                <div class="gfy-locked-bio__text">
-                  <p v-for="(paragraph, pIdx) in currentSlot.lockedBio.split('\n\n').filter(p => p.trim())" :key="pIdx">
-                    {{ paragraph }}
-                  </p>
-                </div>
-                <div class="gfy-locked-bio__actions">
-                  <button type="button" class="gfy-btn gfy-btn--outline" @click="handleCopy(currentSlot.lockedBio)">
-                    <i class="fas fa-copy"></i> Copy
-                  </button>
-                  <button type="button" class="gfy-btn gfy-btn--ghost" @click="unlockBio(activeSlot)">
-                    <i class="fas fa-unlock"></i> Unlock & Edit
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Empty State -->
-            <div v-else-if="currentVariations.length === 0" class="gfy-empty-state">
-              <i class="fas fa-file-alt"></i>
-              <p>Click the button below to generate {{ getVariationCount(activeSlot) }} variations for your {{ activeSlotLabel }} biography.</p>
-              <button
-                type="button"
-                class="gfy-btn gfy-btn--primary"
-                :disabled="isGenerating"
-                @click="handleGenerateForSlot(activeSlot)"
-              >
-                <i class="fas fa-magic"></i>
-                Generate {{ activeSlotLabel }} Bio
-              </button>
-            </div>
-
-            <!-- Variations List -->
-            <template v-else>
-              <div
-                v-for="(variation, index) in currentVariations"
-                :key="variation.id"
-                class="gfy-bio-variation"
-              >
-                <div class="gfy-variation-badge">{{ variation.label }}</div>
-                <div class="gfy-variation-text">
-                  <p v-for="(paragraph, pIdx) in variation.text.split('\n\n').filter(p => p.trim())" :key="pIdx">
-                    {{ paragraph }}
-                  </p>
-                </div>
-                <div class="gfy-variation-footer">
-                  <button
-                    type="button"
-                    class="gfy-btn gfy-btn--primary"
-                    @click="handleLock(index)"
-                  >
-                    <i class="fas fa-lock"></i>
-                    Lock as {{ activeSlotLabel }} Bio
-                  </button>
-                  <button
-                    type="button"
-                    class="gfy-btn gfy-btn--outline"
-                    @click="handleCopy(variation.text)"
-                  >
-                    <i class="fas fa-copy"></i> Copy
-                  </button>
-                </div>
-              </div>
-            </template>
-
-            <!-- Footer Actions -->
-            <div class="gfy-results__footer">
-              <button
-                type="button"
-                class="gfy-btn gfy-btn--primary gfy-btn--large"
-                :disabled="lockedCount === 0 || isSaving"
-                @click="handleSaveAll"
-              >
-                <i v-if="!isSaving" class="fas fa-save"></i>
-                <span v-else class="gfy-spinner"></span>
-                {{ isSaving ? 'Saving...' : 'Save Entire Toolkit' }}
-              </button>
-              <button type="button" class="gfy-btn gfy-btn--ghost" @click="handleEmbeddedStartOver">
-                Start Over
-              </button>
-            </div>
-
-            <!-- Save Success -->
-            <div v-if="saveSuccess" class="gfy-save-success">
-              <i class="fas fa-check-circle"></i>
-              Biographies saved successfully!
-            </div>
-
-            <!-- Save Error -->
-            <div v-if="saveError" class="gfy-save-error">
-              <i class="fas fa-exclamation-triangle"></i>
-              {{ saveError }}
-            </div>
-          </main>
-        </div>
-      </div>
-    </div>
+    <div v-if="error" class="gmkb-embedded-error">{{ error }}</div>
   </div>
 
   <!-- Default Mode: Full Biography Toolkit (Standalone Pages) -->
@@ -971,7 +592,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject, nextTick } from 'vue';
+import { ref, computed, watch, inject } from 'vue';
 import { useAIBiography, SLOT_STATUS, LENGTH_OPTIONS, getVariationCount } from '../../src/composables/useAIBiography';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
@@ -1059,11 +680,7 @@ const showResults = ref(false);
 const saveSuccess = ref(false);
 const copiedText = ref('');
 
-// Embedded mode specific state
-const embeddedShowResults = ref(false);
-const embeddedWrapperRef = ref(null);
-
-// Integrated mode specific state
+// Integrated/Embedded mode specific state
 const authorityHookTextCompact = ref('');
 const integratedLength = ref('medium');
 
@@ -1108,21 +725,19 @@ const handleApply = () => {
  */
 const handleGenerate = async () => {
   try {
-    // Generate long bio by default for embedded mode (like default mode)
-    setActiveSlot('long');
-    await generateForSlot('long');
-
-    // Show full results dashboard in embedded mode
-    embeddedShowResults.value = true;
-
-    // Scroll results into view after DOM updates
-    await nextTick();
-    if (embeddedWrapperRef.value) {
-      embeddedWrapperRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // For embedded mode, parse the compact authority hook text
+    if (props.mode === 'embedded') {
+      authorityHook.who = authorityHookTextCompact.value;
     }
 
-    // Emit the generated result
+    // Generate medium bio for embedded mode (good balance of detail)
+    setActiveSlot('medium');
+    await generateForSlot('medium');
+
+    // Get the generated bio
     const bio = currentBio.value;
+
+    // Emit the generated result for EmbeddedToolWrapper to display
     emit('generated', {
       content: bio,
       hook: bio,
@@ -1134,37 +749,6 @@ const handleGenerate = async () => {
     console.error('[Biography Generator] Generation failed:', err);
     throw err;
   }
-};
-
-/**
- * Handle copy for embedded mode
- */
-const handleEmbeddedCopy = async () => {
-  const success = await copyBio(currentBio.value);
-  if (success) {
-    copiedText.value = currentBio.value;
-    setTimeout(() => { copiedText.value = ''; }, 2000);
-  }
-};
-
-/**
- * Handle regenerate for embedded mode
- */
-const handleEmbeddedRegenerate = async () => {
-  await generateForSlot('medium');
-  emit('generated', {
-    content: currentBio.value,
-    hook: currentBio.value,
-    result: currentBio.value
-  });
-};
-
-/**
- * Handle start over for embedded mode
- */
-const handleEmbeddedStartOver = () => {
-  embeddedShowResults.value = false;
-  reset();
 };
 
 /**
@@ -1315,10 +899,19 @@ watch(
   { immediate: true }
 );
 
-// Watch canGenerate for parent
-watch(canGenerate, (newValue) => {
-  emit('update:can-generate', !!newValue);
-}, { immediate: true });
+// Watch canGenerate for parent - use mode-appropriate check
+watch(
+  () => props.mode === 'embedded' || props.mode === 'integrated'
+    ? canGenerateIntegrated.value
+    : canGenerate.value,
+  (newValue) => {
+    emit('update:can-generate', !!newValue);
+  },
+  { immediate: true }
+);
+
+// Computed for embedded mode canGenerate (used by EmbeddedToolWrapper)
+const canGenerateEmbedded = computed(() => canGenerateIntegrated.value);
 
 // Expose for parent
 defineExpose({
@@ -1327,7 +920,11 @@ defineExpose({
   showResults,
   isGenerating,
   error,
-  canGenerate
+  canGenerate: computed(() =>
+    props.mode === 'embedded' || props.mode === 'integrated'
+      ? canGenerateIntegrated.value
+      : canGenerate.value
+  )
 });
 </script>
 
@@ -2214,48 +1811,12 @@ defineExpose({
 
 .gmkb-embedded-form {
   width: 100%;
+}
+
+.gmkb-embedded-fields {
   display: flex;
   flex-direction: column;
-  gap: 28px;
-}
-
-.gmkb-embedded-section {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.gmkb-embedded-section-header {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--mkcg-text-primary, #0f172a);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid var(--mkcg-border, #e2e8f0);
-}
-
-.gmkb-embedded-optional {
-  font-weight: 400;
-  text-transform: none;
-  color: var(--mkcg-text-light, #94a3b8);
-}
-
-.gmkb-embedded-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.gmkb-embedded-row--3col {
-  grid-template-columns: repeat(3, 1fr);
-}
-
-@media (max-width: 768px) {
-  .gmkb-embedded-row,
-  .gmkb-embedded-row--3col {
-    grid-template-columns: 1fr;
-  }
+  gap: 20px;
 }
 
 .gmkb-embedded-field {
@@ -2271,9 +1832,7 @@ defineExpose({
   color: var(--mkcg-text-primary, #0f172a);
 }
 
-.gmkb-embedded-input,
-.gmkb-embedded-textarea,
-.gmkb-embedded-select {
+.gmkb-embedded-input {
   width: 100%;
   padding: 14px;
   border: 1px solid var(--mkcg-border, #e2e8f0);
@@ -2285,22 +1844,19 @@ defineExpose({
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.gmkb-embedded-textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.gmkb-embedded-input:focus,
-.gmkb-embedded-textarea:focus,
-.gmkb-embedded-select:focus {
+.gmkb-embedded-input:focus {
   outline: none;
   border-color: var(--mkcg-primary, #3b82f6);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.gmkb-embedded-input::placeholder,
-.gmkb-embedded-textarea::placeholder {
+.gmkb-embedded-input::placeholder {
   color: var(--mkcg-text-light, #94a3b8);
+}
+
+.gmkb-embedded-textarea {
+  resize: vertical;
+  min-height: 60px;
 }
 
 .gmkb-embedded-error {
@@ -2311,73 +1867,5 @@ defineExpose({
   border-radius: 8px;
   color: #991b1b;
   font-size: 14px;
-}
-
-/* Highlight boxes for embedded mode */
-.gmkb-embedded-highlight {
-  background: #fff;
-  border: 1px solid var(--mkcg-border, #e2e8f0);
-  padding: 20px;
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.gmkb-embedded-highlight--blue {
-  border-left: 4px solid var(--mkcg-primary, #3b82f6);
-  background: linear-gradient(to right, #eff6ff, #fff);
-}
-
-.gmkb-embedded-highlight--green {
-  border-left: 4px solid #10b981;
-  background: linear-gradient(to right, #d1fae5, #fff);
-}
-
-.gmkb-embedded-highlight-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-
-.gmkb-embedded-highlight-icon {
-  font-size: 18px;
-}
-
-.gmkb-embedded-highlight-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--mkcg-text-primary, #0f172a);
-}
-
-/* Embedded Mode Wrapper */
-.gmkb-embedded-mode {
-  width: 100%;
-}
-
-/* Embedded mode uses full results dashboard - inherits gfy-bio-results styles */
-.gfy-bio-results--embedded {
-  /* Embedded mode inherits all default mode styles */
-  /* Adjust max-width to fit within landing page container */
-  max-width: 100%;
-}
-
-.gfy-bio-results--embedded .gfy-bio-hero {
-  margin-bottom: 24px;
-}
-
-.gfy-bio-results--embedded .gfy-bio-hero__title {
-  font-size: 28px;
-}
-
-.gfy-bio-results--embedded .gfy-results-layout {
-  padding: 24px;
-}
-
-@media (max-width: 900px) {
-  .gfy-bio-results--embedded .gfy-layout-sidebar {
-    position: static;
-  }
 }
 </style>
