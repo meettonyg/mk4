@@ -2,14 +2,53 @@
   <div class="gfy-topics-generator">
     <!-- Form Section -->
     <div v-if="!hasTopics" class="gfy-topics-form">
+      <!-- Draft Restore Prompt -->
+      <div v-if="showDraftPrompt" class="gfy-draft-prompt">
+        <div class="gfy-draft-prompt__content">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          <div>
+            <strong>Restore previous work?</strong>
+            <p>You have a saved draft from {{ getLastSavedText() }}.</p>
+          </div>
+        </div>
+        <div class="gfy-draft-prompt__actions">
+          <button type="button" class="gfy-btn gfy-btn--primary gfy-btn--small" @click="handleRestoreDraft">
+            Restore Draft
+          </button>
+          <button type="button" class="gfy-btn gfy-btn--text gfy-btn--small" @click="handleDiscardDraft">
+            Start Fresh
+          </button>
+        </div>
+      </div>
+
+      <!-- Auto-save Indicator -->
+      <div v-if="isAutoSaving" class="gfy-auto-save-indicator">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+          <polyline points="17 21 17 13 7 13 7 21"/>
+          <polyline points="7 3 7 8 15 8"/>
+        </svg>
+        Saving draft...
+      </div>
+
       <!-- Expertise Field -->
       <div class="gfy-input-group">
-        <label class="gfy-label">Your Area of Expertise *</label>
+        <label class="gfy-label">
+          Your Area of Expertise *
+          <span v-if="isFieldPrefilled('expertise')" class="gfy-prefilled-badge">from profile</span>
+        </label>
         <textarea
           v-model="expertise"
           class="gfy-textarea"
+          :class="{ 'gfy-textarea--prefilled': isFieldPrefilled('expertise') }"
           rows="2"
           placeholder="e.g. Digital Marketing Strategies"
+          @input="markFieldEdited('expertise')"
         ></textarea>
       </div>
 
@@ -239,9 +278,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, inject } from 'vue';
+import { ref, reactive, computed, watch, inject, onMounted } from 'vue';
 import { useAITopics } from '../../src/composables/useAITopics';
 import { useProfileContext } from '../../src/composables/useProfileContext';
+import { useDraftState } from '../../src/composables/useDraftState';
 import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
 import { AuthorityHookBuilder } from '../_shared';
 
@@ -289,6 +329,22 @@ const saveAuthorityHook = ref(true); // Whether to also save authority hook fiel
 // Locked topics from profile (Lock/Pin feature)
 // Each item: { position: 0-4, text: string, locked: boolean }
 const currentTopics = ref([]);
+
+// Draft state for auto-save
+const {
+  hasDraft,
+  lastSaved,
+  isAutoSaving,
+  saveDraft,
+  loadDraft,
+  clearDraft,
+  startAutoSave,
+  getLastSavedText
+} = useDraftState('topics');
+
+// Prefilled fields tracking
+const prefilledFields = ref(new Set());
+const showDraftPrompt = ref(false);
 
 // Computed: resolved profile ID from all available sources
 const resolvedProfileId = computed(() => {
@@ -433,6 +489,76 @@ function populateFromProfile(profileData) {
     });
   }
   currentTopics.value = loadedTopics;
+}
+
+/**
+ * Check if a field was prefilled from profile
+ */
+function isFieldPrefilled(fieldName) {
+  return prefilledFields.value.has(fieldName);
+}
+
+/**
+ * Mark a field as edited (removes prefilled status)
+ */
+function markFieldEdited(fieldName) {
+  prefilledFields.value.delete(fieldName);
+}
+
+/**
+ * Get current form state for draft saving
+ */
+function getDraftState() {
+  return {
+    expertise: expertise.value,
+    authorityHook: { ...authorityHook }
+  };
+}
+
+/**
+ * Restore form state from draft
+ */
+function restoreDraftState(draft) {
+  if (draft.expertise) expertise.value = draft.expertise;
+  if (draft.authorityHook) Object.assign(authorityHook, draft.authorityHook);
+}
+
+/**
+ * Handle restore draft button click
+ */
+function handleRestoreDraft() {
+  const draft = loadDraft();
+  if (draft) {
+    restoreDraftState(draft);
+  }
+  showDraftPrompt.value = false;
+}
+
+/**
+ * Handle discard draft button click
+ */
+function handleDiscardDraft() {
+  clearDraft();
+  showDraftPrompt.value = false;
+}
+
+/**
+ * Handle profile loaded with prefilled tracking
+ */
+function handleProfileLoadedWithTracking(profileData) {
+  if (!profileData) return;
+
+  // Track which fields are being prefilled
+  const newPrefilledFields = new Set();
+
+  if (profileData.expertise && !expertise.value) newPrefilledFields.add('expertise');
+  if (profileData.hook_who && !authorityHook.who) newPrefilledFields.add('hook_who');
+  if (profileData.hook_what && !authorityHook.what) newPrefilledFields.add('hook_what');
+  if (profileData.hook_when && !authorityHook.when) newPrefilledFields.add('hook_when');
+  if (profileData.hook_how && !authorityHook.how) newPrefilledFields.add('hook_how');
+
+  prefilledFields.value = newPrefilledFields;
+  populateFromProfile(profileData);
 }
 
 /**
@@ -611,10 +737,23 @@ watch(
   [() => props.profileData, injectedProfileData],
   ([propsData, injectedData]) => {
     const data = propsData || injectedData;
-    if (data) populateFromProfile(data);
+    if (data) handleProfileLoadedWithTracking(data);
   },
   { immediate: true }
 );
+
+/**
+ * Initialize on mount
+ */
+onMounted(() => {
+  // Check for saved draft on mount
+  if (hasDraft.value) {
+    showDraftPrompt.value = true;
+  }
+
+  // Start auto-save
+  startAutoSave(getDraftState);
+});
 
 // Expose for parent
 defineExpose({
@@ -1471,5 +1610,102 @@ defineExpose({
     align-items: flex-start;
     gap: 0.5rem;
   }
+}
+
+/* ===========================================
+   ENHANCED UX FEATURES
+   =========================================== */
+
+/* Draft Restore Prompt */
+.gfy-draft-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #93c5fd;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.gfy-draft-prompt__content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.gfy-draft-prompt__content svg {
+  flex-shrink: 0;
+  color: var(--gfy-primary-color);
+  margin-top: 2px;
+}
+
+.gfy-draft-prompt__content strong {
+  display: block;
+  font-size: 0.9375rem;
+  color: var(--gfy-text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.gfy-draft-prompt__content p {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--gfy-text-secondary);
+}
+
+.gfy-draft-prompt__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: 2rem;
+}
+
+/* Auto-save Indicator */
+.gfy-auto-save-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--gfy-bg-color);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: var(--gfy-text-secondary);
+  margin-bottom: 1rem;
+}
+
+.gfy-auto-save-indicator svg {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Prefilled Badge */
+.gfy-prefilled-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--gfy-primary-color);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-radius: 4px;
+  margin-left: 8px;
+}
+
+/* Prefilled Textarea State */
+.gfy-textarea--prefilled {
+  border-color: rgba(37, 99, 235, 0.3);
+  background: rgba(37, 99, 235, 0.02);
+}
+
+/* Small button variant */
+.gfy-btn--small {
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
 }
 </style>

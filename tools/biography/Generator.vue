@@ -98,6 +98,30 @@
         @profile-cleared="handleProfileCleared"
       />
 
+      <!-- Draft Restore Prompt -->
+      <div v-if="showDraftPrompt" class="gfy-draft-prompt">
+        <div class="gfy-draft-prompt__content">
+          <i class="fas fa-file-alt"></i>
+          <div>
+            <strong>Restore previous work?</strong>
+            <p>You have a saved draft from {{ getLastSavedText() }}.</p>
+          </div>
+        </div>
+        <div class="gfy-draft-prompt__actions">
+          <button type="button" class="gfy-btn gfy-btn--primary gfy-btn--small" @click="handleRestoreDraft">
+            Restore Draft
+          </button>
+          <button type="button" class="gfy-btn gfy-btn--ghost gfy-btn--small" @click="handleDiscardDraft">
+            Start Fresh
+          </button>
+        </div>
+      </div>
+
+      <!-- Auto-save indicator -->
+      <div v-if="isAutoSaving" class="gfy-autosave-indicator">
+        <i class="fas fa-save"></i> Saving draft...
+      </div>
+
       <!-- Form Container -->
       <div class="gfy-bio-form__container" :class="{ 'gfy-bio-form__container--embedded': mode === 'embedded' }">
         <!-- Basic Information -->
@@ -111,33 +135,48 @@
 
           <div class="gfy-form-grid">
             <div class="gfy-form-group">
-              <label class="gfy-form-label gfy-form-label--required">Your Name</label>
+              <label class="gfy-form-label gfy-form-label--required">
+                Your Name
+                <span v-if="isFieldPrefilled('name')" class="gfy-prefilled-badge">from profile</span>
+              </label>
               <input
                 v-model="name"
                 type="text"
                 class="gfy-form-input"
+                :class="{ 'gfy-form-input--prefilled': isFieldPrefilled('name') }"
                 placeholder="e.g., Dr. Jane Smith"
+                @input="markFieldEdited('name')"
               />
             </div>
 
             <div class="gfy-form-group">
-              <label class="gfy-form-label">Professional Title</label>
+              <label class="gfy-form-label">
+                Professional Title
+                <span v-if="isFieldPrefilled('title')" class="gfy-prefilled-badge">from profile</span>
+              </label>
               <input
                 v-model="optionalFields.title"
                 type="text"
                 class="gfy-form-input"
+                :class="{ 'gfy-form-input--prefilled': isFieldPrefilled('title') }"
                 placeholder="e.g., Executive Coach & Leadership Strategist"
+                @input="markFieldEdited('title')"
               />
             </div>
           </div>
 
           <div class="gfy-form-group">
-            <label class="gfy-form-label">Organization / Company</label>
+            <label class="gfy-form-label">
+              Organization / Company
+              <span v-if="isFieldPrefilled('organization')" class="gfy-prefilled-badge">from profile</span>
+            </label>
             <input
               v-model="optionalFields.organization"
               type="text"
               class="gfy-form-input"
+              :class="{ 'gfy-form-input--prefilled': isFieldPrefilled('organization') }"
               placeholder="e.g., Acme Corporation"
+              @input="markFieldEdited('organization')"
             />
           </div>
         </div>
@@ -505,6 +544,22 @@
               <i class="fas fa-exclamation-triangle"></i>
               {{ saveError }}
             </div>
+
+            <!-- Cross-tool Navigation -->
+            <div v-if="lockedCount > 0 && mode === 'default'" class="gfy-cross-tool-nav">
+              <span class="gfy-cross-tool-nav__label">Continue building your media kit:</span>
+              <div class="gfy-cross-tool-nav__links">
+                <a href="/tools/guest-intro/" class="gfy-cross-tool-nav__link">
+                  <i class="fas fa-microphone"></i> Generate Guest Intro
+                </a>
+                <a href="/tools/topics/" class="gfy-cross-tool-nav__link">
+                  <i class="fas fa-list"></i> Generate Topics
+                </a>
+                <a href="/tools/questions/" class="gfy-cross-tool-nav__link">
+                  <i class="fas fa-question-circle"></i> Generate Interview Questions
+                </a>
+              </div>
+            </div>
           </main>
         </div>
       </div>
@@ -513,10 +568,11 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject } from 'vue';
+import { ref, computed, watch, inject, onMounted } from 'vue';
 import { useAIBiography, SLOT_STATUS, LENGTH_OPTIONS, getVariationCount } from '../../src/composables/useAIBiography';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
+import { useDraftState } from '../../src/composables/useDraftState';
 import { EMBEDDED_PROFILE_DATA_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileContextBanner } from '../_shared';
 
 // Integrated mode components
@@ -603,6 +659,22 @@ const {
   hasSelectedProfile,
   saveMultipleToProfile
 } = useStandaloneProfile();
+
+// Draft state for auto-save
+const {
+  hasDraft,
+  lastSaved,
+  isAutoSaving,
+  saveDraft,
+  loadDraft,
+  clearDraft,
+  startAutoSave,
+  getLastSavedText
+} = useDraftState('biography');
+
+// Prefilled fields tracking
+const prefilledFields = ref(new Set());
+const showDraftPrompt = ref(false);
 
 // Local state
 const showResults = ref(false);
@@ -838,13 +910,73 @@ const handleSaveAll = async () => {
 const handleStartOver = () => {
   reset();
   showResults.value = false;
+  clearDraft(); // Clear saved draft when starting over
 };
+
+// Prefilled field helpers
+function isFieldPrefilled(fieldName) {
+  return prefilledFields.value.has(fieldName);
+}
+
+function markFieldEdited(fieldName) {
+  prefilledFields.value.delete(fieldName);
+}
+
+// Draft state helpers
+function getDraftState() {
+  return {
+    name: name.value,
+    authorityHook: { ...authorityHook },
+    impactIntro: { ...impactIntro },
+    optionalFields: { ...optionalFields },
+    tone: tone.value,
+    pov: pov.value
+  };
+}
+
+function restoreDraftState(draft) {
+  if (draft.name) name.value = draft.name;
+  if (draft.authorityHook) Object.assign(authorityHook, draft.authorityHook);
+  if (draft.impactIntro) Object.assign(impactIntro, draft.impactIntro);
+  if (draft.optionalFields) Object.assign(optionalFields, draft.optionalFields);
+  if (draft.tone) tone.value = draft.tone;
+  if (draft.pov) pov.value = draft.pov;
+}
+
+function handleRestoreDraft() {
+  const draft = loadDraft();
+  if (draft) {
+    restoreDraftState(draft);
+  }
+  showDraftPrompt.value = false;
+}
+
+function handleDiscardDraft() {
+  clearDraft();
+  showDraftPrompt.value = false;
+}
 
 /**
  * Populate from profile data
  */
 function loadProfileData(data) {
   if (!data) return;
+
+  // Track prefilled fields
+  const newPrefilledFields = new Set();
+
+  if (data.full_name || data.first_name) newPrefilledFields.add('name');
+  if (data.guest_title || data.title) newPrefilledFields.add('title');
+  if (data.company || data.organization) newPrefilledFields.add('organization');
+  if (data.hook_who || data.authority_hook_who) newPrefilledFields.add('who');
+  if (data.hook_what || data.authority_hook_what) newPrefilledFields.add('what');
+  if (data.hook_when || data.authority_hook_when) newPrefilledFields.add('when');
+  if (data.hook_how || data.authority_hook_how) newPrefilledFields.add('how');
+  if (data.hook_where || data.authority_hook_where) newPrefilledFields.add('where');
+  if (data.hook_why || data.authority_hook_why) newPrefilledFields.add('why');
+
+  prefilledFields.value = newPrefilledFields;
+
   populateFromProfile(data);
 }
 
@@ -894,6 +1026,19 @@ watch(canGenerate, (newValue) => {
   emit('update:can-generate', !!newValue);
 }, { immediate: true });
 
+// Initialize on mount
+onMounted(() => {
+  // Check for draft in standalone mode
+  if (props.mode === 'default' && hasDraft.value) {
+    showDraftPrompt.value = true;
+  }
+
+  // Start auto-save in standalone mode
+  if (props.mode === 'default') {
+    startAutoSave(getDraftState);
+  }
+});
+
 // Expose for parent
 defineExpose({
   handleStartGeneration,
@@ -901,7 +1046,8 @@ defineExpose({
   showResults,
   isGenerating,
   error,
-  canGenerate
+  canGenerate,
+  handleCopyAll
 });
 </script>
 
@@ -1966,5 +2112,145 @@ defineExpose({
   .gfy-bio-results--embedded .gfy-layout-sidebar {
     position: static;
   }
+}
+
+/* ============================================
+   NEW FEATURES: PREFILLED, DRAFT, CROSS-TOOL NAV
+   ============================================ */
+
+/* Prefilled Badge */
+.gfy-prefilled-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--gfy-success-light);
+  color: #047857;
+  border-radius: 4px;
+}
+
+.gfy-form-input--prefilled {
+  border-color: var(--gfy-success-color);
+  background: linear-gradient(to right, var(--gfy-success-light), var(--gfy-white));
+}
+
+/* Draft Prompt */
+.gfy-draft-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: var(--gfy-radius-md);
+  margin-bottom: 24px;
+}
+
+.gfy-draft-prompt__content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gfy-draft-prompt__content i {
+  font-size: 20px;
+  color: #d97706;
+}
+
+.gfy-draft-prompt__content strong {
+  display: block;
+  color: #92400e;
+  margin-bottom: 2px;
+}
+
+.gfy-draft-prompt__content p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #92400e;
+}
+
+.gfy-draft-prompt__actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Auto-save Indicator */
+.gfy-autosave-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--gfy-primary-light);
+  color: var(--gfy-primary-color);
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: var(--gfy-radius-md);
+  margin-bottom: 16px;
+}
+
+.gfy-autosave-indicator i {
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Small Button Variant */
+.gfy-btn--small {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+/* Cross-tool Navigation */
+.gfy-cross-tool-nav {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--gfy-border-color);
+}
+
+.gfy-cross-tool-nav__label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--gfy-text-secondary);
+  margin-bottom: 12px;
+}
+
+.gfy-cross-tool-nav__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.gfy-cross-tool-nav__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--gfy-bg-color);
+  border: 1px solid var(--gfy-border-color);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--gfy-text-secondary);
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.gfy-cross-tool-nav__link:hover {
+  border-color: var(--gfy-primary-color);
+  color: var(--gfy-primary-color);
+  background: var(--gfy-primary-light);
+}
+
+.gfy-cross-tool-nav__link i {
+  font-size: 12px;
 }
 </style>

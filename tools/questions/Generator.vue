@@ -19,6 +19,39 @@
 
     <!-- Left Panel: Form -->
     <template #left>
+      <!-- Draft Restore Prompt -->
+      <div v-if="showDraftPrompt" class="gfy-draft-prompt">
+        <div class="gfy-draft-prompt__content">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          <div>
+            <strong>Restore previous work?</strong>
+            <p>You have a saved draft from {{ getLastSavedText() }}.</p>
+          </div>
+        </div>
+        <div class="gfy-draft-prompt__actions">
+          <button type="button" class="generator__button generator__button--call-to-action generator__button--small" @click="handleRestoreDraft">
+            Restore Draft
+          </button>
+          <button type="button" class="generator__button generator__button--ghost generator__button--small" @click="handleDiscardDraft">
+            Start Fresh
+          </button>
+        </div>
+      </div>
+
+      <!-- Auto-save Indicator -->
+      <div v-if="isAutoSaving" class="gfy-auto-save-indicator">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+          <polyline points="17 21 17 13 7 13 7 21"/>
+          <polyline points="7 3 7 8 15 8"/>
+        </svg>
+        Saving draft...
+      </div>
 
       <!-- STEP 1: Topic Selection -->
       <div class="generator__section">
@@ -278,6 +311,40 @@
                 Start Over
               </button>
             </div>
+
+            <!-- Cross-tool Navigation -->
+            <div v-if="lockedSlotsCount > 0" class="gfy-cross-tool-nav">
+              <span class="gfy-cross-tool-nav__label">Continue building your media kit:</span>
+              <div class="gfy-cross-tool-nav__links">
+                <a href="/tools/biography/" class="gfy-cross-tool-nav__link">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  Generate Biography
+                </a>
+                <a href="/tools/guest-intro/" class="gfy-cross-tool-nav__link">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="23"/>
+                    <line x1="8" y1="23" x2="16" y2="23"/>
+                  </svg>
+                  Generate Guest Intro
+                </a>
+                <a href="/tools/topics/" class="gfy-cross-tool-nav__link">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="8" y1="6" x2="21" y2="6"/>
+                    <line x1="8" y1="12" x2="21" y2="12"/>
+                    <line x1="8" y1="18" x2="21" y2="18"/>
+                    <line x1="3" y1="6" x2="3.01" y2="6"/>
+                    <line x1="3" y1="12" x2="3.01" y2="12"/>
+                    <line x1="3" y1="18" x2="3.01" y2="18"/>
+                  </svg>
+                  Generate Topics
+                </a>
+              </div>
+            </div>
           </main>
         </div>
       </div>
@@ -399,6 +466,7 @@ import { ref, reactive, computed, onMounted, watch, inject } from 'vue';
 import { useAIQuestions, QUESTION_CATEGORIES } from '../../src/composables/useAIQuestions';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
+import { useDraftState } from '../../src/composables/useDraftState';
 
 // Compact widget components (integrated mode)
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
@@ -478,6 +546,22 @@ const {
 const isSavingToProfile = ref(false);
 const saveSuccess = ref(false);
 const saveError = ref(null);
+
+// Draft state for auto-save
+const {
+  hasDraft,
+  lastSaved,
+  isAutoSaving,
+  saveDraft,
+  loadDraft,
+  clearDraft,
+  startAutoSave,
+  getLastSavedText
+} = useDraftState('questions');
+
+// Prefilled fields tracking
+const prefilledFields = ref(new Set());
+const showDraftPrompt = ref(false);
 
 // Inject profile data from EmbeddedToolWrapper (for embedded mode)
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
@@ -649,10 +733,77 @@ function populateFromProfile(profileData) {
 }
 
 /**
+ * Check if a field was prefilled from profile
+ */
+function isFieldPrefilled(fieldName) {
+  return prefilledFields.value.has(fieldName);
+}
+
+/**
+ * Mark a field as edited (removes prefilled status)
+ */
+function markFieldEdited(fieldName) {
+  prefilledFields.value.delete(fieldName);
+}
+
+/**
+ * Get current form state for draft saving
+ */
+function getDraftState() {
+  return {
+    refinedTopic: refinedTopic.value,
+    selectedTopicIndex: selectedTopicIndex.value,
+    authorityHook: { ...authorityHook }
+  };
+}
+
+/**
+ * Restore form state from draft
+ */
+function restoreDraftState(draft) {
+  if (draft.refinedTopic) refinedTopic.value = draft.refinedTopic;
+  if (draft.selectedTopicIndex !== undefined) selectedTopicIndex.value = draft.selectedTopicIndex;
+  if (draft.authorityHook) Object.assign(authorityHook, draft.authorityHook);
+}
+
+/**
+ * Handle restore draft button click
+ */
+function handleRestoreDraft() {
+  const draft = loadDraft();
+  if (draft) {
+    restoreDraftState(draft);
+  }
+  showDraftPrompt.value = false;
+}
+
+/**
+ * Handle discard draft button click
+ */
+function handleDiscardDraft() {
+  clearDraft();
+  showDraftPrompt.value = false;
+}
+
+/**
  * Handle profile loaded from ProfileContextBanner (standalone mode)
  */
 function handleProfileLoaded(data) {
   if (data && props.mode === 'default') {
+    // Track which fields are being prefilled
+    const newPrefilledFields = new Set();
+
+    const hookWho = data.hook_who || data.authority_hook_who;
+    const hookWhat = data.hook_what || data.authority_hook_what;
+    const hookWhen = data.hook_when || data.authority_hook_when;
+    const hookHow = data.hook_how || data.authority_hook_how;
+
+    if (hookWho && !authorityHook.who) newPrefilledFields.add('hook_who');
+    if (hookWhat && !authorityHook.what) newPrefilledFields.add('hook_what');
+    if (hookWhen && !authorityHook.when) newPrefilledFields.add('hook_when');
+    if (hookHow && !authorityHook.how) newPrefilledFields.add('hook_how');
+
+    prefilledFields.value = newPrefilledFields;
     populateFromProfile(data);
   }
 }
@@ -843,6 +994,16 @@ onMounted(() => {
   // Auto-select first topic if available
   if (availableTopics.value.length > 0 && selectedTopicIndex.value === -1) {
     selectTopic(0);
+  }
+
+  // Check for saved draft on mount (standalone mode only)
+  if (props.mode === 'default' && hasDraft.value) {
+    showDraftPrompt.value = true;
+  }
+
+  // Start auto-save in standalone mode
+  if (props.mode === 'default') {
+    startAutoSave(getDraftState);
   }
 });
 
@@ -1582,5 +1743,126 @@ watch(canGenerate, (newValue) => {
   border-radius: 8px;
   color: #991b1b;
   font-size: 14px;
+}
+
+/* ===========================================
+   ENHANCED UX FEATURES
+   =========================================== */
+
+/* Draft Restore Prompt */
+.gfy-draft-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #93c5fd;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.gfy-draft-prompt__content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.gfy-draft-prompt__content svg {
+  flex-shrink: 0;
+  color: var(--mkcg-primary, #3b82f6);
+  margin-top: 2px;
+}
+
+.gfy-draft-prompt__content strong {
+  display: block;
+  font-size: 0.9375rem;
+  color: var(--mkcg-text-primary, #0f172a);
+  margin-bottom: 0.25rem;
+}
+
+.gfy-draft-prompt__content p {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.gfy-draft-prompt__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: 2rem;
+}
+
+/* Auto-save Indicator */
+.gfy-auto-save-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin-bottom: 1rem;
+}
+
+.gfy-auto-save-indicator svg {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Cross-tool Navigation */
+.gfy-cross-tool-nav {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--mkcg-border, #e2e8f0);
+}
+
+.gfy-cross-tool-nav__label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin-bottom: 0.75rem;
+}
+
+.gfy-cross-tool-nav__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.gfy-cross-tool-nav__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--mkcg-text-primary, #0f172a);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.gfy-cross-tool-nav__link:hover {
+  background: var(--mkcg-primary, #3b82f6);
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: #fff;
+}
+
+.gfy-cross-tool-nav__link svg {
+  flex-shrink: 0;
+}
+
+/* Small button variant */
+.generator__button--small {
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
 }
 </style>
