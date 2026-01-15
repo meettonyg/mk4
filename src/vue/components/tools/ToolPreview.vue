@@ -80,34 +80,35 @@ const emit = defineEmits(['generated', 'applied', 'activate']);
 
 /**
  * Map of component names to async component loaders
- * Loads Widget.vue from the /tools/ directory structure
+ * Loads Generator.vue from the /tools/ directory structure
+ * (Generator.vue has the full form, Widget.vue is the compact version)
  */
 const componentLoaders = {
-  TopicsGenerator: () => import('../../../../tools/topics/Widget.vue'),
-  BiographyGenerator: () => import('../../../../tools/biography/Widget.vue'),
-  QuestionsGenerator: () => import('../../../../tools/questions/Widget.vue'),
-  TaglineGenerator: () => import('../../../../tools/tagline/Widget.vue'),
-  GuestIntroGenerator: () => import('../../../../tools/guest-intro/Widget.vue'),
-  AuthorityHookBuilder: () => import('../../../../tools/authority-hook/Widget.vue'),
-  OffersGenerator: () => import('../../../../tools/offers/Widget.vue'),
-  ElevatorPitchGenerator: () => import('../../../../tools/elevator-pitch/Widget.vue'),
-  SoundBiteGenerator: () => import('../../../../tools/sound-bite/Widget.vue'),
-  PersonaGenerator: () => import('../../../../tools/persona/Widget.vue'),
-  ImpactIntroBuilder: () => import('../../../../tools/impact-intro/Widget.vue'),
-  BrandStoryGenerator: () => import('../../../../tools/brand-story/Widget.vue'),
-  SignatureStoryGenerator: () => import('../../../../tools/signature-story/Widget.vue'),
-  CredibilityStoryGenerator: () => import('../../../../tools/credibility-story/Widget.vue'),
-  FrameworkGenerator: () => import('../../../../tools/framework/Widget.vue'),
-  InterviewPrepGenerator: () => import('../../../../tools/interview-prep/Widget.vue'),
-  BlogGenerator: () => import('../../../../tools/blog/Widget.vue'),
-  ContentRepurposerGenerator: () => import('../../../../tools/content-repurpose/Widget.vue'),
-  PressReleaseGenerator: () => import('../../../../tools/press-release/Widget.vue'),
-  SocialPostGenerator: () => import('../../../../tools/social-post/Widget.vue'),
-  EmailWriterGenerator: () => import('../../../../tools/email/Widget.vue'),
-  NewsletterGenerator: () => import('../../../../tools/newsletter/Widget.vue'),
-  YoutubeDescriptionGenerator: () => import('../../../../tools/youtube-description/Widget.vue'),
-  PodcastNotesGenerator: () => import('../../../../tools/podcast-notes/Widget.vue'),
-  SeoOptimizerGenerator: () => import('../../../../tools/seo-optimizer/Widget.vue'),
+  TopicsGenerator: () => import('../../../../tools/topics/Generator.vue'),
+  BiographyGenerator: () => import('../../../../tools/biography/Generator.vue'),
+  QuestionsGenerator: () => import('../../../../tools/questions/Generator.vue'),
+  TaglineGenerator: () => import('../../../../tools/tagline/Generator.vue'),
+  GuestIntroGenerator: () => import('../../../../tools/guest-intro/Generator.vue'),
+  AuthorityHookBuilder: () => import('../../../../tools/authority-hook/Generator.vue'),
+  OffersGenerator: () => import('../../../../tools/offers/Generator.vue'),
+  ElevatorPitchGenerator: () => import('../../../../tools/elevator-pitch/Generator.vue'),
+  SoundBiteGenerator: () => import('../../../../tools/sound-bite/Generator.vue'),
+  PersonaGenerator: () => import('../../../../tools/persona/Generator.vue'),
+  ImpactIntroBuilder: () => import('../../../../tools/impact-intro/Generator.vue'),
+  BrandStoryGenerator: () => import('../../../../tools/brand-story/Generator.vue'),
+  SignatureStoryGenerator: () => import('../../../../tools/signature-story/Generator.vue'),
+  CredibilityStoryGenerator: () => import('../../../../tools/credibility-story/Generator.vue'),
+  FrameworkGenerator: () => import('../../../../tools/framework/Generator.vue'),
+  InterviewPrepGenerator: () => import('../../../../tools/interview-prep/Generator.vue'),
+  BlogGenerator: () => import('../../../../tools/blog/Generator.vue'),
+  ContentRepurposerGenerator: () => import('../../../../tools/content-repurpose/Generator.vue'),
+  PressReleaseGenerator: () => import('../../../../tools/press-release/Generator.vue'),
+  SocialPostGenerator: () => import('../../../../tools/social-post/Generator.vue'),
+  EmailWriterGenerator: () => import('../../../../tools/email/Generator.vue'),
+  NewsletterGenerator: () => import('../../../../tools/newsletter/Generator.vue'),
+  YoutubeDescriptionGenerator: () => import('../../../../tools/youtube-description/Generator.vue'),
+  PodcastNotesGenerator: () => import('../../../../tools/podcast-notes/Generator.vue'),
+  SeoOptimizerGenerator: () => import('../../../../tools/seo-optimizer/Generator.vue'),
 };
 
 /**
