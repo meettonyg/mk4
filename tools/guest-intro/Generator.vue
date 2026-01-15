@@ -997,40 +997,40 @@ async function handleGenerate() {
 function populateFromProfile(data) {
   if (!data) return;
 
-  // Guest info
+  console.log('[GuestIntroGenerator] Populating from profile:', data);
+
+  // Guest info - always update from profile (overwrite existing)
   const firstName = data.first_name || '';
   const lastName = data.last_name || '';
-  const fullName = [firstName, lastName].filter(Boolean).join(' ');
-  if (fullName && !guestInfo.name) {
+  const fullName = data.full_name || [firstName, lastName].filter(Boolean).join(' ');
+  if (fullName) {
     guestInfo.name = fullName;
   }
 
-  if (data.title && !guestInfo.titleCompany) {
-    const company = data.company || data.organization || '';
-    guestInfo.titleCompany = company ? `${data.title} at ${company}` : data.title;
+  // Title & Company
+  const title = data.guest_title || data.title || '';
+  const company = data.company || data.organization || '';
+  if (title || company) {
+    guestInfo.titleCompany = company && title ? `${title} at ${company}` : (title || company);
   }
 
-  // Authority Hook components
-  if (data.authority_who || data.who) {
-    authorityHook.who = data.authority_who || data.who;
-  }
-  if (data.authority_what || data.what) {
-    authorityHook.what = data.authority_what || data.what;
-  }
-  if (data.authority_when || data.when) {
-    authorityHook.when = data.authority_when || data.when;
-  }
-  if (data.authority_how || data.how) {
-    authorityHook.how = data.authority_how || data.how;
-  }
+  // Authority Hook components (profile uses hook_who, hook_what, etc.)
+  const hookWho = data.hook_who || data.authority_who || data.who || '';
+  const hookWhat = data.hook_what || data.authority_what || data.what || '';
+  const hookWhen = data.hook_when || data.authority_when || data.when || '';
+  const hookHow = data.hook_how || data.authority_how || data.how || '';
 
-  // Impact Intro components
-  if (data.impact_where || data.where || data.credentials) {
-    impactIntro.where = data.impact_where || data.where || data.credentials;
-  }
-  if (data.impact_why || data.why || data.mission) {
-    impactIntro.why = data.impact_why || data.why || data.mission;
-  }
+  if (hookWho) authorityHook.who = hookWho;
+  if (hookWhat) authorityHook.what = hookWhat;
+  if (hookWhen) authorityHook.when = hookWhen;
+  if (hookHow) authorityHook.how = hookHow;
+
+  // Impact Intro components (WHERE = credentials, WHY = mission)
+  const impactWhere = data.impact_where || data.where || data.credentials || '';
+  const impactWhy = data.impact_why || data.why || data.mission || data.why_book_you || '';
+
+  if (impactWhere) impactIntro.where = impactWhere;
+  if (impactWhy) impactIntro.why = impactWhy;
 
   // Emit authority hook data for parent components
   emit('authority-hook-update', {
