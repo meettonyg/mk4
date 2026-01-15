@@ -206,78 +206,149 @@
 
     <!-- Results -->
     <template #results>
-      <div class="tagline-generator__results">
-        <div class="tagline-generator__results-header">
-          <h3>Your Generated Taglines</h3>
-          <p>Click a tagline to select it</p>
-        </div>
+      <div class="tagline-results">
+        <div class="tagline-results__layout">
 
-        <!-- Tagline Cards -->
-        <div class="tagline-generator__cards">
-          <button
-            v-for="(tagline, index) in taglines"
-            :key="index"
-            type="button"
-            class="tagline-generator__card"
-            :class="{ 'tagline-generator__card--selected': selectedIndex === index }"
-            @click="handleSelectTagline(index)"
-          >
-            <span class="tagline-generator__card-number">{{ index + 1 }}</span>
-            <span class="tagline-generator__card-text">{{ tagline.text || tagline }}</span>
-            <svg v-if="selectedIndex === index" class="tagline-generator__card-check" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
-          </button>
-        </div>
+          <!-- SIDEBAR: Master Tagline Slot -->
+          <aside class="tagline-results__sidebar">
+            <div class="tagline-master-slot">
+              <div class="tagline-master-slot__header">
+                <h3 class="tagline-master-slot__title">Your Master Tagline</h3>
+              </div>
 
-        <!-- Selected Preview -->
-        <div v-if="selectedTagline" class="tagline-generator__preview">
-          <span class="tagline-generator__preview-label">Selected:</span>
-          <span class="tagline-generator__preview-text">"{{ selectedTagline }}"</span>
-        </div>
+              <div
+                class="tagline-master-slot__card"
+                :class="{ 'tagline-master-slot__card--locked': lockedTagline }"
+              >
+                <div class="tagline-master-slot__card-header">
+                  <span class="tagline-master-slot__label">
+                    {{ lockedTagline ? 'Active Tagline' : 'Select a Tagline' }}
+                  </span>
+                  <svg v-if="lockedTagline" class="tagline-master-slot__lock" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 1C8.676 1 6 3.676 6 7v2H4v14h16V9h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4zm0 10c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/>
+                  </svg>
+                </div>
+                <div class="tagline-master-slot__preview">
+                  {{ lockedTagline || selectedTagline || 'Click a tagline below to preview it here' }}
+                </div>
+              </div>
 
-        <!-- Navigation -->
-        <div class="tagline-generator__nav">
-          <button
-            type="button"
-            class="generator__button generator__button--outline"
-            :disabled="selectedIndex <= 0"
-            @click="selectPrevious"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="15 18 9 12 15 6"/>
-            </svg>
-            Previous
-          </button>
-          <span class="tagline-generator__nav-count">
-            {{ selectedIndex + 1 }} / {{ taglines.length }}
-          </span>
-          <button
-            type="button"
-            class="generator__button generator__button--outline"
-            :disabled="selectedIndex >= taglines.length - 1"
-            @click="selectNext"
-          >
-            Next
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </button>
-        </div>
+              <p class="tagline-master-slot__hint">
+                This tagline will be used across your Media Kit and bio variations.
+              </p>
+            </div>
+          </aside>
 
-        <!-- Actions -->
-        <div class="tagline-generator__actions">
-          <button
-            type="button"
-            class="generator__button generator__button--outline"
-            @click="handleCopy"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-            Copy to Clipboard
-          </button>
+          <!-- MAIN: Tagline List -->
+          <main class="tagline-results__main">
+            <div class="tagline-results__header">
+              <h3 class="tagline-results__title">{{ taglines.length }} AI Generated Ideas</h3>
+              <div class="tagline-results__actions">
+                <button
+                  type="button"
+                  class="generator__button generator__button--outline"
+                  @click="handleGenerate"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 4v6h-6M1 20v-6h6"/>
+                    <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                  </svg>
+                  Regenerate
+                </button>
+              </div>
+            </div>
+
+            <!-- Refinement Loop Box -->
+            <div class="tagline-refinement">
+              <div class="tagline-refinement__header">
+                <svg class="tagline-refinement__icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+                <span class="tagline-refinement__title">Refine Taglines</span>
+              </div>
+              <div class="tagline-refinement__input-wrapper">
+                <textarea
+                  v-model="refinementFeedback"
+                  class="tagline-refinement__textarea"
+                  rows="1"
+                  placeholder="e.g. Make them shorter or more focused on the 90-day timeline..."
+                ></textarea>
+                <button
+                  type="button"
+                  class="tagline-refinement__btn"
+                  :disabled="!refinementFeedback.trim() || isGenerating"
+                  @click="handleRefine"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 4v6h-6M1 20v-6h6"/>
+                    <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                  </svg>
+                  Refine
+                </button>
+              </div>
+            </div>
+
+            <!-- Tagline Row List -->
+            <div class="tagline-list">
+              <button
+                v-for="(tagline, index) in taglines"
+                :key="index"
+                type="button"
+                class="tagline-row"
+                :class="{
+                  'tagline-row--selected': selectedIndex === index,
+                  'tagline-row--locked': lockedTaglineIndex === index
+                }"
+                @click="handleSelectTagline(index)"
+              >
+                <div class="tagline-row__checkbox" :class="{ 'tagline-row__checkbox--checked': selectedIndex === index }">
+                  <svg v-if="selectedIndex === index" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <polyline points="20 6 9 17 4 12" stroke="currentColor" stroke-width="3" fill="none"/>
+                  </svg>
+                </div>
+                <p class="tagline-row__text">{{ tagline.text || tagline }}</p>
+                <button
+                  v-if="selectedIndex === index && !lockedTagline"
+                  type="button"
+                  class="tagline-row__lock-btn"
+                  title="Lock as Master Tagline"
+                  @click.stop="handleLockTagline(index)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                </button>
+                <svg v-if="lockedTaglineIndex === index" class="tagline-row__locked-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 1C8.676 1 6 3.676 6 7v2H4v14h16V9h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4zm0 10c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="tagline-results__footer">
+              <button
+                type="button"
+                class="generator__button generator__button--call-to-action"
+                :disabled="!selectedTagline && !lockedTagline"
+                @click="handleSaveToProfile"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                Save Tagline to Profile
+              </button>
+              <button
+                type="button"
+                class="generator__button generator__button--ghost"
+                @click="handleStartOver"
+              >
+                Start Over
+              </button>
+            </div>
+          </main>
         </div>
       </div>
     </template>
@@ -507,7 +578,15 @@ const {
   tone,
   intent,
   canGenerate,
-  loadFromProfile
+  loadFromProfile,
+  // Locking & refinement
+  lockedTagline,
+  lockedTaglineIndex,
+  lockTagline,
+  unlockTagline,
+  refine,
+  refinementFeedback,
+  reset
 } = useAITagline();
 
 const { syncFromStore, loadFromProfileData } = useAuthorityHook();
@@ -608,6 +687,49 @@ const handleApply = () => {
     tagline: selectedTagline.value,
     allTaglines: taglines.value
   });
+};
+
+/**
+ * Handle refine button click
+ */
+const handleRefine = async () => {
+  if (!refinementFeedback.value?.trim()) return;
+  try {
+    const context = props.mode === 'integrated' ? 'builder' : 'public';
+    await refine(refinementFeedback.value, context);
+    emit('generated', { taglines: taglines.value });
+  } catch (err) {
+    console.error('[TaglineGenerator] Refinement failed:', err);
+  }
+};
+
+/**
+ * Handle locking a tagline as master
+ */
+const handleLockTagline = (index) => {
+  lockTagline(index);
+};
+
+/**
+ * Handle save to profile
+ */
+const handleSaveToProfile = () => {
+  const taglineToSave = lockedTagline.value || selectedTagline.value;
+  if (taglineToSave) {
+    emit('applied', {
+      componentId: props.componentId,
+      tagline: taglineToSave,
+      allTaglines: taglines.value,
+      action: 'save'
+    });
+  }
+};
+
+/**
+ * Handle start over - reset all state
+ */
+const handleStartOver = () => {
+  reset();
 };
 
 /**
@@ -885,138 +1007,320 @@ watch(canGenerate, (newValue) => {
   margin: 0 0 var(--mkcg-space-sm, 12px) 0;
 }
 
-/* Tagline Results */
-.tagline-generator__results {
-  padding: var(--mkcg-space-md, 20px);
+/* ===========================================
+   TAGLINE RESULTS - Sidebar + Main Layout
+   =========================================== */
+.tagline-results {
+  padding: 0;
 }
 
-.tagline-generator__results-header {
-  margin-bottom: var(--mkcg-space-md, 20px);
-}
-
-.tagline-generator__results-header h3 {
-  margin: 0 0 var(--mkcg-space-xs, 8px) 0;
-  font-size: var(--mkcg-font-size-lg, 18px);
-  color: var(--mkcg-text-primary, #2c3e50);
-}
-
-.tagline-generator__results-header p {
-  margin: 0;
-  color: var(--mkcg-text-secondary, #5a6d7e);
-  font-size: var(--mkcg-font-size-sm, 14px);
-}
-
-.tagline-generator__cards {
+.tagline-results__layout {
   display: flex;
   flex-direction: column;
-  gap: var(--mkcg-space-sm, 12px);
-  margin-bottom: var(--mkcg-space-md, 20px);
+  gap: 1.5rem;
+  padding: 32px;
 }
 
-.tagline-generator__card {
-  position: relative;
+@media (min-width: 900px) {
+  .tagline-results__layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  .tagline-results__sidebar {
+    position: sticky;
+    top: 1rem;
+    flex: 0 0 280px;
+  }
+  .tagline-results__main {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* Sidebar: Master Tagline Slot */
+.tagline-master-slot {
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.tagline-master-slot__header {
+  margin-bottom: 1rem;
+}
+
+.tagline-master-slot__title {
+  font-size: 12px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.tagline-master-slot__card {
+  padding: 1.25rem;
+  background: #fff;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.tagline-master-slot__card--locked {
+  background: var(--mkcg-primary-light, #eff6ff);
+  border-color: var(--mkcg-primary, #3b82f6);
+}
+
+.tagline-master-slot__card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.tagline-master-slot__label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.tagline-master-slot__card--locked .tagline-master-slot__label {
+  color: var(--mkcg-primary, #3b82f6);
+}
+
+.tagline-master-slot__lock {
+  color: var(--mkcg-primary, #3b82f6);
+}
+
+.tagline-master-slot__preview {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.tagline-master-slot__hint {
+  font-size: 11px;
+  color: var(--mkcg-text-muted, #94a3b8);
+  margin-top: 15px;
+  font-style: italic;
+  text-align: center;
+  margin-bottom: 0;
+}
+
+/* Main Area Header */
+.tagline-results__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--mkcg-border, #e2e8f0);
+}
+
+.tagline-results__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.tagline-results__actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Refinement Loop Box */
+.tagline-refinement {
+  background: linear-gradient(to bottom right, #fff, var(--mkcg-bg-secondary, #f8fafc));
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 1.5rem;
+}
+
+.tagline-refinement__header {
   display: flex;
   align-items: center;
-  gap: var(--mkcg-space-sm, 12px);
-  padding: var(--mkcg-space-md, 16px);
-  background: var(--mkcg-bg-primary, #ffffff);
-  border: 2px solid var(--mkcg-border-light, #e9ecef);
-  border-radius: var(--mkcg-radius, 8px);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tagline-refinement__icon {
+  color: var(--mkcg-primary, #3b82f6);
+}
+
+.tagline-refinement__title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--mkcg-primary, #3b82f6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tagline-refinement__input-wrapper {
+  position: relative;
+}
+
+.tagline-refinement__textarea {
+  width: 100%;
+  padding: 14px 110px 14px 16px;
+  border: 2px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  background: #fff;
+  box-sizing: border-box;
+  resize: none;
+  transition: border-color 0.2s;
+}
+
+.tagline-refinement__textarea:focus {
+  outline: none;
+  border-color: var(--mkcg-primary, #3b82f6);
+}
+
+.tagline-refinement__btn {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  bottom: 6px;
+  padding: 0 16px;
+  background: var(--mkcg-primary, #3b82f6);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 13px;
   cursor: pointer;
-  transition: var(--mkcg-transition-fast, 0.15s ease);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.2s;
+}
+
+.tagline-refinement__btn:hover:not(:disabled) {
+  background: var(--mkcg-primary-hover, #2563eb);
+}
+
+.tagline-refinement__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Tagline Row List */
+.tagline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tagline-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: #fff;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
   text-align: left;
   width: 100%;
 }
 
-.tagline-generator__card:hover {
+.tagline-row:hover {
   border-color: var(--mkcg-primary, #3b82f6);
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+  background: var(--mkcg-bg-secondary, #f8fafc);
 }
 
-.tagline-generator__card--selected {
+.tagline-row--selected {
   border-color: var(--mkcg-primary, #3b82f6);
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  background: var(--mkcg-primary-light, #eff6ff);
 }
 
-.tagline-generator__card-number {
+.tagline-row--locked {
+  border-color: var(--mkcg-primary, #3b82f6);
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+}
+
+.tagline-row__checkbox {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
-  background: var(--mkcg-bg-secondary, #f8f9fa);
-  border-radius: 50%;
-  font-size: var(--mkcg-font-size-sm, 14px);
-  font-weight: var(--mkcg-font-weight-semibold, 600);
-  color: var(--mkcg-text-secondary, #5a6d7e);
+  transition: all 0.15s;
 }
 
-.tagline-generator__card--selected .tagline-generator__card-number {
+.tagline-row__checkbox--checked {
   background: var(--mkcg-primary, #3b82f6);
-  color: #ffffff;
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: white;
 }
 
-.tagline-generator__card-text {
+.tagline-row__text {
   flex: 1;
-  font-size: var(--mkcg-font-size-base, 16px);
-  color: var(--mkcg-text-primary, #2c3e50);
-  line-height: var(--mkcg-line-height-normal, 1.5);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--mkcg-text-primary, #0f172a);
+  margin: 0;
+  line-height: 1.4;
 }
 
-.tagline-generator__card--selected .tagline-generator__card-text {
-  font-weight: var(--mkcg-font-weight-medium, 500);
+.tagline-row__lock-btn {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--mkcg-text-secondary, #64748b);
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
 }
 
-.tagline-generator__card-check {
+.tagline-row__lock-btn:hover {
+  background: var(--mkcg-primary, #3b82f6);
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: white;
+}
+
+.tagline-row__locked-icon {
   flex-shrink: 0;
   color: var(--mkcg-primary, #3b82f6);
 }
 
-.tagline-generator__preview {
-  margin-bottom: var(--mkcg-space-md, 20px);
-  padding: var(--mkcg-space-md, 20px);
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  border: 1px solid #7dd3fc;
-  border-radius: var(--mkcg-radius, 8px);
-}
-
-.tagline-generator__preview-label {
-  display: block;
-  font-size: var(--mkcg-font-size-xs, 12px);
-  font-weight: var(--mkcg-font-weight-semibold, 600);
-  color: #0369a1;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: var(--mkcg-space-xs, 4px);
-}
-
-.tagline-generator__preview-text {
-  font-size: var(--mkcg-font-size-lg, 18px);
-  font-weight: var(--mkcg-font-weight-medium, 500);
-  color: #0c4a6e;
-  font-style: italic;
-}
-
-.tagline-generator__nav {
+/* Results Footer */
+.tagline-results__footer {
+  margin-top: 2rem;
+  border-top: 1px solid var(--mkcg-border, #e2e8f0);
+  padding-top: 1.5rem;
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  gap: var(--mkcg-space-md, 20px);
-  margin-bottom: var(--mkcg-space-md, 20px);
-  padding-bottom: var(--mkcg-space-md, 20px);
-  border-bottom: 1px solid var(--mkcg-border-light, #e9ecef);
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
-.tagline-generator__nav-count {
-  font-size: var(--mkcg-font-size-sm, 14px);
-  color: var(--mkcg-text-secondary, #5a6d7e);
-  font-weight: var(--mkcg-font-weight-medium, 500);
+/* Ghost button variant */
+.generator__button--ghost {
+  background: transparent;
+  border: none;
+  color: var(--mkcg-text-secondary, #64748b);
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s;
 }
 
-.tagline-generator__actions {
-  display: flex;
-  gap: var(--mkcg-space-sm, 12px);
+.generator__button--ghost:hover {
+  color: var(--mkcg-text-primary, #0f172a);
 }
 
 /* Integrated Mode Styles */
