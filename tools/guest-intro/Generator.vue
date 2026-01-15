@@ -1026,8 +1026,9 @@ function populateFromProfile(data) {
   if (hookHow) authorityHook.how = hookHow;
 
   // Impact Intro components (WHERE = credentials, WHY = mission)
-  const impactWhere = data.impact_where || data.where || data.credentials || '';
-  const impactWhy = data.impact_why || data.why || data.mission || data.why_book_you || '';
+  // Profile uses hook_where and hook_why as part of 6 W's framework
+  const impactWhere = data.hook_where || data.impact_where || data.where || data.credentials || '';
+  const impactWhy = data.hook_why || data.impact_why || data.why || data.mission || data.why_book_you || '';
 
   if (impactWhere) impactIntro.where = impactWhere;
   if (impactWhy) impactIntro.why = impactWhy;
