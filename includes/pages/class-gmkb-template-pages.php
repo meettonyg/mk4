@@ -88,7 +88,18 @@ class GMKB_Template_Pages {
         }
 
         // Use inline template
-        $temp_file = tempnam(get_temp_dir(), 'gmkb-templates');
+        $temp_file = @tempnam(get_temp_dir(), 'gmkb-templates');
+
+        if ($temp_file === false) {
+            // Fallback to sys_get_temp_dir if get_temp_dir fails
+            $temp_file = @tempnam(sys_get_temp_dir(), 'gmkb-templates');
+        }
+
+        if ($temp_file === false) {
+            error_log('GMKB Error: Failed to create temporary file for template rendering.');
+            return '';
+        }
+
         file_put_contents($temp_file, $this->get_template_content());
         return $temp_file;
     }
