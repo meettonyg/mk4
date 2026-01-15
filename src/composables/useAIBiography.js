@@ -185,9 +185,13 @@ export function useAIBiography() {
 
   /**
    * Check if we have enough data to generate
+   * Requires name AND at least one of the 6 W's (Authority Hook or Impact Intro)
    */
   const canGenerate = computed(() => {
-    return name.value.trim() && (authorityHook.who || authorityHook.what);
+    const hasName = name.value.trim();
+    const hasAuthorityHook = authorityHook.who || authorityHook.what || authorityHook.when || authorityHook.how;
+    const hasImpactIntro = impactIntro.where || impactIntro.why;
+    return hasName && (hasAuthorityHook || hasImpactIntro);
   });
 
   /**
@@ -555,19 +559,21 @@ export function useAIBiography() {
     if (hookHow) authorityHook.how = hookHow;
 
     // Impact Intro (WHERE & WHY) - check multiple field name patterns
-    // Primary: impact_where/impact_why (standard profile fields)
-    // Fallback: where/why (simplified names)
-    // Also check nested impact_intro object
+    // Primary: hook_where/hook_why (profile schema uses hook_ prefix for all 6 W's)
+    // Also check: impact_where/impact_why, where/why, and nested impact_intro object
     const impactData = profileData.impact_intro || profileData.impactIntro || {};
-    const whereVal = profileData.impact_where || profileData.impactWhere ||
+    const whereVal = profileData.hook_where || profileData.hookWhere ||
+                     profileData.impact_where || profileData.impactWhere ||
                      impactData.where || profileData.where ||
                      profileData.credentials || profileData.achievements || '';
-    const whyVal = profileData.impact_why || profileData.impactWhy ||
+    const whyVal = profileData.hook_why || profileData.hookWhy ||
+                   profileData.impact_why || profileData.impactWhy ||
                    impactData.why || profileData.why ||
                    profileData.mission || profileData.purpose || '';
 
     console.log('[useAIBiography] populateFromProfile - Profile data keys:', Object.keys(profileData));
-    console.log('[useAIBiography] populateFromProfile - impactData:', impactData);
+    console.log('[useAIBiography] populateFromProfile - hook_where:', profileData.hook_where);
+    console.log('[useAIBiography] populateFromProfile - hook_why:', profileData.hook_why);
     console.log('[useAIBiography] populateFromProfile - whereVal resolved to:', whereVal);
     console.log('[useAIBiography] populateFromProfile - whyVal resolved to:', whyVal);
 
