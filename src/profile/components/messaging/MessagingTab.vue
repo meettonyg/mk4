@@ -123,7 +123,7 @@
 
                 <!-- Guest Intro Panel -->
                 <EditablePanel
-                    title="Guest Intro"
+                    title="Guest Intro Toolkit"
                     section-id="guest-intro"
                     :is-editing="editingSection === 'guest-intro'"
                     :is-saving="isSaving"
@@ -138,29 +138,103 @@
                     </template>
 
                     <template #display>
-                        <div class="text-area">
-                            <div v-if="store.fields.podcast_intro" class="preserve-lines" v-html="formatWithLineBreaks(store.fields.podcast_intro)"></div>
-                            <div v-else class="empty-text">
-                                <p>
-                                    <span class="info-icon">i</span>
-                                    Click edit to add your Podcast Intro to make it easy for hosts
-                                    to book and introduce you on their show.
-                                </p>
+                        <div class="bio-toolkit">
+                            <!-- Intro Variant Tabs -->
+                            <div class="bio-tabs">
+                                <button
+                                    type="button"
+                                    class="bio-tab"
+                                    :class="{ 'bio-tab--active': activeIntroTab === 'long' }"
+                                    @click="activeIntroTab = 'long'"
+                                >
+                                    Long
+                                </button>
+                                <button
+                                    type="button"
+                                    class="bio-tab"
+                                    :class="{ 'bio-tab--active': activeIntroTab === 'medium' }"
+                                    @click="activeIntroTab = 'medium'"
+                                >
+                                    Medium
+                                </button>
+                                <button
+                                    type="button"
+                                    class="bio-tab"
+                                    :class="{ 'bio-tab--active': activeIntroTab === 'short' }"
+                                    @click="activeIntroTab = 'short'"
+                                >
+                                    Short
+                                </button>
+                            </div>
+
+                            <!-- Intro Content -->
+                            <div class="bio-content">
+                                <div v-if="activeIntroTab === 'long'" class="text-area">
+                                    <div v-if="store.fields.introduction_long" class="preserve-lines" v-html="formatWithLineBreaks(store.fields.introduction_long)"></div>
+                                    <div v-else class="empty-text">
+                                        <p>
+                                            <span class="info-icon">i</span>
+                                            No long introduction yet. Use the AI tool to generate one.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div v-else-if="activeIntroTab === 'medium'" class="text-area">
+                                    <div v-if="store.fields.podcast_intro" class="preserve-lines" v-html="formatWithLineBreaks(store.fields.podcast_intro)"></div>
+                                    <div v-else class="empty-text">
+                                        <p>
+                                            <span class="info-icon">i</span>
+                                            No medium introduction yet. Use the AI tool to generate one.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div v-else class="text-area">
+                                    <div v-if="store.fields.introduction_short" class="preserve-lines" v-html="formatWithLineBreaks(store.fields.introduction_short)"></div>
+                                    <div v-else class="empty-text">
+                                        <p>
+                                            <span class="info-icon">i</span>
+                                            No short introduction yet. Use the AI tool to generate one.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </template>
 
                     <template #edit>
-                        <div class="form-group">
-                            <label class="form-label">
-                                Podcast Intro (short bio, less than 50 words)
-                            </label>
-                            <textarea
-                                class="form-input textarea"
-                                v-model="editFields.podcast_intro"
-                                rows="4"
-                                placeholder="A brief introduction for podcast hosts..."
-                            ></textarea>
+                        <div class="bio-edit-sections">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    Long Introduction
+                                </label>
+                                <textarea
+                                    class="form-input textarea"
+                                    v-model="editFields.introduction_long"
+                                    rows="5"
+                                    placeholder="Comprehensive introduction for detailed event programs..."
+                                ></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    Medium Introduction (Podcast Intro)
+                                </label>
+                                <textarea
+                                    class="form-input textarea"
+                                    v-model="editFields.podcast_intro"
+                                    rows="4"
+                                    placeholder="Standard introduction for podcast hosts..."
+                                ></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    Short Introduction
+                                </label>
+                                <textarea
+                                    class="form-input textarea"
+                                    v-model="editFields.introduction_short"
+                                    rows="3"
+                                    placeholder="Brief introduction for quick mentions..."
+                                ></textarea>
+                            </div>
                         </div>
                     </template>
                 </EditablePanel>
@@ -461,10 +535,13 @@ const editFields = reactive({});
 // Bio toolkit tab state
 const activeBioTab = ref('long');
 
+// Guest intro tab state
+const activeIntroTab = ref('long');
+
 // Section field mappings
 const sectionFields = {
     biography: ['biography', 'biography_short', 'biography_long'],
-    'guest-intro': ['podcast_intro'],
+    'guest-intro': ['podcast_intro', 'introduction_short', 'introduction_long'],
     'six-ws': ['hook_who', 'hook_what', 'hook_when', 'hook_how', 'hook_where', 'hook_why'],
     tagline: ['tagline'],
     'authority-hook': ['authority_statement'],
