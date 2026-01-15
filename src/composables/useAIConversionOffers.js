@@ -13,7 +13,11 @@
 
 import { ref, computed } from 'vue';
 import { useAIGenerator } from './useAIGenerator';
-import { useAIStore } from '../stores/ai';
+
+/**
+ * Minimum character length for a valid offer section when parsing text
+ */
+const MIN_OFFER_SECTION_LENGTH = 30;
 
 /**
  * Offer tier configurations
@@ -64,7 +68,6 @@ export const BUSINESS_CONTEXTS = {
  * });
  */
 export function useAIConversionOffers() {
-  const aiStore = useAIStore();
   const generator = useAIGenerator('conversion-offers');
 
   // Local state
@@ -78,59 +81,23 @@ export function useAIConversionOffers() {
 
   // Parsed offers for current generation
   const offers = computed(() => {
-    const content = generator.generatedContent.value;
-    if (!content) return [];
-
-    // If already an array, process it
-    if (Array.isArray(content)) {
-      return content.map((offer, index) => ({
-        id: `offer_${index + 1}`,
-        title: offer.title || offer.name || `Offer ${index + 1}`,
-        description: offer.description || offer.value || '',
-        investment: offer.investment || offer.price || '',
-        duration: offer.duration || offer.timeline || '',
-        delivery: offer.delivery || offer.format || '',
-        includes: offer.includes || [],
-        ...offer
-      }));
-    }
-
-    // If string, try to parse
-    if (typeof content === 'string') {
-      try {
-        const parsed = JSON.parse(content);
-        if (Array.isArray(parsed)) {
-          return parsed.map((offer, index) => ({
-            id: `offer_${index + 1}`,
-            title: offer.title || `Offer ${index + 1}`,
-            description: offer.description || '',
-            investment: offer.investment || '',
-            duration: offer.duration || '',
-            delivery: offer.delivery || '',
-            ...offer
-          }));
-        }
-      } catch {
-        // Not JSON, try to parse as text
-        return parseTextOffers(content);
-      }
-    }
-
-    return [];
+    return normalizeOffers(generator.generatedContent.value);
   });
 
   /**
    * Parse text-based offer responses
    * @param {string} text Raw text content
+   * @param {object} options Parsing options
    * @returns {array} Parsed offers
    */
-  function parseTextOffers(text) {
+  function parseTextOffers(text, options = {}) {
+    const { idPrefix = 'offer', tier = null } = options;
     const offers = [];
     const sections = text.split(/(?=(?:Option|Offer|Package|Tier)\s*\d|(?:\d+\.\s))/i);
 
     sections.forEach((section, index) => {
       section = section.trim();
-      if (section.length < 30) return;
+      if (section.length < MIN_OFFER_SECTION_LENGTH) return;
 
       // Try to extract title
       const titleMatch = section.match(/^(?:Option|Offer|Package|Tier)?\s*\d*[.:\s]*(.+?)[\n:]/im);
@@ -145,15 +112,76 @@ export function useAIConversionOffers() {
       const investmentMatch = description.match(/\$[\d,]+(?:\.\d{2})?(?:\s*[-\/]\s*\$[\d,]+)?|\bfree\b/i);
       const investment = investmentMatch ? investmentMatch[0] : '';
 
-      offers.push({
-        id: `offer_${index + 1}`,
+      const offer = {
+        id: `${idPrefix}_${index + 1}`,
         title,
         description: description.replace(investmentMatch?.[0] || '', '').trim(),
         investment
-      });
+      };
+
+      if (tier) {
+        offer.tier = tier;
+      }
+
+      offers.push(offer);
     });
 
     return offers;
+  }
+
+  /**
+   * Normalize offer content from any format (array, JSON string, or text)
+   * @param {any} content Raw content to normalize
+   * @param {object} options Normalization options
+   * @returns {array} Normalized offers
+   */
+  function normalizeOffers(content, options = {}) {
+    const {
+      idPrefix = 'offer',
+      tier = null,
+      defaultLabel = 'Offer',
+      defaultInvestment = '',
+      defaultDelivery = ''
+    } = options;
+
+    if (!content) return [];
+
+    // If already an array, normalize each offer
+    if (Array.isArray(content)) {
+      return content.map((offer, index) => {
+        const normalized = {
+          id: `${idPrefix}_${index + 1}`,
+          title: offer.title || offer.name || `${defaultLabel} ${index + 1}`,
+          description: offer.description || offer.value || '',
+          investment: offer.investment || offer.price || defaultInvestment,
+          duration: offer.duration || offer.timeline || '',
+          delivery: offer.delivery || offer.format || defaultDelivery,
+          includes: offer.includes || [],
+          ...offer
+        };
+        // Override id after spread to ensure correct format
+        normalized.id = `${idPrefix}_${index + 1}`;
+        if (tier) {
+          normalized.tier = tier;
+        }
+        return normalized;
+      });
+    }
+
+    // If string, try to parse as JSON first
+    if (typeof content === 'string') {
+      try {
+        const parsed = JSON.parse(content);
+        if (Array.isArray(parsed)) {
+          return normalizeOffers(parsed, options);
+        }
+      } catch {
+        // Not JSON, parse as text
+        return parseTextOffers(content, { idPrefix, tier });
+      }
+    }
+
+    return [];
   }
 
   /**
@@ -225,42 +253,14 @@ export function useAIConversionOffers() {
     try {
       const result = await generator.generate(params);
 
-      // Parse and return the offers
-      let parsedOffers = [];
-
-      if (Array.isArray(result)) {
-        parsedOffers = result.map((offer, index) => ({
-          id: `${tier}_${index + 1}`,
-          tier,
-          title: offer.title || offer.name || `${tierConfig.label} ${index + 1}`,
-          description: offer.description || offer.value || '',
-          investment: offer.investment || offer.price || tierConfig.priceHint,
-          duration: offer.duration || '',
-          delivery: offer.delivery || deliveryMethod,
-          includes: offer.includes || []
-        }));
-      } else if (typeof result === 'string') {
-        try {
-          const parsed = JSON.parse(result);
-          if (Array.isArray(parsed)) {
-            parsedOffers = parsed.map((offer, index) => ({
-              id: `${tier}_${index + 1}`,
-              tier,
-              title: offer.title || `${tierConfig.label} ${index + 1}`,
-              description: offer.description || '',
-              investment: offer.investment || tierConfig.priceHint,
-              duration: offer.duration || '',
-              delivery: offer.delivery || deliveryMethod
-            }));
-          }
-        } catch {
-          parsedOffers = parseTextOffers(result).map((offer, index) => ({
-            ...offer,
-            id: `${tier}_${index + 1}`,
-            tier
-          }));
-        }
-      }
+      // Parse and normalize the offers using shared helper
+      const parsedOffers = normalizeOffers(result, {
+        idPrefix: tier,
+        tier,
+        defaultLabel: tierConfig.label,
+        defaultInvestment: tierConfig.priceHint,
+        defaultDelivery: deliveryMethod
+      });
 
       // Update tier offers
       tierOffers.value[tier] = parsedOffers;

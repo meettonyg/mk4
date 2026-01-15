@@ -362,6 +362,22 @@ const deliveryLabels = {
   'self-paced': 'Self-Paced'
 };
 
+// API field mapping for saving offers to profile
+const TIER_TO_API_MAPPING = {
+  'lead-magnet': {
+    title: 'offer_free',
+    description: 'offer_free_description'
+  },
+  'core-offer': {
+    title: 'offer_1',
+    description: 'offer_1_description'
+  },
+  'high-ticket': {
+    title: 'offer_2',
+    description: 'offer_2_description'
+  }
+};
+
 const props = defineProps({
   profileData: {
     type: Object,
@@ -376,7 +392,12 @@ const {
   isGenerating,
   error,
   generateForTier: generateTierApi,
-  reset
+  reset,
+  tierOffers,
+  lockedOffers,
+  activeTier,
+  lockOffer,
+  unlockOffer
 } = useAIConversionOffers();
 
 const {
@@ -400,35 +421,22 @@ const deliveryMethod = ref('online');
 const variationCount = ref(3);
 const audienceChallenges = ref('');
 
-// Results state
-const activeTier = ref('core-offer');
-const tierOffers = ref({
-  'lead-magnet': [],
-  'core-offer': [],
-  'high-ticket': []
-});
-const lockedOffers = ref({});
+// Results state (from composable: tierOffers, lockedOffers, activeTier)
 const selectedOfferIndex = ref(null);
 const generatingTier = ref(null);
 const refinementPrompt = ref('');
 
 // Save state
-const selectedProfileId = ref(null);
 const saveSuccess = ref(false);
 const saveAuthorityHook = ref(true);
 
 // Computed: resolved profile ID from all available sources
-const resolvedProfileId = computed(() => {
+const selectedProfileId = computed(() => {
   return props.profileData?.id
     || injectedProfileData.value?.id
     || contextProfileId.value
     || null;
 });
-
-// Keep selectedProfileId in sync with resolved ID
-watch(resolvedProfileId, (newId) => {
-  selectedProfileId.value = newId;
-}, { immediate: true });
 
 const hookPreview = computed(() => {
   const who = hookWho.value || '[WHO]';
@@ -568,8 +576,7 @@ function handleRegenerate() {
 function lockSelectedOffer() {
   if (selectedOfferIndex.value === null) return;
   const offer = currentTierOffers.value[selectedOfferIndex.value];
-  lockedOffers.value[activeTier.value] = { ...offer };
-  tierOffers.value[activeTier.value] = [];
+  lockOffer(activeTier.value, offer);
   selectedOfferIndex.value = null;
 
   // Auto-advance to next unlocked tier
@@ -581,7 +588,7 @@ function lockSelectedOffer() {
 }
 
 function unlockTier(tier) {
-  delete lockedOffers.value[tier];
+  unlockOffer(tier);
   generateForTier(tier);
 }
 
@@ -605,15 +612,15 @@ async function handleSaveToProfile() {
   if (lockedCount.value === 0) return;
 
   try {
+    // Build save data using tier mapping
+    const saveData = {};
+    for (const [tier, mapping] of Object.entries(TIER_TO_API_MAPPING)) {
+      saveData[mapping.title] = lockedOffers.value[tier]?.title || '';
+      saveData[mapping.description] = lockedOffers.value[tier]?.description || '';
+    }
+
     // Save offers
-    const offersResult = await saveToProfile('conversion_offers', {
-      offer_free: lockedOffers.value['lead-magnet']?.title || '',
-      offer_free_description: lockedOffers.value['lead-magnet']?.description || '',
-      offer_1: lockedOffers.value['core-offer']?.title || '',
-      offer_1_description: lockedOffers.value['core-offer']?.description || '',
-      offer_2: lockedOffers.value['high-ticket']?.title || '',
-      offer_2_description: lockedOffers.value['high-ticket']?.description || ''
-    }, {
+    const offersResult = await saveToProfile('conversion_offers', saveData, {
       profileId: selectedProfileId.value
     });
 
@@ -647,13 +654,6 @@ async function handleSaveToProfile() {
 
 function handleStartOver() {
   reset();
-  tierOffers.value = {
-    'lead-magnet': [],
-    'core-offer': [],
-    'high-ticket': []
-  };
-  lockedOffers.value = {};
-  activeTier.value = 'core-offer';
   selectedOfferIndex.value = null;
   refinementPrompt.value = '';
 }
