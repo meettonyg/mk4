@@ -415,11 +415,40 @@ const formatWithLineBreaks = (text) => {
     if (!text) return '';
     // If text already has HTML tags (like <p>), return as-is
     if (/<[^>]+>/.test(text)) return text;
-    // Convert double newlines to paragraph breaks, single newlines to <br>
-    const paragraphs = text
-        .split(/\n\n+/)
-        .map(para => para.trim().replace(/\n/g, '<br>'))
-        .filter(para => para);
+
+    // Check if text has explicit paragraph breaks (double newlines)
+    if (/\n\n+/.test(text)) {
+        // Convert double newlines to paragraph breaks, single newlines to <br>
+        const paragraphs = text
+            .split(/\n\n+/)
+            .map(para => para.trim().replace(/\n/g, '<br>'))
+            .filter(para => para);
+        return '<p>' + paragraphs.join('</p><p>') + '</p>';
+    }
+
+    // For longer text without explicit breaks, create logical paragraphs
+    // Split at sentence boundaries after every ~2-3 sentences for readability
+    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+    if (sentences.length <= 3) {
+        return '<p>' + text + '</p>';
+    }
+
+    // Group sentences into paragraphs (2-3 sentences each)
+    const paragraphs = [];
+    let currentPara = [];
+    sentences.forEach((sentence, index) => {
+        currentPara.push(sentence.trim());
+        // Create paragraph break every 2-3 sentences, or at natural breaks
+        if (currentPara.length >= 2 && (currentPara.length >= 3 || index === sentences.length - 1)) {
+            paragraphs.push(currentPara.join(' '));
+            currentPara = [];
+        }
+    });
+    // Add any remaining sentences
+    if (currentPara.length > 0) {
+        paragraphs.push(currentPara.join(' '));
+    }
+
     return '<p>' + paragraphs.join('</p><p>') + '</p>';
 };
 
