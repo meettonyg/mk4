@@ -1,11 +1,22 @@
 /**
  * useAIGenerator - Core composable for AI content generation
  *
- * Part of the Unified AI Generator Architecture ("Modular Widgets")
- * Provides the core logic for making AI generation API calls.
- * Works in both integrated (builder) and standalone (free tools) modes.
+ * @deprecated Since 3.0.0 - Use tool-based API instead.
  *
- * Validation rules are now defined in each tool's meta.json for tool independence.
+ * NEW TOOLS SHOULD NOT USE THIS COMPOSABLE.
+ * This composable calls the legacy /ai/generate endpoint which uses
+ * hardcoded prompt templates in class-gmkb-ai-config.php.
+ *
+ * Instead, tools should:
+ * 1. Create a prompts.php file in their tool directory (tools/[tool-name]/prompts.php)
+ * 2. Call /ai/tool/generate endpoint directly with { tool: 'tool-name', params }
+ * 3. See tools/guest-intro/ for a reference implementation
+ *
+ * The tool-based API provides:
+ * - Self-contained prompt configuration per tool
+ * - Proper JSON response parsing via custom parser functions
+ * - Support for variations and structured output
+ * - No dependency on legacy hardcoded templates
  *
  * @package GMKB
  * @subpackage Composables
@@ -147,6 +158,17 @@ function applyValidation(config, params) {
  * await generate({ name: 'John', tone: 'professional' });
  */
 export function useAIGenerator(type) {
+  // DEPRECATION WARNING - Log once per type
+  if (typeof window !== 'undefined' && !window._gmkbLegacyApiWarned?.[type]) {
+    window._gmkbLegacyApiWarned = window._gmkbLegacyApiWarned || {};
+    window._gmkbLegacyApiWarned[type] = true;
+    console.warn(
+      `[DEPRECATED] useAIGenerator('${type}') uses the legacy /ai/generate endpoint.\n` +
+      `New tools should use the tool-based API (/ai/tool/generate) with prompts.php.\n` +
+      `See tools/guest-intro/ for reference implementation.`
+    );
+  }
+
   // Get AI store
   const aiStore = useAIStore();
 

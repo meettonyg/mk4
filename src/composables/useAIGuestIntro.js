@@ -14,8 +14,48 @@
  */
 
 import { ref, computed, reactive, watch } from 'vue';
-import { useAIGenerator } from './useAIGenerator';
 import { useAIStore } from '../stores/ai';
+
+/**
+ * Get REST URL from available sources
+ */
+function getRestUrl() {
+  const url = window.gmkbData?.restUrl
+    || window.gmkbProfileData?.apiUrl
+    || window.gmkbStandaloneTools?.apiBase
+    || window.gmkbPublicData?.restUrl
+    || '/wp-json/gmkb/v2/';
+  return url.endsWith('/') ? url : url + '/';
+}
+
+/**
+ * Get nonce from available sources
+ */
+function getNonce(context) {
+  if (context === 'builder') {
+    return window.gmkbData?.restNonce
+      || window.gmkbData?.nonce
+      || window.gmkbProfileData?.nonce
+      || window.gmkbStandaloneTools?.restNonce
+      || '';
+  }
+  return window.gmkbPublicNonce
+    || window.gmkbPublicData?.publicNonce
+    || window.gmkbStandaloneTools?.nonce
+    || '';
+}
+
+/**
+ * Check if user is logged in
+ */
+function isUserLoggedIn() {
+  return !!(
+    window.gmkbData?.postId
+    || window.gmkbData?.post_id
+    || window.gmkbProfileData?.postId
+    || window.gmkbStandaloneTools?.isLoggedIn
+  );
+}
 
 /**
  * Length slot configuration
@@ -75,7 +115,14 @@ export const HOOK_STYLE_OPTIONS = [
  */
 export function useAIGuestIntro() {
   const aiStore = useAIStore();
-  const generator = useAIGenerator('guest_intro');
+
+  // ========================================
+  // Generation State (replaces useAIGenerator)
+  // ========================================
+  const isGenerating = ref(false);
+  const error = ref(null);
+  const usageRemaining = ref(null);
+  const resetTime = ref(null);
 
   // ========================================
   // Form State
@@ -184,18 +231,21 @@ export function useAIGuestIntro() {
   // ========================================
 
   /**
-   * Generate variations for a specific slot
+   * Generate variations for a specific slot using the tool-based API
    * @param {string} slotId Slot to generate for ('short', 'medium', 'long')
    * @param {object} overrides Optional parameter overrides
-   * @param {string} context API context ('builder' or 'public')
+   * @param {string} contextOverride API context ('builder' or 'public')
    * @returns {Promise<object>} Generation result
    */
-  const generateForSlot = async (slotId = null, overrides = {}, context = 'public') => {
+  const generateForSlot = async (slotId = null, overrides = {}, contextOverride = null) => {
     const targetSlot = slotId || activeSlot.value;
+    const context = contextOverride || (isUserLoggedIn() ? 'builder' : 'public');
 
     // Set slot to generating state
     slots[targetSlot].status = 'generating';
     slots[targetSlot].preview = 'Generating variations...';
+    isGenerating.value = true;
+    error.value = null;
 
     try {
       const params = {
@@ -214,30 +264,72 @@ export function useAIGuestIntro() {
         notes: overrides.notes || notes.value
       };
 
-      const result = await generator.generate(params, context);
+      const restUrl = getRestUrl();
+      const nonce = getNonce(context);
 
-      // Parse the result
-      if (result && result.variations) {
-        slots[targetSlot].variations = result.variations;
-        slots[targetSlot].status = 'ready';
-        slots[targetSlot].preview = `${result.variations.length} variations ready`;
-      } else if (result && typeof result === 'string') {
-        // Legacy single result format
-        slots[targetSlot].variations = [{
-          id: 1,
-          label: 'Generated',
-          text: result,
-          wordCount: result.split(/\s+/).length
-        }];
-        slots[targetSlot].status = 'ready';
-        slots[targetSlot].preview = '1 variation ready';
+      // Call the tool-based API endpoint (uses prompts.php)
+      const response = await fetch(`${restUrl}ai/tool/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': context === 'builder' ? nonce : ''
+        },
+        body: JSON.stringify({
+          tool: 'guest-intro',
+          params,
+          context,
+          nonce: context === 'public' ? nonce : undefined
+        })
+      });
+
+      const data = await response.json();
+
+      // Handle error responses
+      if (!response.ok) {
+        const errorMessage = data.message || `Generation failed (${response.status})`;
+        error.value = errorMessage;
+        throw new Error(errorMessage);
       }
 
-      return result;
+      // Handle successful response
+      if (data.success && data.data?.content) {
+        const result = data.data.content;
+
+        // Update usage info
+        if (data.usage) {
+          usageRemaining.value = data.usage.remaining;
+          resetTime.value = data.usage.reset_time;
+          aiStore.updateUsage(data.usage);
+        }
+
+        // Parse the result - expect variations array from prompts.php parser
+        if (result && result.variations) {
+          slots[targetSlot].variations = result.variations;
+          slots[targetSlot].status = 'ready';
+          slots[targetSlot].preview = `${result.variations.length} variations ready`;
+        } else if (result && typeof result === 'string') {
+          // Legacy single result format
+          slots[targetSlot].variations = [{
+            id: 1,
+            label: 'Generated',
+            text: result,
+            wordCount: result.split(/\s+/).length
+          }];
+          slots[targetSlot].status = 'ready';
+          slots[targetSlot].preview = '1 variation ready';
+        }
+
+        return result;
+      }
+
+      throw new Error('Unexpected response format from AI service');
     } catch (err) {
       slots[targetSlot].status = 'empty';
       slots[targetSlot].preview = 'Generation failed - click to retry';
+      error.value = err.message;
       throw err;
+    } finally {
+      isGenerating.value = false;
     }
   };
 
@@ -256,6 +348,7 @@ export function useAIGuestIntro() {
     }
 
     isRefining.value = true;
+    const context = isUserLoggedIn() ? 'builder' : 'public';
 
     try {
       const params = {
@@ -265,7 +358,30 @@ export function useAIGuestIntro() {
         tone: tone.value
       };
 
-      const result = await generator.generate(params, 'public');
+      const restUrl = getRestUrl();
+      const nonce = getNonce(context);
+
+      const response = await fetch(`${restUrl}ai/tool/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': context === 'builder' ? nonce : ''
+        },
+        body: JSON.stringify({
+          tool: 'guest-intro',
+          params,
+          context,
+          nonce: context === 'public' ? nonce : undefined
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Refinement failed');
+      }
+
+      const result = data.data?.content;
 
       // Update the variation in place
       if (result && result.variations && result.variations.length > 0) {
@@ -437,19 +553,23 @@ export function useAIGuestIntro() {
 
   /**
    * Get data for saving to profile
+   * Keys match the source keys in meta.json fieldMapping:
+   * - short -> introduction_short
+   * - medium -> introduction
+   * - long -> introduction_long
    * @returns {object} Profile-saveable data
    */
   const getProfileSaveData = () => {
     const data = {};
 
     if (slots.short.lockedIntro) {
-      data.introduction_short = slots.short.lockedIntro.text;
+      data.short = slots.short.lockedIntro.text;
     }
     if (slots.medium.lockedIntro) {
-      data.introduction = slots.medium.lockedIntro.text;
+      data.medium = slots.medium.lockedIntro.text;
     }
     if (slots.long.lockedIntro) {
-      data.introduction_long = slots.long.lockedIntro.text;
+      data.long = slots.long.lockedIntro.text;
     }
 
     return data;
@@ -459,7 +579,9 @@ export function useAIGuestIntro() {
    * Reset all state
    */
   const reset = () => {
-    generator.reset();
+    // Reset generation state
+    isGenerating.value = false;
+    error.value = null;
 
     // Reset form
     guestName.value = '';
@@ -529,11 +651,11 @@ export function useAIGuestIntro() {
   };
 
   return {
-    // Base generator state
-    isGenerating: generator.isGenerating,
-    error: generator.error,
-    usageRemaining: generator.usageRemaining,
-    resetTime: generator.resetTime,
+    // Generation state
+    isGenerating,
+    error,
+    usageRemaining,
+    resetTime,
 
     // Form state
     guestName,
