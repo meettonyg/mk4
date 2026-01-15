@@ -79,6 +79,32 @@
     </template>
   </AiWidgetFrame>
 
+  <!-- Embedded Mode: Simple form for landing pages (like Guest Intro) -->
+  <div v-else-if="mode === 'embedded'" class="gmkb-embedded-form">
+    <div class="gmkb-embedded-fields">
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.name || 'Your Name' }} *</label>
+        <input
+          v-model="name"
+          type="text"
+          class="gmkb-embedded-input"
+          :placeholder="currentIntent?.formPlaceholders?.name || 'e.g., Dr. Jane Smith'"
+        />
+      </div>
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.expertise || 'Your Authority Hook' }} *</label>
+        <textarea
+          v-model="embeddedAuthorityHook"
+          class="gmkb-embedded-input gmkb-embedded-textarea"
+          :placeholder="currentIntent?.formPlaceholders?.expertise || 'e.g., I help SaaS founders scale to $10M ARR through my Revenue Acceleration System...'"
+          rows="3"
+        ></textarea>
+        <span class="gmkb-embedded-hint">Describe who you help and what transformation you provide.</span>
+      </div>
+    </div>
+    <div v-if="error" class="gmkb-embedded-error">{{ error }}</div>
+  </div>
+
   <!-- Default/Standalone Mode: Full Biography Toolkit -->
   <div v-else class="gfy-bio-generator">
     <!-- Phase 1: Input Form -->
@@ -601,7 +627,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['generated', 'saved', 'applied', 'update:can-generate']);
+const emit = defineEmits(['generated', 'saved', 'applied', 'update:can-generate', 'preview-update']);
 
 // Inject profile data from parent
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
@@ -659,6 +685,23 @@ const copiedText = ref('');
 const authorityHookTextCompact = ref('');
 const integratedLength = ref('medium');
 
+// Embedded mode specific state (for landing pages)
+const embeddedAuthorityHook = ref('');
+
+/**
+ * Current intent (for embedded mode)
+ */
+const currentIntent = computed(() => {
+  return props.intent || null;
+});
+
+/**
+ * Can generate check for embedded mode
+ */
+const canGenerateEmbedded = computed(() => {
+  return name.value.trim() && embeddedAuthorityHook.value.trim();
+});
+
 /**
  * Can generate check for integrated mode
  */
@@ -696,23 +739,40 @@ const handleApply = () => {
 };
 
 /**
- * Handle generate (called by EmbeddedToolApp)
+ * Handle generate (called by EmbeddedToolApp for embedded mode)
  */
 const handleGenerate = async () => {
   try {
-    // Start generation with long bio by default
+    // For embedded mode, use the simplified authority hook field
+    if (props.mode === 'embedded') {
+      // Set the authority hook from the embedded field
+      authorityHook.who = embeddedAuthorityHook.value;
+
+      // Generate a medium bio (default for embedded)
+      setActiveSlot('medium');
+      await generateForSlot('medium');
+
+      // Get the generated bio
+      const bio = currentBio.value;
+
+      // Emit result for EmbeddedToolWrapper to display
+      emit('generated', {
+        content: bio,
+        hook: bio,
+        result: bio
+      });
+
+      return bio;
+    }
+
+    // For default mode, use the full form
     await handleStartGeneration();
-
-    // Get the generated bio
     const bio = currentBio.value;
-
-    // Emit result for EmbeddedToolWrapper to display
     emit('generated', {
       content: bio,
       hook: bio,
       result: bio
     });
-
     return bio;
   } catch (err) {
     console.error('[Biography Generator] Generation failed:', err);
@@ -868,10 +928,14 @@ watch(
   { immediate: true }
 );
 
-// Watch canGenerate for parent
-watch(canGenerate, (newValue) => {
-  emit('update:can-generate', !!newValue);
-}, { immediate: true });
+// Watch canGenerate for parent (use appropriate check based on mode)
+watch(
+  () => props.mode === 'embedded' ? canGenerateEmbedded.value : canGenerate.value,
+  (newValue) => {
+    emit('update:can-generate', !!newValue);
+  },
+  { immediate: true }
+);
 
 // Expose for parent
 defineExpose({
@@ -1775,9 +1839,19 @@ defineExpose({
 
 .gmkb-embedded-form {
   width: 100%;
+}
+
+.gmkb-embedded-fields {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 20px;
+}
+
+.gmkb-embedded-hint {
+  display: block;
+  font-size: 12px;
+  color: var(--mkcg-text-light, #94a3b8);
+  margin-top: 6px;
 }
 
 .gmkb-embedded-section {
