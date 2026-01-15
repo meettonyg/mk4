@@ -457,7 +457,8 @@
               <button
                 type="button"
                 class="gfy-btn gfy-btn--primary gfy-btn--large"
-                :disabled="lockedCount === 0 || isSaving"
+                :disabled="lockedCount === 0 || isSaving || (mode === 'default' && !hasSelectedProfile)"
+                :title="mode === 'default' && !hasSelectedProfile ? 'Select a profile above to save' : ''"
                 @click="handleSaveAll"
               >
                 <i v-if="!isSaving" class="fas fa-save"></i>
@@ -491,6 +492,7 @@
 import { ref, computed, watch, inject } from 'vue';
 import { useAIBiography, SLOT_STATUS, LENGTH_OPTIONS, getVariationCount } from '../../src/composables/useAIBiography';
 import { useProfileContext } from '../../src/composables/useProfileContext';
+import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 import { EMBEDDED_PROFILE_DATA_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileContextBanner } from '../_shared';
 
 // Integrated mode components
@@ -570,6 +572,13 @@ const {
   saveError,
   saveToProfile
 } = useProfileContext();
+
+// Profile save functionality (standalone mode)
+const {
+  selectedProfileId: standaloneProfileId,
+  hasSelectedProfile,
+  saveMultipleToProfile
+} = useStandaloneProfile();
 
 // Local state
 const showResults = ref(false);
@@ -723,13 +732,29 @@ const handleSaveAll = async () => {
     return;
   }
 
-  try {
-    // Save each locked bio to the appropriate field
-    const saveData = {};
-    if (lockedBios.short) saveData.biography_short = lockedBios.short;
-    if (lockedBios.medium) saveData.biography = lockedBios.medium;
-    if (lockedBios.long) saveData.biography_long = lockedBios.long;
+  // Build save data
+  const saveData = {};
+  if (lockedBios.short) saveData.biography_short = lockedBios.short;
+  if (lockedBios.medium) saveData.biography = lockedBios.medium;
+  if (lockedBios.long) saveData.biography_long = lockedBios.long;
 
+  // Use standalone profile save in default mode
+  if (props.mode === 'default' && hasSelectedProfile.value) {
+    try {
+      const success = await saveMultipleToProfile(saveData);
+      if (success) {
+        saveSuccess.value = true;
+        setTimeout(() => { saveSuccess.value = false; }, 3000);
+        emit('saved', { biographies: lockedBios });
+      }
+    } catch (err) {
+      console.error('[Biography Generator] Standalone save failed:', err);
+    }
+    return;
+  }
+
+  // Fallback to useProfileContext save (for integrated/embedded modes)
+  try {
     const result = await saveToProfile('biography', saveData, {
       profileId: profileId.value
     });

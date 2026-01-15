@@ -321,17 +321,36 @@
 
             <!-- Footer Actions -->
             <div v-if="lockedOffersCount > 0" class="offers-results__footer">
+              <!-- Save Success Message -->
+              <div v-if="saveSuccess" class="offers-save-success">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                Offers saved to profile!
+              </div>
+
+              <!-- Save Error Message -->
+              <div v-if="saveError" class="offers-save-error">
+                {{ saveError }}
+              </div>
+
               <button
                 type="button"
                 class="generator__button generator__button--call-to-action"
+                :disabled="isSavingToProfile || !hasSelectedProfile"
+                :title="!hasSelectedProfile ? 'Select a profile above to save' : ''"
                 @click="handleSaveAllOffers"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg v-if="!isSavingToProfile" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
                   <polyline points="17 21 17 13 7 13 7 21"/>
                   <polyline points="7 3 7 8 15 8"/>
                 </svg>
-                Save Offer Suite
+                <svg v-else class="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
+                  <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/>
+                </svg>
+                {{ isSavingToProfile ? 'Saving...' : 'Save Offer Suite' }}
               </button>
               <button type="button" class="generator__button generator__button--ghost" @click="handleStartOver">
                 Start Over
@@ -505,6 +524,7 @@
 import { ref, reactive, computed, onMounted, watch, inject } from 'vue';
 import { useAIOffers, PACKAGE_TIERS } from '../../src/composables/useAIOffers';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
+import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 
 // Compact widget components (integrated mode)
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
@@ -586,6 +606,18 @@ const {
 } = useAIOffers();
 
 const { authorityHookSummary, syncFromStore, loadFromProfileData } = useAuthorityHook();
+
+// Profile save functionality (standalone mode)
+const {
+  selectedProfileId,
+  hasSelectedProfile,
+  saveMultipleToProfile
+} = useStandaloneProfile();
+
+// Save state
+const isSavingToProfile = ref(false);
+const saveSuccess = ref(false);
+const saveError = ref(null);
 
 // Local state
 const services = ref('');
@@ -805,7 +837,49 @@ const getDeliveryLabel = (value) => {
 /**
  * Handle save all offers
  */
-const handleSaveAllOffers = () => {
+const handleSaveAllOffers = async () => {
+  // If we have a selected profile in standalone mode, save via API
+  if (props.mode === 'default' && hasSelectedProfile.value && lockedOffersCount.value > 0) {
+    isSavingToProfile.value = true;
+    saveSuccess.value = false;
+    saveError.value = null;
+
+    try {
+      // Build offer data to save
+      const offerData = {};
+      if (lockedOffers.entry) {
+        offerData.offer_entry_name = lockedOffers.entry.name;
+        offerData.offer_entry_description = lockedOffers.entry.description;
+        offerData.offer_entry_price = lockedOffers.entry.price;
+      }
+      if (lockedOffers.signature) {
+        offerData.offer_signature_name = lockedOffers.signature.name;
+        offerData.offer_signature_description = lockedOffers.signature.description;
+        offerData.offer_signature_price = lockedOffers.signature.price;
+      }
+      if (lockedOffers.premium) {
+        offerData.offer_premium_name = lockedOffers.premium.name;
+        offerData.offer_premium_description = lockedOffers.premium.description;
+        offerData.offer_premium_price = lockedOffers.premium.price;
+      }
+
+      const success = await saveMultipleToProfile(offerData);
+      if (success) {
+        saveSuccess.value = true;
+        setTimeout(() => {
+          saveSuccess.value = false;
+        }, 3000);
+      } else {
+        saveError.value = 'Failed to save offers to profile';
+      }
+    } catch (err) {
+      saveError.value = err.message || 'Failed to save offers';
+    } finally {
+      isSavingToProfile.value = false;
+    }
+  }
+
+  // Also emit for parent components
   emit('generated', {
     offers: lockedOffers
   });
@@ -1729,5 +1803,46 @@ watch(canGenerateEmbedded, (newValue) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Save Success/Error Messages */
+.offers-save-success {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 6px;
+  color: #166534;
+  font-size: 0.875rem;
+  font-weight: 500;
+  width: 100%;
+}
+
+.offers-save-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #991b1b;
+  font-size: 0.875rem;
+  font-weight: 500;
+  width: 100%;
+}
+
+/* Spinner animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 </style>

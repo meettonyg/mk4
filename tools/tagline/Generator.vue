@@ -287,18 +287,36 @@
 
             <!-- Footer Actions -->
             <div class="tagline-results__footer">
+              <!-- Save Success Message -->
+              <div v-if="saveSuccess" class="tagline-save-success">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                Tagline saved to profile!
+              </div>
+
+              <!-- Save Error Message -->
+              <div v-if="saveError" class="tagline-save-error">
+                {{ saveError }}
+              </div>
+
               <button
                 type="button"
                 class="generator__button generator__button--call-to-action"
-                :disabled="!selectedTagline && !lockedTagline"
+                :disabled="(!selectedTagline && !lockedTagline) || isSavingToProfile || !hasSelectedProfile"
+                :title="!hasSelectedProfile ? 'Select a profile above to save' : ''"
                 @click="handleSaveToProfile"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg v-if="!isSavingToProfile" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
                   <polyline points="17 21 17 13 7 13 7 21"/>
                   <polyline points="7 3 7 8 15 8"/>
                 </svg>
-                Save Tagline to Profile
+                <svg v-else class="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
+                  <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/>
+                </svg>
+                {{ isSavingToProfile ? 'Saving...' : 'Save Tagline to Profile' }}
               </button>
               <button
                 type="button"
@@ -470,6 +488,7 @@
 import { ref, computed, onMounted, watch, inject } from 'vue';
 import { useAITagline, STYLE_FOCUS_OPTIONS, TONE_OPTIONS, INTENT_OPTIONS } from '../../src/composables/useAITagline';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
+import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 
 // Compact widget components (integrated mode)
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
@@ -550,6 +569,18 @@ const {
 } = useAITagline();
 
 const { syncFromStore, loadFromProfileData } = useAuthorityHook();
+
+// Profile save functionality (standalone mode)
+const {
+  selectedProfileId,
+  hasSelectedProfile,
+  saveToProfile
+} = useStandaloneProfile();
+
+// Save state
+const isSavingToProfile = ref(false);
+const saveSuccess = ref(false);
+const saveError = ref(null);
 
 /**
  * The number of items to generate.
@@ -677,16 +708,41 @@ const handleLockTagline = (index) => {
 /**
  * Handle save to profile
  */
-const handleSaveToProfile = () => {
+const handleSaveToProfile = async () => {
   const taglineToSave = lockedTagline.value || selectedTagline.value;
-  if (taglineToSave) {
-    emit('applied', {
-      componentId: props.componentId,
-      tagline: taglineToSave,
-      allTaglines: taglines.value,
-      action: 'save'
-    });
+  if (!taglineToSave) return;
+
+  // If we have a selected profile in standalone mode, save via API
+  if (props.mode === 'default' && hasSelectedProfile.value) {
+    isSavingToProfile.value = true;
+    saveSuccess.value = false;
+    saveError.value = null;
+
+    try {
+      const success = await saveToProfile('tagline', taglineToSave);
+      if (success) {
+        saveSuccess.value = true;
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          saveSuccess.value = false;
+        }, 3000);
+      } else {
+        saveError.value = 'Failed to save tagline to profile';
+      }
+    } catch (err) {
+      saveError.value = err.message || 'Failed to save tagline';
+    } finally {
+      isSavingToProfile.value = false;
+    }
   }
+
+  // Also emit for parent components
+  emit('applied', {
+    componentId: props.componentId,
+    tagline: taglineToSave,
+    allTaglines: taglines.value,
+    action: 'save'
+  });
 };
 
 /**
@@ -1242,6 +1298,45 @@ watch(canGenerate, (newValue) => {
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+/* Save Success/Error Messages */
+.tagline-save-success {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 6px;
+  color: #166534;
+  font-size: 0.875rem;
+  font-weight: 500;
+  width: 100%;
+}
+
+.tagline-save-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #991b1b;
+  font-size: 0.875rem;
+  font-weight: 500;
+  width: 100%;
+}
+
+/* Spinner animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 
 /* Ghost button variant */
