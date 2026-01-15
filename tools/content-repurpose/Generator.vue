@@ -1,7 +1,7 @@
 <template>
   <!-- Standalone Mode: Full two-panel layout -->
   <GeneratorLayout
-    v-if="mode === 'standalone'"
+    v-if="mode === 'default'"
     title="Content Repurposer"
     subtitle="Transform existing content into new formats for different platforms using AI"
     intro-text="Maximize your content ROI by repurposing existing blog posts, articles, videos, or podcasts into multiple formats. Generate platform-optimized content that maintains your message while adapting to different audience expectations and consumption patterns."
@@ -315,8 +315,8 @@ const props = defineProps({
    */
   mode: {
     type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
 
   /**

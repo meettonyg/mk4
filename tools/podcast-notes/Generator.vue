@@ -1,7 +1,7 @@
 <template>
   <!-- Standalone Mode: Full two-panel layout -->
   <GeneratorLayout
-    v-if="mode === 'standalone'"
+    v-if="mode === 'default'"
     title="Podcast Show Notes Generator"
     subtitle="Create comprehensive show notes for podcast episodes using AI"
     intro-text="Generate professional podcast show notes that include episode summaries, key takeaways, timestamps, and resources. Make your episodes more discoverable and provide value to your listeners with well-structured show notes."
@@ -326,8 +326,8 @@ const props = defineProps({
    */
   mode: {
     type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
 
   /**

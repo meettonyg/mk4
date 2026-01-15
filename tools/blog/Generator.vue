@@ -1,7 +1,7 @@
 <template>
   <!-- Standalone Mode: Full two-panel layout -->
   <GeneratorLayout
-    v-if="mode === 'standalone'"
+    v-if="mode === 'default'"
     title="Blog Post Generator"
     subtitle="Create engaging blog content that showcases your expertise using AI"
     intro-text="Generate compelling blog posts that attract readers, establish your authority, and drive engagement. Input your topic, key points, and target audience to create SEO-optimized content that resonates with your readers."
@@ -324,8 +324,8 @@ const props = defineProps({
    */
   mode: {
     type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
 
   /**

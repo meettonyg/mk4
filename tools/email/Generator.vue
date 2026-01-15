@@ -1,7 +1,7 @@
 <template>
   <!-- Standalone Mode: Full two-panel layout -->
   <GeneratorLayout
-    v-if="mode === 'standalone'"
+    v-if="mode === 'default'"
     title="Email Writer"
     subtitle="Create professional emails for outreach, follow-ups, and more using AI"
     intro-text="Generate compelling emails that get opened and get responses. Our AI helps you craft the perfect message for cold outreach, follow-ups, introductions, pitches, thank you notes, and booking requests."
@@ -321,8 +321,8 @@ const props = defineProps({
    */
   mode: {
     type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
 
   /**

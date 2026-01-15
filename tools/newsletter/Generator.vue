@@ -1,7 +1,7 @@
 <template>
   <!-- Standalone Mode: Full two-panel layout -->
   <GeneratorLayout
-    v-if="mode === 'standalone'"
+    v-if="mode === 'default'"
     title="Newsletter Writer"
     subtitle="Create engaging newsletters that nurture your audience with AI"
     intro-text="Generate compelling newsletter content that combines curated value with your personal voice. Our AI helps you create newsletters that build relationships, deliver value, and drive engagement with your audience."
@@ -296,8 +296,8 @@ const props = defineProps({
    */
   mode: {
     type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
 
   /**

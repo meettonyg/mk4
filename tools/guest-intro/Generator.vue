@@ -1,882 +1,1543 @@
 <template>
-  <div ref="containerRef" class="gfy-guest-intro-generator">
-    <!-- ============================================
-         FORM VIEW (When no results yet)
-         ============================================ -->
-    <div v-if="!showResults" class="gfy-intro-form">
-      <!-- STEP 1: Guest & Episode Information -->
-      <div class="gfy-input-group">
-        <label class="gfy-label">Step 1: Guest & Episode Information</label>
-        <div class="gfy-builder">
-          <div class="gfy-builder__field">
-            <label class="gfy-builder__label">Guest Name *</label>
-            <input
-              v-model="guestName"
-              type="text"
-              class="gfy-builder__input"
-              placeholder="e.g., John Smith"
-            />
-          </div>
-          <div class="gfy-builder__field">
-            <label class="gfy-builder__label">Guest Title & Company</label>
-            <input
-              v-model="guestTitle"
-              type="text"
-              class="gfy-builder__input"
-              placeholder="e.g., CEO of Growthly"
-            />
-          </div>
-          <div class="gfy-builder__field">
-            <label class="gfy-builder__label">Episode/Event Title</label>
-            <input
-              v-model="episodeTitle"
-              type="text"
-              class="gfy-builder__input"
-              placeholder="e.g., Scaling Sustainably"
-            />
-          </div>
-          <div class="gfy-builder__field">
-            <label class="gfy-builder__label">Main Discussion Topic *</label>
-            <input
-              v-model="topic"
-              type="text"
-              class="gfy-builder__input"
-              placeholder="e.g., Plugging revenue leaks"
-            />
-          </div>
-        </div>
+  <!-- Integrated Mode: Compact widget for Media Kit Builder -->
+  <AiWidgetFrame
+    v-if="mode === 'integrated'"
+    title="Guest Introduction Generator"
+    description="Create a host-ready introduction that builds anticipation and establishes credibility."
+    :mode="mode"
+    :is-loading="isGenerating"
+    :has-results="hasVariations"
+    :error="error"
+    target-component="Guest Intro"
+    :show-cta="!hasVariations"
+    @apply="handleApply"
+    @regenerate="() => generateForSlot(activeSlot)"
+    @copy="() => copyIntro(currentIntro)"
+    @retry="() => generateForSlot(activeSlot)"
+  >
+    <!-- Compact Input Form -->
+    <div class="gmkb-ai-form">
+      <div class="gmkb-ai-form-group">
+        <label class="gmkb-ai-label gmkb-ai-label--required">Guest Name</label>
+        <input
+          v-model="guestInfo.name"
+          type="text"
+          class="gmkb-ai-input"
+          placeholder="e.g., Dr. Jane Smith"
+        />
       </div>
 
-      <div class="section-divider"><span>Framework Integration</span></div>
+      <div class="gmkb-ai-form-group">
+        <label class="gmkb-ai-label gmkb-ai-label--required">What do you do?</label>
+        <textarea
+          v-model="authorityHookTextCompact"
+          class="gmkb-ai-input gmkb-ai-textarea"
+          placeholder="e.g., I help busy executives achieve work-life balance through proven mindfulness techniques..."
+          rows="3"
+        ></textarea>
+        <span class="gmkb-ai-hint">
+          Describe who you help and what transformation you provide.
+        </span>
+      </div>
 
-      <!-- STEP 2: Authority Hook (Who-What-When-How) -->
-      <div class="gfy-input-group">
-        <label class="gfy-label">Step 2: Authority Hook</label>
+      <AiToneSelector v-model="tone" />
+      <AiLengthSelector v-model="integratedLength" />
+
+      <AiGenerateButton
+        :loading="isGenerating"
+        :disabled="!canGenerateIntegrated"
+        full-width
+        @click="handleGenerateIntegrated"
+      />
+    </div>
+
+    <!-- Results -->
+    <template #results>
+      <AiResultsDisplay
+        v-if="currentIntro"
+        :content="currentIntro"
+        format="text"
+        show-count
+      />
+    </template>
+
+    <!-- Results Actions -->
+    <template #results-actions>
+      <div class="gmkb-ai-results__tabs" v-if="lockedCount > 0 || hasVariations">
+        <button
+          v-for="len in ['short', 'medium', 'long']"
+          :key="len"
+          type="button"
+          class="gmkb-ai-results__tab"
+          :class="{ 'gmkb-ai-results__tab--active': activeSlot === len }"
+          @click="setActiveSlot(len)"
+        >
+          {{ len }}
+        </button>
+      </div>
+    </template>
+  </AiWidgetFrame>
+
+  <!-- Default/Standalone Mode: Full Guest Intro Toolkit -->
+  <div v-else class="gfy-intro-generator">
+    <!-- Phase 1: Input Form -->
+    <div v-if="!showResults" class="gfy-intro-form">
+      <!-- Hero Section (only show in default mode, not when embedded in landing page) -->
+      <div v-if="mode === 'default'" class="gfy-intro-hero">
+        <h1 class="gfy-intro-hero__title">Guest Introduction Generator</h1>
+        <p class="gfy-intro-hero__subtitle">
+          Create compelling introductions designed to be read aloud by podcast hosts or event MCs using the Authority Hook and Impact Intro frameworks.
+        </p>
+      </div>
+
+      <!-- Form Container -->
+      <div class="gfy-intro-form__container" :class="{ 'gfy-intro-form__container--embedded': mode === 'embedded' }">
+        <!-- STEP 1: Guest & Episode Information -->
+        <div class="gfy-form-section">
+          <div class="gfy-form-section__header">
+            <span class="gfy-form-section__step">1</span>
+            <div>
+              <h3 class="gfy-form-section__title">Guest & Episode Information</h3>
+              <p class="gfy-form-section__subtitle">Basic details about the guest and context</p>
+            </div>
+          </div>
+
+          <div class="gfy-form-grid">
+            <div class="gfy-form-group">
+              <label class="gfy-form-label gfy-form-label--required">Guest Name</label>
+              <input
+                v-model="guestInfo.name"
+                type="text"
+                class="gfy-form-input"
+                placeholder="e.g., Dr. Jane Smith"
+              />
+            </div>
+
+            <div class="gfy-form-group">
+              <label class="gfy-form-label">Guest Title & Company</label>
+              <input
+                v-model="guestInfo.titleCompany"
+                type="text"
+                class="gfy-form-input"
+                placeholder="e.g., CEO of Growth Dynamics"
+              />
+            </div>
+          </div>
+
+          <div class="gfy-form-grid">
+            <div class="gfy-form-group">
+              <label class="gfy-form-label">Episode/Event Title</label>
+              <input
+                v-model="episodeInfo.title"
+                type="text"
+                class="gfy-form-input"
+                placeholder="e.g., How to Scale Without Burnout"
+              />
+            </div>
+
+            <div class="gfy-form-group">
+              <label class="gfy-form-label">Main Discussion Topic</label>
+              <input
+                v-model="episodeInfo.topic"
+                type="text"
+                class="gfy-form-input"
+                placeholder="e.g., Work-life balance for entrepreneurs"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2: Authority Hook Section (WHO, WHAT, WHEN, HOW) -->
         <div class="gfy-highlight-box gfy-highlight-box--blue">
           <div class="gfy-highlight-box__header">
-            <span class="gfy-highlight-box__icon gfy-highlight-box__icon--gold">&#9733;</span>
-            <h3 class="gfy-highlight-box__title">Who-What-When-How</h3>
+            <span class="gfy-form-section__step">2</span>
+            <div>
+              <h3 class="gfy-highlight-box__title">Authority Hook</h3>
+              <p class="gfy-highlight-box__subtitle">Define WHO you help, WHAT results you deliver, WHEN they need it, and HOW you do it.</p>
+            </div>
           </div>
+
           <div class="gfy-builder">
             <div class="gfy-builder__field">
-              <label class="gfy-builder__label">WHO do you help?</label>
+              <label class="gfy-builder__label">
+                <span class="gfy-builder__label-badge">WHO</span>
+                Who do you help?
+              </label>
               <input
-                v-model="hookWho"
+                v-model="authorityHook.who"
                 type="text"
                 class="gfy-builder__input"
-                placeholder="e.g., SaaS Founders"
+                placeholder="e.g., SaaS Founders scaling to $10M ARR"
               />
             </div>
+
             <div class="gfy-builder__field">
-              <label class="gfy-builder__label">WHAT is the result?</label>
+              <label class="gfy-builder__label">
+                <span class="gfy-builder__label-badge">WHAT</span>
+                What result do you deliver?
+              </label>
               <input
-                v-model="hookWhat"
+                v-model="authorityHook.what"
                 type="text"
                 class="gfy-builder__input"
-                placeholder="e.g., Increase revenue by 40%"
+                placeholder="e.g., Increase revenue by 40% in 90 days"
               />
             </div>
+
             <div class="gfy-builder__field">
-              <label class="gfy-builder__label">WHEN do they need it?</label>
+              <label class="gfy-builder__label">
+                <span class="gfy-builder__label-badge">WHEN</span>
+                When do they need your help?
+              </label>
               <input
-                v-model="hookWhen"
+                v-model="authorityHook.when"
                 type="text"
                 class="gfy-builder__input"
-                placeholder="e.g., Scaling rapidly"
+                placeholder="e.g., When they're stuck at a growth plateau"
               />
             </div>
+
             <div class="gfy-builder__field">
-              <label class="gfy-builder__label">HOW do you do it?</label>
+              <label class="gfy-builder__label">
+                <span class="gfy-builder__label-badge">HOW</span>
+                How do you achieve results?
+              </label>
               <input
-                v-model="hookHow"
+                v-model="authorityHook.how"
                 type="text"
                 class="gfy-builder__input"
-                placeholder="e.g., Proven 90-day system"
+                placeholder="e.g., My proven Revenue Acceleration System"
               />
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- STEP 3: Impact Intro (Where-Why) -->
-      <div class="gfy-input-group">
-        <label class="gfy-label">Step 3: Impact Intro</label>
+          <!-- Live Preview -->
+          <div v-if="authorityHookSummary" class="gfy-live-preview">
+            <span class="gfy-live-preview__label">Preview:</span>
+            "{{ authorityHookSummary }}"
+          </div>
+        </div>
+
+        <!-- STEP 3: Impact Intro Section (WHERE, WHY) -->
         <div class="gfy-highlight-box gfy-highlight-box--green">
           <div class="gfy-highlight-box__header">
-            <span class="gfy-highlight-box__icon gfy-highlight-box__icon--green">&#127919;</span>
-            <h3 class="gfy-highlight-box__title">Where & Why</h3>
+            <span class="gfy-form-section__step">3</span>
+            <div>
+              <h3 class="gfy-highlight-box__title">Impact Intro</h3>
+              <p class="gfy-highlight-box__subtitle">Showcase WHERE you've made an impact and WHY you do what you do.</p>
+            </div>
           </div>
-          <div class="gfy-builder">
+
+          <div class="gfy-builder gfy-builder--two-col">
             <div class="gfy-builder__field gfy-builder__field--full">
-              <label class="gfy-builder__label">WHERE is your authority (Credentials)?</label>
-              <input
-                v-model="credentials"
-                type="text"
-                class="gfy-builder__input"
-                placeholder="e.g., Helped 200+ startups achieve 7-figure growth"
-              />
+              <label class="gfy-builder__label">
+                <span class="gfy-builder__label-badge gfy-builder__label-badge--green">WHERE</span>
+                Credentials & Achievements
+              </label>
+              <textarea
+                v-model="impactIntro.where"
+                class="gfy-builder__textarea"
+                rows="2"
+                placeholder="e.g., Featured in Forbes, Inc., and Entrepreneur. Keynoted at 50+ conferences worldwide."
+              ></textarea>
             </div>
+
             <div class="gfy-builder__field gfy-builder__field--full">
-              <label class="gfy-builder__label">WHY do you do it (Mission)?</label>
-              <input
-                v-model="mission"
-                type="text"
-                class="gfy-builder__input"
-                placeholder="e.g., Democratize access to elite growth strategies"
-              />
+              <label class="gfy-builder__label">
+                <span class="gfy-builder__label-badge gfy-builder__label-badge--green">WHY</span>
+                Your Mission or Purpose
+              </label>
+              <textarea
+                v-model="impactIntro.why"
+                class="gfy-builder__textarea"
+                rows="2"
+                placeholder="e.g., Help every founder achieve sustainable growth without sacrificing their health or relationships."
+              ></textarea>
             </div>
+          </div>
+
+          <!-- Impact Preview -->
+          <div v-if="impactIntroSummary" class="gfy-live-preview gfy-live-preview--green">
+            <span class="gfy-live-preview__label">Preview:</span>
+            "{{ impactIntroSummary }}"
           </div>
         </div>
-      </div>
 
-      <div class="section-divider"><span>Settings</span></div>
-
-      <!-- STEP 4: Settings -->
-      <div class="gfy-input-group">
-        <div class="gfy-builder">
-          <div class="gfy-builder__field">
-            <label class="gfy-builder__label">Tone of Intro</label>
-            <select v-model="tone" class="gfy-select">
+        <!-- Settings Row -->
+        <div class="gfy-settings-row">
+          <div class="gfy-form-group gfy-form-group--inline">
+            <label class="gfy-form-label">Tone</label>
+            <select v-model="tone" class="gfy-form-select">
               <option v-for="opt in TONE_OPTIONS" :key="opt.value" :value="opt.value">
                 {{ opt.label }}
               </option>
             </select>
           </div>
-          <div class="gfy-builder__field">
-            <label class="gfy-builder__label">Hook Style</label>
-            <select v-model="hookStyle" class="gfy-select">
+
+          <div class="gfy-form-group gfy-form-group--inline">
+            <label class="gfy-form-label">Hook Style</label>
+            <select v-model="hookStyle" class="gfy-form-select">
               <option v-for="opt in HOOK_STYLE_OPTIONS" :key="opt.value" :value="opt.value">
                 {{ opt.label }}
               </option>
             </select>
           </div>
-          <div class="gfy-builder__field gfy-builder__field--full">
-            <label class="gfy-builder__label">Additional Notes or Requests</label>
-            <textarea
-              v-model="notes"
-              class="gfy-textarea"
-              placeholder="e.g., Mention that I just released a new book..."
-              rows="2"
-            ></textarea>
-          </div>
         </div>
-      </div>
 
-      <!-- Error Display -->
-      <div v-if="error" class="gfy-error-box">
-        <p>{{ error }}</p>
+        <!-- Generate Button (only show in default mode - landing page provides its own button) -->
+        <div v-if="mode === 'default'" class="gfy-form-actions">
+          <button
+            type="button"
+            class="gfy-btn gfy-btn--primary gfy-btn--large gfy-btn--generate"
+            :disabled="!canGenerate || isGenerating"
+            @click="handleStartGeneration"
+          >
+            <i v-if="!isGenerating" class="fas fa-magic"></i>
+            <span v-if="isGenerating" class="gfy-spinner"></span>
+            {{ isGenerating ? 'Generating...' : 'Generate Guest Introduction Toolkit' }}
+          </button>
+          <p class="gfy-form-actions__hint">
+            We'll create multiple variations for Short, Medium, and Long introductions
+          </p>
+        </div>
+
+        <!-- Error Display -->
+        <div v-if="error" class="gfy-error-box">
+          <i class="fas fa-exclamation-circle"></i>
+          <p>{{ error }}</p>
+          <button type="button" class="gfy-btn gfy-btn--outline" @click="handleStartGeneration">
+            Try Again
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- ============================================
-         RESULTS VIEW (Slot-based Dashboard)
-         ============================================ -->
+    <!-- Phase 2: Results Dashboard -->
     <div v-else class="gfy-intro-results">
-      <div class="gfy-results-layout">
-        <!-- SIDEBAR: Script Toolkit (Slot Selector) -->
-        <aside class="gfy-layout-sidebar">
-          <div class="gfy-current-topics">
-            <div class="gfy-sidebar-header">
-              <h3 class="gfy-sidebar-title">Script Toolkit</h3>
-            </div>
+      <!-- Results Hero (only show in default mode, not when embedded in landing page) -->
+      <div v-if="mode === 'default'" class="gfy-intro-hero gfy-intro-hero--compact">
+        <h1 class="gfy-intro-hero__title">Guest Introduction Toolkit</h1>
+        <p class="gfy-intro-hero__subtitle">
+          Refine your introductions. Select a length and provide feedback to iterate with AI.
+        </p>
+      </div>
 
-            <!-- Slot Buttons -->
-            <button
-              v-for="(config, slotId) in LENGTH_SLOTS"
-              :key="slotId"
-              type="button"
-              class="gfy-bio-slot"
-              :class="{
-                'gfy-bio-slot--active': activeSlot === slotId,
-                'gfy-bio-slot--locked': slots[slotId].lockedIntro,
-                'gfy-bio-slot--generating': slots[slotId].status === 'generating'
-              }"
-              @click="selectSlot(slotId)"
-            >
-              <div class="gfy-bio-slot__header">
-                <span class="gfy-bio-slot__label">{{ config.label }}</span>
-                <svg v-if="slots[slotId].lockedIntro" width="14" height="14" viewBox="0 0 24 24" fill="var(--gfy-primary-color)"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
-                <svg v-else-if="slots[slotId].status === 'generating'" class="gfy-icon--spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gfy-primary-color)" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
-                <svg v-else-if="slots[slotId].status === 'ready'" width="14" height="14" viewBox="0 0 24 24" fill="var(--gfy-success-color)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-                <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gfy-text-muted)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <div class="gmkb-tool-embed">
+        <div class="gfy-results-layout">
+          <!-- SIDEBAR: Slot Selection -->
+          <aside class="gfy-layout-sidebar">
+            <div class="gfy-current-topics">
+              <div class="gfy-sidebar-header">
+                <h3 class="gfy-sidebar-title">Select Length to Refine</h3>
               </div>
-              <div class="gfy-bio-slot__preview">{{ slots[slotId].preview }}</div>
-            </button>
 
-            <!-- Summary -->
-            <div class="gfy-sidebar-summary">
-              <span class="gfy-sidebar-locked">
-                &#128274; {{ lockedCount }} locked
-              </span>
-            </div>
-          </div>
-        </aside>
-
-        <!-- MAIN: Variations Display -->
-        <main class="gfy-layout-main">
-          <!-- Results Header -->
-          <div class="gfy-results__header">
-            <h3 class="gfy-results__title">
-              AI Variations:
-              <span style="color: var(--gfy-primary-color)">{{ activeSlotConfig.label }}</span>
-            </h3>
-            <div class="gfy-results__actions">
+              <!-- Short Slot (30-45 sec) -->
               <button
                 type="button"
-                class="gfy-btn gfy-btn--outline"
+                class="gfy-intro-slot"
+                :class="{
+                  'gfy-intro-slot--active': activeSlot === 'short',
+                  'gfy-intro-slot--locked': slots.short.locked,
+                  'gfy-intro-slot--generating': slots.short.status === SLOT_STATUS.GENERATING
+                }"
+                @click="handleSlotClick('short')"
+              >
+                <div class="gfy-intro-slot__header">
+                  <span class="gfy-intro-slot__label">Short (30-45 sec)</span>
+                  <i v-if="slots.short.locked" class="fas fa-lock" style="color: var(--gfy-primary-color);"></i>
+                  <i v-else-if="slots.short.status === SLOT_STATUS.GENERATING" class="fas fa-spinner fa-spin" style="color: var(--gfy-primary-color);"></i>
+                  <i v-else-if="slots.short.variations.length > 0" class="fas fa-check-circle" style="color: var(--gfy-success-color);"></i>
+                  <i v-else class="fas fa-plus" style="color: var(--gfy-text-muted);"></i>
+                </div>
+                <div class="gfy-intro-slot__preview">{{ getSlotPreview('short') }}</div>
+              </button>
+
+              <!-- Medium Slot (60-90 sec) -->
+              <button
+                type="button"
+                class="gfy-intro-slot"
+                :class="{
+                  'gfy-intro-slot--active': activeSlot === 'medium',
+                  'gfy-intro-slot--locked': slots.medium.locked,
+                  'gfy-intro-slot--generating': slots.medium.status === SLOT_STATUS.GENERATING
+                }"
+                @click="handleSlotClick('medium')"
+              >
+                <div class="gfy-intro-slot__header">
+                  <span class="gfy-intro-slot__label">Medium (60-90 sec)</span>
+                  <i v-if="slots.medium.locked" class="fas fa-lock" style="color: var(--gfy-primary-color);"></i>
+                  <i v-else-if="slots.medium.status === SLOT_STATUS.GENERATING" class="fas fa-spinner fa-spin" style="color: var(--gfy-primary-color);"></i>
+                  <i v-else-if="slots.medium.variations.length > 0" class="fas fa-check-circle" style="color: var(--gfy-success-color);"></i>
+                  <i v-else class="fas fa-plus" style="color: var(--gfy-text-muted);"></i>
+                </div>
+                <div class="gfy-intro-slot__preview">{{ getSlotPreview('medium') }}</div>
+              </button>
+
+              <!-- Long Slot (2-3 min) -->
+              <button
+                type="button"
+                class="gfy-intro-slot"
+                :class="{
+                  'gfy-intro-slot--active': activeSlot === 'long',
+                  'gfy-intro-slot--locked': slots.long.locked,
+                  'gfy-intro-slot--generating': slots.long.status === SLOT_STATUS.GENERATING
+                }"
+                @click="handleSlotClick('long')"
+              >
+                <div class="gfy-intro-slot__header">
+                  <span class="gfy-intro-slot__label">Long (2-3 min)</span>
+                  <i v-if="slots.long.locked" class="fas fa-lock" style="color: var(--gfy-primary-color);"></i>
+                  <i v-else-if="slots.long.status === SLOT_STATUS.GENERATING" class="fas fa-spinner fa-spin" style="color: var(--gfy-primary-color);"></i>
+                  <i v-else-if="slots.long.variations.length > 0" class="fas fa-check-circle" style="color: var(--gfy-success-color);"></i>
+                  <i v-else class="fas fa-plus" style="color: var(--gfy-text-muted);"></i>
+                </div>
+                <div class="gfy-intro-slot__preview">{{ getSlotPreview('long') }}</div>
+              </button>
+
+              <!-- Locked Summary -->
+              <div v-if="lockedCount > 0" class="gfy-locked-summary">
+                <i class="fas fa-lock"></i>
+                {{ lockedCount }}/3 introductions locked
+              </div>
+            </div>
+          </aside>
+
+          <!-- MAIN: Variations + Feedback Loop -->
+          <main class="gfy-layout-main">
+            <!-- Results Header -->
+            <div class="gfy-results__header">
+              <h3 class="gfy-results__title">
+                AI Variations:
+                <span style="color: var(--gfy-primary-color)">{{ activeSlotLabel }} Introduction</span>
+              </h3>
+            </div>
+
+            <!-- Read-aloud tip -->
+            <div class="gfy-intro-tip">
+              <i class="fas fa-microphone"></i>
+              <span>These introductions are designed to be read aloud by a podcast host or event MC.</span>
+            </div>
+
+            <!-- Refinement Loop Box -->
+            <div v-if="currentVariations.length > 0 && !currentSlot.locked" class="gfy-refinement-box">
+              <div class="gfy-refinement-header">
+                <i class="fas fa-magic" style="color: var(--gfy-primary-color); font-size: 14px;"></i>
+                <span class="gfy-refinement-title">Refine these results</span>
+              </div>
+              <div class="gfy-refinement-input-wrapper">
+                <textarea
+                  v-model="refinementFeedback"
+                  class="gfy-refinement-textarea"
+                  rows="1"
+                  placeholder="e.g. Make Option 1 more conversational or add my keynote experience..."
+                  @keydown.enter.prevent="handleRefine"
+                ></textarea>
+                <button
+                  type="button"
+                  class="gfy-btn-refine"
+                  :disabled="!refinementFeedback.trim() || isGenerating"
+                  @click="handleRefine"
+                >
+                  <i v-if="!isGenerating" class="fas fa-sync-alt"></i>
+                  <span v-else class="gfy-spinner gfy-spinner--small"></span>
+                  {{ isGenerating ? '' : 'Refine' }}
+                </button>
+              </div>
+              <span class="gfy-refinement-hint">AI will iterate on the drafts below based on your instructions.</span>
+            </div>
+
+            <!-- Loading State -->
+            <div v-if="currentSlot.status === SLOT_STATUS.GENERATING" class="gfy-loading-state">
+              <div class="gfy-loading-spinner"></div>
+              <p>Generating {{ getVariationCount(activeSlot) }} variations for your {{ activeSlotLabel }} introduction...</p>
+            </div>
+
+            <!-- Locked State -->
+            <div v-else-if="currentSlot.locked" class="gfy-locked-intro">
+              <div class="gfy-locked-intro__badge">
+                <i class="fas fa-lock"></i>
+                LOCKED {{ activeSlotLabel.toUpperCase() }} INTRO
+              </div>
+              <div class="gfy-locked-intro__text">
+                <p v-for="(paragraph, pIdx) in currentSlot.lockedIntro.split('\n\n').filter(p => p.trim())" :key="pIdx">
+                  {{ paragraph }}
+                </p>
+              </div>
+              <div class="gfy-locked-intro__actions">
+                <button type="button" class="gfy-btn gfy-btn--outline" @click="handleCopy(currentSlot.lockedIntro)">
+                  <i class="fas fa-copy"></i> Copy
+                </button>
+                <button type="button" class="gfy-btn gfy-btn--ghost" @click="unlockIntro(activeSlot)">
+                  <i class="fas fa-unlock"></i> Unlock & Edit
+                </button>
+              </div>
+            </div>
+
+            <!-- Empty State -->
+            <div v-else-if="currentVariations.length === 0" class="gfy-empty-state">
+              <i class="fas fa-file-alt"></i>
+              <p>Click the button below to generate {{ getVariationCount(activeSlot) }} variations for your {{ activeSlotLabel }} introduction.</p>
+              <button
+                type="button"
+                class="gfy-btn gfy-btn--primary"
                 :disabled="isGenerating"
-                @click="handleRegenerate"
+                @click="handleGenerateForSlot(activeSlot)"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M23 4v6h-6M1 20v-6h6"/>
-                  <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
-                </svg>
-                Regenerate
+                <i class="fas fa-magic"></i>
+                Generate {{ activeSlotLabel }} Intro
               </button>
             </div>
-          </div>
 
-          <!-- Refinement Box -->
-          <div class="gfy-refinement-box">
-            <div class="gfy-refinement-header">
-              <svg class="gfy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-              </svg>
-              <span class="gfy-refinement-title">Refine Script</span>
-            </div>
-            <div class="gfy-refinement-input-wrapper">
-              <textarea
-                v-model="refinementText"
-                class="gfy-refinement-textarea"
-                rows="1"
-                placeholder="e.g., Make it sound more enthusiastic or mention the SaaS background first..."
-                :disabled="isRefining"
-              ></textarea>
+            <!-- Variations List -->
+            <template v-else>
+              <div
+                v-for="(variation, index) in currentVariations"
+                :key="variation.id"
+                class="gfy-intro-variation"
+              >
+                <div class="gfy-variation-badge">{{ variation.label }}</div>
+                <div class="gfy-variation-text">
+                  <p v-for="(paragraph, pIdx) in variation.text.split('\n\n').filter(p => p.trim())" :key="pIdx">
+                    {{ paragraph }}
+                  </p>
+                </div>
+                <div class="gfy-variation-footer">
+                  <button
+                    type="button"
+                    class="gfy-btn gfy-btn--primary"
+                    @click="handleLock(index)"
+                  >
+                    <i class="fas fa-lock"></i>
+                    Lock as {{ activeSlotLabel }} Intro
+                  </button>
+                  <button
+                    type="button"
+                    class="gfy-btn gfy-btn--outline"
+                    @click="handleCopy(variation.text)"
+                  >
+                    <i class="fas fa-copy"></i> Copy
+                  </button>
+                </div>
+              </div>
+            </template>
+
+            <!-- Footer Actions -->
+            <div class="gfy-results__footer">
               <button
                 type="button"
-                class="gfy-btn-refine"
-                :disabled="!refinementText.trim() || isRefining || selectedVariationIndex === null"
-                @click="handleRefine"
+                class="gfy-btn gfy-btn--primary gfy-btn--large"
+                :disabled="lockedCount === 0 || isSaving"
+                @click="handleSaveAll"
               >
-                <svg v-if="isRefining" class="gfy-icon gfy-icon--spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 12a9 9 0 11-6.219-8.56"/>
-                </svg>
-                <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M23 4v6h-6M1 20v-6h6"/>
-                  <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
-                </svg>
-                {{ isRefining ? 'Refining...' : 'Refine' }}
+                <i v-if="!isSaving" class="fas fa-save"></i>
+                <span v-else class="gfy-spinner"></span>
+                {{ isSaving ? 'Saving...' : 'Save Entire Toolkit' }}
+              </button>
+              <button type="button" class="gfy-btn gfy-btn--ghost" @click="handleStartOver">
+                Start Over
               </button>
             </div>
-            <p v-if="selectedVariationIndex === null" class="gfy-refinement-hint">
-              Select a variation below to refine it
-            </p>
-          </div>
 
-          <!-- Locked Intro Display -->
-          <div v-if="currentSlot.lockedIntro" class="gfy-intro-script gfy-intro-script--locked">
-            <div class="gfy-script-badge gfy-script-badge--locked">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
-              LOCKED INTRO
+            <!-- Save Success -->
+            <div v-if="saveSuccess" class="gfy-save-success">
+              <i class="fas fa-check-circle"></i>
+              Introductions saved successfully!
             </div>
-            <p class="gfy-script-text">{{ currentSlot.lockedIntro.text }}</p>
-            <div class="gfy-script-actions">
-              <button
-                type="button"
-                class="gfy-btn gfy-btn--outline"
-                @click="handleUnlock"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg>
-                Unlock
-              </button>
-              <button
-                type="button"
-                class="gfy-btn gfy-btn--outline"
-                @click="handleCopyLocked"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                Copy Script
-              </button>
+
+            <!-- Save Error -->
+            <div v-if="saveError" class="gfy-save-error">
+              <i class="fas fa-exclamation-triangle"></i>
+              {{ saveError }}
             </div>
-          </div>
-
-          <!-- Variations List -->
-          <div v-else-if="currentSlot.variations.length > 0" class="gfy-variations-list">
-            <div
-              v-for="(variation, index) in currentSlot.variations"
-              :key="variation.id"
-              class="gfy-intro-script"
-              :class="{ 'gfy-intro-script--selected': selectedVariationIndex === index }"
-              @click="selectVariation(index)"
-            >
-              <div class="gfy-script-badge">
-                VARIATION {{ index + 1 }}: {{ variation.label }}
-              </div>
-              <p class="gfy-script-text">{{ variation.text }}</p>
-              <div class="gfy-script-meta">
-                <span>{{ variation.wordCount }} words</span>
-              </div>
-              <div class="gfy-script-actions">
-                <button
-                  type="button"
-                  class="gfy-btn gfy-btn--primary"
-                  @click.stop="handleLock(index)"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
-                  Lock as {{ activeSlotConfig.label.split(' ')[0] }} Intro
-                </button>
-                <button
-                  type="button"
-                  class="gfy-btn gfy-btn--outline"
-                  @click.stop="handleCopy(index)"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                  Copy Script
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Empty State -->
-          <div v-else-if="currentSlot.status === 'generating'" class="gfy-empty-state">
-            <div class="gfy-spinner gfy-spinner--large"></div>
-            <p>Generating {{ activeSlotConfig.variationCount }} variations...</p>
-          </div>
-
-          <div v-else class="gfy-empty-state">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--gfy-text-muted)" stroke-width="1.5" style="margin-bottom: 16px;">
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
-            </svg>
-            <p>No variations generated yet for this length.</p>
-            <button
-              type="button"
-              class="gfy-btn gfy-btn--primary"
-              @click="handleGenerateSlot"
-            >
-              Generate {{ activeSlotConfig.variationCount }} Variations
-            </button>
-          </div>
-
-          <!-- Footer Actions -->
-          <div class="gfy-results__footer">
-            <button
-              type="button"
-              class="gfy-btn gfy-btn--primary gfy-btn--large"
-              :disabled="!hasAnyLocked || isSaving"
-              @click="handleSaveToProfile"
-            >
-              <svg v-if="isSaving" class="gfy-icon gfy-icon--spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 12a9 9 0 11-6.219-8.56"/>
-              </svg>
-              <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
-              </svg>
-              {{ isSaving ? 'Saving...' : 'Save All to Profile' }}
-            </button>
-            <button
-              type="button"
-              class="gfy-btn gfy-btn--text"
-              @click="handleStartOver"
-            >
-              Start Over
-            </button>
-          </div>
-
-          <!-- Save Success Message -->
-          <div v-if="saveSuccess" class="gfy-save-success">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--gfy-success-color)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-            Saved successfully!
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, inject, nextTick } from 'vue';
-import { useAIGuestIntro, LENGTH_SLOTS, TONE_OPTIONS, HOOK_STYLE_OPTIONS } from '../../src/composables/useAIGuestIntro';
-import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
-import { useImpactIntro } from '../../src/composables/useImpactIntro';
+import { ref, reactive, computed, watch, inject } from 'vue';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
 
+// Integrated mode components
+import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
+import AiToneSelector from '../../src/vue/components/ai/AiToneSelector.vue';
+import AiLengthSelector from '../../src/vue/components/ai/AiLengthSelector.vue';
+import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
+import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
+
+// Constants
+const SLOT_STATUS = {
+  EMPTY: 'empty',
+  GENERATING: 'generating',
+  READY: 'ready'
+};
+
+const TONE_OPTIONS = [
+  { value: 'professional', label: 'Professional' },
+  { value: 'conversational', label: 'Conversational' },
+  { value: 'enthusiastic', label: 'Enthusiastic' },
+  { value: 'authoritative', label: 'Authoritative' },
+  { value: 'warm', label: 'Warm & Welcoming' }
+];
+
+const HOOK_STYLE_OPTIONS = [
+  { value: 'question', label: 'Question Hook' },
+  { value: 'statistic', label: 'Statistic Hook' },
+  { value: 'problem', label: 'Problem Hook' },
+  { value: 'story', label: 'Story Hook' },
+  { value: 'direct', label: 'Direct Introduction' }
+];
+
 const props = defineProps({
+  mode: {
+    type: String,
+    default: 'default',
+    // 'embedded' mode is used by EmbeddedToolWrapper and renders like 'default' but without hero/button
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
+  },
+  intent: {
+    type: Object,
+    default: null
+  },
   profileData: {
     type: Object,
+    default: null
+  },
+  componentId: {
+    type: String,
     default: null
   }
 });
 
-const emit = defineEmits(['update:can-generate', 'generated', 'saved', 'applied']);
+const emit = defineEmits(['generated', 'saved', 'applied', 'update:can-generate', 'preview-update', 'authority-hook-update']);
 
 // Inject profile data from parent
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
 
-// Use composables
+// Profile context
 const {
-  isGenerating,
-  error,
-  guestName,
-  guestTitle,
-  episodeTitle,
-  topic,
-  tone,
-  hookStyle,
-  notes,
-  activeSlot,
-  slots,
-  currentSlot,
-  hasVariations,
-  hasAnyLocked,
-  lockedIntros,
-  canGenerate,
-  activeSlotConfig,
-  refinementText,
-  isRefining,
-  generateForSlot,
-  refineVariation,
-  regenerate,
-  lockVariation,
-  unlockSlot,
-  copyVariation,
-  copyLockedIntro,
-  loadFromProfileData,
-  getProfileSaveData,
-  reset
-} = useAIGuestIntro();
-
-// Authority Hook composable (syncs with store)
-const {
-  who: hookWho,
-  what: hookWhat,
-  when: hookWhen,
-  how: hookHow,
-  loadFromProfileData: loadAuthorityHookFromProfile
-} = useAuthorityHook();
-
-// Impact Intro composable
-const {
-  credentials: impactCredentials,
-  achievements: impactAchievements,
-  credentialsSummary,
-  achievementsSummary,
-  loadFromProfileData: loadImpactIntroFromProfile
-} = useImpactIntro();
-
-// Profile context for saving
-const {
+  profileId,
   isSaving,
   saveError,
   saveToProfile
 } = useProfileContext();
 
-// Local state
+// Form State
+const guestInfo = reactive({
+  name: '',
+  titleCompany: ''
+});
+
+const episodeInfo = reactive({
+  title: '',
+  topic: ''
+});
+
+const authorityHook = reactive({
+  who: '',
+  what: '',
+  when: '',
+  how: ''
+});
+
+const impactIntro = reactive({
+  where: '',
+  why: ''
+});
+
+const tone = ref('professional');
+const hookStyle = ref('question');
+const refinementFeedback = ref('');
+
+// Slots state (Short, Medium, Long)
+const slots = reactive({
+  short: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY },
+  medium: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY },
+  long: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY }
+});
+
+const activeSlot = ref('short');
+const isGenerating = ref(false);
+const error = ref(null);
 const showResults = ref(false);
 const saveSuccess = ref(false);
-const selectedVariationIndex = ref(null);
-const selectedProfileId = ref(null);
-const containerRef = ref(null);
 
-// Local form fields for credentials/mission (synced with composable)
-const credentials = computed({
-  get: () => credentialsSummary.value,
-  set: (val) => {
-    // Parse comma-separated string into array
-    const arr = val ? val.split(',').map(s => s.trim()).filter(s => s) : [];
-    impactCredentials.value = arr;
-  }
+// Integrated mode state
+const authorityHookTextCompact = ref('');
+const integratedLength = ref('medium');
+
+// Computed
+const currentSlot = computed(() => slots[activeSlot.value]);
+const currentVariations = computed(() => currentSlot.value?.variations || []);
+
+const authorityHookSummary = computed(() => {
+  const { who, what, when, how } = authorityHook;
+  if (!who?.trim() || !what?.trim()) return '';
+  let summary = `I help ${who.trim()} ${what.trim()}`;
+  if (when?.trim()) summary += ` ${when.trim()}`;
+  if (how?.trim()) summary += ` ${how.trim()}`;
+  return summary + '.';
 });
 
-const mission = computed({
-  get: () => achievementsSummary.value,
-  set: (val) => {
-    // Parse comma-separated string into array
-    const arr = val ? val.split(',').map(s => s.trim()).filter(s => s) : [];
-    impactAchievements.value = arr;
-  }
+const impactIntroSummary = computed(() => {
+  const { where, why } = impactIntro;
+  const parts = [];
+  if (where?.trim()) parts.push(where.trim());
+  if (why?.trim()) parts.push(`I'm on a mission to ${why.trim()}`);
+  return parts.join(' ');
 });
 
-// Computed: resolved profile ID
-const resolvedProfileId = computed(() => {
-  return props.profileData?.id
-    || injectedProfileData.value?.id
-    || null;
+const canGenerate = computed(() => {
+  return guestInfo.name.trim() && (
+    authorityHook.who.trim() || authorityHook.what.trim() ||
+    impactIntro.where.trim() || impactIntro.why.trim()
+  );
 });
 
-// Keep profile ID in sync
-watch(resolvedProfileId, (newId) => {
-  selectedProfileId.value = newId;
-}, { immediate: true });
+const canGenerateIntegrated = computed(() => {
+  return guestInfo.name.trim() && authorityHookTextCompact.value.trim();
+});
 
-// Computed: locked count
 const lockedCount = computed(() => {
-  return Object.values(slots).filter(s => s.lockedIntro).length;
+  return Object.values(slots).filter(s => s.locked).length;
 });
 
-/**
- * Populate form from profile data
- */
-function populateFromProfile(profileData) {
-  if (!profileData) return;
+const hasVariations = computed(() => {
+  return Object.values(slots).some(s => s.variations.length > 0 || s.locked);
+});
 
-  // Load guest intro data (name, title, existing intros)
-  loadFromProfileData(profileData);
+const activeSlotLabel = computed(() => {
+  const labels = { short: 'Short', medium: 'Medium', long: 'Long' };
+  return labels[activeSlot.value] || 'Short';
+});
 
-  // Load Authority Hook fields (who/what/when/how)
-  loadAuthorityHookFromProfile(profileData);
+const currentIntro = computed(() => {
+  const slot = slots[activeSlot.value];
+  return slot?.lockedIntro || (slot?.variations[0]?.text || null);
+});
 
-  // Load Impact Intro fields (credentials/achievements)
-  // This syncs to the store and our computed credentials/mission will reflect the values
-  loadImpactIntroFromProfile(profileData);
+// Helper functions
+function getVariationCount(slotName) {
+  return slotName === 'short' ? 2 : slotName === 'medium' ? 3 : 2;
 }
 
-/**
- * Select a slot
- */
-function selectSlot(slotId) {
-  activeSlot.value = slotId;
-  selectedVariationIndex.value = null;
-
-  // Auto-generate if slot is empty
-  if (slots[slotId].status === 'empty' && canGenerate.value) {
-    handleGenerateSlot();
+function getSlotPreview(slotName) {
+  const slot = slots[slotName];
+  if (slot.locked && slot.lockedIntro) {
+    return slot.lockedIntro.substring(0, 80) + '...';
   }
-}
-
-/**
- * Select a variation for refinement
- */
-function selectVariation(index) {
-  selectedVariationIndex.value = selectedVariationIndex.value === index ? null : index;
-}
-
-/**
- * Handle initial generate
- */
-async function handleGenerate() {
-  showResults.value = true;
-
-  // Scroll to top of results after DOM updates
-  await nextTick();
-  if (containerRef.value) {
-    containerRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (slot.variations.length > 0) {
+    return slot.variations[0].text.substring(0, 80) + '...';
   }
-
-  await generateForSlot('short');
-  emit('generated', { slots });
+  return 'Click to generate variations';
 }
 
-/**
- * Handle generate for current slot
- */
-async function handleGenerateSlot() {
-  await generateForSlot(activeSlot.value);
+function setActiveSlot(slotName) {
+  activeSlot.value = slotName;
 }
 
-/**
- * Handle regenerate
- */
-async function handleRegenerate() {
-  selectedVariationIndex.value = null;
-  await regenerate();
-}
+// API call to generate introductions
+async function generateForSlot(slotName) {
+  const slot = slots[slotName];
+  slot.status = SLOT_STATUS.GENERATING;
+  isGenerating.value = true;
+  error.value = null;
 
-/**
- * Handle refine
- */
-async function handleRefine() {
-  if (selectedVariationIndex.value === null) return;
-  await refineVariation(selectedVariationIndex.value, refinementText.value);
-}
-
-/**
- * Handle lock variation
- */
-function handleLock(index) {
-  lockVariation(index);
-  selectedVariationIndex.value = null;
-}
-
-/**
- * Handle unlock
- */
-function handleUnlock() {
-  unlockSlot();
-}
-
-/**
- * Handle copy variation
- */
-async function handleCopy(index) {
-  await copyVariation(index);
-}
-
-/**
- * Handle copy locked intro
- */
-async function handleCopyLocked() {
-  await copyLockedIntro();
-}
-
-/**
- * Handle save to profile
- */
-async function handleSaveToProfile() {
   try {
-    const saveData = getProfileSaveData();
+    // Build the prompt context
+    const context = {
+      guestName: guestInfo.name,
+      titleCompany: guestInfo.titleCompany,
+      episodeTitle: episodeInfo.title,
+      episodeTopic: episodeInfo.topic,
+      authorityHook: authorityHookSummary.value,
+      impactIntro: impactIntroSummary.value,
+      who: authorityHook.who,
+      what: authorityHook.what,
+      when: authorityHook.when,
+      how: authorityHook.how,
+      where: impactIntro.where,
+      why: impactIntro.why,
+      tone: tone.value,
+      hookStyle: hookStyle.value,
+      length: slotName
+    };
 
-    await saveToProfile('guest_intro', saveData, {
-      profileId: selectedProfileId.value
+    // Call the API
+    const response = await fetch('/wp-json/mkcg/v1/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        generator: 'guest-intro',
+        context,
+        count: getVariationCount(slotName)
+      })
     });
 
-    saveSuccess.value = true;
-    setTimeout(() => { saveSuccess.value = false; }, 3000);
+    if (!response.ok) {
+      throw new Error(`Generation failed: ${response.status}`);
+    }
 
-    emit('saved', {
-      profileId: selectedProfileId.value,
-      intros: saveData
+    const data = await response.json();
+
+    // Process variations
+    slot.variations = (data.variations || data.results || []).map((text, idx) => ({
+      id: `${slotName}-${Date.now()}-${idx}`,
+      label: `Option ${idx + 1}`,
+      text: typeof text === 'string' ? text : text.content || text.text || ''
+    }));
+
+    slot.status = SLOT_STATUS.READY;
+
+    emit('generated', { slot: slotName, variations: slot.variations });
+  } catch (err) {
+    console.error('[GuestIntroGenerator] Generation failed:', err);
+    error.value = err.message || 'Failed to generate introductions. Please try again.';
+    slot.status = SLOT_STATUS.EMPTY;
+  } finally {
+    isGenerating.value = false;
+  }
+}
+
+async function refineVariations(feedback) {
+  const slot = currentSlot.value;
+  slot.status = SLOT_STATUS.GENERATING;
+  isGenerating.value = true;
+  error.value = null;
+
+  try {
+    const response = await fetch('/wp-json/mkcg/v1/refine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        generator: 'guest-intro',
+        feedback,
+        currentVariations: slot.variations.map(v => v.text),
+        context: {
+          guestName: guestInfo.name,
+          authorityHook: authorityHookSummary.value,
+          length: activeSlot.value
+        }
+      })
     });
+
+    if (!response.ok) {
+      throw new Error(`Refinement failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    slot.variations = (data.variations || data.results || []).map((text, idx) => ({
+      id: `${activeSlot.value}-${Date.now()}-${idx}`,
+      label: `Option ${idx + 1}`,
+      text: typeof text === 'string' ? text : text.content || text.text || ''
+    }));
+
+    slot.status = SLOT_STATUS.READY;
+    refinementFeedback.value = '';
+  } catch (err) {
+    console.error('[GuestIntroGenerator] Refinement failed:', err);
+    error.value = err.message || 'Failed to refine introductions. Please try again.';
+    slot.status = SLOT_STATUS.READY;
+  } finally {
+    isGenerating.value = false;
+  }
+}
+
+function lockIntro(variationIndex) {
+  const slot = currentSlot.value;
+  const variation = slot.variations[variationIndex];
+  if (variation) {
+    slot.lockedIntro = variation.text;
+    slot.locked = true;
+  }
+}
+
+function unlockIntro(slotName) {
+  const slot = slots[slotName];
+  slot.locked = false;
+  slot.lockedIntro = '';
+}
+
+function getLockedIntros() {
+  const locked = {};
+  Object.entries(slots).forEach(([name, slot]) => {
+    if (slot.locked && slot.lockedIntro) {
+      locked[name] = slot.lockedIntro;
+    }
+  });
+  return locked;
+}
+
+async function copyIntro(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (err) {
+    console.error('[GuestIntroGenerator] Copy failed:', err);
+    return false;
+  }
+}
+
+function reset() {
+  Object.keys(slots).forEach(key => {
+    slots[key] = { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY };
+  });
+  activeSlot.value = 'short';
+  refinementFeedback.value = '';
+  error.value = null;
+  saveSuccess.value = false;
+}
+
+// Event Handlers
+async function handleStartGeneration() {
+  showResults.value = true;
+  await handleGenerateForSlot('short');
+}
+
+async function handleSlotClick(slotName) {
+  setActiveSlot(slotName);
+  if (slots[slotName].status === SLOT_STATUS.EMPTY) {
+    await handleGenerateForSlot(slotName);
+  }
+}
+
+async function handleGenerateForSlot(slotName) {
+  try {
+    await generateForSlot(slotName);
+  } catch (err) {
+    console.error('[GuestIntroGenerator] Generation failed:', err);
+  }
+}
+
+async function handleRefine() {
+  if (!refinementFeedback.value.trim()) return;
+  try {
+    await refineVariations(refinementFeedback.value);
+  } catch (err) {
+    console.error('[GuestIntroGenerator] Refinement failed:', err);
+  }
+}
+
+function handleLock(variationIndex) {
+  lockIntro(variationIndex);
+}
+
+async function handleCopy(text) {
+  const success = await copyIntro(text);
+  if (success) {
+    // Could show a toast notification here
+  }
+}
+
+async function handleSaveAll() {
+  const lockedIntros = getLockedIntros();
+  if (Object.keys(lockedIntros).length === 0) return;
+
+  try {
+    const saveData = {};
+    if (lockedIntros.short) saveData.guest_intro_short = lockedIntros.short;
+    if (lockedIntros.medium) saveData.guest_intro = lockedIntros.medium;
+    if (lockedIntros.long) saveData.guest_intro_long = lockedIntros.long;
+
+    const result = await saveToProfile('guest-intro', saveData, {
+      profileId: profileId.value
+    });
+
+    if (result?.success) {
+      saveSuccess.value = true;
+      setTimeout(() => { saveSuccess.value = false; }, 3000);
+      emit('saved', { introductions: lockedIntros });
+    }
   } catch (err) {
     console.error('[GuestIntroGenerator] Save failed:', err);
   }
 }
 
-/**
- * Handle start over - resets results but preserves profile-loaded form data
- */
 function handleStartOver() {
-  // Reset only the generation results, not the form
+  reset();
   showResults.value = false;
-  selectedVariationIndex.value = null;
+}
 
-  // Reset slots to empty state (clears generated variations and locked intros)
-  Object.keys(slots).forEach(slotId => {
-    slots[slotId].status = 'empty';
-    slots[slotId].variations = [];
-    slots[slotId].lockedIntro = null;
-    slots[slotId].preview = `Click to generate ${slots[slotId].variationCount || 5} variations`;
+// Integrated mode handlers
+async function handleGenerateIntegrated() {
+  authorityHook.who = authorityHookTextCompact.value;
+  setActiveSlot(integratedLength.value);
+  await generateForSlot(integratedLength.value);
+}
+
+function handleApply() {
+  emit('applied', {
+    componentId: props.componentId,
+    content: currentIntro.value,
+    length: activeSlot.value
   });
+}
 
-  // Re-populate form from profile data if available
-  const profileData = props.profileData || injectedProfileData.value;
-  if (profileData) {
-    populateFromProfile(profileData);
+// Handle generate (called by EmbeddedToolApp)
+async function handleGenerate() {
+  try {
+    await handleStartGeneration();
+    const intro = currentIntro.value;
+    emit('generated', {
+      content: intro,
+      hook: intro,
+      result: intro
+    });
+    return intro;
+  } catch (err) {
+    console.error('[GuestIntroGenerator] Generation failed:', err);
+    throw err;
   }
 }
 
-// Watch canGenerate changes
+// Profile data population
+function populateFromProfile(data) {
+  if (!data) return;
+
+  console.log('[GuestIntroGenerator] Populating from profile:', data);
+
+  // Guest info - always update from profile (overwrite existing)
+  const firstName = data.first_name || '';
+  const lastName = data.last_name || '';
+  const fullName = data.full_name || [firstName, lastName].filter(Boolean).join(' ');
+  if (fullName) {
+    guestInfo.name = fullName;
+  }
+
+  // Title & Company
+  const title = data.guest_title || data.title || '';
+  const company = data.company || data.organization || '';
+  if (title || company) {
+    guestInfo.titleCompany = company && title ? `${title} at ${company}` : (title || company);
+  }
+
+  // Authority Hook components (profile uses hook_who, hook_what, etc.)
+  const hookWho = data.hook_who || data.authority_who || data.who || '';
+  const hookWhat = data.hook_what || data.authority_what || data.what || '';
+  const hookWhen = data.hook_when || data.authority_when || data.when || '';
+  const hookHow = data.hook_how || data.authority_how || data.how || '';
+
+  if (hookWho) authorityHook.who = hookWho;
+  if (hookWhat) authorityHook.what = hookWhat;
+  if (hookWhen) authorityHook.when = hookWhen;
+  if (hookHow) authorityHook.how = hookHow;
+
+  // Impact Intro components (WHERE = credentials, WHY = mission)
+  // Profile uses hook_where and hook_why as part of 6 W's framework
+  const impactWhere = data.hook_where || data.impact_where || data.where || data.credentials || '';
+  const impactWhy = data.hook_why || data.impact_why || data.why || data.mission || data.why_book_you || '';
+
+  if (impactWhere) impactIntro.where = impactWhere;
+  if (impactWhy) impactIntro.why = impactWhy;
+
+  // Emit authority hook data for parent components
+  emit('authority-hook-update', {
+    who: authorityHook.who,
+    what: authorityHook.what,
+    when: authorityHook.when,
+    how: authorityHook.how,
+    complete: authorityHookSummary.value
+  });
+}
+
+// Watchers
+watch(injectedProfileData, (newData) => {
+  if (newData) {
+    populateFromProfile(newData);
+  }
+}, { immediate: true });
+
+watch(() => props.profileData, (newData) => {
+  if (newData) {
+    populateFromProfile(newData);
+  }
+}, { immediate: true });
+
 watch(canGenerate, (newValue) => {
   emit('update:can-generate', !!newValue);
 }, { immediate: true });
 
-// Watch profile data
-watch(
-  [() => props.profileData, injectedProfileData],
-  ([propsData, injectedData]) => {
-    const data = propsData || injectedData;
-    if (data) populateFromProfile(data);
-  },
-  { immediate: true }
-);
+// Emit preview updates when authority hook changes
+watch(authorityHookSummary, (newValue) => {
+  if (newValue) {
+    emit('preview-update', { previewHtml: newValue });
+  }
+});
 
 // Expose for parent
 defineExpose({
+  handleStartGeneration,
   handleGenerate,
   showResults,
-  slots,
-  hasAnyLocked,
   isGenerating,
-  error
+  error,
+  canGenerate
 });
 </script>
 
 <style scoped>
-.gfy-guest-intro-generator {
+.gfy-intro-generator {
   --gfy-primary-color: #2563eb;
   --gfy-primary-light: #eff6ff;
   --gfy-primary-dark: #1d4ed8;
+  --gfy-success-color: #10b981;
+  --gfy-success-light: #d1fae5;
   --gfy-text-primary: #0f172a;
   --gfy-text-secondary: #64748b;
   --gfy-text-muted: #94a3b8;
   --gfy-bg-color: #f8fafc;
-  --gfy-bg-secondary: #f9fafb;
   --gfy-white: #ffffff;
   --gfy-border-color: #e2e8f0;
-  --gfy-success-color: #10b981;
-  --gfy-warning-color: #f59e0b;
   --gfy-radius-md: 8px;
   --gfy-radius-lg: 12px;
 
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 20px;
 }
 
-/* ============================================
-   FORM STYLES
-   ============================================ */
-.gfy-intro-form {
-  padding: 20px 0;
+/* HERO */
+.gfy-intro-hero {
+  text-align: center;
+  margin-bottom: 40px;
 }
 
-.gfy-input-group {
-  margin-bottom: 2rem;
+.gfy-intro-hero--compact {
+  margin-bottom: 30px;
 }
 
-.gfy-label {
-  display: block;
-  font-size: 0.95rem;
+.gfy-intro-hero__title {
+  font-size: 36px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  background: linear-gradient(to right, #0f172a, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gfy-intro-hero__subtitle {
+  color: var(--gfy-text-secondary);
+  font-size: 1.1rem;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* FORM CONTAINER */
+.gfy-intro-form__container {
+  background: var(--gfy-white);
+  border-radius: 16px;
+  border: 1px solid var(--gfy-border-color);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  padding: 40px;
+}
+
+.gfy-intro-form__container--embedded {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* FORM SECTIONS */
+.gfy-form-section {
+  margin-bottom: 32px;
+}
+
+.gfy-form-section__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.gfy-form-section__step {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--gfy-primary-color);
+  color: var(--gfy-white);
+  font-size: 14px;
   font-weight: 700;
-  margin-bottom: 1rem;
-  color: var(--gfy-text-primary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
+.gfy-form-section__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gfy-text-primary);
+  margin: 0 0 4px 0;
+}
+
+.gfy-form-section__subtitle {
+  font-size: 0.9rem;
+  color: var(--gfy-text-secondary);
+  margin: 0;
+}
+
+/* FORM GRID */
+.gfy-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 600px) {
+  .gfy-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* FORM GROUPS */
+.gfy-form-group {
+  margin-bottom: 0;
+}
+
+.gfy-form-group--inline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gfy-form-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--gfy-text-primary);
+  margin-bottom: 8px;
+}
+
+.gfy-form-label--required::after {
+  content: ' *';
+  color: #dc2626;
+}
+
+.gfy-form-input,
+.gfy-form-textarea,
+.gfy-form-select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-md);
+  font-family: inherit;
+  font-size: 0.95rem;
+  background: var(--gfy-white);
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.gfy-form-input:focus,
+.gfy-form-textarea:focus,
+.gfy-form-select:focus {
+  outline: none;
+  border-color: var(--gfy-primary-color);
+  box-shadow: 0 0 0 3px var(--gfy-primary-light);
+}
+
+.gfy-form-input::placeholder,
+.gfy-form-textarea::placeholder {
+  color: var(--gfy-text-muted);
+}
+
+/* HIGHLIGHT BOXES */
+.gfy-highlight-box {
+  background: var(--gfy-white);
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-lg);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.gfy-highlight-box--blue {
+  border-left: 4px solid var(--gfy-primary-color);
+  background: linear-gradient(to right, var(--gfy-primary-light), var(--gfy-white));
+}
+
+.gfy-highlight-box--green {
+  border-left: 4px solid var(--gfy-success-color);
+  background: linear-gradient(to right, var(--gfy-success-light), var(--gfy-white));
+}
+
+.gfy-highlight-box__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.gfy-highlight-box__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gfy-text-primary);
+  margin: 0 0 4px 0;
+}
+
+.gfy-highlight-box__subtitle {
+  font-size: 0.9rem;
+  color: var(--gfy-text-secondary);
+  margin: 0;
+}
+
+/* BUILDER GRID */
 .gfy-builder {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
 }
 
-.gfy-builder__field {
-  margin-bottom: 0.5rem;
+.gfy-builder--two-col {
+  grid-template-columns: 1fr;
 }
 
 .gfy-builder__field--full {
-  grid-column: span 2;
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 600px) {
+  .gfy-builder {
+    grid-template-columns: 1fr;
+  }
+}
+
+.gfy-builder__field {
+  margin-bottom: 0;
 }
 
 .gfy-builder__label {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
   color: var(--gfy-text-secondary);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+}
+
+.gfy-builder__label-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--gfy-primary-color);
+  color: var(--gfy-white);
+  border-radius: 4px;
+}
+
+.gfy-builder__label-badge--green {
+  background: var(--gfy-success-color);
 }
 
 .gfy-builder__input,
-.gfy-select,
-.gfy-textarea {
+.gfy-builder__textarea {
   width: 100%;
-  padding: 12px;
+  padding: 12px 14px;
   border: 1px solid var(--gfy-border-color);
-  border-radius: 6px;
-  font-size: 14px;
-  background: var(--gfy-white);
+  border-radius: var(--gfy-radius-md);
   font-family: inherit;
+  font-size: 0.95rem;
+  background: var(--gfy-white);
   box-sizing: border-box;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .gfy-builder__input:focus,
-.gfy-select:focus,
-.gfy-textarea:focus {
+.gfy-builder__textarea:focus {
   outline: none;
   border-color: var(--gfy-primary-color);
   box-shadow: 0 0 0 3px var(--gfy-primary-light);
 }
 
 .gfy-builder__input::placeholder,
-.gfy-textarea::placeholder {
+.gfy-builder__textarea::placeholder {
   color: var(--gfy-text-muted);
 }
 
-.gfy-textarea {
-  resize: vertical;
-  min-height: 60px;
-}
-
-/* Section Divider */
-.section-divider {
-  height: 1px;
-  background: var(--gfy-border-color);
-  margin: 2.5rem 0;
-  position: relative;
-}
-
-.section-divider span {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: var(--gfy-white);
-  padding: 0 15px;
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--gfy-text-secondary);
-  text-transform: uppercase;
-}
-
-/* Highlight Boxes */
-.gfy-highlight-box {
-  background: var(--gfy-white);
-  border: 1px solid var(--gfy-border-color);
-  border-left: 4px solid var(--gfy-primary-color);
-  padding: 1.5rem;
+/* LIVE PREVIEW */
+.gfy-live-preview {
+  margin-top: 16px;
+  padding: 14px 18px;
+  background: var(--gfy-primary-light);
+  border: 1px solid #bfdbfe;
   border-radius: var(--gfy-radius-md);
+  font-size: 0.95rem;
+  font-style: italic;
+  color: var(--gfy-primary-dark);
 }
 
-.gfy-highlight-box--blue {
-  border-left-color: var(--gfy-primary-color);
+.gfy-live-preview--green {
+  background: var(--gfy-success-light);
+  border-color: #6ee7b7;
+  color: #047857;
 }
 
-.gfy-highlight-box--green {
-  border-left-color: var(--gfy-success-color);
+.gfy-live-preview__label {
+  font-weight: 600;
+  font-style: normal;
+  margin-right: 4px;
 }
 
-.gfy-highlight-box__header {
+/* SETTINGS ROW */
+.gfy-settings-row {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: 24px;
+  margin-bottom: 24px;
 }
 
-.gfy-highlight-box__title {
-  font-size: 1rem;
-  font-weight: 700;
-  margin: 0;
+@media (max-width: 600px) {
+  .gfy-settings-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
+/* FORM ACTIONS */
+.gfy-form-actions {
+  text-align: center;
+  padding-top: 16px;
+}
+
+.gfy-form-actions__hint {
+  font-size: 0.85rem;
+  color: var(--gfy-text-muted);
+  margin-top: 12px;
+}
+
+/* BUTTONS */
+.gfy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: var(--gfy-radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.gfy-btn--primary {
+  background: var(--gfy-primary-color);
+  color: var(--gfy-white);
+}
+
+.gfy-btn--primary:hover:not(:disabled) {
+  background: var(--gfy-primary-dark);
+}
+
+.gfy-btn--primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.gfy-btn--outline {
+  background: var(--gfy-white);
+  border-color: var(--gfy-border-color);
+  color: var(--gfy-text-secondary);
+}
+
+.gfy-btn--outline:hover {
+  border-color: var(--gfy-primary-color);
+  color: var(--gfy-primary-color);
+  background: var(--gfy-primary-light);
+}
+
+.gfy-btn--ghost {
+  background: transparent;
+  color: var(--gfy-text-secondary);
+  border: none;
+}
+
+.gfy-btn--ghost:hover {
   color: var(--gfy-text-primary);
 }
 
-.gfy-highlight-box__icon {
-  font-size: 1.2rem;
+.gfy-btn--large {
+  padding: 0.875rem 1.5rem;
+  font-size: 1rem;
 }
 
-.gfy-highlight-box__icon--gold {
-  color: var(--gfy-warning-color);
+.gfy-btn--generate {
+  padding: 16px 32px;
+  font-size: 1.1rem;
+  border-radius: 10px;
 }
 
-.gfy-highlight-box__icon--green {
-  color: var(--gfy-success-color);
+/* SPINNER */
+.gfy-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 0.8s linear infinite;
 }
 
-/* Error Box */
+.gfy-spinner--small {
+  width: 12px;
+  height: 12px;
+  border-width: 2px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ERROR BOX */
 .gfy-error-box {
-  margin-top: 1.5rem;
-  padding: 1.25rem;
+  margin-top: 24px;
+  padding: 20px;
   background: #fef2f2;
   border: 1px solid #fecaca;
   border-radius: var(--gfy-radius-md);
   text-align: center;
+  color: #991b1b;
+}
+
+.gfy-error-box i {
+  font-size: 24px;
+  margin-bottom: 8px;
 }
 
 .gfy-error-box p {
-  color: #991b1b;
-  margin: 0 0 1rem 0;
+  margin: 0 0 12px 0;
 }
 
 /* ============================================
-   RESULTS LAYOUT
+   RESULTS PHASE
    ============================================ */
-.gfy-intro-results {
-  padding: 20px 0;
+
+.gmkb-tool-embed {
+  background: var(--gfy-white);
+  border-radius: 16px;
+  border: 1px solid var(--gfy-border-color);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }
 
 .gfy-results-layout {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  padding: 40px;
 }
 
 @media (min-width: 900px) {
@@ -897,7 +1558,7 @@ defineExpose({
   }
 }
 
-/* Sidebar */
+/* SIDEBAR */
 .gfy-current-topics {
   background: var(--gfy-bg-color);
   border: 1px solid var(--gfy-border-color);
@@ -917,8 +1578,9 @@ defineExpose({
   margin: 0;
 }
 
-/* Bio Slot Buttons */
-.gfy-bio-slot {
+/* INTRO SLOTS */
+.gfy-intro-slot {
+  display: block;
   width: 100%;
   padding: 1rem;
   background: var(--gfy-white);
@@ -930,60 +1592,62 @@ defineExpose({
   text-align: left;
 }
 
-.gfy-bio-slot:hover {
+.gfy-intro-slot:hover {
   border-color: var(--gfy-primary-color);
 }
 
-.gfy-bio-slot--active {
+.gfy-intro-slot--active {
   border-color: var(--gfy-primary-color);
   box-shadow: 0 0 0 2px var(--gfy-primary-color);
 }
 
-.gfy-bio-slot--locked {
+.gfy-intro-slot--locked {
   background: var(--gfy-primary-light);
   border-color: var(--gfy-primary-color);
 }
 
-.gfy-bio-slot__header {
+.gfy-intro-slot--generating {
+  opacity: 0.7;
+}
+
+.gfy-intro-slot__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
 }
 
-.gfy-bio-slot__label {
+.gfy-intro-slot__label {
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
   color: var(--gfy-text-secondary);
 }
 
-.gfy-bio-slot--locked .gfy-bio-slot__label {
+.gfy-intro-slot--locked .gfy-intro-slot__label {
   color: var(--gfy-primary-color);
 }
 
-.gfy-bio-slot__preview {
+.gfy-intro-slot__preview {
   font-size: 11px;
   line-height: 1.4;
   color: var(--gfy-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.gfy-sidebar-summary {
-  margin-top: 1rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--gfy-border-color);
+.gfy-locked-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--gfy-primary-light);
+  border-radius: var(--gfy-radius-md);
   font-size: 0.85rem;
-}
-
-.gfy-sidebar-locked {
-  color: var(--gfy-primary-color);
   font-weight: 600;
+  color: var(--gfy-primary-color);
+  margin-top: 12px;
 }
 
-/* Results Header */
+/* MAIN AREA */
 .gfy-results__header {
   display: flex;
   justify-content: space-between;
@@ -999,18 +1663,33 @@ defineExpose({
   margin: 0;
 }
 
-.gfy-results__actions {
+/* INTRO TIP */
+.gfy-intro-tip {
   display: flex;
-  gap: 0.75rem;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: var(--gfy-radius-md);
+  font-size: 0.9rem;
+  color: #92400e;
+  margin-bottom: 1.5rem;
 }
 
-/* Refinement Box */
+.gfy-intro-tip i {
+  color: #d97706;
+}
+
+/* REFINEMENT BOX */
 .gfy-refinement-box {
-  background: linear-gradient(to bottom right, var(--gfy-white), var(--gfy-bg-color));
+  background: var(--gfy-white);
   border: 1px solid var(--gfy-border-color);
-  border-radius: var(--gfy-radius-lg);
+  border-radius: 12px;
   padding: 20px;
   margin-bottom: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  background: linear-gradient(to bottom right, var(--gfy-white), var(--gfy-bg-color));
 }
 
 .gfy-refinement-header {
@@ -1025,36 +1704,38 @@ defineExpose({
   font-weight: 800;
   color: var(--gfy-primary-color);
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .gfy-refinement-input-wrapper {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  position: relative;
 }
 
 .gfy-refinement-textarea {
-  flex: 1;
-  min-height: 44px;
-  padding: 12px 16px;
+  width: 100%;
+  padding: 14px 110px 14px 16px;
   border: 2px solid var(--gfy-border-color);
   border-radius: 10px;
   font-family: inherit;
   font-size: 14px;
   background: var(--gfy-white);
   box-sizing: border-box;
-  resize: vertical;
-  line-height: 1.5;
+  transition: all 0.2s;
+  resize: none;
+  min-height: 52px;
 }
 
 .gfy-refinement-textarea:focus {
   outline: none;
   border-color: var(--gfy-primary-color);
+  box-shadow: 0 0 0 4px var(--gfy-primary-light);
 }
 
 .gfy-btn-refine {
-  flex-shrink: 0;
-  height: 44px;
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  bottom: 6px;
   padding: 0 16px;
   background: var(--gfy-primary-color);
   color: white;
@@ -1063,11 +1744,10 @@ defineExpose({
   font-weight: 700;
   font-size: 13px;
   cursor: pointer;
+  transition: background 0.2s;
   display: flex;
   align-items: center;
   gap: 6px;
-  transition: background 0.2s;
-  white-space: nowrap;
 }
 
 .gfy-btn-refine:hover:not(:disabled) {
@@ -1080,217 +1760,195 @@ defineExpose({
 }
 
 .gfy-refinement-hint {
-  margin: 8px 0 0;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--gfy-text-muted);
+  margin-top: 8px;
+  display: block;
   font-style: italic;
 }
 
-/* Intro Script Box */
-.gfy-intro-script {
+/* STATES */
+.gfy-loading-state,
+.gfy-empty-state {
+  text-align: center;
+  padding: 60px 40px;
+  color: var(--gfy-text-secondary);
+}
+
+.gfy-loading-state i,
+.gfy-empty-state i {
+  font-size: 48px;
+  color: var(--gfy-text-muted);
+  margin-bottom: 16px;
+}
+
+.gfy-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--gfy-border-color);
+  border-radius: 50%;
+  border-top-color: var(--gfy-primary-color);
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+/* LOCKED STATE */
+.gfy-locked-intro {
+  background: var(--gfy-primary-light);
+  border: 2px solid var(--gfy-primary-color);
+  border-radius: var(--gfy-radius-lg);
+  padding: 24px;
+}
+
+.gfy-locked-intro__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--gfy-primary-color);
+  background: var(--gfy-white);
+  padding: 4px 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.gfy-locked-intro__text {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--gfy-text-primary);
+  margin: 0 0 20px 0;
+}
+
+.gfy-locked-intro__text p {
+  margin: 0 0 1em 0;
+}
+
+.gfy-locked-intro__text p:last-child {
+  margin-bottom: 0;
+}
+
+.gfy-locked-intro__actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* VARIATIONS */
+.gfy-intro-variation {
   padding: 2rem;
   background: var(--gfy-white);
   border: 1px solid var(--gfy-border-color);
   border-radius: 10px;
   margin-bottom: 1.5rem;
-  line-height: 1.8;
-  cursor: pointer;
-  transition: all 0.2s;
+  position: relative;
+  transition: border-color 0.2s;
 }
 
-.gfy-intro-script:hover {
+.gfy-intro-variation:hover {
   border-color: var(--gfy-primary-color);
 }
 
-.gfy-intro-script--selected {
-  border-color: var(--gfy-primary-color);
-  box-shadow: 0 0 0 2px var(--gfy-primary-light);
-}
-
-.gfy-intro-script--locked {
-  background: var(--gfy-primary-light);
-  border-color: var(--gfy-primary-color);
-  cursor: default;
-}
-
-.gfy-script-badge {
+.gfy-variation-badge {
   font-size: 10px;
   font-weight: 800;
   color: var(--gfy-primary-color);
   background: var(--gfy-primary-light);
-  padding: 2px 8px;
+  padding: 4px 10px;
   border-radius: 4px;
   margin-bottom: 12px;
   display: inline-block;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.gfy-script-badge--locked {
-  background: var(--gfy-primary-color);
-  color: var(--gfy-white);
-}
-
-.gfy-script-text {
-  font-size: 16px;
+.gfy-variation-text {
+  font-size: 15px;
+  line-height: 1.7;
   color: var(--gfy-text-primary);
-  font-style: italic;
-  margin: 0 0 16px 0;
+  margin: 0 0 20px;
 }
 
-.gfy-script-meta {
-  font-size: 12px;
-  color: var(--gfy-text-muted);
-  margin-bottom: 16px;
+.gfy-variation-text p {
+  margin: 0 0 1em 0;
 }
 
-.gfy-script-actions {
+.gfy-variation-text p:last-child {
+  margin-bottom: 0;
+}
+
+.gfy-variation-footer {
   display: flex;
   gap: 10px;
-  flex-wrap: wrap;
+  padding-top: 15px;
+  border-top: 1px solid #f1f5f9;
 }
 
-/* Empty State */
-.gfy-empty-state {
-  text-align: center;
-  padding: 3rem;
-  background: var(--gfy-bg-color);
-  border-radius: var(--gfy-radius-lg);
-  margin-bottom: 1.5rem;
-}
-
-.gfy-empty-state p {
-  color: var(--gfy-text-secondary);
-  margin: 0 0 1rem;
-}
-
-/* Buttons */
-.gfy-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  font-family: inherit;
-  border-radius: var(--gfy-radius-md);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  border: none;
-  white-space: nowrap;
-}
-
-.gfy-btn--outline {
-  background: var(--gfy-white);
-  border: 1px solid var(--gfy-border-color);
-  color: var(--gfy-text-secondary);
-}
-
-.gfy-btn--outline:hover {
-  border-color: var(--gfy-primary-color);
-  color: var(--gfy-primary-color);
-  background: var(--gfy-primary-light);
-}
-
-.gfy-btn--primary {
-  background: var(--gfy-primary-color);
-  color: var(--gfy-white);
-}
-
-.gfy-btn--primary:hover:not(:disabled) {
-  background: var(--gfy-primary-dark);
-}
-
-.gfy-btn--primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.gfy-btn--large {
-  padding: 0.875rem 1.5rem;
-  font-size: 1rem;
-}
-
-.gfy-btn--text {
-  background: transparent;
-  color: var(--gfy-text-secondary);
-  padding: 0.6rem 1rem;
-}
-
-.gfy-btn--text:hover {
-  color: var(--gfy-text-primary);
-}
-
-/* Results Footer */
+/* FOOTER */
 .gfy-results__footer {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--gfy-border-color);
   margin-top: 2rem;
+  border-top: 1px solid var(--gfy-border-color);
+  padding-top: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .gfy-save-success {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--gfy-success-color);
-  margin-top: 1rem;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--gfy-success-light);
+  color: #047857;
+  border-radius: var(--gfy-radius-md);
+  font-weight: 600;
+  margin-top: 16px;
 }
 
-/* Spinner */
-.gfy-spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: #fff;
-  animation: spin 0.8s linear infinite;
+.gfy-save-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  color: #991b1b;
+  border-radius: var(--gfy-radius-md);
+  font-weight: 600;
+  margin-top: 16px;
 }
 
-.gfy-spinner--large {
-  width: 32px;
-  height: 32px;
-  border-width: 3px;
-  border-color: rgba(37, 99, 235, 0.2);
-  border-top-color: var(--gfy-primary-color);
-  margin-bottom: 1rem;
+/* ============================================
+   INTEGRATED MODE STYLES
+   ============================================ */
+
+.gmkb-ai-results__tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.gmkb-ai-results__tab {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: transparent;
+  border: 1px solid var(--gfy-border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--gfy-text-secondary);
 }
 
-/* SVG Icon spin animation */
-.gfy-icon--spin {
-  animation: spin 0.8s linear infinite;
+.gmkb-ai-results__tab:hover {
+  border-color: var(--gfy-primary-color);
+  color: var(--gfy-primary-color);
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .gfy-builder {
-    grid-template-columns: 1fr;
-  }
-
-  .gfy-builder__field--full {
-    grid-column: span 1;
-  }
-
-  .gfy-results__header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-
-  .gfy-script-actions {
-    flex-direction: column;
-  }
-
-  .gfy-script-actions .gfy-btn {
-    width: 100%;
-  }
+.gmkb-ai-results__tab--active {
+  background: var(--gfy-primary-color);
+  border-color: var(--gfy-primary-color);
+  color: white;
 }
 </style>

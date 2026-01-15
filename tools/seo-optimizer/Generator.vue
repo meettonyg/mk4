@@ -1,7 +1,7 @@
 <template>
   <!-- Standalone Mode: Full two-panel layout -->
   <GeneratorLayout
-    v-if="mode === 'standalone'"
+    v-if="mode === 'default'"
     title="SEO Content Optimizer"
     subtitle="Optimize your content for search engines with AI-powered keyword analysis and meta tags"
     intro-text="Transform your content into search engine-friendly material with optimized keywords, meta descriptions, headers, and strategic recommendations. Our AI analyzes your content and target keywords to provide comprehensive SEO optimization strategies."
@@ -269,8 +269,8 @@ const props = defineProps({
    */
   mode: {
     type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
 
   /**

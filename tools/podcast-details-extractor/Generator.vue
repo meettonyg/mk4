@@ -1,7 +1,7 @@
 <template>
   <!-- Standalone Mode: Full two-panel layout -->
   <GeneratorLayout
-    v-if="mode === 'standalone'"
+    v-if="mode === 'default'"
     title="Podcast Details Extractor"
     subtitle="Extract podcast information and contact details from Apple or Google Podcasts URLs"
     intro-text="Enter a podcast URL to extract the show title, description, owner email, category, and more. Use this information to craft personalized pitches and research potential podcast opportunities."
@@ -255,8 +255,8 @@ import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
 const props = defineProps({
   mode: {
     type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
   componentId: {
     type: String,

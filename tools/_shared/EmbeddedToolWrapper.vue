@@ -787,13 +787,6 @@ watch(() => props.isGenerating, (newVal, oldVal) => {
     hasGenerated.value = true;
   }
 });
-
-// Also watch previewContent directly - handles timing issues where content arrives after isGenerating changes
-watch(() => props.previewContent, (newVal) => {
-  if (newVal && !props.isGenerating && !hasGenerated.value) {
-    hasGenerated.value = true;
-  }
-});
 </script>
 
 <style scoped>

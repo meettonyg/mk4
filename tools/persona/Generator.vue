@@ -1,7 +1,7 @@
 <template>
   <!-- Standalone Mode: Full two-panel layout -->
   <GeneratorLayout
-    v-if="mode === 'standalone'"
+    v-if="mode === 'default'"
     title="Ideal Client Persona Generator"
     subtitle="Define your ideal client avatar with detailed demographics and psychographics"
     intro-text="Generate a comprehensive ideal client persona based on your services, industry, and current best clients. This AI-powered tool creates detailed demographics, psychographics, pain points, and goals to help you better target and serve your ideal clients."
@@ -285,8 +285,8 @@ const props = defineProps({
    */
   mode: {
     type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
 
   /**

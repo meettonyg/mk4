@@ -1,7 +1,7 @@
 <template>
   <!-- Standalone Mode: Full two-panel layout -->
   <GeneratorLayout
-    v-if="mode === 'standalone'"
+    v-if="mode === 'default'"
     title="Interview Prep Generator"
     subtitle="Prepare talking points and key messages for your next interview using AI"
     intro-text="Generate comprehensive interview preparation materials including talking points, key messages, and anticipated questions. Create a strategic plan to make the most of your interview opportunity."
@@ -304,8 +304,8 @@ const props = defineProps({
    */
   mode: {
     type: String,
-    default: 'standalone',
-    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
 
   /**

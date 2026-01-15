@@ -41,7 +41,6 @@
 <script setup>
 import { ref, computed, onMounted, shallowRef, defineAsyncComponent } from 'vue';
 import IconRenderer from '../common/IconRenderer.vue';
-import { toolModules, resolveSlug } from '../../../../tools';
 
 const props = defineProps({
   /**
@@ -75,18 +74,42 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
-
-  /**
-   * Prefer Generator component over Widget when available
-   * Generator provides the full-featured form, Widget is simplified
-   */
-  preferGenerator: {
-    type: Boolean,
-    default: true,
-  },
 });
 
 const emit = defineEmits(['generated', 'applied', 'activate']);
+
+/**
+ * Map of component names to async component loaders
+ * Loads Generator.vue from the /tools/ directory structure
+ * (Generator.vue has the full form, Widget.vue is the compact version)
+ */
+const componentLoaders = {
+  TopicsGenerator: () => import('../../../../tools/topics/Generator.vue'),
+  BiographyGenerator: () => import('../../../../tools/biography/Generator.vue'),
+  QuestionsGenerator: () => import('../../../../tools/questions/Generator.vue'),
+  TaglineGenerator: () => import('../../../../tools/tagline/Generator.vue'),
+  GuestIntroGenerator: () => import('../../../../tools/guest-intro/Generator.vue'),
+  AuthorityHookBuilder: () => import('../../../../tools/authority-hook/Generator.vue'),
+  OffersGenerator: () => import('../../../../tools/offers/Generator.vue'),
+  ElevatorPitchGenerator: () => import('../../../../tools/elevator-pitch/Generator.vue'),
+  SoundBiteGenerator: () => import('../../../../tools/sound-bite/Generator.vue'),
+  PersonaGenerator: () => import('../../../../tools/persona/Generator.vue'),
+  ImpactIntroBuilder: () => import('../../../../tools/impact-intro/Generator.vue'),
+  BrandStoryGenerator: () => import('../../../../tools/brand-story/Generator.vue'),
+  SignatureStoryGenerator: () => import('../../../../tools/signature-story/Generator.vue'),
+  CredibilityStoryGenerator: () => import('../../../../tools/credibility-story/Generator.vue'),
+  FrameworkGenerator: () => import('../../../../tools/framework/Generator.vue'),
+  InterviewPrepGenerator: () => import('../../../../tools/interview-prep/Generator.vue'),
+  BlogGenerator: () => import('../../../../tools/blog/Generator.vue'),
+  ContentRepurposerGenerator: () => import('../../../../tools/content-repurpose/Generator.vue'),
+  PressReleaseGenerator: () => import('../../../../tools/press-release/Generator.vue'),
+  SocialPostGenerator: () => import('../../../../tools/social-post/Generator.vue'),
+  EmailWriterGenerator: () => import('../../../../tools/email/Generator.vue'),
+  NewsletterGenerator: () => import('../../../../tools/newsletter/Generator.vue'),
+  YoutubeDescriptionGenerator: () => import('../../../../tools/youtube-description/Generator.vue'),
+  PodcastNotesGenerator: () => import('../../../../tools/podcast-notes/Generator.vue'),
+  SeoOptimizerGenerator: () => import('../../../../tools/seo-optimizer/Generator.vue'),
+};
 
 /**
  * Resolved tool component
@@ -94,67 +117,19 @@ const emit = defineEmits(['generated', 'applied', 'activate']);
 const toolComponent = shallowRef(null);
 
 /**
- * Get the tool slug from metadata
- * Handles both direct slug and componentName-based lookup
- */
-function getToolSlug() {
-  // If tool has a direct slug property, use it
-  if (props.tool.slug) {
-    return resolveSlug(props.tool.slug);
-  }
-
-  // Fall back to deriving from componentName if available
-  // e.g., "GuestIntroGenerator" -> "guest-intro"
-  if (props.tool.componentName) {
-    const name = props.tool.componentName
-      .replace(/Generator$|Builder$/, '')
-      .replace(/([a-z])([A-Z])/g, '$1-$2')
-      .toLowerCase();
-    return resolveSlug(name);
-  }
-
-  return null;
-}
-
-/**
  * Load the tool component on mount
- * Dynamically loads from the tool's module - prefers Generator, falls back to Widget
  */
 onMounted(async () => {
-  const slug = getToolSlug();
+  const componentName = props.tool.componentName;
 
-  if (!slug) {
-    console.warn('[ToolPreview] Could not determine tool slug from:', props.tool);
-    return;
-  }
-
-  const toolModule = toolModules[slug];
-
-  if (!toolModule) {
-    console.warn(`[ToolPreview] Unknown tool module: ${slug}`);
-    return;
-  }
-
-  try {
-    // Prefer Generator component if available and preferGenerator is true
-    // Otherwise fall back to Widget or default export
-    let component = null;
-
-    if (props.preferGenerator && toolModule.Generator) {
-      component = toolModule.Generator;
-    } else if (toolModule.Widget) {
-      component = toolModule.Widget;
-    } else if (toolModule.default) {
-      component = toolModule.default;
+  if (componentLoaders[componentName]) {
+    try {
+      toolComponent.value = defineAsyncComponent(componentLoaders[componentName]);
+    } catch (error) {
+      console.error(`[ToolPreview] Failed to load component: ${componentName}`, error);
     }
-
-    if (component) {
-      toolComponent.value = component;
-    } else {
-      console.warn(`[ToolPreview] No component found for: ${slug}`);
-    }
-  } catch (error) {
-    console.error(`[ToolPreview] Failed to load component for: ${slug}`, error);
+  } else {
+    console.warn(`[ToolPreview] Unknown component: ${componentName}`);
   }
 });
 
