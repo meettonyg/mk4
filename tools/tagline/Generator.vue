@@ -31,76 +31,28 @@
         <h3 class="generator__section-title">Step 1: Your Authority Framework</h3>
 
         <!-- Authority Hook Box -->
-        <div class="generator__subsection generator__subsection--authority">
-          <div class="generator__subsection-header">
-            <span class="generator__subsection-icon generator__subsection-icon--star">★</span>
-            <h4 class="generator__subsection-title">Your Authority Hook</h4>
-          </div>
-          <div class="generator__grid">
-            <div class="generator__field">
-              <label class="generator__field-label">WHO do you help?</label>
-              <input
-                v-model="authorityHook.who"
-                type="text"
-                class="generator__field-input"
-                placeholder="e.g. SaaS Founders"
-              />
-            </div>
-            <div class="generator__field">
-              <label class="generator__field-label">WHAT do they achieve?</label>
-              <input
-                v-model="authorityHook.what"
-                type="text"
-                class="generator__field-input"
-                placeholder="e.g. Scale to 7-figures"
-              />
-            </div>
-            <div class="generator__field">
-              <label class="generator__field-label">WHEN do they need it?</label>
-              <input
-                v-model="authorityHook.when"
-                type="text"
-                class="generator__field-input"
-                placeholder="e.g. Feeling plateaued"
-              />
-            </div>
-            <div class="generator__field">
-              <label class="generator__field-label">HOW do you deliver?</label>
-              <input
-                v-model="authorityHook.how"
-                type="text"
-                class="generator__field-input"
-                placeholder="e.g. 90-day framework"
-              />
-            </div>
-          </div>
-        </div>
+        <AuthorityHookBuilder
+          :model-value="authorityHook"
+          @update:model-value="Object.assign(authorityHook, $event)"
+          title="Your Authority Hook"
+          :placeholders="{
+            who: 'e.g. SaaS Founders',
+            what: 'e.g. Scale to 7-figures',
+            when: 'e.g. Feeling plateaued',
+            how: 'e.g. 90-day framework'
+          }"
+        />
 
         <!-- Impact Intro Box -->
-        <div class="generator__subsection generator__subsection--impact">
-          <div class="generator__subsection-header">
-            <span class="generator__subsection-icon generator__subsection-icon--target">🎯</span>
-            <h4 class="generator__subsection-title">Your Impact Intro</h4>
-          </div>
-          <div class="generator__field">
-            <label class="generator__field-label">WHERE is your authority? (Proof)</label>
-            <input
-              v-model="impactIntro.where"
-              type="text"
-              class="generator__field-input"
-              placeholder="e.g. Helped 200+ startups achieve milestones"
-            />
-          </div>
-          <div class="generator__field">
-            <label class="generator__field-label">WHY is this your mission?</label>
-            <input
-              v-model="impactIntro.why"
-              type="text"
-              class="generator__field-input"
-              placeholder="e.g. Democratize elite growth strategies"
-            />
-          </div>
-        </div>
+        <ImpactIntroBuilder
+          :model-value="impactIntro"
+          @update:model-value="Object.assign(impactIntro, $event)"
+          title="Your Impact Intro"
+          :placeholders="{
+            where: 'e.g. Helped 200+ startups achieve milestones',
+            why: 'e.g. Democratize elite growth strategies'
+          }"
+        />
       </div>
 
       <!-- Section Divider -->
@@ -518,7 +470,7 @@ import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
+import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ImpactIntroBuilder, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
 
 // Inject profile data from EmbeddedToolWrapper (for embedded mode)
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
@@ -877,49 +829,6 @@ watch(canGenerate, (newValue) => {
   .generator__grid {
     grid-template-columns: 1fr;
   }
-}
-
-/* Subsection Boxes (Authority Hook & Impact Intro) */
-.generator__subsection {
-  background: #fff;
-  border: 1px solid var(--mkcg-border, #e2e8f0);
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 16px;
-}
-
-.generator__subsection--authority {
-  border-left: 4px solid #f59e0b;
-}
-
-.generator__subsection--impact {
-  border-left: 4px solid #10b981;
-}
-
-.generator__subsection-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.generator__subsection-icon {
-  font-size: 16px;
-}
-
-.generator__subsection-icon--star {
-  color: #f59e0b;
-}
-
-.generator__subsection-icon--target {
-  color: #10b981;
-}
-
-.generator__subsection-title {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--mkcg-text-primary, #0f172a);
 }
 
 /* Section Divider */

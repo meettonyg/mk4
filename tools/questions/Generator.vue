@@ -56,56 +56,17 @@
       <div class="generator__section">
         <h3 class="generator__section-title">Step 2: Confirm Your Authority Hook</h3>
 
-        <div class="questions-authority-hook">
-          <div class="questions-authority-hook__header">
-            <span class="questions-authority-hook__icon">★</span>
-            <h4 class="questions-authority-hook__title">Personalize Your Questions</h4>
-          </div>
-
-          <div class="questions-authority-hook__grid">
-            <div class="questions-authority-hook__field">
-              <label class="questions-authority-hook__label">WHO do you help?</label>
-              <input
-                v-model="authorityHook.who"
-                type="text"
-                class="questions-authority-hook__input"
-                placeholder="e.g. SaaS Founders"
-              />
-            </div>
-            <div class="questions-authority-hook__field">
-              <label class="questions-authority-hook__label">WHAT is the result?</label>
-              <input
-                v-model="authorityHook.what"
-                type="text"
-                class="questions-authority-hook__input"
-                placeholder="e.g. Increase revenue by 40%"
-              />
-            </div>
-            <div class="questions-authority-hook__field">
-              <label class="questions-authority-hook__label">WHEN do they need it?</label>
-              <input
-                v-model="authorityHook.when"
-                type="text"
-                class="questions-authority-hook__input"
-                placeholder="e.g. When scaling rapidly"
-              />
-            </div>
-            <div class="questions-authority-hook__field">
-              <label class="questions-authority-hook__label">HOW do you do it?</label>
-              <input
-                v-model="authorityHook.how"
-                type="text"
-                class="questions-authority-hook__input"
-                placeholder="e.g. My proven 90-day system"
-              />
-            </div>
-          </div>
-
-          <!-- Live Preview -->
-          <div v-if="authorityHookPreview" class="questions-authority-hook__preview">
-            "{{ authorityHookPreview }}"
-          </div>
-        </div>
+        <AuthorityHookBuilder
+          :model-value="authorityHook"
+          @update:model-value="Object.assign(authorityHook, $event)"
+          title="Personalize Your Questions"
+          :placeholders="{
+            who: 'e.g. SaaS Founders',
+            what: 'e.g. Increase revenue by 40%',
+            when: 'e.g. When scaling rapidly',
+            how: 'e.g. My proven 90-day system'
+          }"
+        />
       </div>
 
       <!-- Generate Button -->
@@ -412,7 +373,7 @@ import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
 import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
+import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
 
 const props = defineProps({
   /**
@@ -1039,93 +1000,6 @@ watch(canGenerate, (newValue) => {
   outline: none;
   border-color: var(--mkcg-primary, #3b82f6);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-/* ===========================================
-   AUTHORITY HOOK BUILDER
-   =========================================== */
-.questions-authority-hook {
-  background: #fff;
-  border: 1px solid var(--mkcg-border, #e2e8f0);
-  border-left: 4px solid var(--mkcg-primary, #3b82f6);
-  padding: 1.5rem;
-  border-radius: 8px;
-}
-
-.questions-authority-hook__header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.questions-authority-hook__icon {
-  color: #f59e0b;
-  font-size: 16px;
-}
-
-.questions-authority-hook__title {
-  font-size: 1rem;
-  font-weight: 700;
-  margin: 0;
-  color: var(--mkcg-text-primary, #0f172a);
-}
-
-.questions-authority-hook__grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
-}
-
-@media (max-width: 768px) {
-  .questions-authority-hook__grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.questions-authority-hook__field {
-  display: flex;
-  flex-direction: column;
-}
-
-.questions-authority-hook__label {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--mkcg-text-secondary, #64748b);
-  margin-bottom: 6px;
-}
-
-.questions-authority-hook__input {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid var(--mkcg-border, #e2e8f0);
-  border-radius: 6px;
-  font-size: 14px;
-  background: #fff;
-  font-family: inherit;
-  box-sizing: border-box;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.questions-authority-hook__input:focus {
-  outline: none;
-  border-color: var(--mkcg-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.questions-authority-hook__preview {
-  margin-top: 1.5rem;
-  padding: 1.25rem;
-  background: rgba(59, 130, 246, 0.1);
-  border-radius: 8px;
-  border: 1px solid #bfdbfe;
-  color: var(--mkcg-primary-hover, #2563eb);
-  font-size: 0.95rem;
-  font-style: italic;
-  text-align: center;
-  line-height: 1.5;
 }
 
 /* ===========================================
