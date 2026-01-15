@@ -378,15 +378,28 @@ export function useAITagline() {
   const loadFromProfile = (profileData) => {
     if (!profileData) return;
 
-    // Load authority hook components
-    if (profileData.authority_hook_who) authorityHook.who = profileData.authority_hook_who;
-    if (profileData.authority_hook_what) authorityHook.what = profileData.authority_hook_what;
-    if (profileData.authority_hook_when) authorityHook.when = profileData.authority_hook_when;
-    if (profileData.authority_hook_how) authorityHook.how = profileData.authority_hook_how;
+    // Load authority hook components (check multiple field name patterns)
+    const hookWho = profileData.hook_who || profileData.authority_hook_who || profileData.hookWho || '';
+    const hookWhat = profileData.hook_what || profileData.authority_hook_what || profileData.hookWhat || '';
+    const hookWhen = profileData.hook_when || profileData.authority_hook_when || profileData.hookWhen || '';
+    const hookHow = profileData.hook_how || profileData.authority_hook_how || profileData.hookHow || '';
 
-    // Load impact intro
-    if (profileData.impact_intro_where) impactIntro.where = profileData.impact_intro_where;
-    if (profileData.impact_intro_why) impactIntro.why = profileData.impact_intro_why;
+    if (hookWho) authorityHook.who = hookWho;
+    if (hookWhat) authorityHook.what = hookWhat;
+    if (hookWhen) authorityHook.when = hookWhen;
+    if (hookHow) authorityHook.how = hookHow;
+
+    // Load impact intro (check multiple field name patterns)
+    const impactWhere = profileData.hook_where || profileData.impact_intro_where || profileData.impact_where || '';
+    const impactWhy = profileData.hook_why || profileData.impact_intro_why || profileData.impact_why || '';
+
+    if (impactWhere) impactIntro.where = impactWhere;
+    if (impactWhy) impactIntro.why = impactWhy;
+
+    // Load industry for brand context
+    if (profileData.industry) {
+      brandContext.industry = profileData.industry;
+    }
 
     // Load existing tagline if available
     if (profileData.tagline) {

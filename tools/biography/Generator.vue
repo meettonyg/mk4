@@ -91,6 +91,13 @@
         </p>
       </div>
 
+      <!-- Profile Context Banner (for logged-in users in standalone mode) -->
+      <ProfileContextBanner
+        v-if="mode === 'default'"
+        @profile-loaded="handleProfileLoaded"
+        @profile-cleared="handleProfileCleared"
+      />
+
       <!-- Form Container -->
       <div class="gfy-bio-form__container" :class="{ 'gfy-bio-form__container--embedded': mode === 'embedded' }">
         <!-- Basic Information -->
@@ -484,7 +491,7 @@
 import { ref, computed, watch, inject } from 'vue';
 import { useAIBiography, SLOT_STATUS, LENGTH_OPTIONS, getVariationCount } from '../../src/composables/useAIBiography';
 import { useProfileContext } from '../../src/composables/useProfileContext';
-import { EMBEDDED_PROFILE_DATA_KEY, AuthorityHookBuilder, ImpactIntroBuilder } from '../_shared';
+import { EMBEDDED_PROFILE_DATA_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileContextBanner } from '../_shared';
 
 // Integrated mode components
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
@@ -750,12 +757,24 @@ const handleStartOver = () => {
  */
 function loadProfileData(data) {
   if (!data) return;
-  console.log('[Biography Generator] loadProfileData called with:', data);
-  console.log('[Biography Generator] impact_where:', data.impact_where);
-  console.log('[Biography Generator] impact_why:', data.impact_why);
-  console.log('[Biography Generator] where:', data.where);
-  console.log('[Biography Generator] why:', data.why);
   populateFromProfile(data);
+}
+
+/**
+ * Handle profile loaded from ProfileContextBanner (standalone mode)
+ */
+function handleProfileLoaded(data) {
+  if (data && props.mode === 'default') {
+    loadProfileData(data);
+  }
+}
+
+/**
+ * Handle profile cleared from ProfileContextBanner (standalone mode)
+ */
+function handleProfileCleared() {
+  // Optionally clear form fields when profile is deselected
+  // For now, we keep the existing data to avoid losing user input
 }
 
 // Watch for injected profile data changes (from EmbeddedToolWrapper)

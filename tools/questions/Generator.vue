@@ -9,6 +9,14 @@
     :has-results="hasQuestions"
     :is-loading="isGenerating"
   >
+    <!-- Profile Context Banner (for logged-in users) -->
+    <template #profile-context>
+      <ProfileContextBanner
+        @profile-loaded="handleProfileLoaded"
+        @profile-cleared="handleProfileCleared"
+      />
+    </template>
+
     <!-- Left Panel: Form -->
     <template #left>
 
@@ -373,7 +381,7 @@ import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
 import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
+import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ProfileContextBanner, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
 
 const props = defineProps({
   /**
@@ -589,18 +597,36 @@ const copyQuestion = async (index) => {
 function populateFromProfile(profileData) {
   if (!profileData) return;
 
-  // Populate authority hook fields
-  if (profileData.authority_hook_who) authorityHook.who = profileData.authority_hook_who;
-  if (profileData.authority_hook_what) authorityHook.what = profileData.authority_hook_what;
-  if (profileData.authority_hook_when) authorityHook.when = profileData.authority_hook_when;
-  if (profileData.authority_hook_how) authorityHook.how = profileData.authority_hook_how;
+  // Populate authority hook fields (check multiple field name patterns)
+  const hookWho = profileData.hook_who || profileData.authority_hook_who || '';
+  const hookWhat = profileData.hook_what || profileData.authority_hook_what || '';
+  const hookWhen = profileData.hook_when || profileData.authority_hook_when || '';
+  const hookHow = profileData.hook_how || profileData.authority_hook_how || '';
 
-  // Legacy support
-  if (profileData.hook_who && !authorityHook.who) authorityHook.who = profileData.hook_who;
-  if (profileData.hook_what && !authorityHook.what) authorityHook.what = profileData.hook_what;
+  if (hookWho && !authorityHook.who) authorityHook.who = hookWho;
+  if (hookWhat && !authorityHook.what) authorityHook.what = hookWhat;
+  if (hookWhen && !authorityHook.when) authorityHook.when = hookWhen;
+  if (hookHow && !authorityHook.how) authorityHook.how = hookHow;
 
   // Populate authority hook fields from profile data (for cross-tool sync)
   loadFromProfileData(profileData);
+}
+
+/**
+ * Handle profile loaded from ProfileContextBanner (standalone mode)
+ */
+function handleProfileLoaded(data) {
+  if (data && props.mode === 'default') {
+    populateFromProfile(data);
+  }
+}
+
+/**
+ * Handle profile cleared from ProfileContextBanner (standalone mode)
+ */
+function handleProfileCleared() {
+  // Optionally clear form fields when profile is deselected
+  // For now, we keep the existing data to avoid losing user input
 }
 
 /**
