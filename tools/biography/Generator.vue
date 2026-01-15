@@ -79,171 +79,7 @@
     </template>
   </AiWidgetFrame>
 
-  <!-- Embedded Mode: Form fields for EmbeddedToolWrapper (Landing Pages) -->
-  <div v-else-if="mode === 'embedded'" class="gmkb-embedded-form">
-      <!-- STEP 1: BASIC INFO -->
-      <div class="gmkb-embedded-section">
-        <div class="gmkb-embedded-section-header">Step 1: Basic Information</div>
-        <div class="gmkb-embedded-row gmkb-embedded-row--3col">
-          <div class="gmkb-embedded-field">
-            <label class="gmkb-embedded-label">Full Name *</label>
-            <input
-              v-model="name"
-              type="text"
-              class="gmkb-embedded-input"
-              :placeholder="intent?.formPlaceholders?.name || 'e.g. Tony Guarnaccia'"
-            />
-          </div>
-          <div class="gmkb-embedded-field">
-            <label class="gmkb-embedded-label">Professional Title</label>
-            <input
-              v-model="optionalFields.title"
-              type="text"
-              class="gmkb-embedded-input"
-              placeholder="e.g. CEO, Founder, Consultant"
-            />
-          </div>
-          <div class="gmkb-embedded-field">
-            <label class="gmkb-embedded-label">Organization</label>
-            <input
-              v-model="optionalFields.organization"
-              type="text"
-              class="gmkb-embedded-input"
-              placeholder="e.g. Guestify.ai"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- STEP 2: AUTHORITY HOOK -->
-      <div class="gmkb-embedded-section">
-        <div class="gmkb-embedded-section-header">Step 2: Define Your Authority Hook</div>
-        <div class="gmkb-embedded-highlight gmkb-embedded-highlight--blue">
-          <div class="gmkb-embedded-highlight-header">
-            <span class="gmkb-embedded-highlight-icon">⭐</span>
-            <span class="gmkb-embedded-highlight-title">Who-What-When-How</span>
-          </div>
-          <div class="gmkb-embedded-row">
-            <div class="gmkb-embedded-field">
-              <label class="gmkb-embedded-label">WHO do you help?</label>
-              <input
-                v-model="authorityHook.who"
-                type="text"
-                class="gmkb-embedded-input"
-                placeholder="e.g. SaaS Founders scaling to $10M ARR"
-              />
-            </div>
-            <div class="gmkb-embedded-field">
-              <label class="gmkb-embedded-label">WHAT is the result?</label>
-              <input
-                v-model="authorityHook.what"
-                type="text"
-                class="gmkb-embedded-input"
-                placeholder="e.g. Increase revenue by 40% in 90 days"
-              />
-            </div>
-          </div>
-          <div class="gmkb-embedded-row">
-            <div class="gmkb-embedded-field">
-              <label class="gmkb-embedded-label">WHEN do they need it?</label>
-              <input
-                v-model="authorityHook.when"
-                type="text"
-                class="gmkb-embedded-input"
-                placeholder="e.g. When stuck at a growth plateau"
-              />
-            </div>
-            <div class="gmkb-embedded-field">
-              <label class="gmkb-embedded-label">HOW do you do it?</label>
-              <input
-                v-model="authorityHook.how"
-                type="text"
-                class="gmkb-embedded-input"
-                placeholder="e.g. My proven Revenue Acceleration System"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- STEP 3: IMPACT INTRO -->
-      <div class="gmkb-embedded-section">
-        <div class="gmkb-embedded-section-header">Step 3: Establish Impact & Credibility</div>
-        <div class="gmkb-embedded-highlight gmkb-embedded-highlight--green">
-          <div class="gmkb-embedded-highlight-header">
-            <span class="gmkb-embedded-highlight-icon">🎯</span>
-            <span class="gmkb-embedded-highlight-title">Impact Intro (Where & Why)</span>
-          </div>
-          <div class="gmkb-embedded-field">
-            <label class="gmkb-embedded-label">WHERE - Credentials & Achievements</label>
-            <textarea
-              v-model="impactIntro.where"
-              class="gmkb-embedded-textarea"
-              rows="2"
-              placeholder="e.g. Featured in Forbes, Inc., Entrepreneur. Keynoted at 50+ conferences worldwide."
-            ></textarea>
-          </div>
-          <div class="gmkb-embedded-field">
-            <label class="gmkb-embedded-label">WHY - Your Mission or Purpose</label>
-            <textarea
-              v-model="impactIntro.why"
-              class="gmkb-embedded-textarea"
-              rows="2"
-              placeholder="e.g. Help every founder achieve sustainable growth without sacrificing their health."
-            ></textarea>
-          </div>
-        </div>
-      </div>
-
-      <!-- STEP 4: ADDITIONAL CONTENT -->
-      <div class="gmkb-embedded-section">
-        <div class="gmkb-embedded-section-header">Step 4: Additional Content <span class="gmkb-embedded-optional">(Optional)</span></div>
-        <div class="gmkb-embedded-field">
-          <label class="gmkb-embedded-label">Existing Biography</label>
-          <textarea
-            v-model="optionalFields.existingBio"
-            class="gmkb-embedded-textarea"
-            rows="3"
-            placeholder="Paste your current biography here to improve it with AI..."
-          ></textarea>
-        </div>
-        <div class="gmkb-embedded-field">
-          <label class="gmkb-embedded-label">Additional Notes</label>
-          <textarea
-            v-model="optionalFields.additionalNotes"
-            class="gmkb-embedded-textarea"
-            rows="2"
-            placeholder="Any specific achievements, awards, or personal details you want included?"
-          ></textarea>
-        </div>
-      </div>
-
-      <!-- STEP 5: SETTINGS -->
-      <div class="gmkb-embedded-section">
-        <div class="gmkb-embedded-section-header">Step 5: Settings</div>
-        <div class="gmkb-embedded-row">
-          <div class="gmkb-embedded-field">
-            <label class="gmkb-embedded-label">Tone of Voice</label>
-            <select v-model="tone" class="gmkb-embedded-select">
-              <option v-for="opt in TONE_OPTIONS" :key="opt.value" :value="opt.value">
-                {{ opt.label }}
-              </option>
-            </select>
-          </div>
-          <div class="gmkb-embedded-field">
-            <label class="gmkb-embedded-label">Point of View</label>
-            <select v-model="pov" class="gmkb-embedded-select">
-              <option v-for="opt in POV_OPTIONS" :key="opt.value" :value="opt.value">
-                {{ opt.label }}
-              </option>
-            </select>
-          </div>
-        </div>
-      </div>
-    <div v-if="error" class="gmkb-embedded-error">{{ error }}</div>
-  </div>
-
-  <!-- Default Mode: Full Biography Toolkit (Standalone Pages) -->
+  <!-- Default/Standalone Mode: Full Biography Toolkit -->
   <div v-else class="gfy-bio-generator">
     <!-- Phase 1: Input Form -->
     <div v-if="!showResults" class="gfy-bio-form">
@@ -860,32 +696,6 @@ const handleApply = () => {
 };
 
 /**
- * Handle generate for embedded mode (called by EmbeddedToolWrapper)
- */
-const handleGenerate = async () => {
-  try {
-    // Generate medium bio for embedded mode (good balance of detail)
-    setActiveSlot('medium');
-    await generateForSlot('medium');
-
-    // Get the generated bio
-    const bio = currentBio.value;
-
-    // Emit the generated result for EmbeddedToolWrapper to display
-    emit('generated', {
-      content: bio,
-      hook: bio,
-      result: bio
-    });
-
-    return bio;
-  } catch (err) {
-    console.error('[Biography Generator] Generation failed:', err);
-    throw err;
-  }
-};
-
-/**
  * Get active slot label
  */
 const activeSlotLabel = computed(() => {
@@ -1041,7 +851,6 @@ watch(canGenerate, (newValue) => {
 // Expose for parent
 defineExpose({
   handleStartGeneration,
-  handleGenerate,
   showResults,
   isGenerating,
   error,
