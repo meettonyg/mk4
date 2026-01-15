@@ -83,8 +83,8 @@
   <div v-else class="gfy-bio-generator">
     <!-- Phase 1: Input Form -->
     <div v-if="!showResults" class="gfy-bio-form">
-      <!-- Hero Section (hidden in embedded mode - wrapper provides heading) -->
-      <div v-if="mode !== 'embedded'" class="gfy-bio-hero">
+      <!-- Hero Section (only show in default mode, not when embedded in landing page) -->
+      <div v-if="mode === 'default'" class="gfy-bio-hero">
         <h1 class="gfy-bio-hero__title">Professional Biography Generator</h1>
         <p class="gfy-bio-hero__subtitle">
           Create compelling professional biographies using the Authority Hook and Impact Intro frameworks.
@@ -298,8 +298,8 @@
           </div>
         </div>
 
-        <!-- Generate Button (hidden in embedded mode - wrapper provides button) -->
-        <div v-if="mode !== 'embedded'" class="gfy-form-actions">
+        <!-- Generate Button (only show in default mode - wrapper provides button on landing page) -->
+        <div v-if="mode === 'default'" class="gfy-form-actions">
           <button
             type="button"
             class="gfy-btn gfy-btn--primary gfy-btn--large gfy-btn--generate"

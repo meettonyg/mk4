@@ -82,8 +82,8 @@
   <div v-else class="gfy-intro-generator">
     <!-- Phase 1: Input Form -->
     <div v-if="!showResults" class="gfy-intro-form">
-      <!-- Hero Section -->
-      <div class="gfy-intro-hero">
+      <!-- Hero Section (only show in default mode, not when embedded in landing page) -->
+      <div v-if="mode === 'default'" class="gfy-intro-hero">
         <h1 class="gfy-intro-hero__title">Guest Introduction Generator</h1>
         <p class="gfy-intro-hero__subtitle">
           Create compelling introductions designed to be read aloud by podcast hosts or event MCs using the Authority Hook and Impact Intro frameworks.
@@ -284,8 +284,8 @@
           </div>
         </div>
 
-        <!-- Generate Button -->
-        <div class="gfy-form-actions">
+        <!-- Generate Button (only show in default mode - wrapper provides button on landing page) -->
+        <div v-if="mode === 'default'" class="gfy-form-actions">
           <button
             type="button"
             class="gfy-btn gfy-btn--primary gfy-btn--large gfy-btn--generate"
@@ -314,8 +314,8 @@
 
     <!-- Phase 2: Results Dashboard -->
     <div v-else class="gfy-intro-results">
-      <!-- Results Hero -->
-      <div class="gfy-intro-hero gfy-intro-hero--compact">
+      <!-- Results Hero (only show in default mode, not when embedded in landing page) -->
+      <div v-if="mode === 'default'" class="gfy-intro-hero gfy-intro-hero--compact">
         <h1 class="gfy-intro-hero__title">Guest Introduction Toolkit</h1>
         <p class="gfy-intro-hero__subtitle">
           Refine your introductions. Select a length and provide feedback to iterate with AI.
