@@ -83,8 +83,8 @@
   <div v-else class="gfy-bio-generator">
     <!-- Phase 1: Input Form -->
     <div v-if="!showResults" class="gfy-bio-form">
-      <!-- Hero Section -->
-      <div class="gfy-bio-hero">
+      <!-- Hero Section (hidden in embedded mode - wrapper provides heading) -->
+      <div v-if="mode !== 'embedded'" class="gfy-bio-hero">
         <h1 class="gfy-bio-hero__title">Professional Biography Generator</h1>
         <p class="gfy-bio-hero__subtitle">
           Create compelling professional biographies using the Authority Hook and Impact Intro frameworks.
@@ -92,7 +92,7 @@
       </div>
 
       <!-- Form Container -->
-      <div class="gfy-bio-form__container">
+      <div class="gfy-bio-form__container" :class="{ 'gfy-bio-form__container--embedded': mode === 'embedded' }">
         <!-- Basic Information -->
         <div class="gfy-form-section">
           <h3 class="gfy-form-section__title">
@@ -298,8 +298,8 @@
           </div>
         </div>
 
-        <!-- Generate Button -->
-        <div class="gfy-form-actions">
+        <!-- Generate Button (hidden in embedded mode - wrapper provides button) -->
+        <div v-if="mode !== 'embedded'" class="gfy-form-actions">
           <button
             type="button"
             class="gfy-btn gfy-btn--primary gfy-btn--large gfy-btn--generate"
@@ -696,6 +696,31 @@ const handleApply = () => {
 };
 
 /**
+ * Handle generate (called by EmbeddedToolApp)
+ */
+const handleGenerate = async () => {
+  try {
+    // Start generation with long bio by default
+    await handleStartGeneration();
+
+    // Get the generated bio
+    const bio = currentBio.value;
+
+    // Emit result for EmbeddedToolWrapper to display
+    emit('generated', {
+      content: bio,
+      hook: bio,
+      result: bio
+    });
+
+    return bio;
+  } catch (err) {
+    console.error('[Biography Generator] Generation failed:', err);
+    throw err;
+  }
+};
+
+/**
  * Get active slot label
  */
 const activeSlotLabel = computed(() => {
@@ -851,6 +876,7 @@ watch(canGenerate, (newValue) => {
 // Expose for parent
 defineExpose({
   handleStartGeneration,
+  handleGenerate,
   showResults,
   isGenerating,
   error,
@@ -914,6 +940,14 @@ defineExpose({
   border: 1px solid var(--gfy-border-color);
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   padding: 40px;
+}
+
+.gfy-bio-form__container--embedded {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
 }
 
 /* FORM SECTIONS */
