@@ -1,0 +1,144 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GMKB Starter Template Schema",
+  "description": "Schema for persona-based media kit templates (layout + components, NOT visual styling)",
+  "type": "object",
+  "required": ["template_id", "template_name", "version", "persona", "sections"],
+  "properties": {
+    "template_id": {
+      "type": "string",
+      "description": "Unique identifier for the template (e.g., 'author', 'speaker', 'podcast-guest')"
+    },
+    "template_name": {
+      "type": "string",
+      "description": "Human-readable display name (e.g., 'Author Media Kit')"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 300,
+      "description": "Description of what this template is best suited for"
+    },
+    "persona": {
+      "type": "object",
+      "required": ["type", "label"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["author", "speaker", "podcast-guest", "consultant", "influencer", "executive", "creative"],
+          "description": "The target persona/audience for this template"
+        },
+        "label": {
+          "type": "string",
+          "description": "Human-readable label (e.g., 'Authors & Writers')"
+        },
+        "icon": {
+          "type": "string",
+          "description": "FontAwesome icon class"
+        },
+        "use_cases": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Specific use cases this template serves"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "maxItems": 10
+        },
+        "is_premium": {
+          "type": "boolean",
+          "default": false
+        },
+        "sort_order": {
+          "type": "integer",
+          "default": 100
+        },
+        "recommended_themes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Theme IDs that work well with this template"
+        }
+      }
+    },
+    "preview_image": {
+      "type": "string",
+      "description": "Filename for template preview image"
+    },
+    "sections": {
+      "type": "array",
+      "description": "The layout sections and components that make up this template",
+      "items": {
+        "$ref": "#/definitions/sectionDef"
+      }
+    }
+  },
+  "definitions": {
+    "sectionDef": {
+      "type": "object",
+      "required": ["id", "type"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Section identifier (e.g., 'hero-section', 'bio-section')"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["full_width", "two_column", "three_column"]
+        },
+        "background": {
+          "type": "string",
+          "enum": ["light", "dark", "primary", "surface", "gradient"],
+          "description": "Background style hint (theme applies actual colors)"
+        },
+        "components": {
+          "type": "array",
+          "description": "Components for full_width sections",
+          "items": { "$ref": "#/definitions/componentDef" }
+        },
+        "columns": {
+          "type": "object",
+          "description": "Column definitions for multi-column sections",
+          "properties": {
+            "ratio": {
+              "type": "string",
+              "description": "Column ratio (e.g., '60-40', '50-50', '33-33-34')"
+            }
+          },
+          "patternProperties": {
+            "^[1-3]$": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/componentDef" }
+            }
+          }
+        }
+      }
+    },
+    "componentDef": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Component type (hero, biography, stats, topics, testimonials, etc.)"
+        },
+        "settings": {
+          "type": "object",
+          "description": "Component layout/behavior settings (NOT visual styling)"
+        },
+        "data": {
+          "type": "object",
+          "description": "Default placeholder content"
+        }
+      }
+    }
+  }
+}

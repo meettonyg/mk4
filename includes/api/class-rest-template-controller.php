@@ -3,9 +3,14 @@
  * REST API Template Controller
  *
  * Provides endpoints for template directory functionality:
- * - List all templates (built-in + user)
- * - Get single template with full content
- * - CRUD for user-saved templates
+ *
+ * NEW ARCHITECTURE (v3):
+ * - /starter-templates - Persona-based layouts (what sections/components appear)
+ * - /themes - Visual styles only (colors, typography, spacing)
+ *
+ * LEGACY (backward compatible):
+ * - /templates - Combined templates (for backward compatibility)
+ * - /templates/user - User-saved templates
  *
  * @package Guestify_Media_Kit_Builder
  * @since 2.0.0
@@ -53,6 +58,63 @@ class GMKB_REST_Template_Controller {
      * Register REST API routes
      */
     public function register_routes() {
+        // =====================================================
+        // NEW ARCHITECTURE v3 - Separate Templates and Themes
+        // =====================================================
+
+        // GET /starter-templates - Persona-based layouts (what sections/components)
+        register_rest_route(self::NAMESPACE, '/starter-templates', array(
+            'methods'             => WP_REST_Server::READABLE,
+            'callback'            => array($this, 'get_starter_templates'),
+            'permission_callback' => array($this, 'read_permission_check'),
+        ));
+
+        // GET /starter-templates/(?P<id>[\w-]+) - Single starter template
+        register_rest_route(self::NAMESPACE, '/starter-templates/(?P<id>[\w-]+)', array(
+            'methods'             => WP_REST_Server::READABLE,
+            'callback'            => array($this, 'get_starter_template'),
+            'permission_callback' => array($this, 'read_permission_check'),
+            'args'                => array(
+                'id' => array(
+                    'required'          => true,
+                    'type'              => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ),
+            ),
+        ));
+
+        // GET /starter-templates/personas - List all persona types
+        register_rest_route(self::NAMESPACE, '/starter-templates/personas', array(
+            'methods'             => WP_REST_Server::READABLE,
+            'callback'            => array($this, 'get_persona_types'),
+            'permission_callback' => array($this, 'read_permission_check'),
+        ));
+
+        // GET /themes - Visual styles only (colors, typography, spacing)
+        register_rest_route(self::NAMESPACE, '/themes', array(
+            'methods'             => WP_REST_Server::READABLE,
+            'callback'            => array($this, 'get_themes'),
+            'permission_callback' => array($this, 'read_permission_check'),
+        ));
+
+        // GET /themes/(?P<id>[\w-]+) - Single theme
+        register_rest_route(self::NAMESPACE, '/themes/(?P<id>[\w-]+)', array(
+            'methods'             => WP_REST_Server::READABLE,
+            'callback'            => array($this, 'get_theme'),
+            'permission_callback' => array($this, 'read_permission_check'),
+            'args'                => array(
+                'id' => array(
+                    'required'          => true,
+                    'type'              => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ),
+            ),
+        ));
+
+        // =====================================================
+        // LEGACY ENDPOINTS - Backward Compatible
+        // =====================================================
+
         // GET /templates - All templates (built-in + user)
         register_rest_route(self::NAMESPACE, '/templates', array(
             'methods'             => WP_REST_Server::READABLE,
@@ -154,6 +216,180 @@ class GMKB_REST_Template_Controller {
         }
         return new ThemeDiscovery(GMKB_PLUGIN_DIR . 'themes');
     }
+
+    /**
+     * Get TemplateDiscovery instance
+     *
+     * @return TemplateDiscovery
+     */
+    private function get_template_discovery() {
+        if (!class_exists('TemplateDiscovery')) {
+            require_once GMKB_PLUGIN_DIR . 'system/TemplateDiscovery.php';
+        }
+        return new TemplateDiscovery(GMKB_PLUGIN_DIR . 'starter-templates');
+    }
+
+    // =====================================================
+    // NEW ARCHITECTURE v3 - Handler Methods
+    // =====================================================
+
+    /**
+     * Get all starter templates (persona-based layouts)
+     *
+     * Returns templates that define WHAT sections/components appear,
+     * NOT how they look (that's handled by themes).
+     */
+    public function get_starter_templates($request) {
+        $discovery = $this->get_template_discovery();
+        $templates = array();
+
+        foreach ($discovery->getTemplates() as $id => $template) {
+            $templates[] = array(
+                'id'                    => $id,
+                'name'                  => $template['template_name'] ?? $id,
+                'description'           => $template['description'] ?? '',
+                'persona'               => $template['persona'] ?? null,
+                'preview_url'           => $template['preview_url'] ?? null,
+                'tags'                  => $template['metadata']['tags'] ?? array(),
+                'is_premium'            => $template['metadata']['is_premium'] ?? false,
+                'sort_order'            => $template['metadata']['sort_order'] ?? 100,
+                'recommended_themes'    => $template['metadata']['recommended_themes'] ?? array(),
+                'section_count'         => isset($template['sections']) ? count($template['sections']) : 0,
+            );
+        }
+
+        return rest_ensure_response(array(
+            'success'   => true,
+            'templates' => $templates,
+            'total'     => count($templates),
+        ));
+    }
+
+    /**
+     * Get single starter template with full layout content
+     */
+    public function get_starter_template($request) {
+        $id = sanitize_file_name($request->get_param('id'));
+        $discovery = $this->get_template_discovery();
+        $template = $discovery->getTemplate($id);
+
+        if (!$template) {
+            return new WP_Error(
+                'not_found',
+                __('Starter template not found', 'guestify-media-kit'),
+                array('status' => 404)
+            );
+        }
+
+        return rest_ensure_response(array(
+            'success'  => true,
+            'template' => $template,
+        ));
+    }
+
+    /**
+     * Get all persona types
+     *
+     * Returns list of available personas (author, speaker, podcast-guest, etc.)
+     */
+    public function get_persona_types($request) {
+        $discovery = $this->get_template_discovery();
+        $personas = $discovery->getPersonaTypes();
+
+        return rest_ensure_response(array(
+            'success'  => true,
+            'personas' => $personas,
+        ));
+    }
+
+    /**
+     * Get all themes (visual styles only)
+     *
+     * Returns themes that define HOW things look (colors, typography, spacing),
+     * NOT what sections/components appear (that's handled by starter-templates).
+     */
+    public function get_themes($request) {
+        $discovery = $this->get_theme_discovery();
+        $themes = array();
+
+        foreach ($discovery->getThemes() as $id => $theme) {
+            // Only include v3 themes (visual-only) or all themes for backward compat
+            $themes[] = array(
+                'id'              => $id,
+                'name'            => $theme['theme_name'] ?? $id,
+                'description'     => $theme['description'] ?? '',
+                'style'           => $theme['style'] ?? null,
+                'preview_url'     => $theme['preview_url'] ?? $this->get_preview_url($id),
+                'preview_colors'  => $theme['metadata']['preview_colors'] ?? array(),
+                'is_dark'         => $theme['metadata']['is_dark'] ?? false,
+                'is_premium'      => $theme['metadata']['is_premium'] ?? false,
+                'sort_order'      => $theme['metadata']['sort_order'] ?? 100,
+                'tags'            => $theme['metadata']['tags'] ?? array(),
+                // Include key visual properties for preview
+                'colors'          => array(
+                    'primary'    => $theme['colors']['primary'] ?? '#2563eb',
+                    'secondary'  => $theme['colors']['secondary'] ?? '#1e40af',
+                    'background' => $theme['colors']['background'] ?? '#ffffff',
+                ),
+            );
+        }
+
+        // Sort by sort_order
+        usort($themes, function($a, $b) {
+            return ($a['sort_order'] ?? 100) - ($b['sort_order'] ?? 100);
+        });
+
+        return rest_ensure_response(array(
+            'success' => true,
+            'themes'  => $themes,
+            'total'   => count($themes),
+        ));
+    }
+
+    /**
+     * Get single theme with full visual styling
+     */
+    public function get_theme($request) {
+        $id = sanitize_file_name($request->get_param('id'));
+        $discovery = $this->get_theme_discovery();
+        $theme = $discovery->getTheme($id);
+
+        // Try alternate format (underscores <-> hyphens)
+        if (!$theme) {
+            $alternate_id = strpos($id, '_') !== false
+                ? str_replace('_', '-', $id)
+                : str_replace('-', '_', $id);
+            $theme = $discovery->getTheme($alternate_id);
+        }
+
+        if (!$theme) {
+            return new WP_Error(
+                'not_found',
+                __('Theme not found', 'guestify-media-kit'),
+                array('status' => 404)
+            );
+        }
+
+        // Add preview URLs
+        $theme['preview_image_url'] = $this->get_preview_url($id);
+        $theme['thumbnail_image_url'] = $this->get_thumbnail_url($id);
+
+        // For v3 themes, remove defaultContent if present (it's now in starter-templates)
+        // Keep it for backward compatibility with older themes
+        $is_v3 = isset($theme['style']) && isset($theme['style']['variant']);
+        if ($is_v3 && isset($theme['defaultContent'])) {
+            unset($theme['defaultContent']);
+        }
+
+        return rest_ensure_response(array(
+            'success' => true,
+            'theme'   => $theme,
+        ));
+    }
+
+    // =====================================================
+    // LEGACY ENDPOINTS - Handler Methods
+    // =====================================================
 
     /**
      * Get all templates (lightweight list for directory)

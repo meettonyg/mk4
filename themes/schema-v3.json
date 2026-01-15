@@ -1,0 +1,228 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GMKB Theme Schema V3",
+  "description": "Visual styling only - NO layout or content. Themes define how things LOOK, not what appears.",
+  "type": "object",
+  "required": ["theme_id", "theme_name", "version", "colors", "typography"],
+  "properties": {
+    "theme_id": {
+      "type": "string",
+      "description": "Unique identifier for the theme (e.g., 'professional-clean', 'modern-dark')"
+    },
+    "theme_name": {
+      "type": "string",
+      "description": "Human-readable display name"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "Description of the visual style"
+    },
+    "style": {
+      "type": "object",
+      "required": ["variant", "label"],
+      "properties": {
+        "variant": {
+          "type": "string",
+          "enum": ["clean", "bold", "minimal", "modern", "classic", "creative"],
+          "description": "Visual style category"
+        },
+        "label": {
+          "type": "string",
+          "description": "Human-readable style label"
+        },
+        "mood": {
+          "type": "string",
+          "enum": ["professional", "playful", "elegant", "energetic", "calm", "bold"],
+          "description": "The mood/feeling the theme conveys"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "maxItems": 5,
+          "description": "Searchable tags for theme discovery"
+        },
+        "preview_colors": {
+          "type": "array",
+          "items": { "type": "string" },
+          "maxItems": 3,
+          "description": "Primary colors for preview swatches"
+        },
+        "is_premium": {
+          "type": "boolean",
+          "default": false
+        },
+        "is_dark": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this is a dark mode theme"
+        },
+        "sort_order": {
+          "type": "integer",
+          "default": 100
+        },
+        "author": {
+          "type": "string",
+          "default": "Guestify"
+        }
+      }
+    },
+    "preview_image": {
+      "type": "string",
+      "description": "Filename for theme preview image"
+    },
+    "thumbnail_image": {
+      "type": "string",
+      "description": "Filename for thumbnail"
+    },
+    "typography": {
+      "type": "object",
+      "required": ["primary_font", "heading_font"],
+      "properties": {
+        "primary_font": { "$ref": "#/definitions/fontDef" },
+        "heading_font": { "$ref": "#/definitions/fontDef" },
+        "font_scale": {
+          "type": "number",
+          "default": 1.25,
+          "description": "Typographic scale ratio"
+        },
+        "line_height": {
+          "type": "object",
+          "properties": {
+            "body": { "type": "number", "default": 1.7 },
+            "heading": { "type": "number", "default": 1.3 }
+          }
+        },
+        "letter_spacing": {
+          "type": "object",
+          "properties": {
+            "body": { "type": "string", "default": "0" },
+            "heading": { "type": "string", "default": "-0.02em" }
+          }
+        }
+      }
+    },
+    "colors": {
+      "type": "object",
+      "required": ["primary", "text", "background"],
+      "properties": {
+        "primary": { "type": "string", "description": "Primary brand color" },
+        "primary_hover": { "type": "string" },
+        "secondary": { "type": "string", "description": "Secondary accent color" },
+        "secondary_hover": { "type": "string" },
+        "accent": { "type": "string", "description": "Accent/highlight color" },
+        "text": { "type": "string", "description": "Primary text color" },
+        "text_light": { "type": "string", "description": "Secondary text color" },
+        "text_muted": { "type": "string", "description": "Muted/disabled text" },
+        "background": { "type": "string", "description": "Page background" },
+        "surface": { "type": "string", "description": "Card/surface background" },
+        "surface_hover": { "type": "string" },
+        "border": { "type": "string" },
+        "border_focus": { "type": "string" },
+        "gradient_start": { "type": "string" },
+        "gradient_end": { "type": "string" },
+        "error": { "type": "string" },
+        "success": { "type": "string" },
+        "warning": { "type": "string" },
+        "info": { "type": "string" }
+      }
+    },
+    "spacing": {
+      "type": "object",
+      "properties": {
+        "base_unit": { "type": "string", "default": "8px" },
+        "component_gap": { "type": "string", "default": "48px" },
+        "section_gap": { "type": "string", "default": "96px" },
+        "container_padding": { "type": "string", "default": "24px" },
+        "content_max_width": { "type": "string", "default": "1200px" }
+      }
+    },
+    "effects": {
+      "type": "object",
+      "properties": {
+        "border_radius": { "type": "string", "default": "12px" },
+        "border_radius_sm": { "type": "string", "default": "8px" },
+        "border_radius_lg": { "type": "string", "default": "16px" },
+        "border_radius_full": { "type": "string", "default": "9999px" },
+        "shadow": { "type": "string" },
+        "shadow_sm": { "type": "string" },
+        "shadow_lg": { "type": "string" },
+        "transitions": { "type": "string", "default": "all 0.2s ease" },
+        "transitions_slow": { "type": "string" },
+        "blur": { "type": "string" },
+        "gradient": { "type": "string", "description": "CSS gradient definition" }
+      }
+    },
+    "components": {
+      "type": "object",
+      "description": "Component-specific styling overrides",
+      "properties": {
+        "button": {
+          "type": "object",
+          "properties": {
+            "padding": { "type": "string" },
+            "font_weight": { "type": "string" },
+            "letter_spacing": { "type": "string" },
+            "text_transform": { "type": "string" },
+            "border_radius": { "type": "string" }
+          }
+        },
+        "card": {
+          "type": "object",
+          "properties": {
+            "padding": { "type": "string" },
+            "shadow": { "type": "string" },
+            "border_radius": { "type": "string" }
+          }
+        },
+        "input": {
+          "type": "object",
+          "properties": {
+            "padding": { "type": "string" },
+            "border_width": { "type": "string" },
+            "border_radius": { "type": "string" }
+          }
+        }
+      }
+    },
+    "responsive": {
+      "type": "object",
+      "properties": {
+        "breakpoints": {
+          "type": "object",
+          "properties": {
+            "sm": { "type": "string", "default": "640px" },
+            "md": { "type": "string", "default": "768px" },
+            "lg": { "type": "string", "default": "1024px" },
+            "xl": { "type": "string", "default": "1280px" }
+          }
+        },
+        "font_scale_mobile": { "type": "number", "default": 0.9 },
+        "spacing_scale_mobile": { "type": "number", "default": 0.8 }
+      }
+    }
+  },
+  "definitions": {
+    "fontDef": {
+      "type": "object",
+      "required": ["family"],
+      "properties": {
+        "family": { "type": "string" },
+        "weights": {
+          "type": "array",
+          "items": { "type": "integer" }
+        },
+        "fallback": { "type": "string" }
+      }
+    }
+  }
+}

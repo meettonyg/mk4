@@ -1,0 +1,227 @@
+{
+  "template_id": "author",
+  "template_name": "Author Media Kit",
+  "version": "1.0.0",
+  "description": "Perfect for authors, writers, and thought leaders. Features books showcase, press quotes, biography, and media contact sections.",
+  "persona": {
+    "type": "author",
+    "label": "Authors & Writers",
+    "icon": "fa-solid fa-book",
+    "use_cases": [
+      "Bestselling authors",
+      "Non-fiction writers",
+      "Public intellectuals",
+      "Journalists and columnists",
+      "Academic authors"
+    ]
+  },
+  "metadata": {
+    "tags": ["author", "writer", "book", "literary", "publishing", "press"],
+    "is_premium": false,
+    "sort_order": 10,
+    "recommended_themes": ["professional-clean", "minimal-elegant", "author-bold"]
+  },
+  "preview_image": "preview.jpg",
+  "sections": [
+    {
+      "id": "hero-section",
+      "type": "full_width",
+      "background": "dark",
+      "components": [
+        {
+          "type": "hero",
+          "settings": {
+            "layout": "center_aligned",
+            "imageStyle": "none",
+            "showCTA": true,
+            "minHeight": "600px"
+          },
+          "data": {
+            "headline": "Your Name",
+            "subheadline": "Bestselling Author | [Genre] Writer",
+            "description": "Author of [X] books that have shaped how readers think about [topic].",
+            "cta_text": "Explore My Books"
+          }
+        }
+      ]
+    },
+    {
+      "id": "featured-book-section",
+      "type": "two_column",
+      "background": "gradient",
+      "columns": {
+        "ratio": "35-65",
+        "1": [
+          {
+            "type": "photo-gallery",
+            "settings": {
+              "layout": "single",
+              "style": "book-cover",
+              "showShadow": true
+            },
+            "data": {
+              "images": [{ "alt": "Book cover" }]
+            }
+          }
+        ],
+        "2": [
+          {
+            "type": "guest-intro",
+            "settings": {
+              "style": "featured"
+            },
+            "data": {
+              "title": "THE LATEST BOOK",
+              "subtitle": "Now Available",
+              "content": "A compelling description of your latest work and why readers should pick it up. Include any notable reviews or accolades.",
+              "cta_text": "Order Your Copy",
+              "cta_link": "#"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "press-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "testimonials",
+          "settings": {
+            "layout": "quotes",
+            "showPhotos": false,
+            "showCompany": true,
+            "quoteStyle": "large",
+            "maxTestimonials": 3
+          },
+          "data": {
+            "title": "Press & Reviews",
+            "items": [
+              {
+                "quote": "A must-read for anyone interested in [topic].",
+                "company": "The New York Times"
+              },
+              {
+                "quote": "Compelling, insightful, and beautifully written.",
+                "company": "The Atlantic"
+              },
+              {
+                "quote": "One of the most important books of the year.",
+                "company": "Publishers Weekly"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "bio-section",
+      "type": "two_column",
+      "columns": {
+        "ratio": "40-60",
+        "1": [
+          {
+            "type": "profile-photo",
+            "settings": {
+              "style": "square",
+              "size": "large"
+            },
+            "data": {
+              "alt": "Author portrait"
+            }
+          }
+        ],
+        "2": [
+          {
+            "type": "biography",
+            "settings": {
+              "style": "professional",
+              "showTitle": true
+            },
+            "data": {
+              "title": "About the Author",
+              "content": "Share your background, writing journey, and what drives your work. Include your education, awards, and any notable achievements.\n\n**Books Published:** [Number]\n**Awards:** [List key awards]\n**Languages:** Translated into [X] languages"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "books-section",
+      "type": "full_width",
+      "background": "surface",
+      "components": [
+        {
+          "type": "photo-gallery",
+          "settings": {
+            "layout": "grid",
+            "columns": 4,
+            "style": "book-covers"
+          },
+          "data": {
+            "title": "Bibliography",
+            "images": [
+              { "alt": "Book 1", "caption": "Title One (Year)" },
+              { "alt": "Book 2", "caption": "Title Two (Year)" },
+              { "alt": "Book 3", "caption": "Title Three (Year)" },
+              { "alt": "Book 4", "caption": "Title Four (Year)" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "topics-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "topics",
+          "settings": {
+            "layout": "list",
+            "showDescriptions": true,
+            "style": "minimal"
+          },
+          "data": {
+            "title": "Speaking & Interview Topics",
+            "subtitle": "Available for podcasts, media interviews, and speaking engagements",
+            "items": [
+              {
+                "title": "The Research Behind the Book",
+                "description": "Deep dive into the process and discoveries"
+              },
+              {
+                "title": "Writing and the Creative Process",
+                "description": "Insights into craft and discipline"
+              },
+              {
+                "title": "[Topic Expertise]",
+                "description": "Expert perspective on current issues"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "contact-section",
+      "type": "full_width",
+      "background": "dark",
+      "components": [
+        {
+          "type": "contact",
+          "settings": {
+            "style": "centered",
+            "layout": "centered",
+            "fields": ["name", "email", "organization", "inquiry_type", "message"],
+            "maxWidth": "600px"
+          },
+          "data": {
+            "title": "Media & Speaking Inquiries",
+            "subtitle": "For interviews, appearances, and speaking engagements",
+            "button_text": "Send Message"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,286 @@
+{
+  "template_id": "consultant",
+  "template_name": "Consultant Media Kit",
+  "version": "1.0.0",
+  "description": "Professional template for business consultants, coaches, and advisors. Features services, client results, credentials, and booking options.",
+  "persona": {
+    "type": "consultant",
+    "label": "Consultants & Advisors",
+    "icon": "fa-solid fa-briefcase",
+    "use_cases": [
+      "Business consultants",
+      "Executive coaches",
+      "Financial advisors",
+      "Management consultants",
+      "Strategy consultants",
+      "Corporate trainers"
+    ]
+  },
+  "metadata": {
+    "tags": ["consultant", "business", "professional", "advisor", "coaching", "corporate"],
+    "is_premium": false,
+    "sort_order": 40,
+    "recommended_themes": ["professional-clean", "minimal-elegant", "modern-dark"]
+  },
+  "preview_image": "preview.jpg",
+  "sections": [
+    {
+      "id": "hero-section",
+      "type": "full_width",
+      "background": "light",
+      "components": [
+        {
+          "type": "hero",
+          "settings": {
+            "layout": "split_screen",
+            "imageStyle": "rounded",
+            "showCTA": true,
+            "minHeight": "550px"
+          },
+          "data": {
+            "headline": "Your Name",
+            "subheadline": "Professional Title | Industry Expert",
+            "description": "Helping organizations achieve measurable results through strategic consulting and proven methodologies.",
+            "cta_text": "Schedule a Consultation",
+            "cta_link": "#contact"
+          }
+        }
+      ]
+    },
+    {
+      "id": "stats-section",
+      "type": "full_width",
+      "background": "primary",
+      "components": [
+        {
+          "type": "stats",
+          "settings": {
+            "layout": "horizontal",
+            "columns": 4,
+            "showIcons": false,
+            "animateNumbers": true
+          },
+          "data": {
+            "items": [
+              { "value": "15+", "label": "Years Experience" },
+              { "value": "200+", "label": "Clients Served" },
+              { "value": "$50M+", "label": "Value Delivered" },
+              { "value": "95%", "label": "Client Retention" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "services-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "topics",
+          "settings": {
+            "layout": "grid",
+            "columns": 3,
+            "showDescriptions": true,
+            "showIcons": true,
+            "style": "cards"
+          },
+          "data": {
+            "title": "How I Can Help",
+            "subtitle": "Specialized expertise across key areas",
+            "items": [
+              {
+                "title": "Strategic Planning",
+                "description": "Develop clear roadmaps that align your team and drive sustainable growth.",
+                "icon": "compass"
+              },
+              {
+                "title": "Operational Excellence",
+                "description": "Streamline processes and optimize performance across your organization.",
+                "icon": "chart-bar"
+              },
+              {
+                "title": "Leadership Development",
+                "description": "Build high-performing teams through tailored coaching and training.",
+                "icon": "users"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "bio-section",
+      "type": "two_column",
+      "columns": {
+        "ratio": "60-40",
+        "1": [
+          {
+            "type": "biography",
+            "settings": {
+              "style": "professional",
+              "showTitle": true
+            },
+            "data": {
+              "title": "About Me",
+              "content": "Share your professional background, approach, and what sets you apart. Include your experience working with different types of organizations.\n\n**Education & Credentials:**\n- MBA from [Business School]\n- [Professional Certification]\n- [Industry Accreditation]\n\n**Industries Served:**\nTechnology, Healthcare, Financial Services, Manufacturing"
+            }
+          }
+        ],
+        "2": [
+          {
+            "type": "profile-photo",
+            "settings": {
+              "style": "rounded",
+              "size": "large"
+            },
+            "data": {
+              "alt": "Professional headshot"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "clients-section",
+      "type": "full_width",
+      "background": "surface",
+      "components": [
+        {
+          "type": "logo-grid",
+          "settings": {
+            "layout": "row",
+            "columns": 6,
+            "showLabels": false,
+            "grayscale": true,
+            "hoverColor": true
+          },
+          "data": {
+            "title": "Trusted By",
+            "logos": [
+              { "name": "Company 1", "alt": "Client logo" },
+              { "name": "Company 2", "alt": "Client logo" },
+              { "name": "Company 3", "alt": "Client logo" },
+              { "name": "Company 4", "alt": "Client logo" },
+              { "name": "Company 5", "alt": "Client logo" },
+              { "name": "Company 6", "alt": "Client logo" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "testimonials-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "testimonials",
+          "settings": {
+            "layout": "cards",
+            "columns": 2,
+            "showPhotos": true,
+            "showCompany": true,
+            "quoteStyle": "standard"
+          },
+          "data": {
+            "title": "Client Results",
+            "items": [
+              {
+                "quote": "Working with [Name] transformed our approach to strategic planning. We saw a 40% improvement in operational efficiency within the first year.",
+                "author": "Executive Name",
+                "role": "CEO",
+                "company": "Company Name"
+              },
+              {
+                "quote": "Practical, insightful, and results-driven. [Name] helped us navigate a critical transition with confidence.",
+                "author": "Executive Name",
+                "role": "VP Operations",
+                "company": "Company Name"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "speaking-section",
+      "type": "full_width",
+      "background": "surface",
+      "components": [
+        {
+          "type": "topics",
+          "settings": {
+            "layout": "list",
+            "showDescriptions": true,
+            "style": "minimal"
+          },
+          "data": {
+            "title": "Speaking Topics",
+            "subtitle": "Available for keynotes, workshops, and corporate training",
+            "items": [
+              {
+                "title": "The Future of Work: Preparing Your Organization for Change",
+                "description": "60-90 minute keynote on navigating workforce transformation"
+              },
+              {
+                "title": "Building a Culture of Excellence",
+                "description": "Half-day workshop on organizational culture and performance"
+              },
+              {
+                "title": "Strategic Decision-Making in Uncertain Times",
+                "description": "Executive session on frameworks for complex decisions"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "contact-section",
+      "type": "two_column",
+      "columns": {
+        "ratio": "55-45",
+        "1": [
+          {
+            "type": "contact",
+            "settings": {
+              "style": "professional",
+              "fields": ["name", "email", "company", "phone", "inquiry_type", "message"],
+              "showLabels": true
+            },
+            "data": {
+              "title": "Start a Conversation",
+              "subtitle": "Let's discuss how I can help your organization",
+              "button_text": "Send Message"
+            }
+          }
+        ],
+        "2": [
+          {
+            "type": "call-to-action",
+            "settings": {
+              "style": "card",
+              "showIcon": true
+            },
+            "data": {
+              "title": "Prefer to Talk?",
+              "description": "Schedule a complimentary 30-minute discovery call to discuss your needs.",
+              "cta_text": "Book a Call",
+              "cta_link": "#"
+            }
+          },
+          {
+            "type": "social",
+            "settings": {
+              "layout": "horizontal",
+              "showLabels": false,
+              "iconSize": "medium"
+            },
+            "data": {
+              "title": "Connect"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
