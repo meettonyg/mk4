@@ -15,6 +15,39 @@
         @profile-loaded="handleProfileLoaded"
         @profile-cleared="handleProfileCleared"
       />
+
+      <!-- Draft Restore Prompt -->
+      <div v-if="showDraftPrompt" class="draft-restore-prompt">
+        <div class="draft-restore-prompt__icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+        </div>
+        <div class="draft-restore-prompt__content">
+          <span class="draft-restore-prompt__title">Restore your draft?</span>
+          <span class="draft-restore-prompt__text">You have an unsaved draft from {{ getLastSavedText() }}</span>
+        </div>
+        <div class="draft-restore-prompt__actions">
+          <button type="button" class="draft-restore-prompt__btn draft-restore-prompt__btn--restore" @click="restoreFromDraft(loadDraft())">
+            Restore
+          </button>
+          <button type="button" class="draft-restore-prompt__btn draft-restore-prompt__btn--dismiss" @click="dismissDraftPrompt">
+            Discard
+          </button>
+        </div>
+      </div>
+
+      <!-- Auto-save indicator -->
+      <div v-if="isAutoSaving" class="auto-save-indicator">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin">
+          <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"/>
+        </svg>
+        Saving draft...
+      </div>
     </template>
 
     <!-- Left Panel: Form -->
@@ -74,12 +107,22 @@
 
         <div class="generator__grid">
           <div class="generator__field">
-            <label class="generator__field-label">Industry</label>
+            <label class="generator__field-label">
+              Industry
+              <span v-if="isFieldPrefilled('industry')" class="generator__prefilled-badge" title="Loaded from your profile">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                from profile
+              </span>
+            </label>
             <input
               v-model="brandContext.industry"
               type="text"
               class="generator__field-input"
+              :class="{ 'generator__field-input--prefilled': isFieldPrefilled('industry') }"
               placeholder="e.g. SaaS, Consulting"
+              @input="markFieldEdited('industry')"
             />
           </div>
           <div class="generator__field">
@@ -215,6 +258,17 @@
                   </svg>
                   Regenerate
                 </button>
+                <button
+                  type="button"
+                  class="generator__button generator__button--outline"
+                  @click="handleCopyAll"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                  Copy All
+                </button>
               </div>
             </div>
 
@@ -325,6 +379,29 @@
               >
                 Start Over
               </button>
+            </div>
+
+            <!-- Cross-tool Navigation -->
+            <div v-if="lockedTagline || selectedTagline" class="tagline-cross-tool-nav">
+              <span class="tagline-cross-tool-nav__label">Continue building your brand:</span>
+              <div class="tagline-cross-tool-nav__links">
+                <a href="/tools/biography/" class="tagline-cross-tool-nav__link">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  Create Biography
+                </a>
+                <a href="/tools/persona/" class="tagline-cross-tool-nav__link">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
+                  Define Persona
+                </a>
+              </div>
             </div>
           </main>
         </div>
@@ -489,6 +566,7 @@ import { ref, computed, onMounted, watch, inject } from 'vue';
 import { useAITagline, STYLE_FOCUS_OPTIONS, TONE_OPTIONS, INTENT_OPTIONS } from '../../src/composables/useAITagline';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
+import { useDraftState } from '../../src/composables/useDraftState';
 
 // Compact widget components (integrated mode)
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
@@ -582,6 +660,24 @@ const isSavingToProfile = ref(false);
 const saveSuccess = ref(false);
 const saveError = ref(null);
 
+// Track which fields were pre-filled from profile
+const prefilledFields = ref(new Set());
+
+// Draft state for auto-saving (standalone mode only)
+const {
+  hasDraft,
+  lastSaved,
+  isAutoSaving,
+  saveDraft,
+  loadDraft,
+  clearDraft,
+  startAutoSave,
+  getLastSavedText
+} = useDraftState('tagline');
+
+// Show draft restore prompt
+const showDraftPrompt = ref(false);
+
 /**
  * The number of items to generate.
  */
@@ -674,6 +770,23 @@ const handleCopy = async () => {
 };
 
 /**
+ * Handle copy all taglines to clipboard as a numbered list
+ */
+const handleCopyAll = async () => {
+  if (!taglines.value || taglines.value.length === 0) return;
+
+  const formattedText = taglines.value
+    .map((tagline, index) => `${index + 1}. ${tagline.text}`)
+    .join('\n');
+
+  try {
+    await navigator.clipboard.writeText(formattedText);
+  } catch (err) {
+    console.error('[TaglineGenerator] Failed to copy all:', err);
+  }
+};
+
+/**
  * Handle apply (integrated mode)
  */
 const handleApply = () => {
@@ -750,6 +863,19 @@ const handleSaveToProfile = async () => {
  */
 const handleStartOver = () => {
   reset();
+  clearDraft(); // Clear saved draft when starting over
+};
+
+/**
+ * Check if a field was pre-filled from profile
+ */
+const isFieldPrefilled = (fieldName) => prefilledFields.value.has(fieldName);
+
+/**
+ * Mark a field as user-edited (clear prefilled status)
+ */
+const markFieldEdited = (fieldName) => {
+  prefilledFields.value.delete(fieldName);
 };
 
 /**
@@ -757,6 +883,20 @@ const handleStartOver = () => {
  */
 function populateFromProfile(profileData) {
   if (!profileData) return;
+
+  // Track which fields get populated
+  const newPrefilledFields = new Set();
+
+  // Check which 6W fields will be populated
+  if (profileData.hook_who || profileData.authority_hook_who) newPrefilledFields.add('who');
+  if (profileData.hook_what || profileData.authority_hook_what) newPrefilledFields.add('what');
+  if (profileData.hook_when || profileData.authority_hook_when) newPrefilledFields.add('when');
+  if (profileData.hook_how || profileData.authority_hook_how) newPrefilledFields.add('how');
+  if (profileData.hook_where || profileData.authority_hook_where) newPrefilledFields.add('where');
+  if (profileData.hook_why || profileData.authority_hook_why) newPrefilledFields.add('why');
+  if (profileData.industry) newPrefilledFields.add('industry');
+
+  prefilledFields.value = newPrefilledFields;
 
   // Use loadFromProfile from composable to populate 6 W's fields
   loadFromProfile(profileData);
@@ -783,6 +923,50 @@ function handleProfileCleared() {
 }
 
 /**
+ * Get current form state for draft saving
+ */
+const getDraftState = () => {
+  return {
+    authorityHook: { ...authorityHook },
+    impactIntro: { ...impactIntro },
+    brandContext: { ...brandContext },
+    styleFocus: styleFocus.value,
+    tone: tone.value,
+    intent: intent.value
+  };
+};
+
+/**
+ * Restore form state from draft
+ */
+const restoreFromDraft = (draftState) => {
+  if (!draftState) return;
+
+  if (draftState.authorityHook) {
+    Object.assign(authorityHook, draftState.authorityHook);
+  }
+  if (draftState.impactIntro) {
+    Object.assign(impactIntro, draftState.impactIntro);
+  }
+  if (draftState.brandContext) {
+    Object.assign(brandContext, draftState.brandContext);
+  }
+  if (draftState.styleFocus) styleFocus.value = draftState.styleFocus;
+  if (draftState.tone) tone.value = draftState.tone;
+  if (draftState.intent) intent.value = draftState.intent;
+
+  showDraftPrompt.value = false;
+};
+
+/**
+ * Dismiss draft prompt without restoring
+ */
+const dismissDraftPrompt = () => {
+  showDraftPrompt.value = false;
+  clearDraft();
+};
+
+/**
  * Sync authority hook from store on mount
  */
 onMounted(() => {
@@ -792,6 +976,16 @@ onMounted(() => {
   const profileToLoad = props.profileData || injectedProfileData.value;
   if (profileToLoad) {
     populateFromProfile(profileToLoad);
+  }
+
+  // Check for saved draft (only in standalone mode)
+  if (props.mode === 'default' && hasDraft.value) {
+    showDraftPrompt.value = true;
+  }
+
+  // Start auto-saving in standalone mode
+  if (props.mode === 'default') {
+    startAutoSave(getDraftState);
   }
 });
 
@@ -944,13 +1138,41 @@ watch(canGenerate, (newValue) => {
 }
 
 .generator__field-label {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 12px;
   font-weight: 700;
   color: var(--mkcg-text-secondary, #64748b);
   margin-bottom: 6px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
+}
+
+/* Prefilled badge for fields loaded from profile */
+.generator__prefilled-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 12px;
+  color: #166534;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.generator__prefilled-badge svg {
+  flex-shrink: 0;
+}
+
+/* Prefilled input highlight */
+.generator__field-input--prefilled {
+  border-color: #86efac;
+  background: linear-gradient(to right, #f0fdf4, #fff);
 }
 
 .generator__field-input {
@@ -1407,4 +1629,135 @@ watch(canGenerate, (newValue) => {
 .gmkb-embedded-input::placeholder { color: var(--mkcg-text-light, #94a3b8); }
 .gmkb-embedded-textarea { resize: vertical; min-height: 80px; }
 .gmkb-embedded-error { margin-top: 16px; padding: 12px 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #991b1b; font-size: 14px; }
+
+/* Draft Restore Prompt */
+.draft-restore-prompt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(to right, #fefce8, #fef9c3);
+  border: 1px solid #fde047;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+
+.draft-restore-prompt__icon {
+  flex-shrink: 0;
+  color: #ca8a04;
+}
+
+.draft-restore-prompt__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.draft-restore-prompt__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #854d0e;
+}
+
+.draft-restore-prompt__text {
+  font-size: 12px;
+  color: #a16207;
+}
+
+.draft-restore-prompt__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.draft-restore-prompt__btn {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.draft-restore-prompt__btn--restore {
+  background: #ca8a04;
+  color: white;
+  border: none;
+}
+
+.draft-restore-prompt__btn--restore:hover {
+  background: #a16207;
+}
+
+.draft-restore-prompt__btn--dismiss {
+  background: transparent;
+  color: #854d0e;
+  border: 1px solid #ca8a04;
+}
+
+.draft-restore-prompt__btn--dismiss:hover {
+  background: rgba(202, 138, 4, 0.1);
+}
+
+/* Auto-save Indicator */
+.auto-save-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin-top: 8px;
+}
+
+/* Cross-tool Navigation */
+.tagline-cross-tool-nav {
+  width: 100%;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--mkcg-border, #e2e8f0);
+}
+
+.tagline-cross-tool-nav__label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.tagline-cross-tool-nav__links {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tagline-cross-tool-nav__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  color: var(--mkcg-text-primary, #0f172a);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.tagline-cross-tool-nav__link:hover {
+  background: var(--mkcg-primary, #3b82f6);
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: white;
+}
+
+.tagline-cross-tool-nav__link svg {
+  flex-shrink: 0;
+}
 </style>

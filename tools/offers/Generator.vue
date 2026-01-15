@@ -227,6 +227,17 @@
                   </svg>
                   Regenerate All
                 </button>
+                <button
+                  type="button"
+                  class="generator__button generator__button--outline"
+                  @click="handleCopyAll"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                  Copy All
+                </button>
               </div>
             </div>
 
@@ -965,6 +976,41 @@ const handleGenerate = async () => {
  */
 const handleCopy = async () => {
   await copyToClipboard();
+};
+
+/**
+ * Handle copy all offers to clipboard as formatted text
+ */
+const handleCopyAll = async () => {
+  // Collect all locked/generated offers
+  const allOffers = [];
+
+  ['entry', 'signature', 'premium'].forEach(tier => {
+    const offer = lockedOffers.value[tier] || offers.value[tier];
+    if (offer) {
+      allOffers.push({
+        tier: tier.charAt(0).toUpperCase() + tier.slice(1),
+        ...offer
+      });
+    }
+  });
+
+  if (allOffers.length === 0) return;
+
+  // Format as readable text
+  const formattedText = allOffers.map(offer => {
+    return `== ${offer.tier} Package ==\n` +
+      `Name: ${offer.name || 'N/A'}\n` +
+      `Price: ${offer.price || 'N/A'}\n` +
+      `Description: ${offer.description || 'N/A'}\n` +
+      `Deliverables: ${offer.deliverables?.join(', ') || 'N/A'}`;
+  }).join('\n\n');
+
+  try {
+    await navigator.clipboard.writeText(formattedText);
+  } catch (err) {
+    console.error('[OffersGenerator] Failed to copy all:', err);
+  }
 };
 
 /**

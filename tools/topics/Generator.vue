@@ -212,6 +212,25 @@
             <span v-if="saveError" class="gfy-save-error">
               {{ saveError }}
             </span>
+
+            <!-- Cross-tool Navigation -->
+            <div v-if="selectedTopics.length > 0" class="gfy-cross-tool-nav">
+              <span class="gfy-cross-tool-nav__label">Next Steps:</span>
+              <a
+                :href="`/tools/questions/?topic=${encodeURIComponent(getFirstSelectedTopicText())}`"
+                class="gfy-cross-tool-nav__link"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                Generate Questions for this Topic
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </a>
+            </div>
           </div>
         </main>
       </div>
@@ -555,6 +574,16 @@ const handleStartOver = () => {
   if (reset) {
     reset();
   }
+};
+
+/**
+ * Get the text of the first selected topic (for cross-tool navigation)
+ */
+const getFirstSelectedTopicText = () => {
+  if (selectedTopics.value.length === 0) return '';
+  const firstIndex = selectedTopics.value[0];
+  const topic = topics.value[firstIndex];
+  return typeof topic === 'string' ? topic : topic.title || topic;
 };
 
 // Watch for canGenerate changes
@@ -1366,6 +1395,46 @@ defineExpose({
   font-size: 0.9rem;
   font-weight: 500;
   color: #dc2626;
+}
+
+/* Cross-tool Navigation */
+.gfy-cross-tool-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--gfy-border-color);
+}
+
+.gfy-cross-tool-nav__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--gfy-text-secondary);
+}
+
+.gfy-cross-tool-nav__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--gfy-primary-light);
+  border: 1px solid var(--gfy-primary-color);
+  border-radius: var(--gfy-radius-md);
+  color: var(--gfy-primary-color);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.gfy-cross-tool-nav__link:hover {
+  background: var(--gfy-primary-color);
+  color: var(--gfy-white);
+}
+
+.gfy-cross-tool-nav__link svg {
+  flex-shrink: 0;
 }
 
 .gfy-spinner {

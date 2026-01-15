@@ -345,6 +345,30 @@
                 AI Variations:
                 <span style="color: var(--gfy-primary-color)">{{ activeSlotLabel }} Biography</span>
               </h3>
+              <div class="gfy-results__actions">
+                <button
+                  type="button"
+                  class="gfy-btn gfy-btn--outline"
+                  @click="handleGenerate"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 4v6h-6M1 20v-6h6"/>
+                    <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                  </svg>
+                  Regenerate
+                </button>
+                <button
+                  type="button"
+                  class="gfy-btn gfy-btn--outline"
+                  @click="handleCopyAll"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                  Copy All
+                </button>
+              </div>
             </div>
 
             <!-- Refinement Loop Box -->
@@ -719,6 +743,45 @@ const handleCopy = async (text) => {
   if (success) {
     copiedText.value = text;
     setTimeout(() => { copiedText.value = ''; }, 2000);
+  }
+};
+
+/**
+ * Handle copy all locked bios to clipboard
+ */
+const handleCopyAll = async () => {
+  const lockedBios = getLockedBios();
+  const parts = [];
+
+  if (lockedBios.short) {
+    parts.push(`== SHORT BIO ==\n${lockedBios.short}`);
+  }
+  if (lockedBios.medium) {
+    parts.push(`== MEDIUM BIO ==\n${lockedBios.medium}`);
+  }
+  if (lockedBios.long) {
+    parts.push(`== LONG BIO ==\n${lockedBios.long}`);
+  }
+
+  if (parts.length === 0) {
+    // Fallback to current variations
+    if (currentVariations.value && currentVariations.value.length > 0) {
+      const formattedVariations = currentVariations.value
+        .map((v, i) => `Option ${i + 1}:\n${v}`)
+        .join('\n\n');
+      try {
+        await navigator.clipboard.writeText(formattedVariations);
+      } catch (err) {
+        console.error('[BiographyGenerator] Failed to copy:', err);
+      }
+    }
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(parts.join('\n\n'));
+  } catch (err) {
+    console.error('[BiographyGenerator] Failed to copy all:', err);
   }
 };
 
@@ -1454,6 +1517,11 @@ defineExpose({
   font-size: 1.25rem;
   font-weight: 700;
   margin: 0;
+}
+
+.gfy-results__actions {
+  display: flex;
+  gap: 8px;
 }
 
 /* REFINEMENT BOX */

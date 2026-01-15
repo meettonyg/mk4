@@ -234,19 +234,42 @@
 
             <!-- Footer Actions -->
             <div class="questions-results__footer">
-              <button
-                type="button"
-                class="generator__button generator__button--call-to-action generator__button--large"
-                :disabled="selectedQuestionsCount === 0"
-                @click="handleSaveToMediaKit"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                  <polyline points="17 21 17 13 7 13 7 21"/>
-                  <polyline points="7 3 7 8 15 8"/>
-                </svg>
-                Save to Media Kit
-              </button>
+              <div class="questions-results__save-area">
+                <button
+                  type="button"
+                  class="generator__button generator__button--call-to-action generator__button--large"
+                  :disabled="selectedQuestionsCount === 0 || isSavingToProfile"
+                  @click="handleSaveToMediaKit"
+                >
+                  <svg v-if="isSavingToProfile" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin">
+                    <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"/>
+                  </svg>
+                  <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                    <polyline points="17 21 17 13 7 13 7 21"/>
+                    <polyline points="7 3 7 8 15 8"/>
+                  </svg>
+                  {{ isSavingToProfile ? 'Saving...' : (hasSelectedProfile ? 'Save to Profile & Media Kit' : 'Save to Media Kit') }}
+                </button>
+
+                <!-- Save Success Message -->
+                <div v-if="saveSuccess" class="questions-save-success">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  Questions saved to your profile!
+                </div>
+
+                <!-- Save Error Message -->
+                <div v-if="saveError" class="questions-save-error">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                  </svg>
+                  {{ saveError }}
+                </div>
+              </div>
               <button
                 type="button"
                 class="generator__button generator__button--ghost"
@@ -375,6 +398,7 @@
 import { ref, reactive, computed, onMounted, watch, inject } from 'vue';
 import { useAIQuestions, QUESTION_CATEGORIES } from '../../src/composables/useAIQuestions';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
+import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 
 // Compact widget components (integrated mode)
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
@@ -442,6 +466,18 @@ const {
 } = useAIQuestions();
 
 const { syncFromStore, loadFromProfileData } = useAuthorityHook();
+
+// Profile save functionality (standalone mode)
+const {
+  selectedProfileId,
+  hasSelectedProfile,
+  saveMultipleToProfile
+} = useStandaloneProfile();
+
+// Save to profile state
+const isSavingToProfile = ref(false);
+const saveSuccess = ref(false);
+const saveError = ref(null);
 
 // Inject profile data from EmbeddedToolWrapper (for embedded mode)
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
@@ -727,12 +763,42 @@ const handleApply = () => {
 
 /**
  * Handle save to media kit - save selected questions
+ * Also saves to profile if in standalone mode with a profile selected
  */
-const handleSaveToMediaKit = () => {
+const handleSaveToMediaKit = async () => {
   // Get all questions from the interview set (both locked and selected)
   const savedQuestions = interviewSet.value
     .filter(slot => slot.question)
     .map(slot => slot.question);
+
+  // Save to profile if in standalone mode with profile selected
+  if (props.mode === 'default' && hasSelectedProfile.value && savedQuestions.length > 0) {
+    isSavingToProfile.value = true;
+    saveSuccess.value = false;
+    saveError.value = null;
+
+    try {
+      // Build question fields object (question_1 through question_10)
+      const questionFields = {};
+      savedQuestions.forEach((question, index) => {
+        if (index < 10) { // Max 10 questions
+          questionFields[`question_${index + 1}`] = question;
+        }
+      });
+
+      const success = await saveMultipleToProfile(questionFields);
+      if (success) {
+        saveSuccess.value = true;
+        setTimeout(() => { saveSuccess.value = false; }, 3000);
+      } else {
+        saveError.value = 'Failed to save questions to profile';
+      }
+    } catch (err) {
+      saveError.value = err.message || 'Failed to save questions';
+    } finally {
+      isSavingToProfile.value = false;
+    }
+  }
 
   emit('applied', {
     componentId: props.componentId,
@@ -1369,6 +1435,49 @@ watch(canGenerate, (newValue) => {
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+.questions-results__save-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Save Success/Error Messages */
+.questions-save-success {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 6px;
+  color: #166534;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.questions-save-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #991b1b;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Spinner animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 
 /* Ghost button variant */
