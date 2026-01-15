@@ -306,7 +306,7 @@
                     <polyline points="20 6 9 17 4 12" stroke="currentColor" stroke-width="3" fill="none"/>
                   </svg>
                 </div>
-                <p class="tagline-row__text">{{ tagline.text || tagline }}</p>
+                <p class="tagline-row__text">{{ tagline.text }}</p>
                 <button
                   v-if="selectedIndex === index && !lockedTagline"
                   type="button"
@@ -427,7 +427,7 @@
           Click a tagline to select it:
         </p>
         <AiResultsDisplay
-          :content="taglines.map(t => t.text || t)"
+          :content="taglines.map(t => t.text)"
           format="cards"
           :selected-index="selectedIndex"
           @select="handleSelectTagline"
@@ -592,17 +592,21 @@ const {
 const { syncFromStore, loadFromProfileData } = useAuthorityHook();
 
 /**
+ * The number of items to generate.
+ */
+const GENERATION_COUNT = 10;
+
+/**
  * Dynamic button text based on intent
  */
 const generateButtonText = computed(() => {
-  const count = 10;
   switch (intent.value) {
     case 'podcast':
-      return `Generate ${count} Hooks`;
+      return `Generate ${GENERATION_COUNT} Hooks`;
     case 'course':
-      return `Generate ${count} Titles`;
+      return `Generate ${GENERATION_COUNT} Titles`;
     default:
-      return `Generate ${count} Taglines`;
+      return `Generate ${GENERATION_COUNT} Taglines`;
   }
 });
 
@@ -751,12 +755,10 @@ function populateFromProfile(profileData) {
 onMounted(() => {
   syncFromStore();
 
-  // Load from injected or prop profile data
-  if (props.profileData) {
-    populateFromProfile(props.profileData);
-  }
-  if (injectedProfileData.value) {
-    populateFromProfile(injectedProfileData.value);
+  // Load from injected or prop profile data. Props take precedence.
+  const profileToLoad = props.profileData || injectedProfileData.value;
+  if (profileToLoad) {
+    populateFromProfile(profileToLoad);
   }
 });
 
