@@ -119,70 +119,217 @@
 
     <!-- Results -->
     <template #results>
-      <div class="offers-generator__results">
-        <div class="offers-generator__results-header">
-          <h3>Your Generated Service Packages</h3>
-          <p>Three tiered options designed to appeal to different client needs</p>
-        </div>
+      <div class="offers-results">
+        <div class="offers-results__layout">
 
-        <!-- Package Cards -->
-        <div class="offers-generator__packages-grid">
-          <div
-            v-for="(pkg, index) in offers"
-            :key="index"
-            class="offers-generator__package"
-            :class="[`offers-generator__package--${pkg.tier || PACKAGE_TIERS[index]?.value || 'entry'}`]"
-          >
-            <div class="offers-generator__package-header">
-              <span class="offers-generator__package-tier">
-                {{ pkg.tier || PACKAGE_TIERS[index]?.label || 'Package' }}
-              </span>
-              <h4 class="offers-generator__package-name">{{ pkg.name }}</h4>
+          <!-- SIDEBAR: Offer Suite -->
+          <aside class="offers-results__sidebar">
+            <div class="offers-suite">
+              <span class="offers-suite__title">Your Offer Suite</span>
+
+              <!-- Entry Package Slot -->
+              <button
+                type="button"
+                class="offers-slot"
+                :class="{
+                  'offers-slot--active': activeOfferTier === 'entry',
+                  'offers-slot--locked': lockedOffers.entry
+                }"
+                @click="setActiveOfferTier('entry')"
+              >
+                <div class="offers-slot__header">
+                  <span class="offers-slot__label">Entry Package</span>
+                  <svg v-if="lockedOffers.entry" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 1C8.676 1 6 3.676 6 7v2H4v14h16V9h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4zm0 10c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/>
+                  </svg>
+                </div>
+                <div class="offers-slot__preview">
+                  {{ lockedOffers.entry?.name || getOfferPreview('entry') || 'Click to generate' }}
+                </div>
+              </button>
+
+              <!-- Signature Package Slot -->
+              <button
+                type="button"
+                class="offers-slot"
+                :class="{
+                  'offers-slot--active': activeOfferTier === 'signature',
+                  'offers-slot--locked': lockedOffers.signature
+                }"
+                @click="setActiveOfferTier('signature')"
+              >
+                <div class="offers-slot__header">
+                  <span class="offers-slot__label">Signature Package</span>
+                  <svg v-if="lockedOffers.signature" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 1C8.676 1 6 3.676 6 7v2H4v14h16V9h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4zm0 10c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/>
+                  </svg>
+                </div>
+                <div class="offers-slot__preview">
+                  {{ lockedOffers.signature?.name || getOfferPreview('signature') || 'Click to generate' }}
+                </div>
+              </button>
+
+              <!-- Premium Package Slot -->
+              <button
+                type="button"
+                class="offers-slot"
+                :class="{
+                  'offers-slot--active': activeOfferTier === 'premium',
+                  'offers-slot--locked': lockedOffers.premium
+                }"
+                @click="setActiveOfferTier('premium')"
+              >
+                <div class="offers-slot__header">
+                  <span class="offers-slot__label">Premium Package</span>
+                  <svg v-if="lockedOffers.premium" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 1C8.676 1 6 3.676 6 7v2H4v14h16V9h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4zm0 10c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/>
+                  </svg>
+                </div>
+                <div class="offers-slot__preview">
+                  {{ lockedOffers.premium?.name || getOfferPreview('premium') || 'Click to generate' }}
+                </div>
+              </button>
+
+              <!-- Locked Summary -->
+              <div v-if="lockedOffersCount > 0" class="offers-suite__summary">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 1C8.676 1 6 3.676 6 7v2H4v14h16V9h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4z"/>
+                </svg>
+                {{ lockedOffersCount }}/3 packages locked
+              </div>
             </div>
+          </aside>
 
-            <p class="offers-generator__package-description">{{ pkg.description }}</p>
-
-            <div class="offers-generator__package-section">
-              <h5 class="offers-generator__package-section-title">Includes:</h5>
-              <ul class="offers-generator__package-deliverables">
-                <li
-                  v-for="(deliverable, dIndex) in pkg.deliverables"
-                  :key="dIndex"
+          <!-- MAIN: Package Variations -->
+          <main class="offers-results__main">
+            <div class="offers-results__header">
+              <h3 class="offers-results__title">
+                {{ activeOfferTierLabel }} Package
+                <span v-if="currentTierOffer" class="offers-results__count">Generated</span>
+              </h3>
+              <div class="offers-results__actions">
+                <button
+                  type="button"
+                  class="generator__button generator__button--outline"
+                  @click="handleGenerate"
                 >
-                  {{ deliverable }}
-                </li>
-              </ul>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 4v6h-6M1 20v-6h6"/>
+                    <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                  </svg>
+                  Regenerate All
+                </button>
+              </div>
             </div>
 
-            <div v-if="pkg.idealClient" class="offers-generator__package-ideal">
-              <strong>Ideal for:</strong> {{ pkg.idealClient }}
+            <!-- Locked State -->
+            <div v-if="lockedOffers[activeOfferTier]" class="offers-locked-card">
+              <div class="offers-locked-card__badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 1C8.676 1 6 3.676 6 7v2H4v14h16V9h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4z"/>
+                </svg>
+                LOCKED {{ activeOfferTierLabel.toUpperCase() }} PACKAGE
+              </div>
+              <h4 class="offers-locked-card__name">{{ lockedOffers[activeOfferTier].name }}</h4>
+              <p class="offers-locked-card__description">{{ lockedOffers[activeOfferTier].description }}</p>
+              <div class="offers-locked-card__actions">
+                <button type="button" class="generator__button generator__button--outline" @click="handleCopy">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                  Copy
+                </button>
+                <button type="button" class="generator__button generator__button--ghost" @click="unlockOffer(activeOfferTier)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+                  </svg>
+                  Unlock & Edit
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Pricing Note -->
-        <div class="offers-generator__note">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="16" x2="12" y2="12"/>
-            <line x1="12" y1="8" x2="12.01" y2="8"/>
-          </svg>
-          <span>Add your own pricing to these packages based on your market positioning.</span>
-        </div>
+            <!-- Package Card (when not locked) -->
+            <div v-else-if="currentTierOffer" class="offers-card">
+              <div class="offers-card__tier-badge" :class="`offers-card__tier-badge--${activeOfferTier}`">
+                {{ activeOfferTierLabel }}
+              </div>
+              <h4 class="offers-card__name">{{ currentTierOffer.name }}</h4>
+              <p class="offers-card__description">{{ currentTierOffer.description }}</p>
 
-        <!-- Actions -->
-        <div class="offers-generator__actions">
-          <button
-            type="button"
-            class="generator__button generator__button--outline"
-            @click="handleCopy"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-            Copy to Clipboard
-          </button>
+              <!-- Metadata Row -->
+              <div class="offers-card__meta">
+                <div class="offers-card__meta-item">
+                  <strong>Investment:</strong> {{ getPriceLabel(priceRange) }}
+                </div>
+                <div class="offers-card__meta-item">
+                  <strong>Delivery:</strong> {{ getDeliveryLabel(delivery) }}
+                </div>
+              </div>
+
+              <!-- Deliverables -->
+              <div class="offers-card__section">
+                <h5 class="offers-card__section-title">Includes:</h5>
+                <ul class="offers-card__deliverables">
+                  <li v-for="(item, idx) in currentTierOffer.deliverables" :key="idx">{{ item }}</li>
+                </ul>
+              </div>
+
+              <div v-if="currentTierOffer.idealClient" class="offers-card__ideal">
+                <strong>Ideal for:</strong> {{ currentTierOffer.idealClient }}
+              </div>
+
+              <div class="offers-card__actions">
+                <button
+                  type="button"
+                  class="generator__button generator__button--call-to-action"
+                  @click="lockOffer(activeOfferTier)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                  Lock {{ activeOfferTierLabel }} Package
+                </button>
+                <button type="button" class="generator__button generator__button--outline" @click="handleCopy">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                  Copy
+                </button>
+              </div>
+            </div>
+
+            <!-- Empty State -->
+            <div v-else class="offers-empty-state">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+              </svg>
+              <p>Generate packages to see {{ activeOfferTierLabel }} offer variations here.</p>
+            </div>
+
+            <!-- Footer Actions -->
+            <div v-if="lockedOffersCount > 0" class="offers-results__footer">
+              <button
+                type="button"
+                class="generator__button generator__button--call-to-action"
+                @click="handleSaveAllOffers"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                Save Offer Suite
+              </button>
+              <button type="button" class="generator__button generator__button--ghost" @click="handleStartOver">
+                Start Over
+              </button>
+            </div>
+          </main>
         </div>
       </div>
     </template>
@@ -449,6 +596,14 @@ const priceRange = ref('');
 const delivery = ref('');
 const audienceChallenges = ref('');
 
+// Results UI state
+const activeOfferTier = ref('entry');
+const lockedOffers = reactive({
+  entry: null,
+  signature: null,
+  premium: null
+});
+
 // Inject profile data from EmbeddedToolWrapper (for embedded mode)
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
 
@@ -546,6 +701,100 @@ const canGenerate = computed(() => {
   // Require services and at least WHO + WHAT from authority hook
   return services.value.trim() && authorityHook.who.trim() && authorityHook.what.trim();
 });
+
+/**
+ * Get tier label for active tier
+ */
+const activeOfferTierLabel = computed(() => {
+  const labels = { entry: 'Entry', signature: 'Signature', premium: 'Premium' };
+  return labels[activeOfferTier.value] || 'Entry';
+});
+
+/**
+ * Get the current tier's offer from generated offers
+ */
+const currentTierOffer = computed(() => {
+  if (!offers.value || offers.value.length === 0) return null;
+  const tierIndex = { entry: 0, signature: 1, premium: 2 };
+  return offers.value[tierIndex[activeOfferTier.value]] || null;
+});
+
+/**
+ * Count of locked offers
+ */
+const lockedOffersCount = computed(() => {
+  return Object.values(lockedOffers).filter(Boolean).length;
+});
+
+/**
+ * Get offer preview for sidebar
+ */
+const getOfferPreview = (tier) => {
+  if (!offers.value || offers.value.length === 0) return null;
+  const tierIndex = { entry: 0, signature: 1, premium: 2 };
+  const offer = offers.value[tierIndex[tier]];
+  return offer?.name || null;
+};
+
+/**
+ * Set active offer tier
+ */
+const setActiveOfferTier = (tier) => {
+  activeOfferTier.value = tier;
+};
+
+/**
+ * Lock an offer
+ */
+const lockOffer = (tier) => {
+  const tierIndex = { entry: 0, signature: 1, premium: 2 };
+  const offer = offers.value[tierIndex[tier]];
+  if (offer) {
+    lockedOffers[tier] = { ...offer };
+  }
+};
+
+/**
+ * Unlock an offer
+ */
+const unlockOffer = (tier) => {
+  lockedOffers[tier] = null;
+};
+
+/**
+ * Get price label from value
+ */
+const getPriceLabel = (value) => {
+  const opt = PRICE_RANGE_OPTIONS.find(o => o.value === value);
+  return opt?.label || 'Contact for pricing';
+};
+
+/**
+ * Get delivery label from value
+ */
+const getDeliveryLabel = (value) => {
+  const opt = DELIVERY_OPTIONS.find(o => o.value === value);
+  return opt?.label || 'Custom delivery';
+};
+
+/**
+ * Handle save all offers
+ */
+const handleSaveAllOffers = () => {
+  emit('generated', {
+    offers: lockedOffers
+  });
+};
+
+/**
+ * Handle start over
+ */
+const handleStartOver = () => {
+  lockedOffers.entry = null;
+  lockedOffers.signature = null;
+  lockedOffers.premium = null;
+  activeOfferTier.value = 'entry';
+};
 
 /**
  * Current intent (for embedded mode)
@@ -1125,5 +1374,335 @@ watch(canGenerateEmbedded, (newValue) => {
   border-radius: 8px;
   color: #991b1b;
   font-size: 14px;
+}
+
+/* ===========================================
+   OFFERS RESULTS - Sidebar + Main Layout
+   =========================================== */
+.offers-results {
+  padding: 0;
+}
+
+.offers-results__layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: var(--mkcg-space-lg, 30px);
+}
+
+@media (min-width: 900px) {
+  .offers-results__layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .offers-results__sidebar {
+    position: sticky;
+    top: 1rem;
+    flex: 0 0 280px;
+  }
+
+  .offers-results__main {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* Offer Suite Sidebar */
+.offers-suite {
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.offers-suite__title {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin-bottom: 12px;
+  letter-spacing: 0.5px;
+}
+
+.offers-slot {
+  display: block;
+  width: 100%;
+  padding: 1rem;
+  background: #fff;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s;
+  cursor: pointer;
+  text-align: left;
+}
+
+.offers-slot:hover {
+  border-color: var(--mkcg-primary, #3b82f6);
+}
+
+.offers-slot--active {
+  border-color: var(--mkcg-primary, #3b82f6);
+  box-shadow: 0 0 0 2px var(--mkcg-primary, #3b82f6);
+}
+
+.offers-slot--locked {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: var(--mkcg-primary, #3b82f6);
+}
+
+.offers-slot__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.offers-slot__label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.offers-slot--locked .offers-slot__label {
+  color: var(--mkcg-primary, #3b82f6);
+}
+
+.offers-slot--locked .offers-slot__header svg {
+  color: var(--mkcg-primary, #3b82f6);
+}
+
+.offers-slot__preview {
+  font-size: 11px;
+  color: var(--mkcg-text-muted, #94a3b8);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.offers-suite__summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 10px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mkcg-primary, #3b82f6);
+}
+
+/* Main Area */
+.offers-results__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--mkcg-border, #e2e8f0);
+}
+
+.offers-results__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.offers-results__count {
+  display: inline-block;
+  background: var(--mkcg-primary, #3b82f6);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 10px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.offers-results__actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Offer Card */
+.offers-card {
+  padding: 1.5rem;
+  background: #fff;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 12px;
+  margin-bottom: 1rem;
+}
+
+.offers-card__tier-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.offers-card__tier-badge--entry {
+  color: #475569;
+  background: #f1f5f9;
+}
+
+.offers-card__tier-badge--signature {
+  color: var(--mkcg-primary, #3b82f6);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.offers-card__tier-badge--premium {
+  color: #d97706;
+  background: #fef3c7;
+}
+
+.offers-card__name {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0 0 8px 0;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.offers-card__description {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin: 0 0 16px 0;
+}
+
+.offers-card__meta {
+  display: flex;
+  gap: 20px;
+  padding: 12px 16px;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border-radius: 8px;
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+
+.offers-card__meta-item strong {
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.offers-card__section {
+  margin-bottom: 16px;
+}
+
+.offers-card__section-title {
+  margin: 0 0 8px 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--mkcg-text-secondary, #64748b);
+  letter-spacing: 0.5px;
+}
+
+.offers-card__deliverables {
+  margin: 0;
+  padding: 0 0 0 20px;
+  font-size: 14px;
+  color: var(--mkcg-text-primary, #0f172a);
+  line-height: 1.7;
+}
+
+.offers-card__deliverables li {
+  margin-bottom: 6px;
+}
+
+.offers-card__ideal {
+  padding-top: 16px;
+  border-top: 1px solid var(--mkcg-border, #e2e8f0);
+  font-size: 14px;
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.offers-card__ideal strong {
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.offers-card__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--mkcg-border, #e2e8f0);
+}
+
+/* Locked Card */
+.offers-locked-card {
+  padding: 1.5rem;
+  background: rgba(59, 130, 246, 0.08);
+  border: 2px solid var(--mkcg-primary, #3b82f6);
+  border-radius: 12px;
+}
+
+.offers-locked-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--mkcg-primary, #3b82f6);
+  background: #fff;
+  padding: 4px 12px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.offers-locked-card__name {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0 0 8px 0;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.offers-locked-card__description {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin: 0 0 16px 0;
+}
+
+.offers-locked-card__actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* Empty State */
+.offers-empty-state {
+  text-align: center;
+  padding: 60px 40px;
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.offers-empty-state svg {
+  color: var(--mkcg-text-muted, #94a3b8);
+  margin-bottom: 16px;
+}
+
+.offers-empty-state p {
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Footer */
+.offers-results__footer {
+  margin-top: 2rem;
+  border-top: 1px solid var(--mkcg-border, #e2e8f0);
+  padding-top: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 </style>

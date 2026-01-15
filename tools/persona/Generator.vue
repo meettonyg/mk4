@@ -134,32 +134,177 @@
 
     <!-- Results -->
     <template #results>
-      <div class="persona-generator__results">
-        <div class="persona-generator__results-header">
-          <h3>Your Ideal Client Persona</h3>
-          <p>A comprehensive profile to guide your marketing and service delivery</p>
-        </div>
+      <div class="persona-results">
+        <div class="persona-results__layout">
 
-        <!-- Persona Content -->
-        <div class="persona-generator__content">
-          <div class="persona-generator__text">
-            {{ displayContent }}
-          </div>
-        </div>
+          <!-- SIDEBAR: Buying Committee -->
+          <aside class="persona-results__sidebar">
+            <div class="persona-committee">
+              <span class="persona-committee__title">Buying Committee</span>
 
-        <!-- Actions -->
-        <div class="persona-generator__actions">
-          <button
-            type="button"
-            class="generator__button generator__button--outline"
-            @click="handleCopy"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-            Copy to Clipboard
-          </button>
+              <!-- Primary Buyer Slot -->
+              <button
+                type="button"
+                class="persona-slot"
+                :class="{
+                  'persona-slot--active': activePersonaType === 'primary',
+                  'persona-slot--locked': lockedPersonas.primary
+                }"
+                @click="setActivePersonaType('primary')"
+              >
+                <div class="persona-slot__header">
+                  <span class="persona-slot__label">Primary Buyer</span>
+                  <svg v-if="lockedPersonas.primary" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 1C8.676 1 6 3.676 6 7v2H4v14h16V9h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4zm0 10c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/>
+                  </svg>
+                </div>
+                <div class="persona-slot__preview">
+                  {{ lockedPersonas.primary?.name || (hasContent ? 'Generated persona ready' : 'Click to generate') }}
+                </div>
+              </button>
+
+              <!-- Secondary Buyer Slot (future) -->
+              <button
+                type="button"
+                class="persona-slot persona-slot--disabled"
+                disabled
+              >
+                <div class="persona-slot__header">
+                  <span class="persona-slot__label">Secondary Buyer</span>
+                </div>
+                <div class="persona-slot__preview">Coming soon</div>
+              </button>
+
+              <!-- Locked Summary -->
+              <div v-if="lockedPersonasCount > 0" class="persona-committee__summary">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 1C8.676 1 6 3.676 6 7v2H4v14h16V9h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4z"/>
+                </svg>
+                {{ lockedPersonasCount }}/1 persona locked
+              </div>
+            </div>
+          </aside>
+
+          <!-- MAIN: Persona Card -->
+          <main class="persona-results__main">
+            <div class="persona-results__header">
+              <h3 class="persona-results__title">
+                Primary Buyer Persona
+                <span v-if="hasContent" class="persona-results__count">Generated</span>
+              </h3>
+              <div class="persona-results__actions">
+                <button
+                  type="button"
+                  class="generator__button generator__button--outline"
+                  @click="handleGenerate"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 4v6h-6M1 20v-6h6"/>
+                    <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                  </svg>
+                  Regenerate
+                </button>
+              </div>
+            </div>
+
+            <!-- Locked State -->
+            <div v-if="lockedPersonas.primary" class="persona-locked-card">
+              <div class="persona-locked-card__badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 1C8.676 1 6 3.676 6 7v2H4v14h16V9h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4z"/>
+                </svg>
+                LOCKED PERSONA
+              </div>
+              <div class="persona-locked-card__content">
+                {{ lockedPersonas.primary.content }}
+              </div>
+              <div class="persona-locked-card__actions">
+                <button type="button" class="generator__button generator__button--outline" @click="handleCopy">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                  Copy
+                </button>
+                <button type="button" class="generator__button generator__button--ghost" @click="unlockPersona('primary')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+                  </svg>
+                  Unlock & Edit
+                </button>
+              </div>
+            </div>
+
+            <!-- Persona Card (when not locked) -->
+            <div v-else-if="hasContent" class="persona-card">
+              <!-- Avatar + Name -->
+              <div class="persona-card__header">
+                <div class="persona-card__avatar">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+                  </svg>
+                </div>
+                <div class="persona-card__identity">
+                  <span class="persona-card__archetype">IDEAL CLIENT PERSONA</span>
+                  <h4 class="persona-card__name">The {{ formData.industry || 'Professional' }}</h4>
+                </div>
+              </div>
+
+              <!-- Persona Content -->
+              <div class="persona-card__content">
+                {{ displayContent }}
+              </div>
+
+              <div class="persona-card__actions">
+                <button
+                  type="button"
+                  class="generator__button generator__button--call-to-action"
+                  @click="lockPersona('primary')"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                  Lock Persona
+                </button>
+                <button type="button" class="generator__button generator__button--outline" @click="handleCopy">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                  Copy
+                </button>
+              </div>
+            </div>
+
+            <!-- Empty State -->
+            <div v-else class="persona-empty-state">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3z"/>
+              </svg>
+              <p>Generate a persona to see your ideal client profile here.</p>
+            </div>
+
+            <!-- Footer Actions -->
+            <div v-if="lockedPersonasCount > 0" class="persona-results__footer">
+              <button
+                type="button"
+                class="generator__button generator__button--call-to-action"
+                @click="handleSavePersona"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                Save Persona
+              </button>
+              <button type="button" class="generator__button generator__button--ghost" @click="handleStartOver">
+                Start Over
+              </button>
+            </div>
+          </main>
         </div>
       </div>
     </template>
@@ -406,6 +551,69 @@ const authorityHook = reactive({
 
 // Market context
 const awarenessLevel = ref('');
+
+// Results UI state
+const activePersonaType = ref('primary');
+const lockedPersonas = reactive({
+  primary: null
+});
+
+/**
+ * Computed: Count of locked personas
+ */
+const lockedPersonasCount = computed(() => {
+  return Object.values(lockedPersonas).filter(Boolean).length;
+});
+
+/**
+ * Set active persona type in sidebar
+ */
+const setActivePersonaType = (type) => {
+  activePersonaType.value = type;
+};
+
+/**
+ * Lock current persona
+ */
+const lockPersona = (type) => {
+  if (generatedContent.value) {
+    lockedPersonas[type] = {
+      name: `The ${formData.industry || 'Professional'}`,
+      content: generatedContent.value
+    };
+  }
+};
+
+/**
+ * Unlock a persona
+ */
+const unlockPersona = (type) => {
+  lockedPersonas[type] = null;
+};
+
+/**
+ * Handle save persona action
+ */
+const handleSavePersona = () => {
+  if (lockedPersonas.primary) {
+    emit('generated', {
+      content: lockedPersonas.primary.content,
+      locked: true
+    });
+  }
+};
+
+/**
+ * Handle start over action
+ */
+const handleStartOver = () => {
+  // Clear all locked personas
+  Object.keys(lockedPersonas).forEach(key => {
+    lockedPersonas[key] = null;
+  });
+  // Reset the active type
+  activePersonaType.value = 'primary';
+};
 
 // Inject profile data from EmbeddedToolWrapper (for embedded mode)
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
@@ -848,5 +1056,323 @@ watch(canGenerateEmbedded, (newValue) => {
   border-radius: 8px;
   color: #991b1b;
   font-size: 14px;
+}
+
+/* ========================================
+   Persona Results Layout with Sidebar
+   ======================================== */
+.persona-results {
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border-radius: 12px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.persona-results__layout {
+  display: flex;
+  gap: 0;
+  min-height: 500px;
+}
+
+/* Sidebar */
+.persona-results__sidebar {
+  width: 240px;
+  min-width: 240px;
+  background: var(--mkcg-bg-primary, #ffffff);
+  border-right: 1px solid var(--mkcg-border, #e2e8f0);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.persona-committee {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.persona-committee__title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--mkcg-text-secondary, #64748b);
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+}
+
+/* Persona Slots */
+.persona-slot {
+  display: flex;
+  flex-direction: column;
+  padding: 0.875rem;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.persona-slot:hover:not(.persona-slot--disabled) {
+  border-color: var(--mkcg-primary, #3b82f6);
+  background: var(--mkcg-bg-primary, #ffffff);
+}
+
+.persona-slot--active {
+  border-color: var(--mkcg-primary, #3b82f6);
+  background: var(--mkcg-bg-primary, #ffffff);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.persona-slot--locked {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.persona-slot--locked .persona-slot__label {
+  color: #047857;
+}
+
+.persona-slot--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+}
+
+.persona-slot__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.375rem;
+}
+
+.persona-slot__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.persona-slot__preview {
+  font-size: 11px;
+  color: var(--mkcg-text-secondary, #64748b);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.persona-committee__summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--mkcg-border, #e2e8f0);
+  font-size: 12px;
+  color: #047857;
+  font-weight: 500;
+}
+
+/* Main Content Area */
+.persona-results__main {
+  flex: 1;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.persona-results__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.persona-results__title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--mkcg-text-primary, #0f172a);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.persona-results__count {
+  font-size: 11px;
+  font-weight: 500;
+  color: #10b981;
+  background: #f0fdf4;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.persona-results__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Persona Card */
+.persona-card {
+  background: var(--mkcg-bg-primary, #ffffff);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 12px;
+  padding: 1.5rem;
+  flex: 1;
+}
+
+.persona-card__header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--mkcg-border, #e2e8f0);
+}
+
+.persona-card__avatar {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.persona-card__identity {
+  flex: 1;
+}
+
+.persona-card__archetype {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #8b5cf6;
+  margin-bottom: 0.25rem;
+}
+
+.persona-card__name {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--mkcg-text-primary, #0f172a);
+  margin: 0;
+}
+
+.persona-card__content {
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  color: var(--mkcg-text-primary, #0f172a);
+  white-space: pre-wrap;
+  margin-bottom: 1.5rem;
+}
+
+.persona-card__actions {
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--mkcg-border, #e2e8f0);
+}
+
+/* Locked Persona Card */
+.persona-locked-card {
+  background: #f0fdf4;
+  border: 2px solid #10b981;
+  border-radius: 12px;
+  padding: 1.5rem;
+  flex: 1;
+}
+
+.persona-locked-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #047857;
+  background: #dcfce7;
+  padding: 0.375rem 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.persona-locked-card__content {
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  color: #166534;
+  white-space: pre-wrap;
+  margin-bottom: 1.5rem;
+}
+
+.persona-locked-card__actions {
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #a7f3d0;
+}
+
+/* Empty State */
+.persona-empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: var(--mkcg-text-secondary, #64748b);
+  text-align: center;
+}
+
+.persona-empty-state svg {
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.persona-empty-state p {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+/* Footer */
+.persona-results__footer {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--mkcg-border, #e2e8f0);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .persona-results__layout {
+    flex-direction: column;
+  }
+
+  .persona-results__sidebar {
+    width: 100%;
+    min-width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--mkcg-border, #e2e8f0);
+  }
+
+  .persona-committee {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .persona-committee__title {
+    width: 100%;
+  }
+
+  .persona-slot {
+    flex: 1;
+    min-width: 150px;
+  }
 }
 </style>
