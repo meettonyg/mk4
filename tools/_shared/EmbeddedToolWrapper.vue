@@ -44,22 +44,22 @@
           ></slot>
         </div>
 
-        <!-- Generate Action (hidden in single column mode when results showing) -->
-        <template v-if="!(singleColumn && hasGenerated)">
-          <div class="tool-context__actions">
-            <button
-              class="gmkb-btn-generate"
-              type="button"
-              :disabled="isGenerating || !canGenerate"
-              @click="handleGenerate"
-            >
-              <span v-if="!isGenerating" class="gmkb-btn-icon">✨</span>
-              <span v-if="isGenerating" class="gmkb-btn-spinner"></span>
-              {{ isGenerating ? generatingText : generateButtonText }}
-            </button>
-          </div>
+        <!-- Generate Action (hidden after generation in single column mode - Generator has its own buttons) -->
+        <div v-if="!singleColumn || !hasGenerated" class="tool-context__actions">
+          <button
+            class="gmkb-btn-generate"
+            type="button"
+            :disabled="isGenerating || !canGenerate"
+            @click="handleGenerate"
+          >
+            <span v-if="!isGenerating" class="gmkb-btn-icon">✨</span>
+            <span v-if="isGenerating" class="gmkb-btn-spinner"></span>
+            {{ isGenerating ? generatingText : generateButtonText }}
+          </button>
+        </div>
 
-          <!-- Rate Limit / Progressive Friction (guests only) -->
+        <!-- Rate Limit / Progressive Friction (guests only, hidden after generation in single column) -->
+        <template v-if="!(singleColumn && hasGenerated)">
           <p v-if="!isLoggedIn" class="tool-context__limit-text">
             <span v-if="generationCount < 3">
               {{ remainingGenerations }} free generation{{ remainingGenerations !== 1 ? 's' : '' }} remaining today.
@@ -461,11 +461,11 @@ const props = defineProps({
   },
   /**
    * Single column mode - hides the preview area for a full-width form
-   * Use this for tools that handle their own results display
+   * Default is now true - preview area removed from all tools
    */
   singleColumn: {
     type: Boolean,
-    default: false
+    default: true
   }
 });
 

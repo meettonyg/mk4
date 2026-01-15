@@ -184,33 +184,49 @@ BAD example (DO NOT do this - too long):
 
 Generate 10 SHORT topic titles now:',
 
-            'questions' => 'Generate 25 interview questions for a podcast guest with this background:
+            'questions' => 'Generate {{count}} interview questions for a podcast guest with this background:
 
 Authority Hook: {{authorityHook}}
 Topics they discuss: {{topics}}
 
 Requirements:
-- Start with 5 introductory questions (background, journey, what led them here)
-- Include 10 expertise questions (diving deep into their methodology and insights)
-- Include 5 story-based questions (asking for specific examples and case studies)
-- End with 5 actionable questions (what listeners can do, resources, next steps)
+- Create open-ended questions that invite storytelling and insights
+- Include a mix of introductory, expertise, story-based, and actionable questions
+- Questions should showcase the guest\'s unique expertise and methodology
+- Avoid yes/no questions - make them conversation starters
 
-Format: Return as a numbered list (1-25), with each question on its own line.',
+Format: Return as a numbered list (1-{{count}}), with each question on its own line.',
 
-            'tagline' => 'Create 5 tagline options for someone with this positioning:
+            'tagline' => 'Create {{count}} powerful tagline options for someone with this positioning:
 
-Authority Hook: {{authorityHook}}
+=== AUTHORITY FRAMEWORK ===
+WHO they help: {{who}}
+WHAT they help achieve: {{what}}
+WHEN clients need this: {{when}}
+HOW they deliver: {{how}}
+WHERE their authority comes from: {{where}}
+WHY this is their mission: {{why}}
+
+Authority Hook Summary: {{authorityHook}}
 Name: {{name}}
 
-Requirements:
-- Each tagline should be under 10 words
-- Vary the approaches: some benefit-focused, some identity-focused, some methodology-focused
-- Make them memorable and quotable
-- Ensure they work in various contexts (social bio, email signature, business card)
+{{refinementSection}}
+
+=== REQUIREMENTS ===
+{{wordCountRequirement}}
+- Make them immediately memorable and repeatable
+- Focus on transformation, not features
+- Avoid cliches and generic phrases
+- Each should work standalone without explanation
+- Vary the structure across all options
 
 Tone: {{tone}}
 
-Format: Return as a numbered list (1-5), with each tagline on its own line.',
+IMPORTANT: You MUST generate exactly {{count}} taglines, numbered 1 through {{count}}.
+Format as a numbered list:
+1. [Tagline]
+2. [Tagline]
+...',
 
             'guest_intro' => 'Write a compelling guest introduction for:
 
@@ -313,7 +329,7 @@ Generate {{count}} impact intro variations NOW using ONLY the information provid
             'biography' => 1000,  // Longer for multiple lengths
             'topics' => 500,
             'questions' => 2000,  // 25 questions need more space
-            'tagline' => 300,
+            'tagline' => 600,  // Increased for 10 variations
             'guest_intro' => 400,
             'offers' => 1500,
             'authority_hook' => 600,  // Increased for 5 variations

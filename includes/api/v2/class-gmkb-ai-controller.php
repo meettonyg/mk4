@@ -481,6 +481,13 @@ class GMKB_AI_Controller {
     /**
      * Main AI content generation endpoint
      *
+     * @deprecated Since 3.0.0 - Use /ai/tool/generate endpoint instead.
+     *
+     * NEW TOOLS SHOULD NOT USE THIS ENDPOINT.
+     * This endpoint uses hardcoded prompt templates in class-gmkb-ai-config.php.
+     * Use /ai/tool/generate with a prompts.php file in your tool directory instead.
+     * See tools/guest-intro/prompts.php for reference implementation.
+     *
      * POST /wp-json/gmkb/v2/ai/generate
      *
      * @param WP_REST_Request $request
@@ -490,6 +497,14 @@ class GMKB_AI_Controller {
         $type = $request->get_param('type');
         $params = $request->get_param('params');
         $context = $request->get_param('context') ?? 'public';
+
+        // DEPRECATION WARNING - Always log this
+        error_log(sprintf(
+            '[DEPRECATED] /ai/generate endpoint called for type "%s". ' .
+            'New tools should use /ai/tool/generate with prompts.php. ' .
+            'See tools/guest-intro/ for reference.',
+            $type
+        ));
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('GMKB AI Controller: Generate request');
@@ -638,11 +653,18 @@ class GMKB_AI_Controller {
                 break;
 
             case 'guest_intro':
-                // Guest intro needs bio or credentials
-                if (empty($params['biography']) && empty($params['credentials'])) {
+                // Guest intro needs guest name and context (title, topic, or authority hook)
+                if (empty($params['guestName'])) {
                     return new WP_Error(
                         'missing_params',
-                        'Guest intro generation requires biography or credentials.',
+                        'Guest intro generation requires a guest name.',
+                        array('status' => 400)
+                    );
+                }
+                if (empty($params['guestTitle']) && empty($params['topic']) && empty($params['authorityHook'])) {
+                    return new WP_Error(
+                        'missing_params',
+                        'Guest intro generation requires title, topic, or authority hook data.',
                         array('status' => 400)
                     );
                 }

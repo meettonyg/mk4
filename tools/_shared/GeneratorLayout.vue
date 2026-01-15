@@ -12,7 +12,7 @@
     </div>
 
     <!-- Main Content Area -->
-    <div class="generator__content">
+    <div class="generator__content" :class="{ 'generator__content--single': singleColumn || !$slots.right }">
       <!-- Left Panel (Form) -->
       <div class="generator__panel generator__panel--left">
         <!-- Intro Text -->
@@ -27,8 +27,8 @@
         </div>
       </div>
 
-      <!-- Right Panel (Guidance) -->
-      <div class="generator__panel generator__panel--right">
+      <!-- Right Panel (Guidance) - hidden in single column mode -->
+      <div v-if="!singleColumn && $slots.right" class="generator__panel generator__panel--right">
         <slot name="right"></slot>
       </div>
     </div>
@@ -90,6 +90,14 @@ const props = defineProps({
   isLoading: {
     type: Boolean,
     default: false
+  },
+
+  /**
+   * Single column mode (no right panel)
+   */
+  singleColumn: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -127,5 +135,11 @@ const containerClass = computed(() => {
   margin-top: var(--mkcg-space-lg);
   padding-top: var(--mkcg-space-md);
   border-top: 1px solid var(--mkcg-border-light);
+}
+
+/* Single column mode - left panel takes full width */
+.generator__content--single .generator__panel--left {
+  flex: 1 1 100%;
+  max-width: 100%;
 }
 </style>
