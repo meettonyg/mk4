@@ -27,17 +27,55 @@
             List the services you want to package and sell.
           </p>
         </div>
+      </div>
+
+      <!-- Authority Hook Section -->
+      <AuthorityHookBuilder
+        :model-value="authorityHook"
+        @update:model-value="Object.assign(authorityHook, $event)"
+        title="Authority Context"
+        :placeholders="{
+          who: 'e.g., SaaS Founders scaling to $10M ARR',
+          what: 'e.g., Increase revenue by 40% in 90 days',
+          when: 'e.g., When they\'re stuck at a growth plateau',
+          how: 'e.g., My proven Revenue Acceleration System'
+        }"
+      />
+
+      <!-- Offer Details Section -->
+      <div class="generator__section">
+        <h3 class="generator__section-title">Offer Details</h3>
+
+        <div class="generator__field-row">
+          <div class="generator__field">
+            <label class="generator__field-label">Price Range</label>
+            <select v-model="priceRange" class="generator__field-input generator__field-select">
+              <option v-for="opt in PRICE_RANGE_OPTIONS" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
+
+          <div class="generator__field">
+            <label class="generator__field-label">Delivery Method</label>
+            <select v-model="delivery" class="generator__field-input generator__field-select">
+              <option v-for="opt in DELIVERY_OPTIONS" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
+        </div>
 
         <div class="generator__field">
-          <label class="generator__field-label">Your Expertise *</label>
+          <label class="generator__field-label">Audience Challenges</label>
           <textarea
-            v-model="authorityHookText"
+            v-model="audienceChallenges"
             class="generator__field-input generator__field-textarea"
-            placeholder="e.g., I help entrepreneurs scale their businesses through strategic planning and leadership development..."
+            placeholder="e.g., Struggling to find time, overwhelmed by options, not seeing results from current approach..."
             rows="3"
           ></textarea>
           <p class="generator__field-helper">
-            Describe what you do and who you help.
+            What problems or challenges does your audience face that your offer solves?
           </p>
         </div>
       </div>
@@ -309,7 +347,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, inject } from 'vue';
+import { ref, reactive, computed, onMounted, watch, inject } from 'vue';
 import { useAIOffers, PACKAGE_TIERS } from '../../src/composables/useAIOffers';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 
@@ -318,7 +356,25 @@ import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
 import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
+import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
+
+// Options for select fields
+const PRICE_RANGE_OPTIONS = [
+  { value: '', label: 'Select price range...' },
+  { value: 'budget', label: 'Budget ($0-$500)' },
+  { value: 'mid', label: 'Mid-Range ($500-$2,000)' },
+  { value: 'premium', label: 'Premium ($2,000-$10,000)' },
+  { value: 'luxury', label: 'Luxury ($10,000+)' }
+];
+
+const DELIVERY_OPTIONS = [
+  { value: '', label: 'Select delivery method...' },
+  { value: 'digital', label: 'Digital / Online' },
+  { value: 'in-person', label: 'In-Person' },
+  { value: 'hybrid', label: 'Hybrid (Both)' },
+  { value: 'self-paced', label: 'Self-Paced Course' },
+  { value: 'live', label: 'Live Sessions' }
+];
 
 const props = defineProps({
   /**
@@ -380,6 +436,19 @@ const { authorityHookSummary, syncFromStore, loadFromProfileData } = useAuthorit
 const services = ref('');
 const authorityHookText = ref('');
 
+// Authority Hook (structured fields)
+const authorityHook = reactive({
+  who: '',
+  what: '',
+  when: '',
+  how: ''
+});
+
+// Business context fields
+const priceRange = ref('');
+const delivery = ref('');
+const audienceChallenges = ref('');
+
 // Inject profile data from EmbeddedToolWrapper (for embedded mode)
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
 
@@ -394,9 +463,23 @@ function populateFromProfile(profileData) {
     services.value = profileData.hook_what;
   }
 
-  // Populate authority hook text
+  // Populate authority hook text (for integrated mode)
   if (profileData.authority_hook && !authorityHookText.value) {
     authorityHookText.value = profileData.authority_hook;
+  }
+
+  // Populate structured authority hook fields
+  if (profileData.hook_who && !authorityHook.who) {
+    authorityHook.who = profileData.hook_who;
+  }
+  if (profileData.hook_what && !authorityHook.what) {
+    authorityHook.what = profileData.hook_what;
+  }
+  if (profileData.hook_when && !authorityHook.when) {
+    authorityHook.when = profileData.hook_when;
+  }
+  if (profileData.hook_how && !authorityHook.how) {
+    authorityHook.how = profileData.hook_how;
   }
 
   // Populate authority hook fields from profile data (for cross-tool sync)
@@ -441,10 +524,27 @@ const examples = [
 ];
 
 /**
+ * Computed authority hook summary from structured fields
+ */
+const computedAuthorityHookSummary = computed(() => {
+  const { who, what, when, how } = authorityHook;
+  if (!who && !what) return '';
+
+  let summary = 'I help';
+  if (who) summary += ` ${who}`;
+  if (what) summary += ` ${what}`;
+  if (when) summary += ` ${when}`;
+  if (how) summary += ` through ${how}`;
+
+  return summary + '.';
+});
+
+/**
  * Can generate check
  */
 const canGenerate = computed(() => {
-  return services.value.trim() && authorityHookText.value.trim();
+  // Require services and at least WHO + WHAT from authority hook
+  return services.value.trim() && authorityHook.who.trim() && authorityHook.what.trim();
 });
 
 /**
@@ -492,9 +592,16 @@ const canGenerateEmbedded = computed(() => {
 const handleGenerate = async () => {
   try {
     const context = props.mode === 'integrated' ? 'builder' : 'public';
+    // Use computed summary or fallback to text field for integrated mode
+    const authorityHookValue = computedAuthorityHookSummary.value || authorityHookText.value;
+
     await generate({
       services: services.value,
-      authorityHook: authorityHookText.value
+      authorityHook: authorityHookValue,
+      authorityHookFields: { ...authorityHook },
+      priceRange: priceRange.value,
+      delivery: delivery.value,
+      audienceChallenges: audienceChallenges.value
     }, context);
 
     emit('generated', {
@@ -618,6 +725,24 @@ watch(canGenerateEmbedded, (newValue) => {
   font-weight: var(--mkcg-font-weight-semibold, 600);
   color: var(--mkcg-text-primary, #2c3e50);
   margin: 0 0 var(--mkcg-space-md, 20px) 0;
+}
+
+.generator__field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--mkcg-space-md, 20px);
+  margin-bottom: var(--mkcg-space-md, 20px);
+}
+
+@media (max-width: 600px) {
+  .generator__field-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.generator__field-select {
+  height: 48px;
+  cursor: pointer;
 }
 
 .generator__actions {

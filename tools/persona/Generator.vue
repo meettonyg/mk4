@@ -11,6 +11,19 @@
   >
     <!-- Left Panel: Form -->
     <template #left>
+      <!-- Authority Hook Section -->
+      <AuthorityHookBuilder
+        :model-value="authorityHook"
+        @update:model-value="Object.assign(authorityHook, $event)"
+        title="Who Do You Help?"
+        :placeholders="{
+          who: 'e.g., SaaS Founders scaling to $10M ARR',
+          what: 'e.g., Increase revenue by 40% in 90 days',
+          when: 'e.g., When they\'re stuck at a growth plateau',
+          how: 'e.g., My proven Revenue Acceleration System'
+        }"
+      />
+
       <!-- Services Section -->
       <div class="generator__section">
         <h3 class="generator__section-title">Your Business Information</h3>
@@ -55,13 +68,25 @@
         </div>
       </div>
 
-      <!-- Tone Settings -->
+      <!-- Market Context -->
       <div class="generator__section">
-        <h3 class="generator__section-title">Generation Settings</h3>
+        <h3 class="generator__section-title">Market Context</h3>
+
+        <div class="generator__field">
+          <label class="generator__field-label">Awareness Level</label>
+          <select v-model="awarenessLevel" class="generator__field-input generator__field-select">
+            <option v-for="opt in AWARENESS_OPTIONS" :key="opt.value" :value="opt.value">
+              {{ opt.label }}
+            </option>
+          </select>
+          <p class="generator__field-helper">
+            Where is your ideal client in their buying journey? (Eugene Schwartz's 5 levels)
+          </p>
+        </div>
 
         <div class="generator__field">
           <label class="generator__field-label">Tone</label>
-          <select v-model="formData.tone" class="generator__field-input">
+          <select v-model="formData.tone" class="generator__field-input generator__field-select">
             <option value="professional">Professional</option>
             <option value="conversational">Conversational</option>
             <option value="detailed">Detailed</option>
@@ -274,7 +299,17 @@ import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
+import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
+
+// Awareness level options (Eugene Schwartz's 5 levels)
+const AWARENESS_OPTIONS = [
+  { value: '', label: 'Select awareness level...' },
+  { value: 'unaware', label: 'Unaware - Don\'t know they have a problem' },
+  { value: 'problem-aware', label: 'Problem Aware - Know the problem, not the solution' },
+  { value: 'solution-aware', label: 'Solution Aware - Know solutions exist, not yours' },
+  { value: 'product-aware', label: 'Product Aware - Know your product, not convinced' },
+  { value: 'most-aware', label: 'Most Aware - Ready to buy, need a deal' }
+];
 
 const props = defineProps({
   /**
@@ -361,6 +396,17 @@ config.fields.forEach(field => {
 });
 formData.tone = 'professional';
 
+// Authority Hook (simplified: WHO + WHAT)
+const authorityHook = reactive({
+  who: '',
+  what: '',
+  when: '',
+  how: ''
+});
+
+// Market context
+const awarenessLevel = ref('');
+
 // Inject profile data from EmbeddedToolWrapper (for embedded mode)
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
 
@@ -378,6 +424,20 @@ function populateFromProfile(profileData) {
   // Populate industry from industry field
   if (profileData.industry && !formData.industry) {
     formData.industry = profileData.industry;
+  }
+
+  // Populate structured authority hook fields
+  if (profileData.hook_who && !authorityHook.who) {
+    authorityHook.who = profileData.hook_who;
+  }
+  if (profileData.hook_what && !authorityHook.what) {
+    authorityHook.what = profileData.hook_what;
+  }
+  if (profileData.hook_when && !authorityHook.when) {
+    authorityHook.when = profileData.hook_when;
+  }
+  if (profileData.hook_how && !authorityHook.how) {
+    authorityHook.how = profileData.hook_how;
   }
 }
 
@@ -519,7 +579,11 @@ const canGenerateEmbedded = computed(() => {
 const handleGenerate = async () => {
   try {
     const context = props.mode === 'integrated' ? 'builder' : 'public';
-    const params = { ...formData };
+    const params = {
+      ...formData,
+      authorityHookFields: { ...authorityHook },
+      awarenessLevel: awarenessLevel.value
+    };
 
     await generate(params, context);
 
@@ -647,6 +711,11 @@ watch(canGenerateEmbedded, (newValue) => {
 .generator__error p {
   color: #991b1b;
   margin: 0 0 var(--mkcg-space-sm, 12px) 0;
+}
+
+.generator__field-select {
+  height: 48px;
+  cursor: pointer;
 }
 
 /* Persona Results */

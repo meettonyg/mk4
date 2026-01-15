@@ -114,14 +114,24 @@
             </div>
 
             <div class="gfy-form-group">
-              <label class="gfy-form-label">Organization / Company</label>
+              <label class="gfy-form-label">Professional Title</label>
               <input
-                v-model="optionalFields.organization"
+                v-model="optionalFields.title"
                 type="text"
                 class="gfy-form-input"
-                placeholder="e.g., Acme Corporation"
+                placeholder="e.g., Executive Coach & Leadership Strategist"
               />
             </div>
+          </div>
+
+          <div class="gfy-form-group">
+            <label class="gfy-form-label">Organization / Company</label>
+            <input
+              v-model="optionalFields.organization"
+              type="text"
+              class="gfy-form-input"
+              placeholder="e.g., Acme Corporation"
+            />
           </div>
         </div>
 
