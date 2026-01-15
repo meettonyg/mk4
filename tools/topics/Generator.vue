@@ -14,57 +14,17 @@
       </div>
 
       <!-- Authority Hook Builder -->
-      <div class="gfy-authority-hook">
-        <div class="gfy-authority-hook__header">
-          <span class="gfy-authority-hook__icon">&#9733;</span>
-          <h3 class="gfy-authority-hook__title">Your Authority Hook</h3>
-        </div>
-
-        <!-- Builder Grid -->
-        <div class="gfy-builder">
-          <div class="gfy-builder__field">
-            <label class="gfy-builder__label">WHO do you help?</label>
-            <input
-              v-model="hookWho"
-              type="text"
-              class="gfy-builder__input"
-              placeholder="e.g. SaaS Founders"
-            />
-          </div>
-          <div class="gfy-builder__field">
-            <label class="gfy-builder__label">WHAT is the result?</label>
-            <input
-              v-model="hookWhat"
-              type="text"
-              class="gfy-builder__input"
-              placeholder="e.g. Increase revenue by 40%"
-            />
-          </div>
-          <div class="gfy-builder__field">
-            <label class="gfy-builder__label">WHEN do they need it?</label>
-            <input
-              v-model="hookWhen"
-              type="text"
-              class="gfy-builder__input"
-              placeholder="e.g. When scaling rapidly"
-            />
-          </div>
-          <div class="gfy-builder__field">
-            <label class="gfy-builder__label">HOW do you do it?</label>
-            <input
-              v-model="hookHow"
-              type="text"
-              class="gfy-builder__input"
-              placeholder="e.g. My proven 90-day system"
-            />
-          </div>
-        </div>
-
-        <!-- Live Preview -->
-        <div class="gfy-live-preview">
-          "{{ hookPreview }}"
-        </div>
-      </div>
+      <AuthorityHookBuilder
+        :model-value="authorityHook"
+        @update:model-value="Object.assign(authorityHook, $event)"
+        title="Your Authority Hook"
+        :placeholders="{
+          who: 'e.g. SaaS Founders',
+          what: 'e.g. Increase revenue by 40%',
+          when: 'e.g. When scaling rapidly',
+          how: 'e.g. My proven 90-day system'
+        }"
+      />
     </div>
 
     <!-- Results Section -->
@@ -260,10 +220,11 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject } from 'vue';
+import { ref, reactive, computed, watch, inject } from 'vue';
 import { useAITopics } from '../../src/composables/useAITopics';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
+import { AuthorityHookBuilder } from '../_shared';
 
 // Constants
 const MAX_SELECTED_TOPICS = 5;
@@ -324,20 +285,22 @@ watch(resolvedProfileId, (newId) => {
   selectedProfileId.value = newId;
 }, { immediate: true });
 
-// Authority Hook Builder fields
-const hookWho = ref('');
-const hookWhat = ref('');
-const hookWhen = ref('');
-const hookHow = ref('');
+// Authority Hook Builder fields (reactive object for shared component)
+const authorityHook = reactive({
+  who: '',
+  what: '',
+  when: '',
+  how: ''
+});
 
 /**
  * Computed: Live preview of authority hook
  */
 const hookPreview = computed(() => {
-  const who = hookWho.value || '[WHO]';
-  const what = hookWhat.value || '[WHAT]';
-  const when = hookWhen.value || '[WHEN]';
-  const how = hookHow.value || '[HOW]';
+  const who = authorityHook.who || '[WHO]';
+  const what = authorityHook.what || '[WHAT]';
+  const when = authorityHook.when || '[WHEN]';
+  const how = authorityHook.how || '[HOW]';
   return `I help ${who} ${what} ${when} through ${how}.`;
 });
 
@@ -345,10 +308,10 @@ const hookPreview = computed(() => {
  * Computed: Generated authority hook summary
  */
 const generatedHookSummary = computed(() => {
-  if (!hookWho.value && !hookWhat.value) return '';
-  let summary = `I help ${hookWho.value || ''} ${hookWhat.value || ''}`;
-  if (hookWhen.value) summary += ` ${hookWhen.value}`;
-  if (hookHow.value) summary += ` through ${hookHow.value}`;
+  if (!authorityHook.who && !authorityHook.what) return '';
+  let summary = `I help ${authorityHook.who || ''} ${authorityHook.what || ''}`;
+  if (authorityHook.when) summary += ` ${authorityHook.when}`;
+  if (authorityHook.how) summary += ` through ${authorityHook.how}`;
   return summary.trim() + '.';
 });
 
@@ -357,14 +320,14 @@ const generatedHookSummary = computed(() => {
  */
 const canGenerate = computed(() => {
   return (expertise.value && expertise.value.trim().length > 0) ||
-         (hookWho.value && hookWhat.value);
+         (authorityHook.who && authorityHook.what);
 });
 
 /**
  * Check if user has entered any authority hook data
  */
 const hasAuthorityHookData = computed(() => {
-  return !!(hookWho.value || hookWhat.value || hookWhen.value || hookHow.value);
+  return !!(authorityHook.who || authorityHook.what || authorityHook.when || authorityHook.how);
 });
 
 /**
@@ -434,10 +397,10 @@ const toggleLock = (position) => {
  */
 function populateFromProfile(profileData) {
   if (!profileData) return;
-  if (profileData.hook_who) hookWho.value = profileData.hook_who;
-  if (profileData.hook_what) hookWhat.value = profileData.hook_what;
-  if (profileData.hook_when) hookWhen.value = profileData.hook_when;
-  if (profileData.hook_how) hookHow.value = profileData.hook_how;
+  if (profileData.hook_who) authorityHook.who = profileData.hook_who;
+  if (profileData.hook_what) authorityHook.what = profileData.hook_what;
+  if (profileData.hook_when) authorityHook.when = profileData.hook_when;
+  if (profileData.hook_how) authorityHook.how = profileData.hook_how;
   if (profileData.expertise) expertise.value = profileData.expertise;
 
   // Load existing topics with locked status (all locked by default)
@@ -547,10 +510,10 @@ const handleSaveToMediaKit = async () => {
     let hookResult = { success: true };
     if (saveAuthorityHook.value && hasAuthorityHookData.value) {
       hookResult = await saveToProfile('authority_hook', {
-        who: hookWho.value,
-        what: hookWhat.value,
-        when: hookWhen.value,
-        how: hookHow.value,
+        who: authorityHook.who,
+        what: authorityHook.what,
+        when: authorityHook.when,
+        how: authorityHook.how,
         summary: generatedHookSummary.value
       }, {
         profileId: selectedProfileId.value
@@ -601,16 +564,17 @@ watch(canGenerate, (newValue) => {
 
 // Watch authority hook changes
 watch(
-  [hookWho, hookWhat, hookWhen, hookHow],
+  authorityHook,
   () => {
     emit('authority-hook-update', {
-      who: hookWho.value,
-      what: hookWhat.value,
-      when: hookWhen.value,
-      how: hookHow.value,
+      who: authorityHook.who,
+      what: authorityHook.what,
+      when: authorityHook.when,
+      how: authorityHook.how,
       summary: generatedHookSummary.value
     });
-  }
+  },
+  { deep: true }
 );
 
 // Watch profile data from both props and inject

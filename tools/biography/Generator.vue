@@ -126,124 +126,28 @@
         </div>
 
         <!-- Authority Hook Section (WHO, WHAT, WHEN, HOW) -->
-        <div class="gfy-highlight-box gfy-highlight-box--blue">
-          <div class="gfy-highlight-box__header">
-            <span class="gfy-highlight-box__icon">
-              <i class="fas fa-star"></i>
-            </span>
-            <div>
-              <h3 class="gfy-highlight-box__title">Authority Hook</h3>
-              <p class="gfy-highlight-box__subtitle">Define WHO you help, WHAT results you deliver, WHEN they need it, and HOW you do it.</p>
-            </div>
-          </div>
-
-          <div class="gfy-builder">
-            <div class="gfy-builder__field">
-              <label class="gfy-builder__label">
-                <span class="gfy-builder__label-badge">WHO</span>
-                Who do you help?
-              </label>
-              <input
-                v-model="authorityHook.who"
-                type="text"
-                class="gfy-builder__input"
-                placeholder="e.g., SaaS Founders scaling to $10M ARR"
-              />
-            </div>
-
-            <div class="gfy-builder__field">
-              <label class="gfy-builder__label">
-                <span class="gfy-builder__label-badge">WHAT</span>
-                What result do you deliver?
-              </label>
-              <input
-                v-model="authorityHook.what"
-                type="text"
-                class="gfy-builder__input"
-                placeholder="e.g., Increase revenue by 40% in 90 days"
-              />
-            </div>
-
-            <div class="gfy-builder__field">
-              <label class="gfy-builder__label">
-                <span class="gfy-builder__label-badge">WHEN</span>
-                When do they need your help?
-              </label>
-              <input
-                v-model="authorityHook.when"
-                type="text"
-                class="gfy-builder__input"
-                placeholder="e.g., When they're stuck at a growth plateau"
-              />
-            </div>
-
-            <div class="gfy-builder__field">
-              <label class="gfy-builder__label">
-                <span class="gfy-builder__label-badge">HOW</span>
-                How do you achieve results?
-              </label>
-              <input
-                v-model="authorityHook.how"
-                type="text"
-                class="gfy-builder__input"
-                placeholder="e.g., My proven Revenue Acceleration System"
-              />
-            </div>
-          </div>
-
-          <!-- Live Preview -->
-          <div v-if="authorityHookSummary" class="gfy-live-preview">
-            <span class="gfy-live-preview__label">Preview:</span>
-            "{{ authorityHookSummary }}"
-          </div>
-        </div>
+        <AuthorityHookBuilder
+          :model-value="authorityHook"
+          @update:model-value="Object.assign(authorityHook, $event)"
+          title="Authority Hook"
+          :placeholders="{
+            who: 'e.g., SaaS Founders scaling to $10M ARR',
+            what: 'e.g., Increase revenue by 40% in 90 days',
+            when: 'e.g., When they\'re stuck at a growth plateau',
+            how: 'e.g., My proven Revenue Acceleration System'
+          }"
+        />
 
         <!-- Impact Intro Section (WHERE, WHY) -->
-        <div class="gfy-highlight-box gfy-highlight-box--green">
-          <div class="gfy-highlight-box__header">
-            <span class="gfy-highlight-box__icon">
-              <i class="fas fa-trophy"></i>
-            </span>
-            <div>
-              <h3 class="gfy-highlight-box__title">Impact Intro</h3>
-              <p class="gfy-highlight-box__subtitle">Showcase WHERE you've made an impact and WHY you do what you do.</p>
-            </div>
-          </div>
-
-          <div class="gfy-builder gfy-builder--two-col">
-            <div class="gfy-builder__field gfy-builder__field--full">
-              <label class="gfy-builder__label">
-                <span class="gfy-builder__label-badge gfy-builder__label-badge--green">WHERE</span>
-                Credentials & Achievements
-              </label>
-              <textarea
-                v-model="impactIntro.where"
-                class="gfy-builder__textarea"
-                rows="2"
-                placeholder="e.g., Featured in Forbes, Inc., and Entrepreneur. Keynoted at 50+ conferences worldwide."
-              ></textarea>
-            </div>
-
-            <div class="gfy-builder__field gfy-builder__field--full">
-              <label class="gfy-builder__label">
-                <span class="gfy-builder__label-badge gfy-builder__label-badge--green">WHY</span>
-                Your Mission or Purpose
-              </label>
-              <textarea
-                v-model="impactIntro.why"
-                class="gfy-builder__textarea"
-                rows="2"
-                placeholder="e.g., Help every founder achieve sustainable growth without sacrificing their health or relationships."
-              ></textarea>
-            </div>
-          </div>
-
-          <!-- Impact Preview -->
-          <div v-if="impactIntroSummary" class="gfy-live-preview gfy-live-preview--green">
-            <span class="gfy-live-preview__label">Preview:</span>
-            "{{ impactIntroSummary }}"
-          </div>
-        </div>
+        <ImpactIntroBuilder
+          :model-value="impactIntro"
+          @update:model-value="Object.assign(impactIntro, $event)"
+          title="Impact Intro"
+          :placeholders="{
+            where: 'e.g., Featured in Forbes, Inc., and Entrepreneur. Keynoted at 50+ conferences worldwide.',
+            why: 'e.g., Help every founder achieve sustainable growth without sacrificing their health or relationships.'
+          }"
+        />
 
         <!-- Optional Context Section -->
         <div class="gfy-form-section gfy-form-section--optional">
@@ -570,7 +474,7 @@
 import { ref, computed, watch, inject } from 'vue';
 import { useAIBiography, SLOT_STATUS, LENGTH_OPTIONS, getVariationCount } from '../../src/composables/useAIBiography';
 import { useProfileContext } from '../../src/composables/useProfileContext';
-import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
+import { EMBEDDED_PROFILE_DATA_KEY, AuthorityHookBuilder, ImpactIntroBuilder } from '../_shared';
 
 // Integrated mode components
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
