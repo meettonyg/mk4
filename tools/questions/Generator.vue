@@ -3,47 +3,108 @@
   <GeneratorLayout
     v-if="mode === 'default'"
     title="Interview Questions Generator"
-    subtitle="Generate 25 thoughtful interview questions organized by category using AI"
-    intro-text="Generate 25 professional interview questions organized into four strategic categories: Introductory Questions, Expertise Deep-Dives, Story-Based Questions, and Actionable Takeaways. Each question is designed to help you have engaging, insightful conversations with your guests."
+    subtitle="Select a topic to generate questions, or tweak the wording to match your specific guesting strategy."
+    intro-text="Generate 10 professional interview questions tailored to your selected topic and authority hook."
     generator-type="questions"
     :has-results="hasQuestions"
     :is-loading="isGenerating"
   >
     <!-- Left Panel: Form -->
     <template #left>
-      <!-- Topics Section -->
-      <div class="generator__section">
-        <h3 class="generator__section-title">Interview Topics</h3>
 
-        <div class="generator__field">
-          <label class="generator__field-label">Topics You Discuss *</label>
+      <!-- STEP 1: Topic Selection -->
+      <div class="generator__section">
+        <h3 class="generator__section-title">Step 1: Choose or Tweak Your Topic</h3>
+
+        <!-- Topic Selection Grid -->
+        <div v-if="availableTopics.length > 0" class="questions-topic-grid">
+          <button
+            v-for="(topic, index) in availableTopics"
+            :key="index"
+            type="button"
+            class="questions-topic-card"
+            :class="{ 'questions-topic-card--active': selectedTopicIndex === index }"
+            @click="selectTopic(index)"
+          >
+            <span class="questions-topic-card__number">{{ index + 1 }}</span>
+            <span class="questions-topic-card__text">{{ topic }}</span>
+          </button>
+        </div>
+
+        <!-- No Topics Message -->
+        <div v-else class="questions-topic-empty">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 16v-4M12 8h.01"/>
+          </svg>
+          <p>No topics available. Generate topics first using the Topics Generator, or enter a custom topic below.</p>
+        </div>
+
+        <!-- Refine Selected Topic Textarea -->
+        <div class="questions-refine-container">
+          <span class="questions-refine-hint">Refine Selected Topic</span>
           <textarea
-            v-model="topicsText"
-            class="generator__field-input generator__field-textarea"
-            placeholder="e.g., Leadership development, Building high-performance teams, Navigating career transitions..."
-            rows="4"
+            v-model="refinedTopic"
+            class="questions-refine-textarea"
+            rows="2"
+            placeholder="Enter or customize your interview topic..."
           ></textarea>
-          <p class="generator__field-helper">
-            List 3-5 topics you typically discuss in interviews. Be specific about the areas you want to explore with your guests.
-          </p>
         </div>
       </div>
 
-      <!-- Context Section -->
+      <!-- STEP 2: Authority Hook -->
       <div class="generator__section">
-        <h3 class="generator__section-title">Additional Context (Optional)</h3>
+        <h3 class="generator__section-title">Step 2: Confirm Your Authority Hook</h3>
 
-        <div class="generator__field">
-          <label class="generator__field-label">Your Background</label>
-          <textarea
-            v-model="authorityHookText"
-            class="generator__field-input generator__field-textarea"
-            placeholder="e.g., Former Fortune 500 executive turned leadership coach..."
-            rows="3"
-          ></textarea>
-          <p class="generator__field-helper">
-            Add context about your background or expertise to generate more relevant and tailored questions.
-          </p>
+        <div class="questions-authority-hook">
+          <div class="questions-authority-hook__header">
+            <span class="questions-authority-hook__icon">★</span>
+            <h4 class="questions-authority-hook__title">Personalize Your Questions</h4>
+          </div>
+
+          <div class="questions-authority-hook__grid">
+            <div class="questions-authority-hook__field">
+              <label class="questions-authority-hook__label">WHO do you help?</label>
+              <input
+                v-model="authorityHook.who"
+                type="text"
+                class="questions-authority-hook__input"
+                placeholder="e.g. SaaS Founders"
+              />
+            </div>
+            <div class="questions-authority-hook__field">
+              <label class="questions-authority-hook__label">WHAT is the result?</label>
+              <input
+                v-model="authorityHook.what"
+                type="text"
+                class="questions-authority-hook__input"
+                placeholder="e.g. Increase revenue by 40%"
+              />
+            </div>
+            <div class="questions-authority-hook__field">
+              <label class="questions-authority-hook__label">WHEN do they need it?</label>
+              <input
+                v-model="authorityHook.when"
+                type="text"
+                class="questions-authority-hook__input"
+                placeholder="e.g. When scaling rapidly"
+              />
+            </div>
+            <div class="questions-authority-hook__field">
+              <label class="questions-authority-hook__label">HOW do you do it?</label>
+              <input
+                v-model="authorityHook.how"
+                type="text"
+                class="questions-authority-hook__input"
+                placeholder="e.g. My proven 90-day system"
+              />
+            </div>
+          </div>
+
+          <!-- Live Preview -->
+          <div v-if="authorityHookPreview" class="questions-authority-hook__preview">
+            "{{ authorityHookPreview }}"
+          </div>
         </div>
       </div>
 
@@ -59,9 +120,13 @@
           <svg v-if="!isGenerating" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
           </svg>
-          {{ isGenerating ? 'Generating Questions...' : 'Generate 25 Questions with AI' }}
+          {{ isGenerating ? 'Generating Questions...' : 'Generate 10 Questions' }}
         </button>
       </div>
+
+      <p class="generator__hint-text">
+        Generate questions for your specific audience in seconds.
+      </p>
 
       <!-- Error Display -->
       <div v-if="error" class="generator__error">
@@ -86,62 +151,88 @@
 
     <!-- Results -->
     <template #results>
-      <div class="questions-generator__results">
-        <div class="questions-generator__results-header">
-          <h3>Your Generated Questions</h3>
-          <p>{{ questions.length }} questions across {{ categories.length }} categories</p>
-        </div>
+      <div class="questions-results">
+        <div class="questions-results__layout">
 
-        <!-- Category Accordion -->
-        <div class="questions-generator__accordion">
-          <div
-            v-for="category in categories"
-            :key="category.key"
-            class="questions-generator__accordion-item"
-            :class="{ 'questions-generator__accordion-item--open': openCategory === category.key }"
-          >
-            <button
-              type="button"
-              class="questions-generator__accordion-header"
-              @click="toggleCategory(category.key)"
-            >
-              <span class="questions-generator__accordion-title">
-                {{ category.label }}
-                <span class="questions-generator__badge">
-                  {{ getCategoryQuestions(category.key).length }}
-                </span>
-              </span>
-              <svg class="questions-generator__accordion-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
-            </button>
-            <div v-if="openCategory === category.key" class="questions-generator__accordion-content">
-              <ol class="questions-generator__questions-list">
-                <li
-                  v-for="(question, index) in getCategoryQuestions(category.key)"
-                  :key="index"
-                  class="questions-generator__question-item"
-                >
-                  {{ question }}
-                </li>
-              </ol>
+          <!-- SIDEBAR: Selected Topic -->
+          <aside class="questions-results__sidebar">
+            <div class="questions-results__topic-card">
+              <div class="questions-results__topic-header">
+                <h3 class="questions-results__topic-title">Interview Topic</h3>
+              </div>
+              <div class="questions-results__topic-preview">
+                {{ refinedTopic || 'No topic selected' }}
+              </div>
+              <p class="questions-results__topic-hint">
+                Questions are tailored to this specific topic.
+              </p>
             </div>
-          </div>
-        </div>
+          </aside>
 
-        <!-- Actions -->
-        <div class="questions-generator__actions">
-          <button
-            type="button"
-            class="generator__button generator__button--outline"
-            @click="handleCopy"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-            Copy All Questions
-          </button>
+          <!-- MAIN: Questions List -->
+          <main class="questions-results__main">
+            <div class="questions-results__header">
+              <h3 class="questions-results__title">{{ questions.length }} Generated Questions</h3>
+              <div class="questions-results__actions">
+                <button
+                  type="button"
+                  class="generator__button generator__button--outline"
+                  @click="handleGenerate"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 4v6h-6M1 20v-6h6"/>
+                    <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                  </svg>
+                  Regenerate
+                </button>
+              </div>
+            </div>
+
+            <!-- Questions List -->
+            <div class="questions-list">
+              <div
+                v-for="(question, index) in questions"
+                :key="index"
+                class="questions-list__item"
+              >
+                <span class="questions-list__number">{{ index + 1 }}</span>
+                <p class="questions-list__text">{{ question }}</p>
+                <button
+                  type="button"
+                  class="questions-list__copy-btn"
+                  title="Copy question"
+                  @click="copyQuestion(index)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="questions-results__footer">
+              <button
+                type="button"
+                class="generator__button generator__button--call-to-action"
+                @click="handleCopy"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+                Copy All Questions
+              </button>
+              <button
+                type="button"
+                class="generator__button generator__button--ghost"
+                @click="handleStartOver"
+              >
+                Start Over
+              </button>
+            </div>
+          </main>
         </div>
       </div>
     </template>
@@ -151,7 +242,7 @@
   <AiWidgetFrame
     v-else-if="mode === 'integrated'"
     title="Interview Questions Generator"
-    description="Generate 25 thoughtful interview questions organized by category."
+    description="Generate thoughtful interview questions for your selected topic."
     :mode="mode"
     :is-loading="isGenerating"
     :has-results="hasQuestions"
@@ -168,37 +259,34 @@
   >
     <!-- Input Form -->
     <div class="gmkb-ai-form">
-      <!-- Topics Field -->
+      <!-- Topic Selection (Compact) -->
       <div class="gmkb-ai-form-group">
-        <label class="gmkb-ai-label gmkb-ai-label--required">Topics You Discuss</label>
+        <label class="gmkb-ai-label gmkb-ai-label--required">Interview Topic</label>
         <textarea
-          v-model="topicsText"
+          v-model="refinedTopic"
           class="gmkb-ai-input gmkb-ai-textarea"
-          placeholder="e.g., Leadership development, Building high-performance teams, Navigating career transitions..."
-          rows="3"
-        ></textarea>
-        <span class="gmkb-ai-hint">
-          List 3-5 topics you typically discuss in interviews.
-        </span>
-      </div>
-
-      <!-- Authority Hook (optional) -->
-      <div class="gmkb-ai-form-group">
-        <label class="gmkb-ai-label">Your Background (Optional)</label>
-        <textarea
-          v-model="authorityHookText"
-          class="gmkb-ai-input gmkb-ai-textarea"
-          placeholder="e.g., Former Fortune 500 executive turned leadership coach..."
+          placeholder="e.g., The 3 Hidden Revenue Leaks Killing Your Growth"
           rows="2"
         ></textarea>
         <span class="gmkb-ai-hint">
-          Add context about your background for more relevant questions.
+          Enter the topic you want to generate questions for.
         </span>
+      </div>
+
+      <!-- Authority Hook (Compact) -->
+      <div class="gmkb-ai-form-group">
+        <label class="gmkb-ai-label">Who do you help? (Optional)</label>
+        <input
+          v-model="authorityHook.who"
+          type="text"
+          class="gmkb-ai-input"
+          placeholder="e.g., SaaS Founders"
+        />
       </div>
 
       <!-- Generate Button -->
       <AiGenerateButton
-        text="Generate 25 Questions"
+        text="Generate 10 Questions"
         loading-text="Generating questions..."
         :loading="isGenerating"
         :disabled="!canGenerate"
@@ -210,46 +298,19 @@
     <!-- Results -->
     <template #results>
       <div v-if="hasQuestions" class="gmkb-ai-questions">
-        <!-- Category Accordion -->
-        <div class="gmkb-ai-accordion">
-          <div
-            v-for="category in categories"
-            :key="category.key"
-            class="gmkb-ai-accordion__item"
-            :class="{ 'gmkb-ai-accordion__item--open': openCategory === category.key }"
+        <ol class="gmkb-ai-questions__list">
+          <li
+            v-for="(question, index) in questions"
+            :key="index"
+            class="gmkb-ai-questions__item"
           >
-            <button
-              type="button"
-              class="gmkb-ai-accordion__header"
-              @click="toggleCategory(category.key)"
-            >
-              <span>
-                {{ category.label }}
-                <span class="gmkb-ai-badge gmkb-ai-badge--primary">
-                  {{ getCategoryQuestions(category.key).length }}
-                </span>
-              </span>
-              <svg class="gmkb-ai-accordion__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
-            </button>
-            <div v-if="openCategory === category.key" class="gmkb-ai-accordion__content">
-              <ol class="gmkb-ai-questions__list">
-                <li
-                  v-for="(question, index) in getCategoryQuestions(category.key)"
-                  :key="index"
-                  class="gmkb-ai-questions__item"
-                >
-                  {{ question }}
-                </li>
-              </ol>
-            </div>
-          </div>
-        </div>
+            {{ question }}
+          </li>
+        </ol>
 
         <!-- Total Count -->
         <div class="gmkb-ai-questions__summary">
-          {{ questions.length }} questions generated across {{ categories.length }} categories
+          {{ questions.length }} questions generated
         </div>
       </div>
     </template>
@@ -260,23 +321,23 @@
     <!-- Simplified form for landing page -->
     <div class="gmkb-embedded-fields">
       <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.topics || 'Topics You Discuss' }} *</label>
+        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.topics || 'Interview Topic' }} *</label>
         <textarea
-          v-model="topicsText"
+          v-model="refinedTopic"
           class="gmkb-embedded-input gmkb-embedded-textarea"
-          :placeholder="currentIntent?.formPlaceholders?.topics || 'e.g., Leadership development, Building high-performance teams...'"
-          rows="3"
+          :placeholder="currentIntent?.formPlaceholders?.topics || 'e.g., The 3 Hidden Revenue Leaks Killing Your Growth'"
+          rows="2"
         ></textarea>
       </div>
 
       <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.background || 'Your Background (Optional)' }}</label>
-        <textarea
-          v-model="authorityHookText"
-          class="gmkb-embedded-input gmkb-embedded-textarea"
-          :placeholder="currentIntent?.formPlaceholders?.background || 'e.g., Former Fortune 500 executive turned leadership coach...'"
-          rows="2"
-        ></textarea>
+        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.who || 'Who do you help? (Optional)' }}</label>
+        <input
+          v-model="authorityHook.who"
+          type="text"
+          class="gmkb-embedded-input"
+          :placeholder="currentIntent?.formPlaceholders?.who || 'e.g., SaaS Founders'"
+        />
       </div>
     </div>
 
@@ -288,7 +349,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, inject } from 'vue';
+import { ref, reactive, computed, onMounted, watch, inject } from 'vue';
 import { useAIQuestions, QUESTION_CATEGORIES } from '../../src/composables/useAIQuestions';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 
@@ -301,10 +362,7 @@ import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_s
 
 const props = defineProps({
   /**
-   * Mode: 'integrated', 'standalone', or 'embedded'
-   * - standalone: Full two-panel layout with guidance
-   * - integrated: Compact widget for embedding in other components
-   * - embedded: Landing page embed with simplified form
+   * Mode: 'default', 'integrated', or 'embedded'
    */
   mode: {
     type: String,
@@ -322,7 +380,6 @@ const props = defineProps({
 
   /**
    * Intent object for embedded mode
-   * Contains: { id, label, contextHeading, contextDescription, formPlaceholders, formLabels }
    */
   intent: {
     type: Object,
@@ -331,11 +388,18 @@ const props = defineProps({
 
   /**
    * Profile data for pre-population (embedded mode)
-   * Passed from EmbeddedToolWrapper via scoped slot
    */
   profileData: {
     type: Object,
     default: null
+  },
+
+  /**
+   * Available topics from Topics Generator (passed as prop)
+   */
+  topics: {
+    type: Array,
+    default: () => []
   }
 });
 
@@ -349,26 +413,78 @@ const {
   resetTime,
   questions,
   hasQuestions,
-  introductoryQuestions,
-  expertiseQuestions,
-  storyQuestions,
-  actionableQuestions,
   generate,
-  copyToClipboard
+  copyToClipboard,
+  reset
 } = useAIQuestions();
 
-const { authorityHookSummary, syncFromStore, loadFromProfileData } = useAuthorityHook();
-
-// Local state
-const topicsText = ref('');
-const authorityHookText = ref('');
-const openCategory = ref('introductory');
-
-// Categories config
-const categories = QUESTION_CATEGORIES;
+const { syncFromStore, loadFromProfileData } = useAuthorityHook();
 
 // Inject profile data from EmbeddedToolWrapper (for embedded mode)
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+
+// Local state
+const selectedTopicIndex = ref(-1);
+const refinedTopic = ref('');
+
+// Authority Hook state (reactive object for 4 W's)
+const authorityHook = reactive({
+  who: '',
+  what: '',
+  when: '',
+  how: ''
+});
+
+// Available topics (from props or default examples)
+const availableTopics = computed(() => {
+  if (props.topics && props.topics.length > 0) {
+    return props.topics;
+  }
+  // Default example topics if none provided
+  return [
+    'The 3 Hidden Revenue Leaks Killing Your Growth',
+    'Why Most Scaling Strategies Fail',
+    'From Overwhelmed Owner to Strategic CEO',
+    'Building Systems That Scale',
+    'The 7-Figure Timeline'
+  ];
+});
+
+// Authority Hook live preview
+const authorityHookPreview = computed(() => {
+  const { who, what, when, how } = authorityHook;
+  if (!who && !what) return '';
+
+  let preview = 'I help';
+  if (who) preview += ` ${who}`;
+  if (what) preview += ` ${what}`;
+  if (when) preview += ` ${when}`;
+  if (how) preview += ` through ${how}`;
+
+  return preview + '.';
+});
+
+/**
+ * Select a topic from the grid
+ */
+const selectTopic = (index) => {
+  selectedTopicIndex.value = index;
+  refinedTopic.value = availableTopics.value[index] || '';
+};
+
+/**
+ * Copy single question to clipboard
+ */
+const copyQuestion = async (index) => {
+  const question = questions.value[index];
+  if (question) {
+    try {
+      await navigator.clipboard.writeText(question);
+    } catch (err) {
+      console.error('[QuestionsGenerator] Failed to copy question:', err);
+    }
+  }
+};
 
 /**
  * Populate form fields from profile data
@@ -376,15 +492,15 @@ const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
 function populateFromProfile(profileData) {
   if (!profileData) return;
 
-  // Populate topics from hook_what or topics field
-  if (profileData.hook_what && !topicsText.value) {
-    topicsText.value = profileData.hook_what;
-  }
+  // Populate authority hook fields
+  if (profileData.authority_hook_who) authorityHook.who = profileData.authority_hook_who;
+  if (profileData.authority_hook_what) authorityHook.what = profileData.authority_hook_what;
+  if (profileData.authority_hook_when) authorityHook.when = profileData.authority_hook_when;
+  if (profileData.authority_hook_how) authorityHook.how = profileData.authority_hook_how;
 
-  // Populate authority hook text
-  if (profileData.authority_hook && !authorityHookText.value) {
-    authorityHookText.value = profileData.authority_hook;
-  }
+  // Legacy support
+  if (profileData.hook_who && !authorityHook.who) authorityHook.who = profileData.hook_who;
+  if (profileData.hook_what && !authorityHook.what) authorityHook.what = profileData.hook_what;
 
   // Populate authority hook fields from profile data (for cross-tool sync)
   loadFromProfileData(profileData);
@@ -393,7 +509,7 @@ function populateFromProfile(profileData) {
 /**
  * Questions formula for guidance panel
  */
-const questionsFormula = '<span class="generator__highlight">[CONTEXT]</span> + <span class="generator__highlight">[EXPERTISE]</span> + <span class="generator__highlight">[GOAL]</span> = Interview Questions';
+const questionsFormula = '<span class="generator__highlight">[TOPIC]</span> + <span class="generator__highlight">[AUTHORITY]</span> + <span class="generator__highlight">[CONTEXT]</span> = Interview Questions';
 
 /**
  * Process steps for guidance panel
@@ -401,15 +517,15 @@ const questionsFormula = '<span class="generator__highlight">[CONTEXT]</span> + 
 const processSteps = [
   {
     title: 'Why Great Questions Matter',
-    description: 'The quality of your interview is directly tied to the quality of your questions. Great questions go beyond surface-level conversation to uncover deep insights, compelling stories, and actionable advice that your audience will remember and apply.'
+    description: 'The quality of your interview is directly tied to the quality of your questions. Great questions go beyond surface-level conversation to uncover deep insights, compelling stories, and actionable advice.'
   },
   {
     title: 'What Makes Questions Memorable',
-    description: 'The best interview questions are specific, open-ended, and designed to elicit stories and examples. They focus on experiences, transformations, and practical wisdom rather than yes/no answers or generic industry talk.'
+    description: 'The best interview questions are specific, open-ended, and designed to elicit stories and examples. They focus on experiences, transformations, and practical wisdom.'
   },
   {
-    title: 'How to Prepare with Your Questions',
-    description: 'Use your generated questions as a strategic framework, not a rigid script. Select 8-10 questions that best align with your guest\'s expertise, and be ready to ask spontaneous follow-up questions based on their responses.'
+    title: 'How to Use Your Questions',
+    description: 'Use your generated questions as a strategic framework, not a rigid script. Select questions that best align with your guest\'s expertise, and be ready to ask follow-up questions.'
   }
 ];
 
@@ -419,11 +535,11 @@ const processSteps = [
 const examples = [
   {
     title: 'Deep-Dive Question:',
-    description: 'Can you walk me through a specific moment when you realized your approach to leadership needed to fundamentally change? What happened, and what did you do differently?'
+    description: 'Can you walk me through a specific moment when you realized your approach needed to fundamentally change?'
   },
   {
     title: 'Actionable Question:',
-    description: 'If someone listening is struggling to build trust with their team, what\'s one practical exercise or habit they could implement this week to start making progress?'
+    description: 'If someone listening is struggling with this, what\'s one practical step they could implement this week?'
   }
 ];
 
@@ -431,45 +547,25 @@ const examples = [
  * Can generate check
  */
 const canGenerate = computed(() => {
-  return topicsText.value.trim().length > 0;
+  return refinedTopic.value.trim().length > 0;
 });
-
-/**
- * Get questions for a specific category
- */
-const getCategoryQuestions = (key) => {
-  switch (key) {
-    case 'introductory':
-      return introductoryQuestions.value;
-    case 'expertise':
-      return expertiseQuestions.value;
-    case 'stories':
-      return storyQuestions.value;
-    case 'actionable':
-      return actionableQuestions.value;
-    default:
-      return [];
-  }
-};
-
-/**
- * Toggle accordion category
- */
-const toggleCategory = (key) => {
-  openCategory.value = openCategory.value === key ? null : key;
-};
 
 /**
  * Handle generate button click
  */
 const handleGenerate = async () => {
-  openCategory.value = 'introductory';
-
   try {
     const context = props.mode === 'integrated' ? 'builder' : 'public';
+
+    // Build authority hook string from components
+    let authorityHookStr = '';
+    if (authorityHook.who || authorityHook.what) {
+      authorityHookStr = authorityHookPreview.value;
+    }
+
     await generate({
-      topics: topicsText.value,
-      authorityHook: authorityHookText.value
+      topics: refinedTopic.value,
+      authorityHook: authorityHookStr
     }, context);
 
     emit('generated', {
@@ -498,21 +594,31 @@ const handleApply = () => {
 };
 
 /**
+ * Handle start over - reset all state
+ */
+const handleStartOver = () => {
+  reset();
+  selectedTopicIndex.value = -1;
+  refinedTopic.value = '';
+};
+
+/**
  * Sync authority hook from store on mount
  */
 onMounted(() => {
   syncFromStore();
-  if (authorityHookSummary.value) {
-    authorityHookText.value = authorityHookSummary.value;
-  }
-});
 
-/**
- * Watch for store changes
- */
-watch(authorityHookSummary, (newVal) => {
-  if (newVal && !authorityHookText.value) {
-    authorityHookText.value = newVal;
+  // Load from injected or prop profile data
+  if (props.profileData) {
+    populateFromProfile(props.profileData);
+  }
+  if (injectedProfileData.value) {
+    populateFromProfile(injectedProfileData.value);
+  }
+
+  // Auto-select first topic if available
+  if (availableTopics.value.length > 0 && selectedTopicIndex.value === -1) {
+    selectTopic(0);
   }
 });
 
@@ -522,7 +628,7 @@ watch(authorityHookSummary, (newVal) => {
 watch(
   injectedProfileData,
   (newData) => {
-    if (newData && props.mode === 'embedded') {
+    if (newData) {
       populateFromProfile(newData);
     }
   },
@@ -531,7 +637,6 @@ watch(
 
 /**
  * Watch for profileData prop changes (embedded mode with EmbeddedToolWrapper)
- * Pre-populates form fields when profile data is provided
  */
 watch(
   () => props.profileData,
@@ -544,8 +649,20 @@ watch(
 );
 
 /**
+ * Watch for topics prop changes
+ */
+watch(
+  () => props.topics,
+  (newTopics) => {
+    if (newTopics && newTopics.length > 0 && selectedTopicIndex.value === -1) {
+      selectTopic(0);
+    }
+  },
+  { immediate: true }
+);
+
+/**
  * Current intent for embedded mode
- * Uses props.intent or falls back to default
  */
 const currentIntent = computed(() => props.intent || null);
 
@@ -553,31 +670,23 @@ const currentIntent = computed(() => props.intent || null);
  * Generate preview text for embedded mode
  */
 const embeddedPreviewText = computed(() => {
-  const topicsVal = topicsText.value || '[YOUR TOPICS]';
-
-  if (!topicsText.value) {
-    return null; // Show default preview
-  }
-
-  return `<strong>25 interview questions</strong> covering: <strong>${topicsVal}</strong>`;
+  if (!refinedTopic.value) return null;
+  return `<strong>10 interview questions</strong> for: <strong>${refinedTopic.value}</strong>`;
 });
 
 /**
  * Watch for field changes in embedded mode and emit preview updates
  */
 watch(
-  () => topicsText.value,
+  () => refinedTopic.value,
   () => {
     if (props.mode === 'embedded') {
       emit('preview-update', {
         previewHtml: embeddedPreviewText.value,
-        fields: {
-          topics: topicsText.value
-        }
+        fields: { topic: refinedTopic.value }
       });
     }
-  },
-  { deep: true }
+  }
 );
 
 /**
@@ -597,15 +706,23 @@ watch(canGenerate, (newValue) => {
 }
 
 .generator__section-title {
-  font-size: var(--mkcg-font-size-lg, 18px);
-  font-weight: var(--mkcg-font-weight-semibold, 600);
-  color: var(--mkcg-text-primary, #2c3e50);
-  margin: 0 0 var(--mkcg-space-md, 20px) 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--mkcg-text-primary, #0f172a);
+  margin: 0 0 16px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .generator__actions {
   margin-top: var(--mkcg-space-lg, 30px);
+}
+
+.generator__hint-text {
   text-align: center;
+  font-size: 13px;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin-top: 20px;
 }
 
 .generator__error {
@@ -622,122 +739,416 @@ watch(canGenerate, (newValue) => {
   margin: 0 0 var(--mkcg-space-sm, 12px) 0;
 }
 
-/* Questions Results */
-.questions-generator__results {
-  padding: var(--mkcg-space-md, 20px);
+/* ===========================================
+   TOPIC SELECTION GRID
+   =========================================== */
+.questions-topic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+  margin-bottom: 1.5rem;
 }
 
-.questions-generator__results-header {
-  margin-bottom: var(--mkcg-space-md, 20px);
+@media (max-width: 768px) {
+  .questions-topic-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
-.questions-generator__results-header h3 {
-  margin: 0 0 var(--mkcg-space-xs, 8px) 0;
-  font-size: var(--mkcg-font-size-lg, 18px);
-  color: var(--mkcg-text-primary, #2c3e50);
-}
-
-.questions-generator__results-header p {
-  margin: 0;
-  color: var(--mkcg-text-secondary, #5a6d7e);
-  font-size: var(--mkcg-font-size-sm, 14px);
-}
-
-.questions-generator__accordion {
-  margin-bottom: var(--mkcg-space-md, 20px);
-}
-
-.questions-generator__accordion-item {
-  border: 1px solid var(--mkcg-border-light, #e9ecef);
-  border-radius: var(--mkcg-radius, 8px);
-  margin-bottom: var(--mkcg-space-sm, 12px);
-  overflow: hidden;
-  transition: var(--mkcg-transition-fast, 0.15s ease);
-}
-
-.questions-generator__accordion-item:hover {
-  border-color: var(--mkcg-primary, #1a9bdc);
-}
-
-.questions-generator__accordion-header {
+.questions-topic-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: #fff;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
   width: 100%;
-  padding: var(--mkcg-space-md, 20px);
+}
+
+.questions-topic-card:hover {
+  border-color: var(--mkcg-primary, #3b82f6);
+  background: var(--mkcg-bg-secondary, #f9fafb);
+}
+
+.questions-topic-card--active {
+  border-color: var(--mkcg-primary, #3b82f6);
+  background: var(--mkcg-primary-light, rgba(59, 130, 246, 0.1));
+  box-shadow: 0 0 0 2px var(--mkcg-primary, #3b82f6);
+}
+
+.questions-topic-card__number {
+  width: 24px;
+  height: 24px;
+  background: var(--mkcg-bg-secondary, #f9fafb);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mkcg-text-secondary, #64748b);
+  flex-shrink: 0;
+}
+
+.questions-topic-card--active .questions-topic-card__number {
+  background: var(--mkcg-primary, #3b82f6);
+  color: #fff;
+}
+
+.questions-topic-card__text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mkcg-text-primary, #0f172a);
+  flex: 1;
+  line-height: 1.4;
+}
+
+.questions-topic-empty {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px;
+  background: var(--mkcg-bg-secondary, #f9fafb);
+  border: 1px dashed var(--mkcg-border, #e2e8f0);
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.questions-topic-empty svg {
+  flex-shrink: 0;
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.questions-topic-empty p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--mkcg-text-secondary, #64748b);
+  line-height: 1.5;
+}
+
+/* Refine Topic Textarea */
+.questions-refine-container {
+  position: relative;
+  margin-top: 1rem;
+}
+
+.questions-refine-hint {
+  position: absolute;
+  top: -10px;
+  right: 15px;
+  background: var(--mkcg-primary, #3b82f6);
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  z-index: 1;
+}
+
+.questions-refine-textarea {
+  width: 100%;
+  padding: 16px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 1rem;
+  background: #fff;
+  box-sizing: border-box;
+  transition: all 0.2s;
+  resize: none;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.questions-refine-textarea:focus {
+  outline: none;
+  border-color: var(--mkcg-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* ===========================================
+   AUTHORITY HOOK BUILDER
+   =========================================== */
+.questions-authority-hook {
+  background: #fff;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-left: 4px solid var(--mkcg-primary, #3b82f6);
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.questions-authority-hook__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.questions-authority-hook__icon {
+  color: #f59e0b;
+  font-size: 16px;
+}
+
+.questions-authority-hook__title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.questions-authority-hook__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 768px) {
+  .questions-authority-hook__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.questions-authority-hook__field {
+  display: flex;
+  flex-direction: column;
+}
+
+.questions-authority-hook__label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin-bottom: 6px;
+}
+
+.questions-authority-hook__input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.questions-authority-hook__input:focus {
+  outline: none;
+  border-color: var(--mkcg-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.questions-authority-hook__preview {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 8px;
+  border: 1px solid #bfdbfe;
+  color: var(--mkcg-primary-hover, #2563eb);
+  font-size: 0.95rem;
+  font-style: italic;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ===========================================
+   QUESTIONS RESULTS - Sidebar + Main Layout
+   =========================================== */
+.questions-results {
+  padding: 0;
+}
+
+.questions-results__layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 32px;
+}
+
+@media (min-width: 900px) {
+  .questions-results__layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  .questions-results__sidebar {
+    position: sticky;
+    top: 1rem;
+    flex: 0 0 280px;
+  }
+  .questions-results__main {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* Sidebar: Topic Card */
+.questions-results__topic-card {
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.questions-results__topic-header {
+  margin-bottom: 1rem;
+}
+
+.questions-results__topic-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.questions-results__topic-preview {
+  padding: 1rem;
+  background: #fff;
+  border: 1px solid var(--mkcg-primary, #3b82f6);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.questions-results__topic-hint {
+  font-size: 11px;
+  color: var(--mkcg-text-muted, #94a3b8);
+  margin-top: 15px;
+  font-style: italic;
+  text-align: center;
+  margin-bottom: 0;
+}
+
+/* Main Area Header */
+.questions-results__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: var(--mkcg-bg-primary, #ffffff);
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  font-size: var(--mkcg-font-size-base, 16px);
-  font-weight: var(--mkcg-font-weight-semibold, 600);
-  color: var(--mkcg-text-primary, #2c3e50);
-  transition: var(--mkcg-transition-fast, 0.15s ease);
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--mkcg-border, #e2e8f0);
 }
 
-.questions-generator__accordion-header:hover {
-  background: var(--mkcg-bg-secondary, #f8f9fa);
+.questions-results__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--mkcg-text-primary, #0f172a);
 }
 
-.questions-generator__accordion-title {
+.questions-results__actions {
   display: flex;
-  align-items: center;
-  gap: var(--mkcg-space-xs, 8px);
+  gap: 8px;
 }
 
-.questions-generator__badge {
-  display: inline-flex;
+/* Questions List */
+.questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.questions-list__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: #fff;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  transition: all 0.15s;
+}
+
+.questions-list__item:hover {
+  border-color: var(--mkcg-primary, #3b82f6);
+  background: var(--mkcg-bg-secondary, #f8fafc);
+}
+
+.questions-list__number {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  background: var(--mkcg-primary, #3b82f6);
+  border-radius: 50%;
+  display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 var(--mkcg-space-xs, 8px);
-  font-size: var(--mkcg-font-size-sm, 14px);
-  font-weight: var(--mkcg-font-weight-medium, 500);
-  color: var(--mkcg-primary, #1a9bdc);
-  background: rgba(26, 155, 220, 0.1);
-  border-radius: var(--mkcg-radius-sm, 4px);
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  margin-top: 2px;
 }
 
-.questions-generator__accordion-icon {
-  transition: transform var(--mkcg-transition-fast, 0.15s ease);
-  color: var(--mkcg-text-secondary, #5a6d7e);
-}
-
-.questions-generator__accordion-item--open .questions-generator__accordion-icon {
-  transform: rotate(180deg);
-}
-
-.questions-generator__accordion-content {
-  padding: 0 var(--mkcg-space-md, 20px) var(--mkcg-space-md, 20px);
-  background: var(--mkcg-bg-primary, #ffffff);
-}
-
-.questions-generator__questions-list {
+.questions-list__text {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--mkcg-text-primary, #0f172a);
   margin: 0;
-  padding: 0 0 0 24px;
-  list-style: decimal;
+  line-height: 1.5;
 }
 
-.questions-generator__question-item {
-  padding: var(--mkcg-space-sm, 12px) 0;
-  font-size: var(--mkcg-font-size-base, 16px);
-  line-height: var(--mkcg-line-height-relaxed, 1.6);
-  color: var(--mkcg-text-primary, #2c3e50);
-  border-bottom: 1px solid var(--mkcg-border-light, #e9ecef);
-}
-
-.questions-generator__question-item:last-child {
-  border-bottom: none;
-}
-
-.questions-generator__actions {
-  margin-top: var(--mkcg-space-md, 20px);
+.questions-list__copy-btn {
+  flex-shrink: 0;
+  padding: 6px;
+  background: transparent;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--mkcg-text-secondary, #64748b);
+  transition: all 0.15s;
   display: flex;
-  gap: var(--mkcg-space-sm, 12px);
+  align-items: center;
+  opacity: 0;
 }
 
-/* Integrated Mode Styles (preserved from original) */
+.questions-list__item:hover .questions-list__copy-btn {
+  opacity: 1;
+}
+
+.questions-list__copy-btn:hover {
+  background: var(--mkcg-primary, #3b82f6);
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: white;
+}
+
+/* Results Footer */
+.questions-results__footer {
+  margin-top: 2rem;
+  border-top: 1px solid var(--mkcg-border, #e2e8f0);
+  padding-top: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Ghost button variant */
+.generator__button--ghost {
+  background: transparent;
+  border: none;
+  color: var(--mkcg-text-secondary, #64748b);
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.generator__button--ghost:hover {
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+/* Integrated Mode Styles */
 .gmkb-ai-questions__list {
   margin: 0;
   padding: 0 0 0 20px;
@@ -763,10 +1174,6 @@ watch(canGenerate, (newValue) => {
   font-size: 13px;
   color: var(--gmkb-ai-text-secondary, #64748b);
   text-align: center;
-}
-
-.gmkb-ai-accordion__header .gmkb-ai-badge {
-  margin-left: 8px;
 }
 
 /* Embedded Mode Styles (for landing page) */
