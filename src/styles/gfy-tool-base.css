@@ -1,0 +1,723 @@
+/**
+ * GFY Tool Base Styles - Optional Shared CSS Classes
+ *
+ * This file provides common CSS classes for tool UI elements.
+ * Tools can OPTIONALLY import this for consistent styling.
+ * Each tool remains SELF-CONTAINED - this is just convenience CSS.
+ *
+ * USAGE:
+ * In your tool's <style> section (non-scoped for base styles):
+ *   @import '@/styles/gfy-tool-base.css';
+ *
+ * NOTE: These styles use the variables from gfy-design-tokens.css
+ * Make sure to import that first or include the variables.
+ *
+ * @package GMKB
+ * @subpackage Styles
+ * @version 1.0.0
+ */
+
+/* ============================================
+   TOOL CONTAINER
+   ============================================ */
+.gfy-tool {
+  font-family: var(--gfy-font-family);
+  max-width: var(--gfy-container-max);
+  margin: 0 auto;
+  padding: var(--gfy-space-2xl) var(--gfy-space-md);
+}
+
+/* ============================================
+   HERO SECTION
+   ============================================ */
+.gfy-tool__hero {
+  text-align: center;
+  margin-bottom: var(--gfy-space-2xl);
+}
+
+.gfy-tool__hero--compact {
+  margin-bottom: var(--gfy-space-lg);
+}
+
+.gfy-tool__title {
+  font-size: var(--gfy-font-4xl);
+  font-weight: var(--gfy-font-extrabold);
+  margin: 0 0 10px 0;
+  background: linear-gradient(to right, var(--gfy-text-primary), var(--gfy-primary-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gfy-tool__subtitle {
+  color: var(--gfy-text-secondary);
+  font-size: var(--gfy-font-lg);
+  max-width: var(--gfy-form-max-width);
+  margin: 0 auto;
+  line-height: var(--gfy-line-relaxed);
+}
+
+/* ============================================
+   FORM CONTAINER
+   ============================================ */
+.gfy-tool__form-container {
+  background: var(--gfy-bg-primary);
+  border-radius: var(--gfy-radius-xl);
+  border: 1px solid var(--gfy-border-color);
+  box-shadow: var(--gfy-shadow-xl);
+  padding: var(--gfy-space-2xl);
+}
+
+.gfy-tool__form-container--embedded {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* ============================================
+   HIGHLIGHT BOXES
+   ============================================ */
+.gfy-highlight-box {
+  background: var(--gfy-bg-primary);
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-lg);
+  padding: var(--gfy-space-lg);
+  margin-bottom: var(--gfy-space-lg);
+}
+
+.gfy-highlight-box--blue {
+  border-left: 4px solid var(--gfy-primary-color);
+  background: linear-gradient(to right, var(--gfy-primary-light), var(--gfy-bg-primary));
+}
+
+.gfy-highlight-box--green {
+  border-left: 4px solid var(--gfy-success-color);
+  background: linear-gradient(to right, var(--gfy-success-light), var(--gfy-bg-primary));
+}
+
+.gfy-highlight-box--yellow {
+  border-left: 4px solid var(--gfy-warning-color);
+  background: linear-gradient(to right, var(--gfy-warning-light), var(--gfy-bg-primary));
+}
+
+.gfy-highlight-box__header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gfy-space-sm);
+  margin-bottom: var(--gfy-space-md);
+}
+
+.gfy-highlight-box__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: var(--gfy-primary-color);
+  color: var(--gfy-text-inverse);
+  border-radius: var(--gfy-radius-md);
+  flex-shrink: 0;
+}
+
+.gfy-highlight-box--green .gfy-highlight-box__icon {
+  background: var(--gfy-success-color);
+}
+
+.gfy-highlight-box--yellow .gfy-highlight-box__icon {
+  background: var(--gfy-warning-color);
+}
+
+.gfy-highlight-box__title {
+  font-size: var(--gfy-font-lg);
+  font-weight: var(--gfy-font-bold);
+  color: var(--gfy-text-primary);
+  margin: 0 0 4px 0;
+}
+
+.gfy-highlight-box__subtitle {
+  font-size: var(--gfy-font-sm);
+  color: var(--gfy-text-secondary);
+  margin: 0;
+}
+
+/* ============================================
+   FORM ELEMENTS
+   ============================================ */
+.gfy-form-group {
+  margin-bottom: var(--gfy-space-md);
+}
+
+.gfy-form-group:last-child {
+  margin-bottom: 0;
+}
+
+.gfy-form-label {
+  display: flex;
+  align-items: center;
+  gap: var(--gfy-space-sm);
+  font-size: var(--gfy-font-sm);
+  font-weight: var(--gfy-font-semibold);
+  color: var(--gfy-text-primary);
+  margin-bottom: var(--gfy-space-sm);
+}
+
+.gfy-form-label--required::after {
+  content: ' *';
+  color: var(--gfy-error-color);
+}
+
+.gfy-form-label__optional {
+  font-size: var(--gfy-font-xs);
+  font-weight: var(--gfy-font-medium);
+  color: var(--gfy-text-muted);
+  background: var(--gfy-border-color);
+  padding: 2px 8px;
+  border-radius: var(--gfy-radius-sm);
+}
+
+.gfy-form-input,
+.gfy-form-textarea,
+.gfy-form-select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-md);
+  font-family: inherit;
+  font-size: var(--gfy-font-base);
+  background: var(--gfy-bg-primary);
+  box-sizing: border-box;
+  transition: border-color var(--gfy-transition-fast), box-shadow var(--gfy-transition-fast);
+}
+
+.gfy-form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.gfy-form-input:focus,
+.gfy-form-textarea:focus,
+.gfy-form-select:focus {
+  outline: none;
+  border-color: var(--gfy-primary-color);
+  box-shadow: var(--gfy-shadow-focus);
+}
+
+.gfy-form-input::placeholder,
+.gfy-form-textarea::placeholder {
+  color: var(--gfy-text-muted);
+}
+
+.gfy-form-hint {
+  display: block;
+  font-size: var(--gfy-font-xs);
+  color: var(--gfy-text-muted);
+  margin-top: 6px;
+  font-style: italic;
+}
+
+/* ============================================
+   LIVE PREVIEW
+   ============================================ */
+.gfy-live-preview {
+  margin-top: var(--gfy-space-md);
+  padding: 14px 18px;
+  background: var(--gfy-primary-light);
+  border: 1px solid #bfdbfe;
+  border-radius: var(--gfy-radius-md);
+  font-size: var(--gfy-font-base);
+  font-style: italic;
+  color: var(--gfy-primary-dark);
+}
+
+.gfy-live-preview__label {
+  font-weight: var(--gfy-font-semibold);
+  font-style: normal;
+  margin-right: 4px;
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+.gfy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 10px 16px;
+  font-size: var(--gfy-font-sm);
+  font-weight: var(--gfy-font-semibold);
+  font-family: inherit;
+  border-radius: var(--gfy-radius-md);
+  cursor: pointer;
+  transition: all var(--gfy-transition-fast);
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.gfy-btn--primary {
+  background: var(--gfy-primary-color);
+  color: var(--gfy-text-inverse);
+}
+
+.gfy-btn--primary:hover:not(:disabled) {
+  background: var(--gfy-primary-dark);
+}
+
+.gfy-btn--primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.gfy-btn--outline {
+  background: var(--gfy-bg-primary);
+  border-color: var(--gfy-border-color);
+  color: var(--gfy-text-secondary);
+}
+
+.gfy-btn--outline:hover:not(:disabled) {
+  border-color: var(--gfy-primary-color);
+  color: var(--gfy-primary-color);
+  background: var(--gfy-primary-light);
+}
+
+.gfy-btn--ghost {
+  background: transparent;
+  color: var(--gfy-text-secondary);
+  border: none;
+}
+
+.gfy-btn--ghost:hover:not(:disabled) {
+  color: var(--gfy-text-primary);
+}
+
+.gfy-btn--large {
+  padding: 14px 24px;
+  font-size: var(--gfy-font-base);
+}
+
+.gfy-btn--sm {
+  padding: 6px 12px;
+  font-size: var(--gfy-font-xs);
+}
+
+.gfy-btn--generate {
+  padding: 16px 32px;
+  font-size: var(--gfy-font-lg);
+  border-radius: 10px;
+}
+
+/* ============================================
+   SPINNER
+   ============================================ */
+.gfy-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: gfy-spin 0.8s linear infinite;
+}
+
+@keyframes gfy-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   ERROR BOX
+   ============================================ */
+.gfy-error-box {
+  margin-top: var(--gfy-space-lg);
+  padding: var(--gfy-space-md);
+  background: var(--gfy-error-light);
+  border: 1px solid #fecaca;
+  border-radius: var(--gfy-radius-md);
+  text-align: center;
+  color: #991b1b;
+}
+
+.gfy-error-box i {
+  font-size: 24px;
+  margin-bottom: var(--gfy-space-sm);
+  display: block;
+}
+
+.gfy-error-box p {
+  margin: 0 0 12px 0;
+}
+
+/* ============================================
+   RESULTS LAYOUT
+   ============================================ */
+.gfy-results-container {
+  background: var(--gfy-bg-primary);
+  border-radius: var(--gfy-radius-xl);
+  border: 1px solid var(--gfy-border-color);
+  box-shadow: var(--gfy-shadow-xl);
+  overflow: hidden;
+}
+
+.gfy-results-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gfy-space-lg);
+  padding: var(--gfy-space-2xl);
+}
+
+@media (min-width: 900px) {
+  .gfy-results-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .gfy-results-layout__sidebar {
+    position: sticky;
+    top: 1rem;
+    flex: 0 0 var(--gfy-sidebar-width);
+  }
+
+  .gfy-results-layout__main {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* ============================================
+   SIDEBAR
+   ============================================ */
+.gfy-sidebar-panel {
+  background: var(--gfy-bg-secondary);
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-lg);
+  padding: var(--gfy-space-md);
+}
+
+.gfy-sidebar-header {
+  margin-bottom: var(--gfy-space-md);
+}
+
+.gfy-sidebar-title {
+  font-size: var(--gfy-font-sm);
+  text-transform: uppercase;
+  font-weight: var(--gfy-font-bold);
+  color: var(--gfy-text-secondary);
+  margin: 0;
+}
+
+.gfy-sidebar-slot {
+  display: block;
+  width: 100%;
+  padding: var(--gfy-space-md);
+  background: var(--gfy-bg-primary);
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-md);
+  margin-bottom: var(--gfy-space-sm);
+  transition: all var(--gfy-transition-fast);
+  cursor: pointer;
+  text-align: left;
+}
+
+.gfy-sidebar-slot:hover {
+  border-color: var(--gfy-primary-color);
+}
+
+.gfy-sidebar-slot--active {
+  border-color: var(--gfy-primary-color);
+  box-shadow: 0 0 0 2px var(--gfy-primary-color);
+}
+
+.gfy-sidebar-slot--locked {
+  background: var(--gfy-primary-light);
+  border-color: var(--gfy-primary-color);
+}
+
+.gfy-sidebar-slot__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--gfy-space-sm);
+}
+
+.gfy-sidebar-slot__label {
+  font-size: var(--gfy-font-xs);
+  font-weight: var(--gfy-font-extrabold);
+  text-transform: uppercase;
+  color: var(--gfy-text-secondary);
+}
+
+.gfy-sidebar-slot--active .gfy-sidebar-slot__label,
+.gfy-sidebar-slot--locked .gfy-sidebar-slot__label {
+  color: var(--gfy-primary-color);
+}
+
+.gfy-sidebar-slot__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  font-size: var(--gfy-font-xs);
+  font-weight: var(--gfy-font-bold);
+  color: var(--gfy-text-inverse);
+  background: var(--gfy-primary-color);
+  border-radius: var(--gfy-radius-full);
+}
+
+.gfy-sidebar-slot__preview,
+.gfy-sidebar-slot__text {
+  font-size: var(--gfy-font-xs);
+  line-height: var(--gfy-line-normal);
+  color: var(--gfy-text-muted);
+}
+
+.gfy-sidebar-slot__text {
+  color: var(--gfy-text-primary);
+}
+
+.gfy-sidebar-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--gfy-space-sm);
+  padding: var(--gfy-space-sm);
+  background: var(--gfy-primary-light);
+  border-radius: var(--gfy-radius-md);
+  font-size: var(--gfy-font-sm);
+  font-weight: var(--gfy-font-semibold);
+  color: var(--gfy-primary-color);
+  margin-top: var(--gfy-space-sm);
+}
+
+/* ============================================
+   RESULTS HEADER
+   ============================================ */
+.gfy-results__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--gfy-space-md);
+  padding-bottom: var(--gfy-space-md);
+  border-bottom: 1px solid var(--gfy-border-color);
+}
+
+.gfy-results__title {
+  font-size: var(--gfy-font-xl);
+  font-weight: var(--gfy-font-bold);
+  margin: 0;
+}
+
+.gfy-results__count {
+  font-size: var(--gfy-font-sm);
+  color: var(--gfy-text-muted);
+}
+
+/* ============================================
+   LOADING STATE
+   ============================================ */
+.gfy-loading-state {
+  text-align: center;
+  padding: 60px 40px;
+  color: var(--gfy-text-secondary);
+}
+
+.gfy-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--gfy-border-color);
+  border-radius: 50%;
+  border-top-color: var(--gfy-primary-color);
+  animation: gfy-spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+/* ============================================
+   EMPTY STATE
+   ============================================ */
+.gfy-empty-state {
+  text-align: center;
+  padding: 60px 40px;
+  color: var(--gfy-text-secondary);
+}
+
+.gfy-empty-state i {
+  font-size: 48px;
+  color: var(--gfy-text-muted);
+  margin-bottom: var(--gfy-space-md);
+  display: block;
+}
+
+/* ============================================
+   RESULT CARDS
+   ============================================ */
+.gfy-result-card {
+  display: flex;
+  gap: var(--gfy-space-md);
+  padding: var(--gfy-space-md);
+  background: var(--gfy-bg-primary);
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-md);
+  transition: border-color var(--gfy-transition-fast);
+  margin-bottom: var(--gfy-space-md);
+}
+
+.gfy-result-card:hover {
+  border-color: var(--gfy-primary-color);
+}
+
+.gfy-result-card:last-child {
+  margin-bottom: 0;
+}
+
+.gfy-result-card__number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  background: var(--gfy-primary-light);
+  color: var(--gfy-primary-color);
+  border-radius: 50%;
+  font-size: var(--gfy-font-sm);
+  font-weight: var(--gfy-font-bold);
+}
+
+.gfy-result-card__content {
+  flex: 1;
+}
+
+.gfy-result-card__text {
+  font-size: var(--gfy-font-base);
+  line-height: var(--gfy-line-relaxed);
+  color: var(--gfy-text-primary);
+  margin: 0 0 var(--gfy-space-sm) 0;
+}
+
+.gfy-result-card__actions {
+  display: flex;
+  gap: var(--gfy-space-sm);
+}
+
+/* ============================================
+   LOCKED/SELECTED CONTENT
+   ============================================ */
+.gfy-locked-content,
+.gfy-selected-content {
+  border-radius: var(--gfy-radius-lg);
+  padding: var(--gfy-space-xl);
+  text-align: center;
+  margin-bottom: var(--gfy-space-lg);
+}
+
+.gfy-locked-content {
+  background: var(--gfy-primary-light);
+  border: 2px solid var(--gfy-primary-color);
+}
+
+.gfy-selected-content {
+  background: var(--gfy-bg-primary);
+  border: 2px solid var(--gfy-border-color);
+}
+
+.gfy-locked-content__badge,
+.gfy-selected-content__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gfy-space-sm);
+  font-size: var(--gfy-font-xs);
+  font-weight: var(--gfy-font-extrabold);
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: var(--gfy-radius-sm);
+  margin-bottom: var(--gfy-space-md);
+}
+
+.gfy-locked-content__badge {
+  color: var(--gfy-primary-color);
+  background: var(--gfy-bg-primary);
+}
+
+.gfy-selected-content__badge {
+  color: var(--gfy-primary-color);
+  background: var(--gfy-primary-light);
+}
+
+.gfy-locked-content__text,
+.gfy-selected-content__text {
+  font-size: var(--gfy-font-2xl);
+  font-weight: var(--gfy-font-semibold);
+  font-style: italic;
+  color: var(--gfy-text-primary);
+  margin-bottom: var(--gfy-space-lg);
+  line-height: var(--gfy-line-normal);
+}
+
+.gfy-locked-content__actions,
+.gfy-selected-content__actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--gfy-space-sm);
+}
+
+/* ============================================
+   NAVIGATION
+   ============================================ */
+.gfy-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gfy-space-md);
+  padding: var(--gfy-space-md) 0;
+  border-top: 1px solid var(--gfy-border-color);
+}
+
+.gfy-nav__count {
+  font-size: var(--gfy-font-sm);
+  color: var(--gfy-text-muted);
+  font-weight: var(--gfy-font-medium);
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+.gfy-tool__footer {
+  margin-top: var(--gfy-space-xl);
+  border-top: 1px solid var(--gfy-border-color);
+  padding-top: var(--gfy-space-lg);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gfy-space-sm);
+}
+
+/* ============================================
+   COPY SUCCESS TOAST
+   ============================================ */
+.gfy-copy-success {
+  display: flex;
+  align-items: center;
+  gap: var(--gfy-space-sm);
+  padding: 12px 16px;
+  background: var(--gfy-success-light);
+  color: #047857;
+  border-radius: var(--gfy-radius-md);
+  font-weight: var(--gfy-font-semibold);
+  margin-top: var(--gfy-space-md);
+}
+
+/* ============================================
+   FORM ACTIONS
+   ============================================ */
+.gfy-tool__actions {
+  text-align: center;
+  padding-top: var(--gfy-space-lg);
+  margin-top: var(--gfy-space-lg);
+  border-top: 1px solid var(--gfy-border-color);
+}
+
+.gfy-tool__actions-hint {
+  font-size: var(--gfy-font-sm);
+  color: var(--gfy-text-muted);
+  margin-top: var(--gfy-space-sm);
+}

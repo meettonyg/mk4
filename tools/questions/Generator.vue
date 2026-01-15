@@ -1,155 +1,7 @@
 <template>
-  <!-- Standalone Mode: Full two-panel layout -->
-  <GeneratorLayout
-    v-if="mode === 'default'"
-    title="Interview Questions Generator"
-    subtitle="Generate 25 thoughtful interview questions organized by category using AI"
-    intro-text="Generate 25 professional interview questions organized into four strategic categories: Introductory Questions, Expertise Deep-Dives, Story-Based Questions, and Actionable Takeaways. Each question is designed to help you have engaging, insightful conversations with your guests."
-    generator-type="questions"
-    :has-results="hasQuestions"
-    :is-loading="isGenerating"
-  >
-    <!-- Left Panel: Form -->
-    <template #left>
-      <!-- Topics Section -->
-      <div class="generator__section">
-        <h3 class="generator__section-title">Interview Topics</h3>
-
-        <div class="generator__field">
-          <label class="generator__field-label">Topics You Discuss *</label>
-          <textarea
-            v-model="topicsText"
-            class="generator__field-input generator__field-textarea"
-            placeholder="e.g., Leadership development, Building high-performance teams, Navigating career transitions..."
-            rows="4"
-          ></textarea>
-          <p class="generator__field-helper">
-            List 3-5 topics you typically discuss in interviews. Be specific about the areas you want to explore with your guests.
-          </p>
-        </div>
-      </div>
-
-      <!-- Context Section -->
-      <div class="generator__section">
-        <h3 class="generator__section-title">Additional Context (Optional)</h3>
-
-        <div class="generator__field">
-          <label class="generator__field-label">Your Background</label>
-          <textarea
-            v-model="authorityHookText"
-            class="generator__field-input generator__field-textarea"
-            placeholder="e.g., Former Fortune 500 executive turned leadership coach..."
-            rows="3"
-          ></textarea>
-          <p class="generator__field-helper">
-            Add context about your background or expertise to generate more relevant and tailored questions.
-          </p>
-        </div>
-      </div>
-
-      <!-- Generate Button -->
-      <div class="generator__actions">
-        <button
-          type="button"
-          class="generator__button generator__button--call-to-action"
-          :class="{ 'generator__button--loading': isGenerating }"
-          :disabled="!canGenerate || isGenerating"
-          @click="handleGenerate"
-        >
-          <svg v-if="!isGenerating" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-          </svg>
-          {{ isGenerating ? 'Generating Questions...' : 'Generate 25 Questions with AI' }}
-        </button>
-      </div>
-
-      <!-- Error Display -->
-      <div v-if="error" class="generator__error">
-        <p>{{ error }}</p>
-        <button type="button" class="generator__button generator__button--outline" @click="handleGenerate">
-          Try Again
-        </button>
-      </div>
-    </template>
-
-    <!-- Right Panel: Guidance -->
-    <template #right>
-      <GuidancePanel
-        title="Creating Memorable Interview Questions"
-        subtitle="Great interview questions go beyond surface-level conversation to uncover deep insights, memorable stories, and actionable advice that resonates with your audience."
-        :formula="questionsFormula"
-        :process-steps="processSteps"
-        :examples="examples"
-        examples-title="Example Interview Questions:"
-      />
-    </template>
-
-    <!-- Results -->
-    <template #results>
-      <div class="questions-generator__results">
-        <div class="questions-generator__results-header">
-          <h3>Your Generated Questions</h3>
-          <p>{{ questions.length }} questions across {{ categories.length }} categories</p>
-        </div>
-
-        <!-- Category Accordion -->
-        <div class="questions-generator__accordion">
-          <div
-            v-for="category in categories"
-            :key="category.key"
-            class="questions-generator__accordion-item"
-            :class="{ 'questions-generator__accordion-item--open': openCategory === category.key }"
-          >
-            <button
-              type="button"
-              class="questions-generator__accordion-header"
-              @click="toggleCategory(category.key)"
-            >
-              <span class="questions-generator__accordion-title">
-                {{ category.label }}
-                <span class="questions-generator__badge">
-                  {{ getCategoryQuestions(category.key).length }}
-                </span>
-              </span>
-              <svg class="questions-generator__accordion-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
-            </button>
-            <div v-if="openCategory === category.key" class="questions-generator__accordion-content">
-              <ol class="questions-generator__questions-list">
-                <li
-                  v-for="(question, index) in getCategoryQuestions(category.key)"
-                  :key="index"
-                  class="questions-generator__question-item"
-                >
-                  {{ question }}
-                </li>
-              </ol>
-            </div>
-          </div>
-        </div>
-
-        <!-- Actions -->
-        <div class="questions-generator__actions">
-          <button
-            type="button"
-            class="generator__button generator__button--outline"
-            @click="handleCopy"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-            Copy All Questions
-          </button>
-        </div>
-      </div>
-    </template>
-  </GeneratorLayout>
-
-  <!-- Integrated Mode: Compact widget -->
+  <!-- Integrated Mode: Compact widget for Media Kit Builder -->
   <AiWidgetFrame
-    v-else-if="mode === 'integrated'"
+    v-if="mode === 'integrated'"
     title="Interview Questions Generator"
     description="Generate 25 thoughtful interview questions organized by category."
     :mode="mode"
@@ -168,21 +20,17 @@
   >
     <!-- Input Form -->
     <div class="gmkb-ai-form">
-      <!-- Topics Field -->
       <div class="gmkb-ai-form-group">
         <label class="gmkb-ai-label gmkb-ai-label--required">Topics You Discuss</label>
         <textarea
           v-model="topicsText"
           class="gmkb-ai-input gmkb-ai-textarea"
-          placeholder="e.g., Leadership development, Building high-performance teams, Navigating career transitions..."
+          placeholder="e.g., Leadership development, Building high-performance teams..."
           rows="3"
         ></textarea>
-        <span class="gmkb-ai-hint">
-          List 3-5 topics you typically discuss in interviews.
-        </span>
+        <span class="gmkb-ai-hint">List 3-5 topics you typically discuss.</span>
       </div>
 
-      <!-- Authority Hook (optional) -->
       <div class="gmkb-ai-form-group">
         <label class="gmkb-ai-label">Your Background (Optional)</label>
         <textarea
@@ -191,12 +39,8 @@
           placeholder="e.g., Former Fortune 500 executive turned leadership coach..."
           rows="2"
         ></textarea>
-        <span class="gmkb-ai-hint">
-          Add context about your background for more relevant questions.
-        </span>
       </div>
 
-      <!-- Generate Button -->
       <AiGenerateButton
         text="Generate 25 Questions"
         loading-text="Generating questions..."
@@ -210,10 +54,9 @@
     <!-- Results -->
     <template #results>
       <div v-if="hasQuestions" class="gmkb-ai-questions">
-        <!-- Category Accordion -->
         <div class="gmkb-ai-accordion">
           <div
-            v-for="category in categories"
+            v-for="category in categoriesArray"
             :key="category.key"
             class="gmkb-ai-accordion__item"
             :class="{ 'gmkb-ai-accordion__item--open': openCategory === category.key }"
@@ -246,64 +89,267 @@
             </div>
           </div>
         </div>
-
-        <!-- Total Count -->
         <div class="gmkb-ai-questions__summary">
-          {{ questions.length }} questions generated across {{ categories.length }} categories
+          {{ questions.length }} questions generated across {{ categoriesArray.length }} categories
         </div>
       </div>
     </template>
   </AiWidgetFrame>
 
-  <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
-  <div v-else class="gmkb-embedded-form">
-    <!-- Simplified form for landing page -->
-    <div class="gmkb-embedded-fields">
-      <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.topics || 'Topics You Discuss' }} *</label>
-        <textarea
-          v-model="topicsText"
-          class="gmkb-embedded-input gmkb-embedded-textarea"
-          :placeholder="currentIntent?.formPlaceholders?.topics || 'e.g., Leadership development, Building high-performance teams...'"
-          rows="3"
-        ></textarea>
+  <!-- Default/Standalone Mode: Full Self-Contained Tool -->
+  <div v-else class="gfy-tool gfy-tool--questions">
+    <!-- Phase 1: Input Form -->
+    <div v-if="!showResults" class="gfy-tool__form-phase">
+      <!-- Hero Section -->
+      <div v-if="mode === 'default'" class="gfy-tool__hero">
+        <h1 class="gfy-tool__title">Interview Questions Generator</h1>
+        <p class="gfy-tool__subtitle">
+          Generate 25 professional interview questions organized into four strategic categories designed for engaging conversations.
+        </p>
       </div>
 
-      <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.background || 'Your Background (Optional)' }}</label>
-        <textarea
-          v-model="authorityHookText"
-          class="gmkb-embedded-input gmkb-embedded-textarea"
-          :placeholder="currentIntent?.formPlaceholders?.background || 'e.g., Former Fortune 500 executive turned leadership coach...'"
-          rows="2"
-        ></textarea>
+      <!-- Form Container -->
+      <div class="gfy-tool__form-container" :class="{ 'gfy-tool__form-container--embedded': mode === 'embedded' }">
+        <!-- Topics Section -->
+        <div class="gfy-highlight-box gfy-highlight-box--blue">
+          <div class="gfy-highlight-box__header">
+            <span class="gfy-highlight-box__icon">
+              <i class="fas fa-comments"></i>
+            </span>
+            <div>
+              <h3 class="gfy-highlight-box__title">Interview Topics</h3>
+              <p class="gfy-highlight-box__subtitle">What subjects do you typically discuss in your interviews?</p>
+            </div>
+          </div>
+
+          <div class="gfy-form-group">
+            <label class="gfy-form-label gfy-form-label--required">Topics You Discuss</label>
+            <textarea
+              v-model="topicsText"
+              class="gfy-form-textarea"
+              placeholder="e.g., Leadership development, Building high-performance teams, Navigating career transitions, Entrepreneurship, Work-life balance..."
+              rows="4"
+            ></textarea>
+            <span class="gfy-form-hint">
+              List 3-5 topics you typically discuss in interviews. Be specific about the areas you want to explore.
+            </span>
+          </div>
+
+          <!-- Live Preview -->
+          <div v-if="topicsText.trim()" class="gfy-live-preview">
+            <span class="gfy-live-preview__label">Topics Preview:</span>
+            {{ topicsPreview }}
+          </div>
+        </div>
+
+        <!-- Context Section -->
+        <div class="gfy-highlight-box gfy-highlight-box--green">
+          <div class="gfy-highlight-box__header">
+            <span class="gfy-highlight-box__icon">
+              <i class="fas fa-user-tie"></i>
+            </span>
+            <div>
+              <h3 class="gfy-highlight-box__title">Your Background</h3>
+              <p class="gfy-highlight-box__subtitle">Add context for more tailored questions.</p>
+            </div>
+          </div>
+
+          <div class="gfy-form-group">
+            <label class="gfy-form-label">
+              Authority Hook
+              <span class="gfy-form-label__optional">Optional</span>
+            </label>
+            <textarea
+              v-model="authorityHookText"
+              class="gfy-form-textarea"
+              placeholder="e.g., Former Fortune 500 executive turned leadership coach helping founders scale their impact..."
+              rows="3"
+            ></textarea>
+            <span class="gfy-form-hint">
+              Providing your background helps generate questions that leverage your unique perspective and expertise.
+            </span>
+          </div>
+        </div>
+
+        <!-- Generate Button -->
+        <div v-if="mode === 'default'" class="gfy-tool__actions">
+          <button
+            type="button"
+            class="gfy-btn gfy-btn--primary gfy-btn--large gfy-btn--generate"
+            :disabled="!canGenerate || isGenerating"
+            @click="handleStartGeneration"
+          >
+            <i v-if="!isGenerating" class="fas fa-magic"></i>
+            <span v-if="isGenerating" class="gfy-spinner"></span>
+            {{ isGenerating ? 'Generating...' : 'Generate 25 Interview Questions' }}
+          </button>
+          <p class="gfy-tool__actions-hint">
+            We'll create questions across 4 categories: Introductory, Expertise, Story-Based, and Actionable
+          </p>
+        </div>
+
+        <!-- Error Display -->
+        <div v-if="error" class="gfy-error-box">
+          <i class="fas fa-exclamation-circle"></i>
+          <p>{{ error }}</p>
+          <button type="button" class="gfy-btn gfy-btn--outline" @click="handleStartGeneration">
+            Try Again
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Error display -->
-    <div v-if="error" class="gmkb-embedded-error">
-      {{ error }}
+    <!-- Phase 2: Results Dashboard -->
+    <div v-else class="gfy-tool__results-phase">
+      <!-- Results Hero -->
+      <div class="gfy-tool__hero gfy-tool__hero--compact">
+        <h1 class="gfy-tool__title">Your Interview Questions</h1>
+        <p class="gfy-tool__subtitle">
+          {{ questions.length }} questions across {{ categoriesArray.length }} categories. Select a category to explore.
+        </p>
+      </div>
+
+      <div class="gfy-results-container">
+        <div class="gfy-results-layout">
+          <!-- SIDEBAR: Category Selection -->
+          <aside class="gfy-results-layout__sidebar">
+            <div class="gfy-sidebar-panel">
+              <div class="gfy-sidebar-header">
+                <h3 class="gfy-sidebar-title">Question Categories</h3>
+              </div>
+
+              <!-- Category Slots -->
+              <button
+                v-for="category in categoriesArray"
+                :key="category.key"
+                type="button"
+                class="gfy-sidebar-slot"
+                :class="{
+                  'gfy-sidebar-slot--active': activeCategory === category.key
+                }"
+                @click="setActiveCategory(category.key)"
+              >
+                <div class="gfy-sidebar-slot__header">
+                  <span class="gfy-sidebar-slot__label">{{ category.label }}</span>
+                  <span class="gfy-sidebar-slot__badge">{{ getCategoryQuestions(category.key).length }}</span>
+                </div>
+                <div class="gfy-sidebar-slot__preview">
+                  {{ getCategoryPreview(category.key) }}
+                </div>
+              </button>
+
+              <!-- Summary -->
+              <div class="gfy-sidebar-summary">
+                <i class="fas fa-check-circle"></i>
+                {{ questions.length }} total questions
+              </div>
+            </div>
+          </aside>
+
+          <!-- MAIN: Questions List -->
+          <main class="gfy-results-layout__main">
+            <!-- Results Header -->
+            <div class="gfy-results__header">
+              <h3 class="gfy-results__title">
+                <span class="gfy-results__title-highlight">{{ activeCategoryLabel }}</span>
+              </h3>
+              <span class="gfy-results__count">{{ currentCategoryQuestions.length }} questions</span>
+            </div>
+
+            <!-- Loading State -->
+            <div v-if="isGenerating" class="gfy-loading-state">
+              <div class="gfy-loading-spinner"></div>
+              <p>Generating your interview questions...</p>
+            </div>
+
+            <!-- Questions List -->
+            <template v-else-if="currentCategoryQuestions.length > 0">
+              <div
+                v-for="(question, index) in currentCategoryQuestions"
+                :key="index"
+                class="gfy-result-card"
+              >
+                <div class="gfy-result-card__number">{{ getCategoryStartIndex(activeCategory) + index }}</div>
+                <div class="gfy-result-card__content">
+                  <p class="gfy-result-card__text">{{ question }}</p>
+                  <div class="gfy-result-card__actions">
+                    <button
+                      type="button"
+                      class="gfy-btn gfy-btn--ghost gfy-btn--sm"
+                      @click="handleCopyQuestion(question)"
+                    >
+                      <i class="fas fa-copy"></i> Copy
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </template>
+
+            <!-- Empty State -->
+            <div v-else class="gfy-empty-state">
+              <i class="fas fa-question-circle"></i>
+              <p>No questions in this category yet.</p>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="gfy-tool__footer">
+              <button
+                type="button"
+                class="gfy-btn gfy-btn--primary gfy-btn--large"
+                @click="handleCopy"
+              >
+                <i class="fas fa-copy"></i>
+                Copy All Questions
+              </button>
+              <button type="button" class="gfy-btn gfy-btn--outline" @click="handleGenerate">
+                <i class="fas fa-sync-alt"></i>
+                Regenerate
+              </button>
+              <button type="button" class="gfy-btn gfy-btn--ghost" @click="handleStartOver">
+                Start Over
+              </button>
+            </div>
+
+            <!-- Copy Success -->
+            <div v-if="copySuccess" class="gfy-copy-success">
+              <i class="fas fa-check-circle"></i>
+              Copied to clipboard!
+            </div>
+          </main>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
+/**
+ * Questions Generator - Self-Contained Tool
+ *
+ * ARCHITECTURE:
+ * - This component is FULLY SELF-CONTAINED
+ * - It imports shared CSS for styling consistency
+ * - NO component dependencies on other tools
+ * - If this tool breaks, other tools are unaffected
+ *
+ * @package GMKB
+ * @subpackage Tools/Questions
+ */
+
 import { ref, computed, onMounted, watch, inject } from 'vue';
 import { useAIQuestions, QUESTION_CATEGORIES } from '../../src/composables/useAIQuestions';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
+import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
 
-// Compact widget components (integrated mode)
+// Integrated mode components only
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
 import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 
-// Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
-
 const props = defineProps({
   /**
-   * Mode: 'integrated', 'standalone', or 'embedded'
-   * - standalone: Full two-panel layout with guidance
-   * - integrated: Compact widget for embedding in other components
+   * Mode: 'default', 'integrated', or 'embedded'
+   * - default: Full two-phase layout (form -> results dashboard)
+   * - integrated: Compact widget for embedding in Media Kit Builder
    * - embedded: Landing page embed with simplified form
    */
   mode: {
@@ -311,15 +357,14 @@ const props = defineProps({
     default: 'default',
     validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
   },
-
   /**
    * Component ID to apply results to (integrated mode)
+   * Used when embedding in Media Kit Builder to identify target component
    */
   componentId: {
     type: String,
     default: null
   },
-
   /**
    * Intent object for embedded mode
    * Contains: { id, label, contextHeading, contextDescription, formPlaceholders, formLabels }
@@ -328,7 +373,6 @@ const props = defineProps({
     type: Object,
     default: null
   },
-
   /**
    * Profile data for pre-population (embedded mode)
    * Passed from EmbeddedToolWrapper via scoped slot
@@ -354,115 +398,92 @@ const {
   storyQuestions,
   actionableQuestions,
   generate,
-  copyToClipboard
+  copyToClipboard,
+  reset
 } = useAIQuestions();
 
 const { authorityHookSummary, syncFromStore, loadFromProfileData } = useAuthorityHook();
 
+// Inject profile data from EmbeddedToolWrapper
+const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+
 // Local state
 const topicsText = ref('');
 const authorityHookText = ref('');
+const showResults = ref(false);
+const activeCategory = ref('introductory');
 const openCategory = ref('introductory');
+const copySuccess = ref(false);
 
-// Categories config
-const categories = QUESTION_CATEGORIES;
+// Categories as array for iteration
+const categoriesArray = computed(() => [
+  { key: 'introductory', label: 'Introductory Questions', ...QUESTION_CATEGORIES.introductory },
+  { key: 'expertise', label: 'Expertise Deep-Dives', ...QUESTION_CATEGORIES.expertise },
+  { key: 'stories', label: 'Story-Based Questions', ...QUESTION_CATEGORIES.stories },
+  { key: 'actionable', label: 'Actionable Takeaways', ...QUESTION_CATEGORIES.actionable }
+]);
 
-// Inject profile data from EmbeddedToolWrapper (for embedded mode)
-const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+// Can generate check
+const canGenerate = computed(() => topicsText.value.trim().length > 0);
 
-/**
- * Populate form fields from profile data
- */
-function populateFromProfile(profileData) {
-  if (!profileData) return;
-
-  // Populate topics from hook_what or topics field
-  if (profileData.hook_what && !topicsText.value) {
-    topicsText.value = profileData.hook_what;
-  }
-
-  // Populate authority hook text
-  if (profileData.authority_hook && !authorityHookText.value) {
-    authorityHookText.value = profileData.authority_hook;
-  }
-
-  // Populate authority hook fields from profile data (for cross-tool sync)
-  loadFromProfileData(profileData);
-}
-
-/**
- * Questions formula for guidance panel
- */
-const questionsFormula = '<span class="generator__highlight">[CONTEXT]</span> + <span class="generator__highlight">[EXPERTISE]</span> + <span class="generator__highlight">[GOAL]</span> = Interview Questions';
-
-/**
- * Process steps for guidance panel
- */
-const processSteps = [
-  {
-    title: 'Why Great Questions Matter',
-    description: 'The quality of your interview is directly tied to the quality of your questions. Great questions go beyond surface-level conversation to uncover deep insights, compelling stories, and actionable advice that your audience will remember and apply.'
-  },
-  {
-    title: 'What Makes Questions Memorable',
-    description: 'The best interview questions are specific, open-ended, and designed to elicit stories and examples. They focus on experiences, transformations, and practical wisdom rather than yes/no answers or generic industry talk.'
-  },
-  {
-    title: 'How to Prepare with Your Questions',
-    description: 'Use your generated questions as a strategic framework, not a rigid script. Select 8-10 questions that best align with your guest\'s expertise, and be ready to ask spontaneous follow-up questions based on their responses.'
-  }
-];
-
-/**
- * Example interview questions for guidance panel
- */
-const examples = [
-  {
-    title: 'Deep-Dive Question:',
-    description: 'Can you walk me through a specific moment when you realized your approach to leadership needed to fundamentally change? What happened, and what did you do differently?'
-  },
-  {
-    title: 'Actionable Question:',
-    description: 'If someone listening is struggling to build trust with their team, what\'s one practical exercise or habit they could implement this week to start making progress?'
-  }
-];
-
-/**
- * Can generate check
- */
-const canGenerate = computed(() => {
-  return topicsText.value.trim().length > 0;
+// Topics preview for live preview
+const topicsPreview = computed(() => {
+  const topics = topicsText.value.split(/[,\n]/).map(t => t.trim()).filter(t => t);
+  if (topics.length === 0) return '';
+  if (topics.length <= 3) return topics.join(', ');
+  return topics.slice(0, 3).join(', ') + ` +${topics.length - 3} more`;
 });
 
-/**
- * Get questions for a specific category
- */
+// Active category label
+const activeCategoryLabel = computed(() => {
+  const cat = categoriesArray.value.find(c => c.key === activeCategory.value);
+  return cat?.label || 'Questions';
+});
+
+// Current category questions
+const currentCategoryQuestions = computed(() => getCategoryQuestions(activeCategory.value));
+
+// Get questions for a specific category
 const getCategoryQuestions = (key) => {
   switch (key) {
-    case 'introductory':
-      return introductoryQuestions.value;
-    case 'expertise':
-      return expertiseQuestions.value;
-    case 'stories':
-      return storyQuestions.value;
-    case 'actionable':
-      return actionableQuestions.value;
-    default:
-      return [];
+    case 'introductory': return introductoryQuestions.value;
+    case 'expertise': return expertiseQuestions.value;
+    case 'stories': return storyQuestions.value;
+    case 'actionable': return actionableQuestions.value;
+    default: return [];
   }
 };
 
-/**
- * Toggle accordion category
- */
+// Get category start index (1-based)
+const getCategoryStartIndex = (key) => QUESTION_CATEGORIES[key]?.start || 1;
+
+// Get preview text for a category
+const getCategoryPreview = (key) => {
+  const qs = getCategoryQuestions(key);
+  if (qs.length === 0) return 'No questions yet';
+  const first = qs[0];
+  return first.length > 60 ? first.substring(0, 60) + '...' : first;
+};
+
+// Toggle accordion category
 const toggleCategory = (key) => {
   openCategory.value = openCategory.value === key ? null : key;
 };
 
-/**
- * Handle generate button click
- */
+// Set active category
+const setActiveCategory = (key) => {
+  activeCategory.value = key;
+};
+
+// Handle starting generation - transitions to results view
+const handleStartGeneration = async () => {
+  showResults.value = true;
+  await handleGenerate();
+};
+
+// Handle generate button click
 const handleGenerate = async () => {
+  activeCategory.value = 'introductory';
   openCategory.value = 'introductory';
 
   try {
@@ -472,24 +493,38 @@ const handleGenerate = async () => {
       authorityHook: authorityHookText.value
     }, context);
 
-    emit('generated', {
-      questions: questions.value
-    });
+    emit('generated', { questions: questions.value });
   } catch (err) {
     console.error('[QuestionsGenerator] Generation failed:', err);
   }
 };
 
 /**
- * Handle copy to clipboard
+ * Show copy success feedback with auto-dismiss
+ * Extracted to reduce duplication across copy handlers
  */
-const handleCopy = async () => {
-  await copyToClipboard();
+const showCopySuccess = () => {
+  copySuccess.value = true;
+  setTimeout(() => { copySuccess.value = false; }, 2000);
 };
 
-/**
- * Handle apply (integrated mode)
- */
+// Handle copy all to clipboard
+const handleCopy = async () => {
+  await copyToClipboard();
+  showCopySuccess();
+};
+
+// Handle copy single question
+const handleCopyQuestion = async (question) => {
+  try {
+    await navigator.clipboard.writeText(question);
+    showCopySuccess();
+  } catch (err) {
+    console.error('Failed to copy:', err);
+  }
+};
+
+// Handle apply (integrated mode)
 const handleApply = () => {
   emit('applied', {
     componentId: props.componentId,
@@ -497,247 +532,99 @@ const handleApply = () => {
   });
 };
 
-/**
- * Sync authority hook from store on mount
- */
+// Handle start over
+const handleStartOver = () => {
+  reset();
+  showResults.value = false;
+};
+
+// Populate form fields from profile data
+function populateFromProfile(profileData) {
+  if (!profileData) return;
+  if (profileData.hook_what && !topicsText.value) topicsText.value = profileData.hook_what;
+  if (profileData.authority_hook && !authorityHookText.value) authorityHookText.value = profileData.authority_hook;
+  loadFromProfileData(profileData);
+}
+
+// Sync authority hook from store on mount
 onMounted(() => {
   syncFromStore();
-  if (authorityHookSummary.value) {
-    authorityHookText.value = authorityHookSummary.value;
-  }
+  if (authorityHookSummary.value) authorityHookText.value = authorityHookSummary.value;
 });
 
-/**
- * Watch for store changes
- */
+// Watch for store changes
 watch(authorityHookSummary, (newVal) => {
-  if (newVal && !authorityHookText.value) {
-    authorityHookText.value = newVal;
-  }
+  if (newVal && !authorityHookText.value) authorityHookText.value = newVal;
 });
 
-/**
- * Watch for injected profile data changes (embedded mode)
- */
-watch(
-  injectedProfileData,
-  (newData) => {
-    if (newData && props.mode === 'embedded') {
-      populateFromProfile(newData);
-    }
-  },
-  { immediate: true }
-);
+// Watch for injected profile data changes (embedded mode)
+watch(injectedProfileData, (newData) => {
+  if (newData && props.mode === 'embedded') populateFromProfile(newData);
+}, { immediate: true });
 
-/**
- * Watch for profileData prop changes (embedded mode with EmbeddedToolWrapper)
- * Pre-populates form fields when profile data is provided
- */
-watch(
-  () => props.profileData,
-  (newData) => {
-    if (newData && props.mode === 'embedded') {
-      populateFromProfile(newData);
-    }
-  },
-  { immediate: true }
-);
+// Watch for profileData prop changes
+watch(() => props.profileData, (newData) => {
+  if (newData && props.mode === 'embedded') populateFromProfile(newData);
+}, { immediate: true });
 
-/**
- * Current intent for embedded mode
- * Uses props.intent or falls back to default
- */
+// Current intent for embedded mode
 const currentIntent = computed(() => props.intent || null);
 
-/**
- * Generate preview text for embedded mode
- */
+// Generate preview text for embedded mode
 const embeddedPreviewText = computed(() => {
-  const topicsVal = topicsText.value || '[YOUR TOPICS]';
-
-  if (!topicsText.value) {
-    return null; // Show default preview
-  }
-
-  return `<strong>25 interview questions</strong> covering: <strong>${topicsVal}</strong>`;
+  if (!topicsText.value) return null;
+  return `<strong>25 interview questions</strong> covering: <strong>${topicsPreview.value}</strong>`;
 });
 
-/**
- * Watch for field changes in embedded mode and emit preview updates
- */
-watch(
-  () => topicsText.value,
-  () => {
-    if (props.mode === 'embedded') {
-      emit('preview-update', {
-        previewHtml: embeddedPreviewText.value,
-        fields: {
-          topics: topicsText.value
-        }
-      });
-    }
-  },
-  { deep: true }
-);
-
-/**
- * Emit can-generate status changes to parent (for embedded mode)
- */
-watch(canGenerate, (newValue) => {
+// Watch for field changes in embedded mode
+watch(() => topicsText.value, () => {
   if (props.mode === 'embedded') {
-    emit('update:can-generate', !!newValue);
+    emit('preview-update', {
+      previewHtml: embeddedPreviewText.value,
+      fields: { topics: topicsText.value }
+    });
   }
+}, { deep: true });
+
+// Emit can-generate status changes
+watch(canGenerate, (newValue) => {
+  emit('update:can-generate', !!newValue);
 }, { immediate: true });
+
+// Expose for parent components
+defineExpose({
+  handleStartGeneration,
+  handleGenerate,
+  showResults,
+  isGenerating,
+  error,
+  canGenerate
+});
 </script>
 
+<style>
+/**
+ * SHARED CSS IMPORT
+ * Import design tokens and base styles for consistency.
+ * This tool remains self-contained - these are just CSS classes.
+ */
+@import '@/styles/gfy-design-tokens.css';
+@import '@/styles/gfy-tool-base.css';
+</style>
+
 <style scoped>
-/* Standalone Mode Styles */
-.generator__section {
-  margin-bottom: var(--mkcg-space-lg, 30px);
+/**
+ * TOOL-SPECIFIC STYLES
+ * Only styles unique to this tool go here.
+ * All common styles come from gfy-tool-base.css
+ */
+
+/* Results title highlight */
+.gfy-results__title-highlight {
+  color: var(--gfy-primary-color);
 }
 
-.generator__section-title {
-  font-size: var(--mkcg-font-size-lg, 18px);
-  font-weight: var(--mkcg-font-weight-semibold, 600);
-  color: var(--mkcg-text-primary, #2c3e50);
-  margin: 0 0 var(--mkcg-space-md, 20px) 0;
-}
-
-.generator__actions {
-  margin-top: var(--mkcg-space-lg, 30px);
-  text-align: center;
-}
-
-.generator__error {
-  margin-top: var(--mkcg-space-md, 20px);
-  padding: var(--mkcg-space-md, 20px);
-  background-color: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: var(--mkcg-radius, 8px);
-  text-align: center;
-}
-
-.generator__error p {
-  color: #991b1b;
-  margin: 0 0 var(--mkcg-space-sm, 12px) 0;
-}
-
-/* Questions Results */
-.questions-generator__results {
-  padding: var(--mkcg-space-md, 20px);
-}
-
-.questions-generator__results-header {
-  margin-bottom: var(--mkcg-space-md, 20px);
-}
-
-.questions-generator__results-header h3 {
-  margin: 0 0 var(--mkcg-space-xs, 8px) 0;
-  font-size: var(--mkcg-font-size-lg, 18px);
-  color: var(--mkcg-text-primary, #2c3e50);
-}
-
-.questions-generator__results-header p {
-  margin: 0;
-  color: var(--mkcg-text-secondary, #5a6d7e);
-  font-size: var(--mkcg-font-size-sm, 14px);
-}
-
-.questions-generator__accordion {
-  margin-bottom: var(--mkcg-space-md, 20px);
-}
-
-.questions-generator__accordion-item {
-  border: 1px solid var(--mkcg-border-light, #e9ecef);
-  border-radius: var(--mkcg-radius, 8px);
-  margin-bottom: var(--mkcg-space-sm, 12px);
-  overflow: hidden;
-  transition: var(--mkcg-transition-fast, 0.15s ease);
-}
-
-.questions-generator__accordion-item:hover {
-  border-color: var(--mkcg-primary, #1a9bdc);
-}
-
-.questions-generator__accordion-header {
-  width: 100%;
-  padding: var(--mkcg-space-md, 20px);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--mkcg-bg-primary, #ffffff);
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  font-size: var(--mkcg-font-size-base, 16px);
-  font-weight: var(--mkcg-font-weight-semibold, 600);
-  color: var(--mkcg-text-primary, #2c3e50);
-  transition: var(--mkcg-transition-fast, 0.15s ease);
-}
-
-.questions-generator__accordion-header:hover {
-  background: var(--mkcg-bg-secondary, #f8f9fa);
-}
-
-.questions-generator__accordion-title {
-  display: flex;
-  align-items: center;
-  gap: var(--mkcg-space-xs, 8px);
-}
-
-.questions-generator__badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 var(--mkcg-space-xs, 8px);
-  font-size: var(--mkcg-font-size-sm, 14px);
-  font-weight: var(--mkcg-font-weight-medium, 500);
-  color: var(--mkcg-primary, #1a9bdc);
-  background: rgba(26, 155, 220, 0.1);
-  border-radius: var(--mkcg-radius-sm, 4px);
-}
-
-.questions-generator__accordion-icon {
-  transition: transform var(--mkcg-transition-fast, 0.15s ease);
-  color: var(--mkcg-text-secondary, #5a6d7e);
-}
-
-.questions-generator__accordion-item--open .questions-generator__accordion-icon {
-  transform: rotate(180deg);
-}
-
-.questions-generator__accordion-content {
-  padding: 0 var(--mkcg-space-md, 20px) var(--mkcg-space-md, 20px);
-  background: var(--mkcg-bg-primary, #ffffff);
-}
-
-.questions-generator__questions-list {
-  margin: 0;
-  padding: 0 0 0 24px;
-  list-style: decimal;
-}
-
-.questions-generator__question-item {
-  padding: var(--mkcg-space-sm, 12px) 0;
-  font-size: var(--mkcg-font-size-base, 16px);
-  line-height: var(--mkcg-line-height-relaxed, 1.6);
-  color: var(--mkcg-text-primary, #2c3e50);
-  border-bottom: 1px solid var(--mkcg-border-light, #e9ecef);
-}
-
-.questions-generator__question-item:last-child {
-  border-bottom: none;
-}
-
-.questions-generator__actions {
-  margin-top: var(--mkcg-space-md, 20px);
-  display: flex;
-  gap: var(--mkcg-space-sm, 12px);
-}
-
-/* Integrated Mode Styles (preserved from original) */
+/* Integrated Mode Styles */
 .gmkb-ai-questions__list {
   margin: 0;
   padding: 0 0 0 20px;
@@ -767,66 +654,5 @@ watch(canGenerate, (newValue) => {
 
 .gmkb-ai-accordion__header .gmkb-ai-badge {
   margin-left: 8px;
-}
-
-/* Embedded Mode Styles (for landing page) */
-.gmkb-embedded-form {
-  width: 100%;
-}
-
-.gmkb-embedded-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.gmkb-embedded-field {
-  display: flex;
-  flex-direction: column;
-}
-
-.gmkb-embedded-label {
-  display: block;
-  font-weight: 600;
-  font-size: 13px;
-  margin-bottom: 8px;
-  color: var(--mkcg-text-primary, #0f172a);
-}
-
-.gmkb-embedded-input {
-  width: 100%;
-  padding: 14px;
-  border: 1px solid var(--mkcg-border, #e2e8f0);
-  border-radius: 8px;
-  background: var(--mkcg-bg-secondary, #f9fafb);
-  box-sizing: border-box;
-  font-size: 15px;
-  font-family: inherit;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.gmkb-embedded-input:focus {
-  outline: none;
-  border-color: var(--mkcg-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.gmkb-embedded-input::placeholder {
-  color: var(--mkcg-text-light, #94a3b8);
-}
-
-.gmkb-embedded-textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.gmkb-embedded-error {
-  margin-top: 16px;
-  padding: 12px 16px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  color: #991b1b;
-  font-size: 14px;
 }
 </style>
