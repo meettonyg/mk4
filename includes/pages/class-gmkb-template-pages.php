@@ -198,7 +198,15 @@ class GMKB_Template_Pages {
     }
 
     private function create_inline_template($type) {
-        $temp_file = wp_tempnam('gmkb-template-' . $type);
+        // Use PHP's native tempnam() instead of wp_tempnam() which requires admin includes
+        $temp_dir = get_temp_dir();
+        $temp_file = tempnam($temp_dir, 'gmkb-template-' . $type);
+
+        if ($temp_file === false) {
+            // Fallback to sys_get_temp_dir if get_temp_dir fails
+            $temp_file = tempnam(sys_get_temp_dir(), 'gmkb-template-' . $type);
+        }
+
         $content = ($type === 'directory')
             ? $this->get_directory_template_content()
             : $this->get_single_template_content();
