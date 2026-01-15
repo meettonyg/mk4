@@ -154,25 +154,62 @@
       <div class="questions-results">
         <div class="questions-results__layout">
 
-          <!-- SIDEBAR: Selected Topic -->
+          <!-- SIDEBAR: Interview Set (5 Lockable Slots) -->
           <aside class="questions-results__sidebar">
-            <div class="questions-results__topic-card">
-              <div class="questions-results__topic-header">
-                <h3 class="questions-results__topic-title">Interview Topic</h3>
+            <div class="questions-interview-set">
+              <div class="questions-interview-set__header">
+                <h3 class="questions-interview-set__title">Your Interview Set</h3>
+                <span class="questions-interview-set__hint">Click lock to keep existing questions</span>
               </div>
-              <div class="questions-results__topic-preview">
-                {{ refinedTopic || 'No topic selected' }}
+
+              <div class="questions-interview-set__list">
+                <div
+                  v-for="(slot, slotIndex) in interviewSet"
+                  :key="slotIndex"
+                  class="questions-interview-slot"
+                  :class="{ 'questions-interview-slot--locked': slot.locked, 'questions-interview-slot--filled': slot.question }"
+                >
+                  <span class="questions-interview-slot__position">{{ slotIndex + 1 }}</span>
+                  <span class="questions-interview-slot__text" :class="{ 'questions-interview-slot__text--empty': !slot.question }">
+                    {{ slot.question || 'Empty Slot' }}
+                  </span>
+                  <button
+                    type="button"
+                    class="questions-interview-slot__lock"
+                    :title="slot.locked ? 'Unlock question' : 'Lock question'"
+                    @click="toggleSlotLock(slotIndex)"
+                    :disabled="!slot.question"
+                  >
+                    <svg v-if="slot.locked" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 1C8.676 1 6 3.676 6 7v2H4v14h16V9h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4zm0 10c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/>
+                    </svg>
+                    <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                      <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
-              <p class="questions-results__topic-hint">
-                Questions are tailored to this specific topic.
-              </p>
+
+              <div class="questions-interview-set__summary">
+                <span class="questions-interview-set__locked-count">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 1C8.676 1 6 3.676 6 7v2H4v14h16V9h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4zm0 10c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/>
+                  </svg>
+                  {{ lockedSlotsCount }} locked
+                </span>
+                <span class="questions-interview-set__available">{{ availableSlotsCount }} slots available</span>
+              </div>
             </div>
           </aside>
 
-          <!-- MAIN: Questions List -->
+          <!-- MAIN: AI Generated Questions -->
           <main class="questions-results__main">
             <div class="questions-results__header">
-              <h3 class="questions-results__title">{{ questions.length }} Generated Questions</h3>
+              <div class="questions-results__title-row">
+                <h3 class="questions-results__title">AI Generated Questions</h3>
+                <span class="questions-results__count">{{ questions.length }} Ideas</span>
+              </div>
               <div class="questions-results__actions">
                 <button
                   type="button"
@@ -185,44 +222,61 @@
                   </svg>
                   Regenerate
                 </button>
-              </div>
-            </div>
-
-            <!-- Questions List -->
-            <div class="questions-list">
-              <div
-                v-for="(question, index) in questions"
-                :key="index"
-                class="questions-list__item"
-              >
-                <span class="questions-list__number">{{ index + 1 }}</span>
-                <p class="questions-list__text">{{ question }}</p>
                 <button
                   type="button"
-                  class="questions-list__copy-btn"
-                  title="Copy question"
-                  @click="copyQuestion(index)"
+                  class="generator__button generator__button--outline"
+                  @click="handleCopy"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                   </svg>
+                  Copy All
                 </button>
               </div>
+            </div>
+
+            <!-- Selection Banner -->
+            <div class="questions-selection-banner">
+              <span>Topic: <strong>"{{ refinedTopic }}"</strong></span>
+              <span class="questions-selection-banner__count">{{ selectedQuestionsCount }} of {{ availableSlotsCount }} selected</span>
+            </div>
+
+            <!-- Questions List with Checkboxes -->
+            <div class="questions-list">
+              <button
+                v-for="(question, index) in questions"
+                :key="index"
+                type="button"
+                class="questions-row"
+                :class="{ 'questions-row--selected': isQuestionSelected(index) }"
+                @click="toggleQuestionSelection(index)"
+                :disabled="!canSelectMore && !isQuestionSelected(index)"
+              >
+                <div class="questions-row__checkbox" :class="{ 'questions-row__checkbox--checked': isQuestionSelected(index) }">
+                  <svg v-if="isQuestionSelected(index)" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <polyline points="20 6 9 17 4 12" stroke="currentColor" stroke-width="3" fill="none"/>
+                  </svg>
+                </div>
+                <span class="questions-row__number">{{ index + 1 }}.</span>
+                <p class="questions-row__text">{{ question }}</p>
+              </button>
             </div>
 
             <!-- Footer Actions -->
             <div class="questions-results__footer">
               <button
                 type="button"
-                class="generator__button generator__button--call-to-action"
-                @click="handleCopy"
+                class="generator__button generator__button--call-to-action generator__button--large"
+                :disabled="selectedQuestionsCount === 0"
+                @click="handleSaveToMediaKit"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
                 </svg>
-                Copy All Questions
+                Save to Media Kit
               </button>
               <button
                 type="button"
@@ -464,6 +518,88 @@ const authorityHookPreview = computed(() => {
   return preview + '.';
 });
 
+// ===========================================
+// INTERVIEW SET STATE (5 Lockable Slots)
+// ===========================================
+const MAX_INTERVIEW_SLOTS = 5;
+
+// Interview set: 5 slots that can be locked
+const interviewSet = ref([
+  { question: null, locked: false },
+  { question: null, locked: false },
+  { question: null, locked: false },
+  { question: null, locked: false },
+  { question: null, locked: false }
+]);
+
+// Selected question indices from the generated list
+const selectedQuestionIndices = ref([]);
+
+// Count of locked slots
+const lockedSlotsCount = computed(() => {
+  return interviewSet.value.filter(slot => slot.locked).length;
+});
+
+// Count of available (unlocked empty) slots
+const availableSlotsCount = computed(() => {
+  return MAX_INTERVIEW_SLOTS - lockedSlotsCount.value;
+});
+
+// Count of selected questions
+const selectedQuestionsCount = computed(() => {
+  return selectedQuestionIndices.value.length;
+});
+
+// Can select more questions?
+const canSelectMore = computed(() => {
+  return selectedQuestionsCount.value < availableSlotsCount.value;
+});
+
+/**
+ * Check if a question is selected
+ */
+const isQuestionSelected = (index) => {
+  return selectedQuestionIndices.value.includes(index);
+};
+
+/**
+ * Toggle question selection
+ */
+const toggleQuestionSelection = (index) => {
+  const idx = selectedQuestionIndices.value.indexOf(index);
+  if (idx > -1) {
+    // Deselect
+    selectedQuestionIndices.value.splice(idx, 1);
+    // Also remove from interview set if it was there
+    const slotIdx = interviewSet.value.findIndex(
+      slot => !slot.locked && slot.question === questions.value[index]
+    );
+    if (slotIdx > -1) {
+      interviewSet.value[slotIdx].question = null;
+    }
+  } else if (canSelectMore.value) {
+    // Select
+    selectedQuestionIndices.value.push(index);
+    // Add to first available unlocked slot
+    const emptySlotIdx = interviewSet.value.findIndex(
+      slot => !slot.locked && !slot.question
+    );
+    if (emptySlotIdx > -1) {
+      interviewSet.value[emptySlotIdx].question = questions.value[index];
+    }
+  }
+};
+
+/**
+ * Toggle lock on a slot
+ */
+const toggleSlotLock = (slotIndex) => {
+  const slot = interviewSet.value[slotIndex];
+  if (slot.question) {
+    slot.locked = !slot.locked;
+  }
+};
+
 /**
  * Select a topic from the grid
  */
@@ -568,6 +704,15 @@ const handleGenerate = async () => {
       authorityHook: authorityHookStr
     }, context);
 
+    // Clear selections (but keep locked items)
+    selectedQuestionIndices.value = [];
+    // Clear unlocked slots
+    interviewSet.value.forEach(slot => {
+      if (!slot.locked) {
+        slot.question = null;
+      }
+    });
+
     emit('generated', {
       questions: questions.value
     });
@@ -594,12 +739,38 @@ const handleApply = () => {
 };
 
 /**
+ * Handle save to media kit - save selected questions
+ */
+const handleSaveToMediaKit = () => {
+  // Get all questions from the interview set (both locked and selected)
+  const savedQuestions = interviewSet.value
+    .filter(slot => slot.question)
+    .map(slot => slot.question);
+
+  emit('applied', {
+    componentId: props.componentId,
+    questions: savedQuestions,
+    interviewSet: interviewSet.value,
+    action: 'save'
+  });
+};
+
+/**
  * Handle start over - reset all state
  */
 const handleStartOver = () => {
   reset();
   selectedTopicIndex.value = -1;
   refinedTopic.value = '';
+  // Reset interview set
+  selectedQuestionIndices.value = [];
+  interviewSet.value = [
+    { question: null, locked: false },
+    { question: null, locked: false },
+    { question: null, locked: false },
+    { question: null, locked: false },
+    { question: null, locked: false }
+  ];
 };
 
 /**
@@ -987,55 +1158,179 @@ watch(canGenerate, (newValue) => {
   }
 }
 
-/* Sidebar: Topic Card */
-.questions-results__topic-card {
+/* ===========================================
+   INTERVIEW SET SIDEBAR (5 Lockable Slots)
+   =========================================== */
+.questions-interview-set {
   background: var(--mkcg-bg-secondary, #f8fafc);
   border: 1px solid var(--mkcg-border, #e2e8f0);
   border-radius: 12px;
   padding: 1.25rem;
 }
 
-.questions-results__topic-header {
+.questions-interview-set__header {
   margin-bottom: 1rem;
 }
 
-.questions-results__topic-title {
-  font-size: 12px;
-  text-transform: uppercase;
-  font-weight: 700;
-  color: var(--mkcg-text-secondary, #64748b);
-  margin: 0;
-  letter-spacing: 0.5px;
-}
-
-.questions-results__topic-preview {
-  padding: 1rem;
-  background: #fff;
-  border: 1px solid var(--mkcg-primary, #3b82f6);
-  border-radius: 8px;
+.questions-interview-set__title {
   font-size: 14px;
   font-weight: 700;
-  line-height: 1.4;
   color: var(--mkcg-text-primary, #0f172a);
+  margin: 0 0 4px 0;
 }
 
-.questions-results__topic-hint {
+.questions-interview-set__hint {
   font-size: 11px;
   color: var(--mkcg-text-muted, #94a3b8);
-  margin-top: 15px;
   font-style: italic;
-  text-align: center;
-  margin-bottom: 0;
 }
 
-/* Main Area Header */
-.questions-results__header {
+.questions-interview-set__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Individual Interview Slot */
+.questions-interview-slot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  transition: all 0.15s;
+}
+
+.questions-interview-slot--filled {
+  border-color: var(--mkcg-primary, #3b82f6);
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.questions-interview-slot--locked {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.questions-interview-slot__position {
+  width: 22px;
+  height: 22px;
+  background: var(--mkcg-bg-secondary, #f1f5f9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mkcg-text-secondary, #64748b);
+  flex-shrink: 0;
+}
+
+.questions-interview-slot--filled .questions-interview-slot__position {
+  background: var(--mkcg-primary, #3b82f6);
+  color: #fff;
+}
+
+.questions-interview-slot--locked .questions-interview-slot__position {
+  background: #22c55e;
+  color: #fff;
+}
+
+.questions-interview-slot__text {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--mkcg-text-primary, #0f172a);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.questions-interview-slot__text--empty {
+  color: var(--mkcg-text-muted, #94a3b8);
+  font-style: italic;
+}
+
+.questions-interview-slot__lock {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--mkcg-text-secondary, #64748b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.questions-interview-slot__lock:hover:not(:disabled) {
+  background: var(--mkcg-bg-secondary, #f1f5f9);
+  border-color: var(--mkcg-text-secondary, #64748b);
+}
+
+.questions-interview-slot__lock:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.questions-interview-slot--locked .questions-interview-slot__lock {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: #fff;
+}
+
+.questions-interview-slot--locked .questions-interview-slot__lock:hover {
+  background: #16a34a;
+  border-color: #16a34a;
+}
+
+/* Interview Set Summary */
+.questions-interview-set__summary {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.25rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--mkcg-border, #e2e8f0);
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--mkcg-border, #e2e8f0);
+  font-size: 11px;
+}
+
+.questions-interview-set__locked-count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.questions-interview-set__available {
+  color: var(--mkcg-text-muted, #94a3b8);
+}
+
+/* ===========================================
+   MAIN AREA HEADER
+   =========================================== */
+.questions-results__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.questions-results__title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .questions-results__title {
@@ -1045,80 +1340,123 @@ watch(canGenerate, (newValue) => {
   color: var(--mkcg-text-primary, #0f172a);
 }
 
+.questions-results__count {
+  background: var(--mkcg-primary, #3b82f6);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
 .questions-results__actions {
   display: flex;
   gap: 8px;
 }
 
-/* Questions List */
+/* ===========================================
+   SELECTION BANNER
+   =========================================== */
+.questions-selection-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 13px;
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.questions-selection-banner strong {
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.questions-selection-banner__count {
+  font-weight: 600;
+  color: var(--mkcg-primary, #3b82f6);
+}
+
+/* ===========================================
+   QUESTIONS LIST - Checkbox Style Rows
+   =========================================== */
 .questions-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
-.questions-list__item {
+.questions-row {
   display: flex;
   align-items: flex-start;
-  gap: 1rem;
-  padding: 1rem 1.25rem;
+  gap: 12px;
+  padding: 14px 16px;
   background: #fff;
   border: 1px solid var(--mkcg-border, #e2e8f0);
   border-radius: 8px;
+  cursor: pointer;
   transition: all 0.15s;
+  text-align: left;
+  width: 100%;
 }
 
-.questions-list__item:hover {
+.questions-row:hover:not(:disabled) {
   border-color: var(--mkcg-primary, #3b82f6);
   background: var(--mkcg-bg-secondary, #f8fafc);
 }
 
-.questions-list__number {
+.questions-row--selected {
+  border-color: var(--mkcg-primary, #3b82f6);
+  background: rgba(59, 130, 246, 0.08);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.questions-row:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.questions-row__checkbox {
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  background: var(--mkcg-primary, #3b82f6);
-  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--mkcg-border, #d1d5db);
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: white;
+  margin-top: 2px;
+  transition: all 0.15s;
+  background: #fff;
+}
+
+.questions-row__checkbox--checked {
+  background: var(--mkcg-primary, #3b82f6);
+  border-color: var(--mkcg-primary, #3b82f6);
+}
+
+.questions-row__checkbox--checked svg {
+  color: #fff;
+}
+
+.questions-row__number {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mkcg-text-secondary, #64748b);
+  min-width: 24px;
   margin-top: 2px;
 }
 
-.questions-list__text {
+.questions-row__text {
   flex: 1;
-  font-size: 1rem;
+  font-size: 14px;
   font-weight: 500;
   color: var(--mkcg-text-primary, #0f172a);
   margin: 0;
   line-height: 1.5;
-}
-
-.questions-list__copy-btn {
-  flex-shrink: 0;
-  padding: 6px;
-  background: transparent;
-  border: 1px solid var(--mkcg-border, #e2e8f0);
-  border-radius: 6px;
-  cursor: pointer;
-  color: var(--mkcg-text-secondary, #64748b);
-  transition: all 0.15s;
-  display: flex;
-  align-items: center;
-  opacity: 0;
-}
-
-.questions-list__item:hover .questions-list__copy-btn {
-  opacity: 1;
-}
-
-.questions-list__copy-btn:hover {
-  background: var(--mkcg-primary, #3b82f6);
-  border-color: var(--mkcg-primary, #3b82f6);
-  color: white;
 }
 
 /* Results Footer */
