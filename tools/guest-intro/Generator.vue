@@ -1,605 +1,1944 @@
 <template>
-  <!-- Standalone Mode: Full two-panel layout -->
-  <GeneratorLayout
-    v-if="mode === 'standalone'"
-    title="Guest Introduction Generator"
-    subtitle="Create host-ready introductions that build anticipation and establish credibility using AI"
-    intro-text="Generate compelling introductions designed to be read aloud by podcast hosts or event MCs. Each introduction establishes credibility, creates anticipation, and sets the stage for an engaging conversation."
-    generator-type="guest-intro"
-    :has-results="hasIntroduction"
-    :is-loading="isGenerating"
-  >
-    <!-- Left Panel: Form -->
-    <template #left>
-      <!-- Guest Information Section -->
-      <div class="generator__section">
-        <h3 class="generator__section-title">Guest Information</h3>
-
-        <div class="generator__field">
-          <label class="generator__field-label">Guest Name *</label>
-          <input
-            v-model="name"
-            type="text"
-            class="generator__field-input"
-            placeholder="e.g., Dr. Jane Smith"
-          />
-        </div>
-
-        <div class="generator__field">
-          <label class="generator__field-label">Short Biography *</label>
-          <textarea
-            v-model="biography"
-            class="generator__field-input generator__field-textarea"
-            placeholder="e.g., Dr. Jane Smith is a leadership coach and author who has helped over 500 executives transform their careers..."
-            rows="4"
-          ></textarea>
-          <p class="generator__field-helper">
-            Provide a brief bio to pull key information from.
-          </p>
-        </div>
-
-        <div class="generator__field">
-          <label class="generator__field-label">Key Credentials</label>
-          <input
-            v-model="credentials"
-            type="text"
-            class="generator__field-input"
-            placeholder="e.g., PhD, ICF Certified Coach, TEDx Speaker"
-          />
-          <p class="generator__field-helper">
-            Comma-separated list of credentials to highlight.
-          </p>
-        </div>
-
-        <div class="generator__field">
-          <label class="generator__field-label">Tagline (Optional)</label>
-          <input
-            v-model="tagline"
-            type="text"
-            class="generator__field-input"
-            placeholder="e.g., Helping leaders lead with purpose"
-          />
-        </div>
-      </div>
-
-      <!-- Generate Button -->
-      <div class="generator__actions">
-        <button
-          type="button"
-          class="generator__button generator__button--call-to-action"
-          :class="{ 'generator__button--loading': isGenerating }"
-          :disabled="!canGenerate || isGenerating"
-          @click="handleGenerate"
-        >
-          <svg v-if="!isGenerating" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-          </svg>
-          {{ isGenerating ? 'Crafting introduction...' : 'Generate Introduction with AI' }}
-        </button>
-      </div>
-
-      <!-- Error Display -->
-      <div v-if="error" class="generator__error">
-        <p>{{ error }}</p>
-        <button type="button" class="generator__button generator__button--outline" @click="handleGenerate">
-          Try Again
-        </button>
-      </div>
-    </template>
-
-    <!-- Right Panel: Guidance -->
-    <template #right>
-      <GuidancePanel
-        title="Crafting the Perfect Guest Introduction"
-        subtitle="A powerful guest introduction establishes credibility, creates anticipation, and sets the stage for a memorable conversation."
-        :formula="introFormula"
-        :process-steps="processSteps"
-        :examples="examples"
-        examples-title="Example Guest Introductions:"
-      />
-    </template>
-
-    <!-- Results -->
-    <template #results>
-      <div class="guest-intro-generator__results">
-        <div class="guest-intro-generator__results-header">
-          <h3>Your Generated Introduction</h3>
-          <p>Ready to be read aloud by your host</p>
-        </div>
-
-        <!-- Introduction Content -->
-        <div class="guest-intro-generator__content">
-          <p>{{ introduction }}</p>
-        </div>
-
-        <!-- Read-aloud tip -->
-        <div class="guest-intro-generator__tip">
-          <svg class="guest-intro-generator__tip-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="16" x2="12" y2="12"/>
-            <line x1="12" y1="8" x2="12.01" y2="8"/>
-          </svg>
-          <span>This introduction is designed to be read aloud by a podcast host or event MC.</span>
-        </div>
-
-        <!-- Actions -->
-        <div class="guest-intro-generator__actions">
-          <button
-            type="button"
-            class="generator__button generator__button--outline"
-            @click="handleCopy"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-            Copy to Clipboard
-          </button>
-          <button
-            type="button"
-            class="generator__button generator__button--outline"
-            @click="handleGenerate"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
-            </svg>
-            Regenerate
-          </button>
-        </div>
-      </div>
-    </template>
-  </GeneratorLayout>
-
-  <!-- Integrated Mode: Compact widget -->
+  <!-- Integrated Mode: Compact widget for Media Kit Builder -->
   <AiWidgetFrame
-    v-else-if="mode === 'integrated'"
+    v-if="mode === 'integrated'"
     title="Guest Introduction Generator"
     description="Create a host-ready introduction that builds anticipation and establishes credibility."
     :mode="mode"
     :is-loading="isGenerating"
-    :has-results="hasIntroduction"
+    :has-results="hasVariations"
     :error="error"
-    :usage-remaining="usageRemaining"
-    :reset-time="resetTime"
     target-component="Guest Intro"
-    :show-cta="!hasIntroduction"
-    :cta-variant="usageRemaining === 0 ? 'exhausted' : 'default'"
+    :show-cta="!hasVariations"
     @apply="handleApply"
-    @regenerate="handleGenerate"
-    @copy="handleCopy"
-    @retry="handleGenerate"
+    @regenerate="() => generateForSlot(activeSlot)"
+    @copy="() => copyIntro(currentIntro)"
+    @retry="() => generateForSlot(activeSlot)"
   >
-    <!-- Input Form -->
+    <!-- Compact Input Form -->
     <div class="gmkb-ai-form">
-      <!-- Name Field -->
       <div class="gmkb-ai-form-group">
         <label class="gmkb-ai-label gmkb-ai-label--required">Guest Name</label>
         <input
-          v-model="name"
+          v-model="guestInfo.name"
           type="text"
           class="gmkb-ai-input"
           placeholder="e.g., Dr. Jane Smith"
         />
       </div>
 
-      <!-- Biography Field -->
       <div class="gmkb-ai-form-group">
-        <label class="gmkb-ai-label gmkb-ai-label--required">Short Biography</label>
+        <label class="gmkb-ai-label gmkb-ai-label--required">What do you do?</label>
         <textarea
-          v-model="biography"
+          v-model="authorityHookTextCompact"
           class="gmkb-ai-input gmkb-ai-textarea"
-          placeholder="e.g., Dr. Jane Smith is a leadership coach and author who has helped over 500 executives transform their careers..."
+          placeholder="e.g., I help busy executives achieve work-life balance through proven mindfulness techniques..."
           rows="3"
         ></textarea>
         <span class="gmkb-ai-hint">
-          Provide a brief bio to pull key information from.
+          Describe who you help and what transformation you provide.
         </span>
       </div>
 
-      <!-- Credentials Field -->
-      <div class="gmkb-ai-form-group">
-        <label class="gmkb-ai-label">Key Credentials</label>
-        <input
-          v-model="credentials"
-          type="text"
-          class="gmkb-ai-input"
-          placeholder="e.g., PhD, ICF Certified Coach, TEDx Speaker"
-        />
-        <span class="gmkb-ai-hint">
-          Comma-separated list of credentials to highlight.
-        </span>
-      </div>
+      <AiToneSelector v-model="tone" />
+      <AiLengthSelector v-model="integratedLength" />
 
-      <!-- Tagline Field -->
-      <div class="gmkb-ai-form-group">
-        <label class="gmkb-ai-label">Tagline (Optional)</label>
-        <input
-          v-model="tagline"
-          type="text"
-          class="gmkb-ai-input"
-          placeholder="e.g., Helping leaders lead with purpose"
-        />
-      </div>
-
-      <!-- Generate Button -->
       <AiGenerateButton
-        text="Generate Introduction"
-        loading-text="Crafting introduction..."
         :loading="isGenerating"
-        :disabled="!canGenerate"
+        :disabled="!canGenerateIntegrated"
         full-width
-        @click="handleGenerate"
+        @click="handleGenerateIntegrated"
       />
     </div>
 
     <!-- Results -->
     <template #results>
-      <div v-if="hasIntroduction" class="gmkb-ai-intro">
-        <div class="gmkb-ai-intro__content">
-          <AiResultsDisplay
-            :content="introduction"
-            format="text"
-            show-count
-          />
-        </div>
+      <AiResultsDisplay
+        v-if="currentIntro"
+        :content="currentIntro"
+        format="text"
+        show-count
+      />
+    </template>
 
-        <!-- Read-aloud tip -->
-        <div class="gmkb-ai-intro__tip">
-          <svg class="gmkb-ai-intro__tip-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="16" x2="12" y2="12"/>
-            <line x1="12" y1="8" x2="12.01" y2="8"/>
-          </svg>
-          <span>This introduction is designed to be read aloud by a podcast host or event MC.</span>
-        </div>
+    <!-- Results Actions -->
+    <template #results-actions>
+      <div class="gmkb-ai-results__tabs" v-if="lockedCount > 0 || hasVariations">
+        <button
+          v-for="len in ['short', 'medium', 'long']"
+          :key="len"
+          type="button"
+          class="gmkb-ai-results__tab"
+          :class="{ 'gmkb-ai-results__tab--active': activeSlot === len }"
+          @click="setActiveSlot(len)"
+        >
+          {{ len }}
+        </button>
       </div>
     </template>
   </AiWidgetFrame>
+
+  <!-- Default/Standalone Mode: Full Guest Intro Toolkit -->
+  <div v-else class="gfy-intro-generator">
+    <!-- Phase 1: Input Form -->
+    <div v-if="!showResults" class="gfy-intro-form">
+      <!-- Hero Section -->
+      <div class="gfy-intro-hero">
+        <h1 class="gfy-intro-hero__title">Guest Introduction Generator</h1>
+        <p class="gfy-intro-hero__subtitle">
+          Create compelling introductions designed to be read aloud by podcast hosts or event MCs using the Authority Hook and Impact Intro frameworks.
+        </p>
+      </div>
+
+      <!-- Form Container -->
+      <div class="gfy-intro-form__container">
+        <!-- STEP 1: Guest & Episode Information -->
+        <div class="gfy-form-section">
+          <div class="gfy-form-section__header">
+            <span class="gfy-form-section__step">1</span>
+            <div>
+              <h3 class="gfy-form-section__title">Guest & Episode Information</h3>
+              <p class="gfy-form-section__subtitle">Basic details about the guest and context</p>
+            </div>
+          </div>
+
+          <div class="gfy-form-grid">
+            <div class="gfy-form-group">
+              <label class="gfy-form-label gfy-form-label--required">Guest Name</label>
+              <input
+                v-model="guestInfo.name"
+                type="text"
+                class="gfy-form-input"
+                placeholder="e.g., Dr. Jane Smith"
+              />
+            </div>
+
+            <div class="gfy-form-group">
+              <label class="gfy-form-label">Guest Title & Company</label>
+              <input
+                v-model="guestInfo.titleCompany"
+                type="text"
+                class="gfy-form-input"
+                placeholder="e.g., CEO of Growth Dynamics"
+              />
+            </div>
+          </div>
+
+          <div class="gfy-form-grid">
+            <div class="gfy-form-group">
+              <label class="gfy-form-label">Episode/Event Title</label>
+              <input
+                v-model="episodeInfo.title"
+                type="text"
+                class="gfy-form-input"
+                placeholder="e.g., How to Scale Without Burnout"
+              />
+            </div>
+
+            <div class="gfy-form-group">
+              <label class="gfy-form-label">Main Discussion Topic</label>
+              <input
+                v-model="episodeInfo.topic"
+                type="text"
+                class="gfy-form-input"
+                placeholder="e.g., Work-life balance for entrepreneurs"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2: Authority Hook Section (WHO, WHAT, WHEN, HOW) -->
+        <div class="gfy-highlight-box gfy-highlight-box--blue">
+          <div class="gfy-highlight-box__header">
+            <span class="gfy-form-section__step">2</span>
+            <div>
+              <h3 class="gfy-highlight-box__title">Authority Hook</h3>
+              <p class="gfy-highlight-box__subtitle">Define WHO you help, WHAT results you deliver, WHEN they need it, and HOW you do it.</p>
+            </div>
+          </div>
+
+          <div class="gfy-builder">
+            <div class="gfy-builder__field">
+              <label class="gfy-builder__label">
+                <span class="gfy-builder__label-badge">WHO</span>
+                Who do you help?
+              </label>
+              <input
+                v-model="authorityHook.who"
+                type="text"
+                class="gfy-builder__input"
+                placeholder="e.g., SaaS Founders scaling to $10M ARR"
+              />
+            </div>
+
+            <div class="gfy-builder__field">
+              <label class="gfy-builder__label">
+                <span class="gfy-builder__label-badge">WHAT</span>
+                What result do you deliver?
+              </label>
+              <input
+                v-model="authorityHook.what"
+                type="text"
+                class="gfy-builder__input"
+                placeholder="e.g., Increase revenue by 40% in 90 days"
+              />
+            </div>
+
+            <div class="gfy-builder__field">
+              <label class="gfy-builder__label">
+                <span class="gfy-builder__label-badge">WHEN</span>
+                When do they need your help?
+              </label>
+              <input
+                v-model="authorityHook.when"
+                type="text"
+                class="gfy-builder__input"
+                placeholder="e.g., When they're stuck at a growth plateau"
+              />
+            </div>
+
+            <div class="gfy-builder__field">
+              <label class="gfy-builder__label">
+                <span class="gfy-builder__label-badge">HOW</span>
+                How do you achieve results?
+              </label>
+              <input
+                v-model="authorityHook.how"
+                type="text"
+                class="gfy-builder__input"
+                placeholder="e.g., My proven Revenue Acceleration System"
+              />
+            </div>
+          </div>
+
+          <!-- Live Preview -->
+          <div v-if="authorityHookSummary" class="gfy-live-preview">
+            <span class="gfy-live-preview__label">Preview:</span>
+            "{{ authorityHookSummary }}"
+          </div>
+        </div>
+
+        <!-- STEP 3: Impact Intro Section (WHERE, WHY) -->
+        <div class="gfy-highlight-box gfy-highlight-box--green">
+          <div class="gfy-highlight-box__header">
+            <span class="gfy-form-section__step">3</span>
+            <div>
+              <h3 class="gfy-highlight-box__title">Impact Intro</h3>
+              <p class="gfy-highlight-box__subtitle">Showcase WHERE you've made an impact and WHY you do what you do.</p>
+            </div>
+          </div>
+
+          <div class="gfy-builder gfy-builder--two-col">
+            <div class="gfy-builder__field gfy-builder__field--full">
+              <label class="gfy-builder__label">
+                <span class="gfy-builder__label-badge gfy-builder__label-badge--green">WHERE</span>
+                Credentials & Achievements
+              </label>
+              <textarea
+                v-model="impactIntro.where"
+                class="gfy-builder__textarea"
+                rows="2"
+                placeholder="e.g., Featured in Forbes, Inc., and Entrepreneur. Keynoted at 50+ conferences worldwide."
+              ></textarea>
+            </div>
+
+            <div class="gfy-builder__field gfy-builder__field--full">
+              <label class="gfy-builder__label">
+                <span class="gfy-builder__label-badge gfy-builder__label-badge--green">WHY</span>
+                Your Mission or Purpose
+              </label>
+              <textarea
+                v-model="impactIntro.why"
+                class="gfy-builder__textarea"
+                rows="2"
+                placeholder="e.g., Help every founder achieve sustainable growth without sacrificing their health or relationships."
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- Impact Preview -->
+          <div v-if="impactIntroSummary" class="gfy-live-preview gfy-live-preview--green">
+            <span class="gfy-live-preview__label">Preview:</span>
+            "{{ impactIntroSummary }}"
+          </div>
+        </div>
+
+        <!-- Settings Row -->
+        <div class="gfy-settings-row">
+          <div class="gfy-form-group gfy-form-group--inline">
+            <label class="gfy-form-label">Tone</label>
+            <select v-model="tone" class="gfy-form-select">
+              <option v-for="opt in TONE_OPTIONS" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
+
+          <div class="gfy-form-group gfy-form-group--inline">
+            <label class="gfy-form-label">Hook Style</label>
+            <select v-model="hookStyle" class="gfy-form-select">
+              <option v-for="opt in HOOK_STYLE_OPTIONS" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Generate Button -->
+        <div class="gfy-form-actions">
+          <button
+            type="button"
+            class="gfy-btn gfy-btn--primary gfy-btn--large gfy-btn--generate"
+            :disabled="!canGenerate || isGenerating"
+            @click="handleStartGeneration"
+          >
+            <i v-if="!isGenerating" class="fas fa-magic"></i>
+            <span v-if="isGenerating" class="gfy-spinner"></span>
+            {{ isGenerating ? 'Generating...' : 'Generate Guest Introduction Toolkit' }}
+          </button>
+          <p class="gfy-form-actions__hint">
+            We'll create multiple variations for Short, Medium, and Long introductions
+          </p>
+        </div>
+
+        <!-- Error Display -->
+        <div v-if="error" class="gfy-error-box">
+          <i class="fas fa-exclamation-circle"></i>
+          <p>{{ error }}</p>
+          <button type="button" class="gfy-btn gfy-btn--outline" @click="handleStartGeneration">
+            Try Again
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 2: Results Dashboard -->
+    <div v-else class="gfy-intro-results">
+      <!-- Results Hero -->
+      <div class="gfy-intro-hero gfy-intro-hero--compact">
+        <h1 class="gfy-intro-hero__title">Guest Introduction Toolkit</h1>
+        <p class="gfy-intro-hero__subtitle">
+          Refine your introductions. Select a length and provide feedback to iterate with AI.
+        </p>
+      </div>
+
+      <div class="gmkb-tool-embed">
+        <div class="gfy-results-layout">
+          <!-- SIDEBAR: Slot Selection -->
+          <aside class="gfy-layout-sidebar">
+            <div class="gfy-current-topics">
+              <div class="gfy-sidebar-header">
+                <h3 class="gfy-sidebar-title">Select Length to Refine</h3>
+              </div>
+
+              <!-- Short Slot (30-45 sec) -->
+              <button
+                type="button"
+                class="gfy-intro-slot"
+                :class="{
+                  'gfy-intro-slot--active': activeSlot === 'short',
+                  'gfy-intro-slot--locked': slots.short.locked,
+                  'gfy-intro-slot--generating': slots.short.status === SLOT_STATUS.GENERATING
+                }"
+                @click="handleSlotClick('short')"
+              >
+                <div class="gfy-intro-slot__header">
+                  <span class="gfy-intro-slot__label">Short (30-45 sec)</span>
+                  <i v-if="slots.short.locked" class="fas fa-lock" style="color: var(--gfy-primary-color);"></i>
+                  <i v-else-if="slots.short.status === SLOT_STATUS.GENERATING" class="fas fa-spinner fa-spin" style="color: var(--gfy-primary-color);"></i>
+                  <i v-else-if="slots.short.variations.length > 0" class="fas fa-check-circle" style="color: var(--gfy-success-color);"></i>
+                  <i v-else class="fas fa-plus" style="color: var(--gfy-text-muted);"></i>
+                </div>
+                <div class="gfy-intro-slot__preview">{{ getSlotPreview('short') }}</div>
+              </button>
+
+              <!-- Medium Slot (60-90 sec) -->
+              <button
+                type="button"
+                class="gfy-intro-slot"
+                :class="{
+                  'gfy-intro-slot--active': activeSlot === 'medium',
+                  'gfy-intro-slot--locked': slots.medium.locked,
+                  'gfy-intro-slot--generating': slots.medium.status === SLOT_STATUS.GENERATING
+                }"
+                @click="handleSlotClick('medium')"
+              >
+                <div class="gfy-intro-slot__header">
+                  <span class="gfy-intro-slot__label">Medium (60-90 sec)</span>
+                  <i v-if="slots.medium.locked" class="fas fa-lock" style="color: var(--gfy-primary-color);"></i>
+                  <i v-else-if="slots.medium.status === SLOT_STATUS.GENERATING" class="fas fa-spinner fa-spin" style="color: var(--gfy-primary-color);"></i>
+                  <i v-else-if="slots.medium.variations.length > 0" class="fas fa-check-circle" style="color: var(--gfy-success-color);"></i>
+                  <i v-else class="fas fa-plus" style="color: var(--gfy-text-muted);"></i>
+                </div>
+                <div class="gfy-intro-slot__preview">{{ getSlotPreview('medium') }}</div>
+              </button>
+
+              <!-- Long Slot (2-3 min) -->
+              <button
+                type="button"
+                class="gfy-intro-slot"
+                :class="{
+                  'gfy-intro-slot--active': activeSlot === 'long',
+                  'gfy-intro-slot--locked': slots.long.locked,
+                  'gfy-intro-slot--generating': slots.long.status === SLOT_STATUS.GENERATING
+                }"
+                @click="handleSlotClick('long')"
+              >
+                <div class="gfy-intro-slot__header">
+                  <span class="gfy-intro-slot__label">Long (2-3 min)</span>
+                  <i v-if="slots.long.locked" class="fas fa-lock" style="color: var(--gfy-primary-color);"></i>
+                  <i v-else-if="slots.long.status === SLOT_STATUS.GENERATING" class="fas fa-spinner fa-spin" style="color: var(--gfy-primary-color);"></i>
+                  <i v-else-if="slots.long.variations.length > 0" class="fas fa-check-circle" style="color: var(--gfy-success-color);"></i>
+                  <i v-else class="fas fa-plus" style="color: var(--gfy-text-muted);"></i>
+                </div>
+                <div class="gfy-intro-slot__preview">{{ getSlotPreview('long') }}</div>
+              </button>
+
+              <!-- Locked Summary -->
+              <div v-if="lockedCount > 0" class="gfy-locked-summary">
+                <i class="fas fa-lock"></i>
+                {{ lockedCount }}/3 introductions locked
+              </div>
+            </div>
+          </aside>
+
+          <!-- MAIN: Variations + Feedback Loop -->
+          <main class="gfy-layout-main">
+            <!-- Results Header -->
+            <div class="gfy-results__header">
+              <h3 class="gfy-results__title">
+                AI Variations:
+                <span style="color: var(--gfy-primary-color)">{{ activeSlotLabel }} Introduction</span>
+              </h3>
+            </div>
+
+            <!-- Read-aloud tip -->
+            <div class="gfy-intro-tip">
+              <i class="fas fa-microphone"></i>
+              <span>These introductions are designed to be read aloud by a podcast host or event MC.</span>
+            </div>
+
+            <!-- Refinement Loop Box -->
+            <div v-if="currentVariations.length > 0 && !currentSlot.locked" class="gfy-refinement-box">
+              <div class="gfy-refinement-header">
+                <i class="fas fa-magic" style="color: var(--gfy-primary-color); font-size: 14px;"></i>
+                <span class="gfy-refinement-title">Refine these results</span>
+              </div>
+              <div class="gfy-refinement-input-wrapper">
+                <textarea
+                  v-model="refinementFeedback"
+                  class="gfy-refinement-textarea"
+                  rows="1"
+                  placeholder="e.g. Make Option 1 more conversational or add my keynote experience..."
+                  @keydown.enter.prevent="handleRefine"
+                ></textarea>
+                <button
+                  type="button"
+                  class="gfy-btn-refine"
+                  :disabled="!refinementFeedback.trim() || isGenerating"
+                  @click="handleRefine"
+                >
+                  <i v-if="!isGenerating" class="fas fa-sync-alt"></i>
+                  <span v-else class="gfy-spinner gfy-spinner--small"></span>
+                  {{ isGenerating ? '' : 'Refine' }}
+                </button>
+              </div>
+              <span class="gfy-refinement-hint">AI will iterate on the drafts below based on your instructions.</span>
+            </div>
+
+            <!-- Loading State -->
+            <div v-if="currentSlot.status === SLOT_STATUS.GENERATING" class="gfy-loading-state">
+              <div class="gfy-loading-spinner"></div>
+              <p>Generating {{ getVariationCount(activeSlot) }} variations for your {{ activeSlotLabel }} introduction...</p>
+            </div>
+
+            <!-- Locked State -->
+            <div v-else-if="currentSlot.locked" class="gfy-locked-intro">
+              <div class="gfy-locked-intro__badge">
+                <i class="fas fa-lock"></i>
+                LOCKED {{ activeSlotLabel.toUpperCase() }} INTRO
+              </div>
+              <div class="gfy-locked-intro__text">
+                <p v-for="(paragraph, pIdx) in currentSlot.lockedIntro.split('\n\n').filter(p => p.trim())" :key="pIdx">
+                  {{ paragraph }}
+                </p>
+              </div>
+              <div class="gfy-locked-intro__actions">
+                <button type="button" class="gfy-btn gfy-btn--outline" @click="handleCopy(currentSlot.lockedIntro)">
+                  <i class="fas fa-copy"></i> Copy
+                </button>
+                <button type="button" class="gfy-btn gfy-btn--ghost" @click="unlockIntro(activeSlot)">
+                  <i class="fas fa-unlock"></i> Unlock & Edit
+                </button>
+              </div>
+            </div>
+
+            <!-- Empty State -->
+            <div v-else-if="currentVariations.length === 0" class="gfy-empty-state">
+              <i class="fas fa-file-alt"></i>
+              <p>Click the button below to generate {{ getVariationCount(activeSlot) }} variations for your {{ activeSlotLabel }} introduction.</p>
+              <button
+                type="button"
+                class="gfy-btn gfy-btn--primary"
+                :disabled="isGenerating"
+                @click="handleGenerateForSlot(activeSlot)"
+              >
+                <i class="fas fa-magic"></i>
+                Generate {{ activeSlotLabel }} Intro
+              </button>
+            </div>
+
+            <!-- Variations List -->
+            <template v-else>
+              <div
+                v-for="(variation, index) in currentVariations"
+                :key="variation.id"
+                class="gfy-intro-variation"
+              >
+                <div class="gfy-variation-badge">{{ variation.label }}</div>
+                <div class="gfy-variation-text">
+                  <p v-for="(paragraph, pIdx) in variation.text.split('\n\n').filter(p => p.trim())" :key="pIdx">
+                    {{ paragraph }}
+                  </p>
+                </div>
+                <div class="gfy-variation-footer">
+                  <button
+                    type="button"
+                    class="gfy-btn gfy-btn--primary"
+                    @click="handleLock(index)"
+                  >
+                    <i class="fas fa-lock"></i>
+                    Lock as {{ activeSlotLabel }} Intro
+                  </button>
+                  <button
+                    type="button"
+                    class="gfy-btn gfy-btn--outline"
+                    @click="handleCopy(variation.text)"
+                  >
+                    <i class="fas fa-copy"></i> Copy
+                  </button>
+                </div>
+              </div>
+            </template>
+
+            <!-- Footer Actions -->
+            <div class="gfy-results__footer">
+              <button
+                type="button"
+                class="gfy-btn gfy-btn--primary gfy-btn--large"
+                :disabled="lockedCount === 0 || isSaving"
+                @click="handleSaveAll"
+              >
+                <i v-if="!isSaving" class="fas fa-save"></i>
+                <span v-else class="gfy-spinner"></span>
+                {{ isSaving ? 'Saving...' : 'Save Entire Toolkit' }}
+              </button>
+              <button type="button" class="gfy-btn gfy-btn--ghost" @click="handleStartOver">
+                Start Over
+              </button>
+            </div>
+
+            <!-- Save Success -->
+            <div v-if="saveSuccess" class="gfy-save-success">
+              <i class="fas fa-check-circle"></i>
+              Introductions saved successfully!
+            </div>
+
+            <!-- Save Error -->
+            <div v-if="saveError" class="gfy-save-error">
+              <i class="fas fa-exclamation-triangle"></i>
+              {{ saveError }}
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, inject } from 'vue';
-import { useAIGuestIntro } from '../../src/composables/useAIGuestIntro';
-import { useImpactIntro } from '../../src/composables/useImpactIntro';
+import { ref, reactive, computed, watch, inject } from 'vue';
+import { useProfileContext } from '../../src/composables/useProfileContext';
+import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
 
-// Compact widget components (integrated mode)
+// Integrated mode components
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
+import AiToneSelector from '../../src/vue/components/ai/AiToneSelector.vue';
+import AiLengthSelector from '../../src/vue/components/ai/AiLengthSelector.vue';
 import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
 
-// Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
+// Constants
+const SLOT_STATUS = {
+  EMPTY: 'empty',
+  GENERATING: 'generating',
+  READY: 'ready'
+};
+
+const TONE_OPTIONS = [
+  { value: 'professional', label: 'Professional' },
+  { value: 'conversational', label: 'Conversational' },
+  { value: 'enthusiastic', label: 'Enthusiastic' },
+  { value: 'authoritative', label: 'Authoritative' },
+  { value: 'warm', label: 'Warm & Welcoming' }
+];
+
+const HOOK_STYLE_OPTIONS = [
+  { value: 'question', label: 'Question Hook' },
+  { value: 'statistic', label: 'Statistic Hook' },
+  { value: 'problem', label: 'Problem Hook' },
+  { value: 'story', label: 'Story Hook' },
+  { value: 'direct', label: 'Direct Introduction' }
+];
 
 const props = defineProps({
-  /**
-   * Mode: 'integrated' or 'standalone'
-   * - standalone: Full two-panel layout with guidance
-   * - integrated: Compact widget for embedding in other components
-   */
   mode: {
     type: String,
     default: 'standalone',
-    validator: (v) => ['standalone', 'integrated'].includes(v)
+    validator: (v) => ['standalone', 'integrated', 'embedded'].includes(v)
   },
-
-  /**
-   * Component ID to apply results to (integrated mode)
-   */
-  componentId: {
-    type: String,
+  intent: {
+    type: Object,
     default: null
   },
-
-  /**
-   * Profile data for pre-population
-   * Passed from EmbeddedToolWrapper via scoped slot
-   */
   profileData: {
     type: Object,
     default: null
   },
-
-  /**
-   * Initial name
-   */
-  initialName: {
+  componentId: {
     type: String,
-    default: ''
-  },
-
-  /**
-   * Initial biography
-   */
-  initialBiography: {
-    type: String,
-    default: ''
+    default: null
   }
 });
 
-const emit = defineEmits(['applied', 'generated', 'preview-update', 'update:can-generate']);
+const emit = defineEmits(['generated', 'saved', 'applied', 'update:can-generate', 'preview-update', 'authority-hook-update']);
 
-// Use composables
-const {
-  isGenerating,
-  error,
-  usageRemaining,
-  resetTime,
-  introduction,
-  hasIntroduction,
-  generate,
-  copyToClipboard
-} = useAIGuestIntro();
-
-const { credentialsSummary, syncFromStore: syncImpactIntro } = useImpactIntro();
-
-// Local state
-const name = ref(props.initialName);
-const biography = ref(props.initialBiography);
-const credentials = ref('');
-const tagline = ref('');
-
-// Inject profile data from EmbeddedToolWrapper (for embedded mode)
+// Inject profile data from parent
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
 
-/**
- * Populate form fields from profile data
- */
-function populateFromProfile(profileData) {
-  if (!profileData) return;
+// Profile context
+const {
+  profileId,
+  isSaving,
+  saveError,
+  saveToProfile
+} = useProfileContext();
 
-  // Populate name from first_name + last_name
-  const firstName = profileData.first_name || '';
-  const lastName = profileData.last_name || '';
-  const fullName = [firstName, lastName].filter(Boolean).join(' ');
-  if (fullName && !name.value) {
-    name.value = fullName;
+// Form State
+const guestInfo = reactive({
+  name: '',
+  titleCompany: ''
+});
+
+const episodeInfo = reactive({
+  title: '',
+  topic: ''
+});
+
+const authorityHook = reactive({
+  who: '',
+  what: '',
+  when: '',
+  how: ''
+});
+
+const impactIntro = reactive({
+  where: '',
+  why: ''
+});
+
+const tone = ref('professional');
+const hookStyle = ref('question');
+const refinementFeedback = ref('');
+
+// Slots state (Short, Medium, Long)
+const slots = reactive({
+  short: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY },
+  medium: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY },
+  long: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY }
+});
+
+const activeSlot = ref('short');
+const isGenerating = ref(false);
+const error = ref(null);
+const showResults = ref(false);
+const saveSuccess = ref(false);
+
+// Integrated mode state
+const authorityHookTextCompact = ref('');
+const integratedLength = ref('medium');
+
+// Computed
+const currentSlot = computed(() => slots[activeSlot.value]);
+const currentVariations = computed(() => currentSlot.value?.variations || []);
+
+const authorityHookSummary = computed(() => {
+  const { who, what, when, how } = authorityHook;
+  if (!who?.trim() || !what?.trim()) return '';
+  let summary = `I help ${who.trim()} ${what.trim()}`;
+  if (when?.trim()) summary += ` ${when.trim()}`;
+  if (how?.trim()) summary += ` ${how.trim()}`;
+  return summary + '.';
+});
+
+const impactIntroSummary = computed(() => {
+  const { where, why } = impactIntro;
+  const parts = [];
+  if (where?.trim()) parts.push(where.trim());
+  if (why?.trim()) parts.push(`I'm on a mission to ${why.trim()}`);
+  return parts.join(' ');
+});
+
+const canGenerate = computed(() => {
+  return guestInfo.name.trim() && (
+    authorityHook.who.trim() || authorityHook.what.trim() ||
+    impactIntro.where.trim() || impactIntro.why.trim()
+  );
+});
+
+const canGenerateIntegrated = computed(() => {
+  return guestInfo.name.trim() && authorityHookTextCompact.value.trim();
+});
+
+const lockedCount = computed(() => {
+  return Object.values(slots).filter(s => s.locked).length;
+});
+
+const hasVariations = computed(() => {
+  return Object.values(slots).some(s => s.variations.length > 0 || s.locked);
+});
+
+const activeSlotLabel = computed(() => {
+  const labels = { short: 'Short', medium: 'Medium', long: 'Long' };
+  return labels[activeSlot.value] || 'Short';
+});
+
+const currentIntro = computed(() => {
+  const slot = slots[activeSlot.value];
+  return slot?.lockedIntro || (slot?.variations[0]?.text || null);
+});
+
+// Helper functions
+function getVariationCount(slotName) {
+  return slotName === 'short' ? 2 : slotName === 'medium' ? 3 : 2;
+}
+
+function getSlotPreview(slotName) {
+  const slot = slots[slotName];
+  if (slot.locked && slot.lockedIntro) {
+    return slot.lockedIntro.substring(0, 80) + '...';
   }
-
-  // Populate biography from biography field
-  if (profileData.biography && !biography.value) {
-    biography.value = profileData.biography;
+  if (slot.variations.length > 0) {
+    return slot.variations[0].text.substring(0, 80) + '...';
   }
+  return 'Click to generate variations';
+}
 
-  // Populate credentials from impact intro or certifications
-  if (profileData.credentials && !credentials.value) {
-    credentials.value = profileData.credentials;
-  }
+function setActiveSlot(slotName) {
+  activeSlot.value = slotName;
+}
 
-  // Populate tagline
-  if (profileData.tagline && !tagline.value) {
-    tagline.value = profileData.tagline;
+// API call to generate introductions
+async function generateForSlot(slotName) {
+  const slot = slots[slotName];
+  slot.status = SLOT_STATUS.GENERATING;
+  isGenerating.value = true;
+  error.value = null;
+
+  try {
+    // Build the prompt context
+    const context = {
+      guestName: guestInfo.name,
+      titleCompany: guestInfo.titleCompany,
+      episodeTitle: episodeInfo.title,
+      episodeTopic: episodeInfo.topic,
+      authorityHook: authorityHookSummary.value,
+      impactIntro: impactIntroSummary.value,
+      who: authorityHook.who,
+      what: authorityHook.what,
+      when: authorityHook.when,
+      how: authorityHook.how,
+      where: impactIntro.where,
+      why: impactIntro.why,
+      tone: tone.value,
+      hookStyle: hookStyle.value,
+      length: slotName
+    };
+
+    // Call the API
+    const response = await fetch('/wp-json/mkcg/v1/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        generator: 'guest-intro',
+        context,
+        count: getVariationCount(slotName)
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Generation failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Process variations
+    slot.variations = (data.variations || data.results || []).map((text, idx) => ({
+      id: `${slotName}-${Date.now()}-${idx}`,
+      label: `Option ${idx + 1}`,
+      text: typeof text === 'string' ? text : text.content || text.text || ''
+    }));
+
+    slot.status = SLOT_STATUS.READY;
+
+    emit('generated', { slot: slotName, variations: slot.variations });
+  } catch (err) {
+    console.error('[GuestIntroGenerator] Generation failed:', err);
+    error.value = err.message || 'Failed to generate introductions. Please try again.';
+    slot.status = SLOT_STATUS.EMPTY;
+  } finally {
+    isGenerating.value = false;
   }
 }
 
-/**
- * Introduction formula for guidance panel
- */
-const introFormula = '<span class="generator__highlight">[CREDIBILITY]</span> + <span class="generator__highlight">[RELEVANCE]</span> + <span class="generator__highlight">[HOOK]</span> = Perfect Guest Introduction';
+async function refineVariations(feedback) {
+  const slot = currentSlot.value;
+  slot.status = SLOT_STATUS.GENERATING;
+  isGenerating.value = true;
+  error.value = null;
 
-/**
- * Process steps for guidance panel
- */
-const processSteps = [
-  {
-    title: 'Why Guest Introductions Matter',
-    description: 'The first 30 seconds of your podcast or event set the tone for everything that follows. A compelling guest introduction establishes credibility, creates anticipation, and primes your audience to engage with your guest\'s message. Hosts rely on these introductions to smoothly transition into conversations and build immediate rapport.'
-  },
-  {
-    title: 'What Makes a Great Introduction',
-    description: 'The best guest introductions are concise (30-60 seconds when read aloud), highlight 2-3 key credentials or accomplishments, establish relevance to the audience, and create curiosity about what the guest will share. They\'re written in a conversational tone that sounds natural when spoken.'
-  },
-  {
-    title: 'How Hosts Use Your Introduction',
-    description: 'Podcast hosts and event MCs will read your introduction word-for-word at the start of your appearance. A well-crafted introduction makes their job easier, ensures your key accomplishments are highlighted, and creates the perfect setup for your conversation. Many hosts prefer to receive introductions in advance rather than improvising.'
-  }
-];
-
-/**
- * Example guest introductions for guidance panel
- */
-const examples = [
-  {
-    title: 'Business Coach Introduction:',
-    description: 'Today I\'m thrilled to welcome Sarah Chen, a business coach who\'s helped over 300 entrepreneurs scale their companies to seven figures. Sarah is the author of "The Sustainable Scale," a TEDx speaker, and the founder of the Growth Lab podcast. She specializes in helping mission-driven founders grow their impact without burning out. Sarah, welcome to the show!'
-  },
-  {
-    title: 'Tech Expert Introduction:',
-    description: 'Our guest today is Marcus Rodriguez, the former VP of Engineering at TechFlow and current advisor to over 20 AI startups. Marcus has spent 15 years building products that serve millions of users, and he\'s here to share insights on leading engineering teams through rapid growth. Marcus holds a PhD in Computer Science from MIT and is known for his practical, no-nonsense approach to technical leadership. Marcus, great to have you here!'
-  }
-];
-
-/**
- * Can generate check
- */
-const canGenerate = computed(() => {
-  // All modes use name and biography now
-  return name.value.trim() && biography.value.trim();
-});
-
-/**
- * Handle generate button click
- */
-const handleGenerate = async () => {
   try {
-    const context = props.mode === 'integrated' ? 'builder' : 'public';
-    await generate({
-      name: name.value,
-      biography: biography.value,
-      credentials: credentials.value,
-      tagline: tagline.value
-    }, context);
-
-    emit('generated', {
-      introduction: introduction.value
+    const response = await fetch('/wp-json/mkcg/v1/refine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        generator: 'guest-intro',
+        feedback,
+        currentVariations: slot.variations.map(v => v.text),
+        context: {
+          guestName: guestInfo.name,
+          authorityHook: authorityHookSummary.value,
+          length: activeSlot.value
+        }
+      })
     });
+
+    if (!response.ok) {
+      throw new Error(`Refinement failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    slot.variations = (data.variations || data.results || []).map((text, idx) => ({
+      id: `${activeSlot.value}-${Date.now()}-${idx}`,
+      label: `Option ${idx + 1}`,
+      text: typeof text === 'string' ? text : text.content || text.text || ''
+    }));
+
+    slot.status = SLOT_STATUS.READY;
+    refinementFeedback.value = '';
+  } catch (err) {
+    console.error('[GuestIntroGenerator] Refinement failed:', err);
+    error.value = err.message || 'Failed to refine introductions. Please try again.';
+    slot.status = SLOT_STATUS.READY;
+  } finally {
+    isGenerating.value = false;
+  }
+}
+
+function lockIntro(variationIndex) {
+  const slot = currentSlot.value;
+  const variation = slot.variations[variationIndex];
+  if (variation) {
+    slot.lockedIntro = variation.text;
+    slot.locked = true;
+  }
+}
+
+function unlockIntro(slotName) {
+  const slot = slots[slotName];
+  slot.locked = false;
+  slot.lockedIntro = '';
+}
+
+function getLockedIntros() {
+  const locked = {};
+  Object.entries(slots).forEach(([name, slot]) => {
+    if (slot.locked && slot.lockedIntro) {
+      locked[name] = slot.lockedIntro;
+    }
+  });
+  return locked;
+}
+
+async function copyIntro(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (err) {
+    console.error('[GuestIntroGenerator] Copy failed:', err);
+    return false;
+  }
+}
+
+function reset() {
+  Object.keys(slots).forEach(key => {
+    slots[key] = { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY };
+  });
+  activeSlot.value = 'short';
+  refinementFeedback.value = '';
+  error.value = null;
+  saveSuccess.value = false;
+}
+
+// Event Handlers
+async function handleStartGeneration() {
+  showResults.value = true;
+  await handleGenerateForSlot('short');
+}
+
+async function handleSlotClick(slotName) {
+  setActiveSlot(slotName);
+  if (slots[slotName].status === SLOT_STATUS.EMPTY) {
+    await handleGenerateForSlot(slotName);
+  }
+}
+
+async function handleGenerateForSlot(slotName) {
+  try {
+    await generateForSlot(slotName);
   } catch (err) {
     console.error('[GuestIntroGenerator] Generation failed:', err);
   }
-};
+}
 
-/**
- * Handle copy to clipboard
- */
-const handleCopy = async () => {
-  await copyToClipboard();
-};
+async function handleRefine() {
+  if (!refinementFeedback.value.trim()) return;
+  try {
+    await refineVariations(refinementFeedback.value);
+  } catch (err) {
+    console.error('[GuestIntroGenerator] Refinement failed:', err);
+  }
+}
 
-/**
- * Handle apply (integrated mode)
- */
-const handleApply = () => {
+function handleLock(variationIndex) {
+  lockIntro(variationIndex);
+}
+
+async function handleCopy(text) {
+  const success = await copyIntro(text);
+  if (success) {
+    // Could show a toast notification here
+  }
+}
+
+async function handleSaveAll() {
+  const lockedIntros = getLockedIntros();
+  if (Object.keys(lockedIntros).length === 0) return;
+
+  try {
+    const saveData = {};
+    if (lockedIntros.short) saveData.guest_intro_short = lockedIntros.short;
+    if (lockedIntros.medium) saveData.guest_intro = lockedIntros.medium;
+    if (lockedIntros.long) saveData.guest_intro_long = lockedIntros.long;
+
+    const result = await saveToProfile('guest-intro', saveData, {
+      profileId: profileId.value
+    });
+
+    if (result?.success) {
+      saveSuccess.value = true;
+      setTimeout(() => { saveSuccess.value = false; }, 3000);
+      emit('saved', { introductions: lockedIntros });
+    }
+  } catch (err) {
+    console.error('[GuestIntroGenerator] Save failed:', err);
+  }
+}
+
+function handleStartOver() {
+  reset();
+  showResults.value = false;
+}
+
+// Integrated mode handlers
+async function handleGenerateIntegrated() {
+  authorityHook.who = authorityHookTextCompact.value;
+  setActiveSlot(integratedLength.value);
+  await generateForSlot(integratedLength.value);
+}
+
+function handleApply() {
   emit('applied', {
     componentId: props.componentId,
-    introduction: introduction.value
+    content: currentIntro.value,
+    length: activeSlot.value
   });
-};
+}
 
-/**
- * Load credentials from store on mount
- */
-onMounted(() => {
-  syncImpactIntro();
-  if (credentialsSummary.value) {
-    credentials.value = credentialsSummary.value;
+// Handle generate (called by EmbeddedToolApp)
+async function handleGenerate() {
+  try {
+    await handleStartGeneration();
+    const intro = currentIntro.value;
+    emit('generated', {
+      content: intro,
+      hook: intro,
+      result: intro
+    });
+    return intro;
+  } catch (err) {
+    console.error('[GuestIntroGenerator] Generation failed:', err);
+    throw err;
+  }
+}
+
+// Profile data population
+function populateFromProfile(data) {
+  if (!data) return;
+
+  // Guest info
+  const firstName = data.first_name || '';
+  const lastName = data.last_name || '';
+  const fullName = [firstName, lastName].filter(Boolean).join(' ');
+  if (fullName && !guestInfo.name) {
+    guestInfo.name = fullName;
+  }
+
+  if (data.title && !guestInfo.titleCompany) {
+    const company = data.company || data.organization || '';
+    guestInfo.titleCompany = company ? `${data.title} at ${company}` : data.title;
+  }
+
+  // Authority Hook components
+  if (data.authority_who || data.who) {
+    authorityHook.who = data.authority_who || data.who;
+  }
+  if (data.authority_what || data.what) {
+    authorityHook.what = data.authority_what || data.what;
+  }
+  if (data.authority_when || data.when) {
+    authorityHook.when = data.authority_when || data.when;
+  }
+  if (data.authority_how || data.how) {
+    authorityHook.how = data.authority_how || data.how;
+  }
+
+  // Impact Intro components
+  if (data.impact_where || data.where || data.credentials) {
+    impactIntro.where = data.impact_where || data.where || data.credentials;
+  }
+  if (data.impact_why || data.why || data.mission) {
+    impactIntro.why = data.impact_why || data.why || data.mission;
+  }
+
+  // Emit authority hook data for parent components
+  emit('authority-hook-update', {
+    who: authorityHook.who,
+    what: authorityHook.what,
+    when: authorityHook.when,
+    how: authorityHook.how,
+    complete: authorityHookSummary.value
+  });
+}
+
+// Watchers
+watch(injectedProfileData, (newData) => {
+  if (newData) {
+    populateFromProfile(newData);
+  }
+}, { immediate: true });
+
+watch(() => props.profileData, (newData) => {
+  if (newData) {
+    populateFromProfile(newData);
+  }
+}, { immediate: true });
+
+watch(canGenerate, (newValue) => {
+  emit('update:can-generate', !!newValue);
+}, { immediate: true });
+
+// Emit preview updates when authority hook changes
+watch(authorityHookSummary, (newValue) => {
+  if (newValue) {
+    emit('preview-update', { previewHtml: newValue });
   }
 });
 
-/**
- * Watch for injected profile data changes
- */
-watch(
-  injectedProfileData,
-  (newData) => {
-    if (newData) {
-      populateFromProfile(newData);
-    }
-  },
-  { immediate: true }
-);
-
-/**
- * Watch for profileData prop changes
- */
-watch(
-  () => props.profileData,
-  (newData) => {
-    if (newData) {
-      populateFromProfile(newData);
-    }
-  },
-  { immediate: true }
-);
+// Expose for parent
+defineExpose({
+  handleStartGeneration,
+  handleGenerate,
+  showResults,
+  isGenerating,
+  error,
+  canGenerate
+});
 </script>
 
 <style scoped>
-/* Standalone Mode Styles */
-.generator__section {
-  margin-bottom: var(--mkcg-space-lg, 30px);
+.gfy-intro-generator {
+  --gfy-primary-color: #2563eb;
+  --gfy-primary-light: #eff6ff;
+  --gfy-primary-dark: #1d4ed8;
+  --gfy-success-color: #10b981;
+  --gfy-success-light: #d1fae5;
+  --gfy-text-primary: #0f172a;
+  --gfy-text-secondary: #64748b;
+  --gfy-text-muted: #94a3b8;
+  --gfy-bg-color: #f8fafc;
+  --gfy-white: #ffffff;
+  --gfy-border-color: #e2e8f0;
+  --gfy-radius-md: 8px;
+  --gfy-radius-lg: 12px;
+
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 20px;
 }
 
-.generator__section-title {
-  font-size: var(--mkcg-font-size-lg, 18px);
-  font-weight: var(--mkcg-font-weight-semibold, 600);
-  color: var(--mkcg-text-primary, #2c3e50);
-  margin: 0 0 var(--mkcg-space-md, 20px) 0;
-}
-
-.generator__actions {
-  margin-top: var(--mkcg-space-lg, 30px);
+/* HERO */
+.gfy-intro-hero {
   text-align: center;
+  margin-bottom: 40px;
 }
 
-.generator__error {
-  margin-top: var(--mkcg-space-md, 20px);
-  padding: var(--mkcg-space-md, 20px);
-  background-color: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: var(--mkcg-radius, 8px);
-  text-align: center;
+.gfy-intro-hero--compact {
+  margin-bottom: 30px;
 }
 
-.generator__error p {
-  color: #991b1b;
-  margin: 0 0 var(--mkcg-space-sm, 12px) 0;
+.gfy-intro-hero__title {
+  font-size: 36px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  background: linear-gradient(to right, #0f172a, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-/* Guest Intro Results */
-.guest-intro-generator__results {
-  padding: var(--mkcg-space-md, 20px);
+.gfy-intro-hero__subtitle {
+  color: var(--gfy-text-secondary);
+  font-size: 1.1rem;
+  max-width: 700px;
+  margin: 0 auto;
 }
 
-.guest-intro-generator__results-header {
-  margin-bottom: var(--mkcg-space-md, 20px);
+/* FORM CONTAINER */
+.gfy-intro-form__container {
+  background: var(--gfy-white);
+  border-radius: 16px;
+  border: 1px solid var(--gfy-border-color);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  padding: 40px;
 }
 
-.guest-intro-generator__results-header h3 {
-  margin: 0 0 var(--mkcg-space-xs, 8px) 0;
-  font-size: var(--mkcg-font-size-lg, 18px);
-  color: var(--mkcg-text-primary, #2c3e50);
+/* FORM SECTIONS */
+.gfy-form-section {
+  margin-bottom: 32px;
 }
 
-.guest-intro-generator__results-header p {
-  margin: 0;
-  color: var(--mkcg-text-secondary, #5a6d7e);
-  font-size: var(--mkcg-font-size-sm, 14px);
-}
-
-.guest-intro-generator__content {
-  padding: var(--mkcg-space-md, 20px);
-  background: var(--mkcg-bg-primary, #ffffff);
-  border: 1px solid var(--mkcg-border-light, #e9ecef);
-  border-radius: var(--mkcg-radius, 8px);
-  line-height: var(--mkcg-line-height-relaxed, 1.6);
-  margin-bottom: var(--mkcg-space-md, 20px);
-}
-
-.guest-intro-generator__content p {
-  margin: 0;
-  color: var(--mkcg-text-primary, #2c3e50);
-}
-
-.guest-intro-generator__tip {
+.gfy-form-section__header {
   display: flex;
   align-items: flex-start;
-  gap: var(--mkcg-space-xs, 8px);
-  padding: var(--mkcg-space-sm, 12px);
-  background: var(--mkcg-bg-secondary, #f8f9fa);
-  border: 1px solid var(--mkcg-border-light, #e9ecef);
-  border-radius: var(--mkcg-radius, 8px);
-  font-size: var(--mkcg-font-size-sm, 14px);
-  color: var(--mkcg-text-secondary, #5a6d7e);
-  margin-bottom: var(--mkcg-space-md, 20px);
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
-.guest-intro-generator__tip-icon {
-  flex-shrink: 0;
-  margin-top: 2px;
-  color: var(--mkcg-primary, #1a9bdc);
-}
-
-.guest-intro-generator__actions {
+.gfy-form-section__step {
   display: flex;
-  gap: var(--mkcg-space-sm, 12px);
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--gfy-primary-color);
+  color: var(--gfy-white);
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
-/* Integrated Mode Styles */
-.gmkb-ai-intro__content {
+.gfy-form-section__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gfy-text-primary);
+  margin: 0 0 4px 0;
+}
+
+.gfy-form-section__subtitle {
+  font-size: 0.9rem;
+  color: var(--gfy-text-secondary);
+  margin: 0;
+}
+
+/* FORM GRID */
+.gfy-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
   margin-bottom: 16px;
 }
 
-.gmkb-ai-intro__tip {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 12px;
-  background: var(--gmkb-ai-bg-tertiary, #f3f4f6);
-  border-radius: var(--gmkb-ai-radius-md, 8px);
-  font-size: 13px;
-  color: var(--gmkb-ai-text-secondary, #64748b);
+@media (max-width: 600px) {
+  .gfy-form-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
-.gmkb-ai-intro__tip-icon {
-  flex-shrink: 0;
-  margin-top: 1px;
+/* FORM GROUPS */
+.gfy-form-group {
+  margin-bottom: 0;
+}
+
+.gfy-form-group--inline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gfy-form-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--gfy-text-primary);
+  margin-bottom: 8px;
+}
+
+.gfy-form-label--required::after {
+  content: ' *';
+  color: #dc2626;
+}
+
+.gfy-form-input,
+.gfy-form-textarea,
+.gfy-form-select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-md);
+  font-family: inherit;
+  font-size: 0.95rem;
+  background: var(--gfy-white);
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.gfy-form-input:focus,
+.gfy-form-textarea:focus,
+.gfy-form-select:focus {
+  outline: none;
+  border-color: var(--gfy-primary-color);
+  box-shadow: 0 0 0 3px var(--gfy-primary-light);
+}
+
+.gfy-form-input::placeholder,
+.gfy-form-textarea::placeholder {
+  color: var(--gfy-text-muted);
+}
+
+/* HIGHLIGHT BOXES */
+.gfy-highlight-box {
+  background: var(--gfy-white);
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-lg);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.gfy-highlight-box--blue {
+  border-left: 4px solid var(--gfy-primary-color);
+  background: linear-gradient(to right, var(--gfy-primary-light), var(--gfy-white));
+}
+
+.gfy-highlight-box--green {
+  border-left: 4px solid var(--gfy-success-color);
+  background: linear-gradient(to right, var(--gfy-success-light), var(--gfy-white));
+}
+
+.gfy-highlight-box__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.gfy-highlight-box__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gfy-text-primary);
+  margin: 0 0 4px 0;
+}
+
+.gfy-highlight-box__subtitle {
+  font-size: 0.9rem;
+  color: var(--gfy-text-secondary);
+  margin: 0;
+}
+
+/* BUILDER GRID */
+.gfy-builder {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.gfy-builder--two-col {
+  grid-template-columns: 1fr;
+}
+
+.gfy-builder__field--full {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 600px) {
+  .gfy-builder {
+    grid-template-columns: 1fr;
+  }
+}
+
+.gfy-builder__field {
+  margin-bottom: 0;
+}
+
+.gfy-builder__label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--gfy-text-secondary);
+  margin-bottom: 8px;
+}
+
+.gfy-builder__label-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--gfy-primary-color);
+  color: var(--gfy-white);
+  border-radius: 4px;
+}
+
+.gfy-builder__label-badge--green {
+  background: var(--gfy-success-color);
+}
+
+.gfy-builder__input,
+.gfy-builder__textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-md);
+  font-family: inherit;
+  font-size: 0.95rem;
+  background: var(--gfy-white);
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.gfy-builder__input:focus,
+.gfy-builder__textarea:focus {
+  outline: none;
+  border-color: var(--gfy-primary-color);
+  box-shadow: 0 0 0 3px var(--gfy-primary-light);
+}
+
+.gfy-builder__input::placeholder,
+.gfy-builder__textarea::placeholder {
+  color: var(--gfy-text-muted);
+}
+
+/* LIVE PREVIEW */
+.gfy-live-preview {
+  margin-top: 16px;
+  padding: 14px 18px;
+  background: var(--gfy-primary-light);
+  border: 1px solid #bfdbfe;
+  border-radius: var(--gfy-radius-md);
+  font-size: 0.95rem;
+  font-style: italic;
+  color: var(--gfy-primary-dark);
+}
+
+.gfy-live-preview--green {
+  background: var(--gfy-success-light);
+  border-color: #6ee7b7;
+  color: #047857;
+}
+
+.gfy-live-preview__label {
+  font-weight: 600;
+  font-style: normal;
+  margin-right: 4px;
+}
+
+/* SETTINGS ROW */
+.gfy-settings-row {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 600px) {
+  .gfy-settings-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
+/* FORM ACTIONS */
+.gfy-form-actions {
+  text-align: center;
+  padding-top: 16px;
+}
+
+.gfy-form-actions__hint {
+  font-size: 0.85rem;
+  color: var(--gfy-text-muted);
+  margin-top: 12px;
+}
+
+/* BUTTONS */
+.gfy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: var(--gfy-radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.gfy-btn--primary {
+  background: var(--gfy-primary-color);
+  color: var(--gfy-white);
+}
+
+.gfy-btn--primary:hover:not(:disabled) {
+  background: var(--gfy-primary-dark);
+}
+
+.gfy-btn--primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.gfy-btn--outline {
+  background: var(--gfy-white);
+  border-color: var(--gfy-border-color);
+  color: var(--gfy-text-secondary);
+}
+
+.gfy-btn--outline:hover {
+  border-color: var(--gfy-primary-color);
+  color: var(--gfy-primary-color);
+  background: var(--gfy-primary-light);
+}
+
+.gfy-btn--ghost {
+  background: transparent;
+  color: var(--gfy-text-secondary);
+  border: none;
+}
+
+.gfy-btn--ghost:hover {
+  color: var(--gfy-text-primary);
+}
+
+.gfy-btn--large {
+  padding: 0.875rem 1.5rem;
+  font-size: 1rem;
+}
+
+.gfy-btn--generate {
+  padding: 16px 32px;
+  font-size: 1.1rem;
+  border-radius: 10px;
+}
+
+/* SPINNER */
+.gfy-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 0.8s linear infinite;
+}
+
+.gfy-spinner--small {
+  width: 12px;
+  height: 12px;
+  border-width: 2px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ERROR BOX */
+.gfy-error-box {
+  margin-top: 24px;
+  padding: 20px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--gfy-radius-md);
+  text-align: center;
+  color: #991b1b;
+}
+
+.gfy-error-box i {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.gfy-error-box p {
+  margin: 0 0 12px 0;
+}
+
+/* ============================================
+   RESULTS PHASE
+   ============================================ */
+
+.gmkb-tool-embed {
+  background: var(--gfy-white);
+  border-radius: 16px;
+  border: 1px solid var(--gfy-border-color);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.gfy-results-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 40px;
+}
+
+@media (min-width: 900px) {
+  .gfy-results-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .gfy-layout-sidebar {
+    position: sticky;
+    top: 1rem;
+    flex: 0 0 320px;
+  }
+
+  .gfy-layout-main {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* SIDEBAR */
+.gfy-current-topics {
+  background: var(--gfy-bg-color);
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-lg);
+  padding: 1.25rem;
+}
+
+.gfy-sidebar-header {
+  margin-bottom: 1rem;
+}
+
+.gfy-sidebar-title {
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--gfy-text-secondary);
+  margin: 0;
+}
+
+/* INTRO SLOTS */
+.gfy-intro-slot {
+  display: block;
+  width: 100%;
+  padding: 1rem;
+  background: var(--gfy-white);
+  border: 1px solid var(--gfy-border-color);
+  border-radius: var(--gfy-radius-md);
+  margin-bottom: 0.75rem;
+  transition: all 0.2s;
+  cursor: pointer;
+  text-align: left;
+}
+
+.gfy-intro-slot:hover {
+  border-color: var(--gfy-primary-color);
+}
+
+.gfy-intro-slot--active {
+  border-color: var(--gfy-primary-color);
+  box-shadow: 0 0 0 2px var(--gfy-primary-color);
+}
+
+.gfy-intro-slot--locked {
+  background: var(--gfy-primary-light);
+  border-color: var(--gfy-primary-color);
+}
+
+.gfy-intro-slot--generating {
+  opacity: 0.7;
+}
+
+.gfy-intro-slot__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.gfy-intro-slot__label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--gfy-text-secondary);
+}
+
+.gfy-intro-slot--locked .gfy-intro-slot__label {
+  color: var(--gfy-primary-color);
+}
+
+.gfy-intro-slot__preview {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--gfy-text-muted);
+}
+
+.gfy-locked-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--gfy-primary-light);
+  border-radius: var(--gfy-radius-md);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--gfy-primary-color);
+  margin-top: 12px;
+}
+
+/* MAIN AREA */
+.gfy-results__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--gfy-border-color);
+}
+
+.gfy-results__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* INTRO TIP */
+.gfy-intro-tip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: var(--gfy-radius-md);
+  font-size: 0.9rem;
+  color: #92400e;
+  margin-bottom: 1.5rem;
+}
+
+.gfy-intro-tip i {
+  color: #d97706;
+}
+
+/* REFINEMENT BOX */
+.gfy-refinement-box {
+  background: var(--gfy-white);
+  border: 1px solid var(--gfy-border-color);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  background: linear-gradient(to bottom right, var(--gfy-white), var(--gfy-bg-color));
+}
+
+.gfy-refinement-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.gfy-refinement-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--gfy-primary-color);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.gfy-refinement-input-wrapper {
+  position: relative;
+}
+
+.gfy-refinement-textarea {
+  width: 100%;
+  padding: 14px 110px 14px 16px;
+  border: 2px solid var(--gfy-border-color);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  background: var(--gfy-white);
+  box-sizing: border-box;
+  transition: all 0.2s;
+  resize: none;
+  min-height: 52px;
+}
+
+.gfy-refinement-textarea:focus {
+  outline: none;
+  border-color: var(--gfy-primary-color);
+  box-shadow: 0 0 0 4px var(--gfy-primary-light);
+}
+
+.gfy-btn-refine {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  bottom: 6px;
+  padding: 0 16px;
+  background: var(--gfy-primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gfy-btn-refine:hover:not(:disabled) {
+  background: var(--gfy-primary-dark);
+}
+
+.gfy-btn-refine:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.gfy-refinement-hint {
+  font-size: 11px;
+  color: var(--gfy-text-muted);
+  margin-top: 8px;
+  display: block;
+  font-style: italic;
+}
+
+/* STATES */
+.gfy-loading-state,
+.gfy-empty-state {
+  text-align: center;
+  padding: 60px 40px;
+  color: var(--gfy-text-secondary);
+}
+
+.gfy-loading-state i,
+.gfy-empty-state i {
+  font-size: 48px;
+  color: var(--gfy-text-muted);
+  margin-bottom: 16px;
+}
+
+.gfy-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--gfy-border-color);
+  border-radius: 50%;
+  border-top-color: var(--gfy-primary-color);
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+/* LOCKED STATE */
+.gfy-locked-intro {
+  background: var(--gfy-primary-light);
+  border: 2px solid var(--gfy-primary-color);
+  border-radius: var(--gfy-radius-lg);
+  padding: 24px;
+}
+
+.gfy-locked-intro__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--gfy-primary-color);
+  background: var(--gfy-white);
+  padding: 4px 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.gfy-locked-intro__text {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--gfy-text-primary);
+  margin: 0 0 20px 0;
+}
+
+.gfy-locked-intro__text p {
+  margin: 0 0 1em 0;
+}
+
+.gfy-locked-intro__text p:last-child {
+  margin-bottom: 0;
+}
+
+.gfy-locked-intro__actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* VARIATIONS */
+.gfy-intro-variation {
+  padding: 2rem;
+  background: var(--gfy-white);
+  border: 1px solid var(--gfy-border-color);
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+  position: relative;
+  transition: border-color 0.2s;
+}
+
+.gfy-intro-variation:hover {
+  border-color: var(--gfy-primary-color);
+}
+
+.gfy-variation-badge {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--gfy-primary-color);
+  background: var(--gfy-primary-light);
+  padding: 4px 10px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  display: inline-block;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.gfy-variation-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--gfy-text-primary);
+  margin: 0 0 20px;
+}
+
+.gfy-variation-text p {
+  margin: 0 0 1em 0;
+}
+
+.gfy-variation-text p:last-child {
+  margin-bottom: 0;
+}
+
+.gfy-variation-footer {
+  display: flex;
+  gap: 10px;
+  padding-top: 15px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* FOOTER */
+.gfy-results__footer {
+  margin-top: 2rem;
+  border-top: 1px solid var(--gfy-border-color);
+  padding-top: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.gfy-save-success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--gfy-success-light);
+  color: #047857;
+  border-radius: var(--gfy-radius-md);
+  font-weight: 600;
+  margin-top: 16px;
+}
+
+.gfy-save-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  color: #991b1b;
+  border-radius: var(--gfy-radius-md);
+  font-weight: 600;
+  margin-top: 16px;
+}
+
+/* ============================================
+   INTEGRATED MODE STYLES
+   ============================================ */
+
+.gmkb-ai-results__tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.gmkb-ai-results__tab {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: transparent;
+  border: 1px solid var(--gfy-border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--gfy-text-secondary);
+}
+
+.gmkb-ai-results__tab:hover {
+  border-color: var(--gfy-primary-color);
+  color: var(--gfy-primary-color);
+}
+
+.gmkb-ai-results__tab--active {
+  background: var(--gfy-primary-color);
+  border-color: var(--gfy-primary-color);
+  color: white;
 }
 </style>
