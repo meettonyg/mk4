@@ -80,7 +80,7 @@
   </AiWidgetFrame>
 
   <!-- Embedded Mode: Form fields for EmbeddedToolWrapper (Landing Pages) -->
-  <div v-else-if="mode === 'embedded'" class="gmkb-embedded-mode">
+  <div v-else-if="mode === 'embedded'" ref="embeddedWrapperRef" class="gmkb-embedded-mode">
     <!-- Phase 1: Input Form (shown when no results) -->
     <div v-if="!embeddedShowResults" class="gmkb-embedded-form">
       <!-- STEP 1: BASIC INFO -->
@@ -971,7 +971,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject } from 'vue';
+import { ref, computed, watch, inject, nextTick } from 'vue';
 import { useAIBiography, SLOT_STATUS, LENGTH_OPTIONS, getVariationCount } from '../../src/composables/useAIBiography';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
@@ -1061,6 +1061,7 @@ const copiedText = ref('');
 
 // Embedded mode specific state
 const embeddedShowResults = ref(false);
+const embeddedWrapperRef = ref(null);
 
 // Integrated mode specific state
 const authorityHookTextCompact = ref('');
@@ -1113,6 +1114,12 @@ const handleGenerate = async () => {
 
     // Show full results dashboard in embedded mode
     embeddedShowResults.value = true;
+
+    // Scroll results into view after DOM updates
+    await nextTick();
+    if (embeddedWrapperRef.value) {
+      embeddedWrapperRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 
     // Emit the generated result
     const bio = currentBio.value;
