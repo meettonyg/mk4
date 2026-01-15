@@ -7,6 +7,8 @@
     "type": "author",
     "label": "Authors & Writers",
     "icon": "fa-solid fa-book",
+    "use_case": "General Bio",
+    "layout_variant": "standard",
     "use_cases": [
       "Bestselling authors",
       "Non-fiction writers",

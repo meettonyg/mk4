@@ -7,6 +7,8 @@
     "type": "speaker",
     "label": "Speakers & Trainers",
     "icon": "fa-solid fa-microphone",
+    "use_case": "General Bio",
+    "layout_variant": "split-layout",
     "use_cases": [
       "Keynote speakers",
       "Corporate trainers",

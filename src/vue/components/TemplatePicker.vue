@@ -25,38 +25,63 @@
       </p>
     </section>
 
-    <!-- Filters -->
+    <!-- Filters - Multi-Dimensional (Persona > Use Case > Layout) -->
     <section class="template-picker__filters">
       <div class="filter-section">
-        <!-- Audience Filter -->
+        <!-- Persona Filter (Primary) -->
         <div class="filter-group">
-          <label class="filter-label">I am a...</label>
+          <label class="filter-label">
+            <span class="filter-step">1</span>
+            I am a...
+          </label>
           <div class="filter-tabs">
             <button
-              v-for="audience in audienceFilters"
-              :key="audience.value"
-              @click="activeAudienceFilter = audience.value"
+              v-for="persona in personaFilters"
+              :key="persona.value"
+              @click="activePersonaFilter = persona.value"
               class="filter-tab"
-              :class="{ active: activeAudienceFilter === audience.value }"
+              :class="{ active: activePersonaFilter === persona.value }"
             >
-              <i v-if="audience.icon" :class="audience.icon"></i>
-              {{ audience.label }}
+              <i v-if="persona.icon" :class="persona.icon"></i>
+              {{ persona.label }}
             </button>
           </div>
         </div>
 
-        <!-- Style Filter -->
-        <div class="filter-group">
-          <label class="filter-label">Style preference</label>
+        <!-- Use Case Filter (Secondary) -->
+        <div class="filter-group" v-if="useCaseFilters.length > 1">
+          <label class="filter-label">
+            <span class="filter-step">2</span>
+            Use case
+          </label>
           <div class="filter-tabs">
             <button
-              v-for="style in styleFilters"
-              :key="style.value"
-              @click="activeStyleFilter = style.value"
-              class="filter-tab"
-              :class="{ active: activeStyleFilter === style.value }"
+              v-for="useCase in useCaseFilters"
+              :key="useCase.value"
+              @click="activeUseCaseFilter = useCase.value"
+              class="filter-tab filter-tab--secondary"
+              :class="{ active: activeUseCaseFilter === useCase.value }"
             >
-              {{ style.label }}
+              {{ useCase.label }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Layout Variant Filter (Tertiary) -->
+        <div class="filter-group" v-if="layoutFilters.length > 1">
+          <label class="filter-label">
+            <span class="filter-step">3</span>
+            Layout style
+          </label>
+          <div class="filter-tabs">
+            <button
+              v-for="layout in layoutFilters"
+              :key="layout.value"
+              @click="activeLayoutFilter = layout.value"
+              class="filter-tab filter-tab--layout"
+              :class="{ active: activeLayoutFilter === layout.value }"
+            >
+              {{ layout.label }}
             </button>
           </div>
         </div>
@@ -90,12 +115,15 @@
           <h3 class="template-card__name">{{ template.name }}</h3>
           <p class="template-card__description">{{ template.description }}</p>
           <div class="template-card__meta">
-            <span class="template-card__audience" v-if="template.metadata?.audience_label">
-              <i :class="template.metadata?.icon || 'fa-solid fa-user'"></i>
-              {{ template.metadata.audience_label }}
+            <span class="template-card__persona" v-if="template.persona?.label">
+              <i :class="template.persona?.icon || 'fa-solid fa-user'"></i>
+              {{ template.persona.label }}
             </span>
-            <span class="template-card__style" v-if="template.metadata?.style_label">
-              {{ template.metadata.style_label }}
+            <span class="template-card__use-case" v-if="template.use_case || template.persona?.use_case">
+              {{ template.use_case || template.persona?.use_case }}
+            </span>
+            <span class="template-card__layout" v-if="template.layout_variant || template.persona?.layout_variant">
+              {{ getLayoutLabel(template.layout_variant || template.persona?.layout_variant) }}
             </span>
           </div>
         </div>
@@ -123,7 +151,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import storageService from '../../services/StorageService';
 
 const emit = defineEmits(['template-selected', 'resume-session']);
@@ -140,48 +168,203 @@ const props = defineProps({
   }
 });
 
-// Filter state
-const activeAudienceFilter = ref('all');
-const activeStyleFilter = ref('all');
+// Filter state - Multi-dimensional filtering
+const activePersonaFilter = ref('all');
+const activeUseCaseFilter = ref('all');
+const activeLayoutFilter = ref('all');
 const hasBackup = ref(false);
 
-// Audience filter options
-const audienceFilters = [
-  { value: 'all', label: 'Anyone', icon: null },
-  { value: 'speaker', label: 'Speaker', icon: 'fa-solid fa-microphone' },
-  { value: 'author', label: 'Author', icon: 'fa-solid fa-book' },
-  { value: 'podcaster', label: 'Podcaster', icon: 'fa-solid fa-podcast' },
-  { value: 'creator', label: 'Creator', icon: 'fa-solid fa-video' },
-  { value: 'developer', label: 'Developer', icon: 'fa-solid fa-code' },
-  { value: 'executive', label: 'Executive', icon: 'fa-solid fa-user-tie' },
-  { value: 'professional', label: 'Professional', icon: 'fa-solid fa-briefcase' },
-  { value: 'creative', label: 'Creative', icon: 'fa-solid fa-palette' }
-];
+// Dynamic filter options from API manifest
+const filterManifest = ref(null);
+const isLoadingManifest = ref(false);
 
-// Style filter options
-const styleFilters = [
-  { value: 'all', label: 'All Styles' },
-  { value: 'classic', label: 'Classic' },
-  { value: 'bold', label: 'Bold' },
-  { value: 'minimal', label: 'Minimal' },
-  { value: 'modern', label: 'Modern' },
-  { value: 'dark', label: 'Dark' }
-];
+// Fetch filter manifest from API
+async function fetchFilterManifest() {
+  isLoadingManifest.value = true;
+  try {
+    const restUrl = window.gmkbData?.restUrl || '/wp-json/';
+    const response = await fetch(`${restUrl}gmkb/v1/filter-manifest`);
+    const data = await response.json();
+    if (data.success) {
+      filterManifest.value = data.manifest;
+    }
+  } catch (err) {
+    console.error('Failed to load filter manifest:', err);
+  } finally {
+    isLoadingManifest.value = false;
+  }
+}
 
-// Filter templates
+// Computed: Persona filter options (dynamic from manifest or fallback to templates)
+const personaFilters = computed(() => {
+  const filters = [{ value: 'all', label: 'All Personas', icon: null }];
+
+  if (filterManifest.value?.personas) {
+    filterManifest.value.personas.forEach(persona => {
+      filters.push({
+        value: persona.type,
+        label: persona.label,
+        icon: persona.icon
+      });
+    });
+  } else {
+    // Fallback: Extract from templates
+    const seenTypes = new Set();
+    props.templates.forEach(template => {
+      const persona = template.persona;
+      if (persona?.type && !seenTypes.has(persona.type)) {
+        seenTypes.add(persona.type);
+        filters.push({
+          value: persona.type,
+          label: persona.label || persona.type,
+          icon: persona.icon || 'fa-solid fa-user'
+        });
+      }
+    });
+  }
+
+  return filters;
+});
+
+// Computed: Use Case filter options (dynamic based on selected persona)
+const useCaseFilters = computed(() => {
+  const filters = [{ value: 'all', label: 'All Use Cases' }];
+
+  if (filterManifest.value?.use_cases) {
+    // If a persona is selected, only show use cases available for that persona
+    if (activePersonaFilter.value !== 'all' && filterManifest.value.manifest) {
+      const personaUseCases = filterManifest.value.manifest[activePersonaFilter.value];
+      if (personaUseCases) {
+        Object.keys(personaUseCases).forEach(useCase => {
+          filters.push({ value: useCase, label: useCase });
+        });
+      }
+    } else {
+      // Show all use cases
+      filterManifest.value.use_cases.forEach(useCase => {
+        filters.push({ value: useCase, label: useCase });
+      });
+    }
+  } else {
+    // Fallback: Extract from templates
+    const seenUseCases = new Set();
+    props.templates.forEach(template => {
+      const useCase = template.use_case || template.persona?.use_case;
+      if (useCase && !seenUseCases.has(useCase)) {
+        seenUseCases.add(useCase);
+        filters.push({ value: useCase, label: useCase });
+      }
+    });
+  }
+
+  return filters;
+});
+
+// Computed: Layout Variant filter options (dynamic based on selected persona + use case)
+const layoutFilters = computed(() => {
+  const filters = [{ value: 'all', label: 'All Layouts' }];
+
+  // Layout variant labels for display
+  const layoutLabels = {
+    'standard': 'Standard',
+    'image-left': 'Image Left',
+    'image-right': 'Image Right',
+    'center-stack': 'Centered',
+    'split-layout': 'Split Screen',
+    'minimal': 'Minimal',
+    'bold': 'Bold'
+  };
+
+  if (filterManifest.value?.layout_variants) {
+    // If persona and use case selected, filter layouts accordingly
+    if (activePersonaFilter.value !== 'all' && activeUseCaseFilter.value !== 'all' && filterManifest.value.manifest) {
+      const personaManifest = filterManifest.value.manifest[activePersonaFilter.value];
+      if (personaManifest && personaManifest[activeUseCaseFilter.value]) {
+        personaManifest[activeUseCaseFilter.value].forEach(layout => {
+          filters.push({ value: layout, label: layoutLabels[layout] || layout });
+        });
+      }
+    } else if (activePersonaFilter.value !== 'all' && filterManifest.value.manifest) {
+      // Show all layouts for selected persona
+      const personaManifest = filterManifest.value.manifest[activePersonaFilter.value];
+      if (personaManifest) {
+        const seenLayouts = new Set();
+        Object.values(personaManifest).forEach(layouts => {
+          layouts.forEach(layout => {
+            if (!seenLayouts.has(layout)) {
+              seenLayouts.add(layout);
+              filters.push({ value: layout, label: layoutLabels[layout] || layout });
+            }
+          });
+        });
+      }
+    } else {
+      // Show all layouts
+      filterManifest.value.layout_variants.forEach(layout => {
+        filters.push({ value: layout, label: layoutLabels[layout] || layout });
+      });
+    }
+  } else {
+    // Fallback: Extract from templates
+    const seenLayouts = new Set();
+    props.templates.forEach(template => {
+      const layout = template.layout_variant || template.persona?.layout_variant;
+      if (layout && !seenLayouts.has(layout)) {
+        seenLayouts.add(layout);
+        filters.push({ value: layout, label: layoutLabels[layout] || layout });
+      }
+    });
+  }
+
+  return filters;
+});
+
+// Reset dependent filters when parent filter changes
+watch(activePersonaFilter, () => {
+  activeUseCaseFilter.value = 'all';
+  activeLayoutFilter.value = 'all';
+});
+
+watch(activeUseCaseFilter, () => {
+  activeLayoutFilter.value = 'all';
+});
+
+// Filter templates - Multi-dimensional
 const filteredTemplates = computed(() => {
   return props.templates.filter(template => {
-    const audienceMatch = activeAudienceFilter.value === 'all' ||
-      template.metadata?.audience_type === activeAudienceFilter.value;
-    const styleMatch = activeStyleFilter.value === 'all' ||
-      template.metadata?.style_variant === activeStyleFilter.value;
-    return audienceMatch && styleMatch;
+    // Persona filter
+    const personaType = template.persona?.type;
+    const personaMatch = activePersonaFilter.value === 'all' || personaType === activePersonaFilter.value;
+
+    // Use Case filter
+    const useCase = template.use_case || template.persona?.use_case || 'General Bio';
+    const useCaseMatch = activeUseCaseFilter.value === 'all' || useCase === activeUseCaseFilter.value;
+
+    // Layout Variant filter
+    const layoutVariant = template.layout_variant || template.persona?.layout_variant || 'standard';
+    const layoutMatch = activeLayoutFilter.value === 'all' || layoutVariant === activeLayoutFilter.value;
+
+    return personaMatch && useCaseMatch && layoutMatch;
   });
 });
 
 // Get template icon
 function getTemplateIcon(template) {
-  return template.metadata?.icon || 'fa-solid fa-palette';
+  return template.persona?.icon || template.metadata?.icon || 'fa-solid fa-palette';
+}
+
+// Get human-readable layout label
+function getLayoutLabel(layoutVariant) {
+  const labels = {
+    'standard': 'Standard',
+    'image-left': 'Image Left',
+    'image-right': 'Image Right',
+    'center-stack': 'Centered',
+    'split-layout': 'Split Screen',
+    'minimal': 'Minimal',
+    'bold': 'Bold'
+  };
+  return labels[layoutVariant] || layoutVariant;
 }
 
 // Get preview style
@@ -214,16 +397,20 @@ function resumeSession() {
   window.location.href = currentUrl.toString();
 }
 
-// Reset filters
+// Reset all filters
 function resetFilters() {
-  activeAudienceFilter.value = 'all';
-  activeStyleFilter.value = 'all';
+  activePersonaFilter.value = 'all';
+  activeUseCaseFilter.value = 'all';
+  activeLayoutFilter.value = 'all';
 }
 
-// Check for existing backup on mount
+// Check for existing backup on mount and fetch filter manifest
 onMounted(() => {
   const backup = storageService.get('gmkb_anonymous_backup');
   hasBackup.value = !!backup;
+
+  // Fetch the filter manifest for dynamic filtering
+  fetchFilterManifest();
 });
 </script>
 
@@ -348,9 +535,25 @@ onMounted(() => {
 }
 
 .filter-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: 14px;
   font-weight: 600;
   color: #1e293b;
+}
+
+.filter-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #3b82f6;
+  background: #eff6ff;
+  border-radius: 50%;
 }
 
 .filter-tabs {
@@ -383,6 +586,38 @@ onMounted(() => {
   background: #3b82f6;
   color: white;
   border-color: #3b82f6;
+}
+
+.filter-tab--secondary {
+  background: #f0fdf4;
+  color: #059669;
+}
+
+.filter-tab--secondary:hover {
+  background: #dcfce7;
+  color: #059669;
+}
+
+.filter-tab--secondary.active {
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
+}
+
+.filter-tab--layout {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.filter-tab--layout:hover {
+  background: #fde68a;
+  color: #d97706;
+}
+
+.filter-tab--layout.active {
+  background: #f59e0b;
+  color: white;
+  border-color: #f59e0b;
 }
 
 .filter-tab i {
@@ -490,20 +725,38 @@ onMounted(() => {
 .template-card__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 6px;
 }
 
-.template-card__audience,
-.template-card__style {
+.template-card__persona,
+.template-card__use-case,
+.template-card__layout {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
-  color: #94a3b8;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
 }
 
-.template-card__audience i {
-  font-size: 12px;
+.template-card__persona {
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+.template-card__persona i {
+  font-size: 11px;
+}
+
+.template-card__use-case {
+  background: #f0fdf4;
+  color: #059669;
+}
+
+.template-card__layout {
+  background: #fef3c7;
+  color: #d97706;
 }
 
 .template-card__select {

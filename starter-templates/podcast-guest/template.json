@@ -7,6 +7,8 @@
     "type": "podcast-guest",
     "label": "Podcast Guests",
     "icon": "fa-solid fa-podcast",
+    "use_case": "Podcast Booking",
+    "layout_variant": "center-stack",
     "use_cases": [
       "Subject matter experts seeking podcast appearances",
       "Authors promoting books",

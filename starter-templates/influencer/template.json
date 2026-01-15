@@ -7,6 +7,8 @@
     "type": "influencer",
     "label": "Creators & Influencers",
     "icon": "fa-solid fa-hashtag",
+    "use_case": "Brand Partnerships",
+    "layout_variant": "center-stack",
     "use_cases": [
       "Content creators",
       "Social media influencers",

@@ -234,6 +234,10 @@ export const useTemplateStore = defineStore('templates', {
         /**
          * CRITICAL: Initialize builder from a template
          * Generates fresh UUIDs for all sections/components
+         *
+         * IMPORTANT: This method handles two different template structures:
+         * - Starter templates: sections at root level (template.sections)
+         * - User templates: sections nested (template.defaultContent.sections or template.content.defaultContent.sections)
          */
         async initializeFromTemplate(templateId) {
             const mediaKitStore = useMediaKitStore();
@@ -254,8 +258,8 @@ export const useTemplateStore = defineStore('templates', {
                 mediaKitStore.sections = [];
                 mediaKitStore.components = {};
 
-                // 3. Apply theme styles
-                const themeId = template.theme_id || template.id || templateId;
+                // 3. Apply theme styles (fall back to 'professional_clean' for starter templates)
+                const themeId = template.theme_id || template.theme || 'professional_clean';
                 themeStore.selectTheme(themeId);
 
                 // 4. Apply theme customizations if present
@@ -263,11 +267,22 @@ export const useTemplateStore = defineStore('templates', {
                     mediaKitStore.themeCustomizations = template.themeCustomizations;
                 }
 
-                // 5. Instantiate defaultContent with fresh IDs
-                const defaultContent = template.defaultContent;
+                // 5. CRITICAL FIX: Resolve sections from different possible structures
+                // - Starter templates (flat): sections at root level
+                // - User templates (nested): sections inside defaultContent
+                const sectionsSource = template.sections ||
+                                       template.defaultContent?.sections ||
+                                       template.content?.defaultContent?.sections;
 
-                if (defaultContent?.sections) {
-                    for (const sectionDef of defaultContent.sections) {
+                if (!sectionsSource || !Array.isArray(sectionsSource)) {
+                    throw new Error('Template data structure invalid: No sections found. Expected template.sections, template.defaultContent.sections, or template.content.defaultContent.sections');
+                }
+
+                console.log('📋 Processing', sectionsSource.length, 'sections from template');
+
+                // 6. Instantiate sections with fresh IDs
+                if (sectionsSource.length > 0) {
+                    for (const sectionDef of sectionsSource) {
                         const sectionId = this._generateId('sec');
 
                         const section = {
@@ -338,13 +353,13 @@ export const useTemplateStore = defineStore('templates', {
                     }
                 }
 
-                // 6. Mark as dirty (unsaved)
+                // 7. Mark as dirty (unsaved)
                 mediaKitStore.isDirty = true;
 
-                // 7. Set selected template
+                // 8. Set selected template
                 this.selectedTemplateId = templateId;
 
-                // 8. Navigate to builder
+                // 9. Navigate to builder
                 uiStore.showBuilder();
 
                 console.log('✅ Template initialized successfully:', {

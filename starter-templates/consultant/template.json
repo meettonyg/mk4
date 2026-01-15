@@ -7,6 +7,8 @@
     "type": "consultant",
     "label": "Consultants & Advisors",
     "icon": "fa-solid fa-briefcase",
+    "use_case": "General Bio",
+    "layout_variant": "split-layout",
     "use_cases": [
       "Business consultants",
       "Executive coaches",
