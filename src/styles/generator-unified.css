@@ -720,10 +720,8 @@
   font-weight: 500;
 }
 
-.gmkb-generator-root .gmkb-plg-trust-item span {
-  color: #10B981;
-  font-weight: bold;
-  font-size: 1.1em;
+.gmkb-generator-root .gmkb-plg-trust-item svg {
+  flex-shrink: 0;
 }
 
 /* --- INTENT TABS (Standalone Mode - Pill Style Outside Card) --- */
@@ -738,9 +736,9 @@
   padding: 10px 24px;
   font-size: 1rem;
   font-weight: 600;
-  border: 1px solid #E5E7EB;
-  background: #ffffff;
-  color: #6B7280;
+  border: 1px solid var(--gfy-border, #E5E7EB);
+  background: var(--gfy-bg-surface, #ffffff);
+  color: var(--gfy-text-muted, #6B7280);
   border-radius: 9999px;
   cursor: pointer;
   transition: all 0.2s;
@@ -770,7 +768,7 @@
 
 /* --- MAIN TOOL CONTAINER (Single Unified Card) --- */
 .gmkb-generator-root .gmkb-plg-tool-card {
-  background: #fff;
+  background: var(--gfy-bg-surface, #ffffff);
   border: 1px solid var(--gfy-border, #E5E7EB);
   border-radius: var(--gfy-radius, 12px);
   padding: 32px;
@@ -781,9 +779,9 @@
 
 /* --- PROFILE SELECTOR --- */
 .gmkb-generator-root .gfy-profile-selector-container {
-  background-color: #F9FAFB;
-  border: 1px solid #E5E7EB;
-  border-radius: 8px;
+  background-color: var(--gfy-bg-page, #F9FAFB);
+  border: 1px solid var(--gfy-border, #E5E7EB);
+  border-radius: var(--gfy-radius-sm, 8px);
   padding: 12px 16px;
   margin-bottom: 32px;
   display: flex;
@@ -794,7 +792,7 @@
 .gmkb-generator-root .gfy-profile-label {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--gfy-text-main, #374151);
   margin-right: 12px;
   white-space: nowrap;
 }
@@ -803,10 +801,10 @@
   flex: 1;
   padding: 8px 12px;
   font-size: 0.9rem;
-  border: 1px solid #D1D5DB;
+  border: 1px solid var(--gfy-border, #D1D5DB);
   border-radius: 6px;
-  background-color: white;
-  color: #111827;
+  background-color: var(--gfy-bg-surface, #ffffff);
+  color: var(--gfy-text-main, #111827);
   cursor: pointer;
   transition: border-color 0.2s;
   font-family: inherit;
@@ -823,12 +821,12 @@
 .gmkb-generator-root .gfy-select {
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid #D1D5DB;
-  border-radius: 8px;
+  border: 1px solid var(--gfy-border, #D1D5DB);
+  border-radius: var(--gfy-radius-sm, 8px);
   font-size: 1rem;
   font-family: inherit;
-  color: #111827;
-  background-color: #fff;
+  color: var(--gfy-text-main, #111827);
+  background-color: var(--gfy-bg-surface, #ffffff);
   transition: border-color 0.15s;
 }
 
@@ -863,10 +861,10 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  background: #F9FAFB;
+  background: var(--gfy-bg-page, #F9FAFB);
   padding: 12px 16px;
-  border-radius: 8px;
-  border: 1px solid #E5E7EB;
+  border-radius: var(--gfy-radius-sm, 8px);
+  border: 1px solid var(--gfy-border, #E5E7EB);
 }
 
 .gmkb-generator-root .gfy-range {
@@ -932,7 +930,7 @@
 .gmkb-generator-root .authority-hook-builder__input {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #D1D5DB;
+  border: 1px solid var(--gfy-border, #D1D5DB);
   border-radius: 6px;
   font-size: 0.95rem;
   font-family: inherit;
@@ -950,14 +948,14 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  border-top: 1px solid #E5E7EB;
+  border-top: 1px solid var(--gfy-border, #E5E7EB);
   padding-top: 24px;
 }
 
 /* The Redesigned Restore Link (Small text link above button) */
 .gmkb-generator-root .gfy-restore-link {
   font-size: 0.9rem;
-  color: #6B7280;
+  color: var(--gfy-text-muted, #6B7280);
   text-decoration: none;
   margin-bottom: 16px;
   cursor: pointer;
@@ -986,9 +984,9 @@
   max-width: 400px;
   padding: 16px;
   background: var(--gfy-primary, #4F46E5);
-  color: white;
+  color: var(--gfy-bg-surface, #ffffff);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--gfy-radius-sm, 8px);
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
@@ -1019,7 +1017,7 @@
 /* --- RESULTS CONTAINER --- */
 .gmkb-generator-root .gfy-results-container {
   margin-top: 40px;
-  border-top: 1px solid #E5E7EB;
+  border-top: 1px solid var(--gfy-border, #E5E7EB);
   padding-top: 40px;
 }
 

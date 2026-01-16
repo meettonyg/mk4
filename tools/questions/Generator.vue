@@ -9,9 +9,24 @@
         <p class="gmkb-plg-hero__subhead">Generate thoughtful interview questions and compelling answers tailored to your expertise and interview context.</p>
 
         <div class="gmkb-plg-trust-strip">
-          <div class="gmkb-plg-trust-item"><span>&#10003;</span> Used by 7,000+ guests</div>
-          <div class="gmkb-plg-trust-item"><span>&#10003;</span> No signup required</div>
-          <div class="gmkb-plg-trust-item"><span>&#10003;</span> Free forever</div>
+          <div class="gmkb-plg-trust-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="3" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Used by 7,000+ guests
+          </div>
+          <div class="gmkb-plg-trust-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="3" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            No signup required
+          </div>
+          <div class="gmkb-plg-trust-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="3" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Free forever
+          </div>
         </div>
 
         <!-- Intent Tabs (Outside the Card) -->
@@ -201,50 +216,17 @@
               <h3 class="gfy-form-section__title">Step 2: Confirm Your Authority Hook</h3>
 
               <div class="gfy-highlight-box gfy-highlight-box--green">
-                <div class="authority-hook-builder">
-                  <div class="authority-hook-builder__header">
-                    <span class="authority-hook-builder__icon">&#9733;</span>
-                    <h4 class="authority-hook-builder__title">Authority Hook</h4>
-                  </div>
-                  <div class="authority-hook-builder__grid">
-                    <div class="authority-hook-builder__field">
-                      <label class="authority-hook-builder__label">WHO DO YOU HELP?</label>
-                      <input
-                        v-model="authorityHook.who"
-                        type="text"
-                        class="authority-hook-builder__input"
-                        placeholder="e.g. SaaS Founders"
-                      />
-                    </div>
-                    <div class="authority-hook-builder__field">
-                      <label class="authority-hook-builder__label">WHAT IS THE RESULT?</label>
-                      <input
-                        v-model="authorityHook.what"
-                        type="text"
-                        class="authority-hook-builder__input"
-                        placeholder="e.g. Increase revenue by 40%"
-                      />
-                    </div>
-                    <div class="authority-hook-builder__field">
-                      <label class="authority-hook-builder__label">WHEN DO THEY NEED IT?</label>
-                      <input
-                        v-model="authorityHook.when"
-                        type="text"
-                        class="authority-hook-builder__input"
-                        placeholder="e.g. When scaling rapidly"
-                      />
-                    </div>
-                    <div class="authority-hook-builder__field">
-                      <label class="authority-hook-builder__label">HOW DO YOU DO IT?</label>
-                      <input
-                        v-model="authorityHook.how"
-                        type="text"
-                        class="authority-hook-builder__input"
-                        placeholder="e.g. My proven 90-day system"
-                      />
-                    </div>
-                  </div>
-                </div>
+                <AuthorityHookBuilder
+                  :model-value="authorityHook"
+                  @update:model-value="Object.assign(authorityHook, $event)"
+                  title="Authority Hook"
+                  :placeholders="{
+                    who: 'e.g. SaaS Founders',
+                    what: 'e.g. Increase revenue by 40%',
+                    when: 'e.g. When scaling rapidly',
+                    how: 'e.g. My proven 90-day system'
+                  }"
+                />
               </div>
             </div>
 
@@ -730,11 +712,17 @@ const {
 
 const { syncFromStore, loadFromProfileData } = useAuthorityHook();
 
-// Profile save functionality (standalone mode)
+// Profile functionality (standalone mode)
 const {
+  profiles: availableProfiles,
   selectedProfileId,
+  profileData,
   hasSelectedProfile,
-  saveMultipleToProfile
+  loadProfiles,
+  selectProfile: selectProfileFromComposable,
+  saveMultipleToProfile,
+  authorityHook: profileAuthorityHook,
+  contentFields: profileContentFields
 } = useStandaloneProfile();
 
 // Save to profile state
@@ -800,29 +788,10 @@ function selectIntent(intentId) {
 // ===========================================
 // PROFILE SELECTOR STATE
 // ===========================================
+// Local ref for v-model binding (synced with composable)
 const selectedProfileIdLocal = ref('');
-const availableProfiles = ref([]);
 
-// Fetch available profiles for the dropdown
-async function loadAvailableProfiles() {
-  try {
-    const response = await fetch('/wp-json/gmkb/v1/profiles', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'same-origin'
-    });
-    if (response.ok) {
-      const data = await response.json();
-      availableProfiles.value = data.profiles || [];
-    }
-  } catch (e) {
-    console.warn('[QuestionsGenerator] Failed to load profiles:', e);
-  }
-}
-
-// Handle profile selection
+// Handle profile selection from dropdown
 async function handleProfileSelect() {
   if (!selectedProfileIdLocal.value) return;
 
@@ -832,51 +801,8 @@ async function handleProfileSelect() {
     return;
   }
 
-  // Find the selected profile and pre-fill fields
-  const profile = availableProfiles.value.find(p => p.id === selectedProfileIdLocal.value);
-  if (profile) {
-    // Pre-fill guest bio
-    if (profile.bio) {
-      guestBio.value = profile.bio;
-    }
-    // Pre-fill target audience
-    if (profile.target_audience) {
-      targetAudience.value = profile.target_audience;
-    }
-    // Pre-fill tone
-    if (profile.tone) {
-      selectedTone.value = profile.tone;
-    }
-    // Pre-fill authority hook
-    if (profile.hook_who) authorityHook.who = profile.hook_who;
-    if (profile.hook_what) authorityHook.what = profile.hook_what;
-    if (profile.hook_when) authorityHook.when = profile.hook_when;
-    if (profile.hook_how) authorityHook.how = profile.hook_how;
-  }
-}
-
-// Handle profile data loaded from ProfileContextBanner
-function handleProfileLoaded(profileData) {
-  if (profileData) {
-    // Load authority hook from profile
-    loadFromProfileData(profileData);
-
-    // Sync from store to local state
-    const storeHook = syncFromStore();
-    if (storeHook.who) authorityHook.who = storeHook.who;
-    if (storeHook.what) authorityHook.what = storeHook.what;
-    if (storeHook.when) authorityHook.when = storeHook.when;
-    if (storeHook.how) authorityHook.how = storeHook.how;
-
-    // Pre-fill additional fields if available
-    if (profileData.bio) guestBio.value = profileData.bio;
-    if (profileData.target_audience) targetAudience.value = profileData.target_audience;
-    if (profileData.tone) selectedTone.value = profileData.tone;
-  }
-}
-
-function handleProfileCleared() {
-  // Reset to defaults if needed
+  // Use composable to select and load profile data
+  await selectProfileFromComposable(selectedProfileIdLocal.value);
 }
 
 // ===========================================
@@ -1412,7 +1338,7 @@ onMounted(() => {
   if (props.mode === 'default') {
     startAutoSave(getDraftState);
     // Load available profiles for the profile selector
-    loadAvailableProfiles();
+    loadProfiles();
   }
 
   // Add keyboard shortcut listener
@@ -1437,6 +1363,41 @@ watch(
     }
   },
   { immediate: true }
+);
+
+/**
+ * Watch for profile data changes from composable
+ * Pre-fill form fields when a profile is selected
+ */
+watch(
+  profileData,
+  (newProfileData) => {
+    if (newProfileData) {
+      // Pre-fill authority hook from profile
+      if (profileAuthorityHook.value) {
+        authorityHook.who = profileAuthorityHook.value.who || '';
+        authorityHook.what = profileAuthorityHook.value.what || '';
+        authorityHook.when = profileAuthorityHook.value.when || '';
+        authorityHook.how = profileAuthorityHook.value.how || '';
+      }
+
+      // Pre-fill guest bio from profile content
+      if (profileContentFields.value?.biography) {
+        guestBio.value = profileContentFields.value.biography;
+      }
+
+      // Pre-fill target audience if available
+      if (newProfileData.target_audience) {
+        targetAudience.value = newProfileData.target_audience;
+      }
+
+      // Pre-fill tone if available
+      if (newProfileData.tone) {
+        selectedTone.value = newProfileData.tone;
+      }
+    }
+  },
+  { deep: true }
 );
 
 </script>
