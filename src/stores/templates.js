@@ -154,7 +154,8 @@ export const useTemplateStore = defineStore('templates', {
             this.error = null;
 
             try {
-                const response = await this._fetchWithAuth('gmkb/v1/templates');
+                // Fetch starter templates (built-in)
+                const response = await this._fetchWithAuth('gmkb/v1/starter-templates');
 
                 if (!response.ok) {
                     throw new Error(`Failed to fetch templates: ${response.status}`);
@@ -163,10 +164,24 @@ export const useTemplateStore = defineStore('templates', {
                 const data = await response.json();
 
                 if (data.success) {
-                    // Separate built-in and user templates
-                    this.templates = data.templates.filter(t => t.type === 'built_in');
-                    this.userTemplates = data.templates.filter(t => t.type === 'user');
-                    console.log('✅ Templates loaded:', this.templates.length, 'built-in,', this.userTemplates.length, 'user');
+                    // All starter templates are built-in
+                    this.templates = data.templates.map(t => ({ ...t, type: 'built_in' }));
+                    console.log('✅ Starter templates loaded:', this.templates.length);
+
+                    // Optionally fetch user templates (if logged in)
+                    try {
+                        const userResponse = await this._fetchWithAuth('gmkb/v1/user-templates');
+                        if (userResponse.ok) {
+                            const userData = await userResponse.json();
+                            if (userData.success) {
+                                this.userTemplates = userData.templates.map(t => ({ ...t, type: 'user' }));
+                                console.log('✅ User templates loaded:', this.userTemplates.length);
+                            }
+                        }
+                    } catch (userErr) {
+                        // User templates are optional - don't fail if not logged in
+                        console.log('ℹ️ User templates not available (user may not be logged in)');
+                    }
                 } else {
                     throw new Error(data.message || 'Unknown error');
                 }
@@ -212,7 +227,7 @@ export const useTemplateStore = defineStore('templates', {
          */
         async fetchTemplate(templateId) {
             try {
-                const response = await this._fetchWithAuth(`gmkb/v1/templates/${templateId}`);
+                const response = await this._fetchWithAuth(`gmkb/v1/starter-templates/${templateId}`);
 
                 if (!response.ok) {
                     throw new Error(`Failed to fetch template: ${response.status}`);
