@@ -1,22 +1,31 @@
 <template>
-  <div class="generator__container gmkb-generator-root" :class="containerClass">
-    <!-- Profile Context Banner (for logged-in users, hidden when inside wrapper) -->
-    <div v-if="$slots['profile-context'] && !hideChrome" class="generator__profile-context">
+  <!-- When hideChrome is true, render content directly without container wrapper -->
+  <template v-if="hideChrome">
+    <slot name="left"></slot>
+    <div v-if="hasResults" class="generator__results">
+      <slot name="results"></slot>
+    </div>
+  </template>
+
+  <!-- Full layout with container when not hiding chrome -->
+  <div v-else class="generator__container gmkb-generator-root" :class="containerClass">
+    <!-- Profile Context Banner (for logged-in users) -->
+    <div v-if="$slots['profile-context']" class="generator__profile-context">
       <slot name="profile-context"></slot>
     </div>
 
-    <!-- Header (hidden when inside wrapper) -->
-    <div v-if="!hideChrome" class="generator__header">
+    <!-- Header -->
+    <div class="generator__header">
       <h1 class="generator__title">{{ title }}</h1>
       <p v-if="subtitle" class="generator__subtitle">{{ subtitle }}</p>
     </div>
 
     <!-- Main Content Area -->
-    <div class="generator__content" :class="{ 'generator__content--single': singleColumn || hideChrome || !$slots.right }">
+    <div class="generator__content" :class="{ 'generator__content--single': singleColumn || !$slots.right }">
       <!-- Left Panel (Form) -->
       <div class="generator__panel generator__panel--left">
-        <!-- Intro Text (hidden when inside wrapper) -->
-        <p v-if="introText && !hideChrome" class="generator__intro">{{ introText }}</p>
+        <!-- Intro Text -->
+        <p v-if="introText" class="generator__intro">{{ introText }}</p>
 
         <!-- Left Panel Slot (Form Fields, Authority Hook, etc.) -->
         <slot name="left"></slot>
@@ -27,8 +36,8 @@
         </div>
       </div>
 
-      <!-- Right Panel (Guidance) - hidden in single column mode or when inside wrapper -->
-      <div v-if="!singleColumn && !hideChrome && $slots.right" class="generator__panel generator__panel--right">
+      <!-- Right Panel (Guidance) - hidden in single column mode -->
+      <div v-if="!singleColumn && $slots.right" class="generator__panel generator__panel--right">
         <slot name="right"></slot>
       </div>
     </div>
