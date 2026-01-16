@@ -148,9 +148,11 @@
                   type="button"
                   class="gfy-current-topic__lock"
                   :title="topic.locked ? 'Unlock to replace' : 'Lock to keep'"
+                  :aria-label="topic.locked ? 'Unlock topic to allow replacement' : 'Lock topic to preserve'"
+                  :aria-pressed="topic.locked"
                   @click="toggleLock(topic.position)"
                 >
-                  <i :class="topic.locked ? 'fas fa-lock' : 'fas fa-lock-open'"></i>
+                  <i :class="topic.locked ? 'fas fa-lock' : 'fas fa-lock-open'" aria-hidden="true"></i>
                 </button>
               </div>
             </div>
@@ -175,15 +177,17 @@
             </div>
             <div class="gfy-results__actions">
               <!-- View Toggle -->
-              <div class="gfy-view-toggle">
+              <div class="gfy-view-toggle" role="group" aria-label="View mode toggle">
                 <button
                   type="button"
                   class="gfy-view-toggle__btn"
                   :class="{ 'gfy-view-toggle__btn--active': viewMode === 'card' }"
                   @click="viewMode = 'card'"
                   title="Card View"
+                  aria-label="Switch to card view"
+                  :aria-pressed="viewMode === 'card'"
                 >
-                  <i class="fas fa-th-large"></i>
+                  <i class="fas fa-th-large" aria-hidden="true"></i>
                 </button>
                 <button
                   type="button"
@@ -191,26 +195,28 @@
                   :class="{ 'gfy-view-toggle__btn--active': viewMode === 'list' }"
                   @click="viewMode = 'list'"
                   title="List View"
+                  aria-label="Switch to list view"
+                  :aria-pressed="viewMode === 'list'"
                 >
-                  <i class="fas fa-list"></i>
+                  <i class="fas fa-list" aria-hidden="true"></i>
                 </button>
               </div>
-              <button type="button" class="gfy-btn gfy-btn--outline" @click="handleRegenerate">
+              <button type="button" class="gfy-btn gfy-btn--outline" @click="handleRegenerate" title="Generate new topic ideas" aria-label="Regenerate topics">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M23 4v6h-6M1 20v-6h6"/>
                   <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
                 </svg>
                 Regenerate
               </button>
-              <button type="button" class="gfy-btn gfy-btn--outline" @click="handleCopyAll">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <button type="button" class="gfy-btn gfy-btn--outline" @click="handleCopyAll" title="Copy topics to clipboard" :aria-label="selectedTopics.length > 0 ? 'Copy selected topics to clipboard' : 'Copy all topics to clipboard'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                   <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
                 </svg>
                 {{ selectedTopics.length > 0 ? 'Copy Selected' : 'Copy All' }}
               </button>
-              <button type="button" class="gfy-btn gfy-btn--outline" @click="handleExport">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <button type="button" class="gfy-btn gfy-btn--outline" @click="handleExport" title="Download topics as markdown file" aria-label="Export topics as markdown">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                   <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
                   <polyline points="7 10 12 15 17 10"/>
                   <line x1="12" y1="15" x2="12" y2="3"/>
@@ -236,13 +242,18 @@
           </div>
 
           <!-- Topics Grid (Card View) -->
-          <div v-if="viewMode === 'card'" class="gfy-topics-grid">
+          <div v-if="viewMode === 'card'" class="gfy-topics-grid" role="listbox" aria-label="Generated topics" :aria-multiselectable="true">
             <div
               v-for="(topic, index) in topics"
               :key="index"
               class="gfy-topic-card"
               :class="{ 'gfy-topic-card--selected': isSelected(index) }"
+              role="option"
+              :aria-selected="isSelected(index)"
+              tabindex="0"
               @click="toggleSelection(index)"
+              @keydown.enter.prevent="toggleSelection(index)"
+              @keydown.space.prevent="toggleSelection(index)"
             >
               <div class="gfy-topic-card__number">{{ index + 1 }}</div>
               <div class="gfy-topic-card__content">
@@ -255,12 +266,13 @@
                   class="gfy-copy-btn"
                   :class="{ 'gfy-copy-btn--copied': copiedIndex === index }"
                   :title="copiedIndex === index ? 'Copied!' : 'Copy topic'"
+                  :aria-label="copiedIndex === index ? 'Topic copied to clipboard' : 'Copy this topic to clipboard'"
                   @click="handleCopySingleTopic(index, $event)"
                 >
-                  <svg v-if="copiedIndex === index" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg v-if="copiedIndex === index" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <polyline points="20 6 9 17 4 12"/>
                   </svg>
-                  <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                     <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
                   </svg>
@@ -273,13 +285,18 @@
           </div>
 
           <!-- Topics List (List View) -->
-          <div v-else class="gfy-topics-list">
+          <div v-else class="gfy-topics-list" role="listbox" aria-label="Generated topics" :aria-multiselectable="true">
             <div
               v-for="(topic, index) in topics"
               :key="index"
               class="gfy-topic-row"
               :class="{ 'gfy-topic-row--selected': isSelected(index) }"
+              role="option"
+              :aria-selected="isSelected(index)"
+              tabindex="0"
               @click="toggleSelection(index)"
+              @keydown.enter.prevent="toggleSelection(index)"
+              @keydown.space.prevent="toggleSelection(index)"
             >
               <div class="gfy-topic-row__checkbox">
                 <span v-if="isSelected(index)" class="gfy-position-badge gfy-position-badge--small">{{ getSelectionPosition(index) }}</span>
@@ -291,12 +308,13 @@
                 class="gfy-copy-btn gfy-copy-btn--small"
                 :class="{ 'gfy-copy-btn--copied': copiedIndex === index }"
                 :title="copiedIndex === index ? 'Copied!' : 'Copy topic'"
+                :aria-label="copiedIndex === index ? 'Topic copied to clipboard' : 'Copy this topic to clipboard'"
                 @click="handleCopySingleTopic(index, $event)"
               >
-                <svg v-if="copiedIndex === index" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg v-if="copiedIndex === index" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
-                <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                   <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
                 </svg>
@@ -326,26 +344,28 @@
                 type="button"
                 class="gfy-btn gfy-btn--primary gfy-btn--large"
                 :disabled="selectedTopics.length === 0 || isSaving"
+                title="Save selected topics to your media kit"
+                aria-label="Save selected topics to media kit"
                 @click="handleSaveToMediaKit"
               >
-                <svg v-if="!isSaving" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg v-if="!isSaving" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                   <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
                   <polyline points="17 21 17 13 7 13 7 21"/>
                   <polyline points="7 3 7 8 15 8"/>
                 </svg>
-                <span v-if="isSaving" class="gfy-spinner"></span>
+                <span v-if="isSaving" class="gfy-spinner" aria-hidden="true"></span>
                 {{ isSaving ? 'Saving...' : 'Save to Media Kit' }}
               </button>
-              <button type="button" class="gfy-btn gfy-btn--text" @click="handleStartOver">
+              <button type="button" class="gfy-btn gfy-btn--text" title="Clear results and start fresh" aria-label="Start over with new topics" @click="handleStartOver">
                 Start Over
               </button>
             </div>
             <!-- Save Success Message -->
-            <span v-if="saveSuccess" class="gfy-save-success">
+            <span v-if="saveSuccess" class="gfy-save-success" role="status" aria-live="polite">
               ✓ Saved successfully!
             </span>
             <!-- Save Error Message -->
-            <span v-if="saveError" class="gfy-save-error">
+            <span v-if="saveError" class="gfy-save-error" role="alert" aria-live="assertive">
               {{ saveError }}
             </span>
 

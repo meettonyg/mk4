@@ -251,6 +251,8 @@
                   'offers-slot--active': activeOfferTier === 'entry',
                   'offers-slot--locked': lockedOffers.entry
                 }"
+                :aria-label="lockedOffers.entry ? 'View locked Entry package' : 'Select Entry package'"
+                :aria-pressed="activeOfferTier === 'entry'"
                 @click="setActiveOfferTier('entry')"
               >
                 <div class="offers-slot__header">
@@ -272,6 +274,8 @@
                   'offers-slot--active': activeOfferTier === 'signature',
                   'offers-slot--locked': lockedOffers.signature
                 }"
+                :aria-label="lockedOffers.signature ? 'View locked Signature package' : 'Select Signature package'"
+                :aria-pressed="activeOfferTier === 'signature'"
                 @click="setActiveOfferTier('signature')"
               >
                 <div class="offers-slot__header">
@@ -293,6 +297,8 @@
                   'offers-slot--active': activeOfferTier === 'premium',
                   'offers-slot--locked': lockedOffers.premium
                 }"
+                :aria-label="lockedOffers.premium ? 'View locked Premium package' : 'Select Premium package'"
+                :aria-pressed="activeOfferTier === 'premium'"
                 @click="setActiveOfferTier('premium')"
               >
                 <div class="offers-slot__header">
@@ -327,9 +333,11 @@
                 <button
                   type="button"
                   class="generator__button generator__button--outline"
+                  title="Generate new service packages"
+                  aria-label="Regenerate all packages"
                   @click="handleGenerate"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path d="M23 4v6h-6M1 20v-6h6"/>
                     <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
                   </svg>
@@ -338,9 +346,11 @@
                 <button
                   type="button"
                   class="generator__button generator__button--outline"
+                  title="Copy all packages to clipboard"
+                  aria-label="Copy all packages to clipboard"
                   @click="handleCopyAll"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                   </svg>
@@ -350,9 +360,10 @@
                   type="button"
                   class="offers-action-btn"
                   @click="handleExport"
-                  title="Export as markdown"
+                  title="Download packages as markdown file"
+                  aria-label="Export packages as markdown"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
                     <polyline points="7 10 12 15 17 10"/>
                     <line x1="12" y1="15" x2="12" y2="3"/>
@@ -373,15 +384,15 @@
               <h4 class="offers-locked-card__name">{{ lockedOffers[activeOfferTier].name }}</h4>
               <p class="offers-locked-card__description">{{ lockedOffers[activeOfferTier].description }}</p>
               <div class="offers-locked-card__actions">
-                <button type="button" class="generator__button generator__button--outline" @click="handleCopy">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button type="button" class="generator__button generator__button--outline" title="Copy this package to clipboard" aria-label="Copy package details to clipboard" @click="handleCopy">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                   </svg>
                   Copy
                 </button>
-                <button type="button" class="generator__button generator__button--ghost" @click="unlockOffer(activeOfferTier)">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button type="button" class="generator__button generator__button--ghost" title="Unlock to make changes" aria-label="Unlock package to edit" @click="unlockOffer(activeOfferTier)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                     <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
                   </svg>
@@ -424,16 +435,18 @@
                 <button
                   type="button"
                   class="generator__button generator__button--call-to-action"
+                  :title="`Lock ${activeOfferTierLabel} package to preserve it`"
+                  :aria-label="`Lock ${activeOfferTierLabel} package`"
                   @click="lockOffer(activeOfferTier)"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                     <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                   </svg>
                   Lock {{ activeOfferTierLabel }} Package
                 </button>
-                <button type="button" class="generator__button generator__button--outline" @click="handleCopy">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button type="button" class="generator__button generator__button--outline" title="Copy this package to clipboard" aria-label="Copy package details to clipboard" @click="handleCopy">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                   </svg>
@@ -454,15 +467,15 @@
             <!-- Footer Actions -->
             <div v-if="lockedOffersCount > 0" class="offers-results__footer">
               <!-- Save Success Message -->
-              <div v-if="saveSuccess" class="offers-save-success">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <div v-if="saveSuccess" class="offers-save-success" role="status" aria-live="polite">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                 </svg>
                 Offers saved to profile!
               </div>
 
               <!-- Save Error Message -->
-              <div v-if="saveError" class="offers-save-error">
+              <div v-if="saveError" class="offers-save-error" role="alert" aria-live="assertive">
                 {{ saveError }}
               </div>
 
@@ -470,21 +483,22 @@
                 type="button"
                 class="generator__button generator__button--call-to-action"
                 :disabled="isSavingToProfile || !hasSelectedProfile"
-                :title="!hasSelectedProfile ? 'Select a profile above to save' : ''"
+                :title="!hasSelectedProfile ? 'Select a profile above to save' : 'Save all locked packages to your media kit'"
+                aria-label="Save offer suite to media kit"
                 @click="handleSaveAllOffers"
               >
-                <svg v-if="!isSavingToProfile" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg v-if="!isSavingToProfile" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                   <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
                   <polyline points="17 21 17 13 7 13 7 21"/>
                   <polyline points="7 3 7 8 15 8"/>
                 </svg>
-                <svg v-else class="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg v-else class="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                   <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
                   <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/>
                 </svg>
                 {{ isSavingToProfile ? 'Saving...' : 'Save Offer Suite' }}
               </button>
-              <button type="button" class="generator__button generator__button--ghost" @click="handleStartOver">
+              <button type="button" class="generator__button generator__button--ghost" title="Clear results and start fresh" aria-label="Start over with new packages" @click="handleStartOver">
                 Start Over
               </button>
             </div>
