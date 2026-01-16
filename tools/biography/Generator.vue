@@ -223,7 +223,10 @@
               rows="3"
               placeholder="Paste your current bio here if you want to improve upon it..."
             ></textarea>
-            <span class="gfy-form-hint">If you have an existing bio, we'll use it as inspiration while crafting new versions.</span>
+            <div class="gfy-form-footer">
+              <span class="gfy-form-hint">If you have an existing bio, we'll use it as inspiration while crafting new versions.</span>
+              <span v-if="optionalFields.existingBio" class="gfy-char-count">{{ optionalFields.existingBio.length }} characters</span>
+            </div>
           </div>
 
           <div class="gfy-form-group">
@@ -234,6 +237,10 @@
               rows="2"
               placeholder="Any specific achievements, tone preferences, or details to include..."
             ></textarea>
+            <div class="gfy-form-footer">
+              <span class="gfy-form-hint"></span>
+              <span v-if="optionalFields.additionalNotes" class="gfy-char-count">{{ optionalFields.additionalNotes.length }} characters</span>
+            </div>
           </div>
         </div>
 
@@ -1233,6 +1240,26 @@ defineExpose({
   color: var(--gfy-text-muted);
   margin-top: 6px;
   font-style: italic;
+}
+
+.gfy-form-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-top: 6px;
+}
+
+.gfy-form-footer .gfy-form-hint {
+  margin-top: 0;
+  flex: 1;
+}
+
+.gfy-char-count {
+  font-size: 0.75rem;
+  color: var(--gfy-text-muted, #94a3b8);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* HIGHLIGHT BOXES */

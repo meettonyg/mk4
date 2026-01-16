@@ -83,7 +83,10 @@
 
         <!-- Refine Selected Topic Textarea -->
         <div class="questions-refine-container">
-          <span class="questions-refine-hint">Refine Selected Topic</span>
+          <div class="questions-refine-header">
+            <span class="questions-refine-hint">Refine Selected Topic</span>
+            <span v-if="refinedTopic" class="questions-char-count">{{ refinedTopic.length }} chars</span>
+          </div>
           <textarea
             v-model="refinedTopic"
             class="questions-refine-textarea"
@@ -246,14 +249,12 @@
 
             <!-- Questions List with Checkboxes -->
             <div class="questions-list">
-              <button
+              <div
                 v-for="(question, index) in questions"
                 :key="index"
-                type="button"
                 class="questions-row"
-                :class="{ 'questions-row--selected': isQuestionSelected(index) }"
+                :class="{ 'questions-row--selected': isQuestionSelected(index), 'questions-row--disabled': !canSelectMore && !isQuestionSelected(index) }"
                 @click="toggleQuestionSelection(index)"
-                :disabled="!canSelectMore && !isQuestionSelected(index)"
               >
                 <div class="questions-row__checkbox" :class="{ 'questions-row__checkbox--checked': isQuestionSelected(index) }">
                   <svg v-if="isQuestionSelected(index)" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
@@ -262,7 +263,18 @@
                 </div>
                 <span class="questions-row__number">{{ index + 1 }}.</span>
                 <p class="questions-row__text">{{ question }}</p>
-              </button>
+                <button
+                  type="button"
+                  class="questions-copy-btn"
+                  title="Copy question"
+                  @click="copyQuestion(index, $event)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                  </svg>
+                </button>
+              </div>
             </div>
 
             <!-- Footer Actions -->
@@ -700,7 +712,10 @@ const selectTopic = (index) => {
 /**
  * Copy single question to clipboard
  */
-const copyQuestion = async (index) => {
+const copyQuestion = async (index, event) => {
+  // Prevent triggering row selection
+  if (event) event.stopPropagation();
+
   const question = questions.value[index];
   if (question) {
     try {
@@ -1221,10 +1236,14 @@ watch(canGenerate, (newValue) => {
   margin-top: 1rem;
 }
 
+.questions-refine-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
 .questions-refine-hint {
-  position: absolute;
-  top: -10px;
-  right: 15px;
   background: var(--mkcg-primary, #3b82f6);
   color: white;
   font-size: 10px;
@@ -1232,7 +1251,11 @@ watch(canGenerate, (newValue) => {
   padding: 2px 8px;
   border-radius: 4px;
   text-transform: uppercase;
-  z-index: 1;
+}
+
+.questions-char-count {
+  font-size: 0.75rem;
+  color: var(--mkcg-text-secondary, #64748b);
 }
 
 .questions-refine-textarea {
@@ -1864,5 +1887,40 @@ watch(canGenerate, (newValue) => {
 .generator__button--small {
   padding: 0.5rem 1rem;
   font-size: 0.8125rem;
+}
+
+/* Copy Button for Individual Questions */
+.questions-copy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 6px;
+  color: var(--mkcg-text-secondary, #64748b);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.questions-copy-btn:hover {
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: var(--mkcg-primary, #3b82f6);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+/* Disabled state for question rows */
+.questions-row--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.questions-row--disabled .questions-copy-btn {
+  pointer-events: auto;
+  opacity: 1;
 }
 </style>

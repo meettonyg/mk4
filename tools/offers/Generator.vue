@@ -70,9 +70,12 @@
             rows="4"
             @input="markFieldEdited('services')"
           ></textarea>
-          <p class="generator__field-helper">
-            List the services you want to package and sell.
-          </p>
+          <div class="generator__field-footer">
+            <p class="generator__field-helper">
+              List the services you want to package and sell.
+            </p>
+            <span v-if="services" class="generator__char-count">{{ services.length }} chars</span>
+          </div>
         </div>
       </div>
 
@@ -126,9 +129,12 @@
             rows="3"
             @input="markFieldEdited('audienceChallenges')"
           ></textarea>
-          <p class="generator__field-helper">
-            What problems or challenges does your audience face that your offer solves?
-          </p>
+          <div class="generator__field-footer">
+            <p class="generator__field-helper">
+              What problems or challenges does your audience face that your offer solves?
+            </p>
+            <span v-if="audienceChallenges" class="generator__char-count">{{ audienceChallenges.length }} chars</span>
+          </div>
         </div>
       </div>
 
@@ -545,6 +551,20 @@
             <div v-if="pkg.idealClient" class="gmkb-ai-package__ideal">
               <strong>Ideal for:</strong> {{ pkg.idealClient }}
             </div>
+
+            <!-- Copy Button -->
+            <button
+              type="button"
+              class="gmkb-ai-package__copy-btn"
+              title="Copy package"
+              @click="handleCopySingleOffer(pkg, $event)"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+              </svg>
+              Copy
+            </button>
           </div>
         </div>
 
@@ -596,7 +616,20 @@
           :key="index"
           class="gmkb-embedded-package"
         >
-          <strong>{{ pkg.name }}:</strong> {{ pkg.description }}
+          <div class="gmkb-embedded-package__content">
+            <strong>{{ pkg.name }}:</strong> {{ pkg.description }}
+          </div>
+          <button
+            type="button"
+            class="gmkb-embedded-package__copy"
+            title="Copy package"
+            @click="handleCopySingleOffer(pkg, $event)"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+            </svg>
+          </button>
         </div>
       </div>
     </div>
@@ -1143,6 +1176,28 @@ const handleCopy = async () => {
 };
 
 /**
+ * Copy a single offer/package to clipboard
+ */
+const handleCopySingleOffer = async (pkg, event) => {
+  // Prevent triggering parent click handlers
+  if (event) event.stopPropagation();
+
+  if (!pkg) return;
+
+  // Format the package as readable text
+  const formattedText = `${pkg.name || 'Package'}\n\n` +
+    `${pkg.description || ''}\n\n` +
+    `Includes:\n${pkg.deliverables?.map(d => `• ${d}`).join('\n') || 'N/A'}\n\n` +
+    `${pkg.idealClient ? `Ideal for: ${pkg.idealClient}` : ''}`;
+
+  try {
+    await navigator.clipboard.writeText(formattedText.trim());
+  } catch (err) {
+    console.error('[OffersGenerator] Failed to copy package:', err);
+  }
+};
+
+/**
  * Handle copy all offers to clipboard as formatted text
  */
 const handleCopyAll = async () => {
@@ -1286,6 +1341,26 @@ watch(canGenerateEmbedded, (newValue) => {
 /* Standalone Mode Styles */
 .generator__section {
   margin-bottom: var(--mkcg-space-lg, 30px);
+}
+
+.generator__field-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-top: 4px;
+}
+
+.generator__field-footer .generator__field-helper {
+  margin: 0;
+  flex: 1;
+}
+
+.generator__char-count {
+  font-size: 0.75rem;
+  color: var(--mkcg-text-secondary, #64748b);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .generator__section-title {
@@ -1597,6 +1672,30 @@ watch(canGenerateEmbedded, (newValue) => {
   color: var(--gmkb-ai-text-secondary, #64748b);
 }
 
+.gmkb-ai-package__copy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  margin-top: 12px;
+  background: var(--gmkb-ai-bg, #ffffff);
+  border: 1px solid var(--gmkb-ai-border, #e5e7eb);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gmkb-ai-text-secondary, #64748b);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gmkb-ai-package__copy-btn:hover {
+  border-color: var(--gmkb-ai-primary, #6366f1);
+  color: var(--gmkb-ai-primary, #6366f1);
+  background: rgba(99, 102, 241, 0.05);
+}
+
 .gmkb-ai-packages__note {
   display: flex;
   align-items: flex-start;
@@ -1670,6 +1769,10 @@ watch(canGenerateEmbedded, (newValue) => {
 }
 
 .gmkb-embedded-package {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 12px;
   padding-bottom: 12px;
   border-bottom: 1px solid rgba(22, 101, 52, 0.1);
@@ -1681,8 +1784,33 @@ watch(canGenerateEmbedded, (newValue) => {
   border-bottom: none;
 }
 
+.gmkb-embedded-package__content {
+  flex: 1;
+}
+
 .gmkb-embedded-package strong {
   color: #15803d;
+}
+
+.gmkb-embedded-package__copy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: rgba(22, 101, 52, 0.1);
+  border: 1px solid rgba(22, 101, 52, 0.2);
+  border-radius: 6px;
+  color: #15803d;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.gmkb-embedded-package__copy:hover {
+  background: rgba(22, 101, 52, 0.2);
+  border-color: rgba(22, 101, 52, 0.3);
 }
 
 .gmkb-embedded-error {

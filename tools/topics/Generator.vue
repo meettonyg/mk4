@@ -50,6 +50,7 @@
           placeholder="e.g. Digital Marketing Strategies"
           @input="markFieldEdited('expertise')"
         ></textarea>
+        <div v-if="expertise" class="gfy-char-count">{{ expertise.length }} characters</div>
       </div>
 
       <!-- Authority Hook Builder -->
@@ -184,8 +185,21 @@
                 <span v-if="topic.category" class="gfy-topic-card__category">{{ topic.category }}</span>
                 <p class="gfy-topic-card__title">{{ typeof topic === 'string' ? topic : topic.title || topic }}</p>
               </div>
-              <div class="gfy-topic-card__checkbox">
-                <span v-if="isSelected(index)" class="gfy-position-badge">{{ getSelectionPosition(index) }}</span>
+              <div class="gfy-topic-card__actions">
+                <button
+                  type="button"
+                  class="gfy-copy-btn"
+                  title="Copy topic"
+                  @click="handleCopySingleTopic(index, $event)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                  </svg>
+                </button>
+                <div class="gfy-topic-card__checkbox">
+                  <span v-if="isSelected(index)" class="gfy-position-badge">{{ getSelectionPosition(index) }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -204,6 +218,17 @@
               </div>
               <div class="gfy-topic-row__number">{{ index + 1 }}.</div>
               <p class="gfy-topic-row__title">{{ typeof topic === 'string' ? topic : topic.title || topic }}</p>
+              <button
+                type="button"
+                class="gfy-copy-btn gfy-copy-btn--small"
+                title="Copy topic"
+                @click="handleCopySingleTopic(index, $event)"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                </svg>
+              </button>
             </div>
           </div>
 
@@ -613,6 +638,24 @@ const handleCopyAll = async () => {
 };
 
 /**
+ * Copy a single topic to clipboard
+ */
+const handleCopySingleTopic = async (index, event) => {
+  // Prevent triggering the card/row selection
+  event.stopPropagation();
+
+  const topic = topics.value[index];
+  const text = typeof topic === 'string' ? topic : topic.title || topic;
+
+  try {
+    await navigator.clipboard.writeText(text);
+    // Brief visual feedback could be added here
+  } catch (err) {
+    console.error('[Topics Generator] Failed to copy topic:', err);
+  }
+};
+
+/**
  * Handle save to media kit - saves topics and optionally authority hook
  * Merges locked topics with newly selected topics
  */
@@ -958,6 +1001,13 @@ defineExpose({
 
 .gfy-textarea::placeholder {
   color: var(--gfy-text-muted);
+}
+
+.gfy-char-count {
+  font-size: 0.75rem;
+  color: var(--gfy-text-muted, #94a3b8);
+  text-align: right;
+  margin-top: 4px;
 }
 
 /* AUTHORITY HOOK BLOCK */
@@ -1707,5 +1757,41 @@ defineExpose({
 .gfy-btn--small {
   padding: 0.5rem 1rem;
   font-size: 0.8125rem;
+}
+
+/* Copy Button for Individual Items */
+.gfy-copy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: var(--gfy-white, #ffffff);
+  border: 1px solid var(--gfy-border-color, #e2e8f0);
+  border-radius: 6px;
+  color: var(--gfy-text-muted, #94a3b8);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.gfy-copy-btn:hover {
+  border-color: var(--gfy-primary-color, #2563eb);
+  color: var(--gfy-primary-color, #2563eb);
+  background: var(--gfy-primary-light, #eff6ff);
+}
+
+.gfy-copy-btn--small {
+  width: 28px;
+  height: 28px;
+}
+
+/* Topic Card Actions Container */
+.gfy-topic-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 </style>
