@@ -224,12 +224,13 @@ class TemplateDiscovery {
         $manifest = array();
 
         foreach ($templates as $template) {
-            $persona = isset($template['persona']) ? $template['persona'] : array();
-            $persona_type = isset($persona['type']) ? $persona['type'] : 'unknown';
-            $persona_label = isset($persona['label']) ? $persona['label'] : ucfirst($persona_type);
-            $persona_icon = isset($persona['icon']) ? $persona['icon'] : 'fa-solid fa-user';
-            $use_case = isset($persona['use_case']) ? $persona['use_case'] : 'General Bio';
-            $layout_variant = isset($persona['layout_variant']) ? $persona['layout_variant'] : 'standard';
+            // Use null coalescing operator for cleaner code
+            $persona = $template['persona'] ?? [];
+            $persona_type = $persona['type'] ?? 'unknown';
+            $persona_label = $persona['label'] ?? ucfirst($persona_type);
+            $persona_icon = $persona['icon'] ?? 'fa-solid fa-user';
+            $use_case = $persona['use_case'] ?? 'General Bio';
+            $layout_variant = $persona['layout_variant'] ?? 'standard';
 
             // Collect unique personas
             if (!isset($personas[$persona_type])) {
@@ -240,15 +241,11 @@ class TemplateDiscovery {
                 );
             }
 
-            // Collect unique use cases
-            if (!in_array($use_case, $use_cases)) {
-                $use_cases[] = $use_case;
-            }
+            // Collect unique use cases (using array keys for O(1) lookups)
+            $use_cases[$use_case] = true;
 
-            // Collect unique layout variants
-            if (!in_array($layout_variant, $layout_variants)) {
-                $layout_variants[] = $layout_variant;
-            }
+            // Collect unique layout variants (using array keys for O(1) lookups)
+            $layout_variants[$layout_variant] = true;
 
             // Build the nested manifest: persona -> use_case -> layout_variants[]
             if (!isset($manifest[$persona_type])) {
@@ -262,7 +259,9 @@ class TemplateDiscovery {
             }
         }
 
-        // Sort for consistent ordering
+        // Extract keys and sort for consistent ordering
+        $use_cases = array_keys($use_cases);
+        $layout_variants = array_keys($layout_variants);
         sort($use_cases);
         sort($layout_variants);
 

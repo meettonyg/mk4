@@ -178,6 +178,36 @@ const hasBackup = ref(false);
 const filterManifest = ref(null);
 const isLoadingManifest = ref(false);
 
+// Layout variant labels for display (constant, defined once)
+const LAYOUT_LABELS = {
+  'standard': 'Standard',
+  'image-left': 'Image Left',
+  'image-right': 'Image Right',
+  'center-stack': 'Centered',
+  'split-layout': 'Split Screen',
+  'minimal': 'Minimal',
+  'bold': 'Bold'
+};
+
+/**
+ * Helper to extract unique filter options from templates
+ * @param {Function} keyExtractor - Function to extract the key from a template
+ * @param {Function} labelExtractor - Function to create the filter object
+ * @returns {Array} Array of unique filter options
+ */
+function extractUniqueFromTemplates(keyExtractor, labelExtractor) {
+  const seen = new Set();
+  const results = [];
+  props.templates.forEach(template => {
+    const value = keyExtractor(template);
+    if (value && !seen.has(value)) {
+      seen.add(value);
+      results.push(labelExtractor(template, value));
+    }
+  });
+  return results;
+}
+
 // Fetch filter manifest from API
 async function fetchFilterManifest() {
   isLoadingManifest.value = true;
@@ -208,19 +238,16 @@ const personaFilters = computed(() => {
       });
     });
   } else {
-    // Fallback: Extract from templates
-    const seenTypes = new Set();
-    props.templates.forEach(template => {
-      const persona = template.persona;
-      if (persona?.type && !seenTypes.has(persona.type)) {
-        seenTypes.add(persona.type);
-        filters.push({
-          value: persona.type,
-          label: persona.label || persona.type,
-          icon: persona.icon || 'fa-solid fa-user'
-        });
-      }
-    });
+    // Fallback: Extract from templates using helper
+    const extracted = extractUniqueFromTemplates(
+      template => template.persona?.type,
+      (template, value) => ({
+        value,
+        label: template.persona?.label || value,
+        icon: template.persona?.icon || 'fa-solid fa-user'
+      })
+    );
+    filters.push(...extracted);
   }
 
   return filters;
@@ -232,8 +259,8 @@ const useCaseFilters = computed(() => {
 
   if (filterManifest.value?.use_cases) {
     // If a persona is selected, only show use cases available for that persona
-    if (activePersonaFilter.value !== 'all' && filterManifest.value.manifest) {
-      const personaUseCases = filterManifest.value.manifest[activePersonaFilter.value];
+    if (activePersonaFilter.value !== 'all' && filterManifest.value?.manifest) {
+      const personaUseCases = filterManifest.value.manifest?.[activePersonaFilter.value];
       if (personaUseCases) {
         Object.keys(personaUseCases).forEach(useCase => {
           filters.push({ value: useCase, label: useCase });
@@ -246,15 +273,12 @@ const useCaseFilters = computed(() => {
       });
     }
   } else {
-    // Fallback: Extract from templates
-    const seenUseCases = new Set();
-    props.templates.forEach(template => {
-      const useCase = template.use_case || template.persona?.use_case;
-      if (useCase && !seenUseCases.has(useCase)) {
-        seenUseCases.add(useCase);
-        filters.push({ value: useCase, label: useCase });
-      }
-    });
+    // Fallback: Extract from templates using helper
+    const extracted = extractUniqueFromTemplates(
+      template => template.use_case || template.persona?.use_case,
+      (template, value) => ({ value, label: value })
+    );
+    filters.push(...extracted);
   }
 
   return filters;
@@ -264,36 +288,26 @@ const useCaseFilters = computed(() => {
 const layoutFilters = computed(() => {
   const filters = [{ value: 'all', label: 'All Layouts' }];
 
-  // Layout variant labels for display
-  const layoutLabels = {
-    'standard': 'Standard',
-    'image-left': 'Image Left',
-    'image-right': 'Image Right',
-    'center-stack': 'Centered',
-    'split-layout': 'Split Screen',
-    'minimal': 'Minimal',
-    'bold': 'Bold'
-  };
-
   if (filterManifest.value?.layout_variants) {
     // If persona and use case selected, filter layouts accordingly
-    if (activePersonaFilter.value !== 'all' && activeUseCaseFilter.value !== 'all' && filterManifest.value.manifest) {
-      const personaManifest = filterManifest.value.manifest[activePersonaFilter.value];
-      if (personaManifest && personaManifest[activeUseCaseFilter.value]) {
-        personaManifest[activeUseCaseFilter.value].forEach(layout => {
-          filters.push({ value: layout, label: layoutLabels[layout] || layout });
+    if (activePersonaFilter.value !== 'all' && activeUseCaseFilter.value !== 'all' && filterManifest.value?.manifest) {
+      const personaManifest = filterManifest.value.manifest?.[activePersonaFilter.value];
+      const useCaseLayouts = personaManifest?.[activeUseCaseFilter.value];
+      if (useCaseLayouts) {
+        useCaseLayouts.forEach(layout => {
+          filters.push({ value: layout, label: LAYOUT_LABELS[layout] || layout });
         });
       }
-    } else if (activePersonaFilter.value !== 'all' && filterManifest.value.manifest) {
+    } else if (activePersonaFilter.value !== 'all' && filterManifest.value?.manifest) {
       // Show all layouts for selected persona
-      const personaManifest = filterManifest.value.manifest[activePersonaFilter.value];
+      const personaManifest = filterManifest.value.manifest?.[activePersonaFilter.value];
       if (personaManifest) {
         const seenLayouts = new Set();
         Object.values(personaManifest).forEach(layouts => {
           layouts.forEach(layout => {
             if (!seenLayouts.has(layout)) {
               seenLayouts.add(layout);
-              filters.push({ value: layout, label: layoutLabels[layout] || layout });
+              filters.push({ value: layout, label: LAYOUT_LABELS[layout] || layout });
             }
           });
         });
@@ -301,19 +315,16 @@ const layoutFilters = computed(() => {
     } else {
       // Show all layouts
       filterManifest.value.layout_variants.forEach(layout => {
-        filters.push({ value: layout, label: layoutLabels[layout] || layout });
+        filters.push({ value: layout, label: LAYOUT_LABELS[layout] || layout });
       });
     }
   } else {
-    // Fallback: Extract from templates
-    const seenLayouts = new Set();
-    props.templates.forEach(template => {
-      const layout = template.layout_variant || template.persona?.layout_variant;
-      if (layout && !seenLayouts.has(layout)) {
-        seenLayouts.add(layout);
-        filters.push({ value: layout, label: layoutLabels[layout] || layout });
-      }
-    });
+    // Fallback: Extract from templates using helper
+    const extracted = extractUniqueFromTemplates(
+      template => template.layout_variant || template.persona?.layout_variant,
+      (template, value) => ({ value, label: LAYOUT_LABELS[value] || value })
+    );
+    filters.push(...extracted);
   }
 
   return filters;
@@ -355,16 +366,7 @@ function getTemplateIcon(template) {
 
 // Get human-readable layout label
 function getLayoutLabel(layoutVariant) {
-  const labels = {
-    'standard': 'Standard',
-    'image-left': 'Image Left',
-    'image-right': 'Image Right',
-    'center-stack': 'Centered',
-    'split-layout': 'Split Screen',
-    'minimal': 'Minimal',
-    'bold': 'Bold'
-  };
-  return labels[layoutVariant] || layoutVariant;
+  return LAYOUT_LABELS[layoutVariant] || layoutVariant;
 }
 
 // Get preview style

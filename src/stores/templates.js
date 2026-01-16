@@ -278,8 +278,6 @@ export const useTemplateStore = defineStore('templates', {
                     throw new Error('Template data structure invalid: No sections found. Expected template.sections, template.defaultContent.sections, or template.content.defaultContent.sections');
                 }
 
-                console.log('📋 Processing', sectionsSource.length, 'sections from template');
-
                 // 6. Instantiate sections with fresh IDs
                 if (sectionsSource.length > 0) {
                     for (const sectionDef of sectionsSource) {
