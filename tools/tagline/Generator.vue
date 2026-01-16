@@ -1075,16 +1075,6 @@ const restoreFromHistory = (entry) => {
 };
 
 /**
- * Restore inputs and results from history entry
- */
-const restoreFullHistory = (entry) => {
-  restoreFromHistory(entry);
-  // Results would need to be restored via the composable if supported
-  // For now, just restore inputs
-  showHistory.value = false;
-};
-
-/**
  * Keyboard shortcut handler (Ctrl/Cmd + Enter to generate)
  */
 const handleKeyboardShortcut = (event) => {
