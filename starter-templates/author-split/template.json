@@ -1,0 +1,241 @@
+{
+  "template_id": "author-split",
+  "template_name": "Author: Split Screen",
+  "version": "1.0.0",
+  "description": "Bold split-screen layout with large author photo. Perfect for authors wanting a visual-first impression that showcases personality alongside their work.",
+  "persona": {
+    "type": "author",
+    "label": "Authors & Writers",
+    "icon": "fa-solid fa-book",
+    "use_case": "General Bio",
+    "layout_variant": "split-layout",
+    "use_cases": [
+      "Bestselling authors",
+      "Non-fiction writers",
+      "Public intellectuals",
+      "Journalists and columnists",
+      "Academic authors"
+    ]
+  },
+  "metadata": {
+    "tags": ["author", "writer", "book", "literary", "publishing", "press", "split", "visual"],
+    "is_premium": false,
+    "sort_order": 11,
+    "recommended_themes": ["modern-dark", "creative-bold", "professional-clean"]
+  },
+  "preview_image": "preview.jpg",
+  "sections": [
+    {
+      "id": "hero-section",
+      "type": "two_column",
+      "background": "dark",
+      "columns": {
+        "ratio": "45-55",
+        "1": [
+          {
+            "type": "profile-photo",
+            "settings": {
+              "style": "full-bleed",
+              "size": "hero",
+              "aspectRatio": "3:4"
+            },
+            "data": {
+              "alt": "Author portrait"
+            }
+          }
+        ],
+        "2": [
+          {
+            "type": "hero",
+            "settings": {
+              "layout": "left_aligned",
+              "showImage": false,
+              "showCTA": true,
+              "verticalAlign": "center"
+            },
+            "data": {
+              "headline": "Your Name",
+              "subheadline": "Bestselling Author",
+              "description": "Author of [X] books that have shaped how readers think about [topic]. Featured in The New York Times, NPR, and more.",
+              "cta_text": "Explore My Work"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "featured-book-section",
+      "type": "two_column",
+      "background": "gradient",
+      "columns": {
+        "ratio": "40-60",
+        "1": [
+          {
+            "type": "photo-gallery",
+            "settings": {
+              "layout": "single",
+              "style": "book-cover",
+              "showShadow": true
+            },
+            "data": {
+              "images": [{ "alt": "Book cover" }]
+            }
+          }
+        ],
+        "2": [
+          {
+            "type": "guest-intro",
+            "settings": {
+              "style": "featured"
+            },
+            "data": {
+              "title": "THE LATEST BOOK",
+              "subtitle": "Now Available",
+              "content": "A compelling description of your latest work and why readers should pick it up. Include any notable reviews or accolades.",
+              "cta_text": "Order Your Copy",
+              "cta_link": "#"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "press-section",
+      "type": "full_width",
+      "background": "surface",
+      "components": [
+        {
+          "type": "testimonials",
+          "settings": {
+            "layout": "slider",
+            "showPhotos": false,
+            "showCompany": true,
+            "quoteStyle": "large"
+          },
+          "data": {
+            "title": "Press & Reviews",
+            "items": [
+              {
+                "quote": "A must-read for anyone interested in [topic].",
+                "company": "The New York Times"
+              },
+              {
+                "quote": "Compelling, insightful, and beautifully written.",
+                "company": "The Atlantic"
+              },
+              {
+                "quote": "One of the most important books of the year.",
+                "company": "Publishers Weekly"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "books-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "photo-gallery",
+          "settings": {
+            "layout": "grid",
+            "columns": 4,
+            "style": "book-covers"
+          },
+          "data": {
+            "title": "Bibliography",
+            "images": [
+              { "alt": "Book 1", "caption": "Title One (Year)" },
+              { "alt": "Book 2", "caption": "Title Two (Year)" },
+              { "alt": "Book 3", "caption": "Title Three (Year)" },
+              { "alt": "Book 4", "caption": "Title Four (Year)" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "bio-topics-section",
+      "type": "two_column",
+      "columns": {
+        "ratio": "55-45",
+        "1": [
+          {
+            "type": "biography",
+            "settings": {
+              "style": "narrative",
+              "showTitle": true
+            },
+            "data": {
+              "title": "About the Author",
+              "content": "Share your background, writing journey, and what drives your work. Include your education, awards, and any notable achievements.\n\nYour unique perspective and why readers connect with your voice."
+            }
+          }
+        ],
+        "2": [
+          {
+            "type": "topics",
+            "settings": {
+              "layout": "list",
+              "showDescriptions": true,
+              "style": "minimal"
+            },
+            "data": {
+              "title": "Speaking Topics",
+              "items": [
+                {
+                  "title": "The Research Behind the Book",
+                  "description": "Deep dive into discoveries"
+                },
+                {
+                  "title": "Writing Process",
+                  "description": "Craft and discipline"
+                },
+                {
+                  "title": "[Topic Expertise]",
+                  "description": "Expert perspectives"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "contact-section",
+      "type": "two_column",
+      "background": "dark",
+      "columns": {
+        "ratio": "50-50",
+        "1": [
+          {
+            "type": "call-to-action",
+            "settings": {
+              "style": "simple",
+              "alignment": "left"
+            },
+            "data": {
+              "title": "Media & Speaking Inquiries",
+              "description": "Available for interviews, book events, and speaking engagements. Let's connect.",
+              "cta_text": "Download Press Kit"
+            }
+          }
+        ],
+        "2": [
+          {
+            "type": "contact",
+            "settings": {
+              "style": "compact",
+              "fields": ["name", "email", "organization", "message"],
+              "showLabels": false
+            },
+            "data": {
+              "button_text": "Send Message"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

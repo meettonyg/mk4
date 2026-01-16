@@ -1,0 +1,260 @@
+{
+  "template_id": "speaker-split",
+  "template_name": "Speaker: Split Screen",
+  "version": "1.0.0",
+  "description": "Dynamic split-screen layout for speakers. Features bold hero with image, speaking topics, video reel, testimonials, and booking integration.",
+  "persona": {
+    "type": "speaker",
+    "label": "Speakers & Trainers",
+    "icon": "fa-solid fa-microphone",
+    "use_case": "General Bio",
+    "layout_variant": "split-layout",
+    "use_cases": [
+      "Keynote speakers",
+      "Corporate trainers",
+      "TEDx speakers",
+      "Conference presenters",
+      "Workshop facilitators"
+    ]
+  },
+  "metadata": {
+    "tags": ["speaker", "keynote", "trainer", "presentation", "conference", "workshop", "split"],
+    "is_premium": false,
+    "sort_order": 21,
+    "recommended_themes": ["professional-clean", "speaker-pro", "modern-dark"]
+  },
+  "preview_image": "preview.jpg",
+  "sections": [
+    {
+      "id": "hero-section",
+      "type": "full_width",
+      "background": "gradient",
+      "components": [
+        {
+          "type": "hero",
+          "settings": {
+            "layout": "split_screen",
+            "imageStyle": "rounded",
+            "showCTA": true,
+            "minHeight": "600px"
+          },
+          "data": {
+            "headline": "Inspiring Audiences Worldwide",
+            "subheadline": "Keynote Speaker | [Expertise] Expert",
+            "description": "Transforming organizations through powerful storytelling and actionable insights.",
+            "cta_text": "Book Me to Speak",
+            "cta_link": "#booking"
+          }
+        }
+      ]
+    },
+    {
+      "id": "stats-section",
+      "type": "full_width",
+      "background": "surface",
+      "components": [
+        {
+          "type": "stats",
+          "settings": {
+            "layout": "horizontal",
+            "columns": 4,
+            "showIcons": true,
+            "animateNumbers": true
+          },
+          "data": {
+            "items": [
+              { "value": "500+", "label": "Keynotes Delivered", "icon": "microphone" },
+              { "value": "100K+", "label": "Audience Members", "icon": "users" },
+              { "value": "25+", "label": "Countries", "icon": "globe" },
+              { "value": "98%", "label": "Client Satisfaction", "icon": "star" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "topics-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "topics",
+          "settings": {
+            "layout": "grid",
+            "columns": 3,
+            "showDescriptions": true,
+            "showIcons": true,
+            "style": "cards"
+          },
+          "data": {
+            "title": "Speaking Topics",
+            "subtitle": "Customized presentations for your audience",
+            "items": [
+              {
+                "title": "Leadership in the Digital Age",
+                "description": "Navigate change and inspire your team through transformation.",
+                "icon": "compass"
+              },
+              {
+                "title": "Building High-Performance Teams",
+                "description": "Strategies for creating culture that drives results.",
+                "icon": "users"
+              },
+              {
+                "title": "Innovation & Creative Thinking",
+                "description": "Unlock your organization's creative potential.",
+                "icon": "lightbulb"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "video-section",
+      "type": "full_width",
+      "background": "dark",
+      "components": [
+        {
+          "type": "video-intro",
+          "settings": {
+            "autoplay": false,
+            "showControls": true,
+            "aspectRatio": "16:9",
+            "style": "featured"
+          },
+          "data": {
+            "title": "See Me in Action",
+            "subtitle": "Watch highlights from recent keynotes",
+            "video_url": "",
+            "thumbnail": ""
+          }
+        }
+      ]
+    },
+    {
+      "id": "testimonials-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "testimonials",
+          "settings": {
+            "layout": "carousel",
+            "showPhotos": true,
+            "showCompany": true,
+            "maxTestimonials": 6,
+            "quoteStyle": "large"
+          },
+          "data": {
+            "title": "What Event Organizers Say",
+            "items": [
+              {
+                "quote": "One of the most impactful speakers we've ever had. The audience was captivated from start to finish.",
+                "author": "Event Director Name",
+                "role": "Event Director",
+                "company": "Organization Name"
+              },
+              {
+                "quote": "Incredible energy and actionable takeaways. Our team is still talking about the presentation.",
+                "author": "VP Name",
+                "role": "VP of Learning",
+                "company": "Company Name"
+              },
+              {
+                "quote": "Professional, engaging, and truly transformative. Exceeded all expectations.",
+                "author": "Chair Name",
+                "role": "Conference Chair",
+                "company": "Association Name"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "bio-section",
+      "type": "two_column",
+      "columns": {
+        "ratio": "60-40",
+        "1": [
+          {
+            "type": "biography",
+            "settings": {
+              "style": "narrative",
+              "showTitle": true
+            },
+            "data": {
+              "title": "About",
+              "content": "Share your background, expertise, and what makes you a compelling speaker. Include notable achievements, publications, and your unique perspective.\n\nYour approach to speaking and what audiences can expect from your presentations."
+            }
+          }
+        ],
+        "2": [
+          {
+            "type": "profile-photo",
+            "settings": {
+              "style": "rounded",
+              "size": "large"
+            },
+            "data": {
+              "alt": "Professional speaker headshot"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "booking-section",
+      "type": "full_width",
+      "background": "primary",
+      "components": [
+        {
+          "type": "call-to-action",
+          "settings": {
+            "style": "hero",
+            "alignment": "center"
+          },
+          "data": {
+            "title": "Book Me for Your Next Event",
+            "description": "Check availability and start the conversation about bringing transformative insights to your audience.",
+            "cta_text": "Check Availability"
+          }
+        }
+      ]
+    },
+    {
+      "id": "contact-section",
+      "type": "two_column",
+      "columns": {
+        "ratio": "50-50",
+        "1": [
+          {
+            "type": "contact",
+            "settings": {
+              "style": "form",
+              "fields": ["name", "email", "organization", "event_date", "event_type", "message"],
+              "showLabels": true
+            },
+            "data": {
+              "title": "Speaking Inquiry",
+              "subtitle": "Let's discuss how I can add value to your event",
+              "button_text": "Send Inquiry"
+            }
+          }
+        ],
+        "2": [
+          {
+            "type": "social",
+            "settings": {
+              "layout": "vertical",
+              "showLabels": true,
+              "iconSize": "large"
+            },
+            "data": {
+              "title": "Connect With Me"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

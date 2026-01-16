@@ -1,0 +1,224 @@
+{
+  "template_id": "consultant-minimal",
+  "template_name": "Consultant: Minimal",
+  "version": "1.0.0",
+  "description": "Clean, no-nonsense layout focused on results. Perfect for consultants who want their track record to speak for itself. Elegant and professional.",
+  "persona": {
+    "type": "consultant",
+    "label": "Consultants & Advisors",
+    "icon": "fa-solid fa-briefcase",
+    "use_case": "General Bio",
+    "layout_variant": "minimal",
+    "use_cases": [
+      "Business consultants",
+      "Executive coaches",
+      "Financial advisors",
+      "Management consultants",
+      "Strategy consultants",
+      "Corporate trainers"
+    ]
+  },
+  "metadata": {
+    "tags": ["consultant", "business", "professional", "advisor", "coaching", "corporate", "minimal"],
+    "is_premium": false,
+    "sort_order": 42,
+    "recommended_themes": ["minimal-elegant", "professional-clean", "modern-light"]
+  },
+  "preview_image": "preview.jpg",
+  "sections": [
+    {
+      "id": "hero-section",
+      "type": "two_column",
+      "background": "light",
+      "columns": {
+        "ratio": "30-70",
+        "1": [
+          {
+            "type": "profile-photo",
+            "settings": {
+              "style": "square",
+              "size": "medium"
+            },
+            "data": {
+              "alt": "Professional headshot"
+            }
+          }
+        ],
+        "2": [
+          {
+            "type": "hero",
+            "settings": {
+              "layout": "left_aligned",
+              "showImage": false,
+              "showCTA": false,
+              "style": "minimal"
+            },
+            "data": {
+              "headline": "Your Name",
+              "subheadline": "Business Consultant",
+              "description": "15+ years helping organizations achieve measurable results. 200+ clients served across Technology, Healthcare, and Financial Services."
+            }
+          },
+          {
+            "type": "social",
+            "settings": {
+              "layout": "horizontal",
+              "showLabels": false,
+              "iconSize": "small"
+            },
+            "data": {}
+          }
+        ]
+      }
+    },
+    {
+      "id": "stats-section",
+      "type": "full_width",
+      "background": "surface",
+      "components": [
+        {
+          "type": "stats",
+          "settings": {
+            "layout": "inline",
+            "columns": 4,
+            "showIcons": false,
+            "style": "minimal",
+            "separator": "dot"
+          },
+          "data": {
+            "items": [
+              { "value": "15+", "label": "Years" },
+              { "value": "200+", "label": "Clients" },
+              { "value": "$50M+", "label": "Value" },
+              { "value": "95%", "label": "Retention" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "services-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "topics",
+          "settings": {
+            "layout": "tags",
+            "showDescriptions": false,
+            "showIcons": false,
+            "style": "pills"
+          },
+          "data": {
+            "title": "Services",
+            "items": [
+              { "title": "Strategic Planning" },
+              { "title": "Operational Excellence" },
+              { "title": "Leadership Development" },
+              { "title": "Change Management" },
+              { "title": "Executive Coaching" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "bio-section",
+      "type": "full_width",
+      "background": "surface",
+      "components": [
+        {
+          "type": "biography",
+          "settings": {
+            "style": "minimal",
+            "showTitle": true,
+            "maxWidth": "680px",
+            "alignment": "center"
+          },
+          "data": {
+            "title": "About",
+            "content": "A concise summary of your approach and what sets you apart. Focus on outcomes and the types of problems you solve.\n\nInclude your credentials briefly: MBA, certifications, notable experience."
+          }
+        }
+      ]
+    },
+    {
+      "id": "clients-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "logo-grid",
+          "settings": {
+            "layout": "row",
+            "columns": 5,
+            "showLabels": false,
+            "grayscale": true,
+            "style": "minimal"
+          },
+          "data": {
+            "title": "Clients",
+            "logos": [
+              { "name": "Company 1", "alt": "Client logo" },
+              { "name": "Company 2", "alt": "Client logo" },
+              { "name": "Company 3", "alt": "Client logo" },
+              { "name": "Company 4", "alt": "Client logo" },
+              { "name": "Company 5", "alt": "Client logo" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "testimonials-section",
+      "type": "full_width",
+      "background": "surface",
+      "components": [
+        {
+          "type": "testimonials",
+          "settings": {
+            "layout": "stacked",
+            "showPhotos": false,
+            "showCompany": true,
+            "quoteStyle": "minimal",
+            "maxWidth": "680px"
+          },
+          "data": {
+            "title": "Results",
+            "items": [
+              {
+                "quote": "40% improvement in operational efficiency within the first year.",
+                "author": "CEO",
+                "company": "Tech Company"
+              },
+              {
+                "quote": "Practical, insightful, results-driven.",
+                "author": "VP Operations",
+                "company": "Healthcare Org"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "contact-section",
+      "type": "full_width",
+      "background": "dark",
+      "components": [
+        {
+          "type": "contact",
+          "settings": {
+            "style": "minimal",
+            "fields": ["name", "email", "company", "message"],
+            "showLabels": true,
+            "maxWidth": "520px"
+          },
+          "data": {
+            "title": "Get in Touch",
+            "subtitle": "Complimentary 30-minute consultation",
+            "button_text": "Send Message"
+          }
+        }
+      ]
+    }
+  ]
+}

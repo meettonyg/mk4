@@ -1,8 +1,8 @@
 {
-  "template_id": "consultant",
-  "template_name": "Consultant Media Kit",
+  "template_id": "consultant-split",
+  "template_name": "Consultant: Split Screen",
   "version": "1.0.0",
-  "description": "Professional template for business consultants, coaches, and advisors. Features services, client results, credentials, and booking options.",
+  "description": "Dynamic split-screen layout for consultants. Features approachable hero, services grid, client logos, testimonials, and booking options.",
   "persona": {
     "type": "consultant",
     "label": "Consultants & Advisors",
@@ -19,9 +19,9 @@
     ]
   },
   "metadata": {
-    "tags": ["consultant", "business", "professional", "advisor", "coaching", "corporate"],
+    "tags": ["consultant", "business", "professional", "advisor", "coaching", "corporate", "split"],
     "is_premium": false,
-    "sort_order": 40,
+    "sort_order": 41,
     "recommended_themes": ["professional-clean", "minimal-elegant", "modern-dark"]
   },
   "preview_image": "preview.jpg",

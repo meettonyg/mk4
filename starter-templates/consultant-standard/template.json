@@ -1,0 +1,237 @@
+{
+  "template_id": "consultant-standard",
+  "template_name": "Consultant: Classic",
+  "version": "1.0.0",
+  "description": "Classic centered layout that establishes authority and trust. Perfect for senior consultants and advisors seeking to convey expertise and credibility.",
+  "persona": {
+    "type": "consultant",
+    "label": "Consultants & Advisors",
+    "icon": "fa-solid fa-briefcase",
+    "use_case": "General Bio",
+    "layout_variant": "standard",
+    "use_cases": [
+      "Business consultants",
+      "Executive coaches",
+      "Financial advisors",
+      "Management consultants",
+      "Strategy consultants",
+      "Corporate trainers"
+    ]
+  },
+  "metadata": {
+    "tags": ["consultant", "business", "professional", "advisor", "coaching", "corporate", "classic"],
+    "is_premium": false,
+    "sort_order": 40,
+    "recommended_themes": ["professional-clean", "minimal-elegant", "modern-dark"]
+  },
+  "preview_image": "preview.jpg",
+  "sections": [
+    {
+      "id": "hero-section",
+      "type": "full_width",
+      "background": "dark",
+      "components": [
+        {
+          "type": "hero",
+          "settings": {
+            "layout": "center_aligned",
+            "imageStyle": "circle",
+            "showCTA": true,
+            "minHeight": "550px"
+          },
+          "data": {
+            "headline": "Your Name",
+            "subheadline": "Business Consultant | [Industry] Expert",
+            "description": "Helping organizations achieve measurable results through strategic consulting and proven methodologies.",
+            "cta_text": "Schedule a Consultation"
+          }
+        }
+      ]
+    },
+    {
+      "id": "stats-section",
+      "type": "full_width",
+      "background": "primary",
+      "components": [
+        {
+          "type": "stats",
+          "settings": {
+            "layout": "cards",
+            "columns": 4,
+            "showIcons": true,
+            "animateNumbers": true
+          },
+          "data": {
+            "items": [
+              { "value": "15+", "label": "Years Experience", "icon": "calendar" },
+              { "value": "200+", "label": "Clients Served", "icon": "users" },
+              { "value": "$50M+", "label": "Value Delivered", "icon": "chart-line" },
+              { "value": "95%", "label": "Client Retention", "icon": "star" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "services-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "topics",
+          "settings": {
+            "layout": "grid",
+            "columns": 3,
+            "showDescriptions": true,
+            "showIcons": true,
+            "style": "cards"
+          },
+          "data": {
+            "title": "How I Can Help",
+            "subtitle": "Specialized expertise across key areas",
+            "items": [
+              {
+                "title": "Strategic Planning",
+                "description": "Develop clear roadmaps that align your team and drive sustainable growth.",
+                "icon": "compass"
+              },
+              {
+                "title": "Operational Excellence",
+                "description": "Streamline processes and optimize performance across your organization.",
+                "icon": "chart-bar"
+              },
+              {
+                "title": "Leadership Development",
+                "description": "Build high-performing teams through tailored coaching and training.",
+                "icon": "users"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "bio-section",
+      "type": "two_column",
+      "background": "surface",
+      "columns": {
+        "ratio": "40-60",
+        "1": [
+          {
+            "type": "profile-photo",
+            "settings": {
+              "style": "rounded",
+              "size": "large"
+            },
+            "data": {
+              "alt": "Professional headshot"
+            }
+          },
+          {
+            "type": "social",
+            "settings": {
+              "layout": "horizontal",
+              "showLabels": false,
+              "iconSize": "medium"
+            },
+            "data": {}
+          }
+        ],
+        "2": [
+          {
+            "type": "biography",
+            "settings": {
+              "style": "professional",
+              "showTitle": true
+            },
+            "data": {
+              "title": "About Me",
+              "content": "Share your professional background, approach, and what sets you apart.\n\n**Education & Credentials:**\n- MBA from [Business School]\n- [Professional Certification]\n\n**Industries Served:**\nTechnology, Healthcare, Financial Services, Manufacturing"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "clients-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "logo-grid",
+          "settings": {
+            "layout": "row",
+            "columns": 6,
+            "showLabels": false,
+            "grayscale": true,
+            "hoverColor": true
+          },
+          "data": {
+            "title": "Trusted By",
+            "logos": [
+              { "name": "Company 1", "alt": "Client logo" },
+              { "name": "Company 2", "alt": "Client logo" },
+              { "name": "Company 3", "alt": "Client logo" },
+              { "name": "Company 4", "alt": "Client logo" },
+              { "name": "Company 5", "alt": "Client logo" },
+              { "name": "Company 6", "alt": "Client logo" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "testimonials-section",
+      "type": "full_width",
+      "background": "surface",
+      "components": [
+        {
+          "type": "testimonials",
+          "settings": {
+            "layout": "cards",
+            "columns": 2,
+            "showPhotos": true,
+            "showCompany": true,
+            "quoteStyle": "standard"
+          },
+          "data": {
+            "title": "Client Results",
+            "items": [
+              {
+                "quote": "Working with [Name] transformed our approach. We saw 40% improvement in efficiency within the first year.",
+                "author": "Executive Name",
+                "role": "CEO",
+                "company": "Company Name"
+              },
+              {
+                "quote": "Practical, insightful, and results-driven. Helped us navigate a critical transition with confidence.",
+                "author": "Executive Name",
+                "role": "VP Operations",
+                "company": "Company Name"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "contact-section",
+      "type": "full_width",
+      "background": "gradient",
+      "components": [
+        {
+          "type": "contact",
+          "settings": {
+            "style": "professional",
+            "fields": ["name", "email", "company", "phone", "inquiry_type", "message"],
+            "showLabels": true,
+            "maxWidth": "600px"
+          },
+          "data": {
+            "title": "Start a Conversation",
+            "subtitle": "Let's discuss how I can help your organization",
+            "button_text": "Send Message"
+          }
+        }
+      ]
+    }
+  ]
+}

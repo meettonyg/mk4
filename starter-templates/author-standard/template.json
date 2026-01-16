@@ -1,8 +1,8 @@
 {
-  "template_id": "author",
-  "template_name": "Author Media Kit",
+  "template_id": "author-standard",
+  "template_name": "Author: Classic",
   "version": "1.0.0",
-  "description": "Perfect for authors, writers, and thought leaders. Features books showcase, press quotes, biography, and media contact sections.",
+  "description": "Classic centered layout for authors. Features hero, book showcase, press quotes, biography, and media contact sections.",
   "persona": {
     "type": "author",
     "label": "Authors & Writers",
@@ -18,7 +18,7 @@
     ]
   },
   "metadata": {
-    "tags": ["author", "writer", "book", "literary", "publishing", "press"],
+    "tags": ["author", "writer", "book", "literary", "publishing", "press", "classic"],
     "is_premium": false,
     "sort_order": 10,
     "recommended_themes": ["professional-clean", "minimal-elegant", "author-bold"]

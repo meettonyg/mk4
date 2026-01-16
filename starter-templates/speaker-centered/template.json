@@ -1,14 +1,14 @@
 {
-  "template_id": "speaker",
-  "template_name": "Speaker Media Kit",
+  "template_id": "speaker-centered",
+  "template_name": "Speaker: Centered",
   "version": "1.0.0",
-  "description": "Designed for keynote speakers, trainers, and presenters. Features speaking topics, video reel, testimonials, and booking integration.",
+  "description": "Classic centered layout with commanding presence. Perfect for established keynote speakers who want authority and impact front and center.",
   "persona": {
     "type": "speaker",
     "label": "Speakers & Trainers",
     "icon": "fa-solid fa-microphone",
     "use_case": "General Bio",
-    "layout_variant": "split-layout",
+    "layout_variant": "center-stack",
     "use_cases": [
       "Keynote speakers",
       "Corporate trainers",
@@ -18,10 +18,10 @@
     ]
   },
   "metadata": {
-    "tags": ["speaker", "keynote", "trainer", "presentation", "conference", "workshop"],
+    "tags": ["speaker", "keynote", "trainer", "presentation", "conference", "workshop", "centered"],
     "is_premium": false,
     "sort_order": 20,
-    "recommended_themes": ["professional-clean", "speaker-pro", "modern-dark"]
+    "recommended_themes": ["speaker-pro", "professional-clean", "creative-bold"]
   },
   "preview_image": "preview.jpg",
   "sections": [
@@ -33,8 +33,8 @@
         {
           "type": "hero",
           "settings": {
-            "layout": "split_screen",
-            "imageStyle": "rounded",
+            "layout": "center_aligned",
+            "imageStyle": "circle",
             "showCTA": true,
             "minHeight": "600px"
           },
@@ -42,8 +42,7 @@
             "headline": "Inspiring Audiences Worldwide",
             "subheadline": "Keynote Speaker | [Expertise] Expert",
             "description": "Transforming organizations through powerful storytelling and actionable insights.",
-            "cta_text": "Book Me to Speak",
-            "cta_link": "#booking"
+            "cta_text": "Book Me to Speak"
           }
         }
       ]
@@ -56,7 +55,7 @@
         {
           "type": "stats",
           "settings": {
-            "layout": "horizontal",
+            "layout": "cards",
             "columns": 4,
             "showIcons": true,
             "animateNumbers": true
@@ -66,7 +65,7 @@
               { "value": "500+", "label": "Keynotes Delivered", "icon": "microphone" },
               { "value": "100K+", "label": "Audience Members", "icon": "users" },
               { "value": "25+", "label": "Countries", "icon": "globe" },
-              { "value": "98%", "label": "Client Satisfaction", "icon": "star" }
+              { "value": "98%", "label": "Satisfaction", "icon": "star" }
             ]
           }
         }
@@ -75,6 +74,7 @@
     {
       "id": "topics-section",
       "type": "full_width",
+      "background": "primary",
       "components": [
         {
           "type": "topics",
@@ -120,7 +120,8 @@
             "autoplay": false,
             "showControls": true,
             "aspectRatio": "16:9",
-            "style": "featured"
+            "style": "featured",
+            "maxWidth": "900px"
           },
           "data": {
             "title": "See Me in Action",
@@ -132,50 +133,32 @@
       ]
     },
     {
-      "id": "testimonials-section",
-      "type": "full_width",
-      "components": [
-        {
-          "type": "testimonials",
-          "settings": {
-            "layout": "carousel",
-            "showPhotos": true,
-            "showCompany": true,
-            "maxTestimonials": 6,
-            "quoteStyle": "large"
-          },
-          "data": {
-            "title": "What Event Organizers Say",
-            "items": [
-              {
-                "quote": "One of the most impactful speakers we've ever had. The audience was captivated from start to finish.",
-                "author": "Event Director Name",
-                "role": "Event Director",
-                "company": "Organization Name"
-              },
-              {
-                "quote": "Incredible energy and actionable takeaways. Our team is still talking about the presentation.",
-                "author": "VP Name",
-                "role": "VP of Learning",
-                "company": "Company Name"
-              },
-              {
-                "quote": "Professional, engaging, and truly transformative. Exceeded all expectations.",
-                "author": "Chair Name",
-                "role": "Conference Chair",
-                "company": "Association Name"
-              }
-            ]
-          }
-        }
-      ]
-    },
-    {
       "id": "bio-section",
       "type": "two_column",
       "columns": {
-        "ratio": "60-40",
+        "ratio": "40-60",
         "1": [
+          {
+            "type": "profile-photo",
+            "settings": {
+              "style": "rounded",
+              "size": "large"
+            },
+            "data": {
+              "alt": "Professional speaker headshot"
+            }
+          },
+          {
+            "type": "social",
+            "settings": {
+              "layout": "horizontal",
+              "showLabels": false,
+              "iconSize": "medium"
+            },
+            "data": {}
+          }
+        ],
+        "2": [
           {
             "type": "biography",
             "settings": {
@@ -187,74 +170,66 @@
               "content": "Share your background, expertise, and what makes you a compelling speaker. Include notable achievements, publications, and your unique perspective.\n\nYour approach to speaking and what audiences can expect from your presentations."
             }
           }
-        ],
-        "2": [
-          {
-            "type": "profile-photo",
-            "settings": {
-              "style": "rounded",
-              "size": "large"
-            },
-            "data": {
-              "alt": "Professional speaker headshot"
-            }
-          }
         ]
       }
     },
     {
-      "id": "booking-section",
+      "id": "testimonials-section",
       "type": "full_width",
-      "background": "primary",
+      "background": "surface",
       "components": [
         {
-          "type": "call-to-action",
+          "type": "testimonials",
           "settings": {
-            "style": "hero",
-            "alignment": "center"
+            "layout": "cards",
+            "columns": 3,
+            "showPhotos": true,
+            "showCompany": true,
+            "quoteStyle": "standard"
           },
           "data": {
-            "title": "Book Me for Your Next Event",
-            "description": "Check availability and start the conversation about bringing transformative insights to your audience.",
-            "cta_text": "Check Availability"
+            "title": "What Event Organizers Say",
+            "items": [
+              {
+                "quote": "One of the most impactful speakers we've ever had.",
+                "author": "Event Director",
+                "company": "Organization Name"
+              },
+              {
+                "quote": "Incredible energy and actionable takeaways.",
+                "author": "VP of Learning",
+                "company": "Company Name"
+              },
+              {
+                "quote": "Professional, engaging, and truly transformative.",
+                "author": "Conference Chair",
+                "company": "Association Name"
+              }
+            ]
           }
         }
       ]
     },
     {
-      "id": "contact-section",
-      "type": "two_column",
-      "columns": {
-        "ratio": "50-50",
-        "1": [
-          {
-            "type": "contact",
-            "settings": {
-              "style": "form",
-              "fields": ["name", "email", "organization", "event_date", "event_type", "message"],
-              "showLabels": true
-            },
-            "data": {
-              "title": "Speaking Inquiry",
-              "subtitle": "Let's discuss how I can add value to your event",
-              "button_text": "Send Inquiry"
-            }
+      "id": "booking-section",
+      "type": "full_width",
+      "background": "gradient",
+      "components": [
+        {
+          "type": "contact",
+          "settings": {
+            "style": "booking",
+            "fields": ["name", "email", "organization", "event_date", "event_type", "message"],
+            "showLabels": true,
+            "maxWidth": "650px"
+          },
+          "data": {
+            "title": "Book Me for Your Next Event",
+            "subtitle": "Let's discuss how I can add value to your audience",
+            "button_text": "Send Inquiry"
           }
-        ],
-        "2": [
-          {
-            "type": "social",
-            "settings": {
-              "layout": "vertical",
-              "showLabels": true,
-              "iconSize": "large"
-            },
-            "data": {
-              "title": "Connect With Me"
-            }
-          }
-        ]
-      }
+        }
+      ]
     }
   ]
 }

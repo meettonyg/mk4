@@ -1,8 +1,8 @@
 {
-  "template_id": "influencer",
-  "template_name": "Creator Media Kit",
+  "template_id": "influencer-standard",
+  "template_name": "Creator: Centered",
   "version": "1.0.0",
-  "description": "Built for content creators, influencers, and digital entrepreneurs. Features social stats, content samples, brand collaborations, and partnership inquiries.",
+  "description": "Classic centered layout for creators and influencers. Features social stats, content samples, brand collaborations, and partnership inquiries.",
   "persona": {
     "type": "influencer",
     "label": "Creators & Influencers",
@@ -19,7 +19,7 @@
     ]
   },
   "metadata": {
-    "tags": ["creator", "influencer", "social", "content", "brand", "collaboration"],
+    "tags": ["creator", "influencer", "social", "content", "brand", "collaboration", "centered"],
     "is_premium": false,
     "sort_order": 50,
     "recommended_themes": ["creative-bold", "modern-dark", "podcast-guest"]
