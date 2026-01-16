@@ -91,6 +91,37 @@
         </p>
       </div>
 
+      <!-- Profile Context Banner (for logged-in users in standalone mode) -->
+      <ProfileContextBanner
+        v-if="mode === 'default'"
+        @profile-loaded="handleProfileLoaded"
+        @profile-cleared="handleProfileCleared"
+      />
+
+      <!-- Draft Restore Prompt -->
+      <div v-if="showDraftPrompt" class="gfy-draft-prompt">
+        <div class="gfy-draft-prompt__content">
+          <i class="fas fa-file-alt"></i>
+          <div>
+            <strong>Restore previous work?</strong>
+            <p>You have a saved draft from {{ getLastSavedText() }}.</p>
+          </div>
+        </div>
+        <div class="gfy-draft-prompt__actions">
+          <button type="button" class="gfy-btn gfy-btn--primary gfy-btn--small" @click="handleRestoreDraft">
+            Restore Draft
+          </button>
+          <button type="button" class="gfy-btn gfy-btn--ghost gfy-btn--small" @click="handleDiscardDraft">
+            Start Fresh
+          </button>
+        </div>
+      </div>
+
+      <!-- Auto-save indicator -->
+      <div v-if="isAutoSaving" class="gfy-autosave-indicator">
+        <i class="fas fa-save"></i> Saving draft...
+      </div>
+
       <!-- Form Container -->
       <div class="gfy-bio-form__container" :class="{ 'gfy-bio-form__container--embedded': mode === 'embedded' }">
         <!-- Basic Information -->
@@ -104,146 +135,75 @@
 
           <div class="gfy-form-grid">
             <div class="gfy-form-group">
-              <label class="gfy-form-label gfy-form-label--required">Your Name</label>
+              <label class="gfy-form-label gfy-form-label--required">
+                Your Name
+                <span v-if="isFieldPrefilled('name')" class="gfy-prefilled-badge">from profile</span>
+              </label>
               <input
                 v-model="name"
                 type="text"
                 class="gfy-form-input"
+                :class="{ 'gfy-form-input--prefilled': isFieldPrefilled('name') }"
                 placeholder="e.g., Dr. Jane Smith"
+                @input="markFieldEdited('name')"
               />
             </div>
 
             <div class="gfy-form-group">
-              <label class="gfy-form-label">Organization / Company</label>
+              <label class="gfy-form-label">
+                Professional Title
+                <span v-if="isFieldPrefilled('title')" class="gfy-prefilled-badge">from profile</span>
+              </label>
               <input
-                v-model="optionalFields.organization"
+                v-model="optionalFields.title"
                 type="text"
                 class="gfy-form-input"
-                placeholder="e.g., Acme Corporation"
+                :class="{ 'gfy-form-input--prefilled': isFieldPrefilled('title') }"
+                placeholder="e.g., Executive Coach & Leadership Strategist"
+                @input="markFieldEdited('title')"
               />
             </div>
+          </div>
+
+          <div class="gfy-form-group">
+            <label class="gfy-form-label">
+              Organization / Company
+              <span v-if="isFieldPrefilled('organization')" class="gfy-prefilled-badge">from profile</span>
+            </label>
+            <input
+              v-model="optionalFields.organization"
+              type="text"
+              class="gfy-form-input"
+              :class="{ 'gfy-form-input--prefilled': isFieldPrefilled('organization') }"
+              placeholder="e.g., Acme Corporation"
+              @input="markFieldEdited('organization')"
+            />
           </div>
         </div>
 
         <!-- Authority Hook Section (WHO, WHAT, WHEN, HOW) -->
-        <div class="gfy-highlight-box gfy-highlight-box--blue">
-          <div class="gfy-highlight-box__header">
-            <span class="gfy-highlight-box__icon">
-              <i class="fas fa-star"></i>
-            </span>
-            <div>
-              <h3 class="gfy-highlight-box__title">Authority Hook</h3>
-              <p class="gfy-highlight-box__subtitle">Define WHO you help, WHAT results you deliver, WHEN they need it, and HOW you do it.</p>
-            </div>
-          </div>
-
-          <div class="gfy-builder">
-            <div class="gfy-builder__field">
-              <label class="gfy-builder__label">
-                <span class="gfy-builder__label-badge">WHO</span>
-                Who do you help?
-              </label>
-              <input
-                v-model="authorityHook.who"
-                type="text"
-                class="gfy-builder__input"
-                placeholder="e.g., SaaS Founders scaling to $10M ARR"
-              />
-            </div>
-
-            <div class="gfy-builder__field">
-              <label class="gfy-builder__label">
-                <span class="gfy-builder__label-badge">WHAT</span>
-                What result do you deliver?
-              </label>
-              <input
-                v-model="authorityHook.what"
-                type="text"
-                class="gfy-builder__input"
-                placeholder="e.g., Increase revenue by 40% in 90 days"
-              />
-            </div>
-
-            <div class="gfy-builder__field">
-              <label class="gfy-builder__label">
-                <span class="gfy-builder__label-badge">WHEN</span>
-                When do they need your help?
-              </label>
-              <input
-                v-model="authorityHook.when"
-                type="text"
-                class="gfy-builder__input"
-                placeholder="e.g., When they're stuck at a growth plateau"
-              />
-            </div>
-
-            <div class="gfy-builder__field">
-              <label class="gfy-builder__label">
-                <span class="gfy-builder__label-badge">HOW</span>
-                How do you achieve results?
-              </label>
-              <input
-                v-model="authorityHook.how"
-                type="text"
-                class="gfy-builder__input"
-                placeholder="e.g., My proven Revenue Acceleration System"
-              />
-            </div>
-          </div>
-
-          <!-- Live Preview -->
-          <div v-if="authorityHookSummary" class="gfy-live-preview">
-            <span class="gfy-live-preview__label">Preview:</span>
-            "{{ authorityHookSummary }}"
-          </div>
-        </div>
+        <AuthorityHookBuilder
+          :model-value="authorityHook"
+          @update:model-value="Object.assign(authorityHook, $event)"
+          title="Authority Hook"
+          :placeholders="{
+            who: 'e.g., SaaS Founders scaling to $10M ARR',
+            what: 'e.g., Increase revenue by 40% in 90 days',
+            when: 'e.g., When they\'re stuck at a growth plateau',
+            how: 'e.g., My proven Revenue Acceleration System'
+          }"
+        />
 
         <!-- Impact Intro Section (WHERE, WHY) -->
-        <div class="gfy-highlight-box gfy-highlight-box--green">
-          <div class="gfy-highlight-box__header">
-            <span class="gfy-highlight-box__icon">
-              <i class="fas fa-trophy"></i>
-            </span>
-            <div>
-              <h3 class="gfy-highlight-box__title">Impact Intro</h3>
-              <p class="gfy-highlight-box__subtitle">Showcase WHERE you've made an impact and WHY you do what you do.</p>
-            </div>
-          </div>
-
-          <div class="gfy-builder gfy-builder--two-col">
-            <div class="gfy-builder__field gfy-builder__field--full">
-              <label class="gfy-builder__label">
-                <span class="gfy-builder__label-badge gfy-builder__label-badge--green">WHERE</span>
-                Credentials & Achievements
-              </label>
-              <textarea
-                v-model="impactIntro.where"
-                class="gfy-builder__textarea"
-                rows="2"
-                placeholder="e.g., Featured in Forbes, Inc., and Entrepreneur. Keynoted at 50+ conferences worldwide."
-              ></textarea>
-            </div>
-
-            <div class="gfy-builder__field gfy-builder__field--full">
-              <label class="gfy-builder__label">
-                <span class="gfy-builder__label-badge gfy-builder__label-badge--green">WHY</span>
-                Your Mission or Purpose
-              </label>
-              <textarea
-                v-model="impactIntro.why"
-                class="gfy-builder__textarea"
-                rows="2"
-                placeholder="e.g., Help every founder achieve sustainable growth without sacrificing their health or relationships."
-              ></textarea>
-            </div>
-          </div>
-
-          <!-- Impact Preview -->
-          <div v-if="impactIntroSummary" class="gfy-live-preview gfy-live-preview--green">
-            <span class="gfy-live-preview__label">Preview:</span>
-            "{{ impactIntroSummary }}"
-          </div>
-        </div>
+        <ImpactIntroBuilder
+          :model-value="impactIntro"
+          @update:model-value="Object.assign(impactIntro, $event)"
+          title="Impact Intro"
+          :placeholders="{
+            where: 'e.g., Featured in Forbes, Inc., and Entrepreneur. Keynoted at 50+ conferences worldwide.',
+            why: 'e.g., Help every founder achieve sustainable growth without sacrificing their health or relationships.'
+          }"
+        />
 
         <!-- Optional Context Section -->
         <div class="gfy-form-section gfy-form-section--optional">
@@ -263,7 +223,10 @@
               rows="3"
               placeholder="Paste your current bio here if you want to improve upon it..."
             ></textarea>
-            <span class="gfy-form-hint">If you have an existing bio, we'll use it as inspiration while crafting new versions.</span>
+            <div class="gfy-form-footer">
+              <span class="gfy-form-hint">If you have an existing bio, we'll use it as inspiration while crafting new versions.</span>
+              <span v-if="optionalFields.existingBio" class="gfy-char-count">{{ optionalFields.existingBio.length }} characters</span>
+            </div>
           </div>
 
           <div class="gfy-form-group">
@@ -274,6 +237,10 @@
               rows="2"
               placeholder="Any specific achievements, tone preferences, or details to include..."
             ></textarea>
+            <div class="gfy-form-footer">
+              <span class="gfy-form-hint"></span>
+              <span v-if="optionalFields.additionalNotes" class="gfy-char-count">{{ optionalFields.additionalNotes.length }} characters</span>
+            </div>
           </div>
         </div>
 
@@ -424,6 +391,30 @@
                 AI Variations:
                 <span style="color: var(--gfy-primary-color)">{{ activeSlotLabel }} Biography</span>
               </h3>
+              <div class="gfy-results__actions">
+                <button
+                  type="button"
+                  class="gfy-btn gfy-btn--outline"
+                  @click="handleGenerate"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 4v6h-6M1 20v-6h6"/>
+                    <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                  </svg>
+                  Regenerate
+                </button>
+                <button
+                  type="button"
+                  class="gfy-btn gfy-btn--outline"
+                  @click="handleCopyAll"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                  Copy All
+                </button>
+              </div>
             </div>
 
             <!-- Refinement Loop Box -->
@@ -536,7 +527,8 @@
               <button
                 type="button"
                 class="gfy-btn gfy-btn--primary gfy-btn--large"
-                :disabled="lockedCount === 0 || isSaving"
+                :disabled="lockedCount === 0 || isSaving || (mode === 'default' && !hasSelectedProfile)"
+                :title="mode === 'default' && !hasSelectedProfile ? 'Select a profile above to save' : ''"
                 @click="handleSaveAll"
               >
                 <i v-if="!isSaving" class="fas fa-save"></i>
@@ -559,6 +551,22 @@
               <i class="fas fa-exclamation-triangle"></i>
               {{ saveError }}
             </div>
+
+            <!-- Cross-tool Navigation -->
+            <div v-if="lockedCount > 0 && mode === 'default'" class="gfy-cross-tool-nav">
+              <span class="gfy-cross-tool-nav__label">Continue building your media kit:</span>
+              <div class="gfy-cross-tool-nav__links">
+                <a href="/tools/guest-intro/" class="gfy-cross-tool-nav__link">
+                  <i class="fas fa-microphone"></i> Generate Guest Intro
+                </a>
+                <a href="/tools/topics/" class="gfy-cross-tool-nav__link">
+                  <i class="fas fa-list"></i> Generate Topics
+                </a>
+                <a href="/tools/questions/" class="gfy-cross-tool-nav__link">
+                  <i class="fas fa-question-circle"></i> Generate Interview Questions
+                </a>
+              </div>
+            </div>
           </main>
         </div>
       </div>
@@ -567,10 +575,12 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject } from 'vue';
+import { ref, computed, watch, inject, onMounted } from 'vue';
 import { useAIBiography, SLOT_STATUS, LENGTH_OPTIONS, getVariationCount } from '../../src/composables/useAIBiography';
 import { useProfileContext } from '../../src/composables/useProfileContext';
-import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
+import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
+import { useDraftState } from '../../src/composables/useDraftState';
+import { EMBEDDED_PROFILE_DATA_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileContextBanner } from '../_shared';
 
 // Integrated mode components
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
@@ -649,6 +659,29 @@ const {
   saveError,
   saveToProfile
 } = useProfileContext();
+
+// Profile save functionality (standalone mode)
+const {
+  selectedProfileId: standaloneProfileId,
+  hasSelectedProfile,
+  saveMultipleToProfile
+} = useStandaloneProfile();
+
+// Draft state for auto-save
+const {
+  hasDraft,
+  lastSaved,
+  isAutoSaving,
+  saveDraft,
+  loadDraft,
+  clearDraft,
+  startAutoSave,
+  getLastSavedText
+} = useDraftState('biography');
+
+// Prefilled fields tracking
+const prefilledFields = ref(new Set());
+const showDraftPrompt = ref(false);
 
 // Local state
 const showResults = ref(false);
@@ -793,6 +826,45 @@ const handleCopy = async (text) => {
 };
 
 /**
+ * Handle copy all locked bios to clipboard
+ */
+const handleCopyAll = async () => {
+  const lockedBios = getLockedBios();
+  const parts = [];
+
+  if (lockedBios.short) {
+    parts.push(`== SHORT BIO ==\n${lockedBios.short}`);
+  }
+  if (lockedBios.medium) {
+    parts.push(`== MEDIUM BIO ==\n${lockedBios.medium}`);
+  }
+  if (lockedBios.long) {
+    parts.push(`== LONG BIO ==\n${lockedBios.long}`);
+  }
+
+  if (parts.length === 0) {
+    // Fallback to current variations
+    if (currentVariations.value && currentVariations.value.length > 0) {
+      const formattedVariations = currentVariations.value
+        .map((v, i) => `Option ${i + 1}:\n${v}`)
+        .join('\n\n');
+      try {
+        await navigator.clipboard.writeText(formattedVariations);
+      } catch (err) {
+        console.error('[BiographyGenerator] Failed to copy:', err);
+      }
+    }
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(parts.join('\n\n'));
+  } catch (err) {
+    console.error('[BiographyGenerator] Failed to copy all:', err);
+  }
+};
+
+/**
  * Handle save all locked bios
  */
 const handleSaveAll = async () => {
@@ -802,13 +874,29 @@ const handleSaveAll = async () => {
     return;
   }
 
-  try {
-    // Save each locked bio to the appropriate field
-    const saveData = {};
-    if (lockedBios.short) saveData.biography_short = lockedBios.short;
-    if (lockedBios.medium) saveData.biography = lockedBios.medium;
-    if (lockedBios.long) saveData.biography_long = lockedBios.long;
+  // Build save data
+  const saveData = {};
+  if (lockedBios.short) saveData.biography_short = lockedBios.short;
+  if (lockedBios.medium) saveData.biography = lockedBios.medium;
+  if (lockedBios.long) saveData.biography_long = lockedBios.long;
 
+  // Use standalone profile save in default mode
+  if (props.mode === 'default' && hasSelectedProfile.value) {
+    try {
+      const success = await saveMultipleToProfile(saveData);
+      if (success) {
+        saveSuccess.value = true;
+        setTimeout(() => { saveSuccess.value = false; }, 3000);
+        emit('saved', { biographies: lockedBios });
+      }
+    } catch (err) {
+      console.error('[Biography Generator] Standalone save failed:', err);
+    }
+    return;
+  }
+
+  // Fallback to useProfileContext save (for integrated/embedded modes)
+  try {
     const result = await saveToProfile('biography', saveData, {
       profileId: profileId.value
     });
@@ -829,19 +917,91 @@ const handleSaveAll = async () => {
 const handleStartOver = () => {
   reset();
   showResults.value = false;
+  clearDraft(); // Clear saved draft when starting over
 };
+
+// Prefilled field helpers
+function isFieldPrefilled(fieldName) {
+  return prefilledFields.value.has(fieldName);
+}
+
+function markFieldEdited(fieldName) {
+  prefilledFields.value.delete(fieldName);
+}
+
+// Draft state helpers
+function getDraftState() {
+  return {
+    name: name.value,
+    authorityHook: { ...authorityHook },
+    impactIntro: { ...impactIntro },
+    optionalFields: { ...optionalFields },
+    tone: tone.value,
+    pov: pov.value
+  };
+}
+
+function restoreDraftState(draft) {
+  if (draft.name) name.value = draft.name;
+  if (draft.authorityHook) Object.assign(authorityHook, draft.authorityHook);
+  if (draft.impactIntro) Object.assign(impactIntro, draft.impactIntro);
+  if (draft.optionalFields) Object.assign(optionalFields, draft.optionalFields);
+  if (draft.tone) tone.value = draft.tone;
+  if (draft.pov) pov.value = draft.pov;
+}
+
+function handleRestoreDraft() {
+  const draft = loadDraft();
+  if (draft) {
+    restoreDraftState(draft);
+  }
+  showDraftPrompt.value = false;
+}
+
+function handleDiscardDraft() {
+  clearDraft();
+  showDraftPrompt.value = false;
+}
 
 /**
  * Populate from profile data
  */
 function loadProfileData(data) {
   if (!data) return;
-  console.log('[Biography Generator] loadProfileData called with:', data);
-  console.log('[Biography Generator] impact_where:', data.impact_where);
-  console.log('[Biography Generator] impact_why:', data.impact_why);
-  console.log('[Biography Generator] where:', data.where);
-  console.log('[Biography Generator] why:', data.why);
+
+  // Track prefilled fields
+  const newPrefilledFields = new Set();
+
+  if (data.full_name || data.first_name) newPrefilledFields.add('name');
+  if (data.guest_title || data.title) newPrefilledFields.add('title');
+  if (data.company || data.organization) newPrefilledFields.add('organization');
+  if (data.hook_who || data.authority_hook_who) newPrefilledFields.add('who');
+  if (data.hook_what || data.authority_hook_what) newPrefilledFields.add('what');
+  if (data.hook_when || data.authority_hook_when) newPrefilledFields.add('when');
+  if (data.hook_how || data.authority_hook_how) newPrefilledFields.add('how');
+  if (data.hook_where || data.authority_hook_where) newPrefilledFields.add('where');
+  if (data.hook_why || data.authority_hook_why) newPrefilledFields.add('why');
+
+  prefilledFields.value = newPrefilledFields;
+
   populateFromProfile(data);
+}
+
+/**
+ * Handle profile loaded from ProfileContextBanner (standalone mode)
+ */
+function handleProfileLoaded(data) {
+  if (data && props.mode === 'default') {
+    loadProfileData(data);
+  }
+}
+
+/**
+ * Handle profile cleared from ProfileContextBanner (standalone mode)
+ */
+function handleProfileCleared() {
+  // Optionally clear form fields when profile is deselected
+  // For now, we keep the existing data to avoid losing user input
 }
 
 // Watch for injected profile data changes (from EmbeddedToolWrapper)
@@ -873,6 +1033,19 @@ watch(canGenerate, (newValue) => {
   emit('update:can-generate', !!newValue);
 }, { immediate: true });
 
+// Initialize on mount
+onMounted(() => {
+  // Check for draft in standalone mode
+  if (props.mode === 'default' && hasDraft.value) {
+    showDraftPrompt.value = true;
+  }
+
+  // Start auto-save in standalone mode
+  if (props.mode === 'default') {
+    startAutoSave(getDraftState);
+  }
+});
+
 // Expose for parent
 defineExpose({
   handleStartGeneration,
@@ -880,7 +1053,8 @@ defineExpose({
   showResults,
   isGenerating,
   error,
-  canGenerate
+  canGenerate,
+  handleCopyAll
 });
 </script>
 
@@ -1066,6 +1240,26 @@ defineExpose({
   color: var(--gfy-text-muted);
   margin-top: 6px;
   font-style: italic;
+}
+
+.gfy-form-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-top: 6px;
+}
+
+.gfy-form-footer .gfy-form-hint {
+  margin-top: 0;
+  flex: 1;
+}
+
+.gfy-char-count {
+  font-size: 0.75rem;
+  color: var(--gfy-text-muted, #94a3b8);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* HIGHLIGHT BOXES */
@@ -1496,6 +1690,11 @@ defineExpose({
   font-size: 1.25rem;
   font-weight: 700;
   margin: 0;
+}
+
+.gfy-results__actions {
+  display: flex;
+  gap: 8px;
 }
 
 /* REFINEMENT BOX */
@@ -1940,5 +2139,145 @@ defineExpose({
   .gfy-bio-results--embedded .gfy-layout-sidebar {
     position: static;
   }
+}
+
+/* ============================================
+   NEW FEATURES: PREFILLED, DRAFT, CROSS-TOOL NAV
+   ============================================ */
+
+/* Prefilled Badge */
+.gfy-prefilled-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--gfy-success-light);
+  color: #047857;
+  border-radius: 4px;
+}
+
+.gfy-form-input--prefilled {
+  border-color: var(--gfy-success-color);
+  background: linear-gradient(to right, var(--gfy-success-light), var(--gfy-white));
+}
+
+/* Draft Prompt */
+.gfy-draft-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: var(--gfy-radius-md);
+  margin-bottom: 24px;
+}
+
+.gfy-draft-prompt__content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gfy-draft-prompt__content i {
+  font-size: 20px;
+  color: #d97706;
+}
+
+.gfy-draft-prompt__content strong {
+  display: block;
+  color: #92400e;
+  margin-bottom: 2px;
+}
+
+.gfy-draft-prompt__content p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #92400e;
+}
+
+.gfy-draft-prompt__actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Auto-save Indicator */
+.gfy-autosave-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--gfy-primary-light);
+  color: var(--gfy-primary-color);
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: var(--gfy-radius-md);
+  margin-bottom: 16px;
+}
+
+.gfy-autosave-indicator i {
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Small Button Variant */
+.gfy-btn--small {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+/* Cross-tool Navigation */
+.gfy-cross-tool-nav {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--gfy-border-color);
+}
+
+.gfy-cross-tool-nav__label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--gfy-text-secondary);
+  margin-bottom: 12px;
+}
+
+.gfy-cross-tool-nav__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.gfy-cross-tool-nav__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--gfy-bg-color);
+  border: 1px solid var(--gfy-border-color);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--gfy-text-secondary);
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.gfy-cross-tool-nav__link:hover {
+  border-color: var(--gfy-primary-color);
+  color: var(--gfy-primary-color);
+  background: var(--gfy-primary-light);
+}
+
+.gfy-cross-tool-nav__link i {
+  font-size: 12px;
 }
 </style>

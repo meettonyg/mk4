@@ -3,48 +3,252 @@
   <GeneratorLayout
     v-if="mode === 'default'"
     title="Interview Questions Generator"
-    subtitle="Generate 25 thoughtful interview questions organized by category using AI"
-    intro-text="Generate 25 professional interview questions organized into four strategic categories: Introductory Questions, Expertise Deep-Dives, Story-Based Questions, and Actionable Takeaways. Each question is designed to help you have engaging, insightful conversations with your guests."
+    subtitle="Select a topic to generate questions, or tweak the wording to match your specific guesting strategy."
+    intro-text="Generate 10 professional interview questions tailored to your selected topic and authority hook."
     generator-type="questions"
     :has-results="hasQuestions"
     :is-loading="isGenerating"
   >
+    <!-- Profile Context Banner (for logged-in users) -->
+    <template #profile-context>
+      <ProfileContextBanner
+        @profile-loaded="handleProfileLoaded"
+        @profile-cleared="handleProfileCleared"
+      />
+    </template>
+
     <!-- Left Panel: Form -->
     <template #left>
-      <!-- Topics Section -->
-      <div class="generator__section">
-        <h3 class="generator__section-title">Interview Topics</h3>
-
-        <div class="generator__field">
-          <label class="generator__field-label">Topics You Discuss *</label>
-          <textarea
-            v-model="topicsText"
-            class="generator__field-input generator__field-textarea"
-            placeholder="e.g., Leadership development, Building high-performance teams, Navigating career transitions..."
-            rows="4"
-          ></textarea>
-          <p class="generator__field-helper">
-            List 3-5 topics you typically discuss in interviews. Be specific about the areas you want to explore with your guests.
-          </p>
+      <!-- Draft Restore Prompt -->
+      <div v-if="showDraftPrompt" class="gfy-draft-prompt">
+        <div class="gfy-draft-prompt__content">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          <div>
+            <strong>Restore previous work?</strong>
+            <p>You have a saved draft from {{ getLastSavedText() }}.</p>
+          </div>
+        </div>
+        <div class="gfy-draft-prompt__actions">
+          <button type="button" class="generator__button generator__button--call-to-action generator__button--small" @click="handleRestoreDraft">
+            Restore Draft
+          </button>
+          <button type="button" class="generator__button generator__button--ghost generator__button--small" @click="handleDiscardDraft">
+            Start Fresh
+          </button>
         </div>
       </div>
 
-      <!-- Context Section -->
-      <div class="generator__section">
-        <h3 class="generator__section-title">Additional Context (Optional)</h3>
+      <!-- Auto-save Indicator -->
+      <div v-if="isAutoSaving" class="gfy-auto-save-indicator">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+          <polyline points="17 21 17 13 7 13 7 21"/>
+          <polyline points="7 3 7 8 15 8"/>
+        </svg>
+        Saving draft...
+      </div>
 
-        <div class="generator__field">
-          <label class="generator__field-label">Your Background</label>
-          <textarea
-            v-model="authorityHookText"
-            class="generator__field-input generator__field-textarea"
-            placeholder="e.g., Former Fortune 500 executive turned leadership coach..."
-            rows="3"
-          ></textarea>
-          <p class="generator__field-helper">
-            Add context about your background or expertise to generate more relevant and tailored questions.
-          </p>
+      <!-- Recent History Section -->
+      <div v-if="hasHistory" class="gfy-history">
+        <button
+          type="button"
+          class="gfy-history__toggle"
+          :aria-expanded="showHistory"
+          aria-controls="questions-history-panel"
+          @click="showHistory = !showHistory"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <span>Recent Generations ({{ history.length }})</span>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            class="gfy-history__chevron"
+            :class="{ 'gfy-history__chevron--open': showHistory }"
+            aria-hidden="true"
+          >
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+
+        <div v-if="showHistory" id="questions-history-panel" class="gfy-history__panel" role="region" aria-label="Recent generations">
+          <div class="gfy-history__list">
+            <div
+              v-for="entry in history"
+              :key="entry.id"
+              class="gfy-history__item"
+            >
+              <div class="gfy-history__item-content">
+                <span class="gfy-history__item-preview">{{ entry.preview }}</span>
+                <span class="gfy-history__item-time">{{ formatTimestamp(entry.timestamp) }}</span>
+              </div>
+              <div class="gfy-history__item-actions">
+                <button
+                  type="button"
+                  class="gfy-history__action-btn"
+                  title="Restore inputs only"
+                  aria-label="Restore inputs from this generation"
+                  @click="restoreFromHistory(entry)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                    <path d="M3 3v5h5"/>
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="gfy-history__action-btn gfy-history__action-btn--primary"
+                  title="Restore inputs and results"
+                  aria-label="Restore full generation with results"
+                  @click="restoreFullHistory(entry)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="gfy-history__action-btn gfy-history__action-btn--danger"
+                  title="Remove from history"
+                  aria-label="Delete this history entry"
+                  @click="removeFromHistory(entry.id)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <button
+            v-if="history.length > 1"
+            type="button"
+            class="gfy-history__clear-btn"
+            @click="clearHistory"
+          >
+            Clear All History
+          </button>
         </div>
+      </div>
+
+      <!-- Welcome Section (shown when no topic selected) -->
+      <div v-if="!refinedTopic && selectedTopicIndex === -1" class="gfy-welcome-section">
+        <div class="gfy-welcome-section__icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <h3 class="gfy-welcome-section__title">Generate Interview Questions</h3>
+        <p class="gfy-welcome-section__text">
+          Select a topic and we'll create 10 thought-provoking interview questions that showcase your expertise.
+        </p>
+        <div class="gfy-welcome-section__tips">
+          <span class="gfy-welcome-section__tip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            10 unique questions
+          </span>
+          <span class="gfy-welcome-section__tip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            Authority-focused
+          </span>
+          <span class="gfy-welcome-section__tip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            Ctrl+Enter to generate
+          </span>
+        </div>
+      </div>
+
+      <!-- Form Completion Indicator -->
+      <div class="gfy-form-progress" :class="{ 'gfy-form-progress--complete': formCompletion.isComplete }">
+        <div class="gfy-form-progress__header">
+          <span class="gfy-form-progress__label">
+            <svg v-if="formCompletion.isComplete" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            {{ formCompletion.isComplete ? 'Ready to generate!' : `${formCompletion.filledCount}/${formCompletion.totalCount} fields completed` }}
+          </span>
+        </div>
+        <div class="gfy-form-progress__bar">
+          <div class="gfy-form-progress__fill" :style="{ width: `${formCompletion.percentage}%` }"></div>
+        </div>
+      </div>
+
+      <!-- STEP 1: Topic Selection -->
+      <div class="generator__section">
+        <h3 class="generator__section-title">Step 1: Choose or Tweak Your Topic</h3>
+
+        <!-- Topic Selection Grid -->
+        <div v-if="availableTopics.length > 0" class="questions-topic-grid" role="radiogroup" aria-label="Available topics">
+          <button
+            v-for="(topic, index) in availableTopics"
+            :key="index"
+            type="button"
+            class="questions-topic-card"
+            :class="{ 'questions-topic-card--active': selectedTopicIndex === index }"
+            role="radio"
+            :aria-checked="selectedTopicIndex === index"
+            :aria-label="`Topic ${index + 1}: ${topic}`"
+            @click="selectTopic(index)"
+          >
+            <span class="questions-topic-card__number" aria-hidden="true">{{ index + 1 }}</span>
+            <span class="questions-topic-card__text">{{ topic }}</span>
+          </button>
+        </div>
+
+        <!-- No Topics Message -->
+        <div v-else class="questions-topic-empty">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 16v-4M12 8h.01"/>
+          </svg>
+          <p>No topics available. Generate topics first using the Topics Generator, or enter a custom topic below.</p>
+        </div>
+
+        <!-- Refine Selected Topic Textarea -->
+        <div class="questions-refine-container">
+          <div class="questions-refine-header">
+            <span class="questions-refine-hint">Refine Selected Topic</span>
+            <span v-if="refinedTopic" class="questions-char-count">{{ refinedTopic.length }} chars</span>
+          </div>
+          <textarea
+            v-model="refinedTopic"
+            class="questions-refine-textarea"
+            rows="2"
+            placeholder="Enter or customize your interview topic..."
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- STEP 2: Authority Hook -->
+      <div class="generator__section">
+        <h3 class="generator__section-title">Step 2: Confirm Your Authority Hook</h3>
+
+        <AuthorityHookBuilder
+          :model-value="authorityHook"
+          @update:model-value="Object.assign(authorityHook, $event)"
+          title="Personalize Your Questions"
+          :placeholders="{
+            who: 'e.g. SaaS Founders',
+            what: 'e.g. Increase revenue by 40%',
+            when: 'e.g. When scaling rapidly',
+            how: 'e.g. My proven 90-day system'
+          }"
+        />
       </div>
 
       <!-- Generate Button -->
@@ -59,9 +263,13 @@
           <svg v-if="!isGenerating" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
           </svg>
-          {{ isGenerating ? 'Generating Questions...' : 'Generate 25 Questions with AI' }}
+          {{ isGenerating ? 'Generating Questions...' : 'Generate 10 Questions' }}
         </button>
       </div>
+
+      <p class="generator__hint-text">
+        Generate questions for your specific audience in seconds.
+      </p>
 
       <!-- Error Display -->
       <div v-if="error" class="generator__error">
@@ -86,62 +294,257 @@
 
     <!-- Results -->
     <template #results>
-      <div class="questions-generator__results">
-        <div class="questions-generator__results-header">
-          <h3>Your Generated Questions</h3>
-          <p>{{ questions.length }} questions across {{ categories.length }} categories</p>
+      <!-- Loading Skeleton -->
+      <div v-if="isGenerating && !hasQuestions" class="questions-skeleton">
+        <div class="questions-skeleton__header">
+          <div class="questions-skeleton__title"></div>
+          <div class="questions-skeleton__badge"></div>
         </div>
-
-        <!-- Category Accordion -->
-        <div class="questions-generator__accordion">
-          <div
-            v-for="category in categories"
-            :key="category.key"
-            class="questions-generator__accordion-item"
-            :class="{ 'questions-generator__accordion-item--open': openCategory === category.key }"
-          >
-            <button
-              type="button"
-              class="questions-generator__accordion-header"
-              @click="toggleCategory(category.key)"
-            >
-              <span class="questions-generator__accordion-title">
-                {{ category.label }}
-                <span class="questions-generator__badge">
-                  {{ getCategoryQuestions(category.key).length }}
-                </span>
-              </span>
-              <svg class="questions-generator__accordion-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
-            </button>
-            <div v-if="openCategory === category.key" class="questions-generator__accordion-content">
-              <ol class="questions-generator__questions-list">
-                <li
-                  v-for="(question, index) in getCategoryQuestions(category.key)"
-                  :key="index"
-                  class="questions-generator__question-item"
-                >
-                  {{ question }}
-                </li>
-              </ol>
-            </div>
+        <div class="questions-skeleton__list">
+          <div v-for="i in 10" :key="i" class="questions-skeleton__row">
+            <div class="questions-skeleton__number"></div>
+            <div class="questions-skeleton__text"></div>
           </div>
         </div>
+      </div>
 
-        <!-- Actions -->
-        <div class="questions-generator__actions">
-          <button
-            type="button"
-            class="generator__button generator__button--outline"
-            @click="handleCopy"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-            Copy All Questions
-          </button>
+      <div v-else class="questions-results">
+        <div class="questions-results__layout">
+
+          <!-- SIDEBAR: Interview Set (5 Lockable Slots) -->
+          <aside class="questions-results__sidebar">
+            <div class="questions-interview-set">
+              <div class="questions-interview-set__header">
+                <h3 class="questions-interview-set__title">Your Interview Set</h3>
+                <span class="questions-interview-set__hint">Click lock to keep existing questions</span>
+              </div>
+
+              <div class="questions-interview-set__list">
+                <div
+                  v-for="(slot, slotIndex) in interviewSet"
+                  :key="slotIndex"
+                  class="questions-interview-slot"
+                  :class="{ 'questions-interview-slot--locked': slot.locked, 'questions-interview-slot--filled': slot.question }"
+                >
+                  <span class="questions-interview-slot__position">{{ slotIndex + 1 }}</span>
+                  <span class="questions-interview-slot__text" :class="{ 'questions-interview-slot__text--empty': !slot.question }">
+                    {{ slot.question || 'Empty Slot' }}
+                  </span>
+                  <button
+                    type="button"
+                    class="questions-interview-slot__lock"
+                    :title="slot.locked ? 'Unlock question' : 'Lock question'"
+                    :aria-label="slot.locked ? 'Unlock this question to allow replacement' : 'Lock this question to preserve it'"
+                    :aria-pressed="slot.locked"
+                    @click="toggleSlotLock(slotIndex)"
+                    :disabled="!slot.question"
+                  >
+                    <svg v-if="slot.locked" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M12 1C8.676 1 6 3.676 6 7v2H4v14h16V9h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4zm0 10c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/>
+                    </svg>
+                    <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                      <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="questions-interview-set__summary">
+                <span class="questions-interview-set__locked-count">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 1C8.676 1 6 3.676 6 7v2H4v14h16V9h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4zm0 10c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/>
+                  </svg>
+                  {{ lockedSlotsCount }} locked
+                </span>
+                <span class="questions-interview-set__available">{{ availableSlotsCount }} slots available</span>
+              </div>
+            </div>
+          </aside>
+
+          <!-- MAIN: AI Generated Questions -->
+          <main class="questions-results__main">
+            <div class="questions-results__header">
+              <div class="questions-results__title-row">
+                <h3 class="questions-results__title">AI Generated Questions</h3>
+                <span class="questions-results__count">{{ questions.length }} Ideas</span>
+              </div>
+              <div class="questions-results__actions">
+                <button
+                  type="button"
+                  class="generator__button generator__button--outline"
+                  title="Generate new interview questions"
+                  aria-label="Regenerate questions"
+                  @click="handleGenerate"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M23 4v6h-6M1 20v-6h6"/>
+                    <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                  </svg>
+                  Regenerate
+                </button>
+                <button
+                  type="button"
+                  class="generator__button generator__button--outline"
+                  title="Copy all questions to clipboard"
+                  aria-label="Copy all questions to clipboard"
+                  @click="handleCopy"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                  Copy All
+                </button>
+                <button
+                  type="button"
+                  class="questions-action-btn"
+                  @click="handleExport"
+                  title="Download questions as markdown file"
+                  aria-label="Export questions as markdown"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  Export
+                </button>
+              </div>
+            </div>
+
+            <!-- Selection Banner -->
+            <div class="questions-selection-banner">
+              <span>Topic: <strong>"{{ refinedTopic }}"</strong></span>
+              <span class="questions-selection-banner__count">{{ selectedQuestionsCount }} of {{ availableSlotsCount }} selected</span>
+            </div>
+
+            <!-- Questions List with Checkboxes -->
+            <div class="questions-list" role="listbox" aria-label="Generated interview questions" :aria-multiselectable="true">
+              <div
+                v-for="(question, index) in questions"
+                :key="index"
+                class="questions-row"
+                :class="{ 'questions-row--selected': isQuestionSelected(index), 'questions-row--disabled': !canSelectMore && !isQuestionSelected(index) }"
+                role="option"
+                :aria-selected="isQuestionSelected(index)"
+                :aria-disabled="!canSelectMore && !isQuestionSelected(index)"
+                tabindex="0"
+                @click="toggleQuestionSelection(index)"
+                @keydown.enter.prevent="toggleQuestionSelection(index)"
+                @keydown.space.prevent="toggleQuestionSelection(index)"
+              >
+                <div class="questions-row__checkbox" :class="{ 'questions-row__checkbox--checked': isQuestionSelected(index) }">
+                  <svg v-if="isQuestionSelected(index)" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <polyline points="20 6 9 17 4 12" stroke="currentColor" stroke-width="3" fill="none"/>
+                  </svg>
+                </div>
+                <span class="questions-row__number">{{ index + 1 }}.</span>
+                <p class="questions-row__text">{{ question }}</p>
+                <button
+                  type="button"
+                  class="questions-copy-btn"
+                  :class="{ 'questions-copy-btn--copied': copiedQuestionIndex === index }"
+                  :title="copiedQuestionIndex === index ? 'Copied!' : 'Copy question'"
+                  :aria-label="copiedQuestionIndex === index ? 'Question copied to clipboard' : 'Copy this question to clipboard'"
+                  @click="copyQuestion(index, $event)"
+                >
+                  <svg v-if="copiedQuestionIndex === index" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="questions-results__footer">
+              <div class="questions-results__save-area">
+                <button
+                  type="button"
+                  class="generator__button generator__button--call-to-action generator__button--large"
+                  :disabled="selectedQuestionsCount === 0 || isSavingToProfile"
+                  title="Save selected questions to your media kit"
+                  aria-label="Save selected questions to media kit"
+                  @click="handleSaveToMediaKit"
+                >
+                  <svg v-if="isSavingToProfile" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"/>
+                  </svg>
+                  <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                    <polyline points="17 21 17 13 7 13 7 21"/>
+                    <polyline points="7 3 7 8 15 8"/>
+                  </svg>
+                  {{ isSavingToProfile ? 'Saving...' : (hasSelectedProfile ? 'Save to Profile & Media Kit' : 'Save to Media Kit') }}
+                </button>
+
+                <!-- Save Success Message -->
+                <div v-if="saveSuccess" class="questions-save-success" role="status" aria-live="polite">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  Questions saved to your profile!
+                </div>
+
+                <!-- Save Error Message -->
+                <div v-if="saveError" class="questions-save-error" role="alert" aria-live="assertive">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                  </svg>
+                  {{ saveError }}
+                </div>
+              </div>
+              <button
+                type="button"
+                class="generator__button generator__button--ghost"
+                title="Clear results and start fresh"
+                aria-label="Start over with new questions"
+                @click="handleStartOver"
+              >
+                Start Over
+              </button>
+            </div>
+
+            <!-- Cross-tool Navigation -->
+            <div v-if="lockedSlotsCount > 0" class="gfy-cross-tool-nav">
+              <span class="gfy-cross-tool-nav__label">Continue building your media kit:</span>
+              <div class="gfy-cross-tool-nav__links">
+                <a href="/tools/biography/" class="gfy-cross-tool-nav__link">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  Generate Biography
+                </a>
+                <a href="/tools/guest-intro/" class="gfy-cross-tool-nav__link">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="23"/>
+                    <line x1="8" y1="23" x2="16" y2="23"/>
+                  </svg>
+                  Generate Guest Intro
+                </a>
+                <a href="/tools/topics/" class="gfy-cross-tool-nav__link">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="8" y1="6" x2="21" y2="6"/>
+                    <line x1="8" y1="12" x2="21" y2="12"/>
+                    <line x1="8" y1="18" x2="21" y2="18"/>
+                    <line x1="3" y1="6" x2="3.01" y2="6"/>
+                    <line x1="3" y1="12" x2="3.01" y2="12"/>
+                    <line x1="3" y1="18" x2="3.01" y2="18"/>
+                  </svg>
+                  Generate Topics
+                </a>
+              </div>
+            </div>
+          </main>
         </div>
       </div>
     </template>
@@ -151,7 +554,7 @@
   <AiWidgetFrame
     v-else-if="mode === 'integrated'"
     title="Interview Questions Generator"
-    description="Generate 25 thoughtful interview questions organized by category."
+    description="Generate thoughtful interview questions for your selected topic."
     :mode="mode"
     :is-loading="isGenerating"
     :has-results="hasQuestions"
@@ -168,37 +571,34 @@
   >
     <!-- Input Form -->
     <div class="gmkb-ai-form">
-      <!-- Topics Field -->
+      <!-- Topic Selection (Compact) -->
       <div class="gmkb-ai-form-group">
-        <label class="gmkb-ai-label gmkb-ai-label--required">Topics You Discuss</label>
+        <label class="gmkb-ai-label gmkb-ai-label--required">Interview Topic</label>
         <textarea
-          v-model="topicsText"
+          v-model="refinedTopic"
           class="gmkb-ai-input gmkb-ai-textarea"
-          placeholder="e.g., Leadership development, Building high-performance teams, Navigating career transitions..."
-          rows="3"
-        ></textarea>
-        <span class="gmkb-ai-hint">
-          List 3-5 topics you typically discuss in interviews.
-        </span>
-      </div>
-
-      <!-- Authority Hook (optional) -->
-      <div class="gmkb-ai-form-group">
-        <label class="gmkb-ai-label">Your Background (Optional)</label>
-        <textarea
-          v-model="authorityHookText"
-          class="gmkb-ai-input gmkb-ai-textarea"
-          placeholder="e.g., Former Fortune 500 executive turned leadership coach..."
+          placeholder="e.g., The 3 Hidden Revenue Leaks Killing Your Growth"
           rows="2"
         ></textarea>
         <span class="gmkb-ai-hint">
-          Add context about your background for more relevant questions.
+          Enter the topic you want to generate questions for.
         </span>
+      </div>
+
+      <!-- Authority Hook (Compact) -->
+      <div class="gmkb-ai-form-group">
+        <label class="gmkb-ai-label">Who do you help? (Optional)</label>
+        <input
+          v-model="authorityHook.who"
+          type="text"
+          class="gmkb-ai-input"
+          placeholder="e.g., SaaS Founders"
+        />
       </div>
 
       <!-- Generate Button -->
       <AiGenerateButton
-        text="Generate 25 Questions"
+        text="Generate 10 Questions"
         loading-text="Generating questions..."
         :loading="isGenerating"
         :disabled="!canGenerate"
@@ -210,46 +610,19 @@
     <!-- Results -->
     <template #results>
       <div v-if="hasQuestions" class="gmkb-ai-questions">
-        <!-- Category Accordion -->
-        <div class="gmkb-ai-accordion">
-          <div
-            v-for="category in categories"
-            :key="category.key"
-            class="gmkb-ai-accordion__item"
-            :class="{ 'gmkb-ai-accordion__item--open': openCategory === category.key }"
+        <ol class="gmkb-ai-questions__list">
+          <li
+            v-for="(question, index) in questions"
+            :key="index"
+            class="gmkb-ai-questions__item"
           >
-            <button
-              type="button"
-              class="gmkb-ai-accordion__header"
-              @click="toggleCategory(category.key)"
-            >
-              <span>
-                {{ category.label }}
-                <span class="gmkb-ai-badge gmkb-ai-badge--primary">
-                  {{ getCategoryQuestions(category.key).length }}
-                </span>
-              </span>
-              <svg class="gmkb-ai-accordion__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
-            </button>
-            <div v-if="openCategory === category.key" class="gmkb-ai-accordion__content">
-              <ol class="gmkb-ai-questions__list">
-                <li
-                  v-for="(question, index) in getCategoryQuestions(category.key)"
-                  :key="index"
-                  class="gmkb-ai-questions__item"
-                >
-                  {{ question }}
-                </li>
-              </ol>
-            </div>
-          </div>
-        </div>
+            {{ question }}
+          </li>
+        </ol>
 
         <!-- Total Count -->
         <div class="gmkb-ai-questions__summary">
-          {{ questions.length }} questions generated across {{ categories.length }} categories
+          {{ questions.length }} questions generated
         </div>
       </div>
     </template>
@@ -260,23 +633,23 @@
     <!-- Simplified form for landing page -->
     <div class="gmkb-embedded-fields">
       <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.topics || 'Topics You Discuss' }} *</label>
+        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.topics || 'Interview Topic' }} *</label>
         <textarea
-          v-model="topicsText"
+          v-model="refinedTopic"
           class="gmkb-embedded-input gmkb-embedded-textarea"
-          :placeholder="currentIntent?.formPlaceholders?.topics || 'e.g., Leadership development, Building high-performance teams...'"
-          rows="3"
+          :placeholder="currentIntent?.formPlaceholders?.topics || 'e.g., The 3 Hidden Revenue Leaks Killing Your Growth'"
+          rows="2"
         ></textarea>
       </div>
 
       <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.background || 'Your Background (Optional)' }}</label>
-        <textarea
-          v-model="authorityHookText"
-          class="gmkb-embedded-input gmkb-embedded-textarea"
-          :placeholder="currentIntent?.formPlaceholders?.background || 'e.g., Former Fortune 500 executive turned leadership coach...'"
-          rows="2"
-        ></textarea>
+        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.who || 'Who do you help? (Optional)' }}</label>
+        <input
+          v-model="authorityHook.who"
+          type="text"
+          class="gmkb-embedded-input"
+          :placeholder="currentIntent?.formPlaceholders?.who || 'e.g., SaaS Founders'"
+        />
       </div>
     </div>
 
@@ -288,23 +661,23 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, inject } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, watch, inject } from 'vue';
 import { useAIQuestions, QUESTION_CATEGORIES } from '../../src/composables/useAIQuestions';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
+import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
+import { useDraftState } from '../../src/composables/useDraftState';
+import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 
 // Compact widget components (integrated mode)
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
 import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
+import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ProfileContextBanner, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
 
 const props = defineProps({
   /**
-   * Mode: 'integrated', 'standalone', or 'embedded'
-   * - standalone: Full two-panel layout with guidance
-   * - integrated: Compact widget for embedding in other components
-   * - embedded: Landing page embed with simplified form
+   * Mode: 'default', 'integrated', or 'embedded'
    */
   mode: {
     type: String,
@@ -322,7 +695,6 @@ const props = defineProps({
 
   /**
    * Intent object for embedded mode
-   * Contains: { id, label, contextHeading, contextDescription, formPlaceholders, formLabels }
    */
   intent: {
     type: Object,
@@ -331,11 +703,18 @@ const props = defineProps({
 
   /**
    * Profile data for pre-population (embedded mode)
-   * Passed from EmbeddedToolWrapper via scoped slot
    */
   profileData: {
     type: Object,
     default: null
+  },
+
+  /**
+   * Available topics from Topics Generator (passed as prop)
+   */
+  topics: {
+    type: Array,
+    default: () => []
   }
 });
 
@@ -349,26 +728,212 @@ const {
   resetTime,
   questions,
   hasQuestions,
-  introductoryQuestions,
-  expertiseQuestions,
-  storyQuestions,
-  actionableQuestions,
   generate,
-  copyToClipboard
+  copyToClipboard,
+  reset
 } = useAIQuestions();
 
-const { authorityHookSummary, syncFromStore, loadFromProfileData } = useAuthorityHook();
+const { syncFromStore, loadFromProfileData } = useAuthorityHook();
 
-// Local state
-const topicsText = ref('');
-const authorityHookText = ref('');
-const openCategory = ref('introductory');
+// Profile save functionality (standalone mode)
+const {
+  selectedProfileId,
+  hasSelectedProfile,
+  saveMultipleToProfile
+} = useStandaloneProfile();
 
-// Categories config
-const categories = QUESTION_CATEGORIES;
+// Save to profile state
+const isSavingToProfile = ref(false);
+const saveSuccess = ref(false);
+const saveError = ref(null);
+
+// Draft state for auto-save
+const {
+  hasDraft,
+  lastSaved,
+  isAutoSaving,
+  saveDraft,
+  loadDraft,
+  clearDraft,
+  startAutoSave,
+  getLastSavedText
+} = useDraftState('questions');
+
+// History for recent generations
+const {
+  history,
+  hasHistory,
+  addToHistory,
+  removeFromHistory,
+  clearHistory,
+  formatTimestamp
+} = useGeneratorHistory('questions');
+
+// Show/hide history panel
+const showHistory = ref(false);
+
+// Prefilled fields tracking
+const prefilledFields = ref(new Set());
+const showDraftPrompt = ref(false);
 
 // Inject profile data from EmbeddedToolWrapper (for embedded mode)
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+
+// Local state
+const selectedTopicIndex = ref(-1);
+const refinedTopic = ref('');
+
+// Authority Hook state (reactive object for 4 W's)
+const authorityHook = reactive({
+  who: '',
+  what: '',
+  when: '',
+  how: ''
+});
+
+// Available topics (from props or default examples)
+const availableTopics = computed(() => {
+  if (props.topics && props.topics.length > 0) {
+    return props.topics;
+  }
+  // Default example topics if none provided
+  return [
+    'The 3 Hidden Revenue Leaks Killing Your Growth',
+    'Why Most Scaling Strategies Fail',
+    'From Overwhelmed Owner to Strategic CEO',
+    'Building Systems That Scale',
+    'The 7-Figure Timeline'
+  ];
+});
+
+// Authority Hook live preview
+const authorityHookPreview = computed(() => {
+  const { who, what, when, how } = authorityHook;
+  if (!who && !what) return '';
+
+  let preview = 'I help';
+  if (who) preview += ` ${who}`;
+  if (what) preview += ` ${what}`;
+  if (when) preview += ` ${when}`;
+  if (how) preview += ` through ${how}`;
+
+  return preview + '.';
+});
+
+// ===========================================
+// INTERVIEW SET STATE (5 Lockable Slots)
+// ===========================================
+const MAX_INTERVIEW_SLOTS = 5;
+
+// Interview set: 5 slots that can be locked
+const interviewSet = ref([
+  { question: null, locked: false },
+  { question: null, locked: false },
+  { question: null, locked: false },
+  { question: null, locked: false },
+  { question: null, locked: false }
+]);
+
+// Selected question indices from the generated list
+const selectedQuestionIndices = ref([]);
+
+// Track which question was just copied for visual feedback
+const copiedQuestionIndex = ref(null);
+
+// Count of locked slots
+const lockedSlotsCount = computed(() => {
+  return interviewSet.value.filter(slot => slot.locked).length;
+});
+
+// Count of available (unlocked empty) slots
+const availableSlotsCount = computed(() => {
+  return MAX_INTERVIEW_SLOTS - lockedSlotsCount.value;
+});
+
+// Count of selected questions
+const selectedQuestionsCount = computed(() => {
+  return selectedQuestionIndices.value.length;
+});
+
+// Can select more questions?
+const canSelectMore = computed(() => {
+  return selectedQuestionsCount.value < availableSlotsCount.value;
+});
+
+/**
+ * Check if a question is selected
+ */
+const isQuestionSelected = (index) => {
+  return selectedQuestionIndices.value.includes(index);
+};
+
+/**
+ * Toggle question selection
+ */
+const toggleQuestionSelection = (index) => {
+  const idx = selectedQuestionIndices.value.indexOf(index);
+  if (idx > -1) {
+    // Deselect
+    selectedQuestionIndices.value.splice(idx, 1);
+    // Also remove from interview set if it was there
+    const slotIdx = interviewSet.value.findIndex(
+      slot => !slot.locked && slot.question === questions.value[index]
+    );
+    if (slotIdx > -1) {
+      interviewSet.value[slotIdx].question = null;
+    }
+  } else if (canSelectMore.value) {
+    // Select
+    selectedQuestionIndices.value.push(index);
+    // Add to first available unlocked slot
+    const emptySlotIdx = interviewSet.value.findIndex(
+      slot => !slot.locked && !slot.question
+    );
+    if (emptySlotIdx > -1) {
+      interviewSet.value[emptySlotIdx].question = questions.value[index];
+    }
+  }
+};
+
+/**
+ * Toggle lock on a slot
+ */
+const toggleSlotLock = (slotIndex) => {
+  const slot = interviewSet.value[slotIndex];
+  if (slot.question) {
+    slot.locked = !slot.locked;
+  }
+};
+
+/**
+ * Select a topic from the grid
+ */
+const selectTopic = (index) => {
+  selectedTopicIndex.value = index;
+  refinedTopic.value = availableTopics.value[index] || '';
+};
+
+/**
+ * Copy single question to clipboard
+ */
+const copyQuestion = async (index, event) => {
+  // Prevent triggering row selection
+  if (event) event.stopPropagation();
+
+  const question = questions.value[index];
+  if (question) {
+    try {
+      await navigator.clipboard.writeText(question);
+      // Show visual feedback
+      copiedQuestionIndex.value = index;
+      setTimeout(() => {
+        copiedQuestionIndex.value = null;
+      }, 1500);
+    } catch (err) {
+      console.error('[QuestionsGenerator] Failed to copy question:', err);
+    }
+  }
+};
 
 /**
  * Populate form fields from profile data
@@ -376,24 +941,137 @@ const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
 function populateFromProfile(profileData) {
   if (!profileData) return;
 
-  // Populate topics from hook_what or topics field
-  if (profileData.hook_what && !topicsText.value) {
-    topicsText.value = profileData.hook_what;
-  }
+  // Populate authority hook fields (check multiple field name patterns)
+  const hookWho = profileData.hook_who || profileData.authority_hook_who || '';
+  const hookWhat = profileData.hook_what || profileData.authority_hook_what || '';
+  const hookWhen = profileData.hook_when || profileData.authority_hook_when || '';
+  const hookHow = profileData.hook_how || profileData.authority_hook_how || '';
 
-  // Populate authority hook text
-  if (profileData.authority_hook && !authorityHookText.value) {
-    authorityHookText.value = profileData.authority_hook;
-  }
+  if (hookWho && !authorityHook.who) authorityHook.who = hookWho;
+  if (hookWhat && !authorityHook.what) authorityHook.what = hookWhat;
+  if (hookWhen && !authorityHook.when) authorityHook.when = hookWhen;
+  if (hookHow && !authorityHook.how) authorityHook.how = hookHow;
 
   // Populate authority hook fields from profile data (for cross-tool sync)
   loadFromProfileData(profileData);
 }
 
 /**
+ * Check if a field was prefilled from profile
+ */
+function isFieldPrefilled(fieldName) {
+  return prefilledFields.value.has(fieldName);
+}
+
+/**
+ * Mark a field as edited (removes prefilled status)
+ */
+function markFieldEdited(fieldName) {
+  prefilledFields.value.delete(fieldName);
+}
+
+/**
+ * Get current form state for draft saving
+ */
+function getDraftState() {
+  return {
+    refinedTopic: refinedTopic.value,
+    selectedTopicIndex: selectedTopicIndex.value,
+    authorityHook: { ...authorityHook }
+  };
+}
+
+/**
+ * Restore form state from draft
+ */
+function restoreDraftState(draft) {
+  if (draft.refinedTopic) refinedTopic.value = draft.refinedTopic;
+  if (draft.selectedTopicIndex !== undefined) selectedTopicIndex.value = draft.selectedTopicIndex;
+  if (draft.authorityHook) Object.assign(authorityHook, draft.authorityHook);
+}
+
+/**
+ * Handle restore draft button click
+ */
+function handleRestoreDraft() {
+  const draft = loadDraft();
+  if (draft) {
+    restoreDraftState(draft);
+  }
+  showDraftPrompt.value = false;
+}
+
+/**
+ * Handle discard draft button click
+ */
+function handleDiscardDraft() {
+  clearDraft();
+  showDraftPrompt.value = false;
+}
+
+/**
+ * Restore inputs from a history entry (without results)
+ */
+function restoreFromHistory(entry) {
+  if (entry.inputs) {
+    if (entry.inputs.topic) refinedTopic.value = entry.inputs.topic;
+    if (entry.inputs.authorityHook) Object.assign(authorityHook, entry.inputs.authorityHook);
+  }
+  showHistory.value = false;
+}
+
+/**
+ * Restore full history entry (inputs + results)
+ */
+function restoreFullHistory(entry) {
+  restoreFromHistory(entry);
+  if (entry.results && Array.isArray(entry.results)) {
+    questions.value = entry.results;
+    // Reset selections
+    selectedQuestionIndices.value = [];
+    interviewSet.value.forEach(slot => {
+      if (!slot.locked) {
+        slot.question = null;
+      }
+    });
+  }
+}
+
+/**
+ * Handle profile loaded from ProfileContextBanner (standalone mode)
+ */
+function handleProfileLoaded(data) {
+  if (data && props.mode === 'default') {
+    // Track which fields are being prefilled
+    const newPrefilledFields = new Set();
+
+    const hookWho = data.hook_who || data.authority_hook_who;
+    const hookWhat = data.hook_what || data.authority_hook_what;
+    const hookWhen = data.hook_when || data.authority_hook_when;
+    const hookHow = data.hook_how || data.authority_hook_how;
+
+    if (hookWho && !authorityHook.who) newPrefilledFields.add('hook_who');
+    if (hookWhat && !authorityHook.what) newPrefilledFields.add('hook_what');
+    if (hookWhen && !authorityHook.when) newPrefilledFields.add('hook_when');
+    if (hookHow && !authorityHook.how) newPrefilledFields.add('hook_how');
+
+    prefilledFields.value = newPrefilledFields;
+    populateFromProfile(data);
+  }
+}
+
+/**
+ * Handle profile cleared from ProfileContextBanner (standalone mode)
+ */
+function handleProfileCleared() {
+  // Optionally clear form fields when profile is deselected
+  // For now, we keep the existing data to avoid losing user input
+}
+
+/**
  * Questions formula for guidance panel
  */
-const questionsFormula = '<span class="generator__highlight">[CONTEXT]</span> + <span class="generator__highlight">[EXPERTISE]</span> + <span class="generator__highlight">[GOAL]</span> = Interview Questions';
+const questionsFormula = '<span class="generator__highlight">[TOPIC]</span> + <span class="generator__highlight">[AUTHORITY]</span> + <span class="generator__highlight">[CONTEXT]</span> = Interview Questions';
 
 /**
  * Process steps for guidance panel
@@ -401,15 +1079,15 @@ const questionsFormula = '<span class="generator__highlight">[CONTEXT]</span> + 
 const processSteps = [
   {
     title: 'Why Great Questions Matter',
-    description: 'The quality of your interview is directly tied to the quality of your questions. Great questions go beyond surface-level conversation to uncover deep insights, compelling stories, and actionable advice that your audience will remember and apply.'
+    description: 'The quality of your interview is directly tied to the quality of your questions. Great questions go beyond surface-level conversation to uncover deep insights, compelling stories, and actionable advice.'
   },
   {
     title: 'What Makes Questions Memorable',
-    description: 'The best interview questions are specific, open-ended, and designed to elicit stories and examples. They focus on experiences, transformations, and practical wisdom rather than yes/no answers or generic industry talk.'
+    description: 'The best interview questions are specific, open-ended, and designed to elicit stories and examples. They focus on experiences, transformations, and practical wisdom.'
   },
   {
-    title: 'How to Prepare with Your Questions',
-    description: 'Use your generated questions as a strategic framework, not a rigid script. Select 8-10 questions that best align with your guest\'s expertise, and be ready to ask spontaneous follow-up questions based on their responses.'
+    title: 'How to Use Your Questions',
+    description: 'Use your generated questions as a strategic framework, not a rigid script. Select questions that best align with your guest\'s expertise, and be ready to ask follow-up questions.'
   }
 ];
 
@@ -419,11 +1097,11 @@ const processSteps = [
 const examples = [
   {
     title: 'Deep-Dive Question:',
-    description: 'Can you walk me through a specific moment when you realized your approach to leadership needed to fundamentally change? What happened, and what did you do differently?'
+    description: 'Can you walk me through a specific moment when you realized your approach needed to fundamentally change?'
   },
   {
     title: 'Actionable Question:',
-    description: 'If someone listening is struggling to build trust with their team, what\'s one practical exercise or habit they could implement this week to start making progress?'
+    description: 'If someone listening is struggling with this, what\'s one practical step they could implement this week?'
   }
 ];
 
@@ -431,46 +1109,66 @@ const examples = [
  * Can generate check
  */
 const canGenerate = computed(() => {
-  return topicsText.value.trim().length > 0;
+  return refinedTopic.value.trim().length > 0;
 });
 
 /**
- * Get questions for a specific category
+ * Form completion status for progress indicator
  */
-const getCategoryQuestions = (key) => {
-  switch (key) {
-    case 'introductory':
-      return introductoryQuestions.value;
-    case 'expertise':
-      return expertiseQuestions.value;
-    case 'stories':
-      return storyQuestions.value;
-    case 'actionable':
-      return actionableQuestions.value;
-    default:
-      return [];
-  }
-};
-
-/**
- * Toggle accordion category
- */
-const toggleCategory = (key) => {
-  openCategory.value = openCategory.value === key ? null : key;
-};
+const formCompletion = computed(() => {
+  const fields = [
+    { name: 'Topic', filled: !!(refinedTopic.value && refinedTopic.value.trim()) },
+    { name: 'Who you help', filled: !!authorityHook.who },
+    { name: 'What you do', filled: !!authorityHook.what }
+  ];
+  const filledCount = fields.filter(f => f.filled).length;
+  return {
+    fields,
+    filledCount,
+    totalCount: fields.length,
+    percentage: Math.round((filledCount / fields.length) * 100),
+    isComplete: canGenerate.value
+  };
+});
 
 /**
  * Handle generate button click
  */
 const handleGenerate = async () => {
-  openCategory.value = 'introductory';
-
   try {
     const context = props.mode === 'integrated' ? 'builder' : 'public';
+
+    // Build authority hook string from components
+    let authorityHookStr = '';
+    if (authorityHook.who || authorityHook.what) {
+      authorityHookStr = authorityHookPreview.value;
+    }
+
     await generate({
-      topics: topicsText.value,
-      authorityHook: authorityHookText.value
+      topics: refinedTopic.value,
+      authorityHook: authorityHookStr
     }, context);
+
+    // Clear selections (but keep locked items)
+    selectedQuestionIndices.value = [];
+    // Clear unlocked slots
+    interviewSet.value.forEach(slot => {
+      if (!slot.locked) {
+        slot.question = null;
+      }
+    });
+
+    // Save to history on successful generation
+    if (questions.value && questions.value.length > 0) {
+      addToHistory({
+        inputs: {
+          topic: refinedTopic.value,
+          authorityHook: { ...authorityHook }
+        },
+        results: questions.value,
+        preview: refinedTopic.value?.substring(0, 50) || questions.value[0]
+      });
+    }
 
     emit('generated', {
       questions: questions.value
@@ -488,6 +1186,30 @@ const handleCopy = async () => {
 };
 
 /**
+ * Export questions as a downloadable markdown file
+ */
+const handleExport = () => {
+  if (!questions.value || questions.value.length === 0) return;
+
+  // Create markdown-formatted content
+  const content = `# Interview Questions\n\n` +
+    `**Topic:** ${refinedTopic.value}\n\n` +
+    questions.value.map((question, index) => `${index + 1}. ${question}`).join('\n') +
+    `\n\n---\nGenerated with Interview Questions Generator`;
+
+  // Create and trigger download
+  const blob = new Blob([content], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'interview-questions.md';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+/**
  * Handle apply (integrated mode)
  */
 const handleApply = () => {
@@ -498,22 +1220,120 @@ const handleApply = () => {
 };
 
 /**
+ * Handle save to media kit - save selected questions
+ * Also saves to profile if in standalone mode with a profile selected
+ */
+const handleSaveToMediaKit = async () => {
+  // Get all questions from the interview set (both locked and selected)
+  const savedQuestions = interviewSet.value
+    .filter(slot => slot.question)
+    .map(slot => slot.question);
+
+  // Save to profile if in standalone mode with profile selected
+  if (props.mode === 'default' && hasSelectedProfile.value && savedQuestions.length > 0) {
+    isSavingToProfile.value = true;
+    saveSuccess.value = false;
+    saveError.value = null;
+
+    try {
+      // Build question fields object (question_1 through question_10)
+      const questionFields = {};
+      savedQuestions.forEach((question, index) => {
+        if (index < 10) { // Max 10 questions
+          questionFields[`question_${index + 1}`] = question;
+        }
+      });
+
+      const success = await saveMultipleToProfile(questionFields);
+      if (success) {
+        saveSuccess.value = true;
+        setTimeout(() => { saveSuccess.value = false; }, 3000);
+      } else {
+        saveError.value = 'Failed to save questions to profile';
+      }
+    } catch (err) {
+      saveError.value = err.message || 'Failed to save questions';
+    } finally {
+      isSavingToProfile.value = false;
+    }
+  }
+
+  emit('applied', {
+    componentId: props.componentId,
+    questions: savedQuestions,
+    interviewSet: interviewSet.value,
+    action: 'save'
+  });
+};
+
+/**
+ * Handle start over - reset all state
+ */
+const handleStartOver = () => {
+  reset();
+  selectedTopicIndex.value = -1;
+  refinedTopic.value = '';
+  // Reset interview set
+  selectedQuestionIndices.value = [];
+  interviewSet.value = [
+    { question: null, locked: false },
+    { question: null, locked: false },
+    { question: null, locked: false },
+    { question: null, locked: false },
+    { question: null, locked: false }
+  ];
+};
+
+/**
  * Sync authority hook from store on mount
  */
+/**
+ * Keyboard shortcut handler (Ctrl/Cmd + Enter to generate)
+ */
+const handleKeyboardShortcut = (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    if (canGenerate.value && !isGenerating.value && !hasQuestions.value) {
+      event.preventDefault();
+      handleGenerate();
+    }
+  }
+};
+
 onMounted(() => {
   syncFromStore();
-  if (authorityHookSummary.value) {
-    authorityHookText.value = authorityHookSummary.value;
+
+  // Load from injected or prop profile data
+  if (props.profileData) {
+    populateFromProfile(props.profileData);
   }
+  if (injectedProfileData.value) {
+    populateFromProfile(injectedProfileData.value);
+  }
+
+  // Auto-select first topic if available
+  if (availableTopics.value.length > 0 && selectedTopicIndex.value === -1) {
+    selectTopic(0);
+  }
+
+  // Check for saved draft on mount (standalone mode only)
+  if (props.mode === 'default' && hasDraft.value) {
+    showDraftPrompt.value = true;
+  }
+
+  // Start auto-save in standalone mode
+  if (props.mode === 'default') {
+    startAutoSave(getDraftState);
+  }
+
+  // Add keyboard shortcut listener
+  window.addEventListener('keydown', handleKeyboardShortcut);
 });
 
 /**
- * Watch for store changes
+ * Cleanup on unmount
  */
-watch(authorityHookSummary, (newVal) => {
-  if (newVal && !authorityHookText.value) {
-    authorityHookText.value = newVal;
-  }
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyboardShortcut);
 });
 
 /**
@@ -522,7 +1342,7 @@ watch(authorityHookSummary, (newVal) => {
 watch(
   injectedProfileData,
   (newData) => {
-    if (newData && props.mode === 'embedded') {
+    if (newData) {
       populateFromProfile(newData);
     }
   },
@@ -531,7 +1351,6 @@ watch(
 
 /**
  * Watch for profileData prop changes (embedded mode with EmbeddedToolWrapper)
- * Pre-populates form fields when profile data is provided
  */
 watch(
   () => props.profileData,
@@ -544,8 +1363,20 @@ watch(
 );
 
 /**
+ * Watch for topics prop changes
+ */
+watch(
+  () => props.topics,
+  (newTopics) => {
+    if (newTopics && newTopics.length > 0 && selectedTopicIndex.value === -1) {
+      selectTopic(0);
+    }
+  },
+  { immediate: true }
+);
+
+/**
  * Current intent for embedded mode
- * Uses props.intent or falls back to default
  */
 const currentIntent = computed(() => props.intent || null);
 
@@ -553,31 +1384,23 @@ const currentIntent = computed(() => props.intent || null);
  * Generate preview text for embedded mode
  */
 const embeddedPreviewText = computed(() => {
-  const topicsVal = topicsText.value || '[YOUR TOPICS]';
-
-  if (!topicsText.value) {
-    return null; // Show default preview
-  }
-
-  return `<strong>25 interview questions</strong> covering: <strong>${topicsVal}</strong>`;
+  if (!refinedTopic.value) return null;
+  return `<strong>10 interview questions</strong> for: <strong>${refinedTopic.value}</strong>`;
 });
 
 /**
  * Watch for field changes in embedded mode and emit preview updates
  */
 watch(
-  () => topicsText.value,
+  () => refinedTopic.value,
   () => {
     if (props.mode === 'embedded') {
       emit('preview-update', {
         previewHtml: embeddedPreviewText.value,
-        fields: {
-          topics: topicsText.value
-        }
+        fields: { topic: refinedTopic.value }
       });
     }
-  },
-  { deep: true }
+  }
 );
 
 /**
@@ -597,15 +1420,23 @@ watch(canGenerate, (newValue) => {
 }
 
 .generator__section-title {
-  font-size: var(--mkcg-font-size-lg, 18px);
-  font-weight: var(--mkcg-font-weight-semibold, 600);
-  color: var(--mkcg-text-primary, #2c3e50);
-  margin: 0 0 var(--mkcg-space-md, 20px) 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--mkcg-text-primary, #0f172a);
+  margin: 0 0 16px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .generator__actions {
   margin-top: var(--mkcg-space-lg, 30px);
+}
+
+.generator__hint-text {
   text-align: center;
+  font-size: 13px;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin-top: 20px;
 }
 
 .generator__error {
@@ -622,122 +1453,547 @@ watch(canGenerate, (newValue) => {
   margin: 0 0 var(--mkcg-space-sm, 12px) 0;
 }
 
-/* Questions Results */
-.questions-generator__results {
-  padding: var(--mkcg-space-md, 20px);
+/* ===========================================
+   TOPIC SELECTION GRID
+   =========================================== */
+.questions-topic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+  margin-bottom: 1.5rem;
 }
 
-.questions-generator__results-header {
-  margin-bottom: var(--mkcg-space-md, 20px);
+@media (max-width: 768px) {
+  .questions-topic-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
-.questions-generator__results-header h3 {
-  margin: 0 0 var(--mkcg-space-xs, 8px) 0;
-  font-size: var(--mkcg-font-size-lg, 18px);
-  color: var(--mkcg-text-primary, #2c3e50);
-}
-
-.questions-generator__results-header p {
-  margin: 0;
-  color: var(--mkcg-text-secondary, #5a6d7e);
-  font-size: var(--mkcg-font-size-sm, 14px);
-}
-
-.questions-generator__accordion {
-  margin-bottom: var(--mkcg-space-md, 20px);
-}
-
-.questions-generator__accordion-item {
-  border: 1px solid var(--mkcg-border-light, #e9ecef);
-  border-radius: var(--mkcg-radius, 8px);
-  margin-bottom: var(--mkcg-space-sm, 12px);
-  overflow: hidden;
-  transition: var(--mkcg-transition-fast, 0.15s ease);
-}
-
-.questions-generator__accordion-item:hover {
-  border-color: var(--mkcg-primary, #1a9bdc);
-}
-
-.questions-generator__accordion-header {
+.questions-topic-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: #fff;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
   width: 100%;
-  padding: var(--mkcg-space-md, 20px);
+}
+
+.questions-topic-card:hover {
+  border-color: var(--mkcg-primary, #3b82f6);
+  background: var(--mkcg-bg-secondary, #f9fafb);
+}
+
+.questions-topic-card--active {
+  border-color: var(--mkcg-primary, #3b82f6);
+  background: var(--mkcg-primary-light, rgba(59, 130, 246, 0.1));
+  box-shadow: 0 0 0 2px var(--mkcg-primary, #3b82f6);
+}
+
+.questions-topic-card__number {
+  width: 24px;
+  height: 24px;
+  background: var(--mkcg-bg-secondary, #f9fafb);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mkcg-text-secondary, #64748b);
+  flex-shrink: 0;
+}
+
+.questions-topic-card--active .questions-topic-card__number {
+  background: var(--mkcg-primary, #3b82f6);
+  color: #fff;
+}
+
+.questions-topic-card__text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mkcg-text-primary, #0f172a);
+  flex: 1;
+  line-height: 1.4;
+}
+
+.questions-topic-empty {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px;
+  background: var(--mkcg-bg-secondary, #f9fafb);
+  border: 1px dashed var(--mkcg-border, #e2e8f0);
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.questions-topic-empty svg {
+  flex-shrink: 0;
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.questions-topic-empty p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--mkcg-text-secondary, #64748b);
+  line-height: 1.5;
+}
+
+/* Refine Topic Textarea */
+.questions-refine-container {
+  position: relative;
+  margin-top: 1rem;
+}
+
+.questions-refine-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: var(--mkcg-bg-primary, #ffffff);
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  font-size: var(--mkcg-font-size-base, 16px);
-  font-weight: var(--mkcg-font-weight-semibold, 600);
-  color: var(--mkcg-text-primary, #2c3e50);
-  transition: var(--mkcg-transition-fast, 0.15s ease);
+  margin-bottom: 8px;
 }
 
-.questions-generator__accordion-header:hover {
-  background: var(--mkcg-bg-secondary, #f8f9fa);
+.questions-refine-hint {
+  background: var(--mkcg-primary, #3b82f6);
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
 }
 
-.questions-generator__accordion-title {
+.questions-char-count {
+  font-size: 0.75rem;
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.questions-refine-textarea {
+  width: 100%;
+  padding: 16px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 1rem;
+  background: #fff;
+  box-sizing: border-box;
+  transition: all 0.2s;
+  resize: none;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.questions-refine-textarea:focus {
+  outline: none;
+  border-color: var(--mkcg-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* ===========================================
+   QUESTIONS RESULTS - Sidebar + Main Layout
+   =========================================== */
+.questions-results {
+  padding: 0;
+}
+
+.questions-results__layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 32px;
+}
+
+@media (min-width: 900px) {
+  .questions-results__layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  .questions-results__sidebar {
+    position: sticky;
+    top: 1rem;
+    flex: 0 0 280px;
+  }
+  .questions-results__main {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* ===========================================
+   INTERVIEW SET SIDEBAR (5 Lockable Slots)
+   =========================================== */
+.questions-interview-set {
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.questions-interview-set__header {
+  margin-bottom: 1rem;
+}
+
+.questions-interview-set__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--mkcg-text-primary, #0f172a);
+  margin: 0 0 4px 0;
+}
+
+.questions-interview-set__hint {
+  font-size: 11px;
+  color: var(--mkcg-text-muted, #94a3b8);
+  font-style: italic;
+}
+
+.questions-interview-set__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Individual Interview Slot */
+.questions-interview-slot {
   display: flex;
   align-items: center;
-  gap: var(--mkcg-space-xs, 8px);
+  gap: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  transition: all 0.15s;
 }
 
-.questions-generator__badge {
-  display: inline-flex;
+.questions-interview-slot--filled {
+  border-color: var(--mkcg-primary, #3b82f6);
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.questions-interview-slot--locked {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.questions-interview-slot__position {
+  width: 22px;
+  height: 22px;
+  background: var(--mkcg-bg-secondary, #f1f5f9);
+  border-radius: 50%;
+  display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 var(--mkcg-space-xs, 8px);
-  font-size: var(--mkcg-font-size-sm, 14px);
-  font-weight: var(--mkcg-font-weight-medium, 500);
-  color: var(--mkcg-primary, #1a9bdc);
-  background: rgba(26, 155, 220, 0.1);
-  border-radius: var(--mkcg-radius-sm, 4px);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mkcg-text-secondary, #64748b);
+  flex-shrink: 0;
 }
 
-.questions-generator__accordion-icon {
-  transition: transform var(--mkcg-transition-fast, 0.15s ease);
-  color: var(--mkcg-text-secondary, #5a6d7e);
+.questions-interview-slot--filled .questions-interview-slot__position {
+  background: var(--mkcg-primary, #3b82f6);
+  color: #fff;
 }
 
-.questions-generator__accordion-item--open .questions-generator__accordion-icon {
-  transform: rotate(180deg);
+.questions-interview-slot--locked .questions-interview-slot__position {
+  background: #22c55e;
+  color: #fff;
 }
 
-.questions-generator__accordion-content {
-  padding: 0 var(--mkcg-space-md, 20px) var(--mkcg-space-md, 20px);
-  background: var(--mkcg-bg-primary, #ffffff);
+.questions-interview-slot__text {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--mkcg-text-primary, #0f172a);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
-.questions-generator__questions-list {
-  margin: 0;
-  padding: 0 0 0 24px;
-  list-style: decimal;
+.questions-interview-slot__text--empty {
+  color: var(--mkcg-text-muted, #94a3b8);
+  font-style: italic;
 }
 
-.questions-generator__question-item {
-  padding: var(--mkcg-space-sm, 12px) 0;
-  font-size: var(--mkcg-font-size-base, 16px);
-  line-height: var(--mkcg-line-height-relaxed, 1.6);
-  color: var(--mkcg-text-primary, #2c3e50);
-  border-bottom: 1px solid var(--mkcg-border-light, #e9ecef);
-}
-
-.questions-generator__question-item:last-child {
-  border-bottom: none;
-}
-
-.questions-generator__actions {
-  margin-top: var(--mkcg-space-md, 20px);
+.questions-interview-slot__lock {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--mkcg-text-secondary, #64748b);
   display: flex;
-  gap: var(--mkcg-space-sm, 12px);
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
 }
 
-/* Integrated Mode Styles (preserved from original) */
+.questions-interview-slot__lock:hover:not(:disabled) {
+  background: var(--mkcg-bg-secondary, #f1f5f9);
+  border-color: var(--mkcg-text-secondary, #64748b);
+}
+
+.questions-interview-slot__lock:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.questions-interview-slot--locked .questions-interview-slot__lock {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: #fff;
+}
+
+.questions-interview-slot--locked .questions-interview-slot__lock:hover {
+  background: #16a34a;
+  border-color: #16a34a;
+}
+
+/* Interview Set Summary */
+.questions-interview-set__summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--mkcg-border, #e2e8f0);
+  font-size: 11px;
+}
+
+.questions-interview-set__locked-count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.questions-interview-set__available {
+  color: var(--mkcg-text-muted, #94a3b8);
+}
+
+/* ===========================================
+   MAIN AREA HEADER
+   =========================================== */
+.questions-results__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.questions-results__title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.questions-results__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.questions-results__count {
+  background: var(--mkcg-primary, #3b82f6);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.questions-results__actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ===========================================
+   SELECTION BANNER
+   =========================================== */
+.questions-selection-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 13px;
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.questions-selection-banner strong {
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.questions-selection-banner__count {
+  font-weight: 600;
+  color: var(--mkcg-primary, #3b82f6);
+}
+
+/* ===========================================
+   QUESTIONS LIST - Checkbox Style Rows
+   =========================================== */
+.questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.questions-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+  width: 100%;
+}
+
+.questions-row:hover:not(:disabled) {
+  border-color: var(--mkcg-primary, #3b82f6);
+  background: var(--mkcg-bg-secondary, #f8fafc);
+}
+
+.questions-row--selected {
+  border-color: var(--mkcg-primary, #3b82f6);
+  background: rgba(59, 130, 246, 0.08);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.questions-row:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.questions-row__checkbox {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--mkcg-border, #d1d5db);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+  transition: all 0.15s;
+  background: #fff;
+}
+
+.questions-row__checkbox--checked {
+  background: var(--mkcg-primary, #3b82f6);
+  border-color: var(--mkcg-primary, #3b82f6);
+}
+
+.questions-row__checkbox--checked svg {
+  color: #fff;
+}
+
+.questions-row__number {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mkcg-text-secondary, #64748b);
+  min-width: 24px;
+  margin-top: 2px;
+}
+
+.questions-row__text {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--mkcg-text-primary, #0f172a);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Results Footer */
+.questions-results__footer {
+  margin-top: 2rem;
+  border-top: 1px solid var(--mkcg-border, #e2e8f0);
+  padding-top: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.questions-results__save-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Save Success/Error Messages */
+.questions-save-success {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 6px;
+  color: #166534;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.questions-save-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #991b1b;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Spinner animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Ghost button variant */
+.generator__button--ghost {
+  background: transparent;
+  border: none;
+  color: var(--mkcg-text-secondary, #64748b);
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.generator__button--ghost:hover {
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+/* Integrated Mode Styles */
 .gmkb-ai-questions__list {
   margin: 0;
   padding: 0 0 0 20px;
@@ -763,10 +2019,6 @@ watch(canGenerate, (newValue) => {
   font-size: 13px;
   color: var(--gmkb-ai-text-secondary, #64748b);
   text-align: center;
-}
-
-.gmkb-ai-accordion__header .gmkb-ai-badge {
-  margin-left: 8px;
 }
 
 /* Embedded Mode Styles (for landing page) */
@@ -828,5 +2080,701 @@ watch(canGenerate, (newValue) => {
   border-radius: 8px;
   color: #991b1b;
   font-size: 14px;
+}
+
+/* ===========================================
+   ENHANCED UX FEATURES
+   =========================================== */
+
+/* Draft Restore Prompt */
+.gfy-draft-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #93c5fd;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.gfy-draft-prompt__content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.gfy-draft-prompt__content svg {
+  flex-shrink: 0;
+  color: var(--mkcg-primary, #3b82f6);
+  margin-top: 2px;
+}
+
+.gfy-draft-prompt__content strong {
+  display: block;
+  font-size: 0.9375rem;
+  color: var(--mkcg-text-primary, #0f172a);
+  margin-bottom: 0.25rem;
+}
+
+.gfy-draft-prompt__content p {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.gfy-draft-prompt__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: 2rem;
+}
+
+/* Auto-save Indicator */
+.gfy-auto-save-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin-bottom: 1rem;
+}
+
+.gfy-auto-save-indicator svg {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Welcome Section */
+.gfy-welcome-section {
+  text-align: center;
+  padding: 2rem 1.5rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+  border: 1px dashed var(--mkcg-border, #e2e8f0);
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.gfy-welcome-section__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: var(--mkcg-bg, #ffffff);
+  border-radius: 50%;
+  margin-bottom: 1rem;
+  color: var(--mkcg-primary, #3b82f6);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.gfy-welcome-section__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--mkcg-text-primary, #0f172a);
+  margin: 0 0 0.5rem 0;
+}
+
+.gfy-welcome-section__text {
+  font-size: 0.9375rem;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin: 0 0 1rem 0;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.gfy-welcome-section__tips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.gfy-welcome-section__tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--mkcg-text-secondary, #64748b);
+  background: var(--mkcg-bg, #ffffff);
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+}
+
+.gfy-welcome-section__tip svg {
+  color: #10b981;
+}
+
+/* Form Progress Indicator */
+.gfy-form-progress {
+  padding: 12px 16px;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.gfy-form-progress--complete {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.gfy-form-progress__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.gfy-form-progress__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.gfy-form-progress--complete .gfy-form-progress__label {
+  color: #059669;
+}
+
+.gfy-form-progress__bar {
+  height: 6px;
+  background: var(--mkcg-border, #e2e8f0);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.gfy-form-progress__fill {
+  height: 100%;
+  background: var(--mkcg-primary, #3b82f6);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.gfy-form-progress--complete .gfy-form-progress__fill {
+  background: #10b981;
+}
+
+/* Cross-tool Navigation */
+.gfy-cross-tool-nav {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--mkcg-border, #e2e8f0);
+}
+
+.gfy-cross-tool-nav__label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin-bottom: 0.75rem;
+}
+
+.gfy-cross-tool-nav__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.gfy-cross-tool-nav__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--mkcg-text-primary, #0f172a);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.gfy-cross-tool-nav__link:hover {
+  background: var(--mkcg-primary, #3b82f6);
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: #fff;
+}
+
+.gfy-cross-tool-nav__link svg {
+  flex-shrink: 0;
+}
+
+/* Small button variant */
+.generator__button--small {
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+}
+
+/* Copy Button for Individual Questions */
+.questions-copy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 6px;
+  color: var(--mkcg-text-secondary, #64748b);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.questions-copy-btn:hover {
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: var(--mkcg-primary, #3b82f6);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.questions-copy-btn--copied {
+  border-color: #10b981;
+  color: #10b981;
+  background: #ecfdf5;
+}
+
+/* Disabled state for question rows */
+.questions-row--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.questions-row--disabled .questions-copy-btn {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+/* Loading Skeleton Styles */
+.questions-skeleton {
+  padding: 1.5rem;
+  background: var(--mkcg-bg, #ffffff);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 12px;
+}
+
+.questions-skeleton__header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.questions-skeleton__title {
+  width: 180px;
+  height: 24px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.questions-skeleton__badge {
+  width: 100px;
+  height: 20px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.questions-skeleton__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.questions-skeleton__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border-radius: 8px;
+}
+
+.questions-skeleton__number {
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.questions-skeleton__text {
+  flex: 1;
+  height: 16px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ===========================================
+   MOBILE RESPONSIVE STYLES
+   =========================================== */
+@media (max-width: 768px) {
+  /* Results layout padding */
+  .questions-results__layout {
+    padding: 20px;
+  }
+
+  /* Results header stacks on mobile */
+  .questions-results__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .questions-results__title-row {
+    margin-bottom: 0.5rem;
+  }
+
+  .questions-results__title {
+    font-size: 1.125rem;
+  }
+
+  /* Action buttons wrap */
+  .questions-results__actions {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .questions-results__actions .generator__button {
+    flex: 1 1 auto;
+    min-width: 100px;
+    justify-content: center;
+  }
+
+  /* Selection banner stacks */
+  .questions-selection-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  /* Questions row adjustments */
+  .questions-row {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .questions-row__text {
+    font-size: 13px;
+  }
+
+  /* Footer stacks on mobile */
+  .questions-results__footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .questions-results__save-area {
+    width: 100%;
+  }
+
+  .questions-results__save-area .generator__button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Interview set sidebar */
+  .questions-interview-set {
+    padding: 1rem;
+  }
+
+  .questions-interview-set__summary {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  /* Welcome section */
+  .gfy-welcome-section {
+    padding: 1.5rem 1rem;
+  }
+
+  .gfy-welcome-section__icon {
+    width: 56px;
+    height: 56px;
+  }
+
+  .gfy-welcome-section__title {
+    font-size: 1.125rem;
+  }
+
+  .gfy-welcome-section__text {
+    font-size: 0.875rem;
+  }
+
+  /* Form progress compact */
+  .gfy-form-progress {
+    padding: 10px 12px;
+  }
+
+  /* Draft prompt */
+  .gfy-draft-prompt__actions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  /* Cross-tool navigation */
+  .gfy-cross-tool-nav__links {
+    flex-direction: column;
+  }
+
+  .gfy-cross-tool-nav__link {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .questions-results__layout {
+    padding: 16px;
+  }
+
+  .questions-results__actions {
+    gap: 6px;
+  }
+
+  .questions-results__actions .generator__button {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .questions-results__actions .questions-action-btn {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .questions-row {
+    flex-wrap: wrap;
+  }
+
+  .questions-row__checkbox {
+    order: -1;
+  }
+
+  .questions-copy-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .questions-interview-slot {
+    padding: 8px 10px;
+  }
+
+  .questions-interview-slot__text {
+    font-size: 11px;
+  }
+
+  .generator__button--large {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+
+  .gfy-welcome-section__tips {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .questions-topic-card {
+    padding: 12px;
+  }
+
+  .questions-topic-card__text {
+    font-size: 12px;
+  }
+}
+
+/* ===========================================
+   HISTORY SECTION STYLES
+   =========================================== */
+.gfy-history {
+  margin-bottom: 1.5rem;
+}
+
+.gfy-history__toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--mkcg-text-secondary, #64748b);
+  transition: all 0.2s ease;
+}
+
+.gfy-history__toggle:hover {
+  background: var(--mkcg-bg, #ffffff);
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: var(--mkcg-primary, #3b82f6);
+}
+
+.gfy-history__toggle span {
+  flex: 1;
+  text-align: left;
+}
+
+.gfy-history__chevron {
+  transition: transform 0.2s ease;
+}
+
+.gfy-history__chevron--open {
+  transform: rotate(180deg);
+}
+
+.gfy-history__panel {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: var(--mkcg-bg, #ffffff);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+}
+
+.gfy-history__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.gfy-history__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+
+.gfy-history__item:hover {
+  background: var(--mkcg-bg-tertiary, #f1f5f9);
+}
+
+.gfy-history__item-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gfy-history__item-preview {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--mkcg-text-primary, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gfy-history__item-time {
+  font-size: 0.6875rem;
+  color: var(--mkcg-text-muted, #94a3b8);
+}
+
+.gfy-history__item-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.gfy-history__action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: var(--mkcg-bg, #ffffff);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 4px;
+  color: var(--mkcg-text-secondary, #64748b);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gfy-history__action-btn:hover {
+  border-color: var(--mkcg-text-secondary, #64748b);
+  background: var(--mkcg-bg-secondary, #f8fafc);
+}
+
+.gfy-history__action-btn--primary {
+  background: var(--mkcg-primary, #3b82f6);
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: #ffffff;
+}
+
+.gfy-history__action-btn--primary:hover {
+  background: var(--mkcg-primary-dark, #2563eb);
+  border-color: var(--mkcg-primary-dark, #2563eb);
+}
+
+.gfy-history__action-btn--danger:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+.gfy-history__clear-btn {
+  display: block;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background: transparent;
+  border: 1px dashed var(--mkcg-border, #e2e8f0);
+  border-radius: 6px;
+  color: var(--mkcg-text-muted, #94a3b8);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gfy-history__clear-btn:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+/* Mobile responsive for history */
+@media (max-width: 480px) {
+  .gfy-history__item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .gfy-history__item-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }
 </style>

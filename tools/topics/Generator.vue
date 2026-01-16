@@ -2,67 +2,207 @@
   <div class="gfy-topics-generator">
     <!-- Form Section -->
     <div v-if="!hasTopics" class="gfy-topics-form">
+      <!-- Draft Restore Prompt -->
+      <div v-if="showDraftPrompt" class="gfy-draft-prompt">
+        <div class="gfy-draft-prompt__content">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          <div>
+            <strong>Restore previous work?</strong>
+            <p>You have a saved draft from {{ getLastSavedText() }}.</p>
+          </div>
+        </div>
+        <div class="gfy-draft-prompt__actions">
+          <button type="button" class="gfy-btn gfy-btn--primary gfy-btn--small" @click="handleRestoreDraft">
+            Restore Draft
+          </button>
+          <button type="button" class="gfy-btn gfy-btn--text gfy-btn--small" @click="handleDiscardDraft">
+            Start Fresh
+          </button>
+        </div>
+      </div>
+
+      <!-- Auto-save Indicator -->
+      <div v-if="isAutoSaving" class="gfy-auto-save-indicator">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+          <polyline points="17 21 17 13 7 13 7 21"/>
+          <polyline points="7 3 7 8 15 8"/>
+        </svg>
+        Saving draft...
+      </div>
+
+      <!-- Welcome Section (shown when form is empty) -->
+      <div v-if="!expertise && !authorityHook.who" class="gfy-welcome-section">
+        <div class="gfy-welcome-section__icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+          </svg>
+        </div>
+        <h3 class="gfy-welcome-section__title">Generate Topic Ideas</h3>
+        <p class="gfy-welcome-section__text">
+          Tell us about your expertise and we'll generate compelling podcast/interview topic ideas tailored to your authority.
+        </p>
+        <div class="gfy-welcome-section__tips">
+          <span class="gfy-welcome-section__tip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            10 unique topic ideas
+          </span>
+          <span class="gfy-welcome-section__tip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            Tailored to your expertise
+          </span>
+          <span class="gfy-welcome-section__tip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            Press Ctrl+Enter to generate
+          </span>
+        </div>
+      </div>
+
+      <!-- Form Completion Indicator -->
+      <div class="gfy-form-progress" :class="{ 'gfy-form-progress--complete': formCompletion.isComplete }">
+        <div class="gfy-form-progress__header">
+          <span class="gfy-form-progress__label">
+            <svg v-if="formCompletion.isComplete" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            {{ formCompletion.isComplete ? 'Ready to generate!' : `${formCompletion.filledCount}/${formCompletion.totalCount} fields completed` }}
+          </span>
+        </div>
+        <div class="gfy-form-progress__bar">
+          <div class="gfy-form-progress__fill" :style="{ width: `${formCompletion.percentage}%` }"></div>
+        </div>
+      </div>
+
+      <!-- Recent History -->
+      <div v-if="hasHistory" class="gfy-history">
+        <button
+          type="button"
+          class="gfy-history__toggle"
+          @click="showHistory = !showHistory"
+          :aria-expanded="showHistory"
+          aria-controls="history-panel"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          Recent Generations ({{ history.length }})
+          <svg
+            class="gfy-history__chevron"
+            :class="{ 'gfy-history__chevron--open': showHistory }"
+            width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            aria-hidden="true"
+          >
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <div v-if="showHistory" id="history-panel" class="gfy-history__panel">
+          <div class="gfy-history__list">
+            <div
+              v-for="entry in history"
+              :key="entry.id"
+              class="gfy-history__item"
+            >
+              <div class="gfy-history__item-content">
+                <span class="gfy-history__item-preview">{{ entry.preview }}</span>
+                <span class="gfy-history__item-time">{{ formatTimestamp(entry.timestamp) }}</span>
+              </div>
+              <div class="gfy-history__item-actions">
+                <button
+                  type="button"
+                  class="gfy-history__action-btn"
+                  title="Restore inputs only"
+                  aria-label="Restore inputs from this generation"
+                  @click="restoreFromHistory(entry)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                    <path d="M3 3v5h5"/>
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="gfy-history__action-btn gfy-history__action-btn--primary"
+                  title="Restore inputs and results"
+                  aria-label="Restore full generation"
+                  @click="restoreFullHistory(entry)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="1 4 1 10 7 10"/>
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="gfy-history__action-btn gfy-history__action-btn--danger"
+                  title="Remove from history"
+                  aria-label="Remove this entry from history"
+                  @click="removeFromHistory(entry.id)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <button
+            v-if="history.length > 0"
+            type="button"
+            class="gfy-history__clear"
+            @click="clearHistory"
+          >
+            Clear All History
+          </button>
+        </div>
+      </div>
+
       <!-- Expertise Field -->
       <div class="gfy-input-group">
-        <label class="gfy-label">Your Area of Expertise *</label>
+        <label class="gfy-label">
+          Your Area of Expertise *
+          <span v-if="isFieldPrefilled('expertise')" class="gfy-prefilled-badge">from profile</span>
+        </label>
         <textarea
           v-model="expertise"
           class="gfy-textarea"
+          :class="{ 'gfy-textarea--prefilled': isFieldPrefilled('expertise') }"
           rows="2"
           placeholder="e.g. Digital Marketing Strategies"
+          @input="markFieldEdited('expertise')"
         ></textarea>
+        <div v-if="expertise" class="gfy-char-count">{{ expertise.length }} characters</div>
       </div>
 
       <!-- Authority Hook Builder -->
-      <div class="gfy-authority-hook">
-        <div class="gfy-authority-hook__header">
-          <span class="gfy-authority-hook__icon">&#9733;</span>
-          <h3 class="gfy-authority-hook__title">Your Authority Hook</h3>
-        </div>
+      <AuthorityHookBuilder
+        :model-value="authorityHook"
+        @update:model-value="Object.assign(authorityHook, $event)"
+        title="Your Authority Hook"
+        :placeholders="{
+          who: 'e.g. SaaS Founders',
+          what: 'e.g. Increase revenue by 40%',
+          when: 'e.g. When scaling rapidly',
+          how: 'e.g. My proven 90-day system'
+        }"
+      />
+    </div>
 
-        <!-- Builder Grid -->
-        <div class="gfy-builder">
-          <div class="gfy-builder__field">
-            <label class="gfy-builder__label">WHO do you help?</label>
-            <input
-              v-model="hookWho"
-              type="text"
-              class="gfy-builder__input"
-              placeholder="e.g. SaaS Founders"
-            />
-          </div>
-          <div class="gfy-builder__field">
-            <label class="gfy-builder__label">WHAT is the result?</label>
-            <input
-              v-model="hookWhat"
-              type="text"
-              class="gfy-builder__input"
-              placeholder="e.g. Increase revenue by 40%"
-            />
-          </div>
-          <div class="gfy-builder__field">
-            <label class="gfy-builder__label">WHEN do they need it?</label>
-            <input
-              v-model="hookWhen"
-              type="text"
-              class="gfy-builder__input"
-              placeholder="e.g. When scaling rapidly"
-            />
-          </div>
-          <div class="gfy-builder__field">
-            <label class="gfy-builder__label">HOW do you do it?</label>
-            <input
-              v-model="hookHow"
-              type="text"
-              class="gfy-builder__input"
-              placeholder="e.g. My proven 90-day system"
-            />
-          </div>
-        </div>
-
-        <!-- Live Preview -->
-        <div class="gfy-live-preview">
-          "{{ hookPreview }}"
+    <!-- Loading Skeleton -->
+    <div v-if="isGenerating && !hasTopics" class="gfy-skeleton-results">
+      <div class="gfy-skeleton-header">
+        <div class="gfy-skeleton gfy-skeleton--text gfy-skeleton--title"></div>
+        <div class="gfy-skeleton gfy-skeleton--text gfy-skeleton--badge"></div>
+      </div>
+      <div class="gfy-skeleton-grid">
+        <div v-for="i in 6" :key="i" class="gfy-skeleton-card">
+          <div class="gfy-skeleton gfy-skeleton--text gfy-skeleton--line"></div>
+          <div class="gfy-skeleton gfy-skeleton--text gfy-skeleton--line gfy-skeleton--short"></div>
         </div>
       </div>
     </div>
@@ -92,9 +232,11 @@
                   type="button"
                   class="gfy-current-topic__lock"
                   :title="topic.locked ? 'Unlock to replace' : 'Lock to keep'"
+                  :aria-label="topic.locked ? 'Unlock topic to allow replacement' : 'Lock topic to preserve'"
+                  :aria-pressed="topic.locked"
                   @click="toggleLock(topic.position)"
                 >
-                  <i :class="topic.locked ? 'fas fa-lock' : 'fas fa-lock-open'"></i>
+                  <i :class="topic.locked ? 'fas fa-lock' : 'fas fa-lock-open'" aria-hidden="true"></i>
                 </button>
               </div>
             </div>
@@ -119,15 +261,17 @@
             </div>
             <div class="gfy-results__actions">
               <!-- View Toggle -->
-              <div class="gfy-view-toggle">
+              <div class="gfy-view-toggle" role="group" aria-label="View mode toggle">
                 <button
                   type="button"
                   class="gfy-view-toggle__btn"
                   :class="{ 'gfy-view-toggle__btn--active': viewMode === 'card' }"
                   @click="viewMode = 'card'"
                   title="Card View"
+                  aria-label="Switch to card view"
+                  :aria-pressed="viewMode === 'card'"
                 >
-                  <i class="fas fa-th-large"></i>
+                  <i class="fas fa-th-large" aria-hidden="true"></i>
                 </button>
                 <button
                   type="button"
@@ -135,23 +279,33 @@
                   :class="{ 'gfy-view-toggle__btn--active': viewMode === 'list' }"
                   @click="viewMode = 'list'"
                   title="List View"
+                  aria-label="Switch to list view"
+                  :aria-pressed="viewMode === 'list'"
                 >
-                  <i class="fas fa-list"></i>
+                  <i class="fas fa-list" aria-hidden="true"></i>
                 </button>
               </div>
-              <button type="button" class="gfy-btn gfy-btn--outline" @click="handleRegenerate">
+              <button type="button" class="gfy-btn gfy-btn--outline" @click="handleRegenerate" title="Generate new topic ideas" aria-label="Regenerate topics">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M23 4v6h-6M1 20v-6h6"/>
                   <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
                 </svg>
                 Regenerate
               </button>
-              <button type="button" class="gfy-btn gfy-btn--outline" @click="handleCopyAll">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <button type="button" class="gfy-btn gfy-btn--outline" @click="handleCopyAll" title="Copy topics to clipboard" :aria-label="selectedTopics.length > 0 ? 'Copy selected topics to clipboard' : 'Copy all topics to clipboard'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                   <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
                 </svg>
                 {{ selectedTopics.length > 0 ? 'Copy Selected' : 'Copy All' }}
+              </button>
+              <button type="button" class="gfy-btn gfy-btn--outline" @click="handleExport" title="Download topics as markdown file" aria-label="Export topics as markdown">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Export
               </button>
             </div>
           </div>
@@ -172,39 +326,83 @@
           </div>
 
           <!-- Topics Grid (Card View) -->
-          <div v-if="viewMode === 'card'" class="gfy-topics-grid">
+          <div v-if="viewMode === 'card'" class="gfy-topics-grid" role="listbox" aria-label="Generated topics" :aria-multiselectable="true">
             <div
               v-for="(topic, index) in topics"
               :key="index"
               class="gfy-topic-card"
               :class="{ 'gfy-topic-card--selected': isSelected(index) }"
+              role="option"
+              :aria-selected="isSelected(index)"
+              tabindex="0"
               @click="toggleSelection(index)"
+              @keydown.enter.prevent="toggleSelection(index)"
+              @keydown.space.prevent="toggleSelection(index)"
             >
               <div class="gfy-topic-card__number">{{ index + 1 }}</div>
               <div class="gfy-topic-card__content">
                 <span v-if="topic.category" class="gfy-topic-card__category">{{ topic.category }}</span>
                 <p class="gfy-topic-card__title">{{ typeof topic === 'string' ? topic : topic.title || topic }}</p>
               </div>
-              <div class="gfy-topic-card__checkbox">
-                <span v-if="isSelected(index)" class="gfy-position-badge">{{ getSelectionPosition(index) }}</span>
+              <div class="gfy-topic-card__actions">
+                <button
+                  type="button"
+                  class="gfy-copy-btn"
+                  :class="{ 'gfy-copy-btn--copied': copiedIndex === index }"
+                  :title="copiedIndex === index ? 'Copied!' : 'Copy topic'"
+                  :aria-label="copiedIndex === index ? 'Topic copied to clipboard' : 'Copy this topic to clipboard'"
+                  @click="handleCopySingleTopic(index, $event)"
+                >
+                  <svg v-if="copiedIndex === index" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                  </svg>
+                </button>
+                <div class="gfy-topic-card__checkbox">
+                  <span v-if="isSelected(index)" class="gfy-position-badge">{{ getSelectionPosition(index) }}</span>
+                </div>
               </div>
             </div>
           </div>
 
           <!-- Topics List (List View) -->
-          <div v-else class="gfy-topics-list">
+          <div v-else class="gfy-topics-list" role="listbox" aria-label="Generated topics" :aria-multiselectable="true">
             <div
               v-for="(topic, index) in topics"
               :key="index"
               class="gfy-topic-row"
               :class="{ 'gfy-topic-row--selected': isSelected(index) }"
+              role="option"
+              :aria-selected="isSelected(index)"
+              tabindex="0"
               @click="toggleSelection(index)"
+              @keydown.enter.prevent="toggleSelection(index)"
+              @keydown.space.prevent="toggleSelection(index)"
             >
               <div class="gfy-topic-row__checkbox">
                 <span v-if="isSelected(index)" class="gfy-position-badge gfy-position-badge--small">{{ getSelectionPosition(index) }}</span>
               </div>
               <div class="gfy-topic-row__number">{{ index + 1 }}.</div>
               <p class="gfy-topic-row__title">{{ typeof topic === 'string' ? topic : topic.title || topic }}</p>
+              <button
+                type="button"
+                class="gfy-copy-btn gfy-copy-btn--small"
+                :class="{ 'gfy-copy-btn--copied': copiedIndex === index }"
+                :title="copiedIndex === index ? 'Copied!' : 'Copy topic'"
+                :aria-label="copiedIndex === index ? 'Topic copied to clipboard' : 'Copy this topic to clipboard'"
+                @click="handleCopySingleTopic(index, $event)"
+              >
+                <svg v-if="copiedIndex === index" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                </svg>
+              </button>
             </div>
           </div>
 
@@ -230,28 +428,49 @@
                 type="button"
                 class="gfy-btn gfy-btn--primary gfy-btn--large"
                 :disabled="selectedTopics.length === 0 || isSaving"
+                title="Save selected topics to your media kit"
+                aria-label="Save selected topics to media kit"
                 @click="handleSaveToMediaKit"
               >
-                <svg v-if="!isSaving" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg v-if="!isSaving" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                   <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
                   <polyline points="17 21 17 13 7 13 7 21"/>
                   <polyline points="7 3 7 8 15 8"/>
                 </svg>
-                <span v-if="isSaving" class="gfy-spinner"></span>
+                <span v-if="isSaving" class="gfy-spinner" aria-hidden="true"></span>
                 {{ isSaving ? 'Saving...' : 'Save to Media Kit' }}
               </button>
-              <button type="button" class="gfy-btn gfy-btn--text" @click="handleStartOver">
+              <button type="button" class="gfy-btn gfy-btn--text" title="Clear results and start fresh" aria-label="Start over with new topics" @click="handleStartOver">
                 Start Over
               </button>
             </div>
             <!-- Save Success Message -->
-            <span v-if="saveSuccess" class="gfy-save-success">
+            <span v-if="saveSuccess" class="gfy-save-success" role="status" aria-live="polite">
               ✓ Saved successfully!
             </span>
             <!-- Save Error Message -->
-            <span v-if="saveError" class="gfy-save-error">
+            <span v-if="saveError" class="gfy-save-error" role="alert" aria-live="assertive">
               {{ saveError }}
             </span>
+
+            <!-- Cross-tool Navigation -->
+            <div v-if="selectedTopics.length > 0" class="gfy-cross-tool-nav">
+              <span class="gfy-cross-tool-nav__label">Next Steps:</span>
+              <a
+                :href="`/tools/questions/?topic=${encodeURIComponent(getFirstSelectedTopicText())}`"
+                class="gfy-cross-tool-nav__link"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                Generate Questions for this Topic
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </a>
+            </div>
           </div>
         </main>
       </div>
@@ -260,10 +479,13 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject } from 'vue';
+import { ref, reactive, computed, watch, inject, onMounted, onUnmounted } from 'vue';
 import { useAITopics } from '../../src/composables/useAITopics';
 import { useProfileContext } from '../../src/composables/useProfileContext';
+import { useDraftState } from '../../src/composables/useDraftState';
+import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
+import { AuthorityHookBuilder } from '../_shared';
 
 // Constants
 const MAX_SELECTED_TOPICS = 5;
@@ -305,10 +527,40 @@ const saveSuccess = ref(false);
 const selectedProfileId = ref(null);
 const viewMode = ref('list'); // 'card' or 'list' - default to list for single-column display
 const saveAuthorityHook = ref(true); // Whether to also save authority hook fields
+const copiedIndex = ref(null); // Track which topic was just copied for visual feedback
 
 // Locked topics from profile (Lock/Pin feature)
 // Each item: { position: 0-4, text: string, locked: boolean }
 const currentTopics = ref([]);
+
+// Draft state for auto-save
+const {
+  hasDraft,
+  lastSaved,
+  isAutoSaving,
+  saveDraft,
+  loadDraft,
+  clearDraft,
+  startAutoSave,
+  getLastSavedText
+} = useDraftState('topics');
+
+// History for recent generations
+const {
+  history,
+  hasHistory,
+  addToHistory,
+  removeFromHistory,
+  clearHistory,
+  formatTimestamp
+} = useGeneratorHistory('topics');
+
+// Show/hide history panel
+const showHistory = ref(false);
+
+// Prefilled fields tracking
+const prefilledFields = ref(new Set());
+const showDraftPrompt = ref(false);
 
 // Computed: resolved profile ID from all available sources
 const resolvedProfileId = computed(() => {
@@ -324,20 +576,22 @@ watch(resolvedProfileId, (newId) => {
   selectedProfileId.value = newId;
 }, { immediate: true });
 
-// Authority Hook Builder fields
-const hookWho = ref('');
-const hookWhat = ref('');
-const hookWhen = ref('');
-const hookHow = ref('');
+// Authority Hook Builder fields (reactive object for shared component)
+const authorityHook = reactive({
+  who: '',
+  what: '',
+  when: '',
+  how: ''
+});
 
 /**
  * Computed: Live preview of authority hook
  */
 const hookPreview = computed(() => {
-  const who = hookWho.value || '[WHO]';
-  const what = hookWhat.value || '[WHAT]';
-  const when = hookWhen.value || '[WHEN]';
-  const how = hookHow.value || '[HOW]';
+  const who = authorityHook.who || '[WHO]';
+  const what = authorityHook.what || '[WHAT]';
+  const when = authorityHook.when || '[WHEN]';
+  const how = authorityHook.how || '[HOW]';
   return `I help ${who} ${what} ${when} through ${how}.`;
 });
 
@@ -345,10 +599,10 @@ const hookPreview = computed(() => {
  * Computed: Generated authority hook summary
  */
 const generatedHookSummary = computed(() => {
-  if (!hookWho.value && !hookWhat.value) return '';
-  let summary = `I help ${hookWho.value || ''} ${hookWhat.value || ''}`;
-  if (hookWhen.value) summary += ` ${hookWhen.value}`;
-  if (hookHow.value) summary += ` through ${hookHow.value}`;
+  if (!authorityHook.who && !authorityHook.what) return '';
+  let summary = `I help ${authorityHook.who || ''} ${authorityHook.what || ''}`;
+  if (authorityHook.when) summary += ` ${authorityHook.when}`;
+  if (authorityHook.how) summary += ` through ${authorityHook.how}`;
   return summary.trim() + '.';
 });
 
@@ -357,14 +611,33 @@ const generatedHookSummary = computed(() => {
  */
 const canGenerate = computed(() => {
   return (expertise.value && expertise.value.trim().length > 0) ||
-         (hookWho.value && hookWhat.value);
+         (authorityHook.who && authorityHook.what);
+});
+
+/**
+ * Form completion status for progress indicator
+ */
+const formCompletion = computed(() => {
+  const fields = [
+    { name: 'Expertise', filled: !!(expertise.value && expertise.value.trim()) },
+    { name: 'Who you help', filled: !!authorityHook.who },
+    { name: 'What you do', filled: !!authorityHook.what }
+  ];
+  const filledCount = fields.filter(f => f.filled).length;
+  return {
+    fields,
+    filledCount,
+    totalCount: fields.length,
+    percentage: Math.round((filledCount / fields.length) * 100),
+    isComplete: canGenerate.value
+  };
 });
 
 /**
  * Check if user has entered any authority hook data
  */
 const hasAuthorityHookData = computed(() => {
-  return !!(hookWho.value || hookWhat.value || hookWhen.value || hookHow.value);
+  return !!(authorityHook.who || authorityHook.what || authorityHook.when || authorityHook.how);
 });
 
 /**
@@ -434,10 +707,10 @@ const toggleLock = (position) => {
  */
 function populateFromProfile(profileData) {
   if (!profileData) return;
-  if (profileData.hook_who) hookWho.value = profileData.hook_who;
-  if (profileData.hook_what) hookWhat.value = profileData.hook_what;
-  if (profileData.hook_when) hookWhen.value = profileData.hook_when;
-  if (profileData.hook_how) hookHow.value = profileData.hook_how;
+  if (profileData.hook_who) authorityHook.who = profileData.hook_who;
+  if (profileData.hook_what) authorityHook.what = profileData.hook_what;
+  if (profileData.hook_when) authorityHook.when = profileData.hook_when;
+  if (profileData.hook_how) authorityHook.how = profileData.hook_how;
   if (profileData.expertise) expertise.value = profileData.expertise;
 
   // Load existing topics with locked status (all locked by default)
@@ -454,6 +727,76 @@ function populateFromProfile(profileData) {
 }
 
 /**
+ * Check if a field was prefilled from profile
+ */
+function isFieldPrefilled(fieldName) {
+  return prefilledFields.value.has(fieldName);
+}
+
+/**
+ * Mark a field as edited (removes prefilled status)
+ */
+function markFieldEdited(fieldName) {
+  prefilledFields.value.delete(fieldName);
+}
+
+/**
+ * Get current form state for draft saving
+ */
+function getDraftState() {
+  return {
+    expertise: expertise.value,
+    authorityHook: { ...authorityHook }
+  };
+}
+
+/**
+ * Restore form state from draft
+ */
+function restoreDraftState(draft) {
+  if (draft.expertise) expertise.value = draft.expertise;
+  if (draft.authorityHook) Object.assign(authorityHook, draft.authorityHook);
+}
+
+/**
+ * Handle restore draft button click
+ */
+function handleRestoreDraft() {
+  const draft = loadDraft();
+  if (draft) {
+    restoreDraftState(draft);
+  }
+  showDraftPrompt.value = false;
+}
+
+/**
+ * Handle discard draft button click
+ */
+function handleDiscardDraft() {
+  clearDraft();
+  showDraftPrompt.value = false;
+}
+
+/**
+ * Handle profile loaded with prefilled tracking
+ */
+function handleProfileLoadedWithTracking(profileData) {
+  if (!profileData) return;
+
+  // Track which fields are being prefilled
+  const newPrefilledFields = new Set();
+
+  if (profileData.expertise && !expertise.value) newPrefilledFields.add('expertise');
+  if (profileData.hook_who && !authorityHook.who) newPrefilledFields.add('hook_who');
+  if (profileData.hook_what && !authorityHook.what) newPrefilledFields.add('hook_what');
+  if (profileData.hook_when && !authorityHook.when) newPrefilledFields.add('hook_when');
+  if (profileData.hook_how && !authorityHook.how) newPrefilledFields.add('hook_how');
+
+  prefilledFields.value = newPrefilledFields;
+  populateFromProfile(profileData);
+}
+
+/**
  * Handle generate - exposed for parent to call
  */
 const handleGenerate = async () => {
@@ -465,6 +808,18 @@ const handleGenerate = async () => {
     authorityHook: generatedHookSummary.value,
     count: 10
   });
+
+  // Save to history on successful generation
+  if (topics.value && topics.value.length > 0) {
+    addToHistory({
+      inputs: {
+        expertise: expertise.value,
+        authorityHook: { ...authorityHook }
+      },
+      results: topics.value,
+      preview: expertise.value?.substring(0, 50) || topics.value[0]?.title || topics.value[0]
+    });
+  }
 
   // Emit generated event for parent (EmbeddedToolApp) to handle
   emit('generated', { topics: topics.value });
@@ -501,6 +856,56 @@ const handleCopyAll = async () => {
     await navigator.clipboard.writeText(formattedText);
   } catch (err) {
     console.error('[Topics Generator] Failed to copy:', err);
+  }
+};
+
+/**
+ * Export topics as a downloadable text file
+ */
+const handleExport = () => {
+  const topicsToExport = selectedTopics.value.length > 0
+    ? selectedTopics.value.map(idx => topics.value[idx])
+    : topics.value;
+
+  // Create markdown-formatted content
+  const content = `# Generated Topics\n\n` +
+    topicsToExport.map((topic, index) => {
+      const text = typeof topic === 'string' ? topic : topic.title || topic;
+      return `${index + 1}. ${text}`;
+    }).join('\n') +
+    `\n\n---\nGenerated with Topics Generator`;
+
+  // Create and trigger download
+  const blob = new Blob([content], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'topics.md';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+/**
+ * Copy a single topic to clipboard
+ */
+const handleCopySingleTopic = async (index, event) => {
+  // Prevent triggering the card/row selection
+  event.stopPropagation();
+
+  const topic = topics.value[index];
+  const text = typeof topic === 'string' ? topic : topic.title || topic;
+
+  try {
+    await navigator.clipboard.writeText(text);
+    // Show visual feedback
+    copiedIndex.value = index;
+    setTimeout(() => {
+      copiedIndex.value = null;
+    }, 1500);
+  } catch (err) {
+    console.error('[Topics Generator] Failed to copy topic:', err);
   }
 };
 
@@ -547,10 +952,10 @@ const handleSaveToMediaKit = async () => {
     let hookResult = { success: true };
     if (saveAuthorityHook.value && hasAuthorityHookData.value) {
       hookResult = await saveToProfile('authority_hook', {
-        who: hookWho.value,
-        what: hookWhat.value,
-        when: hookWhen.value,
-        how: hookHow.value,
+        who: authorityHook.who,
+        what: authorityHook.what,
+        when: authorityHook.when,
+        how: authorityHook.how,
         summary: generatedHookSummary.value
       }, {
         profileId: selectedProfileId.value
@@ -594,6 +999,51 @@ const handleStartOver = () => {
   }
 };
 
+/**
+ * Restore inputs from a history entry
+ */
+const restoreFromHistory = (entry) => {
+  if (!entry) return;
+
+  // Restore inputs
+  if (entry.inputs) {
+    if (entry.inputs.expertise) {
+      expertise.value = entry.inputs.expertise;
+    }
+    if (entry.inputs.authorityHook) {
+      Object.assign(authorityHook, entry.inputs.authorityHook);
+    }
+  }
+
+  // Close history panel
+  showHistory.value = false;
+};
+
+/**
+ * Restore inputs and results from a history entry
+ */
+const restoreFullHistory = (entry) => {
+  if (!entry) return;
+
+  restoreFromHistory(entry);
+
+  // Also restore results if available
+  if (entry.results && Array.isArray(entry.results)) {
+    topics.value = entry.results;
+    selectedTopics.value = [];
+  }
+};
+
+/**
+ * Get the text of the first selected topic (for cross-tool navigation)
+ */
+const getFirstSelectedTopicText = () => {
+  if (selectedTopics.value.length === 0) return '';
+  const firstIndex = selectedTopics.value[0];
+  const topic = topics.value[firstIndex];
+  return typeof topic === 'string' ? topic : topic.title || topic;
+};
+
 // Watch for canGenerate changes
 watch(canGenerate, (newValue) => {
   emit('update:can-generate', !!newValue);
@@ -601,16 +1051,17 @@ watch(canGenerate, (newValue) => {
 
 // Watch authority hook changes
 watch(
-  [hookWho, hookWhat, hookWhen, hookHow],
+  authorityHook,
   () => {
     emit('authority-hook-update', {
-      who: hookWho.value,
-      what: hookWhat.value,
-      when: hookWhen.value,
-      how: hookHow.value,
+      who: authorityHook.who,
+      what: authorityHook.what,
+      when: authorityHook.when,
+      how: authorityHook.how,
       summary: generatedHookSummary.value
     });
-  }
+  },
+  { deep: true }
 );
 
 // Watch profile data from both props and inject
@@ -618,10 +1069,45 @@ watch(
   [() => props.profileData, injectedProfileData],
   ([propsData, injectedData]) => {
     const data = propsData || injectedData;
-    if (data) populateFromProfile(data);
+    if (data) handleProfileLoadedWithTracking(data);
   },
   { immediate: true }
 );
+
+/**
+ * Keyboard shortcut handler (Ctrl/Cmd + Enter to generate)
+ */
+const handleKeyboardShortcut = (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    if (canGenerate.value && !isGenerating.value && !hasTopics.value) {
+      event.preventDefault();
+      handleGenerate();
+    }
+  }
+};
+
+/**
+ * Initialize on mount
+ */
+onMounted(() => {
+  // Check for saved draft on mount
+  if (hasDraft.value) {
+    showDraftPrompt.value = true;
+  }
+
+  // Start auto-save
+  startAutoSave(getDraftState);
+
+  // Add keyboard shortcut listener
+  window.addEventListener('keydown', handleKeyboardShortcut);
+});
+
+/**
+ * Cleanup on unmount
+ */
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyboardShortcut);
+});
 
 // Expose for parent
 defineExpose({
@@ -826,6 +1312,13 @@ defineExpose({
 
 .gfy-textarea::placeholder {
   color: var(--gfy-text-muted);
+}
+
+.gfy-char-count {
+  font-size: 0.75rem;
+  color: var(--gfy-text-muted, #94a3b8);
+  text-align: right;
+  margin-top: 4px;
 }
 
 /* AUTHORITY HOOK BLOCK */
@@ -1404,6 +1897,46 @@ defineExpose({
   color: #dc2626;
 }
 
+/* Cross-tool Navigation */
+.gfy-cross-tool-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--gfy-border-color);
+}
+
+.gfy-cross-tool-nav__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--gfy-text-secondary);
+}
+
+.gfy-cross-tool-nav__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--gfy-primary-light);
+  border: 1px solid var(--gfy-primary-color);
+  border-radius: var(--gfy-radius-md);
+  color: var(--gfy-primary-color);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.gfy-cross-tool-nav__link:hover {
+  background: var(--gfy-primary-color);
+  color: var(--gfy-white);
+}
+
+.gfy-cross-tool-nav__link svg {
+  flex-shrink: 0;
+}
+
 .gfy-spinner {
   display: inline-block;
   width: 16px;
@@ -1437,6 +1970,644 @@ defineExpose({
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
+  }
+
+  /* Action buttons wrap on mobile */
+  .gfy-results__actions {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .gfy-results__actions .gfy-btn {
+    flex: 1 1 auto;
+    min-width: 120px;
+  }
+
+  /* Save section stacks on mobile */
+  .gfy-save-section {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .gfy-save-section .gfy-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Cross-tool navigation stacks */
+  .gfy-cross-tool-nav {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .gfy-cross-tool-nav__link {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Welcome section adjustments */
+  .gfy-welcome-section {
+    padding: 1.5rem 1rem;
+  }
+
+  .gfy-welcome-section__icon {
+    width: 56px;
+    height: 56px;
+  }
+
+  .gfy-welcome-section__title {
+    font-size: 1.125rem;
+  }
+
+  .gfy-welcome-section__text {
+    font-size: 0.875rem;
+  }
+
+  /* Topic cards touch-friendly */
+  .gfy-topic-card {
+    padding: 0.875rem;
+  }
+
+  .gfy-topic-card__title {
+    font-size: 0.875rem;
+  }
+
+  /* Topic rows touch-friendly */
+  .gfy-topic-row {
+    padding: 0.75rem;
+  }
+
+  /* Current topics section */
+  .gfy-current-topics {
+    padding: 1rem;
+  }
+
+  .gfy-current-topic {
+    padding: 0.625rem 0.75rem;
+  }
+
+  .gfy-current-topics__summary {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  /* Draft prompt stacks */
+  .gfy-draft-prompt__actions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .gfy-draft-prompt__actions .gfy-btn {
+    flex: 1;
+  }
+
+  /* Skeleton grid single column */
+  .gfy-skeleton-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Results title smaller */
+  .gfy-results__title {
+    font-size: 1.125rem;
+  }
+
+  /* Form progress compact */
+  .gfy-form-progress {
+    padding: 10px 12px;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .gfy-topic-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .gfy-topic-card__actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .gfy-topic-card__number {
+    width: 24px;
+    height: 24px;
+    font-size: 0.75rem;
+  }
+
+  .gfy-results__actions {
+    gap: 0.5rem;
+  }
+
+  .gfy-results__actions .gfy-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .gfy-view-toggle {
+    display: none;
+  }
+
+  .gfy-btn--large {
+    padding: 0.75rem 1rem;
+    font-size: 0.9375rem;
+  }
+
+  .gfy-welcome-section__tips {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .gfy-cross-tool-nav__link {
+    padding: 8px 12px;
+    font-size: 0.8125rem;
+  }
+}
+
+/* ===========================================
+   ENHANCED UX FEATURES
+   =========================================== */
+
+/* Draft Restore Prompt */
+.gfy-draft-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #93c5fd;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.gfy-draft-prompt__content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.gfy-draft-prompt__content svg {
+  flex-shrink: 0;
+  color: var(--gfy-primary-color);
+  margin-top: 2px;
+}
+
+.gfy-draft-prompt__content strong {
+  display: block;
+  font-size: 0.9375rem;
+  color: var(--gfy-text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.gfy-draft-prompt__content p {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--gfy-text-secondary);
+}
+
+.gfy-draft-prompt__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: 2rem;
+}
+
+/* Auto-save Indicator */
+.gfy-auto-save-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--gfy-bg-color);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: var(--gfy-text-secondary);
+  margin-bottom: 1rem;
+}
+
+.gfy-auto-save-indicator svg {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Form Progress Indicator */
+.gfy-form-progress {
+  padding: 12px 16px;
+  background: var(--gfy-bg-secondary, #f8fafc);
+  border: 1px solid var(--gfy-border-color, #e2e8f0);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.gfy-form-progress--complete {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.gfy-form-progress__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.gfy-form-progress__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--gfy-text-secondary, #64748b);
+}
+
+.gfy-form-progress--complete .gfy-form-progress__label {
+  color: #059669;
+}
+
+.gfy-form-progress__bar {
+  height: 6px;
+  background: var(--gfy-border-color, #e2e8f0);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.gfy-form-progress__fill {
+  height: 100%;
+  background: var(--gfy-primary-color, #2563eb);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.gfy-form-progress--complete .gfy-form-progress__fill {
+  background: #10b981;
+}
+
+/* Prefilled Badge */
+.gfy-prefilled-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--gfy-primary-color);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-radius: 4px;
+  margin-left: 8px;
+}
+
+/* Prefilled Textarea State */
+.gfy-textarea--prefilled {
+  border-color: rgba(37, 99, 235, 0.3);
+  background: rgba(37, 99, 235, 0.02);
+}
+
+/* Small button variant */
+.gfy-btn--small {
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+}
+
+/* Welcome Section */
+.gfy-welcome-section {
+  text-align: center;
+  padding: 2rem 1.5rem;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+  border: 1px dashed var(--gfy-border-color, #e2e8f0);
+  border-radius: var(--gfy-radius-lg, 12px);
+  margin-bottom: 1.5rem;
+}
+
+.gfy-welcome-section__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: var(--gfy-white, #ffffff);
+  border-radius: 50%;
+  margin-bottom: 1rem;
+  color: var(--gfy-primary-color, #2563eb);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+}
+
+.gfy-welcome-section__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--gfy-text-primary, #0f172a);
+  margin: 0 0 0.5rem 0;
+}
+
+.gfy-welcome-section__text {
+  font-size: 0.9375rem;
+  color: var(--gfy-text-secondary, #64748b);
+  margin: 0 0 1rem 0;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.gfy-welcome-section__tips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.gfy-welcome-section__tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--gfy-text-secondary, #64748b);
+  background: var(--gfy-white, #ffffff);
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--gfy-border-color, #e2e8f0);
+}
+
+.gfy-welcome-section__tip svg {
+  color: #10b981;
+}
+
+/* Copy Button for Individual Items */
+.gfy-copy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: var(--gfy-white, #ffffff);
+  border: 1px solid var(--gfy-border-color, #e2e8f0);
+  border-radius: 6px;
+  color: var(--gfy-text-muted, #94a3b8);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.gfy-copy-btn:hover {
+  border-color: var(--gfy-primary-color, #2563eb);
+  color: var(--gfy-primary-color, #2563eb);
+  background: var(--gfy-primary-light, #eff6ff);
+}
+
+.gfy-copy-btn--copied {
+  border-color: #10b981;
+  color: #10b981;
+  background: #ecfdf5;
+}
+
+.gfy-copy-btn--small {
+  width: 28px;
+  height: 28px;
+}
+
+/* Topic Card Actions Container */
+.gfy-topic-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Loading Skeleton Styles */
+.gfy-skeleton-results {
+  padding: 1.5rem;
+  background: var(--gfy-white, #ffffff);
+  border: 1px solid var(--gfy-border-color, #e2e8f0);
+  border-radius: var(--gfy-radius-lg, 12px);
+}
+
+.gfy-skeleton-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.gfy-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.gfy-skeleton-card {
+  padding: 1rem;
+  background: var(--gfy-bg-secondary, #f8fafc);
+  border-radius: 8px;
+}
+
+.gfy-skeleton {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.gfy-skeleton--text {
+  height: 16px;
+}
+
+.gfy-skeleton--title {
+  width: 150px;
+  height: 24px;
+}
+
+.gfy-skeleton--badge {
+  width: 80px;
+  height: 20px;
+}
+
+.gfy-skeleton--line {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.gfy-skeleton--short {
+  width: 60%;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ===========================================
+   HISTORY SECTION
+   =========================================== */
+.gfy-history {
+  margin-bottom: 1.5rem;
+}
+
+.gfy-history__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--gfy-bg-color, #f8fafc);
+  border: 1px solid var(--gfy-border-color, #e2e8f0);
+  border-radius: var(--gfy-radius-md, 6px);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gfy-text-secondary, #64748b);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gfy-history__toggle:hover {
+  background: var(--gfy-white, #ffffff);
+  border-color: var(--gfy-primary-color, #2563eb);
+  color: var(--gfy-primary-color, #2563eb);
+}
+
+.gfy-history__chevron {
+  margin-left: auto;
+  transition: transform 0.2s ease;
+}
+
+.gfy-history__chevron--open {
+  transform: rotate(180deg);
+}
+
+.gfy-history__panel {
+  margin-top: 8px;
+  padding: 12px;
+  background: var(--gfy-white, #ffffff);
+  border: 1px solid var(--gfy-border-color, #e2e8f0);
+  border-radius: var(--gfy-radius-md, 6px);
+}
+
+.gfy-history__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.gfy-history__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--gfy-bg-color, #f8fafc);
+  border: 1px solid var(--gfy-border-color, #e2e8f0);
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.gfy-history__item:hover {
+  border-color: var(--gfy-primary-color, #2563eb);
+  background: var(--gfy-primary-light, #eff6ff);
+}
+
+.gfy-history__item-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gfy-history__item-preview {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--gfy-text-primary, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gfy-history__item-time {
+  font-size: 0.6875rem;
+  color: var(--gfy-text-muted, #94a3b8);
+}
+
+.gfy-history__item-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.gfy-history__action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: var(--gfy-white, #ffffff);
+  border: 1px solid var(--gfy-border-color, #e2e8f0);
+  border-radius: 4px;
+  color: var(--gfy-text-secondary, #64748b);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gfy-history__action-btn:hover {
+  border-color: var(--gfy-primary-color, #2563eb);
+  color: var(--gfy-primary-color, #2563eb);
+  background: var(--gfy-primary-light, #eff6ff);
+}
+
+.gfy-history__action-btn--primary {
+  background: var(--gfy-primary-color, #2563eb);
+  border-color: var(--gfy-primary-color, #2563eb);
+  color: var(--gfy-white, #ffffff);
+}
+
+.gfy-history__action-btn--primary:hover {
+  background: var(--gfy-primary-dark, #1d4ed8);
+  border-color: var(--gfy-primary-dark, #1d4ed8);
+  color: var(--gfy-white, #ffffff);
+}
+
+.gfy-history__action-btn--danger:hover {
+  border-color: #dc2626;
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+.gfy-history__clear {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px;
+  background: transparent;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--gfy-text-muted, #94a3b8);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.gfy-history__clear:hover {
+  color: #dc2626;
+}
+
+/* History responsive */
+@media (max-width: 480px) {
+  .gfy-history__item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .gfy-history__item-actions {
+    justify-content: flex-end;
   }
 }
 </style>

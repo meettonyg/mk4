@@ -1,59 +1,172 @@
 <template>
-  <!-- Standalone Mode: Full two-panel layout -->
+  <!-- Standalone Mode: Full two-panel layout with 6 W's Framework -->
   <GeneratorLayout
     v-if="mode === 'default'"
     title="Tagline Generator"
-    subtitle="Create memorable taglines that capture your unique value proposition using AI"
-    intro-text="Generate five compelling taglines based on your unique value proposition and professional identity. Each tagline is crafted to be memorable, concise, and aligned with your brand voice."
+    subtitle="Distill your expertise into a memorable, powerful statement"
+    intro-text="Create memorable taglines using the 6 W's Framework. Generate options for your brand, podcast, or course that stick with your audience."
     generator-type="tagline"
     :has-results="hasTaglines"
     :is-loading="isGenerating"
   >
-    <!-- Left Panel: Form -->
-    <template #left>
-      <!-- Personal Info Section -->
-      <div class="generator__section">
-        <h3 class="generator__section-title">Your Information</h3>
+    <!-- Profile Context Banner (for logged-in users) -->
+    <template #profile-context>
+      <ProfileContextBanner
+        @profile-loaded="handleProfileLoaded"
+        @profile-cleared="handleProfileCleared"
+      />
 
-        <div class="generator__field">
-          <label class="generator__field-label">Your Name (Optional)</label>
-          <input
-            v-model="name"
-            type="text"
-            class="generator__field-input"
-            placeholder="e.g., Jane Smith"
-          />
-          <p class="generator__field-helper">
-            Optional: Include your name to personalize your tagline.
-          </p>
+      <!-- Draft Restore Prompt -->
+      <div v-if="showDraftPrompt" class="draft-restore-prompt">
+        <div class="draft-restore-prompt__icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
         </div>
-
-        <div class="generator__field">
-          <label class="generator__field-label">What You Do *</label>
-          <textarea
-            v-model="authorityHookText"
-            class="generator__field-input generator__field-textarea"
-            placeholder="e.g., I help entrepreneurs build sustainable businesses through strategic planning and mindset coaching..."
-            rows="3"
-          ></textarea>
-          <p class="generator__field-helper">
-            Describe your work and the transformation you provide.
-          </p>
+        <div class="draft-restore-prompt__content">
+          <span class="draft-restore-prompt__title">Restore your draft?</span>
+          <span class="draft-restore-prompt__text">You have an unsaved draft from {{ getLastSavedText() }}</span>
+        </div>
+        <div class="draft-restore-prompt__actions">
+          <button type="button" class="draft-restore-prompt__btn draft-restore-prompt__btn--restore" @click="restoreFromDraft(loadDraft())">
+            Restore
+          </button>
+          <button type="button" class="draft-restore-prompt__btn draft-restore-prompt__btn--dismiss" @click="dismissDraftPrompt">
+            Discard
+          </button>
         </div>
       </div>
 
-      <!-- Tagline Settings -->
-      <div class="generator__section">
-        <h3 class="generator__section-title">Tagline Tone</h3>
+      <!-- Auto-save indicator -->
+      <div v-if="isAutoSaving" class="auto-save-indicator">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin">
+          <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"/>
+        </svg>
+        Saving draft...
+      </div>
+    </template>
 
+    <!-- Left Panel: Form -->
+    <template #left>
+
+      <!-- Intent Tabs -->
+      <div class="generator__intent-tabs">
+        <button
+          v-for="option in INTENT_OPTIONS"
+          :key="option.value"
+          type="button"
+          class="generator__intent-tab"
+          :class="{ 'active': intent === option.value }"
+          @click="intent = option.value"
+        >
+          {{ option.label }}
+        </button>
+      </div>
+
+      <!-- STEP 1: Authority Framework -->
+      <div class="generator__section">
+        <h3 class="generator__section-title">Step 1: Your Authority Framework</h3>
+
+        <!-- Authority Hook Box -->
+        <AuthorityHookBuilder
+          :model-value="authorityHook"
+          @update:model-value="Object.assign(authorityHook, $event)"
+          title="Your Authority Hook"
+          :placeholders="{
+            who: 'e.g. SaaS Founders',
+            what: 'e.g. Scale to 7-figures',
+            when: 'e.g. Feeling plateaued',
+            how: 'e.g. 90-day framework'
+          }"
+        />
+
+        <!-- Impact Intro Box -->
+        <ImpactIntroBuilder
+          :model-value="impactIntro"
+          @update:model-value="Object.assign(impactIntro, $event)"
+          title="Your Impact Intro"
+          :placeholders="{
+            where: 'e.g. Helped 200+ startups achieve milestones',
+            why: 'e.g. Democratize elite growth strategies'
+          }"
+        />
+      </div>
+
+      <!-- Section Divider -->
+      <div class="generator__divider">
+        <span>Context & Style</span>
+      </div>
+
+      <!-- STEP 2: Brand Context -->
+      <div class="generator__section">
+        <h3 class="generator__section-title">Step 2: Brand Context</h3>
+
+        <div class="generator__grid">
+          <div class="generator__field">
+            <label class="generator__field-label">
+              Industry
+              <span v-if="isFieldPrefilled('industry')" class="generator__prefilled-badge" title="Loaded from your profile">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                from profile
+              </span>
+            </label>
+            <input
+              v-model="brandContext.industry"
+              type="text"
+              class="generator__field-input"
+              :class="{ 'generator__field-input--prefilled': isFieldPrefilled('industry') }"
+              placeholder="e.g. SaaS, Consulting"
+              @input="markFieldEdited('industry')"
+            />
+          </div>
+          <div class="generator__field">
+            <label class="generator__field-label">Unique Factor</label>
+            <input
+              v-model="brandContext.uniqueFactor"
+              type="text"
+              class="generator__field-input"
+              placeholder="e.g. No-BS approach, Zero-to-One focus"
+            />
+          </div>
+        </div>
         <div class="generator__field">
-          <label class="generator__field-label">Tone</label>
-          <select v-model="tone" class="generator__field-input">
-            <option value="professional">Professional</option>
-            <option value="conversational">Conversational</option>
-            <option value="authoritative">Authoritative</option>
-            <option value="friendly">Friendly</option>
-          </select>
+          <label class="generator__field-label">Existing Taglines (Optional)</label>
+          <textarea
+            v-model="brandContext.existingTaglines"
+            class="generator__field-input generator__field-textarea"
+            placeholder="List any slogans you currently use to help the AI improve upon them..."
+            rows="2"
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- STEP 3: Tagline Settings -->
+      <div class="generator__section">
+        <h3 class="generator__section-title">Step 3: Tagline Settings</h3>
+
+        <div class="generator__grid">
+          <div class="generator__field">
+            <label class="generator__field-label">Style Focus</label>
+            <select v-model="styleFocus" class="generator__field-input">
+              <option v-for="opt in STYLE_FOCUS_OPTIONS" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
+          <div class="generator__field">
+            <label class="generator__field-label">Tone</label>
+            <select v-model="tone" class="generator__field-input">
+              <option v-for="opt in TONE_OPTIONS" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -69,7 +182,7 @@
           <svg v-if="!isGenerating" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
           </svg>
-          {{ isGenerating ? 'Generating...' : 'Generate 5 Taglines with AI' }}
+          {{ isGenerating ? 'Generating...' : generateButtonText }}
         </button>
       </div>
 
@@ -96,78 +209,201 @@
 
     <!-- Results -->
     <template #results>
-      <div class="tagline-generator__results">
-        <div class="tagline-generator__results-header">
-          <h3>Your Generated Taglines</h3>
-          <p>Click a tagline to select it</p>
-        </div>
+      <div class="tagline-results">
+        <div class="tagline-results__layout">
 
-        <!-- Tagline Cards -->
-        <div class="tagline-generator__cards">
-          <button
-            v-for="(tagline, index) in taglines"
-            :key="index"
-            type="button"
-            class="tagline-generator__card"
-            :class="{ 'tagline-generator__card--selected': selectedIndex === index }"
-            @click="handleSelectTagline(index)"
-          >
-            <span class="tagline-generator__card-number">{{ index + 1 }}</span>
-            <span class="tagline-generator__card-text">{{ tagline }}</span>
-            <svg v-if="selectedIndex === index" class="tagline-generator__card-check" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
-          </button>
-        </div>
+          <!-- SIDEBAR: Master Tagline Slot -->
+          <aside class="tagline-results__sidebar">
+            <div class="tagline-master-slot">
+              <div class="tagline-master-slot__header">
+                <h3 class="tagline-master-slot__title">Your Master Tagline</h3>
+              </div>
 
-        <!-- Selected Preview -->
-        <div v-if="selectedTagline" class="tagline-generator__preview">
-          <span class="tagline-generator__preview-label">Selected:</span>
-          <span class="tagline-generator__preview-text">"{{ selectedTagline }}"</span>
-        </div>
+              <div
+                class="tagline-master-slot__card"
+                :class="{ 'tagline-master-slot__card--locked': lockedTagline }"
+              >
+                <div class="tagline-master-slot__card-header">
+                  <span class="tagline-master-slot__label">
+                    {{ lockedTagline ? 'Active Tagline' : 'Select a Tagline' }}
+                  </span>
+                  <svg v-if="lockedTagline" class="tagline-master-slot__lock" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 1C8.676 1 6 3.676 6 7v2H4v14h16V9h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4zm0 10c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/>
+                  </svg>
+                </div>
+                <div class="tagline-master-slot__preview">
+                  {{ lockedTagline || selectedTagline || 'Click a tagline below to preview it here' }}
+                </div>
+              </div>
 
-        <!-- Navigation -->
-        <div class="tagline-generator__nav">
-          <button
-            type="button"
-            class="generator__button generator__button--outline"
-            :disabled="selectedIndex <= 0"
-            @click="selectPrevious"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="15 18 9 12 15 6"/>
-            </svg>
-            Previous
-          </button>
-          <span class="tagline-generator__nav-count">
-            {{ selectedIndex + 1 }} / {{ taglines.length }}
-          </span>
-          <button
-            type="button"
-            class="generator__button generator__button--outline"
-            :disabled="selectedIndex >= taglines.length - 1"
-            @click="selectNext"
-          >
-            Next
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </button>
-        </div>
+              <p class="tagline-master-slot__hint">
+                This tagline will be used across your Media Kit and bio variations.
+              </p>
+            </div>
+          </aside>
 
-        <!-- Actions -->
-        <div class="tagline-generator__actions">
-          <button
-            type="button"
-            class="generator__button generator__button--outline"
-            @click="handleCopy"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-            Copy to Clipboard
-          </button>
+          <!-- MAIN: Tagline List -->
+          <main class="tagline-results__main">
+            <div class="tagline-results__header">
+              <h3 class="tagline-results__title">{{ taglines.length }} AI Generated Ideas</h3>
+              <div class="tagline-results__actions">
+                <button
+                  type="button"
+                  class="generator__button generator__button--outline"
+                  @click="handleGenerate"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 4v6h-6M1 20v-6h6"/>
+                    <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                  </svg>
+                  Regenerate
+                </button>
+                <button
+                  type="button"
+                  class="generator__button generator__button--outline"
+                  @click="handleCopyAll"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                  Copy All
+                </button>
+              </div>
+            </div>
+
+            <!-- Refinement Loop Box -->
+            <div class="tagline-refinement">
+              <div class="tagline-refinement__header">
+                <svg class="tagline-refinement__icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+                <span class="tagline-refinement__title">Refine Taglines</span>
+              </div>
+              <div class="tagline-refinement__input-wrapper">
+                <textarea
+                  v-model="refinementFeedback"
+                  class="tagline-refinement__textarea"
+                  rows="1"
+                  placeholder="e.g. Make them shorter or more focused on the 90-day timeline..."
+                ></textarea>
+                <button
+                  type="button"
+                  class="tagline-refinement__btn"
+                  :disabled="!refinementFeedback.trim() || isGenerating"
+                  @click="handleRefine"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 4v6h-6M1 20v-6h6"/>
+                    <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                  </svg>
+                  Refine
+                </button>
+              </div>
+            </div>
+
+            <!-- Tagline Row List -->
+            <div class="tagline-list">
+              <button
+                v-for="(tagline, index) in taglines"
+                :key="index"
+                type="button"
+                class="tagline-row"
+                :class="{
+                  'tagline-row--selected': selectedIndex === index,
+                  'tagline-row--locked': lockedTaglineIndex === index
+                }"
+                @click="handleSelectTagline(index)"
+              >
+                <div class="tagline-row__checkbox" :class="{ 'tagline-row__checkbox--checked': selectedIndex === index }">
+                  <svg v-if="selectedIndex === index" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <polyline points="20 6 9 17 4 12" stroke="currentColor" stroke-width="3" fill="none"/>
+                  </svg>
+                </div>
+                <p class="tagline-row__text">{{ tagline.text }}</p>
+                <button
+                  v-if="selectedIndex === index && !lockedTagline"
+                  type="button"
+                  class="tagline-row__lock-btn"
+                  title="Lock as Master Tagline"
+                  @click.stop="handleLockTagline(index)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                </button>
+                <svg v-if="lockedTaglineIndex === index" class="tagline-row__locked-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 1C8.676 1 6 3.676 6 7v2H4v14h16V9h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4zm0 10c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="tagline-results__footer">
+              <!-- Save Success Message -->
+              <div v-if="saveSuccess" class="tagline-save-success">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                Tagline saved to profile!
+              </div>
+
+              <!-- Save Error Message -->
+              <div v-if="saveError" class="tagline-save-error">
+                {{ saveError }}
+              </div>
+
+              <button
+                type="button"
+                class="generator__button generator__button--call-to-action"
+                :disabled="(!selectedTagline && !lockedTagline) || isSavingToProfile || !hasSelectedProfile"
+                :title="!hasSelectedProfile ? 'Select a profile above to save' : ''"
+                @click="handleSaveToProfile"
+              >
+                <svg v-if="!isSavingToProfile" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                <svg v-else class="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
+                  <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/>
+                </svg>
+                {{ isSavingToProfile ? 'Saving...' : 'Save Tagline to Profile' }}
+              </button>
+              <button
+                type="button"
+                class="generator__button generator__button--ghost"
+                @click="handleStartOver"
+              >
+                Start Over
+              </button>
+            </div>
+
+            <!-- Cross-tool Navigation -->
+            <div v-if="lockedTagline || selectedTagline" class="tagline-cross-tool-nav">
+              <span class="tagline-cross-tool-nav__label">Continue building your brand:</span>
+              <div class="tagline-cross-tool-nav__links">
+                <a href="/tools/biography/" class="tagline-cross-tool-nav__link">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  Create Biography
+                </a>
+                <a href="/tools/persona/" class="tagline-cross-tool-nav__link">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
+                  Define Persona
+                </a>
+              </div>
+            </div>
+          </main>
         </div>
       </div>
     </template>
@@ -194,37 +430,43 @@
   >
     <!-- Input Form -->
     <div class="gmkb-ai-form">
-      <!-- Name Field -->
+      <!-- Intent Tabs (Compact) -->
       <div class="gmkb-ai-form-group">
-        <label class="gmkb-ai-label">Your Name (Optional)</label>
+        <label class="gmkb-ai-label">Tagline Type</label>
+        <select v-model="intent" class="gmkb-ai-input">
+          <option v-for="opt in INTENT_OPTIONS" :key="opt.value" :value="opt.value">
+            {{ opt.label }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Authority Hook (Compact) -->
+      <div class="gmkb-ai-form-group">
+        <label class="gmkb-ai-label gmkb-ai-label--required">Who do you help?</label>
         <input
-          v-model="name"
+          v-model="authorityHook.who"
           type="text"
           class="gmkb-ai-input"
-          placeholder="e.g., Jane Smith"
+          placeholder="e.g., SaaS Founders"
         />
       </div>
 
-      <!-- Authority Hook -->
       <div class="gmkb-ai-form-group">
-        <label class="gmkb-ai-label gmkb-ai-label--required">What You Do</label>
-        <textarea
-          v-model="authorityHookText"
-          class="gmkb-ai-input gmkb-ai-textarea"
-          placeholder="e.g., I help entrepreneurs build sustainable businesses through strategic planning and mindset coaching..."
-          rows="3"
-        ></textarea>
-        <span class="gmkb-ai-hint">
-          Describe your work and the transformation you provide.
-        </span>
+        <label class="gmkb-ai-label gmkb-ai-label--required">What do they achieve?</label>
+        <input
+          v-model="authorityHook.what"
+          type="text"
+          class="gmkb-ai-input"
+          placeholder="e.g., Scale to 7-figures"
+        />
       </div>
 
       <!-- Tone Selector -->
-      <AiToneSelector v-model="tone" />
+      <AiToneSelector v-model="tone" :options="TONE_OPTIONS" />
 
       <!-- Generate Button -->
       <AiGenerateButton
-        text="Generate 5 Taglines"
+        :text="generateButtonText"
         loading-text="Generating taglines..."
         :loading="isGenerating"
         :disabled="!canGenerate"
@@ -240,7 +482,7 @@
           Click a tagline to select it:
         </p>
         <AiResultsDisplay
-          :content="taglines"
+          :content="taglines.map(t => t.text)"
           format="cards"
           :selected-index="selectedIndex"
           @select="handleSelectTagline"
@@ -287,23 +529,32 @@
   <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
   <div v-else class="gmkb-embedded-form">
     <div class="gmkb-embedded-fields">
+      <!-- Intent Selection -->
       <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.name || 'Your Name or Brand' }} *</label>
+        <label class="gmkb-embedded-label">Tagline Type</label>
+        <select v-model="intent" class="gmkb-embedded-input">
+          <option v-for="opt in INTENT_OPTIONS" :key="opt.value" :value="opt.value">
+            {{ opt.label }}
+          </option>
+        </select>
+      </div>
+      <div class="gmkb-embedded-field">
+        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.who || 'Who do you help?' }} *</label>
         <input
-          v-model="name"
+          v-model="authorityHook.who"
           type="text"
           class="gmkb-embedded-input"
-          :placeholder="currentIntent?.formPlaceholders?.name || 'e.g., Jane Smith or Your Brand Name'"
+          :placeholder="currentIntent?.formPlaceholders?.who || 'e.g., SaaS Founders, Executives'"
         />
       </div>
       <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.background || 'Your Authority Hook (Optional)' }}</label>
-        <textarea
-          v-model="authorityHookText"
-          class="gmkb-embedded-input gmkb-embedded-textarea"
-          :placeholder="currentIntent?.formPlaceholders?.background || 'e.g., I help executives build high-performance teams...'"
-          rows="2"
-        ></textarea>
+        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.what || 'What do they achieve?' }} *</label>
+        <input
+          v-model="authorityHook.what"
+          type="text"
+          class="gmkb-embedded-input"
+          :placeholder="currentIntent?.formPlaceholders?.what || 'e.g., Scale to 7-figures, Work-life balance'"
+        />
       </div>
     </div>
     <div v-if="error" class="gmkb-embedded-error">{{ error }}</div>
@@ -312,8 +563,10 @@
 
 <script setup>
 import { ref, computed, onMounted, watch, inject } from 'vue';
-import { useAITagline } from '../../src/composables/useAITagline';
+import { useAITagline, STYLE_FOCUS_OPTIONS, TONE_OPTIONS, INTENT_OPTIONS } from '../../src/composables/useAITagline';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
+import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
+import { useDraftState } from '../../src/composables/useDraftState';
 
 // Compact widget components (integrated mode)
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
@@ -322,14 +575,14 @@ import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
+import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ImpactIntroBuilder, ProfileContextBanner, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
 
 // Inject profile data from EmbeddedToolWrapper (for embedded mode)
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
 
 const props = defineProps({
   /**
-   * Mode: 'integrated' or 'standalone'
+   * Mode: 'default', 'integrated', or 'embedded'
    */
   mode: {
     type: String,
@@ -358,7 +611,7 @@ const props = defineProps({
 
 const emit = defineEmits(['applied', 'generated', 'preview-update', 'update:can-generate']);
 
-// Use composables
+// Use composables - destructure all needed state from composable
 const {
   isGenerating,
   error,
@@ -373,14 +626,76 @@ const {
   selectPrevious,
   generate,
   copyToClipboard,
-  tone
+  // Form state from composable (6 W's)
+  authorityHook,
+  impactIntro,
+  brandContext,
+  // Settings state from composable
+  styleFocus,
+  tone,
+  intent,
+  canGenerate,
+  loadFromProfile,
+  // Locking & refinement
+  lockedTagline,
+  lockedTaglineIndex,
+  lockTagline,
+  unlockTagline,
+  refine,
+  refinementFeedback,
+  reset
 } = useAITagline();
 
-const { authorityHookSummary, syncFromStore, loadFromProfileData } = useAuthorityHook();
+const { syncFromStore, loadFromProfileData } = useAuthorityHook();
 
-// Local state
-const name = ref('');
-const authorityHookText = ref('');
+// Profile save functionality (standalone mode)
+const {
+  selectedProfileId,
+  hasSelectedProfile,
+  saveToProfile
+} = useStandaloneProfile();
+
+// Save state
+const isSavingToProfile = ref(false);
+const saveSuccess = ref(false);
+const saveError = ref(null);
+
+// Track which fields were pre-filled from profile
+const prefilledFields = ref(new Set());
+
+// Draft state for auto-saving (standalone mode only)
+const {
+  hasDraft,
+  lastSaved,
+  isAutoSaving,
+  saveDraft,
+  loadDraft,
+  clearDraft,
+  startAutoSave,
+  getLastSavedText
+} = useDraftState('tagline');
+
+// Show draft restore prompt
+const showDraftPrompt = ref(false);
+
+/**
+ * The number of items to generate.
+ */
+const GENERATION_COUNT = 10;
+
+/**
+ * Dynamic button text based on intent
+ */
+const generateButtonText = computed(() => {
+  switch (intent.value) {
+    case 'podcast':
+      return `Generate ${GENERATION_COUNT} Hooks`;
+    case 'course':
+      return `Generate ${GENERATION_COUNT} Titles`;
+    default:
+      return `Generate ${GENERATION_COUNT} Taglines`;
+  }
+});
 
 /**
  * Tagline formula for guidance panel
@@ -392,16 +707,16 @@ const taglineFormula = '<span class="generator__highlight">[PROMISE]</span> + <s
  */
 const processSteps = [
   {
-    title: 'Why Taglines Matter',
-    description: 'A great tagline is your brand\'s first impression distilled into a single memorable phrase. It appears everywhere—your website header, social media profiles, business cards, and email signatures. A powerful tagline makes you unforgettable and immediately communicates your unique value.'
+    title: 'The Framework',
+    description: 'We use the 6 Ws (Who, What, Where, When, Why, How) to deconstruct your value proposition into its core components.'
   },
   {
-    title: 'What Makes Taglines Stick',
-    description: 'The best taglines are concise (5-10 words), unique to you (not generic), benefit-focused (what clients gain), and emotionally resonant. They combine your promise to clients with what makes you different, wrapped in language that\'s easy to remember and impossible to forget.'
+    title: 'Brand Context',
+    description: 'Adding industry context and unique factors helps the AI avoid generic cliches and create taglines specific to your niche.'
   },
   {
-    title: 'Where to Use Your Tagline',
-    description: 'Your tagline should appear consistently across all touchpoints: website headers and footers, email signatures, social media bios, LinkedIn headlines, business cards, podcast intros, speaker introductions, and marketing materials. Consistent use builds brand recognition and reinforces your positioning.'
+    title: 'Style Focus',
+    description: 'Choose between Problem-Focused (pain points), Solution-Focused (what you offer), Outcome-Focused (results), or Authority-Focused (your credentials) to match your audience\'s mindset.'
   }
 ];
 
@@ -416,15 +731,12 @@ const examples = [
   {
     title: 'Marketing Consultant:',
     description: '"Turning invisible brands into industry leaders."'
+  },
+  {
+    title: 'Leadership Expert:',
+    description: '"Transforming managers into leaders people want to follow."'
   }
 ];
-
-/**
- * Can generate check
- */
-const canGenerate = computed(() => {
-  return authorityHookText.value.trim().length > 0;
-});
 
 /**
  * Handle tagline selection
@@ -439,10 +751,8 @@ const handleSelectTagline = (index) => {
 const handleGenerate = async () => {
   try {
     const context = props.mode === 'integrated' ? 'builder' : 'public';
-    await generate({
-      name: name.value,
-      authorityHook: authorityHookText.value
-    }, context);
+    // Generate uses the reactive state directly from the composable
+    await generate({}, context);
 
     emit('generated', {
       taglines: taglines.value
@@ -460,6 +770,23 @@ const handleCopy = async () => {
 };
 
 /**
+ * Handle copy all taglines to clipboard as a numbered list
+ */
+const handleCopyAll = async () => {
+  if (!taglines.value || taglines.value.length === 0) return;
+
+  const formattedText = taglines.value
+    .map((tagline, index) => `${index + 1}. ${tagline.text}`)
+    .join('\n');
+
+  try {
+    await navigator.clipboard.writeText(formattedText);
+  } catch (err) {
+    console.error('[TaglineGenerator] Failed to copy all:', err);
+  }
+};
+
+/**
  * Handle apply (integrated mode)
  */
 const handleApply = () => {
@@ -471,23 +798,85 @@ const handleApply = () => {
 };
 
 /**
- * Sync authority hook from store on mount
+ * Handle refine button click
  */
-onMounted(() => {
-  syncFromStore();
-  if (authorityHookSummary.value) {
-    authorityHookText.value = authorityHookSummary.value;
+const handleRefine = async () => {
+  if (!refinementFeedback.value?.trim()) return;
+  try {
+    const context = props.mode === 'integrated' ? 'builder' : 'public';
+    await refine(refinementFeedback.value, context);
+    emit('generated', { taglines: taglines.value });
+  } catch (err) {
+    console.error('[TaglineGenerator] Refinement failed:', err);
   }
-});
+};
 
 /**
- * Watch for store changes
+ * Handle locking a tagline as master
  */
-watch(authorityHookSummary, (newVal) => {
-  if (newVal && !authorityHookText.value) {
-    authorityHookText.value = newVal;
+const handleLockTagline = (index) => {
+  lockTagline(index);
+};
+
+/**
+ * Handle save to profile
+ */
+const handleSaveToProfile = async () => {
+  const taglineToSave = lockedTagline.value || selectedTagline.value;
+  if (!taglineToSave) return;
+
+  // If we have a selected profile in standalone mode, save via API
+  if (props.mode === 'default' && hasSelectedProfile.value) {
+    isSavingToProfile.value = true;
+    saveSuccess.value = false;
+    saveError.value = null;
+
+    try {
+      const success = await saveToProfile('tagline', taglineToSave);
+      if (success) {
+        saveSuccess.value = true;
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          saveSuccess.value = false;
+        }, 3000);
+      } else {
+        saveError.value = 'Failed to save tagline to profile';
+      }
+    } catch (err) {
+      saveError.value = err.message || 'Failed to save tagline';
+    } finally {
+      isSavingToProfile.value = false;
+    }
   }
-});
+
+  // Also emit for parent components
+  emit('applied', {
+    componentId: props.componentId,
+    tagline: taglineToSave,
+    allTaglines: taglines.value,
+    action: 'save'
+  });
+};
+
+/**
+ * Handle start over - reset all state
+ */
+const handleStartOver = () => {
+  reset();
+  clearDraft(); // Clear saved draft when starting over
+};
+
+/**
+ * Check if a field was pre-filled from profile
+ */
+const isFieldPrefilled = (fieldName) => prefilledFields.value.has(fieldName);
+
+/**
+ * Mark a field as user-edited (clear prefilled status)
+ */
+const markFieldEdited = (fieldName) => {
+  prefilledFields.value.delete(fieldName);
+};
 
 /**
  * Populate form fields from profile data
@@ -495,22 +884,110 @@ watch(authorityHookSummary, (newVal) => {
 function populateFromProfile(profileData) {
   if (!profileData) return;
 
-  // Build full name from profile
-  const firstName = profileData.first_name || '';
-  const lastName = profileData.last_name || '';
-  const fullName = [firstName, lastName].filter(Boolean).join(' ');
-  if (fullName) {
-    name.value = fullName;
-  }
+  // Track which fields get populated
+  const newPrefilledFields = new Set();
 
-  // Use authority hook if available
-  if (profileData.authority_hook) {
-    authorityHookText.value = profileData.authority_hook;
-  }
+  // Check which 6W fields will be populated
+  if (profileData.hook_who || profileData.authority_hook_who) newPrefilledFields.add('who');
+  if (profileData.hook_what || profileData.authority_hook_what) newPrefilledFields.add('what');
+  if (profileData.hook_when || profileData.authority_hook_when) newPrefilledFields.add('when');
+  if (profileData.hook_how || profileData.authority_hook_how) newPrefilledFields.add('how');
+  if (profileData.hook_where || profileData.authority_hook_where) newPrefilledFields.add('where');
+  if (profileData.hook_why || profileData.authority_hook_why) newPrefilledFields.add('why');
+  if (profileData.industry) newPrefilledFields.add('industry');
 
-  // Populate authority hook fields from profile data (for cross-tool sync)
+  prefilledFields.value = newPrefilledFields;
+
+  // Use loadFromProfile from composable to populate 6 W's fields
+  loadFromProfile(profileData);
+
+  // Also sync authority hook store
   loadFromProfileData(profileData);
 }
+
+/**
+ * Handle profile loaded from ProfileContextBanner (standalone mode)
+ */
+function handleProfileLoaded(data) {
+  if (data && props.mode === 'default') {
+    populateFromProfile(data);
+  }
+}
+
+/**
+ * Handle profile cleared from ProfileContextBanner (standalone mode)
+ */
+function handleProfileCleared() {
+  // Optionally clear form fields when profile is deselected
+  // For now, we keep the existing data to avoid losing user input
+}
+
+/**
+ * Get current form state for draft saving
+ */
+const getDraftState = () => {
+  return {
+    authorityHook: { ...authorityHook },
+    impactIntro: { ...impactIntro },
+    brandContext: { ...brandContext },
+    styleFocus: styleFocus.value,
+    tone: tone.value,
+    intent: intent.value
+  };
+};
+
+/**
+ * Restore form state from draft
+ */
+const restoreFromDraft = (draftState) => {
+  if (!draftState) return;
+
+  if (draftState.authorityHook) {
+    Object.assign(authorityHook, draftState.authorityHook);
+  }
+  if (draftState.impactIntro) {
+    Object.assign(impactIntro, draftState.impactIntro);
+  }
+  if (draftState.brandContext) {
+    Object.assign(brandContext, draftState.brandContext);
+  }
+  if (draftState.styleFocus) styleFocus.value = draftState.styleFocus;
+  if (draftState.tone) tone.value = draftState.tone;
+  if (draftState.intent) intent.value = draftState.intent;
+
+  showDraftPrompt.value = false;
+};
+
+/**
+ * Dismiss draft prompt without restoring
+ */
+const dismissDraftPrompt = () => {
+  showDraftPrompt.value = false;
+  clearDraft();
+};
+
+/**
+ * Sync authority hook from store on mount
+ */
+onMounted(() => {
+  syncFromStore();
+
+  // Load from injected or prop profile data. Props take precedence.
+  const profileToLoad = props.profileData || injectedProfileData.value;
+  if (profileToLoad) {
+    populateFromProfile(profileToLoad);
+  }
+
+  // Check for saved draft (only in standalone mode)
+  if (props.mode === 'default' && hasDraft.value) {
+    showDraftPrompt.value = true;
+  }
+
+  // Start auto-saving in standalone mode
+  if (props.mode === 'default') {
+    startAutoSave(getDraftState);
+  }
+});
 
 /**
  * Watch for injected profile data from EmbeddedToolWrapper
@@ -525,11 +1002,16 @@ watch(
   { immediate: true }
 );
 
-const currentIntent = computed(() => props.intent || null);
+const currentIntent = computed(() => {
+  const found = INTENT_OPTIONS.find(opt => opt.value === intent.value);
+  return found || props.intent || null;
+});
 
 const embeddedPreviewText = computed(() => {
-  if (!name.value) return null;
-  return `<strong>Professional tagline</strong> for <strong>${name.value}</strong>`;
+  if (!authorityHook.who && !authorityHook.what) return null;
+  const whoText = authorityHook.who || 'your audience';
+  const whatText = authorityHook.what || 'achieve their goals';
+  return `<strong>Professional tagline</strong> for helping <strong>${whoText}</strong> ${whatText}`;
 });
 
 watch(
@@ -543,12 +1025,12 @@ watch(
 );
 
 watch(
-  () => name.value,
+  [() => authorityHook.who, () => authorityHook.what],
   () => {
     if (props.mode === 'embedded') {
       emit('preview-update', {
         previewHtml: embeddedPreviewText.value,
-        fields: { name: name.value }
+        fields: { who: authorityHook.who, what: authorityHook.what }
       });
     }
   }
@@ -562,21 +1044,167 @@ watch(canGenerate, (newValue) => {
 </script>
 
 <style scoped>
-/* Standalone Mode Styles */
+/* Intent Tabs */
+.generator__intent-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--mkcg-border, #e2e8f0);
+  margin-bottom: 24px;
+  background: var(--mkcg-bg-secondary, #f9fafb);
+  border-radius: var(--mkcg-radius, 8px) var(--mkcg-radius, 8px) 0 0;
+  overflow: hidden;
+}
+
+.generator__intent-tab {
+  flex: 1;
+  padding: 14px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--mkcg-text-secondary, #64748b);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.generator__intent-tab:hover {
+  color: var(--mkcg-text-primary, #0f172a);
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.generator__intent-tab.active {
+  color: var(--mkcg-primary, #3b82f6);
+  background: #fff;
+  border-bottom-color: var(--mkcg-primary, #3b82f6);
+}
+
+/* Sections */
 .generator__section {
-  margin-bottom: var(--mkcg-space-lg, 30px);
+  margin-bottom: var(--mkcg-space-lg, 24px);
 }
 
 .generator__section-title {
-  font-size: var(--mkcg-font-size-lg, 18px);
-  font-weight: var(--mkcg-font-weight-semibold, 600);
-  color: var(--mkcg-text-primary, #2c3e50);
-  margin: 0 0 var(--mkcg-space-md, 20px) 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--mkcg-text-primary, #0f172a);
+  margin: 0 0 16px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
+/* Grid Layout */
+.generator__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 768px) {
+  .generator__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Section Divider */
+.generator__divider {
+  height: 1px;
+  background: var(--mkcg-border, #e2e8f0);
+  margin: 32px 0;
+  position: relative;
+}
+
+.generator__divider span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  padding: 0 16px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--mkcg-text-secondary, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Fields */
+.generator__field {
+  margin-bottom: 12px;
+}
+
+.generator__field:last-child {
+  margin-bottom: 0;
+}
+
+.generator__field-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* Prefilled badge for fields loaded from profile */
+.generator__prefilled-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 12px;
+  color: #166534;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.generator__prefilled-badge svg {
+  flex-shrink: 0;
+}
+
+/* Prefilled input highlight */
+.generator__field-input--prefilled {
+  border-color: #86efac;
+  background: linear-gradient(to right, #f0fdf4, #fff);
+}
+
+.generator__field-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #fff;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.generator__field-input:focus {
+  outline: none;
+  border-color: var(--mkcg-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.generator__field-input::placeholder {
+  color: var(--mkcg-text-light, #94a3b8);
+}
+
+.generator__field-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+/* Actions */
 .generator__actions {
   margin-top: var(--mkcg-space-lg, 30px);
-  text-align: center;
 }
 
 .generator__error {
@@ -593,140 +1221,362 @@ watch(canGenerate, (newValue) => {
   margin: 0 0 var(--mkcg-space-sm, 12px) 0;
 }
 
-/* Tagline Results */
-.tagline-generator__results {
-  padding: var(--mkcg-space-md, 20px);
+/* ===========================================
+   TAGLINE RESULTS - Sidebar + Main Layout
+   =========================================== */
+.tagline-results {
+  padding: 0;
 }
 
-.tagline-generator__results-header {
-  margin-bottom: var(--mkcg-space-md, 20px);
-}
-
-.tagline-generator__results-header h3 {
-  margin: 0 0 var(--mkcg-space-xs, 8px) 0;
-  font-size: var(--mkcg-font-size-lg, 18px);
-  color: var(--mkcg-text-primary, #2c3e50);
-}
-
-.tagline-generator__results-header p {
-  margin: 0;
-  color: var(--mkcg-text-secondary, #5a6d7e);
-  font-size: var(--mkcg-font-size-sm, 14px);
-}
-
-.tagline-generator__cards {
+.tagline-results__layout {
   display: flex;
   flex-direction: column;
-  gap: var(--mkcg-space-sm, 12px);
-  margin-bottom: var(--mkcg-space-md, 20px);
+  gap: 1.5rem;
+  padding: 32px;
 }
 
-.tagline-generator__card {
-  position: relative;
+@media (min-width: 900px) {
+  .tagline-results__layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  .tagline-results__sidebar {
+    position: sticky;
+    top: 1rem;
+    flex: 0 0 280px;
+  }
+  .tagline-results__main {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* Sidebar: Master Tagline Slot */
+.tagline-master-slot {
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.tagline-master-slot__header {
+  margin-bottom: 1rem;
+}
+
+.tagline-master-slot__title {
+  font-size: 12px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.tagline-master-slot__card {
+  padding: 1.25rem;
+  background: #fff;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.tagline-master-slot__card--locked {
+  background: var(--mkcg-primary-light, #eff6ff);
+  border-color: var(--mkcg-primary, #3b82f6);
+}
+
+.tagline-master-slot__card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.tagline-master-slot__label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.tagline-master-slot__card--locked .tagline-master-slot__label {
+  color: var(--mkcg-primary, #3b82f6);
+}
+
+.tagline-master-slot__lock {
+  color: var(--mkcg-primary, #3b82f6);
+}
+
+.tagline-master-slot__preview {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.tagline-master-slot__hint {
+  font-size: 11px;
+  color: var(--mkcg-text-muted, #94a3b8);
+  margin-top: 15px;
+  font-style: italic;
+  text-align: center;
+  margin-bottom: 0;
+}
+
+/* Main Area Header */
+.tagline-results__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--mkcg-border, #e2e8f0);
+}
+
+.tagline-results__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.tagline-results__actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Refinement Loop Box */
+.tagline-refinement {
+  background: linear-gradient(to bottom right, #fff, var(--mkcg-bg-secondary, #f8fafc));
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 1.5rem;
+}
+
+.tagline-refinement__header {
   display: flex;
   align-items: center;
-  gap: var(--mkcg-space-sm, 12px);
-  padding: var(--mkcg-space-md, 20px);
-  background: var(--mkcg-bg-primary, #ffffff);
-  border: 2px solid var(--mkcg-border-light, #e9ecef);
-  border-radius: var(--mkcg-radius, 8px);
-  cursor: pointer;
-  transition: var(--mkcg-transition-fast, 0.15s ease);
-  text-align: left;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
-.tagline-generator__card:hover {
-  border-color: var(--mkcg-primary, #1a9bdc);
-  box-shadow: 0 2px 8px rgba(26, 155, 220, 0.1);
+.tagline-refinement__icon {
+  color: var(--mkcg-primary, #3b82f6);
 }
 
-.tagline-generator__card--selected {
-  border-color: var(--mkcg-primary, #1a9bdc);
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-}
-
-.tagline-generator__card-number {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
-  background: var(--mkcg-bg-secondary, #f8f9fa);
-  border-radius: 50%;
-  font-size: var(--mkcg-font-size-sm, 14px);
-  font-weight: var(--mkcg-font-weight-semibold, 600);
-  color: var(--mkcg-text-secondary, #5a6d7e);
-}
-
-.tagline-generator__card--selected .tagline-generator__card-number {
-  background: var(--mkcg-primary, #1a9bdc);
-  color: #ffffff;
-}
-
-.tagline-generator__card-text {
-  flex: 1;
-  font-size: var(--mkcg-font-size-base, 16px);
-  color: var(--mkcg-text-primary, #2c3e50);
-  line-height: var(--mkcg-line-height-normal, 1.5);
-}
-
-.tagline-generator__card--selected .tagline-generator__card-text {
-  font-weight: var(--mkcg-font-weight-medium, 500);
-}
-
-.tagline-generator__card-check {
-  flex-shrink: 0;
-  color: var(--mkcg-primary, #1a9bdc);
-}
-
-.tagline-generator__preview {
-  margin-bottom: var(--mkcg-space-md, 20px);
-  padding: var(--mkcg-space-md, 20px);
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  border: 1px solid #7dd3fc;
-  border-radius: var(--mkcg-radius, 8px);
-}
-
-.tagline-generator__preview-label {
-  display: block;
-  font-size: var(--mkcg-font-size-xs, 12px);
-  font-weight: var(--mkcg-font-weight-semibold, 600);
-  color: #0369a1;
+.tagline-refinement__title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--mkcg-primary, #3b82f6);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: var(--mkcg-space-xs, 4px);
 }
 
-.tagline-generator__preview-text {
-  font-size: var(--mkcg-font-size-lg, 18px);
-  font-weight: var(--mkcg-font-weight-medium, 500);
-  color: #0c4a6e;
-  font-style: italic;
+.tagline-refinement__input-wrapper {
+  position: relative;
 }
 
-.tagline-generator__nav {
+.tagline-refinement__textarea {
+  width: 100%;
+  padding: 14px 110px 14px 16px;
+  border: 2px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  background: #fff;
+  box-sizing: border-box;
+  resize: none;
+  transition: border-color 0.2s;
+}
+
+.tagline-refinement__textarea:focus {
+  outline: none;
+  border-color: var(--mkcg-primary, #3b82f6);
+}
+
+.tagline-refinement__btn {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  bottom: 6px;
+  padding: 0 16px;
+  background: var(--mkcg-primary, #3b82f6);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.2s;
+}
+
+.tagline-refinement__btn:hover:not(:disabled) {
+  background: var(--mkcg-primary-hover, #2563eb);
+}
+
+.tagline-refinement__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Tagline Row List */
+.tagline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tagline-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: #fff;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+  width: 100%;
+}
+
+.tagline-row:hover {
+  border-color: var(--mkcg-primary, #3b82f6);
+  background: var(--mkcg-bg-secondary, #f8fafc);
+}
+
+.tagline-row--selected {
+  border-color: var(--mkcg-primary, #3b82f6);
+  background: var(--mkcg-primary-light, #eff6ff);
+}
+
+.tagline-row--locked {
+  border-color: var(--mkcg-primary, #3b82f6);
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+}
+
+.tagline-row__checkbox {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--mkcg-space-md, 20px);
-  margin-bottom: var(--mkcg-space-md, 20px);
-  padding-bottom: var(--mkcg-space-md, 20px);
-  border-bottom: 1px solid var(--mkcg-border-light, #e9ecef);
+  transition: all 0.15s;
 }
 
-.tagline-generator__nav-count {
-  font-size: var(--mkcg-font-size-sm, 14px);
-  color: var(--mkcg-text-secondary, #5a6d7e);
-  font-weight: var(--mkcg-font-weight-medium, 500);
+.tagline-row__checkbox--checked {
+  background: var(--mkcg-primary, #3b82f6);
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: white;
 }
 
-.tagline-generator__actions {
+.tagline-row__text {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--mkcg-text-primary, #0f172a);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.tagline-row__lock-btn {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--mkcg-text-secondary, #64748b);
+  transition: all 0.15s;
   display: flex;
-  gap: var(--mkcg-space-sm, 12px);
+  align-items: center;
 }
 
-/* Integrated Mode Styles (kept from original) */
+.tagline-row__lock-btn:hover {
+  background: var(--mkcg-primary, #3b82f6);
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: white;
+}
+
+.tagline-row__locked-icon {
+  flex-shrink: 0;
+  color: var(--mkcg-primary, #3b82f6);
+}
+
+/* Results Footer */
+.tagline-results__footer {
+  margin-top: 2rem;
+  border-top: 1px solid var(--mkcg-border, #e2e8f0);
+  padding-top: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Save Success/Error Messages */
+.tagline-save-success {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 6px;
+  color: #166534;
+  font-size: 0.875rem;
+  font-weight: 500;
+  width: 100%;
+}
+
+.tagline-save-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #991b1b;
+  font-size: 0.875rem;
+  font-weight: 500;
+  width: 100%;
+}
+
+/* Spinner animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Ghost button variant */
+.generator__button--ghost {
+  background: transparent;
+  border: none;
+  color: var(--mkcg-text-secondary, #64748b);
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.generator__button--ghost:hover {
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+/* Integrated Mode Styles */
 .gmkb-ai-taglines__instruction {
   margin: 0 0 12px 0;
   font-size: 13px;
@@ -779,4 +1629,135 @@ watch(canGenerate, (newValue) => {
 .gmkb-embedded-input::placeholder { color: var(--mkcg-text-light, #94a3b8); }
 .gmkb-embedded-textarea { resize: vertical; min-height: 80px; }
 .gmkb-embedded-error { margin-top: 16px; padding: 12px 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #991b1b; font-size: 14px; }
+
+/* Draft Restore Prompt */
+.draft-restore-prompt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(to right, #fefce8, #fef9c3);
+  border: 1px solid #fde047;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+
+.draft-restore-prompt__icon {
+  flex-shrink: 0;
+  color: #ca8a04;
+}
+
+.draft-restore-prompt__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.draft-restore-prompt__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #854d0e;
+}
+
+.draft-restore-prompt__text {
+  font-size: 12px;
+  color: #a16207;
+}
+
+.draft-restore-prompt__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.draft-restore-prompt__btn {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.draft-restore-prompt__btn--restore {
+  background: #ca8a04;
+  color: white;
+  border: none;
+}
+
+.draft-restore-prompt__btn--restore:hover {
+  background: #a16207;
+}
+
+.draft-restore-prompt__btn--dismiss {
+  background: transparent;
+  color: #854d0e;
+  border: 1px solid #ca8a04;
+}
+
+.draft-restore-prompt__btn--dismiss:hover {
+  background: rgba(202, 138, 4, 0.1);
+}
+
+/* Auto-save Indicator */
+.auto-save-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin-top: 8px;
+}
+
+/* Cross-tool Navigation */
+.tagline-cross-tool-nav {
+  width: 100%;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--mkcg-border, #e2e8f0);
+}
+
+.tagline-cross-tool-nav__label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.tagline-cross-tool-nav__links {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tagline-cross-tool-nav__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  color: var(--mkcg-text-primary, #0f172a);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.tagline-cross-tool-nav__link:hover {
+  background: var(--mkcg-primary, #3b82f6);
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: white;
+}
+
+.tagline-cross-tool-nav__link svg {
+  flex-shrink: 0;
+}
 </style>

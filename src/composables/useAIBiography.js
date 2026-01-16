@@ -212,6 +212,7 @@ export function useAIBiography() {
 
     const params = {
       name: overrides.name || name.value,
+      title: optionalFields.title,
       authorityHook: authorityHookSummary.value,
       impactIntro: impactIntroSummary.value,
       organization: optionalFields.organization,
@@ -509,6 +510,7 @@ export function useAIBiography() {
     authorityHook.how = '';
     impactIntro.where = '';
     impactIntro.why = '';
+    optionalFields.title = '';
     optionalFields.organization = '';
     optionalFields.existingBio = '';
     optionalFields.additionalNotes = '';
