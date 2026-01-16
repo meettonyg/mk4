@@ -8,6 +8,7 @@
     generator-type="tagline"
     :has-results="hasTaglines"
     :is-loading="isGenerating"
+    :hide-chrome="hideChrome"
   >
     <!-- Profile Context Banner (for logged-in users) -->
     <template #profile-context>

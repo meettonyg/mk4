@@ -8,6 +8,7 @@
     generator-type="offers"
     :has-results="hasOffers"
     :is-loading="isGenerating"
+    :hide-chrome="hideChrome"
   >
     <!-- Profile Context Banner (for logged-in users) -->
     <template #profile-context>
