@@ -445,6 +445,7 @@ class GMKB_Profile_Repository implements GMKB_Profile_Repository_Interface {
         $last_name = get_post_meta($post_id, 'last_name', true);
         $headshot = get_post_meta($post_id, 'headshot_primary', true);
         $tagline = get_post_meta($post_id, 'tagline', true);
+        $guest_title = get_post_meta($post_id, 'guest_title', true);
 
         $display_name = trim("{$first_name} {$last_name}");
         if (empty($display_name)) {
@@ -459,6 +460,7 @@ class GMKB_Profile_Repository implements GMKB_Profile_Repository_Interface {
         return [
             'id' => $post_id,
             'title' => $display_name,
+            'guest_title' => $guest_title,
             'slug' => $post->post_name,
             'tagline' => $tagline,
             'headshot' => $headshot_url,

@@ -17,13 +17,13 @@
                     :key="profile.id"
                     :value="profile.id"
                   >
-                    {{ profile.title }}
+                    {{ profile.title }}{{ profile.guest_title ? ` - ${profile.guest_title}` : '' }}
                   </option>
                   <option value="new">+ Create New Profile</option>
                 </select>
                 <a
                   v-if="hasSelectedProfile && selectedProfile"
-                  :href="`/profile/${selectedProfileId}/edit/`"
+                  :href="selectedProfile.editUrl || `/app/profiles/guest/profile/?entry=${selectedProfile.slug}`"
                   class="gfy-profile-link"
                   title="Edit this profile"
                 >
