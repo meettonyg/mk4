@@ -169,19 +169,17 @@
             <div class="gfy-form-section">
               <h3 class="gfy-form-section__title">Step 2: Confirm Your Authority Hook</h3>
 
-              <div class="gfy-highlight-box gfy-highlight-box--green">
-                <AuthorityHookBuilder
-                  :model-value="authorityHook"
-                  @update:model-value="Object.assign(authorityHook, $event)"
-                  title="Authority Hook"
-                  :placeholders="{
-                    who: 'e.g. SaaS Founders',
-                    what: 'e.g. Increase revenue by 40%',
-                    when: 'e.g. When scaling rapidly',
-                    how: 'e.g. My proven 90-day system'
-                  }"
-                />
-              </div>
+              <AuthorityHookBuilder
+                :model-value="authorityHook"
+                @update:model-value="Object.assign(authorityHook, $event)"
+                title="Authority Hook"
+                :placeholders="{
+                  who: 'e.g. SaaS Founders',
+                  what: 'e.g. Increase revenue by 40%',
+                  when: 'e.g. When scaling rapidly',
+                  how: 'e.g. My proven 90-day system'
+                }"
+              />
             </div>
 
             <!-- Step 3: Customize Details (new section from mockup) -->
