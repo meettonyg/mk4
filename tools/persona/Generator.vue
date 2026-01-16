@@ -8,10 +8,9 @@
     generator-type="persona"
     :has-results="hasContent"
     :is-loading="isGenerating"
-    :hide-chrome="hideChrome"
   >
     <!-- Profile Context Banner (for logged-in users) -->
-    <template v-if="!hideChrome" #profile-context>
+    <template #profile-context>
       <ProfileContextBanner
         @profile-loaded="handleProfileLoaded"
         @profile-cleared="handleProfileCleared"
@@ -554,14 +553,6 @@ const props = defineProps({
     type: String,
     default: 'default',
     validator: (v) => ['default', 'integrated'].includes(v)
-  },
-
-  /**
-   * Hide hero section and profile banner (when inside EmbeddedToolWrapper)
-   */
-  hideChrome: {
-    type: Boolean,
-    default: false
   },
 
   /**

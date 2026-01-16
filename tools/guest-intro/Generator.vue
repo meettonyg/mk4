@@ -83,7 +83,7 @@
     <!-- Phase 1: Input Form -->
     <div v-if="!showResults" class="gfy-intro-form">
       <!-- Hero Section (only show when not inside wrapper) -->
-      <div v-if="mode === 'default' && !hideChrome" class="gfy-intro-hero">
+      <div v-if="mode === 'default' && !isEmbedded" class="gfy-intro-hero">
         <h1 class="gfy-intro-hero__title">Guest Introduction Generator</h1>
         <p class="gfy-intro-hero__subtitle">
           Create compelling introductions designed to be read aloud by podcast hosts or event MCs using the Authority Hook and Impact Intro frameworks.
@@ -92,7 +92,7 @@
 
       <!-- Profile Context Banner (only when not inside wrapper) -->
       <ProfileContextBanner
-        v-if="mode === 'default' && !hideChrome && isLoggedIn"
+        v-if="mode === 'default' && !isEmbedded && isLoggedIn"
         :profiles="profiles"
         :selected-profile-id="selectedProfileId"
         :is-loading="isLoadingProfiles"
@@ -124,7 +124,7 @@
       </div>
 
       <!-- Form Container (no styling when inside wrapper) -->
-      <div class="gfy-intro-form__container" :class="{ 'gfy-intro-form__container--no-chrome': hideChrome }">
+      <div class="gfy-intro-form__container" :class="{ 'gfy-intro-form__container--no-chrome': isEmbedded }">
         <!-- STEP 1: Guest & Episode Information -->
         <div class="gfy-form-section">
           <div class="gfy-form-section__header">
@@ -539,7 +539,7 @@ import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 import { useDraftState } from '../../src/composables/useDraftState';
-import { EMBEDDED_PROFILE_DATA_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileContextBanner } from '../_shared';
+import { EMBEDDED_PROFILE_DATA_KEY, IS_EMBEDDED_CONTEXT_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileContextBanner } from '../_shared';
 
 // Integrated mode components
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
@@ -571,18 +571,14 @@ const HOOK_STYLE_OPTIONS = [
   { value: 'direct', label: 'Direct Introduction' }
 ];
 
+// Auto-detect if we're inside EmbeddedToolWrapper
+const isEmbedded = inject(IS_EMBEDDED_CONTEXT_KEY, false);
+
 const props = defineProps({
   mode: {
     type: String,
     default: 'default',
     validator: (v) => ['default', 'integrated'].includes(v)
-  },
-  /**
-   * Hide hero section and profile banner (when inside EmbeddedToolWrapper)
-   */
-  hideChrome: {
-    type: Boolean,
-    default: false
   },
   intent: {
     type: Object,

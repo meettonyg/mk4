@@ -84,7 +84,7 @@
     <!-- Phase 1: Input Form -->
     <div v-if="!showResults" class="gfy-bio-form">
       <!-- Hero Section (only show in default mode, not when embedded in landing page) -->
-      <div v-if="mode === 'default' && !hideChrome" class="gfy-bio-hero">
+      <div v-if="mode === 'default' && !isEmbedded" class="gfy-bio-hero">
         <h1 class="gfy-bio-hero__title">Professional Biography Generator</h1>
         <p class="gfy-bio-hero__subtitle">
           Create compelling professional biographies using the Authority Hook and Impact Intro frameworks.
@@ -93,7 +93,7 @@
 
       <!-- Profile Context Banner (for logged-in users in standalone mode) -->
       <ProfileContextBanner
-        v-if="mode === 'default' && !hideChrome"
+        v-if="mode === 'default' && !isEmbedded"
         @profile-loaded="handleProfileLoaded"
         @profile-cleared="handleProfileCleared"
       />
@@ -123,7 +123,7 @@
       </div>
 
       <!-- Form Container (no styling when inside wrapper) -->
-      <div class="gfy-bio-form__container" :class="{ 'gfy-bio-form__container--no-chrome': hideChrome }">
+      <div class="gfy-bio-form__container" :class="{ 'gfy-bio-form__container--no-chrome': isEmbedded }">
         <!-- Basic Information -->
         <div class="gfy-form-section">
           <h3 class="gfy-form-section__title">
@@ -581,7 +581,7 @@ import { useProfileContext } from '../../src/composables/useProfileContext';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 import { useDraftState } from '../../src/composables/useDraftState';
 import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
-import { EMBEDDED_PROFILE_DATA_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileContextBanner } from '../_shared';
+import { EMBEDDED_PROFILE_DATA_KEY, IS_EMBEDDED_CONTEXT_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileContextBanner } from '../_shared';
 
 // Integrated mode components
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
@@ -591,18 +591,14 @@ import AiPovSelector from '../../src/vue/components/ai/AiPovSelector.vue';
 import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
 
+// Auto-detect if we're inside EmbeddedToolWrapper
+const isEmbedded = inject(IS_EMBEDDED_CONTEXT_KEY, false);
+
 const props = defineProps({
   mode: {
     type: String,
     default: 'default',
     validator: (v) => ['default', 'integrated'].includes(v)
-  },
-  /**
-   * Hide hero section and profile banner (when inside EmbeddedToolWrapper)
-   */
-  hideChrome: {
-    type: Boolean,
-    default: false
   },
   intent: {
     type: Object,

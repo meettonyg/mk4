@@ -8,7 +8,6 @@
     generator-type="credibility-story"
     :has-results="hasContent"
     :is-loading="isGenerating"
-    :hide-chrome="hideChrome"
   >
     <!-- Left Panel: Form -->
     <template #left>
@@ -259,14 +258,6 @@ const props = defineProps({
     type: String,
     default: 'default',
     validator: (v) => ['default', 'integrated'].includes(v)
-  },
-
-  /**
-   * Hide hero section and profile banner (when inside EmbeddedToolWrapper)
-   */
-  hideChrome: {
-    type: Boolean,
-    default: false
   },
 
   /**

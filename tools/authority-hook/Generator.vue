@@ -293,14 +293,6 @@ const props = defineProps({
   profileData: {
     type: Object,
     default: null
-  },
-
-  /**
-   * Hide hero section and profile banner (when inside EmbeddedToolWrapper)
-   */
-  hideChrome: {
-    type: Boolean,
-    default: false
   }
 });
 
