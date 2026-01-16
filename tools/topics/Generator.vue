@@ -36,6 +36,21 @@
         Saving draft...
       </div>
 
+      <!-- Form Completion Indicator -->
+      <div class="gfy-form-progress" :class="{ 'gfy-form-progress--complete': formCompletion.isComplete }">
+        <div class="gfy-form-progress__header">
+          <span class="gfy-form-progress__label">
+            <svg v-if="formCompletion.isComplete" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            {{ formCompletion.isComplete ? 'Ready to generate!' : `${formCompletion.filledCount}/${formCompletion.totalCount} fields completed` }}
+          </span>
+        </div>
+        <div class="gfy-form-progress__bar">
+          <div class="gfy-form-progress__fill" :style="{ width: `${formCompletion.percentage}%` }"></div>
+        </div>
+      </div>
+
       <!-- Expertise Field -->
       <div class="gfy-input-group">
         <label class="gfy-label">
@@ -189,10 +204,14 @@
                 <button
                   type="button"
                   class="gfy-copy-btn"
-                  title="Copy topic"
+                  :class="{ 'gfy-copy-btn--copied': copiedIndex === index }"
+                  :title="copiedIndex === index ? 'Copied!' : 'Copy topic'"
                   @click="handleCopySingleTopic(index, $event)"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg v-if="copiedIndex === index" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                     <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
                   </svg>
@@ -221,10 +240,14 @@
               <button
                 type="button"
                 class="gfy-copy-btn gfy-copy-btn--small"
-                title="Copy topic"
+                :class="{ 'gfy-copy-btn--copied': copiedIndex === index }"
+                :title="copiedIndex === index ? 'Copied!' : 'Copy topic'"
                 @click="handleCopySingleTopic(index, $event)"
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg v-if="copiedIndex === index" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                   <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
                 </svg>
@@ -350,6 +373,7 @@ const saveSuccess = ref(false);
 const selectedProfileId = ref(null);
 const viewMode = ref('list'); // 'card' or 'list' - default to list for single-column display
 const saveAuthorityHook = ref(true); // Whether to also save authority hook fields
+const copiedIndex = ref(null); // Track which topic was just copied for visual feedback
 
 // Locked topics from profile (Lock/Pin feature)
 // Each item: { position: 0-4, text: string, locked: boolean }
@@ -421,6 +445,25 @@ const generatedHookSummary = computed(() => {
 const canGenerate = computed(() => {
   return (expertise.value && expertise.value.trim().length > 0) ||
          (authorityHook.who && authorityHook.what);
+});
+
+/**
+ * Form completion status for progress indicator
+ */
+const formCompletion = computed(() => {
+  const fields = [
+    { name: 'Expertise', filled: !!(expertise.value && expertise.value.trim()) },
+    { name: 'Who you help', filled: !!authorityHook.who },
+    { name: 'What you do', filled: !!authorityHook.what }
+  ];
+  const filledCount = fields.filter(f => f.filled).length;
+  return {
+    fields,
+    filledCount,
+    totalCount: fields.length,
+    percentage: Math.round((filledCount / fields.length) * 100),
+    isComplete: canGenerate.value
+  };
 });
 
 /**
@@ -649,7 +692,11 @@ const handleCopySingleTopic = async (index, event) => {
 
   try {
     await navigator.clipboard.writeText(text);
-    // Brief visual feedback could be added here
+    // Show visual feedback
+    copiedIndex.value = index;
+    setTimeout(() => {
+      copiedIndex.value = null;
+    }, 1500);
   } catch (err) {
     console.error('[Topics Generator] Failed to copy topic:', err);
   }
@@ -1731,6 +1778,58 @@ defineExpose({
   50% { opacity: 1; }
 }
 
+/* Form Progress Indicator */
+.gfy-form-progress {
+  padding: 12px 16px;
+  background: var(--gfy-bg-secondary, #f8fafc);
+  border: 1px solid var(--gfy-border-color, #e2e8f0);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.gfy-form-progress--complete {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.gfy-form-progress__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.gfy-form-progress__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--gfy-text-secondary, #64748b);
+}
+
+.gfy-form-progress--complete .gfy-form-progress__label {
+  color: #059669;
+}
+
+.gfy-form-progress__bar {
+  height: 6px;
+  background: var(--gfy-border-color, #e2e8f0);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.gfy-form-progress__fill {
+  height: 100%;
+  background: var(--gfy-primary-color, #2563eb);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.gfy-form-progress--complete .gfy-form-progress__fill {
+  background: #10b981;
+}
+
 /* Prefilled Badge */
 .gfy-prefilled-badge {
   display: inline-flex;
@@ -1780,6 +1879,12 @@ defineExpose({
   border-color: var(--gfy-primary-color, #2563eb);
   color: var(--gfy-primary-color, #2563eb);
   background: var(--gfy-primary-light, #eff6ff);
+}
+
+.gfy-copy-btn--copied {
+  border-color: #10b981;
+  color: #10b981;
+  background: #ecfdf5;
 }
 
 .gfy-copy-btn--small {

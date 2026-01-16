@@ -53,6 +53,21 @@
         Saving draft...
       </div>
 
+      <!-- Form Completion Indicator -->
+      <div class="gfy-form-progress" :class="{ 'gfy-form-progress--complete': formCompletion.isComplete }">
+        <div class="gfy-form-progress__header">
+          <span class="gfy-form-progress__label">
+            <svg v-if="formCompletion.isComplete" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            {{ formCompletion.isComplete ? 'Ready to generate!' : `${formCompletion.filledCount}/${formCompletion.totalCount} fields completed` }}
+          </span>
+        </div>
+        <div class="gfy-form-progress__bar">
+          <div class="gfy-form-progress__fill" :style="{ width: `${formCompletion.percentage}%` }"></div>
+        </div>
+      </div>
+
       <!-- Services Section -->
       <div class="generator__section">
         <h3 class="generator__section-title">Your Services</h3>
@@ -556,14 +571,18 @@
             <button
               type="button"
               class="gmkb-ai-package__copy-btn"
-              title="Copy package"
-              @click="handleCopySingleOffer(pkg, $event)"
+              :class="{ 'gmkb-ai-package__copy-btn--copied': copiedPackageIndex === index }"
+              :title="copiedPackageIndex === index ? 'Copied!' : 'Copy package'"
+              @click="handleCopySingleOffer(pkg, $event, index)"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg v-if="copiedPackageIndex === index" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                 <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
               </svg>
-              Copy
+              {{ copiedPackageIndex === index ? 'Copied!' : 'Copy' }}
             </button>
           </div>
         </div>
@@ -622,10 +641,14 @@
           <button
             type="button"
             class="gmkb-embedded-package__copy"
-            title="Copy package"
-            @click="handleCopySingleOffer(pkg, $event)"
+            :class="{ 'gmkb-embedded-package__copy--copied': copiedPackageIndex === `embedded_${index}` }"
+            :title="copiedPackageIndex === `embedded_${index}` ? 'Copied!' : 'Copy package'"
+            @click="handleCopySingleOffer(pkg, $event, `embedded_${index}`)"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg v-if="copiedPackageIndex === `embedded_${index}`" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
               <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
             </svg>
@@ -740,6 +763,9 @@ const {
 const isSavingToProfile = ref(false);
 const saveSuccess = ref(false);
 const saveError = ref(null);
+
+// Track which package was just copied for visual feedback
+const copiedPackageIndex = ref(null);
 
 // Draft state for auto-save
 const {
@@ -968,6 +994,25 @@ const canGenerate = computed(() => {
 });
 
 /**
+ * Form completion status for progress indicator
+ */
+const formCompletion = computed(() => {
+  const fields = [
+    { name: 'Services', filled: !!(services.value && services.value.trim()) },
+    { name: 'Who you help', filled: !!authorityHook.who.trim() },
+    { name: 'What you do', filled: !!authorityHook.what.trim() }
+  ];
+  const filledCount = fields.filter(f => f.filled).length;
+  return {
+    fields,
+    filledCount,
+    totalCount: fields.length,
+    percentage: Math.round((filledCount / fields.length) * 100),
+    isComplete: canGenerate.value
+  };
+});
+
+/**
  * Get tier label for active tier
  */
 const activeOfferTierLabel = computed(() => {
@@ -1178,7 +1223,7 @@ const handleCopy = async () => {
 /**
  * Copy a single offer/package to clipboard
  */
-const handleCopySingleOffer = async (pkg, event) => {
+const handleCopySingleOffer = async (pkg, event, index = null) => {
   // Prevent triggering parent click handlers
   if (event) event.stopPropagation();
 
@@ -1192,6 +1237,11 @@ const handleCopySingleOffer = async (pkg, event) => {
 
   try {
     await navigator.clipboard.writeText(formattedText.trim());
+    // Show visual feedback
+    copiedPackageIndex.value = index;
+    setTimeout(() => {
+      copiedPackageIndex.value = null;
+    }, 1500);
   } catch (err) {
     console.error('[OffersGenerator] Failed to copy package:', err);
   }
@@ -1696,6 +1746,12 @@ watch(canGenerateEmbedded, (newValue) => {
   background: rgba(99, 102, 241, 0.05);
 }
 
+.gmkb-ai-package__copy-btn--copied {
+  border-color: #10b981;
+  color: #10b981;
+  background: #ecfdf5;
+}
+
 .gmkb-ai-packages__note {
   display: flex;
   align-items: flex-start;
@@ -1811,6 +1867,12 @@ watch(canGenerateEmbedded, (newValue) => {
 .gmkb-embedded-package__copy:hover {
   background: rgba(22, 101, 52, 0.2);
   border-color: rgba(22, 101, 52, 0.3);
+}
+
+.gmkb-embedded-package__copy--copied {
+  background: #10b981;
+  border-color: #10b981;
+  color: #fff;
 }
 
 .gmkb-embedded-error {
@@ -2261,6 +2323,58 @@ watch(canGenerateEmbedded, (newValue) => {
 @keyframes pulse {
   0%, 100% { opacity: 0.5; }
   50% { opacity: 1; }
+}
+
+/* Form Progress Indicator */
+.gfy-form-progress {
+  padding: 12px 16px;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.gfy-form-progress--complete {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.gfy-form-progress__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.gfy-form-progress__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.gfy-form-progress--complete .gfy-form-progress__label {
+  color: #059669;
+}
+
+.gfy-form-progress__bar {
+  height: 6px;
+  background: var(--mkcg-border, #e2e8f0);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.gfy-form-progress__fill {
+  height: 100%;
+  background: var(--mkcg-primary, #6366f1);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.gfy-form-progress--complete .gfy-form-progress__fill {
+  background: #10b981;
 }
 
 /* Prefilled Badge */

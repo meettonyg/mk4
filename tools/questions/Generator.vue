@@ -53,6 +53,21 @@
         Saving draft...
       </div>
 
+      <!-- Form Completion Indicator -->
+      <div class="gfy-form-progress" :class="{ 'gfy-form-progress--complete': formCompletion.isComplete }">
+        <div class="gfy-form-progress__header">
+          <span class="gfy-form-progress__label">
+            <svg v-if="formCompletion.isComplete" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            {{ formCompletion.isComplete ? 'Ready to generate!' : `${formCompletion.filledCount}/${formCompletion.totalCount} fields completed` }}
+          </span>
+        </div>
+        <div class="gfy-form-progress__bar">
+          <div class="gfy-form-progress__fill" :style="{ width: `${formCompletion.percentage}%` }"></div>
+        </div>
+      </div>
+
       <!-- STEP 1: Topic Selection -->
       <div class="generator__section">
         <h3 class="generator__section-title">Step 1: Choose or Tweak Your Topic</h3>
@@ -266,10 +281,14 @@
                 <button
                   type="button"
                   class="questions-copy-btn"
-                  title="Copy question"
+                  :class="{ 'questions-copy-btn--copied': copiedQuestionIndex === index }"
+                  :title="copiedQuestionIndex === index ? 'Copied!' : 'Copy question'"
                   @click="copyQuestion(index, $event)"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg v-if="copiedQuestionIndex === index" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                     <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
                   </svg>
@@ -636,6 +655,9 @@ const interviewSet = ref([
 // Selected question indices from the generated list
 const selectedQuestionIndices = ref([]);
 
+// Track which question was just copied for visual feedback
+const copiedQuestionIndex = ref(null);
+
 // Count of locked slots
 const lockedSlotsCount = computed(() => {
   return interviewSet.value.filter(slot => slot.locked).length;
@@ -720,6 +742,11 @@ const copyQuestion = async (index, event) => {
   if (question) {
     try {
       await navigator.clipboard.writeText(question);
+      // Show visual feedback
+      copiedQuestionIndex.value = index;
+      setTimeout(() => {
+        copiedQuestionIndex.value = null;
+      }, 1500);
     } catch (err) {
       console.error('[QuestionsGenerator] Failed to copy question:', err);
     }
@@ -873,6 +900,25 @@ const examples = [
  */
 const canGenerate = computed(() => {
   return refinedTopic.value.trim().length > 0;
+});
+
+/**
+ * Form completion status for progress indicator
+ */
+const formCompletion = computed(() => {
+  const fields = [
+    { name: 'Topic', filled: !!(refinedTopic.value && refinedTopic.value.trim()) },
+    { name: 'Who you help', filled: !!authorityHook.who },
+    { name: 'What you do', filled: !!authorityHook.what }
+  ];
+  const filledCount = fields.filter(f => f.filled).length;
+  return {
+    fields,
+    filledCount,
+    totalCount: fields.length,
+    percentage: Math.round((filledCount / fields.length) * 100),
+    isComplete: canGenerate.value
+  };
 });
 
 /**
@@ -1837,6 +1883,58 @@ watch(canGenerate, (newValue) => {
   50% { opacity: 1; }
 }
 
+/* Form Progress Indicator */
+.gfy-form-progress {
+  padding: 12px 16px;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.gfy-form-progress--complete {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.gfy-form-progress__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.gfy-form-progress__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.gfy-form-progress--complete .gfy-form-progress__label {
+  color: #059669;
+}
+
+.gfy-form-progress__bar {
+  height: 6px;
+  background: var(--mkcg-border, #e2e8f0);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.gfy-form-progress__fill {
+  height: 100%;
+  background: var(--mkcg-primary, #3b82f6);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.gfy-form-progress--complete .gfy-form-progress__fill {
+  background: #10b981;
+}
+
 /* Cross-tool Navigation */
 .gfy-cross-tool-nav {
   margin-top: 2rem;
@@ -1911,6 +2009,12 @@ watch(canGenerate, (newValue) => {
   border-color: var(--mkcg-primary, #3b82f6);
   color: var(--mkcg-primary, #3b82f6);
   background: rgba(59, 130, 246, 0.08);
+}
+
+.questions-copy-btn--copied {
+  border-color: #10b981;
+  color: #10b981;
+  background: #ecfdf5;
 }
 
 /* Disabled state for question rows */
