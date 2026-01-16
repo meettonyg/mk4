@@ -53,6 +53,35 @@
         Saving draft...
       </div>
 
+      <!-- Welcome Section (shown when no topic selected) -->
+      <div v-if="!refinedTopic && selectedTopicIndex === -1" class="gfy-welcome-section">
+        <div class="gfy-welcome-section__icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <h3 class="gfy-welcome-section__title">Generate Interview Questions</h3>
+        <p class="gfy-welcome-section__text">
+          Select a topic and we'll create 10 thought-provoking interview questions that showcase your expertise.
+        </p>
+        <div class="gfy-welcome-section__tips">
+          <span class="gfy-welcome-section__tip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            10 unique questions
+          </span>
+          <span class="gfy-welcome-section__tip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            Authority-focused
+          </span>
+          <span class="gfy-welcome-section__tip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            Ctrl+Enter to generate
+          </span>
+        </div>
+      </div>
+
       <!-- Form Completion Indicator -->
       <div class="gfy-form-progress" :class="{ 'gfy-form-progress--complete': formCompletion.isComplete }">
         <div class="gfy-form-progress__header">
@@ -266,6 +295,19 @@
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                   </svg>
                   Copy All
+                </button>
+                <button
+                  type="button"
+                  class="questions-action-btn"
+                  @click="handleExport"
+                  title="Export as markdown"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  Export
                 </button>
               </div>
             </div>
@@ -975,6 +1017,30 @@ const handleGenerate = async () => {
  */
 const handleCopy = async () => {
   await copyToClipboard();
+};
+
+/**
+ * Export questions as a downloadable markdown file
+ */
+const handleExport = () => {
+  if (!questions.value || questions.value.length === 0) return;
+
+  // Create markdown-formatted content
+  const content = `# Interview Questions\n\n` +
+    `**Topic:** ${refinedTopic.value}\n\n` +
+    questions.value.map((question, index) => `${index + 1}. ${question}`).join('\n') +
+    `\n\n---\nGenerated with Interview Questions Generator`;
+
+  // Create and trigger download
+  const blob = new Blob([content], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'interview-questions.md';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 };
 
 /**
@@ -1917,6 +1983,68 @@ watch(canGenerate, (newValue) => {
 @keyframes pulse {
   0%, 100% { opacity: 0.5; }
   50% { opacity: 1; }
+}
+
+/* Welcome Section */
+.gfy-welcome-section {
+  text-align: center;
+  padding: 2rem 1.5rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+  border: 1px dashed var(--mkcg-border, #e2e8f0);
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.gfy-welcome-section__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: var(--mkcg-bg, #ffffff);
+  border-radius: 50%;
+  margin-bottom: 1rem;
+  color: var(--mkcg-primary, #3b82f6);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.gfy-welcome-section__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--mkcg-text-primary, #0f172a);
+  margin: 0 0 0.5rem 0;
+}
+
+.gfy-welcome-section__text {
+  font-size: 0.9375rem;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin: 0 0 1rem 0;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.gfy-welcome-section__tips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.gfy-welcome-section__tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--mkcg-text-secondary, #64748b);
+  background: var(--mkcg-bg, #ffffff);
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+}
+
+.gfy-welcome-section__tip svg {
+  color: #10b981;
 }
 
 /* Form Progress Indicator */

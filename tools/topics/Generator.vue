@@ -36,6 +36,33 @@
         Saving draft...
       </div>
 
+      <!-- Welcome Section (shown when form is empty) -->
+      <div v-if="!expertise && !authorityHook.who" class="gfy-welcome-section">
+        <div class="gfy-welcome-section__icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+          </svg>
+        </div>
+        <h3 class="gfy-welcome-section__title">Generate Topic Ideas</h3>
+        <p class="gfy-welcome-section__text">
+          Tell us about your expertise and we'll generate compelling podcast/interview topic ideas tailored to your authority.
+        </p>
+        <div class="gfy-welcome-section__tips">
+          <span class="gfy-welcome-section__tip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            10 unique topic ideas
+          </span>
+          <span class="gfy-welcome-section__tip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            Tailored to your expertise
+          </span>
+          <span class="gfy-welcome-section__tip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            Press Ctrl+Enter to generate
+          </span>
+        </div>
+      </div>
+
       <!-- Form Completion Indicator -->
       <div class="gfy-form-progress" :class="{ 'gfy-form-progress--complete': formCompletion.isComplete }">
         <div class="gfy-form-progress__header">
@@ -181,6 +208,14 @@
                   <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
                 </svg>
                 {{ selectedTopics.length > 0 ? 'Copy Selected' : 'Copy All' }}
+              </button>
+              <button type="button" class="gfy-btn gfy-btn--outline" @click="handleExport">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Export
               </button>
             </div>
           </div>
@@ -692,6 +727,34 @@ const handleCopyAll = async () => {
   } catch (err) {
     console.error('[Topics Generator] Failed to copy:', err);
   }
+};
+
+/**
+ * Export topics as a downloadable text file
+ */
+const handleExport = () => {
+  const topicsToExport = selectedTopics.value.length > 0
+    ? selectedTopics.value.map(idx => topics.value[idx])
+    : topics.value;
+
+  // Create markdown-formatted content
+  const content = `# Generated Topics\n\n` +
+    topicsToExport.map((topic, index) => {
+      const text = typeof topic === 'string' ? topic : topic.title || topic;
+      return `${index + 1}. ${text}`;
+    }).join('\n') +
+    `\n\n---\nGenerated with Topics Generator`;
+
+  // Create and trigger download
+  const blob = new Blob([content], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'topics.md';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 };
 
 /**
@@ -1892,6 +1955,68 @@ defineExpose({
 .gfy-btn--small {
   padding: 0.5rem 1rem;
   font-size: 0.8125rem;
+}
+
+/* Welcome Section */
+.gfy-welcome-section {
+  text-align: center;
+  padding: 2rem 1.5rem;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+  border: 1px dashed var(--gfy-border-color, #e2e8f0);
+  border-radius: var(--gfy-radius-lg, 12px);
+  margin-bottom: 1.5rem;
+}
+
+.gfy-welcome-section__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: var(--gfy-white, #ffffff);
+  border-radius: 50%;
+  margin-bottom: 1rem;
+  color: var(--gfy-primary-color, #2563eb);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+}
+
+.gfy-welcome-section__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--gfy-text-primary, #0f172a);
+  margin: 0 0 0.5rem 0;
+}
+
+.gfy-welcome-section__text {
+  font-size: 0.9375rem;
+  color: var(--gfy-text-secondary, #64748b);
+  margin: 0 0 1rem 0;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.gfy-welcome-section__tips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.gfy-welcome-section__tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--gfy-text-secondary, #64748b);
+  background: var(--gfy-white, #ffffff);
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--gfy-border-color, #e2e8f0);
+}
+
+.gfy-welcome-section__tip svg {
+  color: #10b981;
 }
 
 /* Copy Button for Individual Items */

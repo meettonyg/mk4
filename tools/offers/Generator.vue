@@ -53,6 +53,33 @@
         Saving draft...
       </div>
 
+      <!-- Welcome Section (shown when form is empty) -->
+      <div v-if="!services && !authorityHook.who" class="gfy-welcome-section">
+        <div class="gfy-welcome-section__icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+          </svg>
+        </div>
+        <h3 class="gfy-welcome-section__title">Generate Service Packages</h3>
+        <p class="gfy-welcome-section__text">
+          Tell us about your services and we'll create 3 tiered packages (Entry, Signature, Premium) to help you serve clients at every level.
+        </p>
+        <div class="gfy-welcome-section__tips">
+          <span class="gfy-welcome-section__tip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            3 tiered packages
+          </span>
+          <span class="gfy-welcome-section__tip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            Deliverables included
+          </span>
+          <span class="gfy-welcome-section__tip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            Ctrl+Enter to generate
+          </span>
+        </div>
+      </div>
+
       <!-- Form Completion Indicator -->
       <div class="gfy-form-progress" :class="{ 'gfy-form-progress--complete': formCompletion.isComplete }">
         <div class="gfy-form-progress__header">
@@ -318,6 +345,19 @@
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                   </svg>
                   Copy All
+                </button>
+                <button
+                  type="button"
+                  class="offers-action-btn"
+                  @click="handleExport"
+                  title="Export as markdown"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  Export
                 </button>
               </div>
             </div>
@@ -1296,6 +1336,50 @@ const handleCopyAll = async () => {
   } catch (err) {
     console.error('[OffersGenerator] Failed to copy all:', err);
   }
+};
+
+/**
+ * Handle export as markdown file
+ */
+const handleExport = () => {
+  // Collect all locked/generated offers
+  const allOffers = [];
+
+  ['entry', 'signature', 'premium'].forEach(tier => {
+    const offer = lockedOffers.value[tier] || offers.value[tier];
+    if (offer) {
+      allOffers.push({
+        tier: tier.charAt(0).toUpperCase() + tier.slice(1),
+        ...offer
+      });
+    }
+  });
+
+  if (allOffers.length === 0) return;
+
+  // Format as markdown
+  const content = `# Service Packages\n\n` +
+    allOffers.map(offer => {
+      const deliverables = offer.deliverables?.length > 0
+        ? offer.deliverables.map(d => `  - ${d}`).join('\n')
+        : '  - N/A';
+      return `## ${offer.tier} Package\n\n` +
+        `**${offer.name || 'Untitled'}**\n\n` +
+        `**Price:** ${offer.price || 'TBD'}\n\n` +
+        `${offer.description || ''}\n\n` +
+        `**Deliverables:**\n${deliverables}`;
+    }).join('\n\n---\n\n') +
+    `\n\n---\n*Generated with Offers Generator*`;
+
+  const blob = new Blob([content], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'service-packages.md';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 };
 
 /**
@@ -2361,6 +2445,68 @@ watch(canGenerateEmbedded, (newValue) => {
 @keyframes pulse {
   0%, 100% { opacity: 0.5; }
   50% { opacity: 1; }
+}
+
+/* Welcome Section */
+.gfy-welcome-section {
+  text-align: center;
+  padding: 2rem 1.5rem;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+  border: 1px dashed var(--mkcg-border, #e2e8f0);
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.gfy-welcome-section__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: var(--mkcg-bg, #ffffff);
+  border-radius: 50%;
+  margin-bottom: 1rem;
+  color: var(--mkcg-primary, #6366f1);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+}
+
+.gfy-welcome-section__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--mkcg-text-primary, #0f172a);
+  margin: 0 0 0.5rem 0;
+}
+
+.gfy-welcome-section__text {
+  font-size: 0.9375rem;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin: 0 0 1rem 0;
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.gfy-welcome-section__tips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.gfy-welcome-section__tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--mkcg-text-secondary, #64748b);
+  background: var(--mkcg-bg, #ffffff);
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+}
+
+.gfy-welcome-section__tip svg {
+  color: #10b981;
 }
 
 /* Form Progress Indicator */
