@@ -815,6 +815,36 @@
   border-color: var(--gfy-primary, #4F46E5);
 }
 
+.gmkb-generator-root .gfy-profile-selector-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.gmkb-generator-root .gfy-profile-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--gfy-primary, #4F46E5);
+  text-decoration: none;
+  white-space: nowrap;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.gmkb-generator-root .gfy-profile-link:hover {
+  background-color: var(--gfy-bg-accent, #EEF2FF);
+  color: var(--gfy-primary-hover, #4338CA);
+}
+
+.gmkb-generator-root .gfy-profile-link svg {
+  flex-shrink: 0;
+}
+
 /* --- FORM ELEMENTS --- */
 .gmkb-generator-root .gfy-input,
 .gmkb-generator-root .gfy-textarea,
