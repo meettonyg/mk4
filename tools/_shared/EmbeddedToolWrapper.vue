@@ -26,8 +26,8 @@
     <div class="gmkb-tool-stage" :class="{ 'has-generated': hasGenerated, 'gmkb-tool-stage--single': singleColumn }">
       <!-- Left: Context & Form -->
       <div class="tool-context">
-        <!-- Dynamic Context Header (hidden in single column mode when results showing) -->
-        <template v-if="!(singleColumn && hasGenerated)">
+        <!-- Dynamic Context Header (only shown in two-column mode - Generator has its own title in single column) -->
+        <template v-if="!singleColumn">
           <h3 class="tool-context__heading">{{ currentIntent?.contextHeading || defaultHeading }}</h3>
           <p class="tool-context__description">{{ currentIntent?.contextDescription || defaultDescription }}</p>
         </template>
@@ -44,8 +44,8 @@
           ></slot>
         </div>
 
-        <!-- Generate Action (hidden after generation in single column mode - Generator has its own buttons) -->
-        <div v-if="!singleColumn || !hasGenerated" class="tool-context__actions">
+        <!-- Generate Action (only shown in two-column mode - single column mode uses Generator's own button) -->
+        <div v-if="!singleColumn" class="tool-context__actions">
           <button
             class="gmkb-btn-generate"
             type="button"
@@ -58,8 +58,8 @@
           </button>
         </div>
 
-        <!-- Rate Limit / Progressive Friction (guests only, hidden after generation in single column) -->
-        <template v-if="!(singleColumn && hasGenerated)">
+        <!-- Rate Limit / Progressive Friction (only shown in two-column mode) -->
+        <template v-if="!singleColumn">
           <p v-if="!isLoggedIn" class="tool-context__limit-text">
             <span v-if="generationCount < 3">
               {{ remainingGenerations }} free generation{{ remainingGenerations !== 1 ? 's' : '' }} remaining today.
