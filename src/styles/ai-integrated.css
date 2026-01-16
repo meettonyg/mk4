@@ -596,3 +596,119 @@ body.dark-mode .gmkb-integrated-scope .gmkb-ai-results__list-item {
 body.dark-mode .gmkb-integrated-scope .gmkb-ai-results__list-item:hover {
   border-color: #818cf8;
 }
+
+/* ========================================
+   EXTENDED FORM ELEMENTS (Questions Generator)
+   ======================================== */
+
+/* Context Banner - shows when pre-filled from profile */
+.gmkb-integrated-scope .gmkb-ai-context-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--gmkb-ai-bg-accent, #f0fdf4);
+  border: 1px solid var(--gmkb-ai-border-accent, #86efac);
+  border-radius: var(--gmkb-ai-radius-md, 8px);
+  font-size: 13px;
+  color: var(--gmkb-ai-text-accent, #166534);
+}
+
+.gmkb-integrated-scope .gmkb-ai-context-banner svg {
+  flex-shrink: 0;
+  stroke: currentColor;
+}
+
+/* Authority Hook Grid - 2x2 layout */
+.gmkb-integrated-scope .gmkb-ai-hook-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.gmkb-integrated-scope .gmkb-ai-hook-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Small label for nested fields */
+.gmkb-integrated-scope .gmkb-ai-label--small {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--gmkb-ai-text-secondary, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+/* Form Row - side by side fields */
+.gmkb-integrated-scope .gmkb-ai-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Range Slider */
+.gmkb-integrated-scope .gmkb-ai-range {
+  width: 100%;
+  height: 6px;
+  appearance: none;
+  background: var(--gmkb-ai-bg-muted, #e5e7eb);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+.gmkb-integrated-scope .gmkb-ai-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--gmkb-ai-primary, #6366f1);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.gmkb-integrated-scope .gmkb-ai-range::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.gmkb-integrated-scope .gmkb-ai-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--gmkb-ai-primary, #6366f1);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* Responsive adjustments for smaller modals */
+@media (max-width: 500px) {
+  .gmkb-integrated-scope .gmkb-ai-hook-grid,
+  .gmkb-integrated-scope .gmkb-ai-form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Dark mode for extended elements */
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-context-banner {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #86efac;
+}
+
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-label--small {
+  color: #94a3b8;
+}
+
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-range {
+  background: #334155;
+}
+
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-range::-webkit-slider-thumb {
+  background: #818cf8;
+}
+
+body.dark-mode .gmkb-integrated-scope .gmkb-ai-range::-moz-range-thumb {
+  background: #818cf8;
+}

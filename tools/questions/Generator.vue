@@ -554,9 +554,18 @@
     @copy="handleCopy"
     @retry="handleGenerate"
   >
-    <!-- Input Form -->
+    <!-- Input Form - Same fields as standalone for consistent results -->
     <div class="gmkb-ai-form">
-      <!-- Topic Selection (Compact) -->
+      <!-- Profile context indicator -->
+      <div v-if="hasMediaKitContext" class="gmkb-ai-context-banner">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>Pre-filled from your profile</span>
+      </div>
+
+      <!-- Step 1: Topic -->
       <div class="gmkb-ai-form-group">
         <label class="gmkb-ai-label gmkb-ai-label--required">Interview Topic</label>
         <textarea
@@ -565,25 +574,96 @@
           placeholder="e.g., The 3 Hidden Revenue Leaks Killing Your Growth"
           rows="2"
         ></textarea>
-        <span class="gmkb-ai-hint">
-          Enter the topic you want to generate questions for.
-        </span>
       </div>
 
-      <!-- Authority Hook (Compact) -->
+      <!-- Step 2: Authority Hook (all 4 fields) -->
       <div class="gmkb-ai-form-group">
-        <label class="gmkb-ai-label">Who do you help? (Optional)</label>
+        <label class="gmkb-ai-label">Authority Hook</label>
+        <div class="gmkb-ai-hook-grid">
+          <div class="gmkb-ai-hook-field">
+            <label class="gmkb-ai-label--small">Who do you help?</label>
+            <input
+              v-model="authorityHook.who"
+              type="text"
+              class="gmkb-ai-input"
+              placeholder="e.g., SaaS Founders"
+            />
+          </div>
+          <div class="gmkb-ai-hook-field">
+            <label class="gmkb-ai-label--small">What result?</label>
+            <input
+              v-model="authorityHook.what"
+              type="text"
+              class="gmkb-ai-input"
+              placeholder="e.g., Increase revenue by 40%"
+            />
+          </div>
+          <div class="gmkb-ai-hook-field">
+            <label class="gmkb-ai-label--small">When do they need it?</label>
+            <input
+              v-model="authorityHook.when"
+              type="text"
+              class="gmkb-ai-input"
+              placeholder="e.g., When scaling rapidly"
+            />
+          </div>
+          <div class="gmkb-ai-hook-field">
+            <label class="gmkb-ai-label--small">How do you do it?</label>
+            <input
+              v-model="authorityHook.how"
+              type="text"
+              class="gmkb-ai-input"
+              placeholder="e.g., My proven 90-day system"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Details -->
+      <div class="gmkb-ai-form-group">
+        <label class="gmkb-ai-label">Guest Bio / Context</label>
+        <textarea
+          v-model="guestBio"
+          class="gmkb-ai-input gmkb-ai-textarea"
+          placeholder="Brief background about you..."
+          rows="2"
+        ></textarea>
+      </div>
+
+      <div class="gmkb-ai-form-row">
+        <div class="gmkb-ai-form-group">
+          <label class="gmkb-ai-label">Target Audience</label>
+          <input
+            v-model="targetAudience"
+            type="text"
+            class="gmkb-ai-input"
+            placeholder="e.g., HR Managers, Startup Founders"
+          />
+        </div>
+        <div class="gmkb-ai-form-group">
+          <label class="gmkb-ai-label">Tone</label>
+          <select v-model="selectedTone" class="gmkb-ai-input gmkb-ai-select">
+            <option value="professional">Professional</option>
+            <option value="conversational">Conversational</option>
+            <option value="bold">Bold</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="gmkb-ai-form-group">
+        <label class="gmkb-ai-label">Question Count: {{ questionCount }}</label>
         <input
-          v-model="authorityHook.who"
-          type="text"
-          class="gmkb-ai-input"
-          placeholder="e.g., SaaS Founders"
+          v-model="questionCount"
+          type="range"
+          class="gmkb-ai-range"
+          min="5"
+          max="15"
         />
       </div>
 
       <!-- Generate Button -->
       <AiGenerateButton
-        text="Generate 10 Questions"
+        :text="`Generate ${questionCount} Questions`"
         loading-text="Generating questions..."
         :loading="isGenerating"
         :disabled="!canGenerate"
@@ -620,6 +700,7 @@ import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useAIQuestions, QUESTION_CATEGORIES } from '../../src/composables/useAIQuestions';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
+import { useProfilePrePopulation } from '../../src/composables/useProfilePrePopulation';
 import { useDraftState } from '../../src/composables/useDraftState';
 import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 
@@ -686,12 +767,48 @@ const {
   getAuthorityHookData
 } = useStandaloneProfile();
 
-// Watch profileData and populate form when profile is selected
+// Watch profileData and populate form when profile is selected (standalone mode)
 watch(profileData, (newData) => {
-  if (newData) {
+  if (newData && props.mode === 'default') {
     populateFromProfile(newData);
   }
 }, { immediate: true });
+
+// Profile pre-population for integrated mode (media kit context)
+const {
+  hasProfileData: hasMediaKitProfileData,
+  getPrePopulatedData,
+  getProfileField
+} = useProfilePrePopulation('questions');
+
+// Computed: has media kit context (for integrated mode)
+const hasMediaKitContext = computed(() => {
+  return props.mode === 'integrated' && hasMediaKitProfileData.value;
+});
+
+// Auto-fill from media kit profile when in integrated mode
+watch(() => props.mode, (newMode) => {
+  if (newMode === 'integrated' && hasMediaKitProfileData.value) {
+    prefillFromMediaKitProfile();
+  }
+}, { immediate: true });
+
+/**
+ * Pre-fill form fields from media kit profile data
+ */
+function prefillFromMediaKitProfile() {
+  const hookWho = getProfileField('hook_who') || getProfileField('authority_hook_who');
+  const hookWhat = getProfileField('hook_what') || getProfileField('authority_hook_what');
+  const hookWhen = getProfileField('hook_when') || getProfileField('authority_hook_when');
+  const hookHow = getProfileField('hook_how') || getProfileField('authority_hook_how');
+  const bio = getProfileField('biography') || getProfileField('bio');
+
+  if (hookWho && !authorityHook.who) authorityHook.who = hookWho;
+  if (hookWhat && !authorityHook.what) authorityHook.what = hookWhat;
+  if (hookWhen && !authorityHook.when) authorityHook.when = hookWhen;
+  if (hookHow && !authorityHook.how) authorityHook.how = hookHow;
+  if (bio && !guestBio.value) guestBio.value = bio;
+}
 
 // Save to profile state
 const isSavingToProfile = ref(false);
