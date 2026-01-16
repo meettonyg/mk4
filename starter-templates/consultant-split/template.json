@@ -19,10 +19,22 @@
     ]
   },
   "metadata": {
-    "tags": ["consultant", "business", "professional", "advisor", "coaching", "corporate", "split"],
+    "tags": [
+      "consultant",
+      "business",
+      "professional",
+      "advisor",
+      "coaching",
+      "corporate",
+      "split"
+    ],
     "is_premium": false,
     "sort_order": 41,
-    "recommended_themes": ["professional-clean", "minimal-elegant", "modern-dark"]
+    "recommended_themes": [
+      "professional-clean",
+      "minimal-elegant",
+      "modern-dark"
+    ]
   },
   "preview_image": "preview.jpg",
   "sections": [
@@ -63,11 +75,23 @@
             "animateNumbers": true
           },
           "data": {
-            "items": [
-              { "value": "15+", "label": "Years Experience" },
-              { "value": "200+", "label": "Clients Served" },
-              { "value": "$50M+", "label": "Value Delivered" },
-              { "value": "95%", "label": "Client Retention" }
+            "stats": [
+              {
+                "value": "15+",
+                "label": "Years Experience"
+              },
+              {
+                "value": "200+",
+                "label": "Clients Served"
+              },
+              {
+                "value": "$50M+",
+                "label": "Value Delivered"
+              },
+              {
+                "value": "95%",
+                "label": "Client Retention"
+              }
             ]
           }
         }
@@ -89,7 +113,7 @@
           "data": {
             "title": "How I Can Help",
             "subtitle": "Specialized expertise across key areas",
-            "items": [
+            "topics": [
               {
                 "title": "Strategic Planning",
                 "description": "Develop clear roadmaps that align your team and drive sustainable growth.",
@@ -114,7 +138,6 @@
       "id": "bio-section",
       "type": "two_column",
       "columns": {
-        "ratio": "60-40",
         "1": [
           {
             "type": "biography",
@@ -124,7 +147,7 @@
             },
             "data": {
               "title": "About Me",
-              "content": "Share your professional background, approach, and what sets you apart. Include your experience working with different types of organizations.\n\n**Education & Credentials:**\n- MBA from [Business School]\n- [Professional Certification]\n- [Industry Accreditation]\n\n**Industries Served:**\nTechnology, Healthcare, Financial Services, Manufacturing"
+              "biography": "Share your professional background, approach, and what sets you apart. Include your experience working with different types of organizations.\n\n**Education & Credentials:**\n- MBA from [Business School]\n- [Professional Certification]\n- [Industry Accreditation]\n\n**Industries Served:**\nTechnology, Healthcare, Financial Services, Manufacturing"
             }
           }
         ],
@@ -139,7 +162,8 @@
               "alt": "Professional headshot"
             }
           }
-        ]
+        ],
+        "ratio": "60-40"
       }
     },
     {
@@ -159,12 +183,30 @@
           "data": {
             "title": "Trusted By",
             "logos": [
-              { "name": "Company 1", "alt": "Client logo" },
-              { "name": "Company 2", "alt": "Client logo" },
-              { "name": "Company 3", "alt": "Client logo" },
-              { "name": "Company 4", "alt": "Client logo" },
-              { "name": "Company 5", "alt": "Client logo" },
-              { "name": "Company 6", "alt": "Client logo" }
+              {
+                "name": "Company 1",
+                "alt": "Client logo"
+              },
+              {
+                "name": "Company 2",
+                "alt": "Client logo"
+              },
+              {
+                "name": "Company 3",
+                "alt": "Client logo"
+              },
+              {
+                "name": "Company 4",
+                "alt": "Client logo"
+              },
+              {
+                "name": "Company 5",
+                "alt": "Client logo"
+              },
+              {
+                "name": "Company 6",
+                "alt": "Client logo"
+              }
             ]
           }
         }
@@ -185,7 +227,7 @@
           },
           "data": {
             "title": "Client Results",
-            "items": [
+            "testimonials": [
               {
                 "quote": "Working with [Name] transformed our approach to strategic planning. We saw a 40% improvement in operational efficiency within the first year.",
                 "author": "Executive Name",
@@ -218,7 +260,7 @@
           "data": {
             "title": "Speaking Topics",
             "subtitle": "Available for keynotes, workshops, and corporate training",
-            "items": [
+            "topics": [
               {
                 "title": "The Future of Work: Preparing Your Organization for Change",
                 "description": "60-90 minute keynote on navigating workforce transformation"
@@ -240,13 +282,19 @@
       "id": "contact-section",
       "type": "two_column",
       "columns": {
-        "ratio": "55-45",
         "1": [
           {
             "type": "contact",
             "settings": {
               "style": "professional",
-              "fields": ["name", "email", "company", "phone", "inquiry_type", "message"],
+              "fields": [
+                "name",
+                "email",
+                "company",
+                "phone",
+                "inquiry_type",
+                "message"
+              ],
               "showLabels": true
             },
             "data": {
@@ -281,7 +329,8 @@
               "title": "Connect"
             }
           }
-        ]
+        ],
+        "ratio": "55-45"
       }
     }
   ]

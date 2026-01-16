@@ -18,10 +18,22 @@
     ]
   },
   "metadata": {
-    "tags": ["speaker", "keynote", "trainer", "presentation", "conference", "workshop", "split"],
+    "tags": [
+      "speaker",
+      "keynote",
+      "trainer",
+      "presentation",
+      "conference",
+      "workshop",
+      "split"
+    ],
     "is_premium": false,
     "sort_order": 21,
-    "recommended_themes": ["professional-clean", "speaker-pro", "modern-dark"]
+    "recommended_themes": [
+      "professional-clean",
+      "speaker-pro",
+      "modern-dark"
+    ]
   },
   "preview_image": "preview.jpg",
   "sections": [
@@ -62,11 +74,27 @@
             "animateNumbers": true
           },
           "data": {
-            "items": [
-              { "value": "500+", "label": "Keynotes Delivered", "icon": "microphone" },
-              { "value": "100K+", "label": "Audience Members", "icon": "users" },
-              { "value": "25+", "label": "Countries", "icon": "globe" },
-              { "value": "98%", "label": "Client Satisfaction", "icon": "star" }
+            "stats": [
+              {
+                "value": "500+",
+                "label": "Keynotes Delivered",
+                "icon": "microphone"
+              },
+              {
+                "value": "100K+",
+                "label": "Audience Members",
+                "icon": "users"
+              },
+              {
+                "value": "25+",
+                "label": "Countries",
+                "icon": "globe"
+              },
+              {
+                "value": "98%",
+                "label": "Client Satisfaction",
+                "icon": "star"
+              }
             ]
           }
         }
@@ -88,7 +116,7 @@
           "data": {
             "title": "Speaking Topics",
             "subtitle": "Customized presentations for your audience",
-            "items": [
+            "topics": [
               {
                 "title": "Leadership in the Digital Age",
                 "description": "Navigate change and inspire your team through transformation.",
@@ -146,7 +174,7 @@
           },
           "data": {
             "title": "What Event Organizers Say",
-            "items": [
+            "testimonials": [
               {
                 "quote": "One of the most impactful speakers we've ever had. The audience was captivated from start to finish.",
                 "author": "Event Director Name",
@@ -174,7 +202,6 @@
       "id": "bio-section",
       "type": "two_column",
       "columns": {
-        "ratio": "60-40",
         "1": [
           {
             "type": "biography",
@@ -184,7 +211,7 @@
             },
             "data": {
               "title": "About",
-              "content": "Share your background, expertise, and what makes you a compelling speaker. Include notable achievements, publications, and your unique perspective.\n\nYour approach to speaking and what audiences can expect from your presentations."
+              "biography": "Share your background, expertise, and what makes you a compelling speaker. Include notable achievements, publications, and your unique perspective.\n\nYour approach to speaking and what audiences can expect from your presentations."
             }
           }
         ],
@@ -199,7 +226,8 @@
               "alt": "Professional speaker headshot"
             }
           }
-        ]
+        ],
+        "ratio": "60-40"
       }
     },
     {
@@ -225,13 +253,19 @@
       "id": "contact-section",
       "type": "two_column",
       "columns": {
-        "ratio": "50-50",
         "1": [
           {
             "type": "contact",
             "settings": {
               "style": "form",
-              "fields": ["name", "email", "organization", "event_date", "event_type", "message"],
+              "fields": [
+                "name",
+                "email",
+                "organization",
+                "event_date",
+                "event_type",
+                "message"
+              ],
               "showLabels": true
             },
             "data": {
@@ -253,7 +287,8 @@
               "title": "Connect With Me"
             }
           }
-        ]
+        ],
+        "ratio": "50-50"
       }
     }
   ]

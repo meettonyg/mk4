@@ -19,10 +19,22 @@
     ]
   },
   "metadata": {
-    "tags": ["creator", "influencer", "social", "content", "brand", "collaboration", "centered"],
+    "tags": [
+      "creator",
+      "influencer",
+      "social",
+      "content",
+      "brand",
+      "collaboration",
+      "centered"
+    ],
     "is_premium": false,
     "sort_order": 50,
-    "recommended_themes": ["creative-bold", "modern-dark", "podcast-guest"]
+    "recommended_themes": [
+      "creative-bold",
+      "modern-dark",
+      "podcast-guest"
+    ]
   },
   "preview_image": "preview.jpg",
   "sections": [
@@ -63,11 +75,27 @@
             "colorScheme": "gradient"
           },
           "data": {
-            "items": [
-              { "value": "500K+", "label": "Total Followers", "icon": "users" },
-              { "value": "10M+", "label": "Monthly Reach", "icon": "eye" },
-              { "value": "8.5%", "label": "Engagement Rate", "icon": "heart" },
-              { "value": "50+", "label": "Brand Partners", "icon": "handshake" }
+            "stats": [
+              {
+                "value": "500K+",
+                "label": "Total Followers",
+                "icon": "users"
+              },
+              {
+                "value": "10M+",
+                "label": "Monthly Reach",
+                "icon": "eye"
+              },
+              {
+                "value": "8.5%",
+                "label": "Engagement Rate",
+                "icon": "heart"
+              },
+              {
+                "value": "50+",
+                "label": "Brand Partners",
+                "icon": "handshake"
+              }
             ]
           }
         }
@@ -88,11 +116,27 @@
           "data": {
             "title": "Where I Create",
             "subtitle": "Platform breakdown and audience demographics",
-            "items": [
-              { "value": "250K", "label": "Instagram", "icon": "instagram" },
-              { "value": "150K", "label": "YouTube", "icon": "youtube" },
-              { "value": "75K", "label": "TikTok", "icon": "tiktok" },
-              { "value": "25K", "label": "Twitter", "icon": "twitter" }
+            "stats": [
+              {
+                "value": "250K",
+                "label": "Instagram",
+                "icon": "instagram"
+              },
+              {
+                "value": "150K",
+                "label": "YouTube",
+                "icon": "youtube"
+              },
+              {
+                "value": "75K",
+                "label": "TikTok",
+                "icon": "tiktok"
+              },
+              {
+                "value": "25K",
+                "label": "Twitter",
+                "icon": "twitter"
+              }
             ]
           }
         }
@@ -115,12 +159,30 @@
             "title": "Content Samples",
             "subtitle": "A selection of recent work",
             "images": [
-              { "alt": "Content sample 1", "caption": "Brand Campaign" },
-              { "alt": "Content sample 2", "caption": "Lifestyle Post" },
-              { "alt": "Content sample 3", "caption": "Product Feature" },
-              { "alt": "Content sample 4", "caption": "Behind the Scenes" },
-              { "alt": "Content sample 5", "caption": "Tutorial" },
-              { "alt": "Content sample 6", "caption": "Collaboration" }
+              {
+                "alt": "Content sample 1",
+                "caption": "Brand Campaign"
+              },
+              {
+                "alt": "Content sample 2",
+                "caption": "Lifestyle Post"
+              },
+              {
+                "alt": "Content sample 3",
+                "caption": "Product Feature"
+              },
+              {
+                "alt": "Content sample 4",
+                "caption": "Behind the Scenes"
+              },
+              {
+                "alt": "Content sample 5",
+                "caption": "Tutorial"
+              },
+              {
+                "alt": "Content sample 6",
+                "caption": "Collaboration"
+              }
             ]
           }
         }
@@ -142,7 +204,7 @@
           "data": {
             "title": "Content Categories",
             "subtitle": "What I create and talk about",
-            "items": [
+            "topics": [
               {
                 "title": "Lifestyle & Wellness",
                 "description": "Daily routines, self-care, and living your best life.",
@@ -179,12 +241,30 @@
           "data": {
             "title": "Brands I've Worked With",
             "logos": [
-              { "name": "Brand 1", "alt": "Brand logo" },
-              { "name": "Brand 2", "alt": "Brand logo" },
-              { "name": "Brand 3", "alt": "Brand logo" },
-              { "name": "Brand 4", "alt": "Brand logo" },
-              { "name": "Brand 5", "alt": "Brand logo" },
-              { "name": "Brand 6", "alt": "Brand logo" }
+              {
+                "name": "Brand 1",
+                "alt": "Brand logo"
+              },
+              {
+                "name": "Brand 2",
+                "alt": "Brand logo"
+              },
+              {
+                "name": "Brand 3",
+                "alt": "Brand logo"
+              },
+              {
+                "name": "Brand 4",
+                "alt": "Brand logo"
+              },
+              {
+                "name": "Brand 5",
+                "alt": "Brand logo"
+              },
+              {
+                "name": "Brand 6",
+                "alt": "Brand logo"
+              }
             ]
           }
         }
@@ -194,7 +274,6 @@
       "id": "bio-section",
       "type": "two_column",
       "columns": {
-        "ratio": "40-60",
         "1": [
           {
             "type": "profile-photo",
@@ -225,10 +304,11 @@
             },
             "data": {
               "title": "Hey, I'm [Name]!",
-              "content": "Share your story in an authentic, conversational way. What got you started? What do you love creating? What makes your community special?\n\n**My audience:** Describe your demographics - age range, interests, what they're passionate about.\n\n**My values:** What matters to you? What kind of brands do you love working with?"
+              "biography": "Share your story in an authentic, conversational way. What got you started? What do you love creating? What makes your community special?\n\n**My audience:** Describe your demographics - age range, interests, what they're passionate about.\n\n**My values:** What matters to you? What kind of brands do you love working with?"
             }
           }
-        ]
+        ],
+        "ratio": "40-60"
       }
     },
     {
@@ -246,7 +326,7 @@
           },
           "data": {
             "title": "What Brands Say",
-            "items": [
+            "testimonials": [
               {
                 "quote": "Working with [Name] exceeded all our campaign goals. The content was authentic and the engagement was incredible.",
                 "author": "Marketing Manager",
@@ -277,7 +357,7 @@
           },
           "data": {
             "title": "Partnership Options",
-            "items": [
+            "topics": [
               {
                 "title": "Sponsored Posts",
                 "description": "Feed posts, stories, and reels featuring your product or service."
@@ -304,7 +384,15 @@
           "type": "contact",
           "settings": {
             "style": "brand-inquiry",
-            "fields": ["name", "email", "company", "campaign_type", "budget_range", "timeline", "message"],
+            "fields": [
+              "name",
+              "email",
+              "company",
+              "campaign_type",
+              "budget_range",
+              "timeline",
+              "message"
+            ],
             "showLabels": true,
             "maxWidth": "700px"
           },

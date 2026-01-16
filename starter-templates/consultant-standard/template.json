@@ -19,10 +19,22 @@
     ]
   },
   "metadata": {
-    "tags": ["consultant", "business", "professional", "advisor", "coaching", "corporate", "classic"],
+    "tags": [
+      "consultant",
+      "business",
+      "professional",
+      "advisor",
+      "coaching",
+      "corporate",
+      "classic"
+    ],
     "is_premium": false,
     "sort_order": 40,
-    "recommended_themes": ["professional-clean", "minimal-elegant", "modern-dark"]
+    "recommended_themes": [
+      "professional-clean",
+      "minimal-elegant",
+      "modern-dark"
+    ]
   },
   "preview_image": "preview.jpg",
   "sections": [
@@ -62,11 +74,27 @@
             "animateNumbers": true
           },
           "data": {
-            "items": [
-              { "value": "15+", "label": "Years Experience", "icon": "calendar" },
-              { "value": "200+", "label": "Clients Served", "icon": "users" },
-              { "value": "$50M+", "label": "Value Delivered", "icon": "chart-line" },
-              { "value": "95%", "label": "Client Retention", "icon": "star" }
+            "stats": [
+              {
+                "value": "15+",
+                "label": "Years Experience",
+                "icon": "calendar"
+              },
+              {
+                "value": "200+",
+                "label": "Clients Served",
+                "icon": "users"
+              },
+              {
+                "value": "$50M+",
+                "label": "Value Delivered",
+                "icon": "chart-line"
+              },
+              {
+                "value": "95%",
+                "label": "Client Retention",
+                "icon": "star"
+              }
             ]
           }
         }
@@ -88,7 +116,7 @@
           "data": {
             "title": "How I Can Help",
             "subtitle": "Specialized expertise across key areas",
-            "items": [
+            "topics": [
               {
                 "title": "Strategic Planning",
                 "description": "Develop clear roadmaps that align your team and drive sustainable growth.",
@@ -114,7 +142,6 @@
       "type": "two_column",
       "background": "surface",
       "columns": {
-        "ratio": "40-60",
         "1": [
           {
             "type": "profile-photo",
@@ -145,10 +172,11 @@
             },
             "data": {
               "title": "About Me",
-              "content": "Share your professional background, approach, and what sets you apart.\n\n**Education & Credentials:**\n- MBA from [Business School]\n- [Professional Certification]\n\n**Industries Served:**\nTechnology, Healthcare, Financial Services, Manufacturing"
+              "biography": "Share your professional background, approach, and what sets you apart.\n\n**Education & Credentials:**\n- MBA from [Business School]\n- [Professional Certification]\n\n**Industries Served:**\nTechnology, Healthcare, Financial Services, Manufacturing"
             }
           }
-        ]
+        ],
+        "ratio": "40-60"
       }
     },
     {
@@ -167,12 +195,30 @@
           "data": {
             "title": "Trusted By",
             "logos": [
-              { "name": "Company 1", "alt": "Client logo" },
-              { "name": "Company 2", "alt": "Client logo" },
-              { "name": "Company 3", "alt": "Client logo" },
-              { "name": "Company 4", "alt": "Client logo" },
-              { "name": "Company 5", "alt": "Client logo" },
-              { "name": "Company 6", "alt": "Client logo" }
+              {
+                "name": "Company 1",
+                "alt": "Client logo"
+              },
+              {
+                "name": "Company 2",
+                "alt": "Client logo"
+              },
+              {
+                "name": "Company 3",
+                "alt": "Client logo"
+              },
+              {
+                "name": "Company 4",
+                "alt": "Client logo"
+              },
+              {
+                "name": "Company 5",
+                "alt": "Client logo"
+              },
+              {
+                "name": "Company 6",
+                "alt": "Client logo"
+              }
             ]
           }
         }
@@ -194,7 +240,7 @@
           },
           "data": {
             "title": "Client Results",
-            "items": [
+            "testimonials": [
               {
                 "quote": "Working with [Name] transformed our approach. We saw 40% improvement in efficiency within the first year.",
                 "author": "Executive Name",
@@ -221,7 +267,14 @@
           "type": "contact",
           "settings": {
             "style": "professional",
-            "fields": ["name", "email", "company", "phone", "inquiry_type", "message"],
+            "fields": [
+              "name",
+              "email",
+              "company",
+              "phone",
+              "inquiry_type",
+              "message"
+            ],
             "showLabels": true,
             "maxWidth": "600px"
           },

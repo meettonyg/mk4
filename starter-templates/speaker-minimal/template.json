@@ -18,10 +18,22 @@
     ]
   },
   "metadata": {
-    "tags": ["speaker", "keynote", "trainer", "presentation", "conference", "workshop", "minimal"],
+    "tags": [
+      "speaker",
+      "keynote",
+      "trainer",
+      "presentation",
+      "conference",
+      "workshop",
+      "minimal"
+    ],
     "is_premium": false,
     "sort_order": 22,
-    "recommended_themes": ["minimal-elegant", "professional-clean", "modern-light"]
+    "recommended_themes": [
+      "minimal-elegant",
+      "professional-clean",
+      "modern-light"
+    ]
   },
   "preview_image": "preview.jpg",
   "sections": [
@@ -30,7 +42,6 @@
       "type": "two_column",
       "background": "light",
       "columns": {
-        "ratio": "35-65",
         "1": [
           {
             "type": "profile-photo",
@@ -67,7 +78,8 @@
             },
             "data": {}
           }
-        ]
+        ],
+        "ratio": "35-65"
       }
     },
     {
@@ -85,11 +97,23 @@
             "separator": "dot"
           },
           "data": {
-            "items": [
-              { "value": "500+", "label": "Keynotes" },
-              { "value": "100K+", "label": "Attendees" },
-              { "value": "25+", "label": "Countries" },
-              { "value": "98%", "label": "Satisfaction" }
+            "stats": [
+              {
+                "value": "500+",
+                "label": "Keynotes"
+              },
+              {
+                "value": "100K+",
+                "label": "Attendees"
+              },
+              {
+                "value": "25+",
+                "label": "Countries"
+              },
+              {
+                "value": "98%",
+                "label": "Satisfaction"
+              }
             ]
           }
         }
@@ -109,13 +133,25 @@
           },
           "data": {
             "title": "Speaking Topics",
-            "items": [
-              { "title": "Leadership" },
-              { "title": "Innovation" },
-              { "title": "Team Building" },
-              { "title": "Digital Transformation" },
-              { "title": "Culture" },
-              { "title": "Strategy" }
+            "topics": [
+              {
+                "title": "Leadership"
+              },
+              {
+                "title": "Innovation"
+              },
+              {
+                "title": "Team Building"
+              },
+              {
+                "title": "Digital Transformation"
+              },
+              {
+                "title": "Culture"
+              },
+              {
+                "title": "Strategy"
+              }
             ]
           }
         }
@@ -136,7 +172,7 @@
           },
           "data": {
             "title": "About",
-            "content": "A concise bio covering your expertise, notable clients, and what makes your presentations unique. Event planners want to know: what will their audience take away?\n\nInclude 2-3 sentences about your background and speaking style."
+            "biography": "A concise bio covering your expertise, notable clients, and what makes your presentations unique. Event planners want to know: what will their audience take away?\n\nInclude 2-3 sentences about your background and speaking style."
           }
         }
       ]
@@ -178,7 +214,7 @@
           },
           "data": {
             "title": "Reviews",
-            "items": [
+            "testimonials": [
               {
                 "quote": "One of the most impactful speakers we've ever had.",
                 "author": "Event Director",
@@ -203,7 +239,13 @@
           "type": "contact",
           "settings": {
             "style": "minimal",
-            "fields": ["name", "email", "organization", "event_date", "message"],
+            "fields": [
+              "name",
+              "email",
+              "organization",
+              "event_date",
+              "message"
+            ],
             "showLabels": true,
             "maxWidth": "520px"
           },

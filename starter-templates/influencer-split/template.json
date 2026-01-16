@@ -19,10 +19,23 @@
     ]
   },
   "metadata": {
-    "tags": ["creator", "influencer", "social", "content", "brand", "collaboration", "split", "visual"],
+    "tags": [
+      "creator",
+      "influencer",
+      "social",
+      "content",
+      "brand",
+      "collaboration",
+      "split",
+      "visual"
+    ],
     "is_premium": false,
     "sort_order": 51,
-    "recommended_themes": ["creative-bold", "modern-dark", "vibrant-creator"]
+    "recommended_themes": [
+      "creative-bold",
+      "modern-dark",
+      "vibrant-creator"
+    ]
   },
   "preview_image": "preview.jpg",
   "sections": [
@@ -31,7 +44,6 @@
       "type": "two_column",
       "background": "gradient",
       "columns": {
-        "ratio": "50-50",
         "1": [
           {
             "type": "profile-photo",
@@ -70,13 +82,20 @@
               "size": "compact"
             },
             "data": {
-              "items": [
-                { "value": "500K+", "label": "Followers" },
-                { "value": "8.5%", "label": "Engagement" }
+              "stats": [
+                {
+                  "value": "500K+",
+                  "label": "Followers"
+                },
+                {
+                  "value": "8.5%",
+                  "label": "Engagement"
+                }
               ]
             }
           }
-        ]
+        ],
+        "ratio": "50-50"
       }
     },
     {
@@ -94,11 +113,27 @@
             "colorScheme": "gradient"
           },
           "data": {
-            "items": [
-              { "value": "500K+", "label": "Total Followers", "icon": "users" },
-              { "value": "10M+", "label": "Monthly Reach", "icon": "eye" },
-              { "value": "8.5%", "label": "Engagement Rate", "icon": "heart" },
-              { "value": "50+", "label": "Brand Partners", "icon": "handshake" }
+            "stats": [
+              {
+                "value": "500K+",
+                "label": "Total Followers",
+                "icon": "users"
+              },
+              {
+                "value": "10M+",
+                "label": "Monthly Reach",
+                "icon": "eye"
+              },
+              {
+                "value": "8.5%",
+                "label": "Engagement Rate",
+                "icon": "heart"
+              },
+              {
+                "value": "50+",
+                "label": "Brand Partners",
+                "icon": "handshake"
+              }
             ]
           }
         }
@@ -108,7 +143,6 @@
       "id": "platforms-bio-section",
       "type": "two_column",
       "columns": {
-        "ratio": "45-55",
         "1": [
           {
             "type": "stats",
@@ -119,11 +153,27 @@
             },
             "data": {
               "title": "Where I Create",
-              "items": [
-                { "value": "250K", "label": "Instagram", "icon": "instagram" },
-                { "value": "150K", "label": "YouTube", "icon": "youtube" },
-                { "value": "75K", "label": "TikTok", "icon": "tiktok" },
-                { "value": "25K", "label": "Twitter", "icon": "twitter" }
+              "stats": [
+                {
+                  "value": "250K",
+                  "label": "Instagram",
+                  "icon": "instagram"
+                },
+                {
+                  "value": "150K",
+                  "label": "YouTube",
+                  "icon": "youtube"
+                },
+                {
+                  "value": "75K",
+                  "label": "TikTok",
+                  "icon": "tiktok"
+                },
+                {
+                  "value": "25K",
+                  "label": "Twitter",
+                  "icon": "twitter"
+                }
               ]
             }
           }
@@ -137,10 +187,11 @@
             },
             "data": {
               "title": "Hey, I'm [Name]!",
-              "content": "Share your story in an authentic, conversational way. What got you started? What do you love creating?\n\n**My audience:** Describe your demographics - age range, interests, what they're passionate about.\n\n**My values:** What matters to you? What kind of brands do you love working with?"
+              "biography": "Share your story in an authentic, conversational way. What got you started? What do you love creating?\n\n**My audience:** Describe your demographics - age range, interests, what they're passionate about.\n\n**My values:** What matters to you? What kind of brands do you love working with?"
             }
           }
-        ]
+        ],
+        "ratio": "45-55"
       }
     },
     {
@@ -159,12 +210,30 @@
           "data": {
             "title": "Content Samples",
             "images": [
-              { "alt": "Content 1", "caption": "Brand Campaign" },
-              { "alt": "Content 2", "caption": "Lifestyle Post" },
-              { "alt": "Content 3", "caption": "Product Feature" },
-              { "alt": "Content 4", "caption": "Behind the Scenes" },
-              { "alt": "Content 5", "caption": "Tutorial" },
-              { "alt": "Content 6", "caption": "Collaboration" }
+              {
+                "alt": "Content 1",
+                "caption": "Brand Campaign"
+              },
+              {
+                "alt": "Content 2",
+                "caption": "Lifestyle Post"
+              },
+              {
+                "alt": "Content 3",
+                "caption": "Product Feature"
+              },
+              {
+                "alt": "Content 4",
+                "caption": "Behind the Scenes"
+              },
+              {
+                "alt": "Content 5",
+                "caption": "Tutorial"
+              },
+              {
+                "alt": "Content 6",
+                "caption": "Collaboration"
+              }
             ]
           }
         }
@@ -185,12 +254,30 @@
           "data": {
             "title": "Brands I've Worked With",
             "logos": [
-              { "name": "Brand 1", "alt": "Brand logo" },
-              { "name": "Brand 2", "alt": "Brand logo" },
-              { "name": "Brand 3", "alt": "Brand logo" },
-              { "name": "Brand 4", "alt": "Brand logo" },
-              { "name": "Brand 5", "alt": "Brand logo" },
-              { "name": "Brand 6", "alt": "Brand logo" }
+              {
+                "name": "Brand 1",
+                "alt": "Brand logo"
+              },
+              {
+                "name": "Brand 2",
+                "alt": "Brand logo"
+              },
+              {
+                "name": "Brand 3",
+                "alt": "Brand logo"
+              },
+              {
+                "name": "Brand 4",
+                "alt": "Brand logo"
+              },
+              {
+                "name": "Brand 5",
+                "alt": "Brand logo"
+              },
+              {
+                "name": "Brand 6",
+                "alt": "Brand logo"
+              }
             ]
           }
         }
@@ -211,7 +298,7 @@
           },
           "data": {
             "title": "What Brands Say",
-            "items": [
+            "testimonials": [
               {
                 "quote": "Working with [Name] exceeded all our campaign goals. Authentic content with incredible engagement.",
                 "author": "Marketing Manager",
@@ -232,7 +319,6 @@
       "type": "two_column",
       "background": "gradient",
       "columns": {
-        "ratio": "50-50",
         "1": [
           {
             "type": "topics",
@@ -243,10 +329,19 @@
             },
             "data": {
               "title": "Partnership Options",
-              "items": [
-                { "title": "Sponsored Posts", "description": "Feed posts, stories, and reels" },
-                { "title": "Brand Ambassador", "description": "Long-term partnerships" },
-                { "title": "Content Creation", "description": "UGC for your channels" }
+              "topics": [
+                {
+                  "title": "Sponsored Posts",
+                  "description": "Feed posts, stories, and reels"
+                },
+                {
+                  "title": "Brand Ambassador",
+                  "description": "Long-term partnerships"
+                },
+                {
+                  "title": "Content Creation",
+                  "description": "UGC for your channels"
+                }
               ]
             }
           }
@@ -256,7 +351,12 @@
             "type": "contact",
             "settings": {
               "style": "compact",
-              "fields": ["name", "email", "company", "message"],
+              "fields": [
+                "name",
+                "email",
+                "company",
+                "message"
+              ],
               "showLabels": false
             },
             "data": {
@@ -264,7 +364,8 @@
               "button_text": "Send Inquiry"
             }
           }
-        ]
+        ],
+        "ratio": "50-50"
       }
     }
   ]

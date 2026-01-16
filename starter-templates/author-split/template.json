@@ -18,10 +18,23 @@
     ]
   },
   "metadata": {
-    "tags": ["author", "writer", "book", "literary", "publishing", "press", "split", "visual"],
+    "tags": [
+      "author",
+      "writer",
+      "book",
+      "literary",
+      "publishing",
+      "press",
+      "split",
+      "visual"
+    ],
     "is_premium": false,
     "sort_order": 11,
-    "recommended_themes": ["modern-dark", "creative-bold", "professional-clean"]
+    "recommended_themes": [
+      "modern-dark",
+      "creative-bold",
+      "professional-clean"
+    ]
   },
   "preview_image": "preview.jpg",
   "sections": [
@@ -30,7 +43,6 @@
       "type": "two_column",
       "background": "dark",
       "columns": {
-        "ratio": "45-55",
         "1": [
           {
             "type": "profile-photo",
@@ -60,7 +72,8 @@
               "cta_text": "Explore My Work"
             }
           }
-        ]
+        ],
+        "ratio": "45-55"
       }
     },
     {
@@ -68,7 +81,6 @@
       "type": "two_column",
       "background": "gradient",
       "columns": {
-        "ratio": "40-60",
         "1": [
           {
             "type": "photo-gallery",
@@ -78,7 +90,11 @@
               "showShadow": true
             },
             "data": {
-              "images": [{ "alt": "Book cover" }]
+              "images": [
+                {
+                  "alt": "Book cover"
+                }
+              ]
             }
           }
         ],
@@ -96,7 +112,8 @@
               "cta_link": "#"
             }
           }
-        ]
+        ],
+        "ratio": "40-60"
       }
     },
     {
@@ -114,7 +131,7 @@
           },
           "data": {
             "title": "Press & Reviews",
-            "items": [
+            "testimonials": [
               {
                 "quote": "A must-read for anyone interested in [topic].",
                 "company": "The New York Times"
@@ -146,10 +163,22 @@
           "data": {
             "title": "Bibliography",
             "images": [
-              { "alt": "Book 1", "caption": "Title One (Year)" },
-              { "alt": "Book 2", "caption": "Title Two (Year)" },
-              { "alt": "Book 3", "caption": "Title Three (Year)" },
-              { "alt": "Book 4", "caption": "Title Four (Year)" }
+              {
+                "alt": "Book 1",
+                "caption": "Title One (Year)"
+              },
+              {
+                "alt": "Book 2",
+                "caption": "Title Two (Year)"
+              },
+              {
+                "alt": "Book 3",
+                "caption": "Title Three (Year)"
+              },
+              {
+                "alt": "Book 4",
+                "caption": "Title Four (Year)"
+              }
             ]
           }
         }
@@ -159,7 +188,6 @@
       "id": "bio-topics-section",
       "type": "two_column",
       "columns": {
-        "ratio": "55-45",
         "1": [
           {
             "type": "biography",
@@ -169,7 +197,7 @@
             },
             "data": {
               "title": "About the Author",
-              "content": "Share your background, writing journey, and what drives your work. Include your education, awards, and any notable achievements.\n\nYour unique perspective and why readers connect with your voice."
+              "biography": "Share your background, writing journey, and what drives your work. Include your education, awards, and any notable achievements.\n\nYour unique perspective and why readers connect with your voice."
             }
           }
         ],
@@ -183,7 +211,7 @@
             },
             "data": {
               "title": "Speaking Topics",
-              "items": [
+              "topics": [
                 {
                   "title": "The Research Behind the Book",
                   "description": "Deep dive into discoveries"
@@ -199,7 +227,8 @@
               ]
             }
           }
-        ]
+        ],
+        "ratio": "55-45"
       }
     },
     {
@@ -207,7 +236,6 @@
       "type": "two_column",
       "background": "dark",
       "columns": {
-        "ratio": "50-50",
         "1": [
           {
             "type": "call-to-action",
@@ -227,14 +255,20 @@
             "type": "contact",
             "settings": {
               "style": "compact",
-              "fields": ["name", "email", "organization", "message"],
+              "fields": [
+                "name",
+                "email",
+                "organization",
+                "message"
+              ],
               "showLabels": false
             },
             "data": {
               "button_text": "Send Message"
             }
           }
-        ]
+        ],
+        "ratio": "50-50"
       }
     }
   ]

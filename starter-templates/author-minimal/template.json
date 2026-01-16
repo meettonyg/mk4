@@ -18,10 +18,23 @@
     ]
   },
   "metadata": {
-    "tags": ["author", "writer", "book", "literary", "publishing", "press", "minimal", "elegant"],
+    "tags": [
+      "author",
+      "writer",
+      "book",
+      "literary",
+      "publishing",
+      "press",
+      "minimal",
+      "elegant"
+    ],
     "is_premium": false,
     "sort_order": 12,
-    "recommended_themes": ["minimal-elegant", "professional-clean", "modern-light"]
+    "recommended_themes": [
+      "minimal-elegant",
+      "professional-clean",
+      "modern-light"
+    ]
   },
   "preview_image": "preview.jpg",
   "sections": [
@@ -30,7 +43,6 @@
       "type": "two_column",
       "background": "light",
       "columns": {
-        "ratio": "30-70",
         "1": [
           {
             "type": "profile-photo",
@@ -59,7 +71,8 @@
               "description": "Author of [X] books exploring [themes]. My work has been featured in The New York Times, The Atlantic, and NPR."
             }
           }
-        ]
+        ],
+        "ratio": "30-70"
       }
     },
     {
@@ -75,7 +88,7 @@
             "alignment": "center"
           },
           "data": {
-            "content": "A brief, compelling narrative about your journey as a writer. What drives your work? What themes do you explore? What do readers say about your voice?\n\nKeep it personal but professional. Two to three paragraphs that capture who you are as an author."
+            "biography": "A brief, compelling narrative about your journey as a writer. What drives your work? What themes do you explore? What do readers say about your voice?\n\nKeep it personal but professional. Two to three paragraphs that capture who you are as an author."
           }
         }
       ]
@@ -96,9 +109,18 @@
           "data": {
             "title": "Books",
             "images": [
-              { "alt": "Book 1", "caption": "Title One (Year)" },
-              { "alt": "Book 2", "caption": "Title Two (Year)" },
-              { "alt": "Book 3", "caption": "Title Three (Year)" }
+              {
+                "alt": "Book 1",
+                "caption": "Title One (Year)"
+              },
+              {
+                "alt": "Book 2",
+                "caption": "Title Two (Year)"
+              },
+              {
+                "alt": "Book 3",
+                "caption": "Title Three (Year)"
+              }
             ]
           }
         }
@@ -119,7 +141,7 @@
           },
           "data": {
             "title": "Press",
-            "items": [
+            "testimonials": [
               {
                 "quote": "A must-read for anyone interested in [topic].",
                 "company": "The New York Times"
@@ -148,12 +170,22 @@
           },
           "data": {
             "title": "Speaking & Interview Topics",
-            "items": [
-              { "title": "The Writing Process" },
-              { "title": "Research & Discovery" },
-              { "title": "[Topic Expertise]" },
-              { "title": "Publishing Industry" },
-              { "title": "Creative Life" }
+            "topics": [
+              {
+                "title": "The Writing Process"
+              },
+              {
+                "title": "Research & Discovery"
+              },
+              {
+                "title": "[Topic Expertise]"
+              },
+              {
+                "title": "Publishing Industry"
+              },
+              {
+                "title": "Creative Life"
+              }
             ]
           }
         }
@@ -168,7 +200,12 @@
           "type": "contact",
           "settings": {
             "style": "minimal",
-            "fields": ["name", "email", "organization", "message"],
+            "fields": [
+              "name",
+              "email",
+              "organization",
+              "message"
+            ],
             "showLabels": true,
             "maxWidth": "520px",
             "alignment": "center"

@@ -19,10 +19,22 @@
     ]
   },
   "metadata": {
-    "tags": ["consultant", "business", "professional", "advisor", "coaching", "corporate", "minimal"],
+    "tags": [
+      "consultant",
+      "business",
+      "professional",
+      "advisor",
+      "coaching",
+      "corporate",
+      "minimal"
+    ],
     "is_premium": false,
     "sort_order": 42,
-    "recommended_themes": ["minimal-elegant", "professional-clean", "modern-light"]
+    "recommended_themes": [
+      "minimal-elegant",
+      "professional-clean",
+      "modern-light"
+    ]
   },
   "preview_image": "preview.jpg",
   "sections": [
@@ -31,7 +43,6 @@
       "type": "two_column",
       "background": "light",
       "columns": {
-        "ratio": "30-70",
         "1": [
           {
             "type": "profile-photo",
@@ -68,7 +79,8 @@
             },
             "data": {}
           }
-        ]
+        ],
+        "ratio": "30-70"
       }
     },
     {
@@ -86,11 +98,23 @@
             "separator": "dot"
           },
           "data": {
-            "items": [
-              { "value": "15+", "label": "Years" },
-              { "value": "200+", "label": "Clients" },
-              { "value": "$50M+", "label": "Value" },
-              { "value": "95%", "label": "Retention" }
+            "stats": [
+              {
+                "value": "15+",
+                "label": "Years"
+              },
+              {
+                "value": "200+",
+                "label": "Clients"
+              },
+              {
+                "value": "$50M+",
+                "label": "Value"
+              },
+              {
+                "value": "95%",
+                "label": "Retention"
+              }
             ]
           }
         }
@@ -110,12 +134,22 @@
           },
           "data": {
             "title": "Services",
-            "items": [
-              { "title": "Strategic Planning" },
-              { "title": "Operational Excellence" },
-              { "title": "Leadership Development" },
-              { "title": "Change Management" },
-              { "title": "Executive Coaching" }
+            "topics": [
+              {
+                "title": "Strategic Planning"
+              },
+              {
+                "title": "Operational Excellence"
+              },
+              {
+                "title": "Leadership Development"
+              },
+              {
+                "title": "Change Management"
+              },
+              {
+                "title": "Executive Coaching"
+              }
             ]
           }
         }
@@ -136,7 +170,7 @@
           },
           "data": {
             "title": "About",
-            "content": "A concise summary of your approach and what sets you apart. Focus on outcomes and the types of problems you solve.\n\nInclude your credentials briefly: MBA, certifications, notable experience."
+            "biography": "A concise summary of your approach and what sets you apart. Focus on outcomes and the types of problems you solve.\n\nInclude your credentials briefly: MBA, certifications, notable experience."
           }
         }
       ]
@@ -157,11 +191,26 @@
           "data": {
             "title": "Clients",
             "logos": [
-              { "name": "Company 1", "alt": "Client logo" },
-              { "name": "Company 2", "alt": "Client logo" },
-              { "name": "Company 3", "alt": "Client logo" },
-              { "name": "Company 4", "alt": "Client logo" },
-              { "name": "Company 5", "alt": "Client logo" }
+              {
+                "name": "Company 1",
+                "alt": "Client logo"
+              },
+              {
+                "name": "Company 2",
+                "alt": "Client logo"
+              },
+              {
+                "name": "Company 3",
+                "alt": "Client logo"
+              },
+              {
+                "name": "Company 4",
+                "alt": "Client logo"
+              },
+              {
+                "name": "Company 5",
+                "alt": "Client logo"
+              }
             ]
           }
         }
@@ -183,7 +232,7 @@
           },
           "data": {
             "title": "Results",
-            "items": [
+            "testimonials": [
               {
                 "quote": "40% improvement in operational efficiency within the first year.",
                 "author": "CEO",
@@ -208,7 +257,12 @@
           "type": "contact",
           "settings": {
             "style": "minimal",
-            "fields": ["name", "email", "company", "message"],
+            "fields": [
+              "name",
+              "email",
+              "company",
+              "message"
+            ],
             "showLabels": true,
             "maxWidth": "520px"
           },

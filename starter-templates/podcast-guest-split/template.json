@@ -18,10 +18,23 @@
     ]
   },
   "metadata": {
-    "tags": ["podcast", "interview", "guest", "audio", "media", "appearance", "split", "visual"],
+    "tags": [
+      "podcast",
+      "interview",
+      "guest",
+      "audio",
+      "media",
+      "appearance",
+      "split",
+      "visual"
+    ],
     "is_premium": false,
     "sort_order": 31,
-    "recommended_themes": ["modern-dark", "creative-bold", "professional-clean"]
+    "recommended_themes": [
+      "modern-dark",
+      "creative-bold",
+      "professional-clean"
+    ]
   },
   "preview_image": "preview.jpg",
   "sections": [
@@ -30,7 +43,6 @@
       "type": "two_column",
       "background": "dark",
       "columns": {
-        "ratio": "50-50",
         "1": [
           {
             "type": "profile-photo",
@@ -69,13 +81,20 @@
               "size": "compact"
             },
             "data": {
-              "items": [
-                { "value": "150+", "label": "Podcast Appearances" },
-                { "value": "2M+", "label": "Combined Downloads" }
+              "stats": [
+                {
+                  "value": "150+",
+                  "label": "Podcast Appearances"
+                },
+                {
+                  "value": "2M+",
+                  "label": "Combined Downloads"
+                }
               ]
             }
           }
-        ]
+        ],
+        "ratio": "50-50"
       }
     },
     {
@@ -92,11 +111,27 @@
             "animateNumbers": true
           },
           "data": {
-            "items": [
-              { "value": "150+", "label": "Podcast Appearances", "icon": "microphone" },
-              { "value": "2M+", "label": "Combined Downloads", "icon": "headphones" },
-              { "value": "4.9", "label": "Average Host Rating", "icon": "star" },
-              { "value": "48hrs", "label": "Response Time", "icon": "clock" }
+            "stats": [
+              {
+                "value": "150+",
+                "label": "Podcast Appearances",
+                "icon": "microphone"
+              },
+              {
+                "value": "2M+",
+                "label": "Combined Downloads",
+                "icon": "headphones"
+              },
+              {
+                "value": "4.9",
+                "label": "Average Host Rating",
+                "icon": "star"
+              },
+              {
+                "value": "48hrs",
+                "label": "Response Time",
+                "icon": "clock"
+              }
             ]
           }
         }
@@ -106,7 +141,6 @@
       "id": "topics-section",
       "type": "two_column",
       "columns": {
-        "ratio": "40-60",
         "1": [
           {
             "type": "biography",
@@ -116,7 +150,7 @@
             },
             "data": {
               "title": "What I Bring to Your Show",
-              "content": "I don't just answer questions—I help create memorable moments your listeners will share.\n\nWith experience on 150+ shows, I understand pacing, storytelling, and what makes an episode stand out in a crowded feed."
+              "biography": "I don't just answer questions—I help create memorable moments your listeners will share.\n\nWith experience on 150+ shows, I understand pacing, storytelling, and what makes an episode stand out in a crowded feed."
             }
           }
         ],
@@ -131,7 +165,7 @@
             },
             "data": {
               "title": "Topics I Cover",
-              "items": [
+              "topics": [
                 {
                   "title": "Industry Insights",
                   "description": "Breaking down complex trends into actionable insights.",
@@ -155,7 +189,8 @@
               ]
             }
           }
-        ]
+        ],
+        "ratio": "40-60"
       }
     },
     {
@@ -205,7 +240,6 @@
       "type": "two_column",
       "background": "surface",
       "columns": {
-        "ratio": "50-50",
         "1": [
           {
             "type": "questions",
@@ -217,7 +251,7 @@
             },
             "data": {
               "title": "Questions Hosts Love",
-              "items": [
+              "questions": [
                 {
                   "question": "What's the biggest myth in your industry?",
                   "answer": "I love debunking common misconceptions with data."
@@ -245,7 +279,7 @@
               "maxItems": 3
             },
             "data": {
-              "items": [
+              "questions": [
                 {
                   "question": "Something you believe that most disagree with?",
                   "answer": "A contrarian take that sparks interesting debate."
@@ -261,7 +295,8 @@
               ]
             }
           }
-        ]
+        ],
+        "ratio": "50-50"
       }
     },
     {
@@ -278,7 +313,7 @@
           },
           "data": {
             "title": "What Podcast Hosts Say",
-            "items": [
+            "testimonials": [
               {
                 "quote": "Our episode together was our most downloaded of the year!",
                 "author": "Host Name",
@@ -307,7 +342,6 @@
       "type": "two_column",
       "background": "primary",
       "columns": {
-        "ratio": "50-50",
         "1": [
           {
             "type": "call-to-action",
@@ -327,14 +361,20 @@
             "type": "contact",
             "settings": {
               "style": "compact",
-              "fields": ["name", "email", "podcast_name", "message"],
+              "fields": [
+                "name",
+                "email",
+                "podcast_name",
+                "message"
+              ],
               "showLabels": false
             },
             "data": {
               "button_text": "Send Request"
             }
           }
-        ]
+        ],
+        "ratio": "50-50"
       }
     }
   ]

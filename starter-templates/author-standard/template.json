@@ -18,10 +18,22 @@
     ]
   },
   "metadata": {
-    "tags": ["author", "writer", "book", "literary", "publishing", "press", "classic"],
+    "tags": [
+      "author",
+      "writer",
+      "book",
+      "literary",
+      "publishing",
+      "press",
+      "classic"
+    ],
     "is_premium": false,
     "sort_order": 10,
-    "recommended_themes": ["professional-clean", "minimal-elegant", "author-bold"]
+    "recommended_themes": [
+      "professional-clean",
+      "minimal-elegant",
+      "author-bold"
+    ]
   },
   "preview_image": "preview.jpg",
   "sections": [
@@ -52,7 +64,6 @@
       "type": "two_column",
       "background": "gradient",
       "columns": {
-        "ratio": "35-65",
         "1": [
           {
             "type": "photo-gallery",
@@ -62,7 +73,11 @@
               "showShadow": true
             },
             "data": {
-              "images": [{ "alt": "Book cover" }]
+              "images": [
+                {
+                  "alt": "Book cover"
+                }
+              ]
             }
           }
         ],
@@ -80,7 +95,8 @@
               "cta_link": "#"
             }
           }
-        ]
+        ],
+        "ratio": "35-65"
       }
     },
     {
@@ -98,7 +114,7 @@
           },
           "data": {
             "title": "Press & Reviews",
-            "items": [
+            "testimonials": [
               {
                 "quote": "A must-read for anyone interested in [topic].",
                 "company": "The New York Times"
@@ -120,7 +136,6 @@
       "id": "bio-section",
       "type": "two_column",
       "columns": {
-        "ratio": "40-60",
         "1": [
           {
             "type": "profile-photo",
@@ -142,10 +157,11 @@
             },
             "data": {
               "title": "About the Author",
-              "content": "Share your background, writing journey, and what drives your work. Include your education, awards, and any notable achievements.\n\n**Books Published:** [Number]\n**Awards:** [List key awards]\n**Languages:** Translated into [X] languages"
+              "biography": "Share your background, writing journey, and what drives your work. Include your education, awards, and any notable achievements.\n\n**Books Published:** [Number]\n**Awards:** [List key awards]\n**Languages:** Translated into [X] languages"
             }
           }
-        ]
+        ],
+        "ratio": "40-60"
       }
     },
     {
@@ -163,10 +179,22 @@
           "data": {
             "title": "Bibliography",
             "images": [
-              { "alt": "Book 1", "caption": "Title One (Year)" },
-              { "alt": "Book 2", "caption": "Title Two (Year)" },
-              { "alt": "Book 3", "caption": "Title Three (Year)" },
-              { "alt": "Book 4", "caption": "Title Four (Year)" }
+              {
+                "alt": "Book 1",
+                "caption": "Title One (Year)"
+              },
+              {
+                "alt": "Book 2",
+                "caption": "Title Two (Year)"
+              },
+              {
+                "alt": "Book 3",
+                "caption": "Title Three (Year)"
+              },
+              {
+                "alt": "Book 4",
+                "caption": "Title Four (Year)"
+              }
             ]
           }
         }
@@ -186,7 +214,7 @@
           "data": {
             "title": "Speaking & Interview Topics",
             "subtitle": "Available for podcasts, media interviews, and speaking engagements",
-            "items": [
+            "topics": [
               {
                 "title": "The Research Behind the Book",
                 "description": "Deep dive into the process and discoveries"
@@ -214,7 +242,13 @@
           "settings": {
             "style": "centered",
             "layout": "centered",
-            "fields": ["name", "email", "organization", "inquiry_type", "message"],
+            "fields": [
+              "name",
+              "email",
+              "organization",
+              "inquiry_type",
+              "message"
+            ],
             "maxWidth": "600px"
           },
           "data": {

@@ -18,10 +18,22 @@
     ]
   },
   "metadata": {
-    "tags": ["podcast", "interview", "guest", "audio", "media", "appearance", "centered"],
+    "tags": [
+      "podcast",
+      "interview",
+      "guest",
+      "audio",
+      "media",
+      "appearance",
+      "centered"
+    ],
     "is_premium": false,
     "sort_order": 30,
-    "recommended_themes": ["podcast-guest", "modern-dark", "creative-bold"]
+    "recommended_themes": [
+      "podcast-guest",
+      "modern-dark",
+      "creative-bold"
+    ]
   },
   "preview_image": "preview.jpg",
   "sections": [
@@ -61,11 +73,27 @@
             "animateNumbers": true
           },
           "data": {
-            "items": [
-              { "value": "150+", "label": "Podcast Appearances", "icon": "microphone" },
-              { "value": "2M+", "label": "Combined Downloads", "icon": "headphones" },
-              { "value": "4.9", "label": "Average Host Rating", "icon": "star" },
-              { "value": "48hrs", "label": "Response Time", "icon": "clock" }
+            "stats": [
+              {
+                "value": "150+",
+                "label": "Podcast Appearances",
+                "icon": "microphone"
+              },
+              {
+                "value": "2M+",
+                "label": "Combined Downloads",
+                "icon": "headphones"
+              },
+              {
+                "value": "4.9",
+                "label": "Average Host Rating",
+                "icon": "star"
+              },
+              {
+                "value": "48hrs",
+                "label": "Response Time",
+                "icon": "clock"
+              }
             ]
           }
         }
@@ -129,7 +157,7 @@
           "data": {
             "title": "Topics I Love to Discuss",
             "subtitle": "Expertise that resonates with diverse audiences",
-            "items": [
+            "topics": [
               {
                 "title": "Industry Insights",
                 "description": "Breaking down complex trends into actionable insights.",
@@ -180,7 +208,7 @@
           "data": {
             "title": "Questions Hosts Love to Ask Me",
             "subtitle": "Conversation starters that lead to great content",
-            "items": [
+            "questions": [
               {
                 "question": "What's the biggest myth in your industry?",
                 "answer": "I love debunking common misconceptions with data and real examples."
@@ -214,7 +242,6 @@
       "id": "bio-section",
       "type": "two_column",
       "columns": {
-        "ratio": "40-60",
         "1": [
           {
             "type": "profile-photo",
@@ -245,10 +272,11 @@
             },
             "data": {
               "title": "The Short Version",
-              "content": "Share your background in a conversational tone. What makes you interesting? What's your origin story? What unique perspective do you bring?\n\nInclude what hosts can expect: your energy level, preparation style, and why audiences respond to you.\n\n**What hosts say:** \"One of the most prepared and engaging guests we've ever had.\""
+              "biography": "Share your background in a conversational tone. What makes you interesting? What's your origin story? What unique perspective do you bring?\n\nInclude what hosts can expect: your energy level, preparation style, and why audiences respond to you.\n\n**What hosts say:** \"One of the most prepared and engaging guests we've ever had.\""
             }
           }
-        ]
+        ],
+        "ratio": "40-60"
       }
     },
     {
@@ -267,7 +295,7 @@
           },
           "data": {
             "title": "What Podcast Hosts Say",
-            "items": [
+            "testimonials": [
               {
                 "quote": "Our episode together was our most downloaded of the year!",
                 "author": "Host Name",
@@ -319,7 +347,14 @@
           "type": "contact",
           "settings": {
             "style": "podcast-booking",
-            "fields": ["name", "email", "podcast_name", "audience_size", "topics_of_interest", "message"],
+            "fields": [
+              "name",
+              "email",
+              "podcast_name",
+              "audience_size",
+              "topics_of_interest",
+              "message"
+            ],
             "showLabels": true
           },
           "data": {

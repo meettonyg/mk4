@@ -51,7 +51,7 @@ const props = defineProps({
   },
   waitForPods: {
     type: Boolean,
-    default: true
+    default: false  // Changed: Templates should render immediately with their data
   },
   retryAttempts: {
     type: Number,
@@ -103,16 +103,25 @@ const componentData = computed(() => {
 const canRender = computed(() => {
   // Check basic requirements
   if (!componentData.value) return false;
-  
-  // Check if Pods data is required and available
+
+  // CARRD-LIKE UX: If component has data (from template), render immediately
+  // Only wait for profile data if component data is empty AND waitForPods is true
+  const hasComponentData = componentData.value.data && Object.keys(componentData.value.data).length > 0;
+
+  if (hasComponentData) {
+    // Component has template data - render immediately
+    return true;
+  }
+
+  // No template data - check if we should wait for profile data
   if (props.waitForPods) {
-    const podsAvailable = store.podsData && Object.keys(store.podsData).length > 0;
-    if (!podsAvailable) {
-      console.log(`⏳ Waiting for Pods data for component ${props.componentId}`);
+    const profileDataAvailable = store.podsData && Object.keys(store.podsData).length > 0;
+    if (!profileDataAvailable) {
+      console.log(`⏳ Component ${props.componentId} has no data, waiting for profile data`);
       return false;
     }
   }
-  
+
   return true;
 });
 
@@ -181,31 +190,26 @@ const loadComponent = async () => {
       });
     }
     
-    // Issue #24 FIX: Wait for Pods data using store state
-    if (props.waitForPods && (!store.podsData || Object.keys(store.podsData).length === 0)) {
-      console.log(`⏳ Waiting for Pods data for component ${props.componentId}`);
-      
-      // Wait for Pods data using DOM event
+    // CARRD-LIKE UX: Skip waiting for profile data if component has template data
+    const component = store.components[props.componentId];
+    const hasTemplateData = component?.data && Object.keys(component.data).length > 0;
+
+    if (!hasTemplateData && props.waitForPods && (!store.podsData || Object.keys(store.podsData).length === 0)) {
+      console.log(`⏳ Component ${props.componentId} has no data, waiting for profile data`);
+
+      // Wait for profile data using DOM event (with timeout)
       await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
-          console.warn(`⚠️ Pods data timeout for component ${props.componentId}`);
-          if (currentRetry.value < props.retryAttempts) {
-            retry();
-          } else {
-            reject(new Error('Pods data timeout'));
-          }
-        }, 5000);
-        
+          console.warn(`⚠️ Profile data timeout for component ${props.componentId}, rendering anyway`);
+          resolve(); // Don't reject - just render with empty state
+        }, 2000); // Reduced timeout - fail fast for better UX
+
         const handler = () => {
           clearTimeout(timeout);
           resolve();
         };
-        
+
         document.addEventListener('gmkb:pods-loaded', handler, { once: true });
-      }).catch(error => {
-        if (currentRetry.value >= props.retryAttempts) {
-          throw error;
-        }
       });
     }
     

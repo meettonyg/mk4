@@ -18,10 +18,23 @@
     ]
   },
   "metadata": {
-    "tags": ["podcast", "interview", "guest", "audio", "media", "appearance", "minimal", "clean"],
+    "tags": [
+      "podcast",
+      "interview",
+      "guest",
+      "audio",
+      "media",
+      "appearance",
+      "minimal",
+      "clean"
+    ],
     "is_premium": false,
     "sort_order": 32,
-    "recommended_themes": ["minimal-elegant", "professional-clean", "modern-light"]
+    "recommended_themes": [
+      "minimal-elegant",
+      "professional-clean",
+      "modern-light"
+    ]
   },
   "preview_image": "preview.jpg",
   "sections": [
@@ -30,7 +43,6 @@
       "type": "two_column",
       "background": "light",
       "columns": {
-        "ratio": "35-65",
         "1": [
           {
             "type": "profile-photo",
@@ -69,7 +81,8 @@
             },
             "data": {}
           }
-        ]
+        ],
+        "ratio": "35-65"
       }
     },
     {
@@ -87,11 +100,23 @@
             "separator": "dot"
           },
           "data": {
-            "items": [
-              { "value": "150+", "label": "Podcasts" },
-              { "value": "2M+", "label": "Downloads" },
-              { "value": "4.9", "label": "Avg Rating" },
-              { "value": "48hr", "label": "Response" }
+            "stats": [
+              {
+                "value": "150+",
+                "label": "Podcasts"
+              },
+              {
+                "value": "2M+",
+                "label": "Downloads"
+              },
+              {
+                "value": "4.9",
+                "label": "Avg Rating"
+              },
+              {
+                "value": "48hr",
+                "label": "Response"
+              }
             ]
           }
         }
@@ -111,13 +136,25 @@
           },
           "data": {
             "title": "Topics I Discuss",
-            "items": [
-              { "title": "Industry Insights" },
-              { "title": "Leadership" },
-              { "title": "Personal Journey" },
-              { "title": "Practical Strategies" },
-              { "title": "Future Trends" },
-              { "title": "Behind the Scenes" }
+            "topics": [
+              {
+                "title": "Industry Insights"
+              },
+              {
+                "title": "Leadership"
+              },
+              {
+                "title": "Personal Journey"
+              },
+              {
+                "title": "Practical Strategies"
+              },
+              {
+                "title": "Future Trends"
+              },
+              {
+                "title": "Behind the Scenes"
+              }
             ]
           }
         }
@@ -137,7 +174,7 @@
           },
           "data": {
             "title": "About",
-            "content": "Share your story in 2-3 short paragraphs. Focus on what makes you a compelling guest: your expertise, your unique perspective, and your ability to deliver value to listeners.\n\nMention your background briefly and what hosts can expect from having you on their show."
+            "biography": "Share your story in 2-3 short paragraphs. Focus on what makes you a compelling guest: your expertise, your unique perspective, and your ability to deliver value to listeners.\n\nMention your background briefly and what hosts can expect from having you on their show."
           }
         }
       ]
@@ -195,7 +232,7 @@
           "data": {
             "title": "Conversation Starters",
             "subtitle": "Questions that lead to great content",
-            "items": [
+            "questions": [
               {
                 "question": "What's the biggest myth in your industry?",
                 "answer": "I love debunking common misconceptions with data and real examples."
@@ -222,7 +259,12 @@
           "type": "contact",
           "settings": {
             "style": "minimal",
-            "fields": ["name", "email", "podcast_name", "message"],
+            "fields": [
+              "name",
+              "email",
+              "podcast_name",
+              "message"
+            ],
             "showLabels": true,
             "maxWidth": "560px",
             "alignment": "center"
