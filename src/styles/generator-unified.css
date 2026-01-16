@@ -643,3 +643,467 @@
 .gmkb-generator-root .generator__mb-lg {
   margin-bottom: var(--mkcg-space-lg) !important;
 }
+
+/* ============================================================================
+   12. QUESTIONS GENERATOR REDESIGN - MOCKUP STYLES
+   ============================================================================ */
+
+/* --- CSS Variables (Guestify Design System) --- */
+.gfy-questions-wrapper {
+  --gfy-primary: #4F46E5;
+  --gfy-primary-hover: #4338CA;
+  --gfy-text-main: #111827;
+  --gfy-text-muted: #6B7280;
+  --gfy-border: #E5E7EB;
+  --gfy-bg-surface: #ffffff;
+  --gfy-bg-page: #F9FAFB;
+  --gfy-radius: 12px;
+  --gfy-radius-sm: 8px;
+  --gfy-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --gfy-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* --- HERO SECTION STYLES --- */
+.gmkb-generator-root .gmkb-plg-hero {
+  padding: 4rem 1.5rem 2rem;
+  text-align: center;
+  background: linear-gradient(to bottom, #ffffff, #F3F4F6);
+}
+
+.gmkb-generator-root .gmkb-plg-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.gmkb-generator-root .gmkb-plg-hero__badge {
+  display: inline-block;
+  padding: 6px 16px;
+  background: #EEF2FF;
+  color: var(--gfy-primary, #4F46E5);
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-radius: 9999px;
+  margin-bottom: 1.5rem;
+}
+
+.gmkb-generator-root .gmkb-plg-hero__title {
+  font-size: 3rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: #111827;
+  margin-bottom: 1rem;
+  line-height: 1.1;
+}
+
+.gmkb-generator-root .gmkb-plg-hero__subhead {
+  font-size: 1.25rem;
+  color: #4B5563;
+  max-width: 700px;
+  margin: 0 auto 2rem;
+  line-height: 1.6;
+}
+
+.gmkb-generator-root .gmkb-plg-trust-strip {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 3rem;
+  font-size: 0.95rem;
+  color: #4B5563;
+  flex-wrap: wrap;
+}
+
+.gmkb-generator-root .gmkb-plg-trust-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.gmkb-generator-root .gmkb-plg-trust-item svg {
+  flex-shrink: 0;
+}
+
+/* --- INTENT TABS (Standalone Mode - Pill Style Outside Card) --- */
+.gmkb-generator-root .gmkb-intent-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 2rem;
+}
+
+.gmkb-generator-root .gmkb-intent-tab {
+  padding: 10px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  border: 1px solid var(--gfy-border, #E5E7EB);
+  background: var(--gfy-bg-surface, #ffffff);
+  color: var(--gfy-text-muted, #6B7280);
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.gmkb-generator-root .gmkb-intent-tab.active {
+  background: #EEF2FF;
+  color: var(--gfy-primary, #4F46E5);
+  border-color: #C7D2FE;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.gmkb-generator-root .gmkb-intent-tab:hover:not(.active) {
+  background: #F9FAFB;
+  border-color: #D1D5DB;
+}
+
+/* --- TOOL LAYOUT --- */
+.gmkb-generator-root .gfy-tool-layout {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding-bottom: 4rem;
+}
+
+/* --- MAIN TOOL CONTAINER (Single Unified Card) --- */
+.gmkb-generator-root .gmkb-plg-tool-card {
+  background: var(--gfy-bg-surface, #ffffff);
+  border: 1px solid var(--gfy-border, #E5E7EB);
+  border-radius: var(--gfy-radius, 12px);
+  padding: 32px;
+  box-shadow: var(--gfy-shadow);
+  position: relative;
+  text-align: left;
+}
+
+/* --- PROFILE SELECTOR --- */
+.gmkb-generator-root .gfy-profile-selector-container {
+  background-color: var(--gfy-bg-page, #F9FAFB);
+  border: 1px solid var(--gfy-border, #E5E7EB);
+  border-radius: var(--gfy-radius-sm, 8px);
+  padding: 12px 16px;
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gmkb-generator-root .gfy-profile-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--gfy-text-main, #374151);
+  margin-right: 12px;
+  white-space: nowrap;
+}
+
+.gmkb-generator-root .gfy-profile-select {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  border: 1px solid var(--gfy-border, #D1D5DB);
+  border-radius: 6px;
+  background-color: var(--gfy-bg-surface, #ffffff);
+  color: var(--gfy-text-main, #111827);
+  cursor: pointer;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+.gmkb-generator-root .gfy-profile-select:focus {
+  outline: none;
+  border-color: var(--gfy-primary, #4F46E5);
+}
+
+.gmkb-generator-root .gfy-profile-selector-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.gmkb-generator-root .gfy-profile-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--gfy-primary, #4F46E5);
+  text-decoration: none;
+  white-space: nowrap;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.gmkb-generator-root .gfy-profile-link:hover {
+  background-color: var(--gfy-bg-accent, #EEF2FF);
+  color: var(--gfy-primary-hover, #4338CA);
+}
+
+.gmkb-generator-root .gfy-profile-link svg {
+  flex-shrink: 0;
+}
+
+/* --- FORM ELEMENTS --- */
+.gmkb-generator-root .gfy-input,
+.gmkb-generator-root .gfy-textarea,
+.gmkb-generator-root .gfy-select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--gfy-border, #D1D5DB);
+  border-radius: var(--gfy-radius-sm, 8px);
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--gfy-text-main, #111827);
+  background-color: var(--gfy-bg-surface, #ffffff);
+  transition: border-color 0.15s;
+}
+
+.gmkb-generator-root .gfy-input:focus,
+.gmkb-generator-root .gfy-textarea:focus,
+.gmkb-generator-root .gfy-select:focus {
+  outline: none;
+  border-color: var(--gfy-primary, #4F46E5);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.gmkb-generator-root .gfy-textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* --- INPUT ROW (Two columns) --- */
+.gmkb-generator-root .gfy-input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 640px) {
+  .gmkb-generator-root .gfy-input-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- RANGE SLIDER --- */
+.gmkb-generator-root .gfy-range-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--gfy-bg-page, #F9FAFB);
+  padding: 12px 16px;
+  border-radius: var(--gfy-radius-sm, 8px);
+  border: 1px solid var(--gfy-border, #E5E7EB);
+}
+
+.gmkb-generator-root .gfy-range {
+  flex: 1;
+  accent-color: var(--gfy-primary, #4F46E5);
+  cursor: pointer;
+  height: 6px;
+  width: 100%;
+}
+
+.gmkb-generator-root .gfy-range-value {
+  font-weight: 600;
+  color: var(--gfy-primary, #4F46E5);
+  width: 24px;
+  text-align: right;
+}
+
+/* --- AUTHORITY HOOK BUILDER (Inline Style) --- */
+.gmkb-generator-root .authority-hook-builder__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.gmkb-generator-root .authority-hook-builder__icon {
+  color: #F59E0B;
+  font-size: 1.2rem;
+}
+
+.gmkb-generator-root .authority-hook-builder__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #065F46;
+  margin: 0;
+}
+
+.gmkb-generator-root .authority-hook-builder__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .gmkb-generator-root .authority-hook-builder__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.gmkb-generator-root .authority-hook-builder__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gmkb-generator-root .authority-hook-builder__label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #047857;
+  text-transform: uppercase;
+}
+
+.gmkb-generator-root .authority-hook-builder__input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--gfy-border, #D1D5DB);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.gmkb-generator-root .authority-hook-builder__input:focus {
+  outline: none;
+  border-color: var(--gfy-primary, #4F46E5);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* --- ACTIONS AREA & RESTORE LINK --- */
+.gmkb-generator-root .gfy-actions-wrapper {
+  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-top: 1px solid var(--gfy-border, #E5E7EB);
+  padding-top: 24px;
+}
+
+/* The Redesigned Restore Link (Small text link above button) */
+.gmkb-generator-root .gfy-restore-link {
+  font-size: 0.9rem;
+  color: var(--gfy-text-muted, #6B7280);
+  text-decoration: none;
+  margin-bottom: 16px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 4px;
+  transition: color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+}
+
+.gmkb-generator-root .gfy-restore-link:hover {
+  color: var(--gfy-primary, #4F46E5);
+  text-decoration: underline;
+}
+
+.gmkb-generator-root .gfy-restore-link strong {
+  font-weight: 600;
+}
+
+/* Main Generate Button */
+.gmkb-generator-root .gfy-btn--generate {
+  width: 100%;
+  max-width: 400px;
+  padding: 16px;
+  background: var(--gfy-primary, #4F46E5);
+  color: var(--gfy-bg-surface, #ffffff);
+  border: none;
+  border-radius: var(--gfy-radius-sm, 8px);
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.2s, transform 0.1s;
+  font-family: inherit;
+}
+
+.gmkb-generator-root .gfy-btn--generate:hover:not(:disabled) {
+  background: var(--gfy-primary-hover, #4338CA);
+  transform: translateY(-1px);
+}
+
+.gmkb-generator-root .gfy-btn--generate:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.gmkb-generator-root .gfy-btn--generate.gfy-btn--loading {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+/* --- RESULTS CONTAINER --- */
+.gmkb-generator-root .gfy-results-container {
+  margin-top: 40px;
+  border-top: 1px solid var(--gfy-border, #E5E7EB);
+  padding-top: 40px;
+}
+
+/* --- HIGHLIGHT BOX UPDATES --- */
+.gmkb-generator-root .gfy-highlight-box--blue {
+  background-color: #EFF6FF;
+  border-color: #BFDBFE;
+  border-left: none;
+}
+
+.gmkb-generator-root .gfy-highlight-box--green {
+  background-color: #F0FDF4;
+  border-color: #BBF7D0;
+  border-left: none;
+}
+
+/* --- RESPONSIVE UPDATES --- */
+@media (max-width: 768px) {
+  .gmkb-generator-root .gmkb-plg-hero {
+    padding: 2rem 1rem 1rem;
+  }
+
+  .gmkb-generator-root .gmkb-plg-hero__title {
+    font-size: 2rem;
+  }
+
+  .gmkb-generator-root .gmkb-plg-hero__subhead {
+    font-size: 1rem;
+  }
+
+  .gmkb-generator-root .gmkb-plg-trust-strip {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .gmkb-generator-root .gmkb-intent-tabs {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .gmkb-generator-root .gmkb-intent-tab {
+    width: 100%;
+    text-align: center;
+  }
+
+  .gmkb-generator-root .gmkb-plg-tool-card {
+    padding: 20px;
+  }
+
+  .gmkb-generator-root .gfy-profile-selector-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .gmkb-generator-root .gfy-profile-select {
+    width: 100%;
+  }
+}
