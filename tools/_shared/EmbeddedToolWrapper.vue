@@ -1,8 +1,8 @@
 <template>
   <div class="gmkb-tool-embed">
-    <!-- Profile Context Banner (logged-in users with profile-saveable tools only) -->
+    <!-- Profile Context Banner (logged-in users with profile-saveable tools only, hidden in single-column/embedded mode) -->
     <ProfileContextBanner
-      v-if="isLoggedIn && supportsProfileSave"
+      v-if="isLoggedIn && supportsProfileSave && !singleColumn"
       @profile-loaded="handleProfileLoaded"
       @profile-cleared="handleProfileCleared"
     />
