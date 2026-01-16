@@ -269,7 +269,7 @@ const isLoggedIn = computed(() => !!window.gmkbData?.user?.isLoggedIn)
 const isNewMediaKit = computed(() => !!window.gmkbData?.isNewMediaKit)
 const selectedProfileId = ref(window.gmkbData?.profileId || null)
 
-// Handle profile switch - updates store's podsData with new profile data
+// Handle profile switch - updates store's profileData with new profile data
 const handleProfileSwitch = async (profileId) => {
   if (!profileId) return
 
@@ -280,7 +280,7 @@ const handleProfileSwitch = async (profileId) => {
     const profileData = await profileContextService.loadProfileData(profileId)
 
     if (profileData) {
-      // Update store's podsData with new profile data via action
+      // Update store's profileData with new profile data via action
       store.setProfileData(profileData)
 
       // Dispatch event for components to refresh

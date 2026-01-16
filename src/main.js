@@ -491,7 +491,7 @@ async function initializeVue() {
     // Debug info
     setTimeout(() => {
       console.log('📊 Profile Data Check:');
-      const profileData = window.gmkbData?.pods_data || window.gmkbData?.podsData || {};
+      const profileData = window.gmkbData?.profile_data || window.gmkbData?.profileData || {};
       const fieldCount = Object.keys(profileData).length;
       console.log(`  Fields loaded: ${fieldCount}`);
       if (fieldCount > 0) {

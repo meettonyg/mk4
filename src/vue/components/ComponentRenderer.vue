@@ -49,7 +49,7 @@ const props = defineProps({
     required: false, // CRITICAL FIX: Changed to false to handle undefined gracefully
     default: null
   },
-  waitForPods: {
+  waitForProfile: {
     type: Boolean,
     default: false  // Changed: Templates should render immediately with their data
   },
@@ -105,7 +105,7 @@ const canRender = computed(() => {
   if (!componentData.value) return false;
 
   // CARRD-LIKE UX: If component has data (from template), render immediately
-  // Only wait for profile data if component data is empty AND waitForPods is true
+  // Only wait for profile data if component data is empty AND waitForProfile is true
   const hasComponentData = componentData.value.data && Object.keys(componentData.value.data).length > 0;
 
   if (hasComponentData) {
@@ -114,8 +114,8 @@ const canRender = computed(() => {
   }
 
   // No template data - check if we should wait for profile data
-  if (props.waitForPods) {
-    const profileDataAvailable = store.podsData && Object.keys(store.podsData).length > 0;
+  if (props.waitForProfile) {
+    const profileDataAvailable = store.profileData && Object.keys(store.profileData).length > 0;
     if (!profileDataAvailable) {
       console.log(`⏳ Component ${props.componentId} has no data, waiting for profile data`);
       return false;
@@ -194,7 +194,7 @@ const loadComponent = async () => {
     const component = store.components[props.componentId];
     const hasTemplateData = component?.data && Object.keys(component.data).length > 0;
 
-    if (!hasTemplateData && props.waitForPods && (!store.podsData || Object.keys(store.podsData).length === 0)) {
+    if (!hasTemplateData && props.waitForProfile && (!store.profileData || Object.keys(store.profileData).length === 0)) {
       console.log(`⏳ Component ${props.componentId} has no data, waiting for profile data`);
 
       // Wait for profile data using DOM event (with timeout)
@@ -209,7 +209,7 @@ const loadComponent = async () => {
           resolve();
         };
 
-        document.addEventListener('gmkb:pods-loaded', handler, { once: true });
+        document.addEventListener('gmkb:profile-loaded', handler, { once: true });
       });
     }
     
@@ -271,15 +271,15 @@ onMounted(async () => {
   
   await loadComponent();
   
-  // Listen for Pods data updates
+  // Listen for Profile data updates
   const handlePodsLoaded = () => {
     if (!componentReady.value && !hasError.value) {
-      console.log(`📦 Pods data loaded, retrying component ${props.componentId}`);
+      console.log(`📦 Profile data loaded, retrying component ${props.componentId}`);
       loadComponent();
     }
   };
   
-  addEventListener(document, 'gmkb:pods-loaded', handlePodsLoaded);
+  addEventListener(document, 'gmkb:profile-loaded', handlePodsLoaded);
 });
 
 // Watch for component data changes

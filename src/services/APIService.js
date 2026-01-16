@@ -173,7 +173,7 @@ export class APIService {
    *   sections: [],
    *   layout: [],
    *   theme: {},
-   *   podsData: {},
+   *   profileData: {},
    *   metadata: {}
    * }
    * 
@@ -263,7 +263,7 @@ export class APIService {
               globalSettings: data.state.globalSettings || {},
               theme: data.theme || 'professional_clean', // ✅ NOW STRING!
               themeCustomizations: data.themeCustomizations || {},
-              podsData: data.podsData || {},
+              profileData: data.profileData || {},
               metadata: data.metadata || {}
             };
             
@@ -283,7 +283,7 @@ export class APIService {
               console.log('✅ Loaded media kit data:', {
                 components: Object.keys(result.components).length,
                 sections: result.sections.length,
-                podsFields: Object.keys(result.podsData).length,
+                profileFields: Object.keys(result.profileData).length,
                 theme: result.theme
               });
             }

@@ -60,13 +60,13 @@ export function useSafeArray(props, key, fallback = []) {
 }
 
 /**
- * Create null-safe Pods data ref
+ * Create null-safe Profile data ref
  * For use in tests where Pods composables may not be available
- * @param {Object} podsData - Pods data object
+ * @param {Object} profileData - Profile data object
  * @returns {Object} Safe Pods ref
  */
-export function useSafePodsData(podsData) {
+export function useSafePodsData(profileData) {
   return computed(() => {
-    return podsData?.value || {};
+    return profileData?.value || {};
   });
 }

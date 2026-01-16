@@ -2,13 +2,13 @@
  * Profile Data Integration - Self-Contained Architecture Compliant
  *
  * This integration respects the self-contained component architecture:
- * - Each component defines its own data needs in /components/[name]/pods-config.json
+ * - Each component defines its own data needs in /components/[name]/profile-config.json
  * - This class acts as a bridge between profile data and components
  * - No hardcoded field mappings here
  *
- * NOTE: Despite referencing "pods_data" in variable names (legacy), this class
+ * NOTE: Despite referencing "profile_data" in variable names (legacy), this class
  * works with native WordPress post_meta. The data source is abstracted in PHP
- * via gmkb_get_pods_data() which falls back to gmkb_get_native_meta_data()
+ * via gmkb_get_profile_data() which falls back to gmkb_get_native_meta_data()
  * when the Pods plugin is not installed.
  *
  * @since 2.5.0 Renamed from PodsDataIntegration to ProfileDataIntegration
@@ -26,30 +26,30 @@ export class ProfileDataIntegration {
   /**
    * Get profile data from WordPress
    * Single source of truth for where profile data lives
-   * Note: The variable name "pods_data" is legacy - data may come from native post_meta
+   * Note: The variable name "profile_data" is legacy - data may come from native post_meta
    */
   getProfileDataSource() {
-    return window.gmkbData?.pods_data || window.gmkbVueData?.pods_data || {};
+    return window.gmkbData?.profile_data || window.gmkbVueData?.profile_data || {};
   }
 
   /**
    * Get component's field configuration
-   * Each component defines its own needs in pods-config.json
+   * Each component defines its own needs in profile-config.json
    */
   getComponentFieldConfig(componentType) {
     // First, try to get from the component's actual config if passed from PHP
     if (window.gmkbComponentConfigs && window.gmkbComponentConfigs[componentType]) {
       const config = window.gmkbComponentConfigs[componentType];
-      if (config.pods_config) {
-        return config.pods_config;
+      if (config.profile_config) {
+        return config.profile_config;
       }
     }
 
     // Check the actual registry singleton (window.gmkbComponentRegistry)
     if (window.gmkbComponentRegistry) {
       const component = window.gmkbComponentRegistry.get(componentType);
-      if (component && component.pods_config) {
-        return component.pods_config;
+      if (component && component.profile_config) {
+        return component.profile_config;
       }
     }
 
@@ -60,7 +60,7 @@ export class ProfileDataIntegration {
   }
 
   /**
-   * Embedded configs - These match what's in each component's pods-config.json
+   * Embedded configs - These match what's in each component's profile-config.json
    * This is a fallback for when configs aren't loaded from PHP
    */
   getEmbeddedConfigs() {

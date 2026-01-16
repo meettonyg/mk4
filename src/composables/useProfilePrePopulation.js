@@ -63,7 +63,7 @@ export function useProfilePrePopulation(componentType = null) {
   const lastSaveResult = ref(null);
   const prePopulatedData = ref({});
 
-  // Get the media kit store for accessing podsData
+  // Get the media kit store for accessing profileData
   let store = null;
   try {
     store = useMediaKitStore();
