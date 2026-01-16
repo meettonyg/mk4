@@ -1676,54 +1676,15 @@ watch(canGenerateEmbedded, (newValue) => {
 </script>
 
 <style scoped>
-/* Standalone Mode Styles */
-.gfy-form-section {
-  margin-bottom: var(--mkcg-space-lg, 30px);
-}
+@import "../_shared/gfy-form-base.css";
 
-.gfy-input-group {
-  margin-bottom: var(--mkcg-space-md, 20px);
-}
+/* Standalone Mode Styles */
 
 .gfy-input-group--prominent {
   padding: 16px;
   border-radius: 12px;
   border: 1px solid var(--mkcg-border, #e2e8f0);
   background: var(--mkcg-bg-secondary, #f9fafb);
-}
-
-.gfy-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--mkcg-text-secondary, #64748b);
-  margin-bottom: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.gfy-builder__input {
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid var(--mkcg-border, #e2e8f0);
-  border-radius: 6px;
-  font-size: 14px;
-  font-family: inherit;
-  background: #fff;
-  box-sizing: border-box;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.gfy-builder__input:focus {
-  outline: none;
-  border-color: var(--mkcg-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.gfy-builder__input::placeholder {
-  color: var(--mkcg-text-light, #94a3b8);
 }
 
 .gfy-builder__textarea {
@@ -1760,6 +1721,8 @@ watch(canGenerateEmbedded, (newValue) => {
   font-weight: var(--mkcg-font-weight-semibold, 600);
   color: var(--mkcg-text-primary, #2c3e50);
   margin: 0 0 var(--mkcg-space-md, 20px) 0;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .gfy-input-group-row {
@@ -1781,88 +1744,7 @@ watch(canGenerateEmbedded, (newValue) => {
 }
 
 .gfy-form-actions {
-  margin-top: var(--mkcg-space-lg, 30px);
   text-align: center;
-}
-
-.gfy-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  font-family: inherit;
-  border-radius: var(--mkcg-radius, 8px);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  border: 1px solid transparent;
-  white-space: nowrap;
-}
-
-.gfy-btn svg {
-  flex-shrink: 0;
-}
-
-.gfy-btn--primary {
-  background: var(--mkcg-primary, #3b82f6);
-  color: #fff;
-}
-
-.gfy-btn--primary:hover:not(:disabled) {
-  background: var(--mkcg-primary-dark, #2563eb);
-}
-
-.gfy-btn--primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.gfy-btn--outline {
-  background: #fff;
-  border-color: var(--mkcg-border, #e2e8f0);
-  color: var(--mkcg-text-secondary, #64748b);
-}
-
-.gfy-btn--outline:hover {
-  border-color: var(--mkcg-primary, #3b82f6);
-  color: var(--mkcg-primary, #3b82f6);
-  background: var(--mkcg-primary-light, rgba(59, 130, 246, 0.1));
-}
-
-.gfy-btn--ghost {
-  background: transparent;
-  border: none;
-  color: var(--mkcg-text-secondary, #64748b);
-}
-
-.gfy-btn--ghost:hover {
-  color: var(--mkcg-text-primary, #0f172a);
-}
-
-.gfy-btn--loading {
-  opacity: 0.7;
-  cursor: progress;
-}
-
-.gfy-form-error {
-  margin-top: var(--mkcg-space-md, 20px);
-  padding: var(--mkcg-space-md, 20px);
-  background-color: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: var(--mkcg-radius, 8px);
-  text-align: center;
-}
-
-.gfy-form-error p {
-  color: #991b1b;
-  margin: 0 0 var(--mkcg-space-sm, 12px) 0;
-}
-
-.gfy-highlight {
-  color: var(--mkcg-primary, #3b82f6);
-  font-weight: 700;
 }
 
 .offers-gfy-form-actions {

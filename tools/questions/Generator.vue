@@ -1420,20 +1420,9 @@ watch(canGenerate, (newValue) => {
 </script>
 
 <style scoped>
+@import "../_shared/gfy-form-base.css";
+
 /* Standalone Mode Styles */
-.gfy-form-section {
-  margin-bottom: var(--mkcg-space-lg, 30px);
-}
-
-.gfy-form-section__title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--mkcg-text-primary, #0f172a);
-  margin: 0 0 16px 0;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
 .gfy-highlight-box {
   background: #fff;
   border: 1px solid var(--mkcg-border, #e2e8f0);
@@ -1451,80 +1440,11 @@ watch(canGenerate, (newValue) => {
   background: #ecfdf5;
 }
 
-.gfy-form-actions {
-  margin-top: var(--mkcg-space-lg, 30px);
-}
-
 .gfy-form-hint {
   text-align: center;
   font-size: 13px;
   color: var(--mkcg-text-secondary, #64748b);
   margin-top: 20px;
-}
-
-.gfy-form-error {
-  margin-top: var(--mkcg-space-md, 20px);
-  padding: var(--mkcg-space-md, 20px);
-  background-color: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: var(--mkcg-radius, 8px);
-  text-align: center;
-}
-
-.gfy-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  font-family: inherit;
-  border-radius: var(--mkcg-radius, 8px);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  border: 1px solid transparent;
-  white-space: nowrap;
-}
-
-.gfy-btn svg {
-  flex-shrink: 0;
-}
-
-.gfy-btn--primary {
-  background: var(--mkcg-primary, #3b82f6);
-  color: #fff;
-}
-
-.gfy-btn--primary:hover:not(:disabled) {
-  background: var(--mkcg-primary-dark, #2563eb);
-}
-
-.gfy-btn--primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.gfy-btn--outline {
-  background: #fff;
-  border-color: var(--mkcg-border, #e2e8f0);
-  color: var(--mkcg-text-secondary, #64748b);
-}
-
-.gfy-btn--outline:hover {
-  border-color: var(--mkcg-primary, #3b82f6);
-  color: var(--mkcg-primary, #3b82f6);
-  background: var(--mkcg-primary-light, rgba(59, 130, 246, 0.1));
-}
-
-.gfy-btn--loading {
-  opacity: 0.7;
-  cursor: progress;
-}
-
-.gfy-form-error p {
-  color: #991b1b;
-  margin: 0 0 var(--mkcg-space-sm, 12px) 0;
 }
 
 /* ===========================================
@@ -2050,26 +1970,6 @@ watch(canGenerate, (newValue) => {
 
 .animate-spin {
   animation: spin 1s linear infinite;
-}
-
-.gfy-highlight {
-  color: var(--mkcg-primary, #3b82f6);
-  font-weight: 700;
-}
-
-/* Ghost button variant */
-.gfy-btn--ghost {
-  background: transparent;
-  border: none;
-  color: var(--mkcg-text-secondary, #64748b);
-  padding: 10px 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.gfy-btn--ghost:hover {
-  color: var(--mkcg-text-primary, #0f172a);
 }
 
 /* Integrated Mode Styles */
