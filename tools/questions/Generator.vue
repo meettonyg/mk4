@@ -781,34 +781,64 @@ const {
   getProfileField
 } = useProfilePrePopulation('questions');
 
+// Direct access to profile data for reliable pre-fill
+const getDirectProfileData = () => {
+  return window.gmkbData?.pods_data || window.gmkbVueData?.pods_data || {};
+};
+
 // Computed: has media kit context (for integrated mode)
 const hasMediaKitContext = computed(() => {
-  return props.mode === 'integrated' && hasMediaKitProfileData.value;
+  if (props.mode !== 'integrated') return false;
+  const profileData = getDirectProfileData();
+  return Object.keys(profileData).length > 0;
 });
-
-// Auto-fill from media kit profile when in integrated mode
-watch(() => props.mode, (newMode) => {
-  if (newMode === 'integrated' && hasMediaKitProfileData.value) {
-    prefillFromMediaKitProfile();
-  }
-}, { immediate: true });
 
 /**
  * Pre-fill form fields from media kit profile data
  */
 function prefillFromMediaKitProfile() {
-  const hookWho = getProfileField('hook_who') || getProfileField('authority_hook_who');
-  const hookWhat = getProfileField('hook_what') || getProfileField('authority_hook_what');
-  const hookWhen = getProfileField('hook_when') || getProfileField('authority_hook_when');
-  const hookHow = getProfileField('hook_how') || getProfileField('authority_hook_how');
-  const bio = getProfileField('biography') || getProfileField('bio');
+  const profileData = getDirectProfileData();
+  if (!profileData || Object.keys(profileData).length === 0) {
+    console.log('[QuestionsGenerator] No profile data available for pre-fill');
+    return;
+  }
 
+  console.log('[QuestionsGenerator] Pre-filling from profile data:', Object.keys(profileData));
+
+  // Authority hook fields (check multiple possible field names)
+  const hookWho = profileData.hook_who || profileData.authority_hook_who || '';
+  const hookWhat = profileData.hook_what || profileData.authority_hook_what || '';
+  const hookWhen = profileData.hook_when || profileData.authority_hook_when || '';
+  const hookHow = profileData.hook_how || profileData.authority_hook_how || '';
+
+  // Bio field
+  const bio = profileData.biography || profileData.guest_biography || profileData.bio || '';
+
+  // Target audience
+  const audience = profileData.target_audience || profileData.audience || '';
+
+  // Only fill if form field is empty
   if (hookWho && !authorityHook.who) authorityHook.who = hookWho;
   if (hookWhat && !authorityHook.what) authorityHook.what = hookWhat;
   if (hookWhen && !authorityHook.when) authorityHook.when = hookWhen;
   if (hookHow && !authorityHook.how) authorityHook.how = hookHow;
   if (bio && !guestBio.value) guestBio.value = bio;
+  if (audience && !targetAudience.value) targetAudience.value = audience;
+
+  console.log('[QuestionsGenerator] Pre-fill complete:', {
+    hookWho: !!hookWho, hookWhat: !!hookWhat, hookWhen: !!hookWhen, hookHow: !!hookHow, bio: !!bio
+  });
 }
+
+// Auto-fill from media kit profile when in integrated mode (on mount)
+onMounted(() => {
+  if (props.mode === 'integrated') {
+    // Small delay to ensure window data is available
+    setTimeout(() => {
+      prefillFromMediaKitProfile();
+    }, 100);
+  }
+});
 
 // Save to profile state
 const isSavingToProfile = ref(false);
