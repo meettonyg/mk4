@@ -763,72 +763,10 @@
     </template>
   </AiWidgetFrame>
 
-  <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
-  <div v-else class="gmkb-embedded-form">
-    <!-- Simplified 2-field form for landing page -->
-    <div class="gmkb-embedded-fields">
-      <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">Services You Offer</label>
-        <input
-          v-model="services"
-          type="text"
-          class="gmkb-embedded-input"
-          placeholder="e.g., 1-on-1 coaching, group workshops, keynote speaking"
-          @input="handleEmbeddedFieldChange"
-        />
-      </div>
-
-      <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">Your Expertise</label>
-        <input
-          v-model="authorityHookText"
-          type="text"
-          class="gmkb-embedded-input"
-          placeholder="e.g., I help entrepreneurs scale their businesses through strategic planning"
-          @input="handleEmbeddedFieldChange"
-        />
-      </div>
-    </div>
-
-    <!-- Results display for embedded mode -->
-    <div v-if="hasOffers" class="gmkb-embedded-result">
-      <div class="gmkb-embedded-result__content">
-        <div
-          v-for="(pkg, index) in offers"
-          :key="index"
-          class="gmkb-embedded-package"
-        >
-          <div class="gmkb-embedded-package__content">
-            <strong>{{ pkg.name }}:</strong> {{ pkg.description }}
-          </div>
-          <button
-            type="button"
-            class="gmkb-embedded-package__copy"
-            :class="{ 'gmkb-embedded-package__copy--copied': copiedPackageIndex === `embedded_${index}` }"
-            :title="copiedPackageIndex === `embedded_${index}` ? 'Copied!' : 'Copy package'"
-            @click="handleCopySingleOffer(pkg, $event, `embedded_${index}`)"
-          >
-            <svg v-if="copiedPackageIndex === `embedded_${index}`" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
-            <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Error display -->
-    <div v-if="error" class="gmkb-embedded-error">
-      {{ error }}
-    </div>
-  </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, watch, inject } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useAIOffers, PACKAGE_TIERS } from '../../src/composables/useAIOffers';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
@@ -840,7 +778,7 @@ import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
 import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ProfileContextBanner, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
+import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ProfileContextBanner } from '../_shared';
 
 // Options for select fields
 const PRICE_RANGE_OPTIONS = [
@@ -862,15 +800,14 @@ const DELIVERY_OPTIONS = [
 
 const props = defineProps({
   /**
-   * Mode: 'integrated', 'standalone', or 'embedded'
-   * - standalone: Full two-panel layout with guidance
+   * Mode: 'default' or 'integrated'
+   * - default: Full two-panel layout with guidance
    * - integrated: Compact widget for embedding in other components
-   * - embedded: Landing page embed with simplified form
    */
   mode: {
     type: String,
     default: 'default',
-    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
+    validator: (v) => ['default', 'integrated'].includes(v)
   },
 
   /**
@@ -879,28 +816,10 @@ const props = defineProps({
   componentId: {
     type: String,
     default: null
-  },
-
-  /**
-   * Intent object for embedded mode
-   * Contains: { id, label, contextHeading, contextDescription, formPlaceholders, formLabels }
-   */
-  intent: {
-    type: Object,
-    default: null
-  },
-
-  /**
-   * Profile data for pre-population (embedded mode)
-   * Passed from EmbeddedToolWrapper via scoped slot
-   */
-  profileData: {
-    type: Object,
-    default: null
   }
 });
 
-const emit = defineEmits(['applied', 'generated', 'change', 'preview-update', 'update:can-generate']);
+const emit = defineEmits(['applied', 'generated', 'change']);
 
 // Use composables
 const {
@@ -984,9 +903,6 @@ const lockedOffers = reactive({
   signature: null,
   premium: null
 });
-
-// Inject profile data from EmbeddedToolWrapper (for embedded mode)
-const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
 
 /**
  * Populate form fields from profile data
@@ -1356,45 +1272,6 @@ const handleStartOver = () => {
 };
 
 /**
- * Current intent (for embedded mode)
- */
-const currentIntent = computed(() => {
-  return props.intent || {
-    id: 'default',
-    label: 'Service Packages',
-    formPlaceholders: {
-      services: 'e.g., 1-on-1 coaching, group workshops, keynote speaking',
-      expertise: 'e.g., I help entrepreneurs scale their businesses through strategic planning'
-    },
-    formLabels: {
-      services: 'Services You Offer',
-      expertise: 'Your Expertise'
-    }
-  };
-});
-
-/**
- * Generate preview text for embedded mode
- */
-const embeddedPreviewText = computed(() => {
-  const servicesVal = services.value || '[SERVICES]';
-  const expertiseVal = authorityHookText.value || '[EXPERTISE]';
-
-  if (!services.value && !authorityHookText.value) {
-    return null; // Show default preview
-  }
-
-  return `Creating tiered service packages for <strong>${servicesVal}</strong> based on expertise: <strong>${expertiseVal}</strong>`;
-});
-
-/**
- * Check if embedded form has minimum required fields
- */
-const canGenerateEmbedded = computed(() => {
-  return services.value?.trim() && authorityHookText.value?.trim();
-});
-
-/**
  * Handle generate button click
  */
 const handleGenerate = async () => {
@@ -1559,16 +1436,6 @@ const handleApply = () => {
 };
 
 /**
- * Handle embedded field change
- */
-const handleEmbeddedFieldChange = () => {
-  emit('change', {
-    services: services.value,
-    expertise: authorityHookText.value
-  });
-};
-
-/**
  * Sync authority hook from store on mount
  */
 /**
@@ -1619,60 +1486,6 @@ watch(authorityHookSummary, (newVal) => {
   }
 });
 
-/**
- * Watch for injected profile data changes (embedded mode)
- */
-watch(
-  injectedProfileData,
-  (newData) => {
-    if (newData && props.mode === 'embedded') {
-      populateFromProfile(newData);
-    }
-  },
-  { immediate: true }
-);
-
-/**
- * Watch for profileData prop changes (embedded mode with EmbeddedToolWrapper)
- * Pre-populates form fields when profile data is provided
- */
-watch(
-  () => props.profileData,
-  (newData) => {
-    if (newData && props.mode === 'embedded') {
-      populateFromProfile(newData);
-    }
-  },
-  { immediate: true }
-);
-
-/**
- * Watch for field changes in embedded mode and emit preview updates
- */
-watch(
-  () => [services.value, authorityHookText.value],
-  () => {
-    if (props.mode === 'embedded') {
-      emit('preview-update', {
-        previewHtml: embeddedPreviewText.value,
-        fields: {
-          services: services.value,
-          expertise: authorityHookText.value
-        }
-      });
-    }
-  },
-  { deep: true }
-);
-
-/**
- * Emit can-generate status changes to parent (for embedded mode)
- */
-watch(canGenerateEmbedded, (newValue) => {
-  if (props.mode === 'embedded') {
-    emit('update:can-generate', !!newValue);
-  }
-}, { immediate: true });
 </script>
 
 <style scoped>
@@ -1898,127 +1711,6 @@ watch(canGenerateEmbedded, (newValue) => {
   border-radius: var(--gmkb-ai-radius-md, 8px);
   font-size: 13px;
   color: var(--gmkb-ai-text-secondary, #64748b);
-}
-
-/* Embedded Mode Styles (for landing page) */
-.gmkb-embedded-form {
-  width: 100%;
-}
-
-.gmkb-embedded-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.gmkb-embedded-field {
-  display: flex;
-  flex-direction: column;
-}
-
-.gmkb-embedded-label {
-  display: block;
-  font-weight: 600;
-  font-size: 13px;
-  margin-bottom: 8px;
-  color: var(--mkcg-text-primary, #0f172a);
-}
-
-.gmkb-embedded-input {
-  width: 100%;
-  padding: 14px;
-  border: 1px solid var(--mkcg-border, #e2e8f0);
-  border-radius: 8px;
-  background: var(--mkcg-bg-secondary, #f9fafb);
-  box-sizing: border-box;
-  font-size: 15px;
-  font-family: inherit;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.gmkb-embedded-input:focus {
-  outline: none;
-  border-color: var(--mkcg-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.gmkb-embedded-input::placeholder {
-  color: var(--mkcg-text-light, #94a3b8);
-}
-
-.gmkb-embedded-result {
-  margin-top: 20px;
-  padding: 16px;
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-  border: 1px solid #86efac;
-  border-radius: 8px;
-}
-
-.gmkb-embedded-result__content {
-  font-size: 15px;
-  line-height: 1.6;
-  color: #166534;
-}
-
-.gmkb-embedded-package {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(22, 101, 52, 0.1);
-}
-
-.gmkb-embedded-package:last-child {
-  margin-bottom: 0;
-  padding-bottom: 0;
-  border-bottom: none;
-}
-
-.gmkb-embedded-package__content {
-  flex: 1;
-}
-
-.gmkb-embedded-package strong {
-  color: #15803d;
-}
-
-.gmkb-embedded-package__copy {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  background: rgba(22, 101, 52, 0.1);
-  border: 1px solid rgba(22, 101, 52, 0.2);
-  border-radius: 6px;
-  color: #15803d;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
-}
-
-.gmkb-embedded-package__copy:hover {
-  background: rgba(22, 101, 52, 0.2);
-  border-color: rgba(22, 101, 52, 0.3);
-}
-
-.gmkb-embedded-package__copy--copied {
-  background: #10b981;
-  border-color: #10b981;
-  color: #fff;
-}
-
-.gmkb-embedded-error {
-  margin-top: 16px;
-  padding: 12px 16px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  color: #991b1b;
-  font-size: 14px;
 }
 
 /* ===========================================

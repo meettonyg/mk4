@@ -234,50 +234,12 @@
     </template>
   </AiWidgetFrame>
 
-  <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
-  <div v-else class="gmkb-embedded-form">
-    <!-- Simplified form for landing page -->
-    <div class="gmkb-embedded-fields">
-      <div
-        v-for="field in embeddedFields"
-        :key="field.key"
-        class="gmkb-embedded-field"
-      >
-        <label class="gmkb-embedded-label">{{ field.label }}</label>
-        <textarea
-          v-if="field.type === 'textarea'"
-          v-model="field.model.value"
-          class="gmkb-embedded-input gmkb-embedded-textarea"
-          :placeholder="field.placeholder"
-          :rows="field.rows || 3"
-          @input="handleEmbeddedFieldChange(field.key, $event.target.value)"
-        ></textarea>
-        <input
-          v-else
-          v-model="field.model.value"
-          type="text"
-          class="gmkb-embedded-input"
-          :placeholder="field.placeholder"
-          @input="handleEmbeddedFieldChange(field.key, $event.target.value)"
-        />
-      </div>
-    </div>
-
-    <!-- Results display for embedded mode -->
-    <div v-if="generatedFramework" class="gmkb-embedded-result">
-      <div class="gmkb-embedded-result__content" v-html="generatedFramework"></div>
-    </div>
-
-    <!-- Error display -->
-    <div v-if="error" class="gmkb-embedded-error">
-      {{ error }}
-    </div>
-  </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, inject } from 'vue';
+import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
 import { useAIGenerator } from '../../src/composables/useAIGenerator';
+import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 
 // Compact widget components (integrated mode)
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
@@ -301,7 +263,7 @@ const props = defineProps({
   mode: {
     type: String,
     default: 'default',
-    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
+    validator: (v) => ['default', 'integrated'].includes(v)
   },
 
   /**
@@ -343,6 +305,18 @@ const {
   generate,
   copyToClipboard
 } = useAIGenerator('framework');
+
+// History for recent generations
+const {
+  history,
+  hasHistory,
+  addToHistory,
+  removeFromHistory,
+  clearHistory,
+  formatTimestamp
+} = useGeneratorHistory('framework');
+
+const showHistory = ref(false);
 
 // Local state
 const problem = ref('');
@@ -418,6 +392,25 @@ const canGenerate = computed(() => {
 });
 
 /**
+ * Form completion status for progress indicator
+ */
+const formCompletion = computed(() => {
+  const fields = [
+    { name: 'Problem', filled: !!problem.value.trim() },
+    { name: 'Approach', filled: !!approach.value.trim() },
+    { name: 'Outcome', filled: !!outcome.value.trim() }
+  ];
+  const filledCount = fields.filter(f => f.filled).length;
+  return {
+    fields,
+    filledCount,
+    totalCount: fields.length,
+    percentage: Math.round((filledCount / fields.length) * 100),
+    isComplete: canGenerate.value
+  };
+});
+
+/**
  * Handle generate button click
  */
 const handleGenerate = async () => {
@@ -434,6 +427,20 @@ const handleGenerate = async () => {
       content: generatedContent.value,
       steps: steps.value
     });
+
+    // Save to history on successful generation
+    if (generatedContent.value) {
+      addToHistory({
+        inputs: {
+          problem: problem.value,
+          approach: approach.value,
+          outcome: outcome.value,
+          steps: steps.value
+        },
+        results: generatedContent.value,
+        preview: generatedContent.value.substring(0, 50) || 'Generated framework'
+      });
+    }
   } catch (err) {
     console.error('[FrameworkGenerator] Generation failed:', err);
   }
@@ -524,67 +531,32 @@ function populateFromProfile(profileData) {
 }
 
 /**
- * Watch for profileData prop changes (embedded mode with EmbeddedToolWrapper)
- * Pre-populates form fields when profile data is provided
+ * Keyboard shortcut handler (Ctrl/Cmd + Enter to generate)
  */
-watch(
-  () => props.profileData,
-  (newData) => {
-    if (newData && props.mode === 'embedded') {
-      populateFromProfile(newData);
+const handleKeyboardShortcut = (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    if (canGenerate.value && !isGenerating.value) {
+      event.preventDefault();
+      handleGenerate();
     }
-  },
-  { immediate: true }
-);
+  }
+};
 
 /**
- * Watch for injected profile data from EmbeddedToolWrapper (embedded mode)
- * This is the primary reactive source for profile changes in embedded mode
+ * Initialize on mount
  */
-watch(
-  injectedProfileData,
-  (newData) => {
-    if (newData && props.mode === 'embedded') {
-      populateFromProfile(newData);
-    }
-  },
-  { immediate: true }
-);
-
-/**
- * Watch for field changes in embedded mode and emit preview updates
- */
-watch(
-  () => [problem.value, approach.value],
-  () => {
-    if (props.mode === 'embedded') {
-      emit('preview-update', {
-        previewHtml: embeddedPreviewText.value,
-        fields: {
-          problem: problem.value,
-          approach: approach.value
-        }
-      });
-    }
-  },
-  { deep: true }
-);
-
-/**
- * Check if embedded form has minimum required fields
- */
-const canGenerateEmbedded = computed(() => {
-  return problem.value?.trim() && approach.value?.trim();
+onMounted(() => {
+  // Add keyboard shortcut listener
+  window.addEventListener('keydown', handleKeyboardShortcut);
 });
 
 /**
- * Emit can-generate status changes to parent (for embedded mode)
+ * Cleanup on unmount
  */
-watch(canGenerateEmbedded, (newValue) => {
-  if (props.mode === 'embedded') {
-    emit('update:can-generate', !!newValue);
-  }
-}, { immediate: true });
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyboardShortcut);
+});
+
 </script>
 
 <style scoped>
@@ -692,104 +664,4 @@ watch(canGenerateEmbedded, (newValue) => {
   gap: var(--mkcg-space-sm, 12px);
 }
 
-/* Embedded Mode Styles (for landing page) */
-.gmkb-embedded-form {
-  width: 100%;
-}
-
-.gmkb-embedded-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.gmkb-embedded-field {
-  display: flex;
-  flex-direction: column;
-}
-
-.gmkb-embedded-label {
-  display: block;
-  font-weight: 600;
-  font-size: 13px;
-  margin-bottom: 8px;
-  color: var(--mkcg-text-primary, #0f172a);
-}
-
-.gmkb-embedded-input {
-  width: 100%;
-  padding: 14px;
-  border: 1px solid var(--mkcg-border, #e2e8f0);
-  border-radius: 8px;
-  background: var(--mkcg-bg-secondary, #f9fafb);
-  box-sizing: border-box;
-  font-size: 15px;
-  font-family: inherit;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.gmkb-embedded-textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.gmkb-embedded-input:focus {
-  outline: none;
-  border-color: var(--mkcg-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.gmkb-embedded-input::placeholder {
-  color: var(--mkcg-text-light, #94a3b8);
-}
-
-.gmkb-embedded-result {
-  margin-top: 20px;
-  padding: 16px;
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-  border: 1px solid #86efac;
-  border-radius: 8px;
-}
-
-.gmkb-embedded-result__content {
-  font-size: 15px;
-  line-height: 1.6;
-  color: #166534;
-}
-
-.gmkb-embedded-result__content :deep(h4) {
-  margin: 16px 0 8px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #15803d;
-}
-
-.gmkb-embedded-result__content :deep(p) {
-  margin: 8px 0;
-}
-
-.gmkb-embedded-result__content :deep(ul),
-.gmkb-embedded-result__content :deep(ol) {
-  margin: 8px 0;
-  padding-left: 24px;
-}
-
-.gmkb-embedded-result__content :deep(li) {
-  margin: 4px 0;
-}
-
-.gmkb-embedded-result__content :deep(strong) {
-  font-weight: 600;
-  color: #14532d;
-}
-
-.gmkb-embedded-error {
-  margin-top: 16px;
-  padding: 12px 16px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  color: #991b1b;
-  font-size: 14px;
-}
 </style>

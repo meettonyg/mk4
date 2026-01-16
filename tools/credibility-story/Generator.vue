@@ -227,50 +227,12 @@
     </template>
   </AiWidgetFrame>
 
-  <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
-  <div v-else class="gmkb-embedded-form">
-    <!-- Simplified form for landing page -->
-    <div class="gmkb-embedded-fields">
-      <div
-        v-for="field in embeddedFields"
-        :key="field.key"
-        class="gmkb-embedded-field"
-      >
-        <label class="gmkb-embedded-label">{{ field.label }}</label>
-        <input
-          v-if="field.type === 'text'"
-          v-model="formData[field.key]"
-          type="text"
-          class="gmkb-embedded-input"
-          :placeholder="field.placeholder"
-        />
-        <textarea
-          v-else
-          v-model="formData[field.key]"
-          class="gmkb-embedded-input gmkb-embedded-textarea"
-          :placeholder="field.placeholder"
-          rows="3"
-        ></textarea>
-      </div>
-    </div>
-
-    <!-- Results display for embedded mode -->
-    <div v-if="hasContent" class="gmkb-embedded-result">
-      <div class="gmkb-embedded-result__content">
-        {{ generatedContent }}
-      </div>
-    </div>
-
-    <!-- Error display -->
-    <div v-if="error" class="gmkb-embedded-error">
-      {{ error }}
-    </div>
-  </div>
 </template>
 
 <script setup>
-import { ref, computed, reactive, watch, inject } from 'vue';
+import { ref, computed, reactive, watch, inject, onMounted, onUnmounted } from 'vue';
 import { useAIGenerator } from '../../src/composables/useAIGenerator';
+import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 
 // Compact widget components (integrated mode)
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
@@ -295,7 +257,7 @@ const props = defineProps({
   mode: {
     type: String,
     default: 'default',
-    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
+    validator: (v) => ['default', 'integrated'].includes(v)
   },
 
   /**
@@ -347,6 +309,18 @@ const {
   copyToClipboard
 } = useAIGenerator('credibility_story');
 
+// History composable for UX enhancements
+const {
+  history,
+  hasHistory,
+  addToHistory,
+  removeFromHistory,
+  clearHistory,
+  formatTimestamp
+} = useGeneratorHistory('credibility-story');
+
+const showHistory = ref(false);
+
 /**
  * Credibility story formula for guidance panel
  */
@@ -391,6 +365,25 @@ const canGenerate = computed(() => {
   return formData.expertise.trim() &&
          formData.experience.trim() &&
          formData.lesson.trim();
+});
+
+/**
+ * Form completion tracking for UX feedback
+ */
+const formCompletion = computed(() => {
+  const fields = [
+    { name: 'Area of Expertise', filled: !!formData.expertise.trim() },
+    { name: 'Key Experience', filled: !!formData.experience.trim() },
+    { name: 'Key Lesson/Insight', filled: !!formData.lesson.trim() }
+  ];
+  const filledCount = fields.filter(f => f.filled).length;
+  return {
+    fields,
+    filledCount,
+    totalCount: fields.length,
+    percentage: Math.round((filledCount / fields.length) * 100),
+    isComplete: canGenerate.value
+  };
 });
 
 /**
@@ -452,6 +445,20 @@ const handleGenerate = async () => {
     const context = props.mode === 'integrated' ? 'builder' : 'public';
     await generate(formData, context);
 
+    // Save to history on successful generation
+    if (generatedContent.value) {
+      addToHistory({
+        inputs: {
+          expertise: formData.expertise,
+          experience: formData.experience,
+          lesson: formData.lesson,
+          tone: formData.tone
+        },
+        results: generatedContent.value,
+        preview: generatedContent.value?.substring(0, 50) || 'Generated credibility story'
+      });
+    }
+
     emit('generated', {
       content: generatedContent.value
     });
@@ -478,73 +485,26 @@ const handleApply = () => {
 };
 
 /**
- * Watch for field changes in embedded mode and emit preview updates
+ * Keyboard shortcut handler for Ctrl/Cmd + Enter to generate
  */
-watch(
-  () => [formData.expertise, formData.experience],
-  () => {
-    if (props.mode === 'embedded') {
-      emit('preview-update', {
-        previewHtml: embeddedPreviewText.value,
-        fields: {
-          expertise: formData.expertise,
-          experience: formData.experience
-        }
-      });
+const handleKeyboardShortcut = (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    if (canGenerate.value && !isGenerating.value) {
+      event.preventDefault();
+      handleGenerate();
     }
-  },
-  { deep: true }
-);
-
-/**
- * Populate form fields from profile data
- */
-function populateFromProfile(profileData) {
-  if (!profileData) return;
-
-  // Pre-populate fields from profile data
-  formData.expertise = profileData.expertise || formData.expertise || '';
-  formData.experience = profileData.experience || formData.experience || '';
-  formData.lesson = profileData.lesson || formData.lesson || '';
-  formData.tone = profileData.tone || formData.tone || 'professional';
-}
-
-/**
- * Watch for profileData prop changes (embedded mode with EmbeddedToolWrapper)
- * Pre-populates form fields when profile data is provided
- */
-watch(
-  () => props.profileData,
-  (newData) => {
-    if (newData && props.mode === 'embedded') {
-      populateFromProfile(newData);
-    }
-  },
-  { immediate: true }
-);
-
-/**
- * Watch for injected profile data from EmbeddedToolWrapper (embedded mode)
- * This is the primary reactive source for profile changes in embedded mode
- */
-watch(
-  injectedProfileData,
-  (newData) => {
-    if (newData && props.mode === 'embedded') {
-      populateFromProfile(newData);
-    }
-  },
-  { immediate: true }
-);
-
-/**
- * Emit can-generate status changes to parent (for embedded mode)
- */
-watch(canGenerateEmbedded, (newValue) => {
-  if (props.mode === 'embedded') {
-    emit('update:can-generate', !!newValue);
   }
-}, { immediate: true });
+};
+
+// Lifecycle hooks
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyboardShortcut);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyboardShortcut);
+});
+
 </script>
 
 <style scoped>
@@ -619,79 +579,4 @@ watch(canGenerateEmbedded, (newValue) => {
   gap: var(--mkcg-space-sm, 12px);
 }
 
-/* Embedded Mode Styles (for landing page) */
-.gmkb-embedded-form {
-  width: 100%;
-}
-
-.gmkb-embedded-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.gmkb-embedded-field {
-  display: flex;
-  flex-direction: column;
-}
-
-.gmkb-embedded-label {
-  display: block;
-  font-weight: 600;
-  font-size: 13px;
-  margin-bottom: 8px;
-  color: var(--mkcg-text-primary, #0f172a);
-}
-
-.gmkb-embedded-input {
-  width: 100%;
-  padding: 14px;
-  border: 1px solid var(--mkcg-border, #e2e8f0);
-  border-radius: 8px;
-  background: var(--mkcg-bg-secondary, #f9fafb);
-  box-sizing: border-box;
-  font-size: 15px;
-  font-family: inherit;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.gmkb-embedded-input:focus {
-  outline: none;
-  border-color: var(--mkcg-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.gmkb-embedded-input::placeholder {
-  color: var(--mkcg-text-light, #94a3b8);
-}
-
-.gmkb-embedded-textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.gmkb-embedded-result {
-  margin-top: 20px;
-  padding: 16px;
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-  border: 1px solid #86efac;
-  border-radius: 8px;
-}
-
-.gmkb-embedded-result__content {
-  font-size: 15px;
-  line-height: 1.6;
-  color: #166534;
-  font-style: italic;
-}
-
-.gmkb-embedded-error {
-  margin-top: 16px;
-  padding: 12px 16px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  color: #991b1b;
-  font-size: 14px;
-}
 </style>

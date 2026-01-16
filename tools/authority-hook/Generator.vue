@@ -282,7 +282,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject } from 'vue';
+import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
+import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 import { useAIAuthorityHooks } from '../../src/composables/useAIAuthorityHooks';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
@@ -322,6 +323,18 @@ const {
   loadFromProfileData,
   reset: resetAuthorityHook
 } = useAuthorityHook();
+
+// Generator history for UX enhancements
+const {
+  history,
+  hasHistory,
+  addToHistory,
+  removeFromHistory,
+  clearHistory,
+  formatTimestamp
+} = useGeneratorHistory('authority-hook');
+
+const showHistory = ref(false);
 
 // Inject profile data from parent (EmbeddedToolWrapper provides this)
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
@@ -389,6 +402,38 @@ const hasCurrentHook = computed(() => {
 });
 
 /**
+ * Form completion tracking for UX
+ */
+const formCompletion = computed(() => {
+  const fields = [
+    { name: 'who', filled: !!(hookWho.value && hookWho.value.trim()), required: true },
+    { name: 'what', filled: !!(hookWhat.value && hookWhat.value.trim()), required: true },
+    { name: 'when', filled: !!(hookWhen.value && hookWhen.value.trim()), required: false },
+    { name: 'how', filled: !!(hookHow.value && hookHow.value.trim()), required: false }
+  ];
+  const filledCount = fields.filter(f => f.filled).length;
+  const totalCount = fields.length;
+  return {
+    fields,
+    filledCount,
+    totalCount,
+    percentage: Math.round((filledCount / totalCount) * 100)
+  };
+});
+
+/**
+ * Keyboard shortcut handler
+ */
+const handleKeyboardShortcut = (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    if (canGenerate.value && !isGenerating.value) {
+      event.preventDefault();
+      handleGenerate();
+    }
+  }
+};
+
+/**
  * Populate from profile data - uses composable for state persistence
  */
 function populateFromProfile(profileData) {
@@ -437,6 +482,22 @@ const handleGenerate = async () => {
       hook: firstHook,
       content: firstHook
     });
+
+    // Save to history on success
+    if (hooks.value && hooks.value.length > 0) {
+      addToHistory({
+        input: {
+          who: hookWho.value,
+          what: hookWhat.value,
+          when: hookWhen.value,
+          how: hookHow.value
+        },
+        output: firstHook,
+        metadata: {
+          variationCount: hooks.value.length
+        }
+      });
+    }
 
     return { hooks: hooks.value };
   } catch (err) {
@@ -563,6 +624,17 @@ watch(
   },
   { immediate: true }
 );
+
+// Initialize on mount
+onMounted(() => {
+  // Add keyboard shortcut listener
+  document.addEventListener('keydown', handleKeyboardShortcut);
+});
+
+// Cleanup on unmount
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeyboardShortcut);
+});
 
 // Expose for parent
 defineExpose({

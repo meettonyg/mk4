@@ -123,7 +123,7 @@
       </div>
 
       <!-- Form Container -->
-      <div class="gfy-bio-form__container" :class="{ 'gfy-bio-form__container--embedded': mode === 'embedded' }">
+      <div class="gfy-bio-form__container">
         <!-- Basic Information -->
         <div class="gfy-form-section">
           <h3 class="gfy-form-section__title">
@@ -575,11 +575,12 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject, onMounted } from 'vue';
+import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
 import { useAIBiography, SLOT_STATUS, LENGTH_OPTIONS, getVariationCount } from '../../src/composables/useAIBiography';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 import { useDraftState } from '../../src/composables/useDraftState';
+import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 import { EMBEDDED_PROFILE_DATA_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileContextBanner } from '../_shared';
 
 // Integrated mode components
@@ -594,8 +595,7 @@ const props = defineProps({
   mode: {
     type: String,
     default: 'default',
-    // 'embedded' mode is used by EmbeddedToolWrapper and renders like 'default'
-    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
+    validator: (v) => ['default', 'integrated'].includes(v)
   },
   intent: {
     type: Object,
@@ -678,6 +678,18 @@ const {
   startAutoSave,
   getLastSavedText
 } = useDraftState('biography');
+
+// Generator history for UX enhancement
+const {
+  history,
+  hasHistory,
+  addToHistory,
+  removeFromHistory,
+  clearHistory,
+  formatTimestamp
+} = useGeneratorHistory('biography');
+
+const showHistory = ref(false);
 
 // Prefilled fields tracking
 const prefilledFields = ref(new Set());
@@ -762,6 +774,39 @@ const activeSlotLabel = computed(() => {
 });
 
 /**
+ * Form completion tracking for UX enhancement
+ */
+const formCompletion = computed(() => {
+  const fields = [
+    { name: 'Name', filled: !!name.value },
+    { name: 'Who You Help', filled: !!authorityHook.who },
+    { name: 'What You Do', filled: !!authorityHook.what },
+    { name: 'When They Need You', filled: !!authorityHook.when },
+    { name: 'How You Help', filled: !!authorityHook.how }
+  ];
+  const filledCount = fields.filter(f => f.filled).length;
+  return {
+    fields,
+    filledCount,
+    totalCount: fields.length,
+    percentage: Math.round((filledCount / fields.length) * 100),
+    isComplete: canGenerate.value
+  };
+});
+
+/**
+ * Keyboard shortcut handler for Ctrl/Cmd + Enter
+ */
+const handleKeyboardShortcut = (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    if (canGenerate.value && !isGenerating.value) {
+      event.preventDefault();
+      handleStartGeneration();
+    }
+  }
+};
+
+/**
  * Handle starting generation - goes to results view
  */
 const handleStartGeneration = async () => {
@@ -789,6 +834,22 @@ const handleGenerateForSlot = async (slotName) => {
   try {
     await generateForSlot(slotName);
     emit('generated', { slot: slotName, variations: slots[slotName].variations });
+
+    // Save to history on success
+    if (slots[slotName].variations.length > 0) {
+      addToHistory({
+        inputs: {
+          name: name.value,
+          authorityHook: { ...authorityHook },
+          impactIntro: { ...impactIntro },
+          tone: tone.value,
+          pov: pov.value,
+          slot: slotName
+        },
+        results: slots[slotName].variations,
+        preview: slots[slotName].variations[0]?.text?.substring(0, 50) || 'Generated biography'
+      });
+    }
   } catch (err) {
     console.error('[Biography Generator] Generation failed:', err);
   }
@@ -1044,6 +1105,14 @@ onMounted(() => {
   if (props.mode === 'default') {
     startAutoSave(getDraftState);
   }
+
+  // Add keyboard shortcut listener
+  window.addEventListener('keydown', handleKeyboardShortcut);
+});
+
+// Cleanup on unmount
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyboardShortcut);
 });
 
 // Expose for parent
@@ -1114,14 +1183,6 @@ defineExpose({
   border: 1px solid var(--gfy-border-color);
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   padding: 40px;
-}
-
-.gfy-bio-form__container--embedded {
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-  padding: 0;
 }
 
 /* FORM SECTIONS */
@@ -1966,179 +2027,6 @@ defineExpose({
   background: var(--gfy-primary-color);
   border-color: var(--gfy-primary-color);
   color: white;
-}
-
-/* ============================================
-   EMBEDDED MODE STYLES (for landing page)
-   ============================================ */
-
-.gmkb-embedded-form {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-}
-
-.gmkb-embedded-section {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.gmkb-embedded-section-header {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--mkcg-text-primary, #0f172a);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid var(--mkcg-border, #e2e8f0);
-}
-
-.gmkb-embedded-optional {
-  font-weight: 400;
-  text-transform: none;
-  color: var(--mkcg-text-light, #94a3b8);
-}
-
-.gmkb-embedded-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.gmkb-embedded-row--3col {
-  grid-template-columns: repeat(3, 1fr);
-}
-
-@media (max-width: 768px) {
-  .gmkb-embedded-row,
-  .gmkb-embedded-row--3col {
-    grid-template-columns: 1fr;
-  }
-}
-
-.gmkb-embedded-field {
-  display: flex;
-  flex-direction: column;
-}
-
-.gmkb-embedded-label {
-  display: block;
-  font-weight: 600;
-  font-size: 13px;
-  margin-bottom: 8px;
-  color: var(--mkcg-text-primary, #0f172a);
-}
-
-.gmkb-embedded-input,
-.gmkb-embedded-textarea,
-.gmkb-embedded-select {
-  width: 100%;
-  padding: 14px;
-  border: 1px solid var(--mkcg-border, #e2e8f0);
-  border-radius: 8px;
-  background: var(--mkcg-bg-secondary, #f9fafb);
-  box-sizing: border-box;
-  font-size: 15px;
-  font-family: inherit;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.gmkb-embedded-textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.gmkb-embedded-input:focus,
-.gmkb-embedded-textarea:focus,
-.gmkb-embedded-select:focus {
-  outline: none;
-  border-color: var(--mkcg-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.gmkb-embedded-input::placeholder,
-.gmkb-embedded-textarea::placeholder {
-  color: var(--mkcg-text-light, #94a3b8);
-}
-
-.gmkb-embedded-error {
-  margin-top: 16px;
-  padding: 12px 16px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  color: #991b1b;
-  font-size: 14px;
-}
-
-/* Highlight boxes for embedded mode */
-.gmkb-embedded-highlight {
-  background: #fff;
-  border: 1px solid var(--mkcg-border, #e2e8f0);
-  padding: 20px;
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.gmkb-embedded-highlight--blue {
-  border-left: 4px solid var(--mkcg-primary, #3b82f6);
-  background: linear-gradient(to right, #eff6ff, #fff);
-}
-
-.gmkb-embedded-highlight--green {
-  border-left: 4px solid #10b981;
-  background: linear-gradient(to right, #d1fae5, #fff);
-}
-
-.gmkb-embedded-highlight-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-
-.gmkb-embedded-highlight-icon {
-  font-size: 18px;
-}
-
-.gmkb-embedded-highlight-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--mkcg-text-primary, #0f172a);
-}
-
-/* Embedded Mode Wrapper */
-.gmkb-embedded-mode {
-  width: 100%;
-}
-
-/* Embedded mode uses full results dashboard - inherits gfy-bio-results styles */
-.gfy-bio-results--embedded {
-  /* Embedded mode inherits all default mode styles */
-  /* Adjust max-width to fit within landing page container */
-  max-width: 100%;
-}
-
-.gfy-bio-results--embedded .gfy-bio-hero {
-  margin-bottom: 24px;
-}
-
-.gfy-bio-results--embedded .gfy-bio-hero__title {
-  font-size: 28px;
-}
-
-.gfy-bio-results--embedded .gfy-results-layout {
-  padding: 24px;
-}
-
-@media (max-width: 900px) {
-  .gfy-bio-results--embedded .gfy-layout-sidebar {
-    position: static;
-  }
 }
 
 /* ============================================

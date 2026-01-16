@@ -634,40 +634,10 @@
     </template>
   </AiWidgetFrame>
 
-  <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
-  <div v-else class="gmkb-embedded-form">
-    <!-- Simplified form for landing page -->
-    <div class="gmkb-embedded-fields">
-      <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.topics || 'Interview Topic' }} *</label>
-        <textarea
-          v-model="refinedTopic"
-          class="gmkb-embedded-input gmkb-embedded-textarea"
-          :placeholder="currentIntent?.formPlaceholders?.topics || 'e.g., The 3 Hidden Revenue Leaks Killing Your Growth'"
-          rows="2"
-        ></textarea>
-      </div>
-
-      <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.who || 'Who do you help? (Optional)' }}</label>
-        <input
-          v-model="authorityHook.who"
-          type="text"
-          class="gmkb-embedded-input"
-          :placeholder="currentIntent?.formPlaceholders?.who || 'e.g., SaaS Founders'"
-        />
-      </div>
-    </div>
-
-    <!-- Error display -->
-    <div v-if="error" class="gmkb-embedded-error">
-      {{ error }}
-    </div>
-  </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, watch, inject } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useAIQuestions, QUESTION_CATEGORIES } from '../../src/composables/useAIQuestions';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
@@ -679,16 +649,16 @@ import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
 import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ProfileContextBanner, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
+import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ProfileContextBanner } from '../_shared';
 
 const props = defineProps({
   /**
-   * Mode: 'default', 'integrated', or 'embedded'
+   * Mode: 'default' or 'integrated'
    */
   mode: {
     type: String,
     default: 'default',
-    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
+    validator: (v) => ['default', 'integrated'].includes(v)
   },
 
   /**
@@ -696,22 +666,6 @@ const props = defineProps({
    */
   componentId: {
     type: String,
-    default: null
-  },
-
-  /**
-   * Intent object for embedded mode
-   */
-  intent: {
-    type: Object,
-    default: null
-  },
-
-  /**
-   * Profile data for pre-population (embedded mode)
-   */
-  profileData: {
-    type: Object,
     default: null
   },
 
@@ -724,7 +678,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['applied', 'generated', 'preview-update', 'update:can-generate']);
+const emit = defineEmits(['applied', 'generated']);
 
 // Use composables
 const {
@@ -781,9 +735,6 @@ const showHistory = ref(false);
 // Prefilled fields tracking
 const prefilledFields = ref(new Set());
 const showDraftPrompt = ref(false);
-
-// Inject profile data from EmbeddedToolWrapper (for embedded mode)
-const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
 
 // Local state
 const selectedTopicIndex = ref(-1);
@@ -1308,14 +1259,6 @@ const handleKeyboardShortcut = (event) => {
 onMounted(() => {
   syncFromStore();
 
-  // Load from injected or prop profile data
-  if (props.profileData) {
-    populateFromProfile(props.profileData);
-  }
-  if (injectedProfileData.value) {
-    populateFromProfile(injectedProfileData.value);
-  }
-
   // Auto-select first topic if available
   if (availableTopics.value.length > 0 && selectedTopicIndex.value === -1) {
     selectTopic(0);
@@ -1343,32 +1286,6 @@ onUnmounted(() => {
 });
 
 /**
- * Watch for injected profile data changes (embedded mode)
- */
-watch(
-  injectedProfileData,
-  (newData) => {
-    if (newData) {
-      populateFromProfile(newData);
-    }
-  },
-  { immediate: true }
-);
-
-/**
- * Watch for profileData prop changes (embedded mode with EmbeddedToolWrapper)
- */
-watch(
-  () => props.profileData,
-  (newData) => {
-    if (newData && props.mode === 'embedded') {
-      populateFromProfile(newData);
-    }
-  },
-  { immediate: true }
-);
-
-/**
  * Watch for topics prop changes
  */
 watch(
@@ -1381,42 +1298,6 @@ watch(
   { immediate: true }
 );
 
-/**
- * Current intent for embedded mode
- */
-const currentIntent = computed(() => props.intent || null);
-
-/**
- * Generate preview text for embedded mode
- */
-const embeddedPreviewText = computed(() => {
-  if (!refinedTopic.value) return null;
-  return `<strong>10 interview questions</strong> for: <strong>${refinedTopic.value}</strong>`;
-});
-
-/**
- * Watch for field changes in embedded mode and emit preview updates
- */
-watch(
-  () => refinedTopic.value,
-  () => {
-    if (props.mode === 'embedded') {
-      emit('preview-update', {
-        previewHtml: embeddedPreviewText.value,
-        fields: { topic: refinedTopic.value }
-      });
-    }
-  }
-);
-
-/**
- * Emit can-generate status changes to parent (for embedded mode)
- */
-watch(canGenerate, (newValue) => {
-  if (props.mode === 'embedded') {
-    emit('update:can-generate', !!newValue);
-  }
-}, { immediate: true });
 </script>
 
 <style scoped>
@@ -1998,67 +1879,6 @@ watch(canGenerate, (newValue) => {
   font-size: 13px;
   color: var(--gmkb-ai-text-secondary, #64748b);
   text-align: center;
-}
-
-/* Embedded Mode Styles (for landing page) */
-.gmkb-embedded-form {
-  width: 100%;
-}
-
-.gmkb-embedded-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.gmkb-embedded-field {
-  display: flex;
-  flex-direction: column;
-}
-
-.gmkb-embedded-label {
-  display: block;
-  font-weight: 600;
-  font-size: 13px;
-  margin-bottom: 8px;
-  color: var(--mkcg-text-primary, #0f172a);
-}
-
-.gmkb-embedded-input {
-  width: 100%;
-  padding: 14px;
-  border: 1px solid var(--mkcg-border, #e2e8f0);
-  border-radius: 8px;
-  background: var(--mkcg-bg-secondary, #f9fafb);
-  box-sizing: border-box;
-  font-size: 15px;
-  font-family: inherit;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.gmkb-embedded-input:focus {
-  outline: none;
-  border-color: var(--mkcg-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.gmkb-embedded-input::placeholder {
-  color: var(--mkcg-text-light, #94a3b8);
-}
-
-.gmkb-embedded-textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.gmkb-embedded-error {
-  margin-top: 16px;
-  padding: 12px 16px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  color: #991b1b;
-  font-size: 14px;
 }
 
 /* ===========================================

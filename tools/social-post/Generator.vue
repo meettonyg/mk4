@@ -279,61 +279,12 @@
     </template>
   </AiWidgetFrame>
 
-  <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
-  <div v-else class="gmkb-embedded-form">
-    <!-- Simplified form for landing page -->
-    <div class="gmkb-embedded-fields">
-      <div
-        v-for="field in embeddedFields"
-        :key="field.key"
-        class="gmkb-embedded-field"
-      >
-        <label class="gmkb-embedded-label">{{ field.label }}</label>
-        <textarea
-          v-if="field.key === 'topic'"
-          v-model="formData[field.key]"
-          class="gmkb-embedded-input gmkb-embedded-textarea"
-          :placeholder="field.placeholder"
-          rows="3"
-        ></textarea>
-        <select
-          v-else-if="field.key === 'platform'"
-          v-model="formData[field.key]"
-          class="gmkb-embedded-input gmkb-embedded-select"
-        >
-          <option value="linkedin">LinkedIn</option>
-          <option value="twitter">Twitter/X</option>
-          <option value="instagram">Instagram</option>
-          <option value="facebook">Facebook</option>
-          <option value="all">All Platforms</option>
-        </select>
-        <input
-          v-else
-          v-model="formData[field.key]"
-          type="text"
-          class="gmkb-embedded-input"
-          :placeholder="field.placeholder"
-        />
-      </div>
-    </div>
-
-    <!-- Results display for embedded mode -->
-    <div v-if="hasContent" class="gmkb-embedded-result">
-      <div class="gmkb-embedded-result__content">
-        {{ currentPost?.content || generatedContent }}
-      </div>
-    </div>
-
-    <!-- Error display -->
-    <div v-if="error" class="gmkb-embedded-error">
-      {{ error }}
-    </div>
-  </div>
 </template>
 
 <script setup>
-import { ref, computed, reactive, watch, inject } from 'vue';
+import { ref, computed, reactive, watch, inject, onMounted, onUnmounted } from 'vue';
 import { useAIGenerator } from '../../src/composables/useAIGenerator';
+import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 
 // Compact widget components (integrated mode)
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
@@ -354,7 +305,7 @@ const props = defineProps({
   mode: {
     type: String,
     default: 'default',
-    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
+    validator: (v) => ['default', 'integrated'].includes(v)
   },
 
   /**
@@ -414,6 +365,63 @@ const selectedPlatform = ref('linkedin');
 // Inject profile data from EmbeddedToolWrapper (for embedded mode)
 // This provides reactive updates when profile is selected from dropdown
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+
+// Use generator history composable
+const {
+  history,
+  hasHistory,
+  addToHistory,
+  removeFromHistory,
+  clearHistory,
+  formatTimestamp
+} = useGeneratorHistory('social-post');
+
+const showHistory = ref(false);
+
+/**
+ * Form completion tracking for UX feedback
+ */
+const formCompletion = computed(() => {
+  const fields = [
+    { name: 'Post Topic', filled: !!formData.topic?.trim() },
+    { name: 'Platform', filled: !!formData.platform },
+    { name: 'Tone', filled: !!formData.tone }
+  ];
+  const filledCount = fields.filter(f => f.filled).length;
+  return {
+    fields,
+    filledCount,
+    totalCount: fields.length,
+    percentage: Math.round((filledCount / fields.length) * 100),
+    isComplete: canGenerate.value
+  };
+});
+
+/**
+ * Handle keyboard shortcut for quick generation
+ */
+const handleKeyboardShortcut = (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    if (canGenerate.value && !isGenerating.value) {
+      event.preventDefault();
+      handleGenerate();
+    }
+  }
+};
+
+/**
+ * Setup keyboard listener on mount
+ */
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyboardShortcut);
+});
+
+/**
+ * Cleanup keyboard listener on unmount
+ */
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyboardShortcut);
+});
 
 /**
  * Social post formula for guidance panel
@@ -602,6 +610,20 @@ const handleGenerate = async () => {
       selectedPlatform.value = displayPosts.value[0].platform.toLowerCase();
     }
 
+    // Save to history on successful generation
+    if (generatedContent.value) {
+      addToHistory({
+        inputs: {
+          topic: formData.topic,
+          platform: formData.platform,
+          callToAction: formData.callToAction,
+          tone: formData.tone
+        },
+        results: displayPosts.value,
+        preview: displayPosts.value[0]?.content?.substring(0, 50) || 'Generated social post'
+      });
+    }
+
     emit('generated', {
       content: generatedContent.value,
       platform: formData.platform
@@ -655,61 +677,6 @@ function populateFromProfile(profileData) {
   }
 }
 
-/**
- * Watch for profileData prop changes (embedded mode with EmbeddedToolWrapper)
- * Pre-populates form fields when profile data is provided
- */
-watch(
-  () => props.profileData,
-  (newData) => {
-    if (newData && props.mode === 'embedded') {
-      populateFromProfile(newData);
-    }
-  },
-  { immediate: true }
-);
-
-/**
- * Watch for injected profile data from EmbeddedToolWrapper (embedded mode)
- * This is the primary reactive source for profile changes in embedded mode
- */
-watch(
-  injectedProfileData,
-  (newData) => {
-    if (newData && props.mode === 'embedded') {
-      populateFromProfile(newData);
-    }
-  },
-  { immediate: true }
-);
-
-/**
- * Watch for field changes in embedded mode and emit preview updates
- */
-watch(
-  () => [formData.topic, formData.platform],
-  () => {
-    if (props.mode === 'embedded') {
-      emit('preview-update', {
-        previewHtml: embeddedPreviewText.value,
-        fields: {
-          topic: formData.topic,
-          platform: formData.platform
-        }
-      });
-    }
-  },
-  { deep: true }
-);
-
-/**
- * Emit can-generate status changes to parent (for embedded mode)
- */
-watch(canGenerateEmbedded, (newValue) => {
-  if (props.mode === 'embedded') {
-    emit('update:can-generate', !!newValue);
-  }
-}, { immediate: true });
 </script>
 
 <style scoped>
@@ -897,89 +864,4 @@ watch(canGenerateEmbedded, (newValue) => {
   border-color: var(--gmkb-ai-primary, #6366f1);
 }
 
-/* Embedded Mode Styles (for landing page) */
-.gmkb-embedded-form {
-  width: 100%;
-}
-
-.gmkb-embedded-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.gmkb-embedded-field {
-  display: flex;
-  flex-direction: column;
-}
-
-.gmkb-embedded-label {
-  display: block;
-  font-weight: 600;
-  font-size: 13px;
-  margin-bottom: 8px;
-  color: var(--mkcg-text-primary, #0f172a);
-}
-
-.gmkb-embedded-input {
-  width: 100%;
-  padding: 14px;
-  border: 1px solid var(--mkcg-border, #e2e8f0);
-  border-radius: 8px;
-  background: var(--mkcg-bg-secondary, #f9fafb);
-  box-sizing: border-box;
-  font-size: 15px;
-  font-family: inherit;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.gmkb-embedded-textarea {
-  resize: vertical;
-  min-height: 80px;
-  line-height: 1.5;
-}
-
-.gmkb-embedded-select {
-  cursor: pointer;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 36px;
-}
-
-.gmkb-embedded-input:focus {
-  outline: none;
-  border-color: var(--mkcg-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.gmkb-embedded-input::placeholder {
-  color: var(--mkcg-text-light, #94a3b8);
-}
-
-.gmkb-embedded-result {
-  margin-top: 20px;
-  padding: 16px;
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-  border: 1px solid #86efac;
-  border-radius: 8px;
-}
-
-.gmkb-embedded-result__content {
-  font-size: 15px;
-  line-height: 1.6;
-  color: #166534;
-  white-space: pre-wrap;
-}
-
-.gmkb-embedded-error {
-  margin-top: 16px;
-  padding: 12px 16px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  color: #991b1b;
-  font-size: 14px;
-}
 </style>

@@ -246,61 +246,12 @@
     </template>
   </AiWidgetFrame>
 
-  <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
-  <div v-else class="gmkb-embedded-form">
-    <!-- Simplified form for landing page -->
-    <div class="gmkb-embedded-fields">
-      <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.topic || 'Blog Topic' }} *</label>
-        <input
-          v-model="topic"
-          type="text"
-          class="gmkb-embedded-input"
-          :placeholder="currentIntent?.formPlaceholders?.topic || 'e.g., 5 Leadership Lessons from Failed Startups'"
-          @input="handleEmbeddedFieldChange"
-        />
-      </div>
-
-      <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.keyPoints || 'Key Points to Cover' }}</label>
-        <textarea
-          v-model="keyPoints"
-          class="gmkb-embedded-input gmkb-embedded-textarea"
-          :placeholder="currentIntent?.formPlaceholders?.keyPoints || 'e.g., Main arguments, examples, takeaways...'"
-          rows="3"
-          @input="handleEmbeddedFieldChange"
-        ></textarea>
-      </div>
-
-      <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.audience || 'Target Audience (Optional)' }}</label>
-        <input
-          v-model="audience"
-          type="text"
-          class="gmkb-embedded-input"
-          :placeholder="currentIntent?.formPlaceholders?.audience || 'e.g., Startup founders, entrepreneurs'"
-          @input="handleEmbeddedFieldChange"
-        />
-      </div>
-    </div>
-
-    <!-- Results display for embedded mode -->
-    <div v-if="generatedContent" class="gmkb-embedded-result">
-      <div class="gmkb-embedded-result__content">
-        {{ generatedContent }}
-      </div>
-    </div>
-
-    <!-- Error display -->
-    <div v-if="error" class="gmkb-embedded-error">
-      {{ error }}
-    </div>
-  </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, inject } from 'vue';
+import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
 import { useAIGenerator } from '../../src/composables/useAIGenerator';
+import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 
 // Compact widget components (integrated mode)
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
@@ -325,7 +276,7 @@ const props = defineProps({
   mode: {
     type: String,
     default: 'default',
-    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
+    validator: (v) => ['default', 'integrated'].includes(v)
   },
 
   /**
@@ -368,6 +319,18 @@ const {
   generate,
   copyToClipboard
 } = useAIGenerator('blog');
+
+// Generator history for UX enhancement
+const {
+  history,
+  hasHistory,
+  addToHistory,
+  removeFromHistory,
+  clearHistory,
+  formatTimestamp
+} = useGeneratorHistory('blog');
+
+const showHistory = ref(false);
 
 // Local state for form fields
 const topic = ref('');
@@ -418,6 +381,25 @@ const examples = [
  */
 const canGenerate = computed(() => {
   return topic.value.trim() && keyPoints.value.trim();
+});
+
+/**
+ * Form completion tracking for UX enhancement
+ */
+const formCompletion = computed(() => {
+  const fields = [
+    { name: 'Blog Topic', filled: !!topic.value.trim() },
+    { name: 'Key Points', filled: !!keyPoints.value.trim() },
+    { name: 'Target Audience', filled: !!audience.value.trim() }
+  ];
+  const filledCount = fields.filter(f => f.filled).length;
+  return {
+    fields,
+    filledCount,
+    totalCount: fields.length,
+    percentage: Math.round((filledCount / fields.length) * 100),
+    isComplete: canGenerate.value
+  };
 });
 
 /**
@@ -513,24 +495,14 @@ const canGenerateEmbedded = computed(() => {
 });
 
 /**
- * Handle field change in embedded mode
+ * Keyboard shortcut handler for Ctrl/Cmd + Enter
  */
-const handleEmbeddedFieldChange = () => {
-  if (props.mode === 'embedded') {
-    emit('change', {
-      topic: topic.value,
-      keyPoints: keyPoints.value,
-      audience: audience.value
-    });
-
-    emit('preview-update', {
-      previewHtml: embeddedPreviewText.value,
-      fields: {
-        topic: topic.value,
-        keyPoints: keyPoints.value,
-        audience: audience.value
-      }
-    });
+const handleKeyboardShortcut = (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    if (canGenerate.value && !isGenerating.value) {
+      event.preventDefault();
+      handleGenerate();
+    }
   }
 };
 
@@ -554,6 +526,21 @@ const handleGenerate = async () => {
       tone: tone.value,
       length: length.value
     });
+
+    // Save to history on success
+    if (generatedContent.value) {
+      addToHistory({
+        inputs: {
+          topic: topic.value,
+          keyPoints: keyPoints.value,
+          audience: audience.value,
+          tone: tone.value,
+          length: length.value
+        },
+        results: [{ text: generatedContent.value }],
+        preview: generatedContent.value.substring(0, 50) || 'Generated blog post'
+      });
+    }
   } catch (err) {
     console.error('[BlogGenerator] Generation failed:', err);
   }
@@ -592,62 +579,17 @@ function populateFromProfile(profileData) {
   if (profileData.blog_length) length.value = profileData.blog_length;
 }
 
-/**
- * Watch for field changes in embedded mode and emit preview updates
- */
-watch(
-  () => [topic.value, keyPoints.value, audience.value],
-  () => {
-    if (props.mode === 'embedded') {
-      emit('preview-update', {
-        previewHtml: embeddedPreviewText.value,
-        fields: {
-          topic: topic.value,
-          keyPoints: keyPoints.value,
-          audience: audience.value
-        }
-      });
-    }
-  },
-  { deep: true }
-);
+// Initialize on mount
+onMounted(() => {
+  // Add keyboard shortcut listener
+  window.addEventListener('keydown', handleKeyboardShortcut);
+});
 
-/**
- * Watch for profileData prop changes (embedded mode with EmbeddedToolWrapper)
- * Pre-populates form fields when profile data is provided
- */
-watch(
-  () => props.profileData,
-  (newData) => {
-    if (newData && props.mode === 'embedded') {
-      populateFromProfile(newData);
-    }
-  },
-  { immediate: true }
-);
+// Cleanup on unmount
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyboardShortcut);
+});
 
-/**
- * Watch for injected profile data from EmbeddedToolWrapper (embedded mode)
- * This is the primary reactive source for profile changes in embedded mode
- */
-watch(
-  injectedProfileData,
-  (newData) => {
-    if (newData && props.mode === 'embedded') {
-      populateFromProfile(newData);
-    }
-  },
-  { immediate: true }
-);
-
-/**
- * Emit can-generate status changes to parent (for embedded mode)
- */
-watch(canGenerateEmbedded, (newValue) => {
-  if (props.mode === 'embedded') {
-    emit('update:can-generate', !!newValue);
-  }
-}, { immediate: true });
 </script>
 
 <style scoped>
@@ -732,80 +674,4 @@ watch(canGenerateEmbedded, (newValue) => {
   gap: var(--mkcg-space-sm, 12px);
 }
 
-/* Embedded Mode Styles (for landing page) */
-.gmkb-embedded-form {
-  width: 100%;
-}
-
-.gmkb-embedded-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.gmkb-embedded-field {
-  display: flex;
-  flex-direction: column;
-}
-
-.gmkb-embedded-label {
-  display: block;
-  font-weight: 600;
-  font-size: 13px;
-  margin-bottom: 8px;
-  color: var(--mkcg-text-primary, #0f172a);
-}
-
-.gmkb-embedded-input {
-  width: 100%;
-  padding: 14px;
-  border: 1px solid var(--mkcg-border, #e2e8f0);
-  border-radius: 8px;
-  background: var(--mkcg-bg-secondary, #f9fafb);
-  box-sizing: border-box;
-  font-size: 15px;
-  font-family: inherit;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.gmkb-embedded-input:focus {
-  outline: none;
-  border-color: var(--mkcg-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.gmkb-embedded-input::placeholder {
-  color: var(--mkcg-text-light, #94a3b8);
-}
-
-.gmkb-embedded-textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.gmkb-embedded-result {
-  margin-top: 20px;
-  padding: 16px;
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-  border: 1px solid #86efac;
-  border-radius: 8px;
-}
-
-.gmkb-embedded-result__content {
-  font-size: 15px;
-  line-height: 1.6;
-  color: #166534;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-
-.gmkb-embedded-error {
-  margin-top: 16px;
-  padding: 12px 16px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  color: #991b1b;
-  font-size: 14px;
-}
 </style>

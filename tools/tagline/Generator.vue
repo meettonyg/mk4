@@ -636,43 +636,10 @@
     </template>
   </AiWidgetFrame>
 
-  <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
-  <div v-else class="gmkb-embedded-form">
-    <div class="gmkb-embedded-fields">
-      <!-- Intent Selection -->
-      <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">Tagline Type</label>
-        <select v-model="intent" class="gmkb-embedded-input">
-          <option v-for="opt in INTENT_OPTIONS" :key="opt.value" :value="opt.value">
-            {{ opt.label }}
-          </option>
-        </select>
-      </div>
-      <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.who || 'Who do you help?' }} *</label>
-        <input
-          v-model="authorityHook.who"
-          type="text"
-          class="gmkb-embedded-input"
-          :placeholder="currentIntent?.formPlaceholders?.who || 'e.g., SaaS Founders, Executives'"
-        />
-      </div>
-      <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.what || 'What do they achieve?' }} *</label>
-        <input
-          v-model="authorityHook.what"
-          type="text"
-          class="gmkb-embedded-input"
-          :placeholder="currentIntent?.formPlaceholders?.what || 'e.g., Scale to 7-figures, Work-life balance'"
-        />
-      </div>
-    </div>
-    <div v-if="error" class="gmkb-embedded-error">{{ error }}</div>
-  </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, inject } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useAITagline, STYLE_FOCUS_OPTIONS, TONE_OPTIONS, INTENT_OPTIONS } from '../../src/composables/useAITagline';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
@@ -686,19 +653,16 @@ import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ImpactIntroBuilder, ProfileContextBanner, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
-
-// Inject profile data from EmbeddedToolWrapper (for embedded mode)
-const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ImpactIntroBuilder, ProfileContextBanner } from '../_shared';
 
 const props = defineProps({
   /**
-   * Mode: 'default', 'integrated', or 'embedded'
+   * Mode: 'default' or 'integrated'
    */
   mode: {
     type: String,
     default: 'default',
-    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
+    validator: (v) => ['default', 'integrated'].includes(v)
   },
 
   /**
@@ -707,20 +671,10 @@ const props = defineProps({
   componentId: {
     type: String,
     default: null
-  },
-
-  intent: {
-    type: Object,
-    default: null
-  },
-
-  profileData: {
-    type: Object,
-    default: null
   }
 });
 
-const emit = defineEmits(['applied', 'generated', 'preview-update', 'update:can-generate']);
+const emit = defineEmits(['applied', 'generated']);
 
 // Use composables - destructure all needed state from composable
 const {
@@ -1176,12 +1130,6 @@ const handleKeyboardShortcut = (event) => {
 onMounted(() => {
   syncFromStore();
 
-  // Load from injected or prop profile data. Props take precedence.
-  const profileToLoad = props.profileData || injectedProfileData.value;
-  if (profileToLoad) {
-    populateFromProfile(profileToLoad);
-  }
-
   // Check for saved draft (only in standalone mode)
   if (props.mode === 'default' && hasDraft.value) {
     showDraftPrompt.value = true;
@@ -1203,58 +1151,6 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyboardShortcut);
 });
 
-/**
- * Watch for injected profile data from EmbeddedToolWrapper
- */
-watch(
-  injectedProfileData,
-  (newData) => {
-    if (newData) {
-      populateFromProfile(newData);
-    }
-  },
-  { immediate: true }
-);
-
-const currentIntent = computed(() => {
-  const found = INTENT_OPTIONS.find(opt => opt.value === intent.value);
-  return found || props.intent || null;
-});
-
-const embeddedPreviewText = computed(() => {
-  if (!authorityHook.who && !authorityHook.what) return null;
-  const whoText = authorityHook.who || 'your audience';
-  const whatText = authorityHook.what || 'achieve their goals';
-  return `<strong>Professional tagline</strong> for helping <strong>${whoText}</strong> ${whatText}`;
-});
-
-watch(
-  () => props.profileData,
-  (newData) => {
-    if (newData && props.mode === 'embedded') {
-      populateFromProfile(newData);
-    }
-  },
-  { immediate: true }
-);
-
-watch(
-  [() => authorityHook.who, () => authorityHook.what],
-  () => {
-    if (props.mode === 'embedded') {
-      emit('preview-update', {
-        previewHtml: embeddedPreviewText.value,
-        fields: { who: authorityHook.who, what: authorityHook.what }
-      });
-    }
-  }
-);
-
-watch(canGenerate, (newValue) => {
-  if (props.mode === 'embedded') {
-    emit('update:can-generate', !!newValue);
-  }
-}, { immediate: true });
 </script>
 
 <style scoped>
@@ -1761,17 +1657,6 @@ watch(canGenerate, (newValue) => {
   font-size: 13px;
   color: var(--gmkb-ai-text-secondary, #64748b);
 }
-
-/* Embedded Mode Styles (for landing page) */
-.gmkb-embedded-form { width: 100%; }
-.gmkb-embedded-fields { display: flex; flex-direction: column; gap: 20px; }
-.gmkb-embedded-field { display: flex; flex-direction: column; }
-.gmkb-embedded-label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 8px; color: var(--mkcg-text-primary, #0f172a); }
-.gmkb-embedded-input { width: 100%; padding: 14px; border: 1px solid var(--mkcg-border, #e2e8f0); border-radius: 8px; background: var(--mkcg-bg-secondary, #f9fafb); box-sizing: border-box; font-size: 15px; font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s; }
-.gmkb-embedded-input:focus { outline: none; border-color: var(--mkcg-primary, #3b82f6); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-.gmkb-embedded-input::placeholder { color: var(--mkcg-text-light, #94a3b8); }
-.gmkb-embedded-textarea { resize: vertical; min-height: 80px; }
-.gmkb-embedded-error { margin-top: 16px; padding: 12px 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #991b1b; font-size: 14px; }
 
 /* Draft Restore Prompt */
 .draft-restore-prompt {
