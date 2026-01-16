@@ -118,33 +118,6 @@
     <!-- Left Panel: Form -->
     <template #left>
       <div class="gmkb-plg-tool-embed">
-        <!-- Welcome Section (shown when form is empty) -->
-        <div v-if="!authorityHook.who && !authorityHook.what && !hasTaglines" class="gfy-welcome-section">
-          <div class="gfy-welcome-section__icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-            </svg>
-          </div>
-          <h3 class="gfy-welcome-section__title">Create Your Perfect Tagline</h3>
-          <p class="gfy-welcome-section__text">
-            Distill your expertise into a memorable, powerful statement that captures your unique value.
-          </p>
-          <div class="gfy-welcome-section__tips">
-            <span class="gfy-welcome-section__tip">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-              10 unique options
-            </span>
-            <span class="gfy-welcome-section__tip">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-              Ctrl+Enter to generate
-            </span>
-            <span class="gfy-welcome-section__tip">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-              Save to profile
-            </span>
-          </div>
-        </div>
-
         <!-- Form Progress Indicator -->
         <div class="gfy-form-progress" :class="{ 'gfy-form-progress--complete': formCompletion.isComplete }">
           <div class="gfy-form-progress__header">

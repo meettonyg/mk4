@@ -147,33 +147,6 @@
           </div>
         </div>
 
-        <!-- Welcome Section (shown when form is empty) -->
-        <div v-if="!services && !authorityHook.who" class="gfy-welcome-section">
-          <div class="gfy-welcome-section__icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-            </svg>
-          </div>
-          <h3 class="gfy-welcome-section__title">Generate Service Packages</h3>
-          <p class="gfy-welcome-section__text">
-            Tell us about your services and we'll create 3 tiered packages (Entry, Signature, Premium) to help you serve clients at every level.
-          </p>
-          <div class="gfy-welcome-section__tips">
-            <span class="gfy-welcome-section__tip">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-              3 tiered packages
-            </span>
-            <span class="gfy-welcome-section__tip">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-              Deliverables included
-            </span>
-            <span class="gfy-welcome-section__tip">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-              Ctrl+Enter to generate
-            </span>
-          </div>
-        </div>
-
         <!-- Form Completion Indicator -->
         <div class="gfy-form-progress" :class="{ 'gfy-form-progress--complete': formCompletion.isComplete }">
           <div class="gfy-form-progress__header">

@@ -147,35 +147,6 @@
           </div>
         </div>
 
-        <!-- Welcome Section (shown when no topic selected) -->
-        <div v-if="!refinedTopic && selectedTopicIndex === -1" class="gfy-welcome-section">
-          <div class="gfy-welcome-section__icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-              <line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-          </div>
-          <h3 class="gfy-welcome-section__title">Generate Interview Questions</h3>
-          <p class="gfy-welcome-section__text">
-            Select a topic and we'll create 10 thought-provoking interview questions that showcase your expertise.
-          </p>
-          <div class="gfy-welcome-section__tips">
-            <span class="gfy-welcome-section__tip">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-              10 unique questions
-            </span>
-            <span class="gfy-welcome-section__tip">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-              Authority-focused
-            </span>
-            <span class="gfy-welcome-section__tip">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-              Ctrl+Enter to generate
-            </span>
-          </div>
-        </div>
-
         <!-- Form Completion Indicator -->
         <div class="gfy-form-progress" :class="{ 'gfy-form-progress--complete': formCompletion.isComplete }">
           <div class="gfy-form-progress__header">

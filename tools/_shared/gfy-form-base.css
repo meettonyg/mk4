@@ -448,58 +448,6 @@
 }
 
 /* ============================================================================
-   WELCOME SECTION - Empty State
-   ============================================================================ */
-
-.gfy-welcome-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 40px 24px;
-  text-align: center;
-  background: var(--mkcg-bg-secondary, #f9fafb);
-  border-radius: 12px;
-  margin-bottom: 24px;
-}
-
-.gfy-welcome-section__icon {
-  color: var(--mkcg-primary, #3b82f6);
-  margin-bottom: 16px;
-  opacity: 0.8;
-}
-
-.gfy-welcome-section__title {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--mkcg-text-primary, #0f172a);
-  margin: 0 0 8px 0;
-}
-
-.gfy-welcome-section__text {
-  font-size: 14px;
-  color: var(--mkcg-text-secondary, #64748b);
-  margin: 0 0 16px 0;
-  max-width: 400px;
-  line-height: 1.5;
-}
-
-.gfy-welcome-section__tips {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.gfy-welcome-section__tip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: #16a34a;
-  font-weight: 500;
-}
-
-/* ============================================================================
    FORM PROGRESS INDICATOR
    ============================================================================ */
 
