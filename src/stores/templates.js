@@ -13,6 +13,7 @@ import { useMediaKitStore } from './mediaKit';
 import { useThemeStore } from './theme';
 import { useUIStore } from './ui';
 import { mergeWithDefaults } from '../utils/componentSchema';
+import profileDataIntegration from '../core/ProfileDataIntegration.js';
 
 export const useTemplateStore = defineStore('templates', {
     state: () => ({
@@ -315,6 +316,13 @@ export const useTemplateStore = defineStore('templates', {
                                 const compId = this._generateId('comp');
                                 section.components.push(compId);
 
+                                // CARRD-LIKE UX: Merge template data with profile data
+                                // This personalizes templates with user's existing data
+                                const mergedData = this._mergeWithProfileData(
+                                    compDef.type,
+                                    compDef.data || {}
+                                );
+
                                 // ROOT FIX: Merge template settings with DEFAULT_SETTINGS
                                 // This ensures components have proper style/advanced structure
                                 mediaKitStore.components[compId] = {
@@ -322,7 +330,7 @@ export const useTemplateStore = defineStore('templates', {
                                     type: compDef.type,
                                     section_id: sectionId,
                                     settings: mergeWithDefaults(compDef.settings || {}),
-                                    data: compDef.data || {},
+                                    data: mergedData,
                                     customization: {}
                                 };
                             }
@@ -347,6 +355,13 @@ export const useTemplateStore = defineStore('templates', {
                                     const compId = this._generateId('comp');
                                     section.columns[colNum].push(compId);
 
+                                    // CARRD-LIKE UX: Merge template data with profile data
+                                    // This personalizes templates with user's existing data
+                                    const mergedData = this._mergeWithProfileData(
+                                        compDef.type,
+                                        compDef.data || {}
+                                    );
+
                                     // ROOT FIX: Merge template settings with DEFAULT_SETTINGS
                                     // This ensures components have proper style/advanced structure
                                     mediaKitStore.components[compId] = {
@@ -355,7 +370,7 @@ export const useTemplateStore = defineStore('templates', {
                                         section_id: sectionId,
                                         column: parseInt(colNum),
                                         settings: mergeWithDefaults(compDef.settings || {}),
-                                        data: compDef.data || {},
+                                        data: mergedData,
                                         customization: {}
                                     };
                                 }
@@ -544,6 +559,44 @@ export const useTemplateStore = defineStore('templates', {
          */
         _generateId(prefix) {
             return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        },
+
+        /**
+         * CARRD-LIKE UX: Merge profile data with template placeholder data
+         * Profile data takes precedence over template placeholders
+         * This creates a personalized starting point for new templates
+         *
+         * @param {string} componentType - The component type
+         * @param {Object} templateData - Original template data
+         * @returns {Object} Merged data with profile values
+         */
+        _mergeWithProfileData(componentType, templateData) {
+            // Get pre-populated data from user's profile
+            const profileData = profileDataIntegration.getPrePopulatedData(componentType);
+
+            // If no profile data, return template data as-is
+            if (!profileData || Object.keys(profileData).length === 0) {
+                return templateData;
+            }
+
+            // Merge: profile data overwrites template placeholders
+            // But only for fields that have actual values
+            const merged = { ...templateData };
+
+            for (const [key, value] of Object.entries(profileData)) {
+                // Only merge non-empty values
+                if (value !== null && value !== undefined && value !== '') {
+                    // For arrays, only merge if we have actual items
+                    if (Array.isArray(value) && value.length > 0) {
+                        merged[key] = value;
+                    } else if (!Array.isArray(value)) {
+                        merged[key] = value;
+                    }
+                }
+            }
+
+            console.log(`🔄 Merged profile data for ${componentType}:`, merged);
+            return merged;
         },
 
         /**

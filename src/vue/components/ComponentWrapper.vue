@@ -9,6 +9,17 @@
     @mouseenter="onMouseEnter"
     @mouseleave="onMouseLeave"
   >
+    <!-- Click-to-edit hint (Carrd-like UX) -->
+    <Transition name="fade">
+      <div
+        v-if="showEditHint"
+        class="edit-hint"
+        @click.stop="handleEditClick"
+      >
+        <span class="edit-hint-text">Click to edit</span>
+      </div>
+    </Transition>
+
     <!-- Single unified control system -->
     <!-- ROOT FIX: Use actualComponent computed for null safety -->
     <ComponentControls
@@ -210,6 +221,29 @@ const showControlsComputed = computed(() => {
   }
 })
 
+// Show edit hint on hover (subtle Carrd-like prompt)
+const showEditHint = computed(() => {
+  try {
+    // Only show in edit mode, not in preview
+    if (uiStore.previewMode) return false;
+    if (!props.showControls) return false;
+
+    // Show on hover but not when already selected/editing
+    return isHovered.value && !isSelected.value && !isEditing.value;
+  } catch (error) {
+    return false;
+  }
+})
+
+// Handle clicking the edit hint
+function handleEditClick() {
+  const id = props.componentId || props.component?.id;
+  if (id) {
+    store.selectComponent(id);
+    emit('edit', id);
+  }
+}
+
 // ROOT FIX: Custom CSS ID from settings
 const customId = computed(() => {
   try {
@@ -376,5 +410,49 @@ function onMouseLeave(event) {
 
 .placeholder-icon {
   font-size: 24px;
+}
+
+/* Edit Hint (Carrd-like UX) */
+.edit-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.edit-hint-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: rgba(99, 102, 241, 0.95);
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.edit-hint:hover .edit-hint-text {
+  background: rgba(79, 70, 229, 1);
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.5);
+}
+
+/* Fade transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.9);
 }
 </style>

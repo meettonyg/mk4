@@ -53,9 +53,12 @@
           v-for="theme in group.themes"
           :key="theme.id"
           @click="selectTheme(theme.id)"
+          @mouseenter="previewTheme(theme.id)"
+          @mouseleave="clearPreview"
           class="theme-card"
           :class="{
             active: theme.id === activeThemeId,
+            previewing: theme.id === previewingThemeId,
             'is-new': theme.metadata?.is_new,
             'is-premium': theme.metadata?.is_premium
           }"
@@ -113,6 +116,11 @@ const mediaKitStore = useMediaKitStore();
 // Filter state
 const activeAudienceFilter = ref('all');
 const activeStyleFilter = ref('all');
+
+// Preview state for hover preview (Carrd-like UX)
+const previewingThemeId = ref(null);
+const originalThemeId = ref(null);
+let previewTimeout = null;
 
 // Audience filter options
 const audienceFilters = [
@@ -201,9 +209,53 @@ function getPreviewStyle(theme) {
 }
 
 function selectTheme(themeId) {
+  // Clear any pending preview
+  clearPreview();
+  previewingThemeId.value = null;
+  originalThemeId.value = null;
+
   themeStore.selectTheme(themeId);
   mediaKitStore.theme = themeId;
   mediaKitStore._trackChange();
+}
+
+// CARRD-LIKE UX: Preview theme on hover
+function previewTheme(themeId) {
+  // Don't preview if already the active theme
+  if (themeId === activeThemeId.value) return;
+
+  // Store original theme for restoration
+  if (originalThemeId.value === null) {
+    originalThemeId.value = activeThemeId.value;
+  }
+
+  // Clear any pending preview timeout
+  if (previewTimeout) {
+    clearTimeout(previewTimeout);
+  }
+
+  // Small delay before preview to avoid flickering on fast mouse movements
+  previewTimeout = setTimeout(() => {
+    previewingThemeId.value = themeId;
+    // Apply theme preview without tracking change
+    themeStore.previewTheme(themeId);
+  }, 150);
+}
+
+// Clear theme preview and restore original
+function clearPreview() {
+  if (previewTimeout) {
+    clearTimeout(previewTimeout);
+    previewTimeout = null;
+  }
+
+  if (originalThemeId.value !== null && previewingThemeId.value !== null) {
+    // Restore original theme
+    themeStore.selectTheme(originalThemeId.value);
+  }
+
+  previewingThemeId.value = null;
+  originalThemeId.value = null;
 }
 
 function resetFilters() {
@@ -349,6 +401,30 @@ body.dark-mode .theme-card {
 
 body.dark-mode .theme-card.active {
   background: rgba(59, 130, 246, 0.1);
+}
+
+/* Previewing state (hover preview - Carrd-like UX) */
+.theme-card.previewing {
+  border-color: #8b5cf6;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.25);
+}
+
+.theme-card.previewing::after {
+  content: 'Previewing';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 8px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  background: #8b5cf6;
+  border-radius: 12px;
+  white-space: nowrap;
+  z-index: 10;
 }
 
 /* Badges */
