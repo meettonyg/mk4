@@ -1826,6 +1826,159 @@ defineExpose({
     align-items: flex-start;
     gap: 0.5rem;
   }
+
+  /* Action buttons wrap on mobile */
+  .gfy-results__actions {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .gfy-results__actions .gfy-btn {
+    flex: 1 1 auto;
+    min-width: 120px;
+  }
+
+  /* Save section stacks on mobile */
+  .gfy-save-section {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .gfy-save-section .gfy-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Cross-tool navigation stacks */
+  .gfy-cross-tool-nav {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .gfy-cross-tool-nav__link {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Welcome section adjustments */
+  .gfy-welcome-section {
+    padding: 1.5rem 1rem;
+  }
+
+  .gfy-welcome-section__icon {
+    width: 56px;
+    height: 56px;
+  }
+
+  .gfy-welcome-section__title {
+    font-size: 1.125rem;
+  }
+
+  .gfy-welcome-section__text {
+    font-size: 0.875rem;
+  }
+
+  /* Topic cards touch-friendly */
+  .gfy-topic-card {
+    padding: 0.875rem;
+  }
+
+  .gfy-topic-card__title {
+    font-size: 0.875rem;
+  }
+
+  /* Topic rows touch-friendly */
+  .gfy-topic-row {
+    padding: 0.75rem;
+  }
+
+  /* Current topics section */
+  .gfy-current-topics {
+    padding: 1rem;
+  }
+
+  .gfy-current-topic {
+    padding: 0.625rem 0.75rem;
+  }
+
+  .gfy-current-topics__summary {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  /* Draft prompt stacks */
+  .gfy-draft-prompt__actions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .gfy-draft-prompt__actions .gfy-btn {
+    flex: 1;
+  }
+
+  /* Skeleton grid single column */
+  .gfy-skeleton-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Results title smaller */
+  .gfy-results__title {
+    font-size: 1.125rem;
+  }
+
+  /* Form progress compact */
+  .gfy-form-progress {
+    padding: 10px 12px;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .gfy-topic-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .gfy-topic-card__actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .gfy-topic-card__number {
+    width: 24px;
+    height: 24px;
+    font-size: 0.75rem;
+  }
+
+  .gfy-results__actions {
+    gap: 0.5rem;
+  }
+
+  .gfy-results__actions .gfy-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .gfy-view-toggle {
+    display: none;
+  }
+
+  .gfy-btn--large {
+    padding: 0.75rem 1rem;
+    font-size: 0.9375rem;
+  }
+
+  .gfy-welcome-section__tips {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .gfy-cross-tool-nav__link {
+    padding: 8px 12px;
+    font-size: 0.8125rem;
+  }
 }
 
 /* ===========================================

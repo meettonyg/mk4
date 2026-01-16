@@ -2284,4 +2284,182 @@ watch(canGenerate, (newValue) => {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+/* ===========================================
+   MOBILE RESPONSIVE STYLES
+   =========================================== */
+@media (max-width: 768px) {
+  /* Results layout padding */
+  .questions-results__layout {
+    padding: 20px;
+  }
+
+  /* Results header stacks on mobile */
+  .questions-results__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .questions-results__title-row {
+    margin-bottom: 0.5rem;
+  }
+
+  .questions-results__title {
+    font-size: 1.125rem;
+  }
+
+  /* Action buttons wrap */
+  .questions-results__actions {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .questions-results__actions .generator__button {
+    flex: 1 1 auto;
+    min-width: 100px;
+    justify-content: center;
+  }
+
+  /* Selection banner stacks */
+  .questions-selection-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  /* Questions row adjustments */
+  .questions-row {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .questions-row__text {
+    font-size: 13px;
+  }
+
+  /* Footer stacks on mobile */
+  .questions-results__footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .questions-results__save-area {
+    width: 100%;
+  }
+
+  .questions-results__save-area .generator__button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Interview set sidebar */
+  .questions-interview-set {
+    padding: 1rem;
+  }
+
+  .questions-interview-set__summary {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  /* Welcome section */
+  .gfy-welcome-section {
+    padding: 1.5rem 1rem;
+  }
+
+  .gfy-welcome-section__icon {
+    width: 56px;
+    height: 56px;
+  }
+
+  .gfy-welcome-section__title {
+    font-size: 1.125rem;
+  }
+
+  .gfy-welcome-section__text {
+    font-size: 0.875rem;
+  }
+
+  /* Form progress compact */
+  .gfy-form-progress {
+    padding: 10px 12px;
+  }
+
+  /* Draft prompt */
+  .gfy-draft-prompt__actions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  /* Cross-tool navigation */
+  .gfy-cross-tool-nav__links {
+    flex-direction: column;
+  }
+
+  .gfy-cross-tool-nav__link {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .questions-results__layout {
+    padding: 16px;
+  }
+
+  .questions-results__actions {
+    gap: 6px;
+  }
+
+  .questions-results__actions .generator__button {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .questions-results__actions .questions-action-btn {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .questions-row {
+    flex-wrap: wrap;
+  }
+
+  .questions-row__checkbox {
+    order: -1;
+  }
+
+  .questions-copy-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .questions-interview-slot {
+    padding: 8px 10px;
+  }
+
+  .questions-interview-slot__text {
+    font-size: 11px;
+  }
+
+  .generator__button--large {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+
+  .gfy-welcome-section__tips {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .questions-topic-card {
+    padding: 12px;
+  }
+
+  .questions-topic-card__text {
+    font-size: 12px;
+  }
+}
 </style>
