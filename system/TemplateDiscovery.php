@@ -20,6 +20,7 @@ class TemplateDiscovery {
     private $templates_dir;
     private $templates = array();
     private $cache_key = 'gmkb_starter_templates_cache';
+    private $manifest_cache_key = 'gmkb_filter_manifest_cache';
     private $cache_duration = 3600; // 1 hour
 
     /**
@@ -201,9 +202,20 @@ class TemplateDiscovery {
      * - layout_variants: Array of unique layout variants across all templates
      * - manifest: Nested map of Persona -> Use Cases -> Layout Variants
      *
+     * Results are cached for performance (same duration as template cache).
+     *
+     * @param bool $force_fresh Force fresh build without cache
      * @return array Filter manifest for frontend consumption
      */
-    public function getFilterManifest() {
+    public function getFilterManifest($force_fresh = false) {
+        // Try cache first unless forced fresh
+        if (!$force_fresh) {
+            $cached_manifest = get_transient($this->manifest_cache_key);
+            if ($cached_manifest !== false) {
+                return $cached_manifest;
+            }
+        }
+
         $templates = $this->getTemplates();
 
         $personas = array();
@@ -254,19 +266,25 @@ class TemplateDiscovery {
         sort($use_cases);
         sort($layout_variants);
 
-        return array(
+        $result = array(
             'personas' => array_values($personas),
             'use_cases' => $use_cases,
             'layout_variants' => $layout_variants,
             'manifest' => $manifest
         );
+
+        // Cache the result
+        set_transient($this->manifest_cache_key, $result, $this->cache_duration);
+
+        return $result;
     }
 
     /**
-     * Clear template cache
+     * Clear template cache (includes filter manifest cache)
      */
     public function clearCache() {
         delete_transient($this->cache_key);
+        delete_transient($this->manifest_cache_key);
     }
 
     /**
