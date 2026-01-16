@@ -82,17 +82,17 @@
   <div v-else class="gfy-intro-generator">
     <!-- Phase 1: Input Form -->
     <div v-if="!showResults" class="gfy-intro-form">
-      <!-- Hero Section (only show in default mode, not when embedded in landing page) -->
-      <div v-if="mode === 'default'" class="gfy-intro-hero">
+      <!-- Hero Section (only show when not inside wrapper) -->
+      <div v-if="mode === 'default' && !isEmbedded" class="gfy-intro-hero">
         <h1 class="gfy-intro-hero__title">Guest Introduction Generator</h1>
         <p class="gfy-intro-hero__subtitle">
           Create compelling introductions designed to be read aloud by podcast hosts or event MCs using the Authority Hook and Impact Intro frameworks.
         </p>
       </div>
 
-      <!-- Profile Context Banner (standalone mode) -->
+      <!-- Profile Context Banner (only when not inside wrapper) -->
       <ProfileContextBanner
-        v-if="mode === 'default' && isLoggedIn"
+        v-if="mode === 'default' && !isEmbedded && isLoggedIn"
         :profiles="profiles"
         :selected-profile-id="selectedProfileId"
         :is-loading="isLoadingProfiles"
@@ -123,8 +123,8 @@
         <i class="fas fa-save"></i> Saving draft...
       </div>
 
-      <!-- Form Container -->
-      <div class="gfy-intro-form__container" :class="{ 'gfy-intro-form__container--embedded': mode === 'embedded' }">
+      <!-- Form Container (no styling when inside wrapper) -->
+      <div class="gfy-intro-form__container" :class="{ 'gfy-intro-form__container--no-chrome': isEmbedded }">
         <!-- STEP 1: Guest & Episode Information -->
         <div class="gfy-form-section">
           <div class="gfy-form-section__header">
@@ -534,11 +534,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, inject, onMounted } from 'vue';
+import { ref, reactive, computed, watch, inject, onMounted, onUnmounted } from 'vue';
+import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 import { useDraftState } from '../../src/composables/useDraftState';
-import { EMBEDDED_PROFILE_DATA_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileContextBanner } from '../_shared';
+import { EMBEDDED_PROFILE_DATA_KEY, IS_EMBEDDED_CONTEXT_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileContextBanner } from '../_shared';
 
 // Integrated mode components
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
@@ -570,12 +571,14 @@ const HOOK_STYLE_OPTIONS = [
   { value: 'direct', label: 'Direct Introduction' }
 ];
 
+// Auto-detect if we're inside EmbeddedToolWrapper
+const isEmbedded = inject(IS_EMBEDDED_CONTEXT_KEY, false);
+
 const props = defineProps({
   mode: {
     type: String,
     default: 'default',
-    // 'embedded' mode is used by EmbeddedToolWrapper and renders like 'default' but without hero/button
-    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
+    validator: (v) => ['default', 'integrated'].includes(v)
   },
   intent: {
     type: Object,
@@ -627,6 +630,18 @@ const {
   startAutoSave,
   getLastSavedText
 } = useDraftState('guest-intro');
+
+// Generator history for UX enhancements
+const {
+  history,
+  hasHistory,
+  addToHistory,
+  removeFromHistory,
+  clearHistory,
+  formatTimestamp
+} = useGeneratorHistory('guest-intro');
+
+const showHistory = ref(false);
 
 // Prefilled fields tracking
 const prefilledFields = ref(new Set());
@@ -726,6 +741,38 @@ const currentIntro = computed(() => {
   return slot?.lockedIntro || (slot?.variations[0]?.text || null);
 });
 
+// Form completion tracking for UX
+const formCompletion = computed(() => {
+  const fields = [
+    { name: 'guestName', filled: !!guestInfo.name.trim(), required: true },
+    { name: 'titleCompany', filled: !!guestInfo.titleCompany.trim(), required: false },
+    { name: 'who', filled: !!authorityHook.who.trim(), required: false },
+    { name: 'what', filled: !!authorityHook.what.trim(), required: false },
+    { name: 'when', filled: !!authorityHook.when.trim(), required: false },
+    { name: 'how', filled: !!authorityHook.how.trim(), required: false },
+    { name: 'where', filled: !!impactIntro.where.trim(), required: false },
+    { name: 'why', filled: !!impactIntro.why.trim(), required: false }
+  ];
+  const filledCount = fields.filter(f => f.filled).length;
+  const totalCount = fields.length;
+  return {
+    fields,
+    filledCount,
+    totalCount,
+    percentage: Math.round((filledCount / totalCount) * 100)
+  };
+});
+
+// Keyboard shortcut handler
+const handleKeyboardShortcut = (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    if (canGenerate.value && !isGenerating.value) {
+      event.preventDefault();
+      handleStartGeneration();
+    }
+  }
+};
+
 // Helper functions
 function getVariationCount(slotName) {
   return slotName === 'short' ? 2 : slotName === 'medium' ? 3 : 2;
@@ -798,6 +845,25 @@ async function generateForSlot(slotName) {
     }));
 
     slot.status = SLOT_STATUS.READY;
+
+    // Save to history on success
+    if (slot.variations.length > 0) {
+      addToHistory({
+        input: {
+          guestName: guestInfo.name,
+          titleCompany: guestInfo.titleCompany,
+          who: authorityHook.who,
+          what: authorityHook.what,
+          length: slotName
+        },
+        output: slot.variations[0].text,
+        metadata: {
+          variationCount: slot.variations.length,
+          tone: tone.value,
+          hookStyle: hookStyle.value
+        }
+      });
+    }
 
     emit('generated', { slot: slotName, variations: slot.variations });
   } catch (err) {
@@ -1182,6 +1248,14 @@ onMounted(() => {
   if (props.mode === 'default') {
     startAutoSave(getDraftState);
   }
+
+  // Add keyboard shortcut listener
+  document.addEventListener('keydown', handleKeyboardShortcut);
+});
+
+// Cleanup on unmount
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeyboardShortcut);
 });
 
 // Expose for parent
@@ -1254,7 +1328,8 @@ defineExpose({
   padding: 40px;
 }
 
-.gfy-intro-form__container--embedded {
+/* Remove container styling when inside wrapper */
+.gfy-intro-form__container--no-chrome {
   background: transparent;
   border: none;
   border-radius: 0;

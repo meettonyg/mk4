@@ -337,7 +337,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject } from 'vue';
+import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
+import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 import { useAIImpactIntros } from '../../src/composables/useAIImpactIntros';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { useImpactIntro, CREDENTIAL_EXAMPLES } from '../../src/composables/useImpactIntro';
@@ -345,16 +346,16 @@ import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
 
 const props = defineProps({
   /**
-   * Mode: 'default', 'integrated', or 'embedded'
+   * Mode: 'default' or 'integrated'
    */
   mode: {
     type: String,
-    default: 'embedded',
-    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
+    default: 'default',
+    validator: (v) => ['default', 'integrated'].includes(v)
   },
 
   /**
-   * Profile data for pre-population (embedded mode)
+   * Profile data for pre-population
    */
   profileData: {
     type: Object,
@@ -391,6 +392,18 @@ const {
   setCredentials,
   selectAllCredentials
 } = useImpactIntro();
+
+// Generator history for UX enhancements
+const {
+  history,
+  hasHistory,
+  addToHistory,
+  removeFromHistory,
+  clearHistory,
+  formatTimestamp
+} = useGeneratorHistory('impact-intro');
+
+const showHistory = ref(false);
 
 // Inject profile data from parent (EmbeddedToolWrapper provides this)
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
@@ -451,6 +464,37 @@ const hasCurrentIntro = computed(() => {
 });
 
 /**
+ * Form completion tracking for UX
+ */
+const formCompletion = computed(() => {
+  const fields = [
+    { name: 'where', filled: !!(introWhere.value && introWhere.value.trim()), required: true },
+    { name: 'why', filled: !!(introWhy.value && introWhy.value.trim()), required: false },
+    { name: 'credentials', filled: credentials.value.length > 0, required: false }
+  ];
+  const filledCount = fields.filter(f => f.filled).length;
+  const totalCount = fields.length;
+  return {
+    fields,
+    filledCount,
+    totalCount,
+    percentage: Math.round((filledCount / totalCount) * 100)
+  };
+});
+
+/**
+ * Keyboard shortcut handler
+ */
+const handleKeyboardShortcut = (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    if (canGenerate.value && !isGenerating.value) {
+      event.preventDefault();
+      handleGenerate();
+    }
+  }
+};
+
+/**
  * Populate from profile data
  */
 function populateFromProfile(profileData) {
@@ -507,6 +551,21 @@ const handleGenerate = async () => {
       intro: firstIntro,
       content: firstIntro
     });
+
+    // Save to history on success
+    if (intros.value && intros.value.length > 0) {
+      addToHistory({
+        input: {
+          where: introWhere.value,
+          why: introWhy.value,
+          credentialsCount: credentials.value.length
+        },
+        output: firstIntro,
+        metadata: {
+          variationCount: intros.value.length
+        }
+      });
+    }
 
     return { intros: intros.value };
   } catch (err) {
@@ -665,6 +724,17 @@ const handleAddCredential = () => {
 const handleAddExample = (exampleText) => {
   addCredential(exampleText);
 };
+
+// Initialize on mount
+onMounted(() => {
+  // Add keyboard shortcut listener
+  document.addEventListener('keydown', handleKeyboardShortcut);
+});
+
+// Cleanup on unmount
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeyboardShortcut);
+});
 
 /**
  * Exposed for parent component (EmbeddedToolWrapper)

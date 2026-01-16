@@ -21,7 +21,6 @@
       register-url="/register/"
       :social-login-html="socialLoginHtml"
       @intent-change="handleIntentChange"
-      @generate="handleGenerate"
       @save-click="handleSaveClick"
       @gate-shown="handleGateShown"
       @gate-signup="handleGateSignup"
@@ -31,12 +30,10 @@
         <component
           :is="generatorComponent"
           ref="generator"
-          mode="embedded"
+          mode="default"
           :intent="currentIntent"
           :profile-data="profileData"
-          @preview-update="handlePreviewUpdate"
           @generated="handleGenerated"
-          @update:can-generate="handleCanGenerateUpdate"
           @authority-hook-update="handleAuthorityHookUpdate"
         />
       </template>
@@ -66,11 +63,13 @@ const emit = defineEmits(['generated', 'save-click', 'gate-shown', 'gate-signup'
 // State
 const currentIntent = ref(props.intents[0] || null);
 const previewContent = ref('');
-const isGenerating = ref(false);
-const canGenerate = ref(false);
 const hasGenerated = ref(false);
 const generator = ref(null);
 const authorityHookData = ref(null);
+
+// These are passed to wrapper but not actively managed since Generator handles its own state in default mode
+const isGenerating = ref(false);
+const canGenerate = ref(true); // Default to true since Generator validates internally
 
 // Computed from meta
 const supportsProfileSave = computed(() => props.meta.supportsProfileSave ?? true);
@@ -98,70 +97,9 @@ function handleIntentChange(intent) {
   currentIntent.value = intent;
 }
 
-function handlePreviewUpdate({ previewHtml }) {
-  previewContent.value = previewHtml;
-}
-
-function handleGenerate() {
-  if (generator.value?.handleGenerate) {
-    isGenerating.value = true;
-    generator.value.handleGenerate()
-      .catch((err) => {
-        console.error('[EmbeddedToolApp] Generation failed:', err);
-        isGenerating.value = false;
-      });
-  }
-}
-
 function handleGenerated(data) {
   hasGenerated.value = true;
-
-  // Update preview content based on generated data BEFORE setting isGenerating = false
-  // (so the wrapper's watcher sees previewContent when checking)
-  if (data) {
-    // Escape HTML to prevent XSS from AI-generated content
-    const escapeHtml = (unsafe) => {
-      if (typeof unsafe !== 'string') {
-        // Handle objects (topics come as { title: "..." })
-        unsafe = unsafe?.title || String(unsafe);
-      }
-      return unsafe
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    };
-
-    // Format array items as numbered HTML list
-    const formatArrayToHtmlList = (arr) =>
-      arr
-        .map((item, i) => `<strong>${i + 1}.</strong> ${escapeHtml(item)}`)
-        .join('<br><br>');
-
-    // Handle topics array
-    if (data.topics && Array.isArray(data.topics)) {
-      previewContent.value = formatArrayToHtmlList(data.topics);
-    }
-    // Handle single content (hook, bio, tagline, etc.)
-    else if (data.hook || data.content || data.result) {
-      previewContent.value = escapeHtml(data.hook || data.content || data.result);
-    }
-    // Handle questions array
-    else if (data.questions && Array.isArray(data.questions)) {
-      previewContent.value = formatArrayToHtmlList(data.questions);
-    }
-  }
-
-  // Set isGenerating = false AFTER previewContent is set
-  // This ensures the wrapper's watcher sees the new previewContent
-  isGenerating.value = false;
-
   emit('generated', data);
-}
-
-function handleCanGenerateUpdate(value) {
-  canGenerate.value = value;
 }
 
 function handleSaveClick() {

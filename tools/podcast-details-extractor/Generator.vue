@@ -225,26 +225,12 @@
     </template>
   </AiWidgetFrame>
 
-  <!-- Embedded Mode: Landing page form -->
-  <div v-else class="gmkb-embedded-form">
-    <div class="gmkb-embedded-fields">
-      <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.url || 'Podcast URL' }} *</label>
-        <input
-          v-model="podcastUrl"
-          type="url"
-          class="gmkb-embedded-input"
-          :placeholder="currentIntent?.formPlaceholders?.url || 'e.g., https://podcasts.apple.com/us/podcast/...'"
-        />
-      </div>
-    </div>
-    <div v-if="error" class="gmkb-embedded-error">{{ error }}</div>
-  </div>
 </template>
 
 <script setup>
-import { computed, watch, defineExpose } from 'vue';
+import { ref, computed, watch, defineExpose, onMounted, onUnmounted } from 'vue';
 import { usePodcastExtractor } from './usePodcastExtractor.js';
+import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 
 // Full layout components (standalone mode)
 import { GeneratorLayout, GuidancePanel } from '../_shared';
@@ -256,7 +242,7 @@ const props = defineProps({
   mode: {
     type: String,
     default: 'default',
-    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
+    validator: (v) => ['default', 'integrated'].includes(v)
   },
   componentId: {
     type: String,
@@ -288,6 +274,61 @@ const {
   copyEmail,
   copyAllDetails
 } = usePodcastExtractor();
+
+// Use generator history composable
+const {
+  history,
+  hasHistory,
+  addToHistory,
+  removeFromHistory,
+  clearHistory,
+  formatTimestamp
+} = useGeneratorHistory('podcast-details-extractor');
+
+const showHistory = ref(false);
+
+/**
+ * Form completion tracking for UX feedback
+ */
+const formCompletion = computed(() => {
+  const fields = [
+    { name: 'Podcast URL', filled: !!podcastUrl.value?.trim() }
+  ];
+  const filledCount = fields.filter(f => f.filled).length;
+  return {
+    fields,
+    filledCount,
+    totalCount: fields.length,
+    percentage: Math.round((filledCount / fields.length) * 100),
+    isComplete: canExtract.value
+  };
+});
+
+/**
+ * Handle keyboard shortcut for quick extraction
+ */
+const handleKeyboardShortcut = (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    if (canExtract.value && !isExtracting.value) {
+      event.preventDefault();
+      onExtract();
+    }
+  }
+};
+
+/**
+ * Setup keyboard listener on mount
+ */
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyboardShortcut);
+});
+
+/**
+ * Cleanup keyboard listener on unmount
+ */
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyboardShortcut);
+});
 
 /**
  * Process steps for guidance panel
@@ -340,6 +381,15 @@ const escapeHtml = (unsafe) => {
 const onExtract = async () => {
   const result = await handleExtract();
   if (result) {
+    // Save to history on successful extraction
+    addToHistory({
+      inputs: {
+        podcastUrl: podcastUrl.value
+      },
+      results: result,
+      preview: result.title?.substring(0, 50) || 'Extracted podcast details'
+    });
+
     // Emit generated event for EmbeddedToolWrapper compatibility
     emit('generated', {
       url: podcastUrl.value,
@@ -617,13 +667,4 @@ defineExpose({
   opacity: 0.7;
 }
 
-/* Embedded Mode Styles */
-.gmkb-embedded-form { width: 100%; }
-.gmkb-embedded-fields { display: flex; flex-direction: column; gap: 20px; }
-.gmkb-embedded-field { display: flex; flex-direction: column; }
-.gmkb-embedded-label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 8px; color: var(--mkcg-text-primary, #0f172a); }
-.gmkb-embedded-input { width: 100%; padding: 14px; border: 1px solid var(--mkcg-border, #e2e8f0); border-radius: 8px; background: var(--mkcg-bg-secondary, #f9fafb); box-sizing: border-box; font-size: 15px; font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s; }
-.gmkb-embedded-input:focus { outline: none; border-color: var(--mkcg-primary, #3b82f6); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-.gmkb-embedded-input::placeholder { color: var(--mkcg-text-light, #94a3b8); }
-.gmkb-embedded-error { margin-top: 16px; padding: 12px 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #991b1b; font-size: 14px; }
 </style>

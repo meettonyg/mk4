@@ -9,7 +9,7 @@
     :has-results="hasTaglines"
     :is-loading="isGenerating"
   >
-    <!-- Profile Context Banner (for logged-in users) -->
+    <!-- Profile Context Banner (for logged-in users, only shown in standalone mode) -->
     <template #profile-context>
       <ProfileContextBanner
         @profile-loaded="handleProfileLoaded"
@@ -17,8 +17,8 @@
       />
 
       <!-- Draft Restore Prompt -->
-      <div v-if="showDraftPrompt" class="draft-restore-prompt">
-        <div class="draft-restore-prompt__icon">
+      <div v-if="showDraftPrompt" class="gfy-draft-prompt">
+        <div class="gfy-draft-prompt__content">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <polyline points="14 2 14 8 20 8"/>
@@ -26,23 +26,86 @@
             <line x1="16" y1="17" x2="8" y2="17"/>
             <polyline points="10 9 9 9 8 9"/>
           </svg>
+          <div>
+            <strong>Restore your draft?</strong>
+            <p>You have an unsaved draft from {{ getLastSavedText() }}</p>
+          </div>
         </div>
-        <div class="draft-restore-prompt__content">
-          <span class="draft-restore-prompt__title">Restore your draft?</span>
-          <span class="draft-restore-prompt__text">You have an unsaved draft from {{ getLastSavedText() }}</span>
-        </div>
-        <div class="draft-restore-prompt__actions">
-          <button type="button" class="draft-restore-prompt__btn draft-restore-prompt__btn--restore" @click="restoreFromDraft(loadDraft())">
+        <div class="gfy-draft-prompt__actions">
+          <button type="button" class="gfy-btn gfy-btn--primary gfy-btn--small" @click="restoreFromDraft(loadDraft())">
             Restore
           </button>
-          <button type="button" class="draft-restore-prompt__btn draft-restore-prompt__btn--dismiss" @click="dismissDraftPrompt">
+          <button type="button" class="gfy-btn gfy-btn--outline gfy-btn--small" @click="dismissDraftPrompt">
             Discard
           </button>
         </div>
       </div>
 
+      <!-- History Toggle -->
+      <div v-if="hasHistory" class="gfy-history">
+        <button
+          type="button"
+          class="gfy-history__toggle"
+          @click="showHistory = !showHistory"
+          aria-expanded="showHistory"
+          aria-controls="tagline-history-panel"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          Recent Generations ({{ history.length }})
+          <svg
+            class="gfy-history__chevron"
+            :class="{ 'gfy-history__chevron--open': showHistory }"
+            width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          >
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <div v-if="showHistory" id="tagline-history-panel" class="gfy-history__panel">
+          <div class="gfy-history__list">
+            <div v-for="entry in history" :key="entry.id" class="gfy-history__item">
+              <div class="gfy-history__item-content">
+                <span class="gfy-history__item-preview">{{ entry.preview }}</span>
+                <span class="gfy-history__item-time">{{ formatTimestamp(entry.timestamp) }}</span>
+              </div>
+              <div class="gfy-history__item-actions">
+                <button
+                  type="button"
+                  class="gfy-history__action-btn gfy-history__action-btn--primary"
+                  title="Restore inputs"
+                  aria-label="Restore inputs from this generation"
+                  @click="restoreFromHistory(entry)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="1 4 1 10 7 10"/>
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="gfy-history__action-btn gfy-history__action-btn--danger"
+                  title="Delete"
+                  aria-label="Delete this history entry"
+                  @click="removeFromHistory(entry.id)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="gfy-history__clear-btn" @click="clearHistory">
+            Clear All History
+          </button>
+        </div>
+      </div>
+
       <!-- Auto-save indicator -->
-      <div v-if="isAutoSaving" class="auto-save-indicator">
+      <div v-if="isAutoSaving" class="gfy-auto-save-indicator">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin">
           <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"/>
         </svg>
@@ -53,6 +116,21 @@
     <!-- Left Panel: Form -->
     <template #left>
       <div class="gmkb-plg-tool-embed">
+        <!-- Form Progress Indicator -->
+        <div class="gfy-form-progress" :class="{ 'gfy-form-progress--complete': formCompletion.isComplete }">
+          <div class="gfy-form-progress__header">
+            <span class="gfy-form-progress__label">
+              <svg v-if="formCompletion.isComplete" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+              </svg>
+              {{ formCompletion.isComplete ? 'Ready to generate!' : `${formCompletion.filledCount}/${formCompletion.totalCount} fields completed` }}
+            </span>
+          </div>
+          <div class="gfy-form-progress__bar">
+            <div class="gfy-form-progress__fill" :style="{ width: `${formCompletion.percentage}%` }"></div>
+          </div>
+        </div>
+
         <!-- Intent Tabs -->
         <div class="gfy-intent-tabs">
           <button
@@ -531,47 +609,15 @@
     </template>
   </AiWidgetFrame>
 
-  <!-- Embedded Mode: Landing page form (simplified, used with EmbeddedToolWrapper) -->
-  <div v-else class="gmkb-embedded-form">
-    <div class="gmkb-embedded-fields">
-      <!-- Intent Selection -->
-      <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">Tagline Type</label>
-        <select v-model="intent" class="gmkb-embedded-input">
-          <option v-for="opt in INTENT_OPTIONS" :key="opt.value" :value="opt.value">
-            {{ opt.label }}
-          </option>
-        </select>
-      </div>
-      <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.who || 'Who do you help?' }} *</label>
-        <input
-          v-model="authorityHook.who"
-          type="text"
-          class="gmkb-embedded-input"
-          :placeholder="currentIntent?.formPlaceholders?.who || 'e.g., SaaS Founders, Executives'"
-        />
-      </div>
-      <div class="gmkb-embedded-field">
-        <label class="gmkb-embedded-label">{{ currentIntent?.formLabels?.what || 'What do they achieve?' }} *</label>
-        <input
-          v-model="authorityHook.what"
-          type="text"
-          class="gmkb-embedded-input"
-          :placeholder="currentIntent?.formPlaceholders?.what || 'e.g., Scale to 7-figures, Work-life balance'"
-        />
-      </div>
-    </div>
-    <div v-if="error" class="gmkb-embedded-error">{{ error }}</div>
-  </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, inject } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useAITagline, STYLE_FOCUS_OPTIONS, TONE_OPTIONS, INTENT_OPTIONS } from '../../src/composables/useAITagline';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 import { useDraftState } from '../../src/composables/useDraftState';
+import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 
 // Compact widget components (integrated mode)
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
@@ -580,41 +626,27 @@ import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ImpactIntroBuilder, ProfileContextBanner, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
-
-// Inject profile data from EmbeddedToolWrapper (for embedded mode)
-const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
+import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ImpactIntroBuilder, ProfileContextBanner } from '../_shared';
 
 const props = defineProps({
   /**
-   * Mode: 'default', 'integrated', or 'embedded'
+   * Mode: 'default' or 'integrated'
    */
   mode: {
     type: String,
     default: 'default',
-    validator: (v) => ['default', 'integrated', 'embedded'].includes(v)
+    validator: (v) => ['default', 'integrated'].includes(v)
   },
-
   /**
    * Component ID to apply results to (integrated mode)
    */
   componentId: {
     type: String,
     default: null
-  },
-
-  intent: {
-    type: Object,
-    default: null
-  },
-
-  profileData: {
-    type: Object,
-    default: null
   }
 });
 
-const emit = defineEmits(['applied', 'generated', 'preview-update', 'update:can-generate']);
+const emit = defineEmits(['applied', 'generated']);
 
 // Use composables - destructure all needed state from composable
 const {
@@ -680,6 +712,19 @@ const {
   getLastSavedText
 } = useDraftState('tagline');
 
+// History for recent generations
+const {
+  history,
+  hasHistory,
+  addToHistory,
+  removeFromHistory,
+  clearHistory,
+  formatTimestamp
+} = useGeneratorHistory('tagline');
+
+// Show/hide history panel
+const showHistory = ref(false);
+
 // Show draft restore prompt
 const showDraftPrompt = ref(false);
 
@@ -700,6 +745,25 @@ const generateButtonText = computed(() => {
     default:
       return `Generate ${GENERATION_COUNT} Taglines`;
   }
+});
+
+/**
+ * Form completion status for progress indicator
+ */
+const formCompletion = computed(() => {
+  const fields = [
+    { name: 'Who you help', filled: !!authorityHook.who },
+    { name: 'What you do', filled: !!authorityHook.what },
+    { name: 'Industry', filled: !!(brandContext.industry && brandContext.industry.trim()) }
+  ];
+  const filledCount = fields.filter(f => f.filled).length;
+  return {
+    fields,
+    filledCount,
+    totalCount: fields.length,
+    percentage: Math.round((filledCount / fields.length) * 100),
+    isComplete: canGenerate.value
+  };
 });
 
 /**
@@ -758,6 +822,22 @@ const handleGenerate = async () => {
     const context = props.mode === 'integrated' ? 'builder' : 'public';
     // Generate uses the reactive state directly from the composable
     await generate({}, context);
+
+    // Save to history on successful generation
+    if (taglines.value && taglines.value.length > 0) {
+      addToHistory({
+        inputs: {
+          authorityHook: { ...authorityHook },
+          impactIntro: { ...impactIntro },
+          brandContext: { ...brandContext },
+          styleFocus: styleFocus.value,
+          tone: tone.value,
+          intent: intent.value
+        },
+        results: taglines.value,
+        preview: taglines.value[0]?.text?.substring(0, 50) || 'Generated taglines'
+      });
+    }
 
     emit('generated', {
       taglines: taglines.value
@@ -972,16 +1052,45 @@ const dismissDraftPrompt = () => {
 };
 
 /**
+ * Restore inputs from history entry
+ */
+const restoreFromHistory = (entry) => {
+  if (!entry || !entry.inputs) return;
+
+  const inputs = entry.inputs;
+  if (inputs.authorityHook) {
+    Object.assign(authorityHook, inputs.authorityHook);
+  }
+  if (inputs.impactIntro) {
+    Object.assign(impactIntro, inputs.impactIntro);
+  }
+  if (inputs.brandContext) {
+    Object.assign(brandContext, inputs.brandContext);
+  }
+  if (inputs.styleFocus) styleFocus.value = inputs.styleFocus;
+  if (inputs.tone) tone.value = inputs.tone;
+  if (inputs.intent) intent.value = inputs.intent;
+
+  showHistory.value = false;
+};
+
+/**
+ * Keyboard shortcut handler (Ctrl/Cmd + Enter to generate)
+ */
+const handleKeyboardShortcut = (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    if (canGenerate.value && !isGenerating.value && !hasTaglines.value) {
+      event.preventDefault();
+      handleGenerate();
+    }
+  }
+};
+
+/**
  * Sync authority hook from store on mount
  */
 onMounted(() => {
   syncFromStore();
-
-  // Load from injected or prop profile data. Props take precedence.
-  const profileToLoad = props.profileData || injectedProfileData.value;
-  if (profileToLoad) {
-    populateFromProfile(profileToLoad);
-  }
 
   // Check for saved draft (only in standalone mode)
   if (props.mode === 'default' && hasDraft.value) {
@@ -992,60 +1101,18 @@ onMounted(() => {
   if (props.mode === 'default') {
     startAutoSave(getDraftState);
   }
+
+  // Add keyboard shortcut listener
+  window.addEventListener('keydown', handleKeyboardShortcut);
 });
 
 /**
- * Watch for injected profile data from EmbeddedToolWrapper
+ * Cleanup on unmount
  */
-watch(
-  injectedProfileData,
-  (newData) => {
-    if (newData) {
-      populateFromProfile(newData);
-    }
-  },
-  { immediate: true }
-);
-
-const currentIntent = computed(() => {
-  const found = INTENT_OPTIONS.find(opt => opt.value === intent.value);
-  return found || props.intent || null;
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyboardShortcut);
 });
 
-const embeddedPreviewText = computed(() => {
-  if (!authorityHook.who && !authorityHook.what) return null;
-  const whoText = authorityHook.who || 'your audience';
-  const whatText = authorityHook.what || 'achieve their goals';
-  return `<strong>Professional tagline</strong> for helping <strong>${whoText}</strong> ${whatText}`;
-});
-
-watch(
-  () => props.profileData,
-  (newData) => {
-    if (newData && props.mode === 'embedded') {
-      populateFromProfile(newData);
-    }
-  },
-  { immediate: true }
-);
-
-watch(
-  [() => authorityHook.who, () => authorityHook.what],
-  () => {
-    if (props.mode === 'embedded') {
-      emit('preview-update', {
-        previewHtml: embeddedPreviewText.value,
-        fields: { who: authorityHook.who, what: authorityHook.what }
-      });
-    }
-  }
-);
-
-watch(canGenerate, (newValue) => {
-  if (props.mode === 'embedded') {
-    emit('update:can-generate', !!newValue);
-  }
-}, { immediate: true });
 </script>
 
 <style scoped>
@@ -1552,17 +1619,6 @@ watch(canGenerate, (newValue) => {
   font-size: 13px;
   color: var(--gmkb-ai-text-secondary, #64748b);
 }
-
-/* Embedded Mode Styles (for landing page) */
-.gmkb-embedded-form { width: 100%; }
-.gmkb-embedded-fields { display: flex; flex-direction: column; gap: 20px; }
-.gmkb-embedded-field { display: flex; flex-direction: column; }
-.gmkb-embedded-label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 8px; color: var(--mkcg-text-primary, #0f172a); }
-.gmkb-embedded-input { width: 100%; padding: 14px; border: 1px solid var(--mkcg-border, #e2e8f0); border-radius: 8px; background: var(--mkcg-bg-secondary, #f9fafb); box-sizing: border-box; font-size: 15px; font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s; }
-.gmkb-embedded-input:focus { outline: none; border-color: var(--mkcg-primary, #3b82f6); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-.gmkb-embedded-input::placeholder { color: var(--mkcg-text-light, #94a3b8); }
-.gmkb-embedded-textarea { resize: vertical; min-height: 80px; }
-.gmkb-embedded-error { margin-top: 16px; padding: 12px 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #991b1b; font-size: 14px; }
 
 /* Draft Restore Prompt */
 .draft-restore-prompt {

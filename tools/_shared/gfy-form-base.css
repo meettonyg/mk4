@@ -1,3 +1,110 @@
+/* ============================================================================
+   CONTAINER STYLES - .gmkb-plg-tool-embed
+   ============================================================================
+   These styles were previously only in tool-landing-plg.css (loaded via PHP).
+   Adding here ensures Vue components render correctly.
+   ============================================================================ */
+
+.gmkb-plg-tool-embed {
+  background: white;
+  border-radius: 16px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  overflow: hidden;
+  text-align: left;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  min-height: 450px;
+  padding: 30px;
+}
+
+/* Remove container styling when inside EmbeddedToolWrapper (landing pages) */
+.gmkb-tool-embed .gmkb-plg-tool-embed {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  min-height: auto;
+  padding: 0;
+  max-width: none;
+}
+
+/* ============================================================================
+   HIGHLIGHT BOXES - Framework Containers
+   ============================================================================ */
+
+.gfy-highlight-box {
+  background: #fff;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 1.5rem;
+}
+
+.gfy-highlight-box--blue {
+  border-left: 4px solid var(--mkcg-primary, #3b82f6);
+  background: var(--mkcg-bg-secondary, #f9fafb);
+}
+
+.gfy-highlight-box--green {
+  border-left: 4px solid #10b981;
+  background: #ecfdf5;
+}
+
+.gfy-highlight-box__title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+/* ============================================================================
+   SECTION DIVIDER
+   ============================================================================ */
+
+.gfy-section-divider {
+  height: 1px;
+  background: var(--mkcg-border, #e2e8f0);
+  margin: 2.5rem 0;
+  position: relative;
+}
+
+.gfy-section-divider span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  padding: 0 15px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--mkcg-text-secondary, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================================================
+   FORM GRID - Two Column Layout
+   ============================================================================ */
+
+.gfy-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 768px) {
+  .gfy-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================================
+   FORM SECTIONS
+   ============================================================================ */
+
 .gfy-form-section {
   margin-bottom: var(--mkcg-space-lg, 30px);
 }
@@ -140,4 +247,458 @@
 .gfy-highlight {
   color: var(--mkcg-primary, #3b82f6);
   font-weight: 700;
+}
+
+/* ============================================================================
+   INPUT GROUP ROW - Two Column Layout for Selects
+   ============================================================================ */
+
+.gfy-input-group-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: var(--mkcg-space-md, 20px);
+}
+
+@media (max-width: 768px) {
+  .gfy-input-group-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.gfy-input-group-row .gfy-input-group {
+  margin-bottom: 0;
+}
+
+.gfy-input-group-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+
+.gfy-input-group-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.gfy-input-group-helper {
+  font-size: 12px;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin: 0;
+}
+
+.gfy-char-count {
+  font-size: 11px;
+  color: var(--mkcg-text-light, #94a3b8);
+}
+
+.gfy-input-group--prominent .gfy-builder__textarea {
+  min-height: 100px;
+}
+
+.gfy-builder__textarea--large {
+  min-height: 120px;
+}
+
+/* ============================================================================
+   PREFILLED BADGE - Profile Data Indicator
+   ============================================================================ */
+
+.gfy-prefilled-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 12px;
+  color: #166534;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.gfy-builder__input--prefilled {
+  border-color: #86efac;
+  background: linear-gradient(to right, #f0fdf4, #fff);
+}
+
+/* ============================================================================
+   FORM HINT TEXT
+   ============================================================================ */
+
+.gfy-form-hint {
+  font-size: 13px;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin-top: 12px;
+  text-align: center;
+}
+
+/* ============================================================================
+   TOPIC SELECTION GRID - Questions Generator
+   ============================================================================ */
+
+.questions-topic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+
+.questions-topic-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.questions-topic-card:hover {
+  border-color: var(--mkcg-primary, #3b82f6);
+  background: var(--mkcg-primary-xlight, rgba(59, 130, 246, 0.05));
+}
+
+.questions-topic-card--active {
+  border-color: var(--mkcg-primary, #3b82f6);
+  background: var(--mkcg-primary-light, rgba(59, 130, 246, 0.1));
+  box-shadow: 0 0 0 2px var(--mkcg-primary, #3b82f6);
+}
+
+.questions-topic-card__number {
+  width: 24px;
+  height: 24px;
+  background: var(--mkcg-bg-secondary, #f1f5f9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--mkcg-text-secondary, #64748b);
+  flex-shrink: 0;
+}
+
+.questions-topic-card--active .questions-topic-card__number {
+  background: var(--mkcg-primary, #3b82f6);
+  color: white;
+}
+
+.questions-topic-card__text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mkcg-text-primary, #0f172a);
+  flex: 1;
+  line-height: 1.3;
+}
+
+.questions-topic-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.questions-topic-empty svg {
+  opacity: 0.5;
+}
+
+.questions-topic-empty p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.questions-refine-container {
+  margin-top: 1rem;
+}
+
+.questions-refine-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.questions-refine-hint {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.questions-refine-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #fff;
+  box-sizing: border-box;
+  resize: vertical;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.questions-refine-textarea:focus {
+  outline: none;
+  border-color: var(--mkcg-primary, #3b82f6);
+  box-shadow: 0 0 0 3px var(--mkcg-primary-light, rgba(59, 130, 246, 0.1));
+}
+
+/* ============================================================================
+   FORM PROGRESS INDICATOR
+   ============================================================================ */
+
+.gfy-form-progress {
+  margin-bottom: 20px;
+}
+
+.gfy-form-progress__header {
+  margin-bottom: 8px;
+}
+
+.gfy-form-progress__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.gfy-form-progress--complete .gfy-form-progress__label {
+  color: #16a34a;
+}
+
+.gfy-form-progress__bar {
+  height: 4px;
+  background: var(--mkcg-border, #e2e8f0);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.gfy-form-progress__fill {
+  height: 100%;
+  background: var(--mkcg-primary, #3b82f6);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.gfy-form-progress--complete .gfy-form-progress__fill {
+  background: #16a34a;
+}
+
+/* ============================================================================
+   DRAFT PROMPT
+   ============================================================================ */
+
+.gfy-draft-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  background: linear-gradient(to right, var(--mkcg-warning-xlight, #fefce8), var(--mkcg-warning-light, #fef9c3));
+  border: 1px solid var(--mkcg-warning-border, #fde047);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.gfy-draft-prompt__content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--mkcg-warning-text, #854d0e);
+}
+
+.gfy-draft-prompt__content strong {
+  font-weight: 600;
+}
+
+.gfy-draft-prompt__content p {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: var(--mkcg-warning-text-light, #a16207);
+}
+
+.gfy-draft-prompt__actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ============================================================================
+   AUTO-SAVE INDICATOR
+   ============================================================================ */
+
+.gfy-auto-save-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin-bottom: 16px;
+}
+
+/* ============================================================================
+   HISTORY SECTION
+   ============================================================================ */
+
+.gfy-history {
+  margin-bottom: 20px;
+}
+
+.gfy-history__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mkcg-text-secondary, #64748b);
+  transition: all 0.15s ease;
+}
+
+.gfy-history__toggle:hover {
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: var(--mkcg-primary, #3b82f6);
+}
+
+.gfy-history__chevron {
+  margin-left: auto;
+  transition: transform 0.2s ease;
+}
+
+.gfy-history__chevron--open {
+  transform: rotate(180deg);
+}
+
+.gfy-history__panel {
+  margin-top: 8px;
+  padding: 12px;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+}
+
+.gfy-history__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gfy-history__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 6px;
+}
+
+.gfy-history__item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.gfy-history__item-preview {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--mkcg-text-primary, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gfy-history__item-time {
+  display: block;
+  font-size: 11px;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin-top: 2px;
+}
+
+.gfy-history__item-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.gfy-history__action-btn {
+  padding: 6px;
+  background: transparent;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--mkcg-text-secondary, #64748b);
+  transition: all 0.15s ease;
+}
+
+.gfy-history__action-btn:hover {
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: var(--mkcg-primary, #3b82f6);
+}
+
+.gfy-history__action-btn--primary {
+  background: var(--mkcg-primary, #3b82f6);
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: white;
+}
+
+.gfy-history__action-btn--primary:hover {
+  background: var(--mkcg-primary-dark, #2563eb);
+  border-color: var(--mkcg-primary-dark, #2563eb);
+  color: white;
+}
+
+.gfy-history__action-btn--danger:hover {
+  border-color: var(--mkcg-danger, #ef4444);
+  color: var(--mkcg-danger, #ef4444);
+}
+
+.gfy-history__clear-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px;
+  background: transparent;
+  border: 1px dashed var(--mkcg-border, #e2e8f0);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--mkcg-text-secondary, #64748b);
+  transition: all 0.15s ease;
+}
+
+.gfy-history__clear-btn:hover {
+  border-color: var(--mkcg-danger, #ef4444);
+  color: var(--mkcg-danger, #ef4444);
+}
+
+/* ============================================================================
+   BUTTON SIZE VARIANTS
+   ============================================================================ */
+
+.gfy-btn--small {
+  padding: 6px 12px;
+  font-size: 12px;
 }

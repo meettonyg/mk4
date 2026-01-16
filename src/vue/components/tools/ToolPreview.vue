@@ -13,7 +13,7 @@
       <component
         v-if="toolComponent"
         :is="toolComponent"
-        mode="standalone"
+        mode="default"
         :preview-mode="!interactive"
         @generated="handleGenerated"
         @applied="handleApplied"

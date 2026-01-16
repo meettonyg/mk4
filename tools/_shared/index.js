@@ -16,4 +16,4 @@ export { default as ImpactIntroBuilder } from './ImpactIntroBuilder.vue';
 export { default as ProfileContextBanner } from './ProfileContextBanner.vue';
 export { default as EmbeddedToolWrapper } from './EmbeddedToolWrapper.vue';
 export { default as EmbeddedToolApp } from './EmbeddedToolApp.vue';
-export { EMBEDDED_PROFILE_DATA_KEY } from './constants';
+export { EMBEDDED_PROFILE_DATA_KEY, IS_EMBEDDED_CONTEXT_KEY } from './constants';
