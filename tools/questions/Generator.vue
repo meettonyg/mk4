@@ -1,53 +1,7 @@
 <template>
-  <!-- Standalone Mode: Full single-column layout with redesigned UI -->
+  <!-- Standalone Mode: Tool card content (hero is provided by landing page wrapper) -->
   <div v-if="mode === 'default'" class="gfy-questions-wrapper gmkb-generator-root">
-    <!-- Hero Section -->
-    <section class="gmkb-plg-hero">
-      <div class="gmkb-plg-container">
-        <div class="gmkb-plg-hero__badge">Free AI Tool</div>
-        <h1 class="gmkb-plg-hero__title">Free Interview Questions Generator</h1>
-        <p class="gmkb-plg-hero__subhead">Generate thoughtful interview questions and compelling answers tailored to your expertise and interview context.</p>
-
-        <div class="gmkb-plg-trust-strip">
-          <div class="gmkb-plg-trust-item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="3" aria-hidden="true">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
-            Used by 7,000+ guests
-          </div>
-          <div class="gmkb-plg-trust-item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="3" aria-hidden="true">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
-            No signup required
-          </div>
-          <div class="gmkb-plg-trust-item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="3" aria-hidden="true">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
-            Free forever
-          </div>
-        </div>
-
-        <!-- Intent Tabs (Outside the Card) -->
-        <div class="gmkb-intent-tabs" role="tablist">
-          <button
-            v-for="intent in intentTabs"
-            :key="intent.id"
-            class="gmkb-intent-tab"
-            :class="{ active: selectedIntent === intent.id }"
-            role="tab"
-            :aria-selected="selectedIntent === intent.id"
-            @click="selectIntent(intent.id)"
-          >
-            {{ intent.label }}
-          </button>
-        </div>
-
-        <!-- Single Column Tool Layout -->
-        <div class="gfy-tool-layout">
-          <!-- Single Unified Card -->
-          <div class="gmkb-plg-tool-card">
+    <div class="gmkb-plg-tool-embed">
             <!-- Profile Selector (Top of Form, inside Card) -->
             <div class="gfy-profile-selector-container">
               <label class="gfy-profile-label">Pre-fill from Profile:</label>
@@ -321,8 +275,6 @@
                 Try Again
               </button>
             </div>
-          </div>
-          <!-- End Single Card -->
 
           <!-- Results Container (appears below when generated) -->
           <div v-if="hasQuestions" class="gfy-results-container">
@@ -567,12 +519,9 @@
           </div>
           <!-- End Results Container -->
         </div>
-        <!-- End Tool Layout -->
+        <!-- End Tool Embed -->
       </div>
-      <!-- End Container -->
-    </section>
-  </div>
-  <!-- End Standalone Mode -->
+      <!-- End Standalone Mode -->
 
   <!-- Integrated Mode: Compact widget -->
   <AiWidgetFrame
@@ -770,20 +719,6 @@ const authorityHook = reactive({
   when: '',
   how: ''
 });
-
-// ===========================================
-// INTENT TABS STATE (Podcast/Press/Panel)
-// ===========================================
-const intentTabs = [
-  { id: 'podcast', label: 'Podcast Interview' },
-  { id: 'press', label: 'Press Interview' },
-  { id: 'panel', label: 'Panel Discussion' }
-];
-const selectedIntent = ref('podcast');
-
-function selectIntent(intentId) {
-  selectedIntent.value = intentId;
-}
 
 // ===========================================
 // PROFILE SELECTOR STATE
