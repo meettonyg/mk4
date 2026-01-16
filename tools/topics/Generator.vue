@@ -78,6 +78,90 @@
         </div>
       </div>
 
+      <!-- Recent History -->
+      <div v-if="hasHistory" class="gfy-history">
+        <button
+          type="button"
+          class="gfy-history__toggle"
+          @click="showHistory = !showHistory"
+          :aria-expanded="showHistory"
+          aria-controls="history-panel"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          Recent Generations ({{ history.length }})
+          <svg
+            class="gfy-history__chevron"
+            :class="{ 'gfy-history__chevron--open': showHistory }"
+            width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            aria-hidden="true"
+          >
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <div v-if="showHistory" id="history-panel" class="gfy-history__panel">
+          <div class="gfy-history__list">
+            <div
+              v-for="entry in history"
+              :key="entry.id"
+              class="gfy-history__item"
+            >
+              <div class="gfy-history__item-content">
+                <span class="gfy-history__item-preview">{{ entry.preview }}</span>
+                <span class="gfy-history__item-time">{{ formatTimestamp(entry.timestamp) }}</span>
+              </div>
+              <div class="gfy-history__item-actions">
+                <button
+                  type="button"
+                  class="gfy-history__action-btn"
+                  title="Restore inputs only"
+                  aria-label="Restore inputs from this generation"
+                  @click="restoreFromHistory(entry)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                    <path d="M3 3v5h5"/>
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="gfy-history__action-btn gfy-history__action-btn--primary"
+                  title="Restore inputs and results"
+                  aria-label="Restore full generation"
+                  @click="restoreFullHistory(entry)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="1 4 1 10 7 10"/>
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="gfy-history__action-btn gfy-history__action-btn--danger"
+                  title="Remove from history"
+                  aria-label="Remove this entry from history"
+                  @click="removeFromHistory(entry.id)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <button
+            v-if="history.length > 0"
+            type="button"
+            class="gfy-history__clear"
+            @click="clearHistory"
+          >
+            Clear All History
+          </button>
+        </div>
+      </div>
+
       <!-- Expertise Field -->
       <div class="gfy-input-group">
         <label class="gfy-label">
@@ -399,6 +483,7 @@ import { ref, reactive, computed, watch, inject, onMounted, onUnmounted } from '
 import { useAITopics } from '../../src/composables/useAITopics';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { useDraftState } from '../../src/composables/useDraftState';
+import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
 import { AuthorityHookBuilder } from '../_shared';
 
@@ -459,6 +544,19 @@ const {
   startAutoSave,
   getLastSavedText
 } = useDraftState('topics');
+
+// History for recent generations
+const {
+  history,
+  hasHistory,
+  addToHistory,
+  removeFromHistory,
+  clearHistory,
+  formatTimestamp
+} = useGeneratorHistory('topics');
+
+// Show/hide history panel
+const showHistory = ref(false);
 
 // Prefilled fields tracking
 const prefilledFields = ref(new Set());
@@ -711,6 +809,18 @@ const handleGenerate = async () => {
     count: 10
   });
 
+  // Save to history on successful generation
+  if (topics.value && topics.value.length > 0) {
+    addToHistory({
+      inputs: {
+        expertise: expertise.value,
+        authorityHook: { ...authorityHook }
+      },
+      results: topics.value,
+      preview: expertise.value?.substring(0, 50) || topics.value[0]?.title || topics.value[0]
+    });
+  }
+
   // Emit generated event for parent (EmbeddedToolApp) to handle
   emit('generated', { topics: topics.value });
 
@@ -886,6 +996,41 @@ const handleStartOver = () => {
   selectedTopics.value = [];
   if (reset) {
     reset();
+  }
+};
+
+/**
+ * Restore inputs from a history entry
+ */
+const restoreFromHistory = (entry) => {
+  if (!entry) return;
+
+  // Restore inputs
+  if (entry.inputs) {
+    if (entry.inputs.expertise) {
+      expertise.value = entry.inputs.expertise;
+    }
+    if (entry.inputs.authorityHook) {
+      Object.assign(authorityHook, entry.inputs.authorityHook);
+    }
+  }
+
+  // Close history panel
+  showHistory.value = false;
+};
+
+/**
+ * Restore inputs and results from a history entry
+ */
+const restoreFullHistory = (entry) => {
+  if (!entry) return;
+
+  restoreFromHistory(entry);
+
+  // Also restore results if available
+  if (entry.results && Array.isArray(entry.results)) {
+    topics.value = entry.results;
+    selectedTopics.value = [];
   }
 };
 
@@ -2294,5 +2439,175 @@ defineExpose({
 @keyframes skeleton-shimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
+}
+
+/* ===========================================
+   HISTORY SECTION
+   =========================================== */
+.gfy-history {
+  margin-bottom: 1.5rem;
+}
+
+.gfy-history__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--gfy-bg-color, #f8fafc);
+  border: 1px solid var(--gfy-border-color, #e2e8f0);
+  border-radius: var(--gfy-radius-md, 6px);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gfy-text-secondary, #64748b);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gfy-history__toggle:hover {
+  background: var(--gfy-white, #ffffff);
+  border-color: var(--gfy-primary-color, #2563eb);
+  color: var(--gfy-primary-color, #2563eb);
+}
+
+.gfy-history__chevron {
+  margin-left: auto;
+  transition: transform 0.2s ease;
+}
+
+.gfy-history__chevron--open {
+  transform: rotate(180deg);
+}
+
+.gfy-history__panel {
+  margin-top: 8px;
+  padding: 12px;
+  background: var(--gfy-white, #ffffff);
+  border: 1px solid var(--gfy-border-color, #e2e8f0);
+  border-radius: var(--gfy-radius-md, 6px);
+}
+
+.gfy-history__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.gfy-history__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--gfy-bg-color, #f8fafc);
+  border: 1px solid var(--gfy-border-color, #e2e8f0);
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.gfy-history__item:hover {
+  border-color: var(--gfy-primary-color, #2563eb);
+  background: var(--gfy-primary-light, #eff6ff);
+}
+
+.gfy-history__item-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gfy-history__item-preview {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--gfy-text-primary, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gfy-history__item-time {
+  font-size: 0.6875rem;
+  color: var(--gfy-text-muted, #94a3b8);
+}
+
+.gfy-history__item-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.gfy-history__action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: var(--gfy-white, #ffffff);
+  border: 1px solid var(--gfy-border-color, #e2e8f0);
+  border-radius: 4px;
+  color: var(--gfy-text-secondary, #64748b);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gfy-history__action-btn:hover {
+  border-color: var(--gfy-primary-color, #2563eb);
+  color: var(--gfy-primary-color, #2563eb);
+  background: var(--gfy-primary-light, #eff6ff);
+}
+
+.gfy-history__action-btn--primary {
+  background: var(--gfy-primary-color, #2563eb);
+  border-color: var(--gfy-primary-color, #2563eb);
+  color: var(--gfy-white, #ffffff);
+}
+
+.gfy-history__action-btn--primary:hover {
+  background: var(--gfy-primary-dark, #1d4ed8);
+  border-color: var(--gfy-primary-dark, #1d4ed8);
+  color: var(--gfy-white, #ffffff);
+}
+
+.gfy-history__action-btn--danger:hover {
+  border-color: #dc2626;
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+.gfy-history__clear {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px;
+  background: transparent;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--gfy-text-muted, #94a3b8);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.gfy-history__clear:hover {
+  color: #dc2626;
+}
+
+/* History responsive */
+@media (max-width: 480px) {
+  .gfy-history__item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .gfy-history__item-actions {
+    justify-content: flex-end;
+  }
 }
 </style>

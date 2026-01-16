@@ -53,6 +53,97 @@
         Saving draft...
       </div>
 
+      <!-- Recent History Section -->
+      <div v-if="hasHistory" class="gfy-history">
+        <button
+          type="button"
+          class="gfy-history__toggle"
+          :aria-expanded="showHistory"
+          aria-controls="offers-history-panel"
+          @click="showHistory = !showHistory"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <span>Recent Generations ({{ history.length }})</span>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            class="gfy-history__chevron"
+            :class="{ 'gfy-history__chevron--open': showHistory }"
+            aria-hidden="true"
+          >
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+
+        <div v-if="showHistory" id="offers-history-panel" class="gfy-history__panel" role="region" aria-label="Recent generations">
+          <div class="gfy-history__list">
+            <div
+              v-for="entry in history"
+              :key="entry.id"
+              class="gfy-history__item"
+            >
+              <div class="gfy-history__item-content">
+                <span class="gfy-history__item-preview">{{ entry.preview }}</span>
+                <span class="gfy-history__item-time">{{ formatTimestamp(entry.timestamp) }}</span>
+              </div>
+              <div class="gfy-history__item-actions">
+                <button
+                  type="button"
+                  class="gfy-history__action-btn"
+                  title="Restore inputs only"
+                  aria-label="Restore inputs from this generation"
+                  @click="restoreFromHistory(entry)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                    <path d="M3 3v5h5"/>
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="gfy-history__action-btn gfy-history__action-btn--primary"
+                  title="Restore inputs and results"
+                  aria-label="Restore full generation with results"
+                  @click="restoreFullHistory(entry)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="gfy-history__action-btn gfy-history__action-btn--danger"
+                  title="Remove from history"
+                  aria-label="Delete this history entry"
+                  @click="removeFromHistory(entry.id)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <button
+            v-if="history.length > 1"
+            type="button"
+            class="gfy-history__clear-btn"
+            @click="clearHistory"
+          >
+            Clear All History
+          </button>
+        </div>
+      </div>
+
       <!-- Welcome Section (shown when form is empty) -->
       <div v-if="!services && !authorityHook.who" class="gfy-welcome-section">
         <div class="gfy-welcome-section__icon">
@@ -740,6 +831,7 @@ import { useAIOffers, PACKAGE_TIERS } from '../../src/composables/useAIOffers';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 import { useDraftState } from '../../src/composables/useDraftState';
+import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 
 // Compact widget components (integrated mode)
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
@@ -848,6 +940,19 @@ const {
   startAutoSave,
   getLastSavedText
 } = useDraftState('offers');
+
+// History for recent generations
+const {
+  history,
+  hasHistory,
+  addToHistory,
+  removeFromHistory,
+  clearHistory,
+  formatTimestamp
+} = useGeneratorHistory('offers');
+
+// Show/hide history panel
+const showHistory = ref(false);
 
 // Prefilled fields tracking
 const prefilledFields = ref(new Set());
@@ -972,6 +1077,36 @@ function handleRestoreDraft() {
 function handleDiscardDraft() {
   clearDraft();
   showDraftPrompt.value = false;
+}
+
+/**
+ * Restore inputs from a history entry (without results)
+ */
+function restoreFromHistory(entry) {
+  if (entry.inputs) {
+    if (entry.inputs.services) services.value = entry.inputs.services;
+    if (entry.inputs.authorityHook) Object.assign(authorityHook, entry.inputs.authorityHook);
+    if (entry.inputs.priceRange) priceRange.value = entry.inputs.priceRange;
+    if (entry.inputs.delivery) delivery.value = entry.inputs.delivery;
+    if (entry.inputs.audienceChallenges) audienceChallenges.value = entry.inputs.audienceChallenges;
+  }
+  showHistory.value = false;
+}
+
+/**
+ * Restore full history entry (inputs + results)
+ */
+function restoreFullHistory(entry) {
+  restoreFromHistory(entry);
+  if (entry.results && Array.isArray(entry.results)) {
+    offers.value = entry.results;
+    // Reset locked offers
+    lockedOffers.entry = null;
+    lockedOffers.signature = null;
+    lockedOffers.premium = null;
+    // Set active tier to entry
+    activeOfferTier.value = 'entry';
+  }
 }
 
 /**
@@ -1274,6 +1409,21 @@ const handleGenerate = async () => {
       delivery: delivery.value,
       audienceChallenges: audienceChallenges.value
     }, context);
+
+    // Save to history on successful generation
+    if (offers.value && offers.value.length > 0) {
+      addToHistory({
+        inputs: {
+          services: services.value,
+          authorityHook: { ...authorityHook },
+          priceRange: priceRange.value,
+          delivery: delivery.value,
+          audienceChallenges: audienceChallenges.value
+        },
+        results: offers.value,
+        preview: services.value?.substring(0, 50) || offers.value[0]?.name || 'Service Packages'
+      });
+    }
 
     emit('generated', {
       offers: offers.value
@@ -2946,6 +3096,176 @@ watch(canGenerateEmbedded, (newValue) => {
 
   .generator__section-title {
     font-size: 15px;
+  }
+}
+
+/* ===========================================
+   HISTORY SECTION STYLES
+   =========================================== */
+.gfy-history {
+  margin-bottom: 1.5rem;
+}
+
+.gfy-history__toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--mkcg-text-secondary, #64748b);
+  transition: all 0.2s ease;
+}
+
+.gfy-history__toggle:hover {
+  background: var(--mkcg-bg, #ffffff);
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: var(--mkcg-primary, #3b82f6);
+}
+
+.gfy-history__toggle span {
+  flex: 1;
+  text-align: left;
+}
+
+.gfy-history__chevron {
+  transition: transform 0.2s ease;
+}
+
+.gfy-history__chevron--open {
+  transform: rotate(180deg);
+}
+
+.gfy-history__panel {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: var(--mkcg-bg, #ffffff);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+}
+
+.gfy-history__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.gfy-history__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+
+.gfy-history__item:hover {
+  background: var(--mkcg-bg-tertiary, #f1f5f9);
+}
+
+.gfy-history__item-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gfy-history__item-preview {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--mkcg-text-primary, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gfy-history__item-time {
+  font-size: 0.6875rem;
+  color: var(--mkcg-text-muted, #94a3b8);
+}
+
+.gfy-history__item-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.gfy-history__action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: var(--mkcg-bg, #ffffff);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 4px;
+  color: var(--mkcg-text-secondary, #64748b);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gfy-history__action-btn:hover {
+  border-color: var(--mkcg-text-secondary, #64748b);
+  background: var(--mkcg-bg-secondary, #f8fafc);
+}
+
+.gfy-history__action-btn--primary {
+  background: var(--mkcg-primary, #3b82f6);
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: #ffffff;
+}
+
+.gfy-history__action-btn--primary:hover {
+  background: var(--mkcg-primary-dark, #2563eb);
+  border-color: var(--mkcg-primary-dark, #2563eb);
+}
+
+.gfy-history__action-btn--danger:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+.gfy-history__clear-btn {
+  display: block;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background: transparent;
+  border: 1px dashed var(--mkcg-border, #e2e8f0);
+  border-radius: 6px;
+  color: var(--mkcg-text-muted, #94a3b8);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gfy-history__clear-btn:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+/* Mobile responsive for history */
+@media (max-width: 480px) {
+  .gfy-history__item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .gfy-history__item-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 }
 </style>
