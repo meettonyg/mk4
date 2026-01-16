@@ -122,8 +122,8 @@
         <i class="fas fa-save"></i> Saving draft...
       </div>
 
-      <!-- Form Container -->
-      <div class="gfy-bio-form__container">
+      <!-- Form Container (no styling when inside wrapper) -->
+      <div class="gfy-bio-form__container" :class="{ 'gfy-bio-form__container--no-chrome': hideChrome }">
         <!-- Basic Information -->
         <div class="gfy-form-section">
           <h3 class="gfy-form-section__title">
@@ -1190,6 +1190,15 @@ defineExpose({
   border: 1px solid var(--gfy-border-color);
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   padding: 40px;
+}
+
+/* Remove container styling when inside wrapper */
+.gfy-bio-form__container--no-chrome {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
 }
 
 /* FORM SECTIONS */
