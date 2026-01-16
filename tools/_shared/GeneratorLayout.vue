@@ -12,11 +12,11 @@
     </div>
 
     <!-- Main Content Area -->
-    <div class="generator__content" :class="{ 'generator__content--single': singleColumn || !$slots.right }">
+    <div class="generator__content" :class="{ 'generator__content--single': singleColumn || hideChrome || !$slots.right }">
       <!-- Left Panel (Form) -->
       <div class="generator__panel generator__panel--left">
-        <!-- Intro Text -->
-        <p v-if="introText" class="generator__intro">{{ introText }}</p>
+        <!-- Intro Text (hidden when inside wrapper) -->
+        <p v-if="introText && !hideChrome" class="generator__intro">{{ introText }}</p>
 
         <!-- Left Panel Slot (Form Fields, Authority Hook, etc.) -->
         <slot name="left"></slot>
@@ -27,8 +27,8 @@
         </div>
       </div>
 
-      <!-- Right Panel (Guidance) - hidden in single column mode -->
-      <div v-if="!singleColumn && $slots.right" class="generator__panel generator__panel--right">
+      <!-- Right Panel (Guidance) - hidden in single column mode or when inside wrapper -->
+      <div v-if="!singleColumn && !hideChrome && $slots.right" class="generator__panel generator__panel--right">
         <slot name="right"></slot>
       </div>
     </div>

@@ -8,6 +8,7 @@
     generator-type="questions"
     :has-results="hasQuestions"
     :is-loading="isGenerating"
+    :hide-chrome="hideChrome"
   >
     <!-- Profile Context Banner (for logged-in users) -->
     <template #profile-context>
