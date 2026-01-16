@@ -351,7 +351,7 @@ function gmkb_prepare_data_for_injection() {
     require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php';
     require_once GUESTIFY_PLUGIN_DIR . 'system/ThemeDiscovery.php';
 
-    $rest_url = rest_url();
+    $rest_url = rest_url('gmkb/v2/');
     if (substr($rest_url, -1) !== '/') {
         $rest_url .= '/';
     }
@@ -402,7 +402,7 @@ function gmkb_prepare_data_for_injection() {
         'profileBranding'   => $profile_branding,
         'deprecationConfig' => $deprecation_config,
         'apiSettings'       => array(
-            'apiUrl' => esc_url_raw($rest_url . 'gmkb/v2'),
+            'apiUrl' => esc_url_raw(rtrim($rest_url, '/')),
             'nonce' => wp_create_nonce('wp_rest'),
         ),
         'user'              => array(
