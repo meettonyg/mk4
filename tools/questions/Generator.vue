@@ -171,7 +171,21 @@
 
     <!-- Results -->
     <template #results>
-      <div class="questions-results">
+      <!-- Loading Skeleton -->
+      <div v-if="isGenerating && !hasQuestions" class="questions-skeleton">
+        <div class="questions-skeleton__header">
+          <div class="questions-skeleton__title"></div>
+          <div class="questions-skeleton__badge"></div>
+        </div>
+        <div class="questions-skeleton__list">
+          <div v-for="i in 10" :key="i" class="questions-skeleton__row">
+            <div class="questions-skeleton__number"></div>
+            <div class="questions-skeleton__text"></div>
+          </div>
+        </div>
+      </div>
+
+      <div v-else class="questions-results">
         <div class="questions-results__layout">
 
           <!-- SIDEBAR: Interview Set (5 Lockable Slots) -->
@@ -493,7 +507,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch, inject } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, watch, inject } from 'vue';
 import { useAIQuestions, QUESTION_CATEGORIES } from '../../src/composables/useAIQuestions';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
@@ -1041,6 +1055,18 @@ const handleStartOver = () => {
 /**
  * Sync authority hook from store on mount
  */
+/**
+ * Keyboard shortcut handler (Ctrl/Cmd + Enter to generate)
+ */
+const handleKeyboardShortcut = (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    if (canGenerate.value && !isGenerating.value && !hasQuestions.value) {
+      event.preventDefault();
+      handleGenerate();
+    }
+  }
+};
+
 onMounted(() => {
   syncFromStore();
 
@@ -1066,6 +1092,16 @@ onMounted(() => {
   if (props.mode === 'default') {
     startAutoSave(getDraftState);
   }
+
+  // Add keyboard shortcut listener
+  window.addEventListener('keydown', handleKeyboardShortcut);
+});
+
+/**
+ * Cleanup on unmount
+ */
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyboardShortcut);
 });
 
 /**
@@ -2026,5 +2062,77 @@ watch(canGenerate, (newValue) => {
 .questions-row--disabled .questions-copy-btn {
   pointer-events: auto;
   opacity: 1;
+}
+
+/* Loading Skeleton Styles */
+.questions-skeleton {
+  padding: 1.5rem;
+  background: var(--mkcg-bg, #ffffff);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 12px;
+}
+
+.questions-skeleton__header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.questions-skeleton__title {
+  width: 180px;
+  height: 24px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.questions-skeleton__badge {
+  width: 100px;
+  height: 20px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.questions-skeleton__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.questions-skeleton__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border-radius: 8px;
+}
+
+.questions-skeleton__number {
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.questions-skeleton__text {
+  flex: 1;
+  height: 16px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 </style>

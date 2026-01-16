@@ -82,6 +82,20 @@
       />
     </div>
 
+    <!-- Loading Skeleton -->
+    <div v-if="isGenerating && !hasTopics" class="gfy-skeleton-results">
+      <div class="gfy-skeleton-header">
+        <div class="gfy-skeleton gfy-skeleton--text gfy-skeleton--title"></div>
+        <div class="gfy-skeleton gfy-skeleton--text gfy-skeleton--badge"></div>
+      </div>
+      <div class="gfy-skeleton-grid">
+        <div v-for="i in 6" :key="i" class="gfy-skeleton-card">
+          <div class="gfy-skeleton gfy-skeleton--text gfy-skeleton--line"></div>
+          <div class="gfy-skeleton gfy-skeleton--text gfy-skeleton--line gfy-skeleton--short"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Results Section -->
     <div v-if="hasTopics" class="gfy-results">
       <!-- Layout wrapper for side-by-side on desktop -->
@@ -326,7 +340,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, inject, onMounted } from 'vue';
+import { ref, reactive, computed, watch, inject, onMounted, onUnmounted } from 'vue';
 import { useAITopics } from '../../src/composables/useAITopics';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { useDraftState } from '../../src/composables/useDraftState';
@@ -833,6 +847,18 @@ watch(
 );
 
 /**
+ * Keyboard shortcut handler (Ctrl/Cmd + Enter to generate)
+ */
+const handleKeyboardShortcut = (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    if (canGenerate.value && !isGenerating.value && !hasTopics.value) {
+      event.preventDefault();
+      handleGenerate();
+    }
+  }
+};
+
+/**
  * Initialize on mount
  */
 onMounted(() => {
@@ -843,6 +869,16 @@ onMounted(() => {
 
   // Start auto-save
   startAutoSave(getDraftState);
+
+  // Add keyboard shortcut listener
+  window.addEventListener('keydown', handleKeyboardShortcut);
+});
+
+/**
+ * Cleanup on unmount
+ */
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyboardShortcut);
 });
 
 // Expose for parent
@@ -1898,5 +1934,67 @@ defineExpose({
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+}
+
+/* Loading Skeleton Styles */
+.gfy-skeleton-results {
+  padding: 1.5rem;
+  background: var(--gfy-white, #ffffff);
+  border: 1px solid var(--gfy-border-color, #e2e8f0);
+  border-radius: var(--gfy-radius-lg, 12px);
+}
+
+.gfy-skeleton-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.gfy-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.gfy-skeleton-card {
+  padding: 1rem;
+  background: var(--gfy-bg-secondary, #f8fafc);
+  border-radius: 8px;
+}
+
+.gfy-skeleton {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.gfy-skeleton--text {
+  height: 16px;
+}
+
+.gfy-skeleton--title {
+  width: 150px;
+  height: 24px;
+}
+
+.gfy-skeleton--badge {
+  width: 80px;
+  height: 20px;
+}
+
+.gfy-skeleton--line {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.gfy-skeleton--short {
+  width: 60%;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 </style>

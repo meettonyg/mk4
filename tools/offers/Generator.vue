@@ -192,7 +192,23 @@
 
     <!-- Results -->
     <template #results>
-      <div class="offers-results">
+      <!-- Loading Skeleton -->
+      <div v-if="isGenerating && !hasOffers" class="offers-skeleton">
+        <div class="offers-skeleton__header">
+          <div class="offers-skeleton__title"></div>
+        </div>
+        <div class="offers-skeleton__grid">
+          <div v-for="i in 3" :key="i" class="offers-skeleton__card">
+            <div class="offers-skeleton__card-header"></div>
+            <div class="offers-skeleton__card-desc"></div>
+            <div class="offers-skeleton__card-line"></div>
+            <div class="offers-skeleton__card-line offers-skeleton__card-line--short"></div>
+            <div class="offers-skeleton__card-line"></div>
+          </div>
+        </div>
+      </div>
+
+      <div v-else class="offers-results">
         <div class="offers-results__layout">
 
           <!-- SIDEBAR: Offer Suite -->
@@ -665,7 +681,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch, inject } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, watch, inject } from 'vue';
 import { useAIOffers, PACKAGE_TIERS } from '../../src/composables/useAIOffers';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
@@ -1305,6 +1321,18 @@ const handleEmbeddedFieldChange = () => {
 /**
  * Sync authority hook from store on mount
  */
+/**
+ * Keyboard shortcut handler (Ctrl/Cmd + Enter to generate)
+ */
+const handleKeyboardShortcut = (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    if (canGenerate.value && !isGenerating.value && !hasOffers.value) {
+      event.preventDefault();
+      handleGenerate();
+    }
+  }
+};
+
 onMounted(() => {
   syncFromStore();
   if (authorityHookSummary.value) {
@@ -1320,6 +1348,16 @@ onMounted(() => {
   if (props.mode === 'default') {
     startAutoSave(getDraftState);
   }
+
+  // Add keyboard shortcut listener
+  window.addEventListener('keydown', handleKeyboardShortcut);
+});
+
+/**
+ * Cleanup on unmount
+ */
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyboardShortcut);
 });
 
 /**
@@ -2449,5 +2487,83 @@ watch(canGenerateEmbedded, (newValue) => {
 .generator__button--small {
   padding: 0.5rem 1rem;
   font-size: 0.8125rem;
+}
+
+/* Loading Skeleton Styles */
+.offers-skeleton {
+  padding: 1.5rem;
+  background: var(--mkcg-bg, #ffffff);
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 12px;
+}
+
+.offers-skeleton__header {
+  margin-bottom: 1.5rem;
+}
+
+.offers-skeleton__title {
+  width: 200px;
+  height: 24px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.offers-skeleton__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .offers-skeleton__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.offers-skeleton__card {
+  padding: 1.5rem;
+  background: var(--mkcg-bg-secondary, #f8fafc);
+  border-radius: 8px;
+}
+
+.offers-skeleton__card-header {
+  width: 80%;
+  height: 20px;
+  margin-bottom: 12px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.offers-skeleton__card-desc {
+  width: 100%;
+  height: 40px;
+  margin-bottom: 16px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.offers-skeleton__card-line {
+  width: 100%;
+  height: 14px;
+  margin-bottom: 8px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.offers-skeleton__card-line--short {
+  width: 60%;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 </style>
