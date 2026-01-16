@@ -19,264 +19,270 @@
 
     <!-- Left Panel: Form -->
     <template #left>
-      <!-- Draft Restore Prompt -->
-      <div v-if="showDraftPrompt" class="gfy-draft-prompt">
-        <div class="gfy-draft-prompt__content">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="16" y1="13" x2="8" y2="13"/>
-            <line x1="16" y1="17" x2="8" y2="17"/>
-          </svg>
-          <div>
-            <strong>Restore previous work?</strong>
-            <p>You have a saved draft from {{ getLastSavedText() }}.</p>
-          </div>
-        </div>
-        <div class="gfy-draft-prompt__actions">
-          <button type="button" class="generator__button generator__button--call-to-action generator__button--small" @click="handleRestoreDraft">
-            Restore Draft
-          </button>
-          <button type="button" class="generator__button generator__button--ghost generator__button--small" @click="handleDiscardDraft">
-            Start Fresh
-          </button>
-        </div>
-      </div>
-
-      <!-- Auto-save Indicator -->
-      <div v-if="isAutoSaving" class="gfy-auto-save-indicator">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-          <polyline points="17 21 17 13 7 13 7 21"/>
-          <polyline points="7 3 7 8 15 8"/>
-        </svg>
-        Saving draft...
-      </div>
-
-      <!-- Recent History Section -->
-      <div v-if="hasHistory" class="gfy-history">
-        <button
-          type="button"
-          class="gfy-history__toggle"
-          :aria-expanded="showHistory"
-          aria-controls="questions-history-panel"
-          @click="showHistory = !showHistory"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12 6 12 12 16 14"/>
-          </svg>
-          <span>Recent Generations ({{ history.length }})</span>
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            class="gfy-history__chevron"
-            :class="{ 'gfy-history__chevron--open': showHistory }"
-            aria-hidden="true"
-          >
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        </button>
-
-        <div v-if="showHistory" id="questions-history-panel" class="gfy-history__panel" role="region" aria-label="Recent generations">
-          <div class="gfy-history__list">
-            <div
-              v-for="entry in history"
-              :key="entry.id"
-              class="gfy-history__item"
-            >
-              <div class="gfy-history__item-content">
-                <span class="gfy-history__item-preview">{{ entry.preview }}</span>
-                <span class="gfy-history__item-time">{{ formatTimestamp(entry.timestamp) }}</span>
-              </div>
-              <div class="gfy-history__item-actions">
-                <button
-                  type="button"
-                  class="gfy-history__action-btn"
-                  title="Restore inputs only"
-                  aria-label="Restore inputs from this generation"
-                  @click="restoreFromHistory(entry)"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                    <path d="M3 3v5h5"/>
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  class="gfy-history__action-btn gfy-history__action-btn--primary"
-                  title="Restore inputs and results"
-                  aria-label="Restore full generation with results"
-                  @click="restoreFullHistory(entry)"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  class="gfy-history__action-btn gfy-history__action-btn--danger"
-                  title="Remove from history"
-                  aria-label="Delete this history entry"
-                  @click="removeFromHistory(entry.id)"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <polyline points="3 6 5 6 21 6"/>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                  </svg>
-                </button>
-              </div>
+      <div class="gmkb-plg-tool-embed">
+        <!-- Draft Restore Prompt -->
+        <div v-if="showDraftPrompt" class="gfy-draft-prompt">
+          <div class="gfy-draft-prompt__content">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            <div>
+              <strong>Restore previous work?</strong>
+              <p>You have a saved draft from {{ getLastSavedText() }}.</p>
             </div>
           </div>
-          <button
-            v-if="history.length > 1"
-            type="button"
-            class="gfy-history__clear-btn"
-            @click="clearHistory"
-          >
-            Clear All History
-          </button>
-        </div>
-      </div>
-
-      <!-- Welcome Section (shown when no topic selected) -->
-      <div v-if="!refinedTopic && selectedTopicIndex === -1" class="gfy-welcome-section">
-        <div class="gfy-welcome-section__icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-            <line x1="12" y1="17" x2="12.01" y2="17"/>
-          </svg>
-        </div>
-        <h3 class="gfy-welcome-section__title">Generate Interview Questions</h3>
-        <p class="gfy-welcome-section__text">
-          Select a topic and we'll create 10 thought-provoking interview questions that showcase your expertise.
-        </p>
-        <div class="gfy-welcome-section__tips">
-          <span class="gfy-welcome-section__tip">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-            10 unique questions
-          </span>
-          <span class="gfy-welcome-section__tip">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-            Authority-focused
-          </span>
-          <span class="gfy-welcome-section__tip">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-            Ctrl+Enter to generate
-          </span>
-        </div>
-      </div>
-
-      <!-- Form Completion Indicator -->
-      <div class="gfy-form-progress" :class="{ 'gfy-form-progress--complete': formCompletion.isComplete }">
-        <div class="gfy-form-progress__header">
-          <span class="gfy-form-progress__label">
-            <svg v-if="formCompletion.isComplete" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-            </svg>
-            {{ formCompletion.isComplete ? 'Ready to generate!' : `${formCompletion.filledCount}/${formCompletion.totalCount} fields completed` }}
-          </span>
-        </div>
-        <div class="gfy-form-progress__bar">
-          <div class="gfy-form-progress__fill" :style="{ width: `${formCompletion.percentage}%` }"></div>
-        </div>
-      </div>
-
-      <!-- STEP 1: Topic Selection -->
-      <div class="generator__section">
-        <h3 class="generator__section-title">Step 1: Choose or Tweak Your Topic</h3>
-
-        <!-- Topic Selection Grid -->
-        <div v-if="availableTopics.length > 0" class="questions-topic-grid" role="radiogroup" aria-label="Available topics">
-          <button
-            v-for="(topic, index) in availableTopics"
-            :key="index"
-            type="button"
-            class="questions-topic-card"
-            :class="{ 'questions-topic-card--active': selectedTopicIndex === index }"
-            role="radio"
-            :aria-checked="selectedTopicIndex === index"
-            :aria-label="`Topic ${index + 1}: ${topic}`"
-            @click="selectTopic(index)"
-          >
-            <span class="questions-topic-card__number" aria-hidden="true">{{ index + 1 }}</span>
-            <span class="questions-topic-card__text">{{ topic }}</span>
-          </button>
-        </div>
-
-        <!-- No Topics Message -->
-        <div v-else class="questions-topic-empty">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M12 16v-4M12 8h.01"/>
-          </svg>
-          <p>No topics available. Generate topics first using the Topics Generator, or enter a custom topic below.</p>
-        </div>
-
-        <!-- Refine Selected Topic Textarea -->
-        <div class="questions-refine-container">
-          <div class="questions-refine-header">
-            <span class="questions-refine-hint">Refine Selected Topic</span>
-            <span v-if="refinedTopic" class="questions-char-count">{{ refinedTopic.length }} chars</span>
+          <div class="gfy-draft-prompt__actions">
+            <button type="button" class="gfy-btn gfy-btn--primary gfy-btn--small" @click="handleRestoreDraft">
+              Restore Draft
+            </button>
+            <button type="button" class="gfy-btn gfy-btn--ghost gfy-btn--small" @click="handleDiscardDraft">
+              Start Fresh
+            </button>
           </div>
-          <textarea
-            v-model="refinedTopic"
-            class="questions-refine-textarea"
-            rows="2"
-            placeholder="Enter or customize your interview topic..."
-          ></textarea>
         </div>
-      </div>
 
-      <!-- STEP 2: Authority Hook -->
-      <div class="generator__section">
-        <h3 class="generator__section-title">Step 2: Confirm Your Authority Hook</h3>
-
-        <AuthorityHookBuilder
-          :model-value="authorityHook"
-          @update:model-value="Object.assign(authorityHook, $event)"
-          title="Personalize Your Questions"
-          :placeholders="{
-            who: 'e.g. SaaS Founders',
-            what: 'e.g. Increase revenue by 40%',
-            when: 'e.g. When scaling rapidly',
-            how: 'e.g. My proven 90-day system'
-          }"
-        />
-      </div>
-
-      <!-- Generate Button -->
-      <div class="generator__actions">
-        <button
-          type="button"
-          class="generator__button generator__button--call-to-action"
-          :class="{ 'generator__button--loading': isGenerating }"
-          :disabled="!canGenerate || isGenerating"
-          @click="handleGenerate"
-        >
-          <svg v-if="!isGenerating" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        <!-- Auto-save Indicator -->
+        <div v-if="isAutoSaving" class="gfy-auto-save-indicator">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
           </svg>
-          {{ isGenerating ? 'Generating Questions...' : 'Generate 10 Questions' }}
-        </button>
-      </div>
+          Saving draft...
+        </div>
 
-      <p class="generator__hint-text">
-        Generate questions for your specific audience in seconds.
-      </p>
+        <!-- Recent History Section -->
+        <div v-if="hasHistory" class="gfy-history">
+          <button
+            type="button"
+            class="gfy-history__toggle"
+            :aria-expanded="showHistory"
+            aria-controls="questions-history-panel"
+            @click="showHistory = !showHistory"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span>Recent Generations ({{ history.length }})</span>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              class="gfy-history__chevron"
+              :class="{ 'gfy-history__chevron--open': showHistory }"
+              aria-hidden="true"
+            >
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
 
-      <!-- Error Display -->
-      <div v-if="error" class="generator__error">
-        <p>{{ error }}</p>
-        <button type="button" class="generator__button generator__button--outline" @click="handleGenerate">
-          Try Again
-        </button>
+          <div v-if="showHistory" id="questions-history-panel" class="gfy-history__panel" role="region" aria-label="Recent generations">
+            <div class="gfy-history__list">
+              <div
+                v-for="entry in history"
+                :key="entry.id"
+                class="gfy-history__item"
+              >
+                <div class="gfy-history__item-content">
+                  <span class="gfy-history__item-preview">{{ entry.preview }}</span>
+                  <span class="gfy-history__item-time">{{ formatTimestamp(entry.timestamp) }}</span>
+                </div>
+                <div class="gfy-history__item-actions">
+                  <button
+                    type="button"
+                    class="gfy-history__action-btn"
+                    title="Restore inputs only"
+                    aria-label="Restore inputs from this generation"
+                    @click="restoreFromHistory(entry)"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                      <path d="M3 3v5h5"/>
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    class="gfy-history__action-btn gfy-history__action-btn--primary"
+                    title="Restore inputs and results"
+                    aria-label="Restore full generation with results"
+                    @click="restoreFullHistory(entry)"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    class="gfy-history__action-btn gfy-history__action-btn--danger"
+                    title="Remove from history"
+                    aria-label="Delete this history entry"
+                    @click="removeFromHistory(entry.id)"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button
+              v-if="history.length > 1"
+              type="button"
+              class="gfy-history__clear-btn"
+              @click="clearHistory"
+            >
+              Clear All History
+            </button>
+          </div>
+        </div>
+
+        <!-- Welcome Section (shown when no topic selected) -->
+        <div v-if="!refinedTopic && selectedTopicIndex === -1" class="gfy-welcome-section">
+          <div class="gfy-welcome-section__icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <h3 class="gfy-welcome-section__title">Generate Interview Questions</h3>
+          <p class="gfy-welcome-section__text">
+            Select a topic and we'll create 10 thought-provoking interview questions that showcase your expertise.
+          </p>
+          <div class="gfy-welcome-section__tips">
+            <span class="gfy-welcome-section__tip">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+              10 unique questions
+            </span>
+            <span class="gfy-welcome-section__tip">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+              Authority-focused
+            </span>
+            <span class="gfy-welcome-section__tip">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+              Ctrl+Enter to generate
+            </span>
+          </div>
+        </div>
+
+        <!-- Form Completion Indicator -->
+        <div class="gfy-form-progress" :class="{ 'gfy-form-progress--complete': formCompletion.isComplete }">
+          <div class="gfy-form-progress__header">
+            <span class="gfy-form-progress__label">
+              <svg v-if="formCompletion.isComplete" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+              </svg>
+              {{ formCompletion.isComplete ? 'Ready to generate!' : `${formCompletion.filledCount}/${formCompletion.totalCount} fields completed` }}
+            </span>
+          </div>
+          <div class="gfy-form-progress__bar">
+            <div class="gfy-form-progress__fill" :style="{ width: `${formCompletion.percentage}%` }"></div>
+          </div>
+        </div>
+
+        <!-- STEP 1: Topic Selection -->
+        <div class="gfy-form-section">
+          <h3 class="gfy-form-section__title">Step 1: Choose or Tweak Your Topic</h3>
+
+          <div class="gfy-highlight-box gfy-highlight-box--blue">
+            <!-- Topic Selection Grid -->
+            <div v-if="availableTopics.length > 0" class="questions-topic-grid" role="radiogroup" aria-label="Available topics">
+              <button
+                v-for="(topic, index) in availableTopics"
+                :key="index"
+                type="button"
+                class="questions-topic-card"
+                :class="{ 'questions-topic-card--active': selectedTopicIndex === index }"
+                role="radio"
+                :aria-checked="selectedTopicIndex === index"
+                :aria-label="`Topic ${index + 1}: ${topic}`"
+                @click="selectTopic(index)"
+              >
+                <span class="questions-topic-card__number" aria-hidden="true">{{ index + 1 }}</span>
+                <span class="questions-topic-card__text">{{ topic }}</span>
+              </button>
+            </div>
+
+            <!-- No Topics Message -->
+            <div v-else class="questions-topic-empty">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 16v-4M12 8h.01"/>
+              </svg>
+              <p>No topics available. Generate topics first using the Topics Generator, or enter a custom topic below.</p>
+            </div>
+
+            <!-- Refine Selected Topic Textarea -->
+            <div class="questions-refine-container">
+              <div class="questions-refine-header">
+                <span class="questions-refine-hint">Refine Selected Topic</span>
+                <span v-if="refinedTopic" class="questions-char-count">{{ refinedTopic.length }} chars</span>
+              </div>
+              <textarea
+                v-model="refinedTopic"
+                class="questions-refine-textarea"
+                rows="2"
+                placeholder="Enter or customize your interview topic..."
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2: Authority Hook -->
+        <div class="gfy-form-section">
+          <h3 class="gfy-form-section__title">Step 2: Confirm Your Authority Hook</h3>
+
+          <div class="gfy-highlight-box gfy-highlight-box--green">
+            <AuthorityHookBuilder
+              :model-value="authorityHook"
+              @update:model-value="Object.assign(authorityHook, $event)"
+              title="Personalize Your Questions"
+              :placeholders="{
+                who: 'e.g. SaaS Founders',
+                what: 'e.g. Increase revenue by 40%',
+                when: 'e.g. When scaling rapidly',
+                how: 'e.g. My proven 90-day system'
+              }"
+            />
+          </div>
+        </div>
+
+        <!-- Generate Button -->
+        <div class="gfy-form-actions">
+          <button
+            type="button"
+            class="gfy-btn gfy-btn--primary"
+            :class="{ 'gfy-btn--loading': isGenerating }"
+            :disabled="!canGenerate || isGenerating"
+            @click="handleGenerate"
+          >
+            <svg v-if="!isGenerating" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            {{ isGenerating ? 'Generating Questions...' : 'Generate 10 Questions' }}
+          </button>
+        </div>
+
+        <p class="gfy-form-hint">
+          Generate questions for your specific audience in seconds.
+        </p>
+
+        <!-- Error Display -->
+        <div v-if="error" class="gfy-form-error">
+          <p>{{ error }}</p>
+          <button type="button" class="gfy-btn gfy-btn--outline" @click="handleGenerate">
+            Try Again
+          </button>
+        </div>
       </div>
     </template>
 
@@ -372,7 +378,7 @@
               <div class="questions-results__actions">
                 <button
                   type="button"
-                  class="generator__button generator__button--outline"
+                  class="gfy-btn gfy-btn--outline"
                   title="Generate new interview questions"
                   aria-label="Regenerate questions"
                   @click="handleGenerate"
@@ -385,7 +391,7 @@
                 </button>
                 <button
                   type="button"
-                  class="generator__button generator__button--outline"
+                  class="gfy-btn gfy-btn--outline"
                   title="Copy all questions to clipboard"
                   aria-label="Copy all questions to clipboard"
                   @click="handleCopy"
@@ -465,7 +471,7 @@
               <div class="questions-results__save-area">
                 <button
                   type="button"
-                  class="generator__button generator__button--call-to-action generator__button--large"
+                  class="gfy-btn gfy-btn--primary gfy-btn--large"
                   :disabled="selectedQuestionsCount === 0 || isSavingToProfile"
                   title="Save selected questions to your media kit"
                   aria-label="Save selected questions to media kit"
@@ -502,7 +508,7 @@
               </div>
               <button
                 type="button"
-                class="generator__button generator__button--ghost"
+                class="gfy-btn gfy-btn--ghost"
                 title="Clear results and start fresh"
                 aria-label="Start over with new questions"
                 @click="handleStartOver"
@@ -1071,7 +1077,7 @@ function handleProfileCleared() {
 /**
  * Questions formula for guidance panel
  */
-const questionsFormula = '<span class="generator__highlight">[TOPIC]</span> + <span class="generator__highlight">[AUTHORITY]</span> + <span class="generator__highlight">[CONTEXT]</span> = Interview Questions';
+const questionsFormula = '<span class="gfy-highlight">[TOPIC]</span> + <span class="gfy-highlight">[AUTHORITY]</span> + <span class="gfy-highlight">[CONTEXT]</span> = Interview Questions';
 
 /**
  * Process steps for guidance panel
@@ -1415,11 +1421,11 @@ watch(canGenerate, (newValue) => {
 
 <style scoped>
 /* Standalone Mode Styles */
-.generator__section {
+.gfy-form-section {
   margin-bottom: var(--mkcg-space-lg, 30px);
 }
 
-.generator__section-title {
+.gfy-form-section__title {
   font-size: 14px;
   font-weight: 700;
   color: var(--mkcg-text-primary, #0f172a);
@@ -1428,18 +1434,35 @@ watch(canGenerate, (newValue) => {
   letter-spacing: 0.5px;
 }
 
-.generator__actions {
+.gfy-highlight-box {
+  background: #fff;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.gfy-highlight-box--blue {
+  border-left: 4px solid var(--mkcg-primary, #3b82f6);
+  background: var(--mkcg-bg-secondary, #f9fafb);
+}
+
+.gfy-highlight-box--green {
+  border-left: 4px solid #10b981;
+  background: #ecfdf5;
+}
+
+.gfy-form-actions {
   margin-top: var(--mkcg-space-lg, 30px);
 }
 
-.generator__hint-text {
+.gfy-form-hint {
   text-align: center;
   font-size: 13px;
   color: var(--mkcg-text-secondary, #64748b);
   margin-top: 20px;
 }
 
-.generator__error {
+.gfy-form-error {
   margin-top: var(--mkcg-space-md, 20px);
   padding: var(--mkcg-space-md, 20px);
   background-color: #fef2f2;
@@ -1448,7 +1471,58 @@ watch(canGenerate, (newValue) => {
   text-align: center;
 }
 
-.generator__error p {
+.gfy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: var(--mkcg-radius, 8px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.gfy-btn svg {
+  flex-shrink: 0;
+}
+
+.gfy-btn--primary {
+  background: var(--mkcg-primary, #3b82f6);
+  color: #fff;
+}
+
+.gfy-btn--primary:hover:not(:disabled) {
+  background: var(--mkcg-primary-dark, #2563eb);
+}
+
+.gfy-btn--primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.gfy-btn--outline {
+  background: #fff;
+  border-color: var(--mkcg-border, #e2e8f0);
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.gfy-btn--outline:hover {
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: var(--mkcg-primary, #3b82f6);
+  background: var(--mkcg-primary-light, rgba(59, 130, 246, 0.1));
+}
+
+.gfy-btn--loading {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.gfy-form-error p {
   color: #991b1b;
   margin: 0 0 var(--mkcg-space-sm, 12px) 0;
 }
@@ -1978,8 +2052,13 @@ watch(canGenerate, (newValue) => {
   animation: spin 1s linear infinite;
 }
 
+.gfy-highlight {
+  color: var(--mkcg-primary, #3b82f6);
+  font-weight: 700;
+}
+
 /* Ghost button variant */
-.generator__button--ghost {
+.gfy-btn--ghost {
   background: transparent;
   border: none;
   color: var(--mkcg-text-secondary, #64748b);
@@ -1989,7 +2068,7 @@ watch(canGenerate, (newValue) => {
   transition: color 0.2s;
 }
 
-.generator__button--ghost:hover {
+.gfy-btn--ghost:hover {
   color: var(--mkcg-text-primary, #0f172a);
 }
 
@@ -2312,7 +2391,7 @@ watch(canGenerate, (newValue) => {
 }
 
 /* Small button variant */
-.generator__button--small {
+.gfy-btn--small {
   padding: 0.5rem 1rem;
   font-size: 0.8125rem;
 }
@@ -2459,7 +2538,7 @@ watch(canGenerate, (newValue) => {
     width: 100%;
   }
 
-  .questions-results__actions .generator__button {
+  .questions-results__actions .gfy-btn {
     flex: 1 1 auto;
     min-width: 100px;
     justify-content: center;
@@ -2492,7 +2571,7 @@ watch(canGenerate, (newValue) => {
     width: 100%;
   }
 
-  .questions-results__save-area .generator__button {
+  .questions-results__save-area .gfy-btn {
     width: 100%;
     justify-content: center;
   }
@@ -2558,7 +2637,7 @@ watch(canGenerate, (newValue) => {
     gap: 6px;
   }
 
-  .questions-results__actions .generator__button {
+  .questions-results__actions .gfy-btn {
     padding: 8px 12px;
     font-size: 12px;
   }
@@ -2589,7 +2668,7 @@ watch(canGenerate, (newValue) => {
     font-size: 11px;
   }
 
-  .generator__button--large {
+  .gfy-btn--large {
     padding: 12px 16px;
     font-size: 14px;
   }

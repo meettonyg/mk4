@@ -124,4 +124,14 @@ defineProps({
 .generator__process {
   margin-bottom: var(--mkcg-space-lg, 30px);
 }
+
+:deep(.gfy-highlight) {
+  color: var(--mkcg-primary, #3b82f6);
+  font-weight: 700;
+}
+
+:deep(.generator__highlight) {
+  color: var(--mkcg-primary, #3b82f6);
+  font-weight: 700;
+}
 </style>

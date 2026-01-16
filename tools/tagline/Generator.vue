@@ -52,146 +52,151 @@
 
     <!-- Left Panel: Form -->
     <template #left>
+      <div class="gmkb-plg-tool-embed">
+        <!-- Intent Tabs -->
+        <div class="gfy-intent-tabs">
+          <button
+            v-for="option in INTENT_OPTIONS"
+            :key="option.value"
+            type="button"
+            class="gfy-intent-tab"
+            :class="{ 'active': intent === option.value }"
+            @click="intent = option.value"
+          >
+            {{ option.label }}
+          </button>
+        </div>
 
-      <!-- Intent Tabs -->
-      <div class="generator__intent-tabs">
-        <button
-          v-for="option in INTENT_OPTIONS"
-          :key="option.value"
-          type="button"
-          class="generator__intent-tab"
-          :class="{ 'active': intent === option.value }"
-          @click="intent = option.value"
-        >
-          {{ option.label }}
-        </button>
-      </div>
+        <!-- STEP 1: Authority Framework -->
+        <div class="gfy-form-section">
+          <h3 class="gfy-form-section__title">Step 1: Your Authority Framework</h3>
 
-      <!-- STEP 1: Authority Framework -->
-      <div class="generator__section">
-        <h3 class="generator__section-title">Step 1: Your Authority Framework</h3>
-
-        <!-- Authority Hook Box -->
-        <AuthorityHookBuilder
-          :model-value="authorityHook"
-          @update:model-value="Object.assign(authorityHook, $event)"
-          title="Your Authority Hook"
-          :placeholders="{
-            who: 'e.g. SaaS Founders',
-            what: 'e.g. Scale to 7-figures',
-            when: 'e.g. Feeling plateaued',
-            how: 'e.g. 90-day framework'
-          }"
-        />
-
-        <!-- Impact Intro Box -->
-        <ImpactIntroBuilder
-          :model-value="impactIntro"
-          @update:model-value="Object.assign(impactIntro, $event)"
-          title="Your Impact Intro"
-          :placeholders="{
-            where: 'e.g. Helped 200+ startups achieve milestones',
-            why: 'e.g. Democratize elite growth strategies'
-          }"
-        />
-      </div>
-
-      <!-- Section Divider -->
-      <div class="generator__divider">
-        <span>Context & Style</span>
-      </div>
-
-      <!-- STEP 2: Brand Context -->
-      <div class="generator__section">
-        <h3 class="generator__section-title">Step 2: Brand Context</h3>
-
-        <div class="generator__grid">
-          <div class="generator__field">
-            <label class="generator__field-label">
-              Industry
-              <span v-if="isFieldPrefilled('industry')" class="generator__prefilled-badge" title="Loaded from your profile">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
-                from profile
-              </span>
-            </label>
-            <input
-              v-model="brandContext.industry"
-              type="text"
-              class="generator__field-input"
-              :class="{ 'generator__field-input--prefilled': isFieldPrefilled('industry') }"
-              placeholder="e.g. SaaS, Consulting"
-              @input="markFieldEdited('industry')"
+          <!-- Authority Hook Box -->
+          <div class="gfy-highlight-box gfy-highlight-box--blue">
+            <AuthorityHookBuilder
+              :model-value="authorityHook"
+              @update:model-value="Object.assign(authorityHook, $event)"
+              title="Your Authority Hook"
+              :placeholders="{
+                who: 'e.g. SaaS Founders',
+                what: 'e.g. Scale to 7-figures',
+                when: 'e.g. Feeling plateaued',
+                how: 'e.g. 90-day framework'
+              }"
             />
           </div>
-          <div class="generator__field">
-            <label class="generator__field-label">Unique Factor</label>
-            <input
-              v-model="brandContext.uniqueFactor"
-              type="text"
-              class="generator__field-input"
-              placeholder="e.g. No-BS approach, Zero-to-One focus"
+
+          <!-- Impact Intro Box -->
+          <div class="gfy-highlight-box gfy-highlight-box--green">
+            <ImpactIntroBuilder
+              :model-value="impactIntro"
+              @update:model-value="Object.assign(impactIntro, $event)"
+              title="Your Impact Intro"
+              :placeholders="{
+                where: 'e.g. Helped 200+ startups achieve milestones',
+                why: 'e.g. Democratize elite growth strategies'
+              }"
             />
           </div>
         </div>
-        <div class="generator__field">
-          <label class="generator__field-label">Existing Taglines (Optional)</label>
-          <textarea
-            v-model="brandContext.existingTaglines"
-            class="generator__field-input generator__field-textarea"
-            placeholder="List any slogans you currently use to help the AI improve upon them..."
-            rows="2"
-          ></textarea>
+
+        <!-- Section Divider -->
+        <div class="gfy-section-divider">
+          <span>Context & Style</span>
         </div>
-      </div>
 
-      <!-- STEP 3: Tagline Settings -->
-      <div class="generator__section">
-        <h3 class="generator__section-title">Step 3: Tagline Settings</h3>
+        <!-- STEP 2: Brand Context -->
+        <div class="gfy-form-section">
+          <h3 class="gfy-form-section__title">Step 2: Brand Context</h3>
 
-        <div class="generator__grid">
-          <div class="generator__field">
-            <label class="generator__field-label">Style Focus</label>
-            <select v-model="styleFocus" class="generator__field-input">
-              <option v-for="opt in STYLE_FOCUS_OPTIONS" :key="opt.value" :value="opt.value">
-                {{ opt.label }}
-              </option>
-            </select>
+          <div class="gfy-form-grid">
+            <div class="gfy-input-group">
+              <label class="gfy-label">
+                Industry
+                <span v-if="isFieldPrefilled('industry')" class="gfy-prefilled-badge" title="Loaded from your profile">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                  </svg>
+                  from profile
+                </span>
+              </label>
+              <input
+                v-model="brandContext.industry"
+                type="text"
+                class="gfy-builder__input"
+                :class="{ 'gfy-builder__input--prefilled': isFieldPrefilled('industry') }"
+                placeholder="e.g. SaaS, Consulting"
+                @input="markFieldEdited('industry')"
+              />
+            </div>
+            <div class="gfy-input-group">
+              <label class="gfy-label">Unique Factor</label>
+              <input
+                v-model="brandContext.uniqueFactor"
+                type="text"
+                class="gfy-builder__input"
+                placeholder="e.g. No-BS approach, Zero-to-One focus"
+              />
+            </div>
           </div>
-          <div class="generator__field">
-            <label class="generator__field-label">Tone</label>
-            <select v-model="tone" class="generator__field-input">
-              <option v-for="opt in TONE_OPTIONS" :key="opt.value" :value="opt.value">
-                {{ opt.label }}
-              </option>
-            </select>
+          <div class="gfy-input-group">
+            <label class="gfy-label">Existing Taglines (Optional)</label>
+            <textarea
+              v-model="brandContext.existingTaglines"
+              class="gfy-builder__input gfy-builder__textarea"
+              placeholder="List any slogans you currently use to help the AI improve upon them..."
+              rows="2"
+            ></textarea>
           </div>
         </div>
-      </div>
 
-      <!-- Generate Button -->
-      <div class="generator__actions">
-        <button
-          type="button"
-          class="generator__button generator__button--call-to-action"
-          :class="{ 'generator__button--loading': isGenerating }"
-          :disabled="!canGenerate || isGenerating"
-          @click="handleGenerate"
-        >
-          <svg v-if="!isGenerating" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-          </svg>
-          {{ isGenerating ? 'Generating...' : generateButtonText }}
-        </button>
-      </div>
+        <!-- STEP 3: Tagline Settings -->
+        <div class="gfy-form-section">
+          <h3 class="gfy-form-section__title">Step 3: Tagline Settings</h3>
 
-      <!-- Error Display -->
-      <div v-if="error" class="generator__error">
-        <p>{{ error }}</p>
-        <button type="button" class="generator__button generator__button--outline" @click="handleGenerate">
-          Try Again
-        </button>
+          <div class="gfy-form-grid">
+            <div class="gfy-input-group">
+              <label class="gfy-label">Style Focus</label>
+              <select v-model="styleFocus" class="gfy-builder__input">
+                <option v-for="opt in STYLE_FOCUS_OPTIONS" :key="opt.value" :value="opt.value">
+                  {{ opt.label }}
+                </option>
+              </select>
+            </div>
+            <div class="gfy-input-group">
+              <label class="gfy-label">Tone</label>
+              <select v-model="tone" class="gfy-builder__input">
+                <option v-for="opt in TONE_OPTIONS" :key="opt.value" :value="opt.value">
+                  {{ opt.label }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Generate Button -->
+        <div class="gfy-form-actions">
+          <button
+            type="button"
+            class="gfy-btn gfy-btn--primary"
+            :class="{ 'gfy-btn--loading': isGenerating }"
+            :disabled="!canGenerate || isGenerating"
+            @click="handleGenerate"
+          >
+            <svg v-if="!isGenerating" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            {{ isGenerating ? 'Generating...' : generateButtonText }}
+          </button>
+        </div>
+
+        <!-- Error Display -->
+        <div v-if="error" class="gfy-form-error">
+          <p>{{ error }}</p>
+          <button type="button" class="gfy-btn gfy-btn--outline" @click="handleGenerate">
+            Try Again
+          </button>
+        </div>
       </div>
     </template>
 
@@ -249,7 +254,7 @@
               <div class="tagline-results__actions">
                 <button
                   type="button"
-                  class="generator__button generator__button--outline"
+                  class="gfy-btn gfy-btn--outline"
                   @click="handleGenerate"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -260,7 +265,7 @@
                 </button>
                 <button
                   type="button"
-                  class="generator__button generator__button--outline"
+                  class="gfy-btn gfy-btn--outline"
                   @click="handleCopyAll"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -356,7 +361,7 @@
 
               <button
                 type="button"
-                class="generator__button generator__button--call-to-action"
+                class="gfy-btn gfy-btn--primary"
                 :disabled="(!selectedTagline && !lockedTagline) || isSavingToProfile || !hasSelectedProfile"
                 :title="!hasSelectedProfile ? 'Select a profile above to save' : ''"
                 @click="handleSaveToProfile"
@@ -374,7 +379,7 @@
               </button>
               <button
                 type="button"
-                class="generator__button generator__button--ghost"
+                class="gfy-btn gfy-btn--ghost"
                 @click="handleStartOver"
               >
                 Start Over
@@ -700,7 +705,7 @@ const generateButtonText = computed(() => {
 /**
  * Tagline formula for guidance panel
  */
-const taglineFormula = '<span class="generator__highlight">[PROMISE]</span> + <span class="generator__highlight">[DIFFERENTIATION]</span> + <span class="generator__highlight">[BREVITY]</span> = Memorable Tagline';
+const taglineFormula = '<span class="gfy-highlight">[PROMISE]</span> + <span class="gfy-highlight">[DIFFERENTIATION]</span> + <span class="gfy-highlight">[BREVITY]</span> = Memorable Tagline';
 
 /**
  * Process steps for guidance panel
@@ -1045,7 +1050,7 @@ watch(canGenerate, (newValue) => {
 
 <style scoped>
 /* Intent Tabs */
-.generator__intent-tabs {
+.gfy-intent-tabs {
   display: flex;
   border-bottom: 1px solid var(--mkcg-border, #e2e8f0);
   margin-bottom: 24px;
@@ -1054,7 +1059,7 @@ watch(canGenerate, (newValue) => {
   overflow: hidden;
 }
 
-.generator__intent-tab {
+.gfy-intent-tab {
   flex: 1;
   padding: 14px 16px;
   background: transparent;
@@ -1067,23 +1072,23 @@ watch(canGenerate, (newValue) => {
   transition: all 0.2s ease;
 }
 
-.generator__intent-tab:hover {
+.gfy-intent-tab:hover {
   color: var(--mkcg-text-primary, #0f172a);
   background: rgba(59, 130, 246, 0.05);
 }
 
-.generator__intent-tab.active {
+.gfy-intent-tab.active {
   color: var(--mkcg-primary, #3b82f6);
   background: #fff;
   border-bottom-color: var(--mkcg-primary, #3b82f6);
 }
 
 /* Sections */
-.generator__section {
+.gfy-form-section {
   margin-bottom: var(--mkcg-space-lg, 24px);
 }
 
-.generator__section-title {
+.gfy-form-section__title {
   font-size: 14px;
   font-weight: 700;
   color: var(--mkcg-text-primary, #0f172a);
@@ -1092,8 +1097,27 @@ watch(canGenerate, (newValue) => {
   letter-spacing: 0.5px;
 }
 
+/* Highlight Boxes */
+.gfy-highlight-box {
+  background: #fff;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.gfy-highlight-box--blue {
+  border-left: 4px solid var(--mkcg-primary, #3b82f6);
+  background: var(--mkcg-bg-secondary, #f9fafb);
+}
+
+.gfy-highlight-box--green {
+  border-left: 4px solid #10b981;
+  background: #ecfdf5;
+}
+
 /* Grid Layout */
-.generator__grid {
+.gfy-form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
@@ -1101,20 +1125,20 @@ watch(canGenerate, (newValue) => {
 }
 
 @media (max-width: 768px) {
-  .generator__grid {
+  .gfy-form-grid {
     grid-template-columns: 1fr;
   }
 }
 
 /* Section Divider */
-.generator__divider {
+.gfy-section-divider {
   height: 1px;
   background: var(--mkcg-border, #e2e8f0);
   margin: 32px 0;
   position: relative;
 }
 
-.generator__divider span {
+.gfy-section-divider span {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -1129,15 +1153,15 @@ watch(canGenerate, (newValue) => {
 }
 
 /* Fields */
-.generator__field {
+.gfy-input-group {
   margin-bottom: 12px;
 }
 
-.generator__field:last-child {
+.gfy-input-group:last-child {
   margin-bottom: 0;
 }
 
-.generator__field-label {
+.gfy-label {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1150,7 +1174,7 @@ watch(canGenerate, (newValue) => {
 }
 
 /* Prefilled badge for fields loaded from profile */
-.generator__prefilled-badge {
+.gfy-prefilled-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -1165,17 +1189,17 @@ watch(canGenerate, (newValue) => {
   letter-spacing: normal;
 }
 
-.generator__prefilled-badge svg {
+.gfy-prefilled-badge svg {
   flex-shrink: 0;
 }
 
 /* Prefilled input highlight */
-.generator__field-input--prefilled {
+.gfy-builder__input--prefilled {
   border-color: #86efac;
   background: linear-gradient(to right, #f0fdf4, #fff);
 }
 
-.generator__field-input {
+.gfy-builder__input {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid var(--mkcg-border, #e2e8f0);
@@ -1187,27 +1211,78 @@ watch(canGenerate, (newValue) => {
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.generator__field-input:focus {
+.gfy-builder__input:focus {
   outline: none;
   border-color: var(--mkcg-primary, #3b82f6);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.generator__field-input::placeholder {
+.gfy-builder__input::placeholder {
   color: var(--mkcg-text-light, #94a3b8);
 }
 
-.generator__field-textarea {
+.gfy-builder__textarea {
   resize: vertical;
   min-height: 60px;
 }
 
 /* Actions */
-.generator__actions {
+.gfy-form-actions {
   margin-top: var(--mkcg-space-lg, 30px);
 }
 
-.generator__error {
+.gfy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: var(--mkcg-radius, 8px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.gfy-btn svg {
+  flex-shrink: 0;
+}
+
+.gfy-btn--primary {
+  background: var(--mkcg-primary, #3b82f6);
+  color: #fff;
+}
+
+.gfy-btn--primary:hover:not(:disabled) {
+  background: var(--mkcg-primary-dark, #2563eb);
+}
+
+.gfy-btn--primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.gfy-btn--outline {
+  background: #fff;
+  border-color: var(--mkcg-border, #e2e8f0);
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.gfy-btn--outline:hover {
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: var(--mkcg-primary, #3b82f6);
+  background: var(--mkcg-primary-light, rgba(59, 130, 246, 0.1));
+}
+
+.gfy-btn--loading {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.gfy-form-error {
   margin-top: var(--mkcg-space-md, 20px);
   padding: var(--mkcg-space-md, 20px);
   background-color: #fef2f2;
@@ -1216,7 +1291,7 @@ watch(canGenerate, (newValue) => {
   text-align: center;
 }
 
-.generator__error p {
+.gfy-form-error p {
   color: #991b1b;
   margin: 0 0 var(--mkcg-space-sm, 12px) 0;
 }
@@ -1561,8 +1636,13 @@ watch(canGenerate, (newValue) => {
   animation: spin 1s linear infinite;
 }
 
+.gfy-highlight {
+  color: var(--mkcg-primary, #3b82f6);
+  font-weight: 700;
+}
+
 /* Ghost button variant */
-.generator__button--ghost {
+.gfy-btn--ghost {
   background: transparent;
   border: none;
   color: var(--mkcg-text-secondary, #64748b);
@@ -1572,7 +1652,7 @@ watch(canGenerate, (newValue) => {
   transition: color 0.2s;
 }
 
-.generator__button--ghost:hover {
+.gfy-btn--ghost:hover {
   color: var(--mkcg-text-primary, #0f172a);
 }
 

@@ -19,280 +19,282 @@
 
     <!-- Left Panel: Form -->
     <template #left>
-      <!-- Draft Restore Prompt -->
-      <div v-if="showDraftPrompt" class="gfy-draft-prompt">
-        <div class="gfy-draft-prompt__content">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="16" y1="13" x2="8" y2="13"/>
-            <line x1="16" y1="17" x2="8" y2="17"/>
-          </svg>
-          <div>
-            <strong>Restore previous work?</strong>
-            <p>You have a saved draft from {{ getLastSavedText() }}.</p>
-          </div>
-        </div>
-        <div class="gfy-draft-prompt__actions">
-          <button type="button" class="generator__button generator__button--call-to-action generator__button--small" @click="handleRestoreDraft">
-            Restore Draft
-          </button>
-          <button type="button" class="generator__button generator__button--ghost generator__button--small" @click="handleDiscardDraft">
-            Start Fresh
-          </button>
-        </div>
-      </div>
-
-      <!-- Auto-save Indicator -->
-      <div v-if="isAutoSaving" class="gfy-auto-save-indicator">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-          <polyline points="17 21 17 13 7 13 7 21"/>
-          <polyline points="7 3 7 8 15 8"/>
-        </svg>
-        Saving draft...
-      </div>
-
-      <!-- Recent History Section -->
-      <div v-if="hasHistory" class="gfy-history">
-        <button
-          type="button"
-          class="gfy-history__toggle"
-          :aria-expanded="showHistory"
-          aria-controls="offers-history-panel"
-          @click="showHistory = !showHistory"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12 6 12 12 16 14"/>
-          </svg>
-          <span>Recent Generations ({{ history.length }})</span>
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            class="gfy-history__chevron"
-            :class="{ 'gfy-history__chevron--open': showHistory }"
-            aria-hidden="true"
-          >
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        </button>
-
-        <div v-if="showHistory" id="offers-history-panel" class="gfy-history__panel" role="region" aria-label="Recent generations">
-          <div class="gfy-history__list">
-            <div
-              v-for="entry in history"
-              :key="entry.id"
-              class="gfy-history__item"
-            >
-              <div class="gfy-history__item-content">
-                <span class="gfy-history__item-preview">{{ entry.preview }}</span>
-                <span class="gfy-history__item-time">{{ formatTimestamp(entry.timestamp) }}</span>
-              </div>
-              <div class="gfy-history__item-actions">
-                <button
-                  type="button"
-                  class="gfy-history__action-btn"
-                  title="Restore inputs only"
-                  aria-label="Restore inputs from this generation"
-                  @click="restoreFromHistory(entry)"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                    <path d="M3 3v5h5"/>
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  class="gfy-history__action-btn gfy-history__action-btn--primary"
-                  title="Restore inputs and results"
-                  aria-label="Restore full generation with results"
-                  @click="restoreFullHistory(entry)"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  class="gfy-history__action-btn gfy-history__action-btn--danger"
-                  title="Remove from history"
-                  aria-label="Delete this history entry"
-                  @click="removeFromHistory(entry.id)"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <polyline points="3 6 5 6 21 6"/>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                  </svg>
-                </button>
-              </div>
+      <div class="gmkb-plg-tool-embed">
+        <!-- Draft Restore Prompt -->
+        <div v-if="showDraftPrompt" class="gfy-draft-prompt">
+          <div class="gfy-draft-prompt__content">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            <div>
+              <strong>Restore previous work?</strong>
+              <p>You have a saved draft from {{ getLastSavedText() }}.</p>
             </div>
           </div>
+          <div class="gfy-draft-prompt__actions">
+            <button type="button" class="gfy-btn gfy-btn--primary gfy-btn--small" @click="handleRestoreDraft">
+              Restore Draft
+            </button>
+            <button type="button" class="gfy-btn gfy-btn--ghost gfy-btn--small" @click="handleDiscardDraft">
+              Start Fresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Auto-save Indicator -->
+        <div v-if="isAutoSaving" class="gfy-auto-save-indicator">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+          </svg>
+          Saving draft...
+        </div>
+
+        <!-- Recent History Section -->
+        <div v-if="hasHistory" class="gfy-history">
           <button
-            v-if="history.length > 1"
             type="button"
-            class="gfy-history__clear-btn"
-            @click="clearHistory"
+            class="gfy-history__toggle"
+            :aria-expanded="showHistory"
+            aria-controls="offers-history-panel"
+            @click="showHistory = !showHistory"
           >
-            Clear All History
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span>Recent Generations ({{ history.length }})</span>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              class="gfy-history__chevron"
+              :class="{ 'gfy-history__chevron--open': showHistory }"
+              aria-hidden="true"
+            >
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+
+          <div v-if="showHistory" id="offers-history-panel" class="gfy-history__panel" role="region" aria-label="Recent generations">
+            <div class="gfy-history__list">
+              <div
+                v-for="entry in history"
+                :key="entry.id"
+                class="gfy-history__item"
+              >
+                <div class="gfy-history__item-content">
+                  <span class="gfy-history__item-preview">{{ entry.preview }}</span>
+                  <span class="gfy-history__item-time">{{ formatTimestamp(entry.timestamp) }}</span>
+                </div>
+                <div class="gfy-history__item-actions">
+                  <button
+                    type="button"
+                    class="gfy-history__action-btn"
+                    title="Restore inputs only"
+                    aria-label="Restore inputs from this generation"
+                    @click="restoreFromHistory(entry)"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                      <path d="M3 3v5h5"/>
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    class="gfy-history__action-btn gfy-history__action-btn--primary"
+                    title="Restore inputs and results"
+                    aria-label="Restore full generation with results"
+                    @click="restoreFullHistory(entry)"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    class="gfy-history__action-btn gfy-history__action-btn--danger"
+                    title="Remove from history"
+                    aria-label="Delete this history entry"
+                    @click="removeFromHistory(entry.id)"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button
+              v-if="history.length > 1"
+              type="button"
+              class="gfy-history__clear-btn"
+              @click="clearHistory"
+            >
+              Clear All History
+            </button>
+          </div>
+        </div>
+
+        <!-- Welcome Section (shown when form is empty) -->
+        <div v-if="!services && !authorityHook.who" class="gfy-welcome-section">
+          <div class="gfy-welcome-section__icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
+          </div>
+          <h3 class="gfy-welcome-section__title">Generate Service Packages</h3>
+          <p class="gfy-welcome-section__text">
+            Tell us about your services and we'll create 3 tiered packages (Entry, Signature, Premium) to help you serve clients at every level.
+          </p>
+          <div class="gfy-welcome-section__tips">
+            <span class="gfy-welcome-section__tip">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+              3 tiered packages
+            </span>
+            <span class="gfy-welcome-section__tip">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+              Deliverables included
+            </span>
+            <span class="gfy-welcome-section__tip">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+              Ctrl+Enter to generate
+            </span>
+          </div>
+        </div>
+
+        <!-- Form Completion Indicator -->
+        <div class="gfy-form-progress" :class="{ 'gfy-form-progress--complete': formCompletion.isComplete }">
+          <div class="gfy-form-progress__header">
+            <span class="gfy-form-progress__label">
+              <svg v-if="formCompletion.isComplete" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+              </svg>
+              {{ formCompletion.isComplete ? 'Ready to generate!' : `${formCompletion.filledCount}/${formCompletion.totalCount} fields completed` }}
+            </span>
+          </div>
+          <div class="gfy-form-progress__bar">
+            <div class="gfy-form-progress__fill" :style="{ width: `${formCompletion.percentage}%` }"></div>
+          </div>
+        </div>
+
+        <!-- Services Section -->
+        <div class="gfy-form-section">
+          <h3 class="gfy-form-section__title">Your Services</h3>
+
+          <div class="gfy-input-group">
+            <label class="gfy-label">
+              Services You Offer *
+              <span v-if="isFieldPrefilled('services')" class="gfy-prefilled-badge">from profile</span>
+            </label>
+            <textarea
+              v-model="services"
+              class="gfy-builder__input gfy-builder__textarea"
+              :class="{ 'gfy-builder__input--prefilled': isFieldPrefilled('services') }"
+              placeholder="e.g., 1-on-1 coaching, group workshops, keynote speaking, online courses, consulting..."
+              rows="4"
+              @input="markFieldEdited('services')"
+            ></textarea>
+            <div class="gfy-input-group-footer">
+              <p class="gfy-input-group-helper">
+                List the services you want to package and sell.
+              </p>
+              <span v-if="services" class="gfy-char-count">{{ services.length }} chars</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Authority Hook Section -->
+        <AuthorityHookBuilder
+          :model-value="authorityHook"
+          @update:model-value="Object.assign(authorityHook, $event)"
+          title="Authority Context"
+          :placeholders="{
+            who: 'e.g., SaaS Founders scaling to $10M ARR',
+            what: 'e.g., Increase revenue by 40% in 90 days',
+            when: 'e.g., When they\'re stuck at a growth plateau',
+            how: 'e.g., My proven Revenue Acceleration System'
+          }"
+        />
+
+        <!-- Offer Details Section -->
+        <div class="gfy-form-section">
+          <h3 class="gfy-form-section__title">Offer Details</h3>
+
+          <div class="gfy-input-group-row">
+            <div class="gfy-input-group">
+              <label class="gfy-label">Price Range</label>
+              <select v-model="priceRange" class="gfy-builder__input gfy-input-group-select">
+                <option v-for="opt in PRICE_RANGE_OPTIONS" :key="opt.value" :value="opt.value">
+                  {{ opt.label }}
+                </option>
+              </select>
+            </div>
+
+            <div class="gfy-input-group">
+              <label class="gfy-label">Delivery Method</label>
+              <select v-model="delivery" class="gfy-builder__input gfy-input-group-select">
+                <option v-for="opt in DELIVERY_OPTIONS" :key="opt.value" :value="opt.value">
+                  {{ opt.label }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="gfy-input-group gfy-input-group--prominent">
+            <label class="gfy-label">
+              Target Audience Challenges
+              <span v-if="isFieldPrefilled('audienceChallenges')" class="gfy-prefilled-badge">from profile</span>
+            </label>
+            <textarea
+              v-model="audienceChallenges"
+              class="gfy-builder__input gfy-builder__textarea gfy-builder__textarea--large"
+              :class="{ 'gfy-builder__input--prefilled': isFieldPrefilled('audienceChallenges') }"
+              placeholder="e.g., Struggling to find time, overwhelmed by options, not seeing results from current approach..."
+              rows="5"
+              @input="markFieldEdited('audienceChallenges')"
+            ></textarea>
+            <div class="gfy-input-group-footer">
+              <p class="gfy-input-group-helper">
+                What problems or challenges does your audience face that your offer solves?
+              </p>
+              <span v-if="audienceChallenges" class="gfy-char-count">{{ audienceChallenges.length }} chars</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Generate Button -->
+        <div class="gfy-form-actions">
+          <button
+            type="button"
+            class="gfy-btn gfy-btn--primary"
+            :class="{ 'gfy-btn--loading': isGenerating }"
+            :disabled="!canGenerate || isGenerating"
+            @click="handleGenerate"
+          >
+            <svg v-if="!isGenerating" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            {{ isGenerating ? 'Creating packages...' : 'Generate 3 Packages with AI' }}
           </button>
         </div>
-      </div>
 
-      <!-- Welcome Section (shown when form is empty) -->
-      <div v-if="!services && !authorityHook.who" class="gfy-welcome-section">
-        <div class="gfy-welcome-section__icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-          </svg>
+        <!-- Error Display -->
+        <div v-if="error" class="gfy-form-error">
+          <p>{{ error }}</p>
+          <button type="button" class="gfy-btn gfy-btn--outline" @click="handleGenerate">
+            Try Again
+          </button>
         </div>
-        <h3 class="gfy-welcome-section__title">Generate Service Packages</h3>
-        <p class="gfy-welcome-section__text">
-          Tell us about your services and we'll create 3 tiered packages (Entry, Signature, Premium) to help you serve clients at every level.
-        </p>
-        <div class="gfy-welcome-section__tips">
-          <span class="gfy-welcome-section__tip">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-            3 tiered packages
-          </span>
-          <span class="gfy-welcome-section__tip">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-            Deliverables included
-          </span>
-          <span class="gfy-welcome-section__tip">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-            Ctrl+Enter to generate
-          </span>
-        </div>
-      </div>
-
-      <!-- Form Completion Indicator -->
-      <div class="gfy-form-progress" :class="{ 'gfy-form-progress--complete': formCompletion.isComplete }">
-        <div class="gfy-form-progress__header">
-          <span class="gfy-form-progress__label">
-            <svg v-if="formCompletion.isComplete" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-            </svg>
-            {{ formCompletion.isComplete ? 'Ready to generate!' : `${formCompletion.filledCount}/${formCompletion.totalCount} fields completed` }}
-          </span>
-        </div>
-        <div class="gfy-form-progress__bar">
-          <div class="gfy-form-progress__fill" :style="{ width: `${formCompletion.percentage}%` }"></div>
-        </div>
-      </div>
-
-      <!-- Services Section -->
-      <div class="generator__section">
-        <h3 class="generator__section-title">Your Services</h3>
-
-        <div class="generator__field">
-          <label class="generator__field-label">
-            Services You Offer *
-            <span v-if="isFieldPrefilled('services')" class="gfy-prefilled-badge">from profile</span>
-          </label>
-          <textarea
-            v-model="services"
-            class="generator__field-input generator__field-textarea"
-            :class="{ 'generator__field-input--prefilled': isFieldPrefilled('services') }"
-            placeholder="e.g., 1-on-1 coaching, group workshops, keynote speaking, online courses, consulting..."
-            rows="4"
-            @input="markFieldEdited('services')"
-          ></textarea>
-          <div class="generator__field-footer">
-            <p class="generator__field-helper">
-              List the services you want to package and sell.
-            </p>
-            <span v-if="services" class="generator__char-count">{{ services.length }} chars</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Authority Hook Section -->
-      <AuthorityHookBuilder
-        :model-value="authorityHook"
-        @update:model-value="Object.assign(authorityHook, $event)"
-        title="Authority Context"
-        :placeholders="{
-          who: 'e.g., SaaS Founders scaling to $10M ARR',
-          what: 'e.g., Increase revenue by 40% in 90 days',
-          when: 'e.g., When they\'re stuck at a growth plateau',
-          how: 'e.g., My proven Revenue Acceleration System'
-        }"
-      />
-
-      <!-- Offer Details Section -->
-      <div class="generator__section">
-        <h3 class="generator__section-title">Offer Details</h3>
-
-        <div class="generator__field-row">
-          <div class="generator__field">
-            <label class="generator__field-label">Price Range</label>
-            <select v-model="priceRange" class="generator__field-input generator__field-select">
-              <option v-for="opt in PRICE_RANGE_OPTIONS" :key="opt.value" :value="opt.value">
-                {{ opt.label }}
-              </option>
-            </select>
-          </div>
-
-          <div class="generator__field">
-            <label class="generator__field-label">Delivery Method</label>
-            <select v-model="delivery" class="generator__field-input generator__field-select">
-              <option v-for="opt in DELIVERY_OPTIONS" :key="opt.value" :value="opt.value">
-                {{ opt.label }}
-              </option>
-            </select>
-          </div>
-        </div>
-
-        <div class="generator__field">
-          <label class="generator__field-label">
-            Audience Challenges
-            <span v-if="isFieldPrefilled('audienceChallenges')" class="gfy-prefilled-badge">from profile</span>
-          </label>
-          <textarea
-            v-model="audienceChallenges"
-            class="generator__field-input generator__field-textarea"
-            :class="{ 'generator__field-input--prefilled': isFieldPrefilled('audienceChallenges') }"
-            placeholder="e.g., Struggling to find time, overwhelmed by options, not seeing results from current approach..."
-            rows="3"
-            @input="markFieldEdited('audienceChallenges')"
-          ></textarea>
-          <div class="generator__field-footer">
-            <p class="generator__field-helper">
-              What problems or challenges does your audience face that your offer solves?
-            </p>
-            <span v-if="audienceChallenges" class="generator__char-count">{{ audienceChallenges.length }} chars</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Generate Button -->
-      <div class="generator__actions">
-        <button
-          type="button"
-          class="generator__button generator__button--call-to-action"
-          :class="{ 'generator__button--loading': isGenerating }"
-          :disabled="!canGenerate || isGenerating"
-          @click="handleGenerate"
-        >
-          <svg v-if="!isGenerating" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-          </svg>
-          {{ isGenerating ? 'Creating packages...' : 'Generate 3 Packages with AI' }}
-        </button>
-      </div>
-
-      <!-- Error Display -->
-      <div v-if="error" class="generator__error">
-        <p>{{ error }}</p>
-        <button type="button" class="generator__button generator__button--outline" @click="handleGenerate">
-          Try Again
-        </button>
       </div>
     </template>
 
@@ -423,7 +425,7 @@
               <div class="offers-results__actions">
                 <button
                   type="button"
-                  class="generator__button generator__button--outline"
+                  class="gfy-btn gfy-btn--outline"
                   title="Generate new service packages"
                   aria-label="Regenerate all packages"
                   @click="handleGenerate"
@@ -436,7 +438,7 @@
                 </button>
                 <button
                   type="button"
-                  class="generator__button generator__button--outline"
+                  class="gfy-btn gfy-btn--outline"
                   title="Copy all packages to clipboard"
                   aria-label="Copy all packages to clipboard"
                   @click="handleCopyAll"
@@ -475,14 +477,14 @@
               <h4 class="offers-locked-card__name">{{ lockedOffers[activeOfferTier].name }}</h4>
               <p class="offers-locked-card__description">{{ lockedOffers[activeOfferTier].description }}</p>
               <div class="offers-locked-card__actions">
-                <button type="button" class="generator__button generator__button--outline" title="Copy this package to clipboard" aria-label="Copy package details to clipboard" @click="handleCopy">
+                <button type="button" class="gfy-btn gfy-btn--outline" title="Copy this package to clipboard" aria-label="Copy package details to clipboard" @click="handleCopy">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                   </svg>
                   Copy
                 </button>
-                <button type="button" class="generator__button generator__button--ghost" title="Unlock to make changes" aria-label="Unlock package to edit" @click="unlockOffer(activeOfferTier)">
+                <button type="button" class="gfy-btn gfy-btn--ghost" title="Unlock to make changes" aria-label="Unlock package to edit" @click="unlockOffer(activeOfferTier)">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                     <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
@@ -525,7 +527,7 @@
               <div class="offers-card__actions">
                 <button
                   type="button"
-                  class="generator__button generator__button--call-to-action"
+                  class="gfy-btn gfy-btn--primary"
                   :title="`Lock ${activeOfferTierLabel} package to preserve it`"
                   :aria-label="`Lock ${activeOfferTierLabel} package`"
                   @click="lockOffer(activeOfferTier)"
@@ -536,7 +538,7 @@
                   </svg>
                   Lock {{ activeOfferTierLabel }} Package
                 </button>
-                <button type="button" class="generator__button generator__button--outline" title="Copy this package to clipboard" aria-label="Copy package details to clipboard" @click="handleCopy">
+                <button type="button" class="gfy-btn gfy-btn--outline" title="Copy this package to clipboard" aria-label="Copy package details to clipboard" @click="handleCopy">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
@@ -572,7 +574,7 @@
 
               <button
                 type="button"
-                class="generator__button generator__button--call-to-action"
+                class="gfy-btn gfy-btn--primary"
                 :disabled="isSavingToProfile || !hasSelectedProfile"
                 :title="!hasSelectedProfile ? 'Select a profile above to save' : 'Save all locked packages to your media kit'"
                 aria-label="Save offer suite to media kit"
@@ -589,7 +591,7 @@
                 </svg>
                 {{ isSavingToProfile ? 'Saving...' : 'Save Offer Suite' }}
               </button>
-              <button type="button" class="generator__button generator__button--ghost" title="Clear results and start fresh" aria-label="Start over with new packages" @click="handleStartOver">
+              <button type="button" class="gfy-btn gfy-btn--ghost" title="Clear results and start fresh" aria-label="Start over with new packages" @click="handleStartOver">
                 Start Over
               </button>
             </div>
@@ -1140,7 +1142,7 @@ function handleProfileCleared() {
 /**
  * Offers formula for guidance panel
  */
-const offersFormula = '<span class="generator__highlight">[VALUE PROPOSITION]</span> + <span class="generator__highlight">[TARGET AUDIENCE]</span> + <span class="generator__highlight">[TRANSFORMATION]</span> = Irresistible Offer';
+const offersFormula = '<span class="gfy-highlight">[VALUE PROPOSITION]</span> + <span class="gfy-highlight">[TARGET AUDIENCE]</span> + <span class="gfy-highlight">[TRANSFORMATION]</span> = Irresistible Offer';
 
 /**
  * Process steps for guidance panel
@@ -1675,11 +1677,65 @@ watch(canGenerateEmbedded, (newValue) => {
 
 <style scoped>
 /* Standalone Mode Styles */
-.generator__section {
+.gfy-form-section {
   margin-bottom: var(--mkcg-space-lg, 30px);
 }
 
-.generator__field-footer {
+.gfy-input-group {
+  margin-bottom: var(--mkcg-space-md, 20px);
+}
+
+.gfy-input-group--prominent {
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  background: var(--mkcg-bg-secondary, #f9fafb);
+}
+
+.gfy-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--mkcg-text-secondary, #64748b);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.gfy-builder__input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--mkcg-border, #e2e8f0);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #fff;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.gfy-builder__input:focus {
+  outline: none;
+  border-color: var(--mkcg-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.gfy-builder__input::placeholder {
+  color: var(--mkcg-text-light, #94a3b8);
+}
+
+.gfy-builder__textarea {
+  resize: vertical;
+  min-height: 96px;
+}
+
+.gfy-builder__textarea--large {
+  min-height: 160px;
+}
+
+.gfy-input-group-footer {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -1687,26 +1743,26 @@ watch(canGenerateEmbedded, (newValue) => {
   margin-top: 4px;
 }
 
-.generator__field-footer .generator__field-helper {
+.gfy-input-group-footer .gfy-input-group-helper {
   margin: 0;
   flex: 1;
 }
 
-.generator__char-count {
+.gfy-char-count {
   font-size: 0.75rem;
   color: var(--mkcg-text-secondary, #64748b);
   white-space: nowrap;
   flex-shrink: 0;
 }
 
-.generator__section-title {
+.gfy-form-section__title {
   font-size: var(--mkcg-font-size-lg, 18px);
   font-weight: var(--mkcg-font-weight-semibold, 600);
   color: var(--mkcg-text-primary, #2c3e50);
   margin: 0 0 var(--mkcg-space-md, 20px) 0;
 }
 
-.generator__field-row {
+.gfy-input-group-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--mkcg-space-md, 20px);
@@ -1714,22 +1770,83 @@ watch(canGenerateEmbedded, (newValue) => {
 }
 
 @media (max-width: 600px) {
-  .generator__field-row {
+  .gfy-input-group-row {
     grid-template-columns: 1fr;
   }
 }
 
-.generator__field-select {
+.gfy-input-group-select {
   height: 48px;
   cursor: pointer;
 }
 
-.generator__actions {
+.gfy-form-actions {
   margin-top: var(--mkcg-space-lg, 30px);
   text-align: center;
 }
 
-.generator__error {
+.gfy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: var(--mkcg-radius, 8px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.gfy-btn svg {
+  flex-shrink: 0;
+}
+
+.gfy-btn--primary {
+  background: var(--mkcg-primary, #3b82f6);
+  color: #fff;
+}
+
+.gfy-btn--primary:hover:not(:disabled) {
+  background: var(--mkcg-primary-dark, #2563eb);
+}
+
+.gfy-btn--primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.gfy-btn--outline {
+  background: #fff;
+  border-color: var(--mkcg-border, #e2e8f0);
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.gfy-btn--outline:hover {
+  border-color: var(--mkcg-primary, #3b82f6);
+  color: var(--mkcg-primary, #3b82f6);
+  background: var(--mkcg-primary-light, rgba(59, 130, 246, 0.1));
+}
+
+.gfy-btn--ghost {
+  background: transparent;
+  border: none;
+  color: var(--mkcg-text-secondary, #64748b);
+}
+
+.gfy-btn--ghost:hover {
+  color: var(--mkcg-text-primary, #0f172a);
+}
+
+.gfy-btn--loading {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.gfy-form-error {
   margin-top: var(--mkcg-space-md, 20px);
   padding: var(--mkcg-space-md, 20px);
   background-color: #fef2f2;
@@ -1738,166 +1855,17 @@ watch(canGenerateEmbedded, (newValue) => {
   text-align: center;
 }
 
-.generator__error p {
+.gfy-form-error p {
   color: #991b1b;
   margin: 0 0 var(--mkcg-space-sm, 12px) 0;
 }
 
-/* Offers Results */
-.offers-generator__results {
-  padding: var(--mkcg-space-md, 20px);
+.gfy-highlight {
+  color: var(--mkcg-primary, #3b82f6);
+  font-weight: 700;
 }
 
-.offers-generator__results-header {
-  margin-bottom: var(--mkcg-space-md, 20px);
-}
-
-.offers-generator__results-header h3 {
-  margin: 0 0 var(--mkcg-space-xs, 8px) 0;
-  font-size: var(--mkcg-font-size-lg, 18px);
-  color: var(--mkcg-text-primary, #2c3e50);
-}
-
-.offers-generator__results-header p {
-  margin: 0;
-  color: var(--mkcg-text-secondary, #5a6d7e);
-  font-size: var(--mkcg-font-size-sm, 14px);
-}
-
-.offers-generator__packages-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--mkcg-space-md, 20px);
-  margin-bottom: var(--mkcg-space-md, 20px);
-}
-
-.offers-generator__package {
-  background: var(--mkcg-bg-primary, #ffffff);
-  border: 1px solid var(--mkcg-border-light, #e9ecef);
-  border-radius: var(--mkcg-radius, 8px);
-  padding: var(--mkcg-space-md, 20px);
-  display: flex;
-  flex-direction: column;
-  transition: var(--mkcg-transition-fast, 0.15s ease);
-}
-
-.offers-generator__package:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.offers-generator__package--entry {
-  border-top: 3px solid #94a3b8;
-}
-
-.offers-generator__package--signature {
-  border-top: 3px solid var(--mkcg-primary, #1a9bdc);
-  box-shadow: 0 4px 12px rgba(26, 155, 220, 0.15);
-}
-
-.offers-generator__package--premium {
-  border-top: 3px solid #f59e0b;
-}
-
-.offers-generator__package-header {
-  margin-bottom: var(--mkcg-space-sm, 12px);
-}
-
-.offers-generator__package-tier {
-  display: inline-block;
-  padding: 4px 12px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-radius: var(--mkcg-radius-sm, 4px);
-  margin-bottom: 8px;
-}
-
-.offers-generator__package--entry .offers-generator__package-tier {
-  color: #475569;
-  background: #f1f5f9;
-}
-
-.offers-generator__package--signature .offers-generator__package-tier {
-  color: var(--mkcg-primary, #1a9bdc);
-  background: rgba(26, 155, 220, 0.1);
-}
-
-.offers-generator__package--premium .offers-generator__package-tier {
-  color: #d97706;
-  background: #fef3c7;
-}
-
-.offers-generator__package-name {
-  margin: 0;
-  font-size: var(--mkcg-font-size-md, 16px);
-  font-weight: var(--mkcg-font-weight-semibold, 600);
-  color: var(--mkcg-text-primary, #2c3e50);
-}
-
-.offers-generator__package-description {
-  margin: 0 0 var(--mkcg-space-md, 20px) 0;
-  font-size: var(--mkcg-font-size-sm, 14px);
-  color: var(--mkcg-text-secondary, #5a6d7e);
-  line-height: var(--mkcg-line-height-relaxed, 1.6);
-}
-
-.offers-generator__package-section {
-  flex: 1;
-  margin-bottom: var(--mkcg-space-sm, 12px);
-}
-
-.offers-generator__package-section-title {
-  margin: 0 0 var(--mkcg-space-xs, 8px) 0;
-  font-size: 12px;
-  font-weight: var(--mkcg-font-weight-semibold, 600);
-  color: var(--mkcg-text-secondary, #5a6d7e);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.offers-generator__package-deliverables {
-  margin: 0;
-  padding: 0 0 0 20px;
-  font-size: var(--mkcg-font-size-sm, 14px);
-  color: var(--mkcg-text-primary, #2c3e50);
-  line-height: var(--mkcg-line-height-relaxed, 1.6);
-}
-
-.offers-generator__package-deliverables li {
-  margin-bottom: 6px;
-}
-
-.offers-generator__package-ideal {
-  padding-top: var(--mkcg-space-sm, 12px);
-  border-top: 1px solid var(--mkcg-border-light, #e9ecef);
-  font-size: var(--mkcg-font-size-sm, 14px);
-  color: var(--mkcg-text-secondary, #5a6d7e);
-}
-
-.offers-generator__package-ideal strong {
-  color: var(--mkcg-text-primary, #2c3e50);
-}
-
-.offers-generator__note {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--mkcg-space-xs, 8px);
-  padding: var(--mkcg-space-md, 20px);
-  background: #fef9f3;
-  border: 1px solid #fed7aa;
-  border-radius: var(--mkcg-radius, 8px);
-  font-size: var(--mkcg-font-size-sm, 14px);
-  color: #92400e;
-}
-
-.offers-generator__note svg {
-  flex-shrink: 0;
-  margin-top: 2px;
-  color: #f59e0b;
-}
-
-.offers-generator__actions {
+.offers-gfy-form-actions {
   margin-top: var(--mkcg-space-md, 20px);
   display: flex;
   gap: var(--mkcg-space-sm, 12px);
@@ -2742,7 +2710,7 @@ watch(canGenerateEmbedded, (newValue) => {
 }
 
 /* Prefilled Input State */
-.generator__field-input--prefilled {
+.gfy-builder__input--prefilled {
   border-color: rgba(59, 130, 246, 0.3);
   background: rgba(59, 130, 246, 0.02);
 }
@@ -2794,7 +2762,7 @@ watch(canGenerateEmbedded, (newValue) => {
 }
 
 /* Small button variant */
-.generator__button--small {
+.gfy-btn--small {
   padding: 0.5rem 1rem;
   font-size: 0.8125rem;
 }
@@ -2903,7 +2871,7 @@ watch(canGenerateEmbedded, (newValue) => {
     width: 100%;
   }
 
-  .offers-results__actions .generator__button {
+  .offers-results__actions .gfy-btn {
     flex: 1 1 auto;
     min-width: 100px;
     justify-content: center;
@@ -2947,7 +2915,7 @@ watch(canGenerateEmbedded, (newValue) => {
     width: 100%;
   }
 
-  .offers-card__actions .generator__button {
+  .offers-card__actions .gfy-btn {
     width: 100%;
     justify-content: center;
   }
@@ -2962,7 +2930,7 @@ watch(canGenerateEmbedded, (newValue) => {
     width: 100%;
   }
 
-  .offers-locked-card__actions .generator__button {
+  .offers-locked-card__actions .gfy-btn {
     width: 100%;
     justify-content: center;
   }
@@ -2973,7 +2941,7 @@ watch(canGenerateEmbedded, (newValue) => {
     gap: 1rem;
   }
 
-  .offers-results__footer .generator__button {
+  .offers-results__footer .gfy-btn {
     width: 100%;
     justify-content: center;
   }
@@ -3017,11 +2985,6 @@ watch(canGenerateEmbedded, (newValue) => {
     justify-content: center;
   }
 
-  /* Packages grid */
-  .offers-generator__packages-grid {
-    grid-template-columns: 1fr;
-  }
-
   .gmkb-ai-packages__grid {
     grid-template-columns: 1fr;
   }
@@ -3042,7 +3005,7 @@ watch(canGenerateEmbedded, (newValue) => {
     gap: 6px;
   }
 
-  .offers-results__actions .generator__button {
+  .offers-results__actions .gfy-btn {
     padding: 8px 12px;
     font-size: 12px;
   }
@@ -3080,7 +3043,7 @@ watch(canGenerateEmbedded, (newValue) => {
     font-size: 13px;
   }
 
-  .generator__button--large {
+  .gfy-btn--large {
     padding: 12px 16px;
     font-size: 14px;
   }
@@ -3090,11 +3053,11 @@ watch(canGenerateEmbedded, (newValue) => {
     gap: 0.5rem;
   }
 
-  .generator__field-row {
+  .gfy-input-group-row {
     gap: 12px;
   }
 
-  .generator__section-title {
+  .gfy-form-section__title {
     font-size: 15px;
   }
 }
