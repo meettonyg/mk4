@@ -306,7 +306,7 @@
 import { ref, computed, watch, onMounted, provide } from 'vue';
 import ProfileContextBanner from './ProfileContextBanner.vue';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
-import { EMBEDDED_PROFILE_DATA_KEY } from './constants';
+import { EMBEDDED_PROFILE_DATA_KEY, IS_EMBEDDED_CONTEXT_KEY } from './constants';
 
 // Profile management for logged-in users
 const {
@@ -713,6 +713,9 @@ const loadedProfileData = ref(null);
 
 // Provide profile data to child components (like Generator) via inject
 provide(EMBEDDED_PROFILE_DATA_KEY, loadedProfileData);
+
+// Signal to child components (like GeneratorLayout) that they're inside embedded wrapper
+provide(IS_EMBEDDED_CONTEXT_KEY, true);
 
 function handleProfileLoaded(data) {
   loadedProfileData.value = data;

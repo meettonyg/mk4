@@ -8,12 +8,10 @@
     generator-type="offers"
     :has-results="hasOffers"
     :is-loading="isGenerating"
-    :hide-chrome="hideChrome"
   >
-    <!-- Profile Context Banner (for logged-in users) -->
+    <!-- Profile Context Banner (for logged-in users, only shown in standalone mode) -->
     <template #profile-context>
       <ProfileContextBanner
-        v-if="!hideChrome"
         @profile-loaded="handleProfileLoaded"
         @profile-cleared="handleProfileCleared"
       />
@@ -784,14 +782,6 @@ const props = defineProps({
     default: 'default',
     validator: (v) => ['default', 'integrated'].includes(v)
   },
-  /**
-   * Hide hero section and profile banner (when inside EmbeddedToolWrapper)
-   */
-  hideChrome: {
-    type: Boolean,
-    default: false
-  },
-
   /**
    * Component ID to apply results to (integrated mode)
    */

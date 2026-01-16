@@ -1,13 +1,13 @@
 <template>
-  <!-- When hideChrome is true, render content directly without container wrapper -->
-  <template v-if="hideChrome">
+  <!-- When embedded, render content directly without container wrapper -->
+  <template v-if="isEmbedded">
     <slot name="left"></slot>
     <div v-if="hasResults" class="generator__results">
       <slot name="results"></slot>
     </div>
   </template>
 
-  <!-- Full layout with container when not hiding chrome -->
+  <!-- Full layout with container when standalone -->
   <div v-else class="generator__container gmkb-generator-root" :class="containerClass">
     <!-- Profile Context Banner (for logged-in users) -->
     <div v-if="$slots['profile-context']" class="generator__profile-context">
@@ -50,7 +50,11 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, inject } from 'vue';
+import { IS_EMBEDDED_CONTEXT_KEY } from './constants';
+
+// Auto-detect if we're inside EmbeddedToolWrapper
+const isEmbedded = inject(IS_EMBEDDED_CONTEXT_KEY, false);
 
 const props = defineProps({
   /**
@@ -105,14 +109,6 @@ const props = defineProps({
    * Single column mode (no right panel)
    */
   singleColumn: {
-    type: Boolean,
-    default: false
-  },
-
-  /**
-   * Hide chrome (header, profile banner) when inside EmbeddedToolWrapper
-   */
-  hideChrome: {
     type: Boolean,
     default: false
   }
