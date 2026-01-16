@@ -1,531 +1,596 @@
 <template>
-  <!-- Standalone Mode: Full two-panel layout -->
-  <GeneratorLayout
-    v-if="mode === 'default'"
-    title="Interview Questions Generator"
-    subtitle="Select a topic to generate questions, or tweak the wording to match your specific guesting strategy."
-    intro-text="Generate 10 professional interview questions tailored to your selected topic and authority hook."
-    generator-type="questions"
-    :has-results="hasQuestions"
-    :is-loading="isGenerating"
-  >
-    <!-- Profile Context Banner (for logged-in users, only shown in standalone mode) -->
-    <template #profile-context>
-      <ProfileContextBanner
-        @profile-loaded="handleProfileLoaded"
-        @profile-cleared="handleProfileCleared"
-      />
-    </template>
+  <!-- Standalone Mode: Full single-column layout with redesigned UI -->
+  <div v-if="mode === 'default'" class="gfy-questions-wrapper gmkb-generator-root">
+    <!-- Hero Section -->
+    <section class="gmkb-plg-hero">
+      <div class="gmkb-plg-container">
+        <div class="gmkb-plg-hero__badge">Free AI Tool</div>
+        <h1 class="gmkb-plg-hero__title">Free Interview Questions Generator</h1>
+        <p class="gmkb-plg-hero__subhead">Generate thoughtful interview questions and compelling answers tailored to your expertise and interview context.</p>
 
-    <!-- Left Panel: Form -->
-    <template #left>
-      <div class="gmkb-plg-tool-embed">
-        <!-- Draft Restore Prompt -->
-        <div v-if="showDraftPrompt" class="gfy-draft-prompt">
-          <div class="gfy-draft-prompt__content">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-              <line x1="16" y1="13" x2="8" y2="13"/>
-              <line x1="16" y1="17" x2="8" y2="17"/>
-            </svg>
-            <div>
-              <strong>Restore previous work?</strong>
-              <p>You have a saved draft from {{ getLastSavedText() }}.</p>
-            </div>
-          </div>
-          <div class="gfy-draft-prompt__actions">
-            <button type="button" class="gfy-btn gfy-btn--primary gfy-btn--small" @click="handleRestoreDraft">
-              Restore Draft
-            </button>
-            <button type="button" class="gfy-btn gfy-btn--ghost gfy-btn--small" @click="handleDiscardDraft">
-              Start Fresh
-            </button>
-          </div>
+        <div class="gmkb-plg-trust-strip">
+          <div class="gmkb-plg-trust-item"><span>&#10003;</span> Used by 7,000+ guests</div>
+          <div class="gmkb-plg-trust-item"><span>&#10003;</span> No signup required</div>
+          <div class="gmkb-plg-trust-item"><span>&#10003;</span> Free forever</div>
         </div>
 
-        <!-- Auto-save Indicator -->
-        <div v-if="isAutoSaving" class="gfy-auto-save-indicator">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-            <polyline points="17 21 17 13 7 13 7 21"/>
-            <polyline points="7 3 7 8 15 8"/>
-          </svg>
-          Saving draft...
-        </div>
-
-        <!-- Recent History Section -->
-        <div v-if="hasHistory" class="gfy-history">
+        <!-- Intent Tabs (Outside the Card) -->
+        <div class="gmkb-intent-tabs" role="tablist">
           <button
-            type="button"
-            class="gfy-history__toggle"
-            :aria-expanded="showHistory"
-            aria-controls="questions-history-panel"
-            @click="showHistory = !showHistory"
+            v-for="intent in intentTabs"
+            :key="intent.id"
+            class="gmkb-intent-tab"
+            :class="{ active: selectedIntent === intent.id }"
+            role="tab"
+            :aria-selected="selectedIntent === intent.id"
+            @click="selectIntent(intent.id)"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="12 6 12 12 16 14"/>
-            </svg>
-            <span>Recent Generations ({{ history.length }})</span>
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              class="gfy-history__chevron"
-              :class="{ 'gfy-history__chevron--open': showHistory }"
-              aria-hidden="true"
-            >
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
+            {{ intent.label }}
           </button>
+        </div>
 
-          <div v-if="showHistory" id="questions-history-panel" class="gfy-history__panel" role="region" aria-label="Recent generations">
-            <div class="gfy-history__list">
-              <div
-                v-for="entry in history"
-                :key="entry.id"
-                class="gfy-history__item"
+        <!-- Single Column Tool Layout -->
+        <div class="gfy-tool-layout">
+          <!-- Single Unified Card -->
+          <div class="gmkb-plg-tool-card">
+            <!-- Profile Selector (Top of Form, inside Card) -->
+            <div class="gfy-profile-selector-container">
+              <label class="gfy-profile-label">Pre-fill from Profile:</label>
+              <select
+                v-model="selectedProfileIdLocal"
+                class="gfy-profile-select"
+                @change="handleProfileSelect"
               >
-                <div class="gfy-history__item-content">
-                  <span class="gfy-history__item-preview">{{ entry.preview }}</span>
-                  <span class="gfy-history__item-time">{{ formatTimestamp(entry.timestamp) }}</span>
-                </div>
-                <div class="gfy-history__item-actions">
-                  <button
-                    type="button"
-                    class="gfy-history__action-btn"
-                    title="Restore inputs only"
-                    aria-label="Restore inputs from this generation"
-                    @click="restoreFromHistory(entry)"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                      <path d="M3 3v5h5"/>
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    class="gfy-history__action-btn gfy-history__action-btn--primary"
-                    title="Restore inputs and results"
-                    aria-label="Restore full generation with results"
-                    @click="restoreFullHistory(entry)"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    class="gfy-history__action-btn gfy-history__action-btn--danger"
-                    title="Remove from history"
-                    aria-label="Delete this history entry"
-                    @click="removeFromHistory(entry.id)"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <polyline points="3 6 5 6 21 6"/>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                    </svg>
-                  </button>
-                </div>
-              </div>
+                <option value="" disabled>Select a guest profile to pre-fill...</option>
+                <option
+                  v-for="profile in availableProfiles"
+                  :key="profile.id"
+                  :value="profile.id"
+                >
+                  {{ profile.title }}
+                </option>
+                <option value="new">+ Create New Profile</option>
+              </select>
             </div>
-            <button
-              v-if="history.length > 1"
-              type="button"
-              class="gfy-history__clear-btn"
-              @click="clearHistory"
-            >
-              Clear All History
-            </button>
-          </div>
-        </div>
 
-        <!-- Form Completion Indicator -->
-        <div class="gfy-form-progress" :class="{ 'gfy-form-progress--complete': formCompletion.isComplete }">
-          <div class="gfy-form-progress__header">
-            <span class="gfy-form-progress__label">
-              <svg v-if="formCompletion.isComplete" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            <!-- Auto-save Indicator -->
+            <div v-if="isAutoSaving" class="gfy-auto-save-indicator">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/>
+                <polyline points="7 3 7 8 15 8"/>
               </svg>
-              {{ formCompletion.isComplete ? 'Ready to generate!' : `${formCompletion.filledCount}/${formCompletion.totalCount} fields completed` }}
-            </span>
-          </div>
-          <div class="gfy-form-progress__bar">
-            <div class="gfy-form-progress__fill" :style="{ width: `${formCompletion.percentage}%` }"></div>
-          </div>
-        </div>
+              Saving draft...
+            </div>
 
-        <!-- STEP 1: Topic Selection -->
-        <div class="gfy-form-section">
-          <h3 class="gfy-form-section__title">Step 1: Choose or Tweak Your Topic</h3>
-
-          <div class="gfy-highlight-box gfy-highlight-box--blue">
-            <!-- Topic Selection Grid -->
-            <div v-if="availableTopics.length > 0" class="questions-topic-grid" role="radiogroup" aria-label="Available topics">
+            <!-- Recent History Section -->
+            <div v-if="hasHistory" class="gfy-history">
               <button
-                v-for="(topic, index) in availableTopics"
-                :key="index"
                 type="button"
-                class="questions-topic-card"
-                :class="{ 'questions-topic-card--active': selectedTopicIndex === index }"
-                role="radio"
-                :aria-checked="selectedTopicIndex === index"
-                :aria-label="`Topic ${index + 1}: ${topic}`"
-                @click="selectTopic(index)"
+                class="gfy-history__toggle"
+                :aria-expanded="showHistory"
+                aria-controls="questions-history-panel"
+                @click="showHistory = !showHistory"
               >
-                <span class="questions-topic-card__number" aria-hidden="true">{{ index + 1 }}</span>
-                <span class="questions-topic-card__text">{{ topic }}</span>
-              </button>
-            </div>
-
-            <!-- No Topics Message -->
-            <div v-else class="questions-topic-empty">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M12 16v-4M12 8h.01"/>
-              </svg>
-              <p>No topics available. Generate topics first using the Topics Generator, or enter a custom topic below.</p>
-            </div>
-
-            <!-- Refine Selected Topic Textarea -->
-            <div class="questions-refine-container">
-              <div class="questions-refine-header">
-                <span class="questions-refine-hint">Refine Selected Topic</span>
-                <span v-if="refinedTopic" class="questions-char-count">{{ refinedTopic.length }} chars</span>
-              </div>
-              <textarea
-                v-model="refinedTopic"
-                class="questions-refine-textarea"
-                rows="2"
-                placeholder="Enter or customize your interview topic..."
-              ></textarea>
-            </div>
-          </div>
-        </div>
-
-        <!-- STEP 2: Authority Hook -->
-        <div class="gfy-form-section">
-          <h3 class="gfy-form-section__title">Step 2: Confirm Your Authority Hook</h3>
-
-          <div class="gfy-highlight-box gfy-highlight-box--green">
-            <AuthorityHookBuilder
-              :model-value="authorityHook"
-              @update:model-value="Object.assign(authorityHook, $event)"
-              title="Personalize Your Questions"
-              :placeholders="{
-                who: 'e.g. SaaS Founders',
-                what: 'e.g. Increase revenue by 40%',
-                when: 'e.g. When scaling rapidly',
-                how: 'e.g. My proven 90-day system'
-              }"
-            />
-          </div>
-        </div>
-
-        <!-- Generate Button -->
-        <div class="gfy-form-actions">
-          <button
-            type="button"
-            class="gfy-btn gfy-btn--primary"
-            :class="{ 'gfy-btn--loading': isGenerating }"
-            :disabled="!canGenerate || isGenerating"
-            @click="handleGenerate"
-          >
-            <svg v-if="!isGenerating" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-            </svg>
-            {{ isGenerating ? 'Generating Questions...' : 'Generate 10 Questions' }}
-          </button>
-        </div>
-
-        <p class="gfy-form-hint">
-          Generate questions for your specific audience in seconds.
-        </p>
-
-        <!-- Error Display -->
-        <div v-if="error" class="gfy-form-error">
-          <p>{{ error }}</p>
-          <button type="button" class="gfy-btn gfy-btn--outline" @click="handleGenerate">
-            Try Again
-          </button>
-        </div>
-      </div>
-    </template>
-
-    <!-- Right Panel: Guidance -->
-    <template #right>
-      <GuidancePanel
-        title="Creating Memorable Interview Questions"
-        subtitle="Great interview questions go beyond surface-level conversation to uncover deep insights, memorable stories, and actionable advice that resonates with your audience."
-        :formula="questionsFormula"
-        :process-steps="processSteps"
-        :examples="examples"
-        examples-title="Example Interview Questions:"
-      />
-    </template>
-
-    <!-- Results -->
-    <template #results>
-      <!-- Loading Skeleton -->
-      <div v-if="isGenerating && !hasQuestions" class="questions-skeleton">
-        <div class="questions-skeleton__header">
-          <div class="questions-skeleton__title"></div>
-          <div class="questions-skeleton__badge"></div>
-        </div>
-        <div class="questions-skeleton__list">
-          <div v-for="i in 10" :key="i" class="questions-skeleton__row">
-            <div class="questions-skeleton__number"></div>
-            <div class="questions-skeleton__text"></div>
-          </div>
-        </div>
-      </div>
-
-      <div v-else class="questions-results">
-        <div class="questions-results__layout">
-
-          <!-- SIDEBAR: Interview Set (5 Lockable Slots) -->
-          <aside class="questions-results__sidebar">
-            <div class="questions-interview-set">
-              <div class="questions-interview-set__header">
-                <h3 class="questions-interview-set__title">Your Interview Set</h3>
-                <span class="questions-interview-set__hint">Click lock to keep existing questions</span>
-              </div>
-
-              <div class="questions-interview-set__list">
-                <div
-                  v-for="(slot, slotIndex) in interviewSet"
-                  :key="slotIndex"
-                  class="questions-interview-slot"
-                  :class="{ 'questions-interview-slot--locked': slot.locked, 'questions-interview-slot--filled': slot.question }"
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                <span>Recent Generations ({{ history.length }})</span>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  class="gfy-history__chevron"
+                  :class="{ 'gfy-history__chevron--open': showHistory }"
+                  aria-hidden="true"
                 >
-                  <span class="questions-interview-slot__position">{{ slotIndex + 1 }}</span>
-                  <span class="questions-interview-slot__text" :class="{ 'questions-interview-slot__text--empty': !slot.question }">
-                    {{ slot.question || 'Empty Slot' }}
-                  </span>
-                  <button
-                    type="button"
-                    class="questions-interview-slot__lock"
-                    :title="slot.locked ? 'Unlock question' : 'Lock question'"
-                    :aria-label="slot.locked ? 'Unlock this question to allow replacement' : 'Lock this question to preserve it'"
-                    :aria-pressed="slot.locked"
-                    @click="toggleSlotLock(slotIndex)"
-                    :disabled="!slot.question"
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+
+              <div v-if="showHistory" id="questions-history-panel" class="gfy-history__panel" role="region" aria-label="Recent generations">
+                <div class="gfy-history__list">
+                  <div
+                    v-for="entry in history"
+                    :key="entry.id"
+                    class="gfy-history__item"
                   >
-                    <svg v-if="slot.locked" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                      <path d="M12 1C8.676 1 6 3.676 6 7v2H4v14h16V9h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4zm0 10c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/>
-                    </svg>
-                    <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                      <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
-                    </svg>
+                    <div class="gfy-history__item-content">
+                      <span class="gfy-history__item-preview">{{ entry.preview }}</span>
+                      <span class="gfy-history__item-time">{{ formatTimestamp(entry.timestamp) }}</span>
+                    </div>
+                    <div class="gfy-history__item-actions">
+                      <button
+                        type="button"
+                        class="gfy-history__action-btn"
+                        title="Restore inputs only"
+                        aria-label="Restore inputs from this generation"
+                        @click="restoreFromHistory(entry)"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                          <path d="M3 3v5h5"/>
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        class="gfy-history__action-btn gfy-history__action-btn--primary"
+                        title="Restore inputs and results"
+                        aria-label="Restore full generation with results"
+                        @click="restoreFullHistory(entry)"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        class="gfy-history__action-btn gfy-history__action-btn--danger"
+                        title="Remove from history"
+                        aria-label="Delete this history entry"
+                        @click="removeFromHistory(entry.id)"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <polyline points="3 6 5 6 21 6"/>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  v-if="history.length > 1"
+                  type="button"
+                  class="gfy-history__clear-btn"
+                  @click="clearHistory"
+                >
+                  Clear All History
+                </button>
+              </div>
+            </div>
+
+            <!-- STEP 1: Topic Selection -->
+            <div class="gfy-form-section">
+              <h3 class="gfy-form-section__title">Step 1: Choose or Tweak Your Topic</h3>
+
+              <div class="gfy-highlight-box gfy-highlight-box--blue">
+                <!-- Topic Selection Grid -->
+                <div v-if="availableTopics.length > 0" class="questions-topic-grid" role="radiogroup" aria-label="Available topics">
+                  <button
+                    v-for="(topic, index) in availableTopics"
+                    :key="index"
+                    type="button"
+                    class="questions-topic-card"
+                    :class="{ 'questions-topic-card--active': selectedTopicIndex === index }"
+                    role="radio"
+                    :aria-checked="selectedTopicIndex === index"
+                    :aria-label="`Topic ${index + 1}: ${topic}`"
+                    @click="selectTopic(index)"
+                  >
+                    <span class="questions-topic-card__number" aria-hidden="true">{{ index + 1 }}</span>
+                    <span class="questions-topic-card__text">{{ topic }}</span>
                   </button>
                 </div>
-              </div>
 
-              <div class="questions-interview-set__summary">
-                <span class="questions-interview-set__locked-count">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 1C8.676 1 6 3.676 6 7v2H4v14h16V9h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4zm0 10c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/>
-                  </svg>
-                  {{ lockedSlotsCount }} locked
-                </span>
-                <span class="questions-interview-set__available">{{ availableSlotsCount }} slots available</span>
-              </div>
-            </div>
-          </aside>
-
-          <!-- MAIN: AI Generated Questions -->
-          <main class="questions-results__main">
-            <div class="questions-results__header">
-              <div class="questions-results__title-row">
-                <h3 class="questions-results__title">AI Generated Questions</h3>
-                <span class="questions-results__count">{{ questions.length }} Ideas</span>
-              </div>
-              <div class="questions-results__actions">
-                <button
-                  type="button"
-                  class="gfy-btn gfy-btn--outline"
-                  title="Generate new interview questions"
-                  aria-label="Regenerate questions"
-                  @click="handleGenerate"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path d="M23 4v6h-6M1 20v-6h6"/>
-                    <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
-                  </svg>
-                  Regenerate
-                </button>
-                <button
-                  type="button"
-                  class="gfy-btn gfy-btn--outline"
-                  title="Copy all questions to clipboard"
-                  aria-label="Copy all questions to clipboard"
-                  @click="handleCopy"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                  </svg>
-                  Copy All
-                </button>
-                <button
-                  type="button"
-                  class="questions-action-btn"
-                  @click="handleExport"
-                  title="Download questions as markdown file"
-                  aria-label="Export questions as markdown"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-                    <polyline points="7 10 12 15 17 10"/>
-                    <line x1="12" y1="15" x2="12" y2="3"/>
-                  </svg>
-                  Export
-                </button>
-              </div>
-            </div>
-
-            <!-- Selection Banner -->
-            <div class="questions-selection-banner">
-              <span>Topic: <strong>"{{ refinedTopic }}"</strong></span>
-              <span class="questions-selection-banner__count">{{ selectedQuestionsCount }} of {{ availableSlotsCount }} selected</span>
-            </div>
-
-            <!-- Questions List with Checkboxes -->
-            <div class="questions-list" role="listbox" aria-label="Generated interview questions" :aria-multiselectable="true">
-              <div
-                v-for="(question, index) in questions"
-                :key="index"
-                class="questions-row"
-                :class="{ 'questions-row--selected': isQuestionSelected(index), 'questions-row--disabled': !canSelectMore && !isQuestionSelected(index) }"
-                role="option"
-                :aria-selected="isQuestionSelected(index)"
-                :aria-disabled="!canSelectMore && !isQuestionSelected(index)"
-                tabindex="0"
-                @click="toggleQuestionSelection(index)"
-                @keydown.enter.prevent="toggleQuestionSelection(index)"
-                @keydown.space.prevent="toggleQuestionSelection(index)"
-              >
-                <div class="questions-row__checkbox" :class="{ 'questions-row__checkbox--checked': isQuestionSelected(index) }">
-                  <svg v-if="isQuestionSelected(index)" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                    <polyline points="20 6 9 17 4 12" stroke="currentColor" stroke-width="3" fill="none"/>
-                  </svg>
-                </div>
-                <span class="questions-row__number">{{ index + 1 }}.</span>
-                <p class="questions-row__text">{{ question }}</p>
-                <button
-                  type="button"
-                  class="questions-copy-btn"
-                  :class="{ 'questions-copy-btn--copied': copiedQuestionIndex === index }"
-                  :title="copiedQuestionIndex === index ? 'Copied!' : 'Copy question'"
-                  :aria-label="copiedQuestionIndex === index ? 'Question copied to clipboard' : 'Copy this question to clipboard'"
-                  @click="copyQuestion(index, $event)"
-                >
-                  <svg v-if="copiedQuestionIndex === index" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                  <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <!-- Footer Actions -->
-            <div class="questions-results__footer">
-              <div class="questions-results__save-area">
-                <button
-                  type="button"
-                  class="gfy-btn gfy-btn--primary gfy-btn--large"
-                  :disabled="selectedQuestionsCount === 0 || isSavingToProfile"
-                  title="Save selected questions to your media kit"
-                  aria-label="Save selected questions to media kit"
-                  @click="handleSaveToMediaKit"
-                >
-                  <svg v-if="isSavingToProfile" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin" aria-hidden="true">
-                    <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"/>
-                  </svg>
-                  <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                    <polyline points="17 21 17 13 7 13 7 21"/>
-                    <polyline points="7 3 7 8 15 8"/>
-                  </svg>
-                  {{ isSavingToProfile ? 'Saving...' : (hasSelectedProfile ? 'Save to Profile & Media Kit' : 'Save to Media Kit') }}
-                </button>
-
-                <!-- Save Success Message -->
-                <div v-if="saveSuccess" class="questions-save-success" role="status" aria-live="polite">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                  Questions saved to your profile!
-                </div>
-
-                <!-- Save Error Message -->
-                <div v-if="saveError" class="questions-save-error" role="alert" aria-live="assertive">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <!-- No Topics Message -->
+                <div v-else class="questions-topic-empty">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"/>
-                    <line x1="15" y1="9" x2="9" y2="15"/>
-                    <line x1="9" y1="9" x2="15" y2="15"/>
+                    <path d="M12 16v-4M12 8h.01"/>
                   </svg>
-                  {{ saveError }}
+                  <p>No topics available. Generate topics first using the Topics Generator, or enter a custom topic below.</p>
                 </div>
+
+                <!-- Refine Selected Topic Textarea -->
+                <textarea
+                  v-model="refinedTopic"
+                  class="questions-refine-textarea"
+                  rows="2"
+                  placeholder="Refine topic or enter your own..."
+                ></textarea>
               </div>
-              <button
-                type="button"
-                class="gfy-btn gfy-btn--ghost"
-                title="Clear results and start fresh"
-                aria-label="Start over with new questions"
-                @click="handleStartOver"
-              >
-                Start Over
-              </button>
             </div>
 
-            <!-- Cross-tool Navigation -->
-            <div v-if="lockedSlotsCount > 0" class="gfy-cross-tool-nav">
-              <span class="gfy-cross-tool-nav__label">Continue building your media kit:</span>
-              <div class="gfy-cross-tool-nav__links">
-                <a href="/tools/biography/" class="gfy-cross-tool-nav__link">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                  </svg>
-                  Generate Biography
-                </a>
-                <a href="/tools/guest-intro/" class="gfy-cross-tool-nav__link">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                    <line x1="12" y1="19" x2="12" y2="23"/>
-                    <line x1="8" y1="23" x2="16" y2="23"/>
-                  </svg>
-                  Generate Guest Intro
-                </a>
-                <a href="/tools/topics/" class="gfy-cross-tool-nav__link">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="8" y1="6" x2="21" y2="6"/>
-                    <line x1="8" y1="12" x2="21" y2="12"/>
-                    <line x1="8" y1="18" x2="21" y2="18"/>
-                    <line x1="3" y1="6" x2="3.01" y2="6"/>
-                    <line x1="3" y1="12" x2="3.01" y2="12"/>
-                    <line x1="3" y1="18" x2="3.01" y2="18"/>
-                  </svg>
-                  Generate Topics
-                </a>
+            <!-- STEP 2: Authority Hook -->
+            <div class="gfy-form-section">
+              <h3 class="gfy-form-section__title">Step 2: Confirm Your Authority Hook</h3>
+
+              <div class="gfy-highlight-box gfy-highlight-box--green">
+                <div class="authority-hook-builder">
+                  <div class="authority-hook-builder__header">
+                    <span class="authority-hook-builder__icon">&#9733;</span>
+                    <h4 class="authority-hook-builder__title">Authority Hook</h4>
+                  </div>
+                  <div class="authority-hook-builder__grid">
+                    <div class="authority-hook-builder__field">
+                      <label class="authority-hook-builder__label">WHO DO YOU HELP?</label>
+                      <input
+                        v-model="authorityHook.who"
+                        type="text"
+                        class="authority-hook-builder__input"
+                        placeholder="e.g. SaaS Founders"
+                      />
+                    </div>
+                    <div class="authority-hook-builder__field">
+                      <label class="authority-hook-builder__label">WHAT IS THE RESULT?</label>
+                      <input
+                        v-model="authorityHook.what"
+                        type="text"
+                        class="authority-hook-builder__input"
+                        placeholder="e.g. Increase revenue by 40%"
+                      />
+                    </div>
+                    <div class="authority-hook-builder__field">
+                      <label class="authority-hook-builder__label">WHEN DO THEY NEED IT?</label>
+                      <input
+                        v-model="authorityHook.when"
+                        type="text"
+                        class="authority-hook-builder__input"
+                        placeholder="e.g. When scaling rapidly"
+                      />
+                    </div>
+                    <div class="authority-hook-builder__field">
+                      <label class="authority-hook-builder__label">HOW DO YOU DO IT?</label>
+                      <input
+                        v-model="authorityHook.how"
+                        type="text"
+                        class="authority-hook-builder__input"
+                        placeholder="e.g. My proven 90-day system"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </main>
+
+            <!-- Step 3: Customize Details (new section from mockup) -->
+            <div class="gfy-form-section">
+              <h3 class="gfy-form-section__title">Step 3: Customize Details</h3>
+
+              <div class="gfy-input-group">
+                <label class="gfy-label">Guest Bio / Context</label>
+                <textarea
+                  v-model="guestBio"
+                  class="gfy-textarea"
+                  placeholder="Paste bio or interview context here..."
+                  rows="4"
+                ></textarea>
+              </div>
+
+              <div class="gfy-input-group">
+                <label class="gfy-label">Target Audience</label>
+                <input
+                  v-model="targetAudience"
+                  type="text"
+                  class="gfy-input"
+                  placeholder="e.g. HR Managers, Startup Founders"
+                />
+              </div>
+
+              <div class="gfy-input-row">
+                <div class="gfy-input-group">
+                  <label class="gfy-label">Tone</label>
+                  <select v-model="selectedTone" class="gfy-select">
+                    <option value="professional">Professional</option>
+                    <option value="conversational">Conversational</option>
+                    <option value="bold">Bold</option>
+                  </select>
+                </div>
+                <div class="gfy-input-group">
+                  <label class="gfy-label">Question Count</label>
+                  <div class="gfy-range-container">
+                    <input
+                      v-model="questionCount"
+                      type="range"
+                      class="gfy-range"
+                      min="5"
+                      max="15"
+                    />
+                    <span class="gfy-range-value">{{ questionCount }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Actions & Restore Link -->
+            <div class="gfy-actions-wrapper">
+              <!-- Redesigned Restore Link (subtle text link) -->
+              <button
+                v-if="showDraftPrompt"
+                type="button"
+                class="gfy-restore-link"
+                @click="handleRestoreDraft"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 4v6h6"/>
+                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                </svg>
+                Unsaved changes found. <strong>Restore?</strong>
+              </button>
+
+              <!-- Main Generate Button -->
+              <button
+                type="button"
+                class="gfy-btn gfy-btn--generate"
+                :class="{ 'gfy-btn--loading': isGenerating }"
+                :disabled="!canGenerate || isGenerating"
+                @click="handleGenerate"
+              >
+                <svg v-if="!isGenerating" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+                {{ isGenerating ? 'Generating Questions...' : 'Generate Questions' }}
+              </button>
+
+              <p class="gfy-form-hint">
+                Generate questions for your specific audience in seconds.
+              </p>
+            </div>
+
+            <!-- Error Display -->
+            <div v-if="error" class="gfy-form-error">
+              <p>{{ error }}</p>
+              <button type="button" class="gfy-btn gfy-btn--outline" @click="handleGenerate">
+                Try Again
+              </button>
+            </div>
+          </div>
+          <!-- End Single Card -->
+
+          <!-- Results Container (appears below when generated) -->
+          <div v-if="hasQuestions" class="gfy-results-container">
+            <div class="questions-results">
+              <div class="questions-results__layout">
+                <!-- SIDEBAR: Interview Set (5 Lockable Slots) -->
+                <aside class="questions-results__sidebar">
+                  <div class="questions-interview-set">
+                    <div class="questions-interview-set__header">
+                      <h3 class="questions-interview-set__title">Your Interview Set</h3>
+                      <span class="questions-interview-set__hint">Click lock to keep existing questions</span>
+                    </div>
+
+                    <div class="questions-interview-set__list">
+                      <div
+                        v-for="(slot, slotIndex) in interviewSet"
+                        :key="slotIndex"
+                        class="questions-interview-slot"
+                        :class="{ 'questions-interview-slot--locked': slot.locked, 'questions-interview-slot--filled': slot.question }"
+                      >
+                        <span class="questions-interview-slot__position">{{ slotIndex + 1 }}</span>
+                        <span class="questions-interview-slot__text" :class="{ 'questions-interview-slot__text--empty': !slot.question }">
+                          {{ slot.question || 'Empty Slot' }}
+                        </span>
+                        <button
+                          type="button"
+                          class="questions-interview-slot__lock"
+                          :title="slot.locked ? 'Unlock question' : 'Lock question'"
+                          :aria-label="slot.locked ? 'Unlock this question to allow replacement' : 'Lock this question to preserve it'"
+                          :aria-pressed="slot.locked"
+                          @click="toggleSlotLock(slotIndex)"
+                          :disabled="!slot.question"
+                        >
+                          <svg v-if="slot.locked" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M12 1C8.676 1 6 3.676 6 7v2H4v14h16V9h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4zm0 10c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/>
+                          </svg>
+                          <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="questions-interview-set__summary">
+                      <span class="questions-interview-set__locked-count">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 1C8.676 1 6 3.676 6 7v2H4v14h16V9h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4zm0 10c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/>
+                        </svg>
+                        {{ lockedSlotsCount }} locked
+                      </span>
+                      <span class="questions-interview-set__available">{{ availableSlotsCount }} slots available</span>
+                    </div>
+                  </div>
+                </aside>
+
+                <!-- MAIN: AI Generated Questions -->
+                <main class="questions-results__main">
+                  <div class="questions-results__header">
+                    <div class="questions-results__title-row">
+                      <h3 class="questions-results__title">AI Generated Questions</h3>
+                      <span class="questions-results__count">{{ questions.length }} Ideas</span>
+                    </div>
+                    <div class="questions-results__actions">
+                      <button
+                        type="button"
+                        class="gfy-btn gfy-btn--outline"
+                        title="Generate new interview questions"
+                        aria-label="Regenerate questions"
+                        @click="handleGenerate"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <path d="M23 4v6h-6M1 20v-6h6"/>
+                          <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                        </svg>
+                        Regenerate
+                      </button>
+                      <button
+                        type="button"
+                        class="gfy-btn gfy-btn--outline"
+                        title="Copy all questions to clipboard"
+                        aria-label="Copy all questions to clipboard"
+                        @click="handleCopy"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        Copy All
+                      </button>
+                      <button
+                        type="button"
+                        class="questions-action-btn"
+                        @click="handleExport"
+                        title="Download questions as markdown file"
+                        aria-label="Export questions as markdown"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                          <polyline points="7 10 12 15 17 10"/>
+                          <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        Export
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Selection Banner -->
+                  <div class="questions-selection-banner">
+                    <span>Topic: <strong>"{{ refinedTopic }}"</strong></span>
+                    <span class="questions-selection-banner__count">{{ selectedQuestionsCount }} of {{ availableSlotsCount }} selected</span>
+                  </div>
+
+                  <!-- Questions List with Checkboxes -->
+                  <div class="questions-list" role="listbox" aria-label="Generated interview questions" :aria-multiselectable="true">
+                    <div
+                      v-for="(question, index) in questions"
+                      :key="index"
+                      class="questions-row"
+                      :class="{ 'questions-row--selected': isQuestionSelected(index), 'questions-row--disabled': !canSelectMore && !isQuestionSelected(index) }"
+                      role="option"
+                      :aria-selected="isQuestionSelected(index)"
+                      :aria-disabled="!canSelectMore && !isQuestionSelected(index)"
+                      tabindex="0"
+                      @click="toggleQuestionSelection(index)"
+                      @keydown.enter.prevent="toggleQuestionSelection(index)"
+                      @keydown.space.prevent="toggleQuestionSelection(index)"
+                    >
+                      <div class="questions-row__checkbox" :class="{ 'questions-row__checkbox--checked': isQuestionSelected(index) }">
+                        <svg v-if="isQuestionSelected(index)" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                          <polyline points="20 6 9 17 4 12" stroke="currentColor" stroke-width="3" fill="none"/>
+                        </svg>
+                      </div>
+                      <span class="questions-row__number">{{ index + 1 }}.</span>
+                      <p class="questions-row__text">{{ question }}</p>
+                      <button
+                        type="button"
+                        class="questions-copy-btn"
+                        :class="{ 'questions-copy-btn--copied': copiedQuestionIndex === index }"
+                        :title="copiedQuestionIndex === index ? 'Copied!' : 'Copy question'"
+                        :aria-label="copiedQuestionIndex === index ? 'Question copied to clipboard' : 'Copy this question to clipboard'"
+                        @click="copyQuestion(index, $event)"
+                      >
+                        <svg v-if="copiedQuestionIndex === index" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Footer Actions -->
+                  <div class="questions-results__footer">
+                    <div class="questions-results__save-area">
+                      <button
+                        type="button"
+                        class="gfy-btn gfy-btn--primary gfy-btn--large"
+                        :disabled="selectedQuestionsCount === 0 || isSavingToProfile"
+                        title="Save selected questions to your media kit"
+                        aria-label="Save selected questions to media kit"
+                        @click="handleSaveToMediaKit"
+                      >
+                        <svg v-if="isSavingToProfile" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin" aria-hidden="true">
+                          <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"/>
+                        </svg>
+                        <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                          <polyline points="17 21 17 13 7 13 7 21"/>
+                          <polyline points="7 3 7 8 15 8"/>
+                        </svg>
+                        {{ isSavingToProfile ? 'Saving...' : (hasSelectedProfile ? 'Save to Profile & Media Kit' : 'Save to Media Kit') }}
+                      </button>
+
+                      <!-- Save Success Message -->
+                      <div v-if="saveSuccess" class="questions-save-success" role="status" aria-live="polite">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Questions saved to your profile!
+                      </div>
+
+                      <!-- Save Error Message -->
+                      <div v-if="saveError" class="questions-save-error" role="alert" aria-live="assertive">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <circle cx="12" cy="12" r="10"/>
+                          <line x1="15" y1="9" x2="9" y2="15"/>
+                          <line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                        {{ saveError }}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      class="gfy-btn gfy-btn--ghost"
+                      title="Clear results and start fresh"
+                      aria-label="Start over with new questions"
+                      @click="handleStartOver"
+                    >
+                      Start Over
+                    </button>
+                  </div>
+
+                  <!-- Cross-tool Navigation -->
+                  <div v-if="lockedSlotsCount > 0" class="gfy-cross-tool-nav">
+                    <span class="gfy-cross-tool-nav__label">Continue building your media kit:</span>
+                    <div class="gfy-cross-tool-nav__links">
+                      <a href="/tools/biography/" class="gfy-cross-tool-nav__link">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                          <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        Generate Biography
+                      </a>
+                      <a href="/tools/guest-intro/" class="gfy-cross-tool-nav__link">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                          <line x1="12" y1="19" x2="12" y2="23"/>
+                          <line x1="8" y1="23" x2="16" y2="23"/>
+                        </svg>
+                        Generate Guest Intro
+                      </a>
+                      <a href="/tools/topics/" class="gfy-cross-tool-nav__link">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <line x1="8" y1="6" x2="21" y2="6"/>
+                          <line x1="8" y1="12" x2="21" y2="12"/>
+                          <line x1="8" y1="18" x2="21" y2="18"/>
+                          <line x1="3" y1="6" x2="3.01" y2="6"/>
+                          <line x1="3" y1="12" x2="3.01" y2="12"/>
+                          <line x1="3" y1="18" x2="3.01" y2="18"/>
+                        </svg>
+                        Generate Topics
+                      </a>
+                    </div>
+                  </div>
+                </main>
+              </div>
+            </div>
+          </div>
+          <!-- End Results Container -->
         </div>
+        <!-- End Tool Layout -->
       </div>
-    </template>
-  </GeneratorLayout>
+      <!-- End Container -->
+    </section>
+  </div>
+  <!-- End Standalone Mode -->
 
   <!-- Integrated Mode: Compact widget -->
   <AiWidgetFrame
@@ -717,6 +782,110 @@ const authorityHook = reactive({
   when: '',
   how: ''
 });
+
+// ===========================================
+// INTENT TABS STATE (Podcast/Press/Panel)
+// ===========================================
+const intentTabs = [
+  { id: 'podcast', label: 'Podcast Interview' },
+  { id: 'press', label: 'Press Interview' },
+  { id: 'panel', label: 'Panel Discussion' }
+];
+const selectedIntent = ref('podcast');
+
+function selectIntent(intentId) {
+  selectedIntent.value = intentId;
+}
+
+// ===========================================
+// PROFILE SELECTOR STATE
+// ===========================================
+const selectedProfileIdLocal = ref('');
+const availableProfiles = ref([]);
+
+// Fetch available profiles for the dropdown
+async function loadAvailableProfiles() {
+  try {
+    const response = await fetch('/wp-json/gmkb/v1/profiles', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'same-origin'
+    });
+    if (response.ok) {
+      const data = await response.json();
+      availableProfiles.value = data.profiles || [];
+    }
+  } catch (e) {
+    console.warn('[QuestionsGenerator] Failed to load profiles:', e);
+  }
+}
+
+// Handle profile selection
+async function handleProfileSelect() {
+  if (!selectedProfileIdLocal.value) return;
+
+  if (selectedProfileIdLocal.value === 'new') {
+    // Navigate to create new profile
+    window.location.href = '/profile/new/';
+    return;
+  }
+
+  // Find the selected profile and pre-fill fields
+  const profile = availableProfiles.value.find(p => p.id === selectedProfileIdLocal.value);
+  if (profile) {
+    // Pre-fill guest bio
+    if (profile.bio) {
+      guestBio.value = profile.bio;
+    }
+    // Pre-fill target audience
+    if (profile.target_audience) {
+      targetAudience.value = profile.target_audience;
+    }
+    // Pre-fill tone
+    if (profile.tone) {
+      selectedTone.value = profile.tone;
+    }
+    // Pre-fill authority hook
+    if (profile.hook_who) authorityHook.who = profile.hook_who;
+    if (profile.hook_what) authorityHook.what = profile.hook_what;
+    if (profile.hook_when) authorityHook.when = profile.hook_when;
+    if (profile.hook_how) authorityHook.how = profile.hook_how;
+  }
+}
+
+// Handle profile data loaded from ProfileContextBanner
+function handleProfileLoaded(profileData) {
+  if (profileData) {
+    // Load authority hook from profile
+    loadFromProfileData(profileData);
+
+    // Sync from store to local state
+    const storeHook = syncFromStore();
+    if (storeHook.who) authorityHook.who = storeHook.who;
+    if (storeHook.what) authorityHook.what = storeHook.what;
+    if (storeHook.when) authorityHook.when = storeHook.when;
+    if (storeHook.how) authorityHook.how = storeHook.how;
+
+    // Pre-fill additional fields if available
+    if (profileData.bio) guestBio.value = profileData.bio;
+    if (profileData.target_audience) targetAudience.value = profileData.target_audience;
+    if (profileData.tone) selectedTone.value = profileData.tone;
+  }
+}
+
+function handleProfileCleared() {
+  // Reset to defaults if needed
+}
+
+// ===========================================
+// STEP 3: CUSTOMIZE DETAILS STATE
+// ===========================================
+const guestBio = ref('');
+const targetAudience = ref('');
+const selectedTone = ref('professional');
+const questionCount = ref(10);
 
 // Available topics (from props or default examples)
 const availableTopics = computed(() => {
@@ -1242,6 +1411,8 @@ onMounted(() => {
   // Start auto-save in standalone mode
   if (props.mode === 'default') {
     startAutoSave(getDraftState);
+    // Load available profiles for the profile selector
+    loadAvailableProfiles();
   }
 
   // Add keyboard shortcut listener
