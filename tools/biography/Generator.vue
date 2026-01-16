@@ -84,7 +84,7 @@
     <!-- Phase 1: Input Form -->
     <div v-if="!showResults" class="gfy-bio-form">
       <!-- Hero Section (only show in default mode, not when embedded in landing page) -->
-      <div v-if="mode === 'default'" class="gfy-bio-hero">
+      <div v-if="mode === 'default' && !hideChrome" class="gfy-bio-hero">
         <h1 class="gfy-bio-hero__title">Professional Biography Generator</h1>
         <p class="gfy-bio-hero__subtitle">
           Create compelling professional biographies using the Authority Hook and Impact Intro frameworks.
@@ -93,7 +93,7 @@
 
       <!-- Profile Context Banner (for logged-in users in standalone mode) -->
       <ProfileContextBanner
-        v-if="mode === 'default'"
+        v-if="mode === 'default' && !hideChrome"
         @profile-loaded="handleProfileLoaded"
         @profile-cleared="handleProfileCleared"
       />
@@ -596,6 +596,13 @@ const props = defineProps({
     type: String,
     default: 'default',
     validator: (v) => ['default', 'integrated'].includes(v)
+  },
+  /**
+   * Hide hero section and profile banner (when inside EmbeddedToolWrapper)
+   */
+  hideChrome: {
+    type: Boolean,
+    default: false
   },
   intent: {
     type: Object,

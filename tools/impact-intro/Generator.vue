@@ -355,6 +355,14 @@ const props = defineProps({
   },
 
   /**
+   * Hide hero section and profile banner (when inside EmbeddedToolWrapper)
+   */
+  hideChrome: {
+    type: Boolean,
+    default: false
+  },
+
+  /**
    * Profile data for pre-population
    */
   profileData: {

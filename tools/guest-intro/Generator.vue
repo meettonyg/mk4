@@ -82,17 +82,17 @@
   <div v-else class="gfy-intro-generator">
     <!-- Phase 1: Input Form -->
     <div v-if="!showResults" class="gfy-intro-form">
-      <!-- Hero Section (only show in default mode, not when embedded in landing page) -->
-      <div v-if="mode === 'default'" class="gfy-intro-hero">
+      <!-- Hero Section (only show when not inside wrapper) -->
+      <div v-if="mode === 'default' && !hideChrome" class="gfy-intro-hero">
         <h1 class="gfy-intro-hero__title">Guest Introduction Generator</h1>
         <p class="gfy-intro-hero__subtitle">
           Create compelling introductions designed to be read aloud by podcast hosts or event MCs using the Authority Hook and Impact Intro frameworks.
         </p>
       </div>
 
-      <!-- Profile Context Banner (standalone mode) -->
+      <!-- Profile Context Banner (only when not inside wrapper) -->
       <ProfileContextBanner
-        v-if="mode === 'default' && isLoggedIn"
+        v-if="mode === 'default' && !hideChrome && isLoggedIn"
         :profiles="profiles"
         :selected-profile-id="selectedProfileId"
         :is-loading="isLoadingProfiles"
@@ -576,6 +576,13 @@ const props = defineProps({
     type: String,
     default: 'default',
     validator: (v) => ['default', 'integrated'].includes(v)
+  },
+  /**
+   * Hide hero section and profile banner (when inside EmbeddedToolWrapper)
+   */
+  hideChrome: {
+    type: Boolean,
+    default: false
   },
   intent: {
     type: Object,

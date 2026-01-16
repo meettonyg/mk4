@@ -1,12 +1,12 @@
 <template>
   <div class="generator__container gmkb-generator-root" :class="containerClass">
-    <!-- Profile Context Banner (for logged-in users) -->
-    <div v-if="$slots['profile-context']" class="generator__profile-context">
+    <!-- Profile Context Banner (for logged-in users, hidden when inside wrapper) -->
+    <div v-if="$slots['profile-context'] && !hideChrome" class="generator__profile-context">
       <slot name="profile-context"></slot>
     </div>
 
-    <!-- Header -->
-    <div class="generator__header">
+    <!-- Header (hidden when inside wrapper) -->
+    <div v-if="!hideChrome" class="generator__header">
       <h1 class="generator__title">{{ title }}</h1>
       <p v-if="subtitle" class="generator__subtitle">{{ subtitle }}</p>
     </div>
@@ -96,6 +96,14 @@ const props = defineProps({
    * Single column mode (no right panel)
    */
   singleColumn: {
+    type: Boolean,
+    default: false
+  },
+
+  /**
+   * Hide chrome (header, profile banner) when inside EmbeddedToolWrapper
+   */
+  hideChrome: {
     type: Boolean,
     default: false
   }

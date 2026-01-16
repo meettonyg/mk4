@@ -491,6 +491,21 @@ import { AuthorityHookBuilder } from '../_shared';
 const MAX_SELECTED_TOPICS = 5;
 
 const props = defineProps({
+  /**
+   * Mode: 'default' or 'integrated'
+   */
+  mode: {
+    type: String,
+    default: 'default',
+    validator: (v) => ['default', 'integrated'].includes(v)
+  },
+  /**
+   * Hide hero section and profile banner (when inside EmbeddedToolWrapper)
+   */
+  hideChrome: {
+    type: Boolean,
+    default: false
+  },
   profileData: {
     type: Object,
     default: null

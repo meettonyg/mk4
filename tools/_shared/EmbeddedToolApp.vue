@@ -31,6 +31,7 @@
           :is="generatorComponent"
           ref="generator"
           mode="default"
+          :hide-chrome="true"
           :intent="currentIntent"
           :profile-data="profileData"
           @generated="handleGenerated"

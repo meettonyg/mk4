@@ -12,6 +12,7 @@
     <!-- Profile Context Banner (for logged-in users) -->
     <template #profile-context>
       <ProfileContextBanner
+        v-if="!hideChrome"
         @profile-loaded="handleProfileLoaded"
         @profile-cleared="handleProfileCleared"
       />
@@ -659,6 +660,13 @@ const props = defineProps({
     type: String,
     default: 'default',
     validator: (v) => ['default', 'integrated'].includes(v)
+  },
+  /**
+   * Hide hero section and profile banner (when inside EmbeddedToolWrapper)
+   */
+  hideChrome: {
+    type: Boolean,
+    default: false
   },
 
   /**

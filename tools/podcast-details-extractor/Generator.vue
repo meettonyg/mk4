@@ -8,6 +8,7 @@
     generator-type="podcast-details-extractor"
     :has-results="hasResults"
     :is-loading="isExtracting"
+    :hide-chrome="hideChrome"
   >
     <!-- Left Panel: Form -->
     <template #left>
@@ -243,6 +244,13 @@ const props = defineProps({
     type: String,
     default: 'default',
     validator: (v) => ['default', 'integrated'].includes(v)
+  },
+  /**
+   * Hide hero section and profile banner (when inside EmbeddedToolWrapper)
+   */
+  hideChrome: {
+    type: Boolean,
+    default: false
   },
   componentId: {
     type: String,
