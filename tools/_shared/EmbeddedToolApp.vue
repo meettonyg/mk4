@@ -31,7 +31,7 @@
         <component
           :is="generatorComponent"
           ref="generator"
-          mode="embedded"
+          mode="default"
           :intent="currentIntent"
           :profile-data="profileData"
           @preview-update="handlePreviewUpdate"
