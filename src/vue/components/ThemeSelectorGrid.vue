@@ -1,34 +1,44 @@
 <template>
-  <div class="theme-selector-container">
+  <div class="theme-selector-container" role="region" aria-label="Theme selector">
     <!-- Filter Tabs -->
-    <div class="filter-section">
+    <div class="filter-section" aria-label="Theme filters">
       <!-- Audience Filter -->
-      <div class="filter-group">
-        <label class="filter-label">Audience</label>
-        <div class="filter-tabs">
+      <div class="filter-group" role="group" aria-labelledby="audience-filter-label">
+        <label id="audience-filter-label" class="filter-label">Audience</label>
+        <div class="filter-tabs" role="tablist" aria-label="Filter by audience">
           <button
-            v-for="audience in audienceFilters"
+            v-for="(audience, index) in audienceFilters"
             :key="audience.value"
             @click="activeAudienceFilter = audience.value"
+            @keydown="handleFilterKeydown($event, 'audience', index)"
             class="filter-tab"
             :class="{ active: activeAudienceFilter === audience.value }"
+            role="tab"
+            :aria-selected="activeAudienceFilter === audience.value"
+            :tabindex="activeAudienceFilter === audience.value ? 0 : -1"
+            :id="`audience-tab-${audience.value}`"
           >
-            <i v-if="audience.icon" :class="audience.icon"></i>
+            <i v-if="audience.icon" :class="audience.icon" aria-hidden="true"></i>
             {{ audience.label }}
           </button>
         </div>
       </div>
 
       <!-- Style Filter -->
-      <div class="filter-group">
-        <label class="filter-label">Style</label>
-        <div class="filter-tabs">
+      <div class="filter-group" role="group" aria-labelledby="style-filter-label">
+        <label id="style-filter-label" class="filter-label">Style</label>
+        <div class="filter-tabs" role="tablist" aria-label="Filter by style">
           <button
-            v-for="style in styleFilters"
+            v-for="(style, index) in styleFilters"
             :key="style.value"
             @click="activeStyleFilter = style.value"
+            @keydown="handleFilterKeydown($event, 'style', index)"
             class="filter-tab"
             :class="{ active: activeStyleFilter === style.value }"
+            role="tab"
+            :aria-selected="activeStyleFilter === style.value"
+            :tabindex="activeStyleFilter === style.value ? 0 : -1"
+            :id="`style-tab-${style.value}`"
           >
             {{ style.label }}
           </button>
@@ -37,24 +47,33 @@
     </div>
 
     <!-- Theme Count -->
-    <div class="results-count">
+    <div class="results-count" role="status" aria-live="polite">
       {{ filteredThemes.length }} template{{ filteredThemes.length !== 1 ? 's' : '' }} found
     </div>
 
     <!-- Grouped Themes -->
-    <div v-for="group in groupedThemes" :key="group.audience" class="theme-group">
-      <h3 class="group-title" v-if="activeAudienceFilter === 'all'">
-        <i :class="group.icon"></i>
+    <div v-for="group in groupedThemes" :key="group.audience" class="theme-group" role="group" :aria-label="`${group.label} themes`">
+      <h3 class="group-title" v-if="activeAudienceFilter === 'all'" :id="`group-${group.audience}`">
+        <i :class="group.icon" aria-hidden="true"></i>
         {{ group.label }}
       </h3>
 
-      <div class="theme-selector-grid">
+      <div
+        class="theme-selector-grid"
+        role="listbox"
+        :aria-labelledby="activeAudienceFilter === 'all' ? `group-${group.audience}` : undefined"
+        :aria-label="activeAudienceFilter !== 'all' ? 'Available themes' : undefined"
+      >
         <button
           v-for="theme in group.themes"
           :key="theme.id"
           @click="selectTheme(theme.id)"
           @mouseenter="previewTheme(theme.id)"
           @mouseleave="clearPreview"
+          @focus="previewTheme(theme.id)"
+          @blur="clearPreview"
+          @keydown.enter.prevent="selectTheme(theme.id)"
+          @keydown.space.prevent="selectTheme(theme.id)"
           class="theme-card"
           :class="{
             active: theme.id === activeThemeId,
@@ -62,12 +81,15 @@
             'is-new': theme.metadata?.is_new,
             'is-premium': theme.metadata?.is_premium
           }"
+          role="option"
+          :aria-selected="theme.id === activeThemeId"
+          :aria-label="`${theme.name}${theme.metadata?.style_label ? ', ' + theme.metadata.style_label : ''}${theme.metadata?.is_new ? ', New' : ''}${theme.metadata?.is_premium ? ', Premium' : ''}${theme.id === activeThemeId ? ', Currently selected' : ''}`"
         >
           <!-- Badges -->
-          <div v-if="theme.metadata?.is_new" class="theme-badge new">
+          <div v-if="theme.metadata?.is_new" class="theme-badge new" aria-hidden="true">
             <span>NEW</span>
           </div>
-          <div v-else-if="theme.metadata?.is_premium" class="theme-badge premium">
+          <div v-else-if="theme.metadata?.is_premium" class="theme-badge premium" aria-hidden="true">
             <i class="fa-solid fa-crown"></i>
             <span>PREMIUM</span>
           </div>
@@ -76,6 +98,7 @@
           <div
             class="theme-preview"
             :style="getPreviewStyle(theme)"
+            aria-hidden="true"
           >
             <i :class="getThemeIcon(theme)"></i>
           </div>
@@ -89,7 +112,7 @@
           </div>
 
           <!-- Active indicator -->
-          <div v-if="theme.id === activeThemeId" class="active-check">
+          <div v-if="theme.id === activeThemeId" class="active-check" aria-hidden="true">
             <i class="fa-solid fa-check"></i>
           </div>
         </button>
@@ -97,8 +120,8 @@
     </div>
 
     <!-- Empty State -->
-    <div v-if="filteredThemes.length === 0" class="empty-state">
-      <i class="fa-solid fa-search"></i>
+    <div v-if="filteredThemes.length === 0" class="empty-state" role="status" aria-live="polite">
+      <i class="fa-solid fa-search" aria-hidden="true"></i>
       <p>No templates match your filters</p>
       <button @click="resetFilters" class="reset-button">Reset Filters</button>
     </div>
@@ -106,7 +129,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, nextTick } from 'vue';
 import { useThemeStore } from '../../stores/theme';
 import { useMediaKitStore } from '../../stores/mediaKit';
 
@@ -262,6 +285,57 @@ function resetFilters() {
   activeAudienceFilter.value = 'all';
   activeStyleFilter.value = 'all';
 }
+
+// Keyboard navigation for filter tabs
+function handleFilterKeydown(event, filterType, currentIndex) {
+  const { key } = event;
+  let filters;
+  let setFilter;
+  let prefix;
+
+  if (filterType === 'audience') {
+    filters = audienceFilters;
+    setFilter = (val) => { activeAudienceFilter.value = val; };
+    prefix = 'audience-tab';
+  } else {
+    filters = styleFilters;
+    setFilter = (val) => { activeStyleFilter.value = val; };
+    prefix = 'style-tab';
+  }
+
+  let newIndex = currentIndex;
+
+  switch (key) {
+    case 'ArrowRight':
+    case 'ArrowDown':
+      event.preventDefault();
+      newIndex = (currentIndex + 1) % filters.length;
+      break;
+    case 'ArrowLeft':
+    case 'ArrowUp':
+      event.preventDefault();
+      newIndex = (currentIndex - 1 + filters.length) % filters.length;
+      break;
+    case 'Home':
+      event.preventDefault();
+      newIndex = 0;
+      break;
+    case 'End':
+      event.preventDefault();
+      newIndex = filters.length - 1;
+      break;
+    default:
+      return;
+  }
+
+  if (newIndex !== currentIndex) {
+    setFilter(filters[newIndex].value);
+    nextTick(() => {
+      const tabId = `${prefix}-${filters[newIndex].value}`;
+      document.getElementById(tabId)?.focus();
+    });
+  }
+}
 </script>
 
 <style scoped>
@@ -314,10 +388,16 @@ function resetFilters() {
   transition: all 0.2s;
 }
 
-.filter-tab:hover {
+.filter-tab:hover,
+.filter-tab:focus {
   background: var(--gmkb-color-surface-hover, #f1f5f9);
   border-color: var(--gmkb-color-primary, #3b82f6);
   color: var(--gmkb-color-primary, #3b82f6);
+  outline: none;
+}
+
+.filter-tab:focus-visible {
+  box-shadow: 0 0 0 2px var(--gmkb-color-primary, #3b82f6);
 }
 
 .filter-tab.active {
@@ -387,10 +467,16 @@ body.dark-mode .theme-card {
   border-color: #334155;
 }
 
-.theme-card:hover {
+.theme-card:hover,
+.theme-card:focus {
   border-color: #3b82f6;
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(59, 130, 246, 0.15);
+  outline: none;
+}
+
+.theme-card:focus-visible {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4), 0 8px 20px rgba(59, 130, 246, 0.15);
 }
 
 .theme-card.active {
@@ -577,8 +663,9 @@ body.dark-mode .theme-card.active .theme-name {
   }
 
   .filter-tab {
-    padding: 5px 10px;
+    padding: 8px 12px;
     font-size: 12px;
+    min-height: 40px; /* Touch-friendly target */
   }
 
   .theme-selector-grid {
@@ -588,6 +675,7 @@ body.dark-mode .theme-card.active .theme-name {
 
   .theme-card {
     padding: 16px 12px;
+    min-height: 140px; /* Consistent touch target */
   }
 
   .theme-preview {
@@ -601,6 +689,45 @@ body.dark-mode .theme-card.active .theme-name {
 
   .theme-name {
     font-size: 13px;
+  }
+
+  .reset-button {
+    min-height: 44px;
+    padding: 12px 24px;
+  }
+}
+
+/* Touch-friendly styles for touch devices */
+@media (hover: none) and (pointer: coarse) {
+  /* Remove hover-only transforms on touch */
+  .theme-card:hover {
+    transform: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .theme-card:hover .theme-preview {
+    transform: none;
+  }
+
+  /* Use active state for touch feedback */
+  .theme-card:active {
+    transform: scale(0.97);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Touch feedback for filter tabs */
+  .filter-tab:active {
+    transform: scale(0.95);
+  }
+
+  /* Touch feedback for reset button */
+  .reset-button:active {
+    transform: scale(0.98);
+  }
+
+  /* Hide previewing label on touch (confusing UX) */
+  .theme-card.previewing::after {
+    display: none;
   }
 }
 </style>

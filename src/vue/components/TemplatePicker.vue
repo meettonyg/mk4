@@ -1,14 +1,19 @@
 <template>
-  <div class="template-picker">
+  <div
+    class="template-picker"
+    @keydown="handleGlobalKeydown"
+    role="application"
+    aria-label="Media Kit Template Picker"
+  >
     <!-- Header -->
-    <header class="template-picker__header">
+    <header class="template-picker__header" role="banner">
       <div class="template-picker__brand">
         <span class="template-picker__logo">Guestify</span>
         <span class="template-picker__tagline">Media Kit Builder</span>
       </div>
       <div class="template-picker__actions">
         <a v-if="hasBackup" @click.prevent="resumeSession" href="#" class="template-picker__resume-btn">
-          <i class="fa-solid fa-clock-rotate-left"></i>
+          <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
           Resume Previous Session
         </a>
         <a :href="loginUrl" class="template-picker__login-link">
@@ -18,49 +23,59 @@
     </header>
 
     <!-- Hero Section -->
-    <section class="template-picker__hero">
-      <h1 class="template-picker__title">Create Your Professional Media Kit</h1>
+    <section class="template-picker__hero" aria-labelledby="picker-title">
+      <h1 id="picker-title" class="template-picker__title">Create Your Professional Media Kit</h1>
       <p class="template-picker__subtitle">
         Choose a template to get started. You can customize everything later.
       </p>
     </section>
 
     <!-- Filters - Multi-Dimensional (Persona > Use Case > Layout) -->
-    <section class="template-picker__filters">
+    <section class="template-picker__filters" aria-label="Template filters">
       <div class="filter-section">
         <!-- Persona Filter (Primary) -->
-        <div class="filter-group">
-          <label class="filter-label">
-            <span class="filter-step">1</span>
+        <div class="filter-group" role="group" aria-labelledby="persona-label">
+          <label id="persona-label" class="filter-label">
+            <span class="filter-step" aria-hidden="true">1</span>
             I am a...
           </label>
-          <div class="filter-tabs">
+          <div class="filter-tabs" role="tablist" aria-label="Persona filter">
             <button
-              v-for="persona in personaFilters"
+              v-for="(persona, index) in personaFilters"
               :key="persona.value"
               @click="activePersonaFilter = persona.value"
+              @keydown="handleFilterKeydown($event, 'persona', index)"
               class="filter-tab"
               :class="{ active: activePersonaFilter === persona.value }"
+              role="tab"
+              :aria-selected="activePersonaFilter === persona.value"
+              :tabindex="activePersonaFilter === persona.value ? 0 : -1"
+              :id="`persona-tab-${persona.value}`"
             >
-              <i v-if="persona.icon" :class="persona.icon"></i>
+              <i v-if="persona.icon" :class="persona.icon" aria-hidden="true"></i>
               {{ persona.label }}
             </button>
           </div>
         </div>
 
         <!-- Use Case Filter (Secondary) -->
-        <div class="filter-group" v-if="useCaseFilters.length > 1">
-          <label class="filter-label">
-            <span class="filter-step">2</span>
+        <div class="filter-group" v-if="useCaseFilters.length > 1" role="group" aria-labelledby="usecase-label">
+          <label id="usecase-label" class="filter-label">
+            <span class="filter-step" aria-hidden="true">2</span>
             Use case
           </label>
-          <div class="filter-tabs">
+          <div class="filter-tabs" role="tablist" aria-label="Use case filter">
             <button
-              v-for="useCase in useCaseFilters"
+              v-for="(useCase, index) in useCaseFilters"
               :key="useCase.value"
               @click="activeUseCaseFilter = useCase.value"
+              @keydown="handleFilterKeydown($event, 'usecase', index)"
               class="filter-tab filter-tab--secondary"
               :class="{ active: activeUseCaseFilter === useCase.value }"
+              role="tab"
+              :aria-selected="activeUseCaseFilter === useCase.value"
+              :tabindex="activeUseCaseFilter === useCase.value ? 0 : -1"
+              :id="`usecase-tab-${useCase.value}`"
             >
               {{ useCase.label }}
             </button>
@@ -68,18 +83,23 @@
         </div>
 
         <!-- Layout Variant Filter (Tertiary) -->
-        <div class="filter-group" v-if="layoutFilters.length > 1">
-          <label class="filter-label">
-            <span class="filter-step">3</span>
+        <div class="filter-group" v-if="layoutFilters.length > 1" role="group" aria-labelledby="layout-label">
+          <label id="layout-label" class="filter-label">
+            <span class="filter-step" aria-hidden="true">3</span>
             Layout style
           </label>
-          <div class="filter-tabs">
+          <div class="filter-tabs" role="tablist" aria-label="Layout style filter">
             <button
-              v-for="layout in layoutFilters"
+              v-for="(layout, index) in layoutFilters"
               :key="layout.value"
               @click="activeLayoutFilter = layout.value"
+              @keydown="handleFilterKeydown($event, 'layout', index)"
               class="filter-tab filter-tab--layout"
               :class="{ active: activeLayoutFilter === layout.value }"
+              role="tab"
+              :aria-selected="activeLayoutFilter === layout.value"
+              :tabindex="activeLayoutFilter === layout.value ? 0 : -1"
+              :id="`layout-tab-${layout.value}`"
             >
               {{ layout.label }}
             </button>
@@ -89,34 +109,50 @@
     </section>
 
     <!-- Results Count -->
-    <div class="template-picker__count">
+    <div class="template-picker__count" role="status" aria-live="polite">
       {{ filteredTemplates.length }} template{{ filteredTemplates.length !== 1 ? 's' : '' }} available
     </div>
 
     <!-- Template Grid -->
-    <section class="template-picker__grid">
+    <section
+      ref="templateGridRef"
+      class="template-picker__grid"
+      role="listbox"
+      aria-label="Available templates"
+      @keydown="handleGridKeydown"
+    >
       <div
-        v-for="template in filteredTemplates"
+        v-for="(template, index) in filteredTemplates"
         :key="template.id"
         @click="selectTemplate(template)"
+        @keydown.enter.prevent="selectTemplate(template)"
+        @keydown.space.prevent="selectTemplate(template)"
         class="template-card"
-        :class="{ 'is-new': template.metadata?.is_new }"
+        :class="{
+          'is-new': template.metadata?.is_new,
+          'is-focused': focusedTemplateIndex === index
+        }"
+        role="option"
+        :aria-selected="focusedTemplateIndex === index"
+        :tabindex="focusedTemplateIndex === index ? 0 : -1"
+        :id="`template-card-${template.id}`"
+        :ref="el => { if (el) templateCardRefs[index] = el }"
       >
         <!-- Badge -->
-        <div v-if="template.metadata?.is_new" class="template-card__badge">NEW</div>
+        <div v-if="template.metadata?.is_new" class="template-card__badge" aria-label="New template">NEW</div>
 
         <!-- Preview -->
-        <div class="template-card__preview" :style="getPreviewStyle(template)">
+        <div class="template-card__preview" :style="getPreviewStyle(template)" aria-hidden="true">
           <i :class="getTemplateIcon(template)"></i>
         </div>
 
         <!-- Info -->
         <div class="template-card__info">
-          <h3 class="template-card__name">{{ template.name }}</h3>
+          <h3 class="template-card__name" :id="`template-name-${template.id}`">{{ template.name }}</h3>
           <p class="template-card__description">{{ template.description }}</p>
           <div class="template-card__meta">
             <span class="template-card__persona" v-if="template.persona?.label">
-              <i :class="template.persona?.icon || 'fa-solid fa-user'"></i>
+              <i :class="template.persona?.icon || 'fa-solid fa-user'" aria-hidden="true"></i>
               {{ template.persona.label }}
             </span>
             <span class="template-card__use-case" v-if="template.use_case || template.persona?.use_case">
@@ -129,29 +165,39 @@
         </div>
 
         <!-- Select Button -->
-        <button class="template-card__select">
-          <i class="fa-solid fa-arrow-right"></i>
+        <button
+          class="template-card__select"
+          @click.stop="selectTemplate(template)"
+          :aria-label="`Use ${template.name} template`"
+          tabindex="-1"
+        >
+          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
           Use This Template
         </button>
       </div>
     </section>
 
     <!-- Empty State -->
-    <div v-if="filteredTemplates.length === 0" class="template-picker__empty">
-      <i class="fa-solid fa-search"></i>
+    <div v-if="filteredTemplates.length === 0" class="template-picker__empty" role="status" aria-live="polite">
+      <i class="fa-solid fa-search" aria-hidden="true"></i>
       <p>No templates match your filters</p>
       <button @click="resetFilters" class="template-picker__reset-btn">Show All Templates</button>
     </div>
 
     <!-- Footer -->
-    <footer class="template-picker__footer">
+    <footer class="template-picker__footer" role="contentinfo">
       <p>Free to create. Register only when you're ready to save.</p>
     </footer>
+
+    <!-- Screen reader announcements -->
+    <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">
+      {{ screenReaderAnnouncement }}
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import storageService from '../../services/StorageService';
 
 const emit = defineEmits(['template-selected', 'resume-session']);
@@ -173,6 +219,12 @@ const activePersonaFilter = ref('all');
 const activeUseCaseFilter = ref('all');
 const activeLayoutFilter = ref('all');
 const hasBackup = ref(false);
+
+// Keyboard navigation state
+const focusedTemplateIndex = ref(0);
+const templateGridRef = ref(null);
+const templateCardRefs = ref([]);
+const screenReaderAnnouncement = ref('');
 
 // Dynamic filter options from API manifest
 const filterManifest = ref(null);
@@ -414,6 +466,169 @@ onMounted(() => {
   // Fetch the filter manifest for dynamic filtering
   fetchFilterManifest();
 });
+
+// Reset focused index when filters change
+watch(filteredTemplates, () => {
+  focusedTemplateIndex.value = 0;
+  templateCardRefs.value = [];
+});
+
+/**
+ * Calculate grid columns based on container width
+ * Used for arrow key navigation to move up/down rows
+ */
+function getGridColumns() {
+  if (!templateGridRef.value) return 3;
+  const containerWidth = templateGridRef.value.offsetWidth;
+  const cardMinWidth = 320;
+  const gap = 24;
+  return Math.max(1, Math.floor((containerWidth + gap) / (cardMinWidth + gap)));
+}
+
+/**
+ * Focus a template card by index
+ */
+function focusTemplateCard(index) {
+  if (index < 0 || index >= filteredTemplates.value.length) return;
+  focusedTemplateIndex.value = index;
+  nextTick(() => {
+    const card = templateCardRefs.value[index];
+    if (card) {
+      card.focus();
+      announceTemplate(filteredTemplates.value[index]);
+    }
+  });
+}
+
+/**
+ * Announce template to screen readers
+ */
+function announceTemplate(template) {
+  const parts = [template.name];
+  if (template.persona?.label) parts.push(template.persona.label);
+  if (template.description) parts.push(template.description);
+  screenReaderAnnouncement.value = parts.join('. ');
+}
+
+/**
+ * Handle keyboard navigation within the template grid
+ */
+function handleGridKeydown(event) {
+  const { key } = event;
+  const totalTemplates = filteredTemplates.value.length;
+  if (totalTemplates === 0) return;
+
+  const columns = getGridColumns();
+  let newIndex = focusedTemplateIndex.value;
+
+  switch (key) {
+    case 'ArrowRight':
+      event.preventDefault();
+      newIndex = Math.min(totalTemplates - 1, focusedTemplateIndex.value + 1);
+      break;
+    case 'ArrowLeft':
+      event.preventDefault();
+      newIndex = Math.max(0, focusedTemplateIndex.value - 1);
+      break;
+    case 'ArrowDown':
+      event.preventDefault();
+      newIndex = Math.min(totalTemplates - 1, focusedTemplateIndex.value + columns);
+      break;
+    case 'ArrowUp':
+      event.preventDefault();
+      newIndex = Math.max(0, focusedTemplateIndex.value - columns);
+      break;
+    case 'Home':
+      event.preventDefault();
+      newIndex = 0;
+      break;
+    case 'End':
+      event.preventDefault();
+      newIndex = totalTemplates - 1;
+      break;
+    default:
+      return;
+  }
+
+  if (newIndex !== focusedTemplateIndex.value) {
+    focusTemplateCard(newIndex);
+  }
+}
+
+/**
+ * Handle keyboard navigation within filter tabs (left/right arrows)
+ */
+function handleFilterKeydown(event, filterType, currentIndex) {
+  const { key } = event;
+  let filters;
+  let setFilter;
+
+  switch (filterType) {
+    case 'persona':
+      filters = personaFilters.value;
+      setFilter = (val) => { activePersonaFilter.value = val; };
+      break;
+    case 'usecase':
+      filters = useCaseFilters.value;
+      setFilter = (val) => { activeUseCaseFilter.value = val; };
+      break;
+    case 'layout':
+      filters = layoutFilters.value;
+      setFilter = (val) => { activeLayoutFilter.value = val; };
+      break;
+    default:
+      return;
+  }
+
+  let newIndex = currentIndex;
+
+  switch (key) {
+    case 'ArrowRight':
+    case 'ArrowDown':
+      event.preventDefault();
+      newIndex = (currentIndex + 1) % filters.length;
+      break;
+    case 'ArrowLeft':
+    case 'ArrowUp':
+      event.preventDefault();
+      newIndex = (currentIndex - 1 + filters.length) % filters.length;
+      break;
+    case 'Home':
+      event.preventDefault();
+      newIndex = 0;
+      break;
+    case 'End':
+      event.preventDefault();
+      newIndex = filters.length - 1;
+      break;
+    default:
+      return;
+  }
+
+  if (newIndex !== currentIndex) {
+    setFilter(filters[newIndex].value);
+    nextTick(() => {
+      const tabId = `${filterType}-tab-${filters[newIndex].value}`;
+      document.getElementById(tabId)?.focus();
+    });
+  }
+}
+
+/**
+ * Global keyboard handler for Escape key
+ */
+function handleGlobalKeydown(event) {
+  if (event.key === 'Escape') {
+    // Reset filters on Escape
+    if (activePersonaFilter.value !== 'all' ||
+        activeUseCaseFilter.value !== 'all' ||
+        activeLayoutFilter.value !== 'all') {
+      event.preventDefault();
+      resetFilters();
+      screenReaderAnnouncement.value = 'Filters reset. Showing all templates.';
+    }
+  }
+}
 </script>
 
 <style scoped>
@@ -846,6 +1061,12 @@ onMounted(() => {
   .template-picker__actions {
     flex-direction: column;
     gap: 12px;
+    width: 100%;
+  }
+
+  .template-picker__resume-btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .template-picker__hero {
@@ -873,8 +1094,9 @@ onMounted(() => {
   }
 
   .filter-tab {
-    padding: 8px 14px;
+    padding: 10px 16px; /* Larger touch target */
     font-size: 13px;
+    min-height: 44px; /* iOS minimum touch target */
   }
 
   .template-picker__grid {
@@ -890,6 +1112,88 @@ onMounted(() => {
   .template-card__select {
     opacity: 1;
     transform: translateY(0);
+    min-height: 52px; /* Larger touch target */
   }
+}
+
+/* Touch-friendly styles for touch devices */
+@media (hover: none) and (pointer: coarse) {
+  /* Remove hover-only effects on touch devices */
+  .template-card:hover {
+    transform: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Use active state for touch feedback */
+  .template-card:active {
+    transform: scale(0.98);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Always show select button on touch */
+  .template-card__select {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Touch feedback for filter tabs */
+  .filter-tab:active {
+    transform: scale(0.95);
+  }
+
+  /* Touch feedback for buttons */
+  .template-picker__resume-btn:active,
+  .template-picker__reset-btn:active {
+    transform: scale(0.98);
+  }
+}
+
+/* Focus styles for keyboard navigation */
+.template-card:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px #3b82f6, 0 12px 40px rgba(0, 0, 0, 0.12);
+  transform: translateY(-4px);
+}
+
+.template-card:focus .template-card__select {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.template-card.is-focused {
+  box-shadow: 0 0 0 3px #3b82f6, 0 12px 40px rgba(0, 0, 0, 0.12);
+}
+
+.filter-tab:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #3b82f6;
+}
+
+.filter-tab:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.template-picker__reset-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+}
+
+.template-picker__resume-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.5);
+}
+
+/* Screen reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 </style>

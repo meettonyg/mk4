@@ -6,8 +6,14 @@
     :data-component-id="componentId || component?.id"
     :data-draggable="true"
     data-component-wrapper
+    role="region"
+    :aria-label="componentAriaLabel"
+    :tabindex="showControls && !uiStore.previewMode ? 0 : -1"
     @mouseenter="onMouseEnter"
     @mouseleave="onMouseLeave"
+    @focus="onFocus"
+    @blur="onBlur"
+    @keydown="handleKeydown"
   >
     <!-- Click-to-edit hint (Carrd-like UX) -->
     <Transition name="fade">
@@ -15,8 +21,11 @@
         v-if="showEditHint"
         class="edit-hint"
         @click.stop="handleEditClick"
+        role="button"
+        aria-label="Click to edit this component"
+        tabindex="-1"
       >
-        <span class="edit-hint-text">Click to edit</span>
+        <span class="edit-hint-text" aria-hidden="true">Click to edit</span>
       </div>
     </Transition>
 
@@ -104,6 +113,7 @@ const emit = defineEmits(['edit', 'duplicate', 'remove'])
 const store = useMediaKitStore()
 const uiStore = useUIStore()
 const isHovered = ref(false)
+const isFocused = ref(false)
 
 // ROOT FIX: Get Vue component from UnifiedComponentRegistry
 // This replaces the hardcoded componentMap and ensures consistency
@@ -228,11 +238,21 @@ const showEditHint = computed(() => {
     if (uiStore.previewMode) return false;
     if (!props.showControls) return false;
 
-    // Show on hover but not when already selected/editing
-    return isHovered.value && !isSelected.value && !isEditing.value;
+    // Show on hover/focus but not when already selected/editing
+    return (isHovered.value || isFocused.value) && !isSelected.value && !isEditing.value;
   } catch (error) {
     return false;
   }
+})
+
+// Accessible label for the component
+const componentAriaLabel = computed(() => {
+  if (!actualComponent.value) return 'Media kit component';
+  const type = actualComponent.value.type || 'component';
+  const name = actualComponent.value.data?.name ||
+               actualComponent.value.data?.title ||
+               type.replace(/-/g, ' ');
+  return `${name} - ${type} component. ${props.showControls && !uiStore.previewMode ? 'Press Enter to edit.' : ''}`;
 })
 
 // Handle clicking the edit hint
@@ -350,12 +370,66 @@ function onMouseLeave(event) {
     // Mouse moved to controls, keep hover state
     return
   }
-  
+
   console.log('   ❌ Removing hover')
   isHovered.value = false
   const id = props.componentId || props.component?.id
   if (id && store.hoveredComponentId === id) {
     store.setHoveredComponent(null)
+  }
+}
+
+// Focus events for keyboard accessibility
+function onFocus() {
+  isFocused.value = true
+  const id = props.componentId || props.component?.id
+  if (id) {
+    store.setHoveredComponent(id)
+  }
+}
+
+function onBlur() {
+  isFocused.value = false
+  const id = props.componentId || props.component?.id
+  if (id && store.hoveredComponentId === id) {
+    store.setHoveredComponent(null)
+  }
+}
+
+// Keyboard navigation
+function handleKeydown(event) {
+  // Only handle keyboard in edit mode
+  if (uiStore.previewMode || !props.showControls) return
+
+  const id = props.componentId || props.component?.id
+  if (!id) return
+
+  switch (event.key) {
+    case 'Enter':
+    case ' ':
+      event.preventDefault()
+      store.selectComponent(id)
+      emit('edit', id)
+      break
+    case 'Escape':
+      event.preventDefault()
+      if (isSelected.value || isEditing.value) {
+        store.selectComponent(null)
+      }
+      break
+    case 'Delete':
+    case 'Backspace':
+      if (event.metaKey || event.ctrlKey) {
+        event.preventDefault()
+        emit('remove', id)
+      }
+      break
+    case 'd':
+      if (event.metaKey || event.ctrlKey) {
+        event.preventDefault()
+        emit('duplicate', id)
+      }
+      break
   }
 }
 </script>
@@ -383,6 +457,22 @@ function onMouseLeave(event) {
 .component-wrapper--editing {
   outline: 2px solid var(--success-color, #10b981);
   outline-offset: 2px;
+}
+
+/* Focus styles for keyboard navigation */
+.component-wrapper:focus {
+  outline: 2px solid var(--primary-color, #3b82f6);
+  outline-offset: 2px;
+}
+
+.component-wrapper:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.component-wrapper:focus-visible {
+  outline: 2px solid var(--primary-color, #3b82f6);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
 }
 
 /* V2 ARCHITECTURE: Component root handles all visual styles */
@@ -454,5 +544,31 @@ function onMouseLeave(event) {
 .fade-leave-to {
   opacity: 0;
   transform: translate(-50%, -50%) scale(0.9);
+}
+
+/* Touch-friendly styles */
+@media (hover: none) and (pointer: coarse) {
+  /* Larger touch target for edit hint */
+  .edit-hint-text {
+    padding: 12px 20px;
+    font-size: 14px;
+    min-height: 44px;
+  }
+
+  /* Active state for touch feedback */
+  .edit-hint:active .edit-hint-text {
+    transform: scale(0.95);
+    background: rgba(79, 70, 229, 1);
+  }
+
+  /* Remove hover transforms on touch */
+  .edit-hint:hover .edit-hint-text {
+    transform: none;
+  }
+
+  /* Larger tap targets for component wrapper */
+  .component-wrapper {
+    min-height: 44px;
+  }
 }
 </style>
