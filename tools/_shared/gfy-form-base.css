@@ -19,6 +19,17 @@
   padding: 30px;
 }
 
+/* Remove container styling when inside EmbeddedToolWrapper (landing pages) */
+.gmkb-tool-embed .gmkb-plg-tool-embed {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  min-height: auto;
+  padding: 0;
+  max-width: none;
+}
+
 /* ============================================================================
    HIGHLIGHT BOXES - Framework Containers
    ============================================================================ */
