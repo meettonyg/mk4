@@ -1160,36 +1160,6 @@ function restoreFullHistory(entry) {
   }
 }
 
-/**
- * Handle profile loaded from ProfileContextBanner (standalone mode)
- */
-function handleProfileLoaded(data) {
-  if (data && props.mode === 'default') {
-    // Track which fields are being prefilled
-    const newPrefilledFields = new Set();
-
-    const hookWho = data.hook_who || data.authority_hook_who;
-    const hookWhat = data.hook_what || data.authority_hook_what;
-    const hookWhen = data.hook_when || data.authority_hook_when;
-    const hookHow = data.hook_how || data.authority_hook_how;
-
-    if (hookWho && !authorityHook.who) newPrefilledFields.add('hook_who');
-    if (hookWhat && !authorityHook.what) newPrefilledFields.add('hook_what');
-    if (hookWhen && !authorityHook.when) newPrefilledFields.add('hook_when');
-    if (hookHow && !authorityHook.how) newPrefilledFields.add('hook_how');
-
-    prefilledFields.value = newPrefilledFields;
-    populateFromProfile(data);
-  }
-}
-
-/**
- * Handle profile cleared from ProfileContextBanner (standalone mode)
- */
-function handleProfileCleared() {
-  // Optionally clear form fields when profile is deselected
-  // For now, we keep the existing data to avoid losing user input
-}
 
 /**
  * Questions formula for guidance panel
