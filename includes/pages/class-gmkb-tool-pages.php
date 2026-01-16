@@ -1936,9 +1936,28 @@ get_footer();
                     <div class="gmkb-plg-trust-strip">
                         <?php foreach ($hero['microProof'] as $proof): ?>
                         <div class="gmkb-plg-trust-item">
-                            <span><?php echo esc_html($proof['icon'] ?? '✓'); ?></span>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
                             <?php echo esc_html($proof['text']); ?>
                         </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+
+                    <!-- Intent Tabs (shown in hero for non-logged-in users only) -->
+                    <?php if (!$is_logged_in && !empty($intents) && count($intents) > 1): ?>
+                    <div class="gmkb-intent-tabs" role="tablist" id="gmkb-hero-intent-tabs">
+                        <?php foreach ($intents as $index => $intent): ?>
+                        <button
+                            type="button"
+                            class="gmkb-intent-tab<?php echo $index === 0 ? ' active' : ''; ?>"
+                            role="tab"
+                            aria-selected="<?php echo $index === 0 ? 'true' : 'false'; ?>"
+                            data-intent-id="<?php echo esc_attr($intent['id']); ?>"
+                        >
+                            <?php echo esc_html($intent['label']); ?>
+                        </button>
                         <?php endforeach; ?>
                     </div>
                     <?php endif; ?>
@@ -1949,7 +1968,8 @@ get_footer();
                          data-tool="<?php echo esc_attr($tool_slug); ?>"
                          data-mode="embedded"
                          data-intents="<?php echo esc_attr(wp_json_encode($intents)); ?>"
-                         data-meta="<?php echo esc_attr(wp_json_encode($vue_meta)); ?>">
+                         data-meta="<?php echo esc_attr(wp_json_encode($vue_meta)); ?>"
+                         data-tabs-in-hero="<?php echo (!$is_logged_in && !empty($intents) && count($intents) > 1) ? 'true' : 'false'; ?>">
                         <!-- Vue app will mount here -->
                         <noscript>
                             <div class="gmkb-plg-noscript">
@@ -2129,6 +2149,35 @@ get_footer();
             </section>
             <?php endif; ?>
         </div>
+
+        <?php if (!$is_logged_in && !empty($intents) && count($intents) > 1): ?>
+        <!-- Hero Intent Tabs JavaScript -->
+        <script>
+        (function() {
+            var heroTabs = document.getElementById('gmkb-hero-intent-tabs');
+            if (!heroTabs) return;
+
+            heroTabs.addEventListener('click', function(e) {
+                var tab = e.target.closest('.gmkb-intent-tab');
+                if (!tab) return;
+
+                // Update active states
+                heroTabs.querySelectorAll('.gmkb-intent-tab').forEach(function(t) {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-selected', 'false');
+                });
+                tab.classList.add('active');
+                tab.setAttribute('aria-selected', 'true');
+
+                // Dispatch event for Vue component
+                var intentId = tab.getAttribute('data-intent-id');
+                document.dispatchEvent(new CustomEvent('gmkb:hero-intent-change', {
+                    detail: { intentId: intentId }
+                }));
+            });
+        })();
+        </script>
+        <?php endif; ?>
 
         <?php
         // Enqueue the PLG CSS

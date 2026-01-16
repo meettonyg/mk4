@@ -7,8 +7,8 @@
       @profile-cleared="handleProfileCleared"
     />
 
-    <!-- Intent Tabs (hidden when showing results in single column mode) -->
-    <div v-if="intents && intents.length > 0 && !(singleColumn && hasGenerated)" class="gmkb-intent-tabs" role="tablist">
+    <!-- Intent Tabs (hidden when tabs are in hero section, or when showing results in single column mode) -->
+    <div v-if="intents && intents.length > 0 && !tabsInHero && !(singleColumn && hasGenerated)" class="gmkb-intent-tabs" role="tablist">
       <button
         v-for="intent in intents"
         :key="intent.id"
@@ -466,6 +466,14 @@ const props = defineProps({
   singleColumn: {
     type: Boolean,
     default: true
+  },
+  /**
+   * Whether intent tabs are rendered in the hero section (PHP)
+   * When true, hides the internal tabs in this wrapper
+   */
+  tabsInHero: {
+    type: Boolean,
+    default: false
   }
 });
 

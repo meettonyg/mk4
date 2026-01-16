@@ -166,6 +166,7 @@ function initializeEmbeddedTool(container) {
 
   const isLoggedIn = !!(window.gmkbStandaloneTools?.isLoggedIn || window.gmkbUserData?.isLoggedIn);
   const socialLoginHtml = window.gmkbSocialLogin?.html || '';
+  const tabsInHero = container.dataset.tabsInHero === 'true';
 
   const app = mountApp(container, EmbeddedToolApp, {
     toolSlug,
@@ -174,6 +175,7 @@ function initializeEmbeddedTool(container) {
     generatorComponent: GeneratorComponent,
     isLoggedIn,
     socialLoginHtml,
+    tabsInHero,
     onGenerated: (data) => container.dispatchEvent(new CustomEvent('gmkb:generated', { detail: data, bubbles: true })),
     onSaveClick: (data) => container.dispatchEvent(new CustomEvent('gmkb:save-click', { detail: data, bubbles: true })),
     onGateShown: (data) => container.dispatchEvent(new CustomEvent('gmkb:gate-shown', { detail: data, bubbles: true })),
