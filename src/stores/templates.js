@@ -127,14 +127,19 @@ export const useTemplateStore = defineStore('templates', {
          * Centralized fetch helper with REST API authentication
          * Reduces code duplication across all API methods (DRY principle)
          *
-         * @param {string} endpoint - API endpoint (relative to restUrl)
+         * @param {string} endpoint - API endpoint (full path from wp-json root, e.g., 'gmkb/v1/starter-templates')
          * @param {Object} options - Fetch options (method, body, headers, etc.)
          * @returns {Promise<Response>} Fetch response
          */
         async _fetchWithAuth(endpoint, options = {}) {
+            // CRITICAL FIX: Use base WP-JSON URL, not the v2 namespace URL
+            // Templates API uses gmkb/v1 namespace, while restUrl points to gmkb/v2
+            // We need to construct the URL from the base /wp-json/ path
             const restUrl = window.gmkbData?.restUrl || '/wp-json/';
+            // Extract base WP-JSON URL by removing any namespace suffix
+            const baseUrl = restUrl.replace(/gmkb\/v\d+\/?$/, '');
             const nonce = window.gmkbData?.restNonce || '';
-            const url = `${restUrl}${endpoint}`;
+            const url = `${baseUrl}${endpoint}`;
 
             const fetchOptions = {
                 ...options,
