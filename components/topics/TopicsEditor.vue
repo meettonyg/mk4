@@ -232,12 +232,19 @@ const handleSaveToProfile = async () => {
 const loadComponentData = () => {
   const component = store.components[props.componentId];
   if (component && component.data) {
+    // Normalize topics: extract title if topic is an object, otherwise use as-is
+    const rawTopics = Array.isArray(component.data.topics) ? component.data.topics : [];
+    const normalizedTopics = rawTopics.map(t => {
+      if (typeof t === 'object' && t !== null) {
+        return t.title || t.name || t.text || '';
+      }
+      return t || '';
+    });
+
     localData.value = {
       title: component.data.title || 'Areas of Expertise',
       description: component.data.description || '',
-      topics: Array.isArray(component.data.topics) 
-        ? [...component.data.topics]
-        : [],
+      topics: normalizedTopics,
       columns: String(component.data.columns || '3'),
       showIcons: component.data.showIcons || false
     };
