@@ -582,10 +582,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, toRef } from 'vue';
 import { useAITagline, STYLE_FOCUS_OPTIONS, TONE_OPTIONS, INTENT_OPTIONS } from '../../src/composables/useAITagline';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
+import { useProfileSelectionHandler } from '../../src/composables/useProfileSelectionHandler';
 import { useDraftState } from '../../src/composables/useDraftState';
 import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 
@@ -960,29 +961,12 @@ function populateFromProfile(profileData) {
   loadFromProfileData(profileData);
 }
 
-/**
- * Handle profile selected from ProfileSelector (standalone mode)
- * Sets selectedProfileId so saveMultipleToProfile can work correctly
- */
-function handleProfileSelected({ id, data }) {
-  if (props.mode === 'default') {
-    // Set the profile ID in our composable instance so saves work correctly
-    if (id) {
-      selectedProfileId.value = id;
-    }
-    if (data) {
-      populateFromProfile(data);
-    }
-  }
-}
-
-/**
- * Handle profile cleared from ProfileSelector (standalone mode)
- */
-function handleProfileCleared() {
-  // Clear the profile ID so saves are disabled
-  selectedProfileId.value = null;
-}
+// Profile selection handlers (using shared composable)
+const { handleProfileSelected, handleProfileCleared } = useProfileSelectionHandler({
+  profileIdRef: selectedProfileId,
+  onDataLoaded: populateFromProfile,
+  mode: toRef(props, 'mode'),
+});
 
 /**
  * Get current form state for draft saving

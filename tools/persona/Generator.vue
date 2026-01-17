@@ -506,10 +506,11 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, watch, inject, onMounted, onUnmounted } from 'vue';
+import { ref, computed, reactive, watch, inject, onMounted, onUnmounted, toRef } from 'vue';
 import { useAIGenerator } from '../../src/composables/useAIGenerator';
 import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
+import { useProfileSelectionHandler } from '../../src/composables/useProfileSelectionHandler';
 import { useDraftState } from '../../src/composables/useDraftState';
 
 // Compact widget components (integrated mode)
@@ -830,39 +831,31 @@ function handleDiscardDraft() {
 }
 
 /**
- * Handle profile selected from ProfileSelector (standalone mode)
- * Sets selectedProfileId so saveMultipleToProfile can work correctly
+ * Load profile data with prefilled field tracking
  */
-function handleProfileSelected({ id, data }) {
-  if (props.mode === 'default') {
-    // Set the profile ID in our composable instance so saves work correctly
-    if (id) {
-      selectedProfileId.value = id;
-    }
-    if (data) {
-      // Track which fields are being prefilled
-      const newPrefilledFields = new Set();
+function loadProfileDataWithTracking(data) {
+  if (!data) return;
 
-      if (data.hook_what && !formData.services) newPrefilledFields.add('services');
-      if (data.industry && !formData.industry) newPrefilledFields.add('industry');
-      if (data.hook_who && !authorityHook.who) newPrefilledFields.add('hook_who');
-      if (data.hook_what && !authorityHook.what) newPrefilledFields.add('hook_what');
-      if (data.hook_when && !authorityHook.when) newPrefilledFields.add('hook_when');
-      if (data.hook_how && !authorityHook.how) newPrefilledFields.add('hook_how');
+  // Track which fields are being prefilled
+  const newPrefilledFields = new Set();
 
-      prefilledFields.value = newPrefilledFields;
-      populateFromProfile(data);
-    }
-  }
+  if (data.hook_what && !formData.services) newPrefilledFields.add('services');
+  if (data.industry && !formData.industry) newPrefilledFields.add('industry');
+  if (data.hook_who && !authorityHook.who) newPrefilledFields.add('hook_who');
+  if (data.hook_what && !authorityHook.what) newPrefilledFields.add('hook_what');
+  if (data.hook_when && !authorityHook.when) newPrefilledFields.add('hook_when');
+  if (data.hook_how && !authorityHook.how) newPrefilledFields.add('hook_how');
+
+  prefilledFields.value = newPrefilledFields;
+  populateFromProfile(data);
 }
 
-/**
- * Handle profile cleared from ProfileSelector (standalone mode)
- */
-function handleProfileCleared() {
-  // Clear the profile ID so saves are disabled
-  selectedProfileId.value = null;
-}
+// Profile selection handlers (using shared composable)
+const { handleProfileSelected, handleProfileCleared } = useProfileSelectionHandler({
+  profileIdRef: selectedProfileId,
+  onDataLoaded: loadProfileDataWithTracking,
+  mode: toRef(props, 'mode'),
+});
 
 // Use the generic AI generator
 const {

@@ -728,10 +728,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, watch, toRef } from 'vue';
 import { useAIOffers, PACKAGE_TIERS } from '../../src/composables/useAIOffers';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
+import { useProfileSelectionHandler } from '../../src/composables/useProfileSelectionHandler';
 import { useDraftState } from '../../src/composables/useDraftState';
 import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 
@@ -989,39 +990,31 @@ function restoreFullHistory(entry) {
 }
 
 /**
- * Handle profile selected from ProfileSelector (standalone mode)
- * Sets selectedProfileId so saveMultipleToProfile can work correctly
+ * Load profile data with prefilled field tracking
  */
-function handleProfileSelected({ id, data }) {
-  if (props.mode === 'default') {
-    // Set the profile ID in our composable instance so saves work correctly
-    if (id) {
-      selectedProfileId.value = id;
-    }
-    if (data) {
-      // Track which fields are being prefilled
-      const newPrefilledFields = new Set();
+function loadProfileDataWithTracking(data) {
+  if (!data) return;
 
-      if (data.hook_what && !services.value) newPrefilledFields.add('services');
-      if (data.authority_hook && !authorityHookText.value) newPrefilledFields.add('authorityHookText');
-      if (data.hook_who && !authorityHook.who) newPrefilledFields.add('hook_who');
-      if (data.hook_what && !authorityHook.what) newPrefilledFields.add('hook_what');
-      if (data.hook_when && !authorityHook.when) newPrefilledFields.add('hook_when');
-      if (data.hook_how && !authorityHook.how) newPrefilledFields.add('hook_how');
+  // Track which fields are being prefilled
+  const newPrefilledFields = new Set();
 
-      prefilledFields.value = newPrefilledFields;
-      populateFromProfile(data);
-    }
-  }
+  if (data.hook_what && !services.value) newPrefilledFields.add('services');
+  if (data.authority_hook && !authorityHookText.value) newPrefilledFields.add('authorityHookText');
+  if (data.hook_who && !authorityHook.who) newPrefilledFields.add('hook_who');
+  if (data.hook_what && !authorityHook.what) newPrefilledFields.add('hook_what');
+  if (data.hook_when && !authorityHook.when) newPrefilledFields.add('hook_when');
+  if (data.hook_how && !authorityHook.how) newPrefilledFields.add('hook_how');
+
+  prefilledFields.value = newPrefilledFields;
+  populateFromProfile(data);
 }
 
-/**
- * Handle profile cleared from ProfileSelector (standalone mode)
- */
-function handleProfileCleared() {
-  // Clear the profile ID so saves are disabled
-  selectedProfileId.value = null;
-}
+// Profile selection handlers (using shared composable)
+const { handleProfileSelected, handleProfileCleared } = useProfileSelectionHandler({
+  profileIdRef: selectedProfileId,
+  onDataLoaded: loadProfileDataWithTracking,
+  mode: toRef(props, 'mode'),
+});
 
 /**
  * Offers formula for guidance panel

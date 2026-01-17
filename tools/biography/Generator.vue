@@ -571,10 +571,11 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, inject, onMounted, onUnmounted, toRef } from 'vue';
 import { useAIBiography, SLOT_STATUS, LENGTH_OPTIONS, getVariationCount } from '../../src/composables/useAIBiography';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
+import { useProfileSelectionHandler } from '../../src/composables/useProfileSelectionHandler';
 import { useDraftState } from '../../src/composables/useDraftState';
 import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 import { EMBEDDED_PROFILE_DATA_KEY, IS_EMBEDDED_CONTEXT_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileSelector } from '../_shared';
@@ -1047,29 +1048,12 @@ function loadProfileData(data) {
   populateFromProfile(data);
 }
 
-/**
- * Handle profile selected from ProfileSelector (standalone mode)
- * Sets selectedProfileId so saveMultipleToProfile can work correctly
- */
-function handleProfileSelected({ id, data }) {
-  if (props.mode === 'default') {
-    // Set the profile ID in our composable instance so saves work correctly
-    if (id) {
-      standaloneProfileId.value = id;
-    }
-    if (data) {
-      loadProfileData(data);
-    }
-  }
-}
-
-/**
- * Handle profile cleared from ProfileSelector (standalone mode)
- */
-function handleProfileCleared() {
-  // Clear the profile ID so saves are disabled
-  standaloneProfileId.value = null;
-}
+// Profile selection handlers (using shared composable)
+const { handleProfileSelected, handleProfileCleared } = useProfileSelectionHandler({
+  profileIdRef: standaloneProfileId,
+  onDataLoaded: loadProfileData,
+  mode: toRef(props, 'mode'),
+});
 
 // Watch for injected profile data changes (from EmbeddedToolWrapper)
 watch(

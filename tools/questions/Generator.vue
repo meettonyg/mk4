@@ -669,10 +669,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick, toRef } from 'vue';
 import { useAIQuestions, QUESTION_CATEGORIES } from '../../src/composables/useAIQuestions';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
+import { useProfileSelectionHandler } from '../../src/composables/useProfileSelectionHandler';
 import { useProfilePrePopulation } from '../../src/composables/useProfilePrePopulation';
 import { useDraftState } from '../../src/composables/useDraftState';
 import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
@@ -860,27 +861,9 @@ const authorityHook = reactive({
 // PROFILE SELECTOR HANDLERS
 // ===========================================
 /**
- * Handle profile selected from ProfileSelector (standalone mode)
- * Sets selectedProfileId so saveMultipleToProfile can work correctly
+ * Clear profile-specific data when profile is deselected
  */
-function handleProfileSelected({ id, data }) {
-  if (props.mode === 'default') {
-    // Set the profile ID in our composable instance so saves work correctly
-    if (id) {
-      selectedProfileId.value = id;
-    }
-    if (data) {
-      populateFromProfile(data);
-    }
-  }
-}
-
-/**
- * Handle profile cleared from ProfileSelector (standalone mode)
- */
-function handleProfileCleared() {
-  // Clear the profile ID so saves are disabled
-  selectedProfileId.value = null;
+function clearProfileData() {
   // Clear topics loaded from profile when profile is deselected
   profileTopics.value = [];
   selectedTopicIndex.value = -1;
@@ -888,6 +871,14 @@ function handleProfileCleared() {
   // Clear prefilled fields tracking
   prefilledFields.value = new Set();
 }
+
+// Profile selection handlers (using shared composable)
+const { handleProfileSelected, handleProfileCleared } = useProfileSelectionHandler({
+  profileIdRef: selectedProfileId,
+  onDataLoaded: populateFromProfile,
+  onCleared: clearProfileData,
+  mode: toRef(props, 'mode'),
+});
 
 // ===========================================
 // STEP 3: CUSTOMIZE DETAILS STATE
