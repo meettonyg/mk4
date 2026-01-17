@@ -9,17 +9,15 @@
     :has-results="hasOffers"
     :is-loading="isGenerating"
   >
-    <!-- Profile Selector (for logged-in users, only shown in standalone mode) -->
-    <template #profile-context>
-      <ProfileSelector
-        @profile-selected="handleProfileSelected"
-        @profile-cleared="handleProfileCleared"
-      />
-    </template>
-
     <!-- Left Panel: Form -->
     <template #left>
       <div class="gmkb-plg-tool-embed">
+        <!-- Profile Selector (for logged-in users in standalone mode) -->
+        <ProfileSelector
+          @profile-selected="handleProfileSelected"
+          @profile-cleared="handleProfileCleared"
+        />
+
         <!-- Auto-save Indicator -->
         <div v-if="isAutoSaving" class="gfy-auto-save-indicator">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

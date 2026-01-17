@@ -9,16 +9,14 @@
     :has-results="hasContent"
     :is-loading="isGenerating"
   >
-    <!-- Profile Selector (for logged-in users) -->
-    <template #profile-context>
+    <!-- Left Panel: Form -->
+    <template #left>
+      <!-- Profile Selector (for logged-in users in standalone mode) -->
       <ProfileSelector
         @profile-selected="handleProfileSelected"
         @profile-cleared="handleProfileCleared"
       />
-    </template>
 
-    <!-- Left Panel: Form -->
-    <template #left>
       <!-- Auto-save Indicator -->
       <div v-if="isAutoSaving" class="gfy-auto-save-indicator">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
