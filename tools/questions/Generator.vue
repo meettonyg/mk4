@@ -1520,6 +1520,44 @@ watch(
   background: #ecfdf5;
 }
 
+/* Actions wrapper - ensure full width and centered content */
+.gfy-actions-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  width: 100%;
+}
+
+.gfy-btn--generate {
+  width: 100%;
+  max-width: 400px;
+  padding: 14px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  background: var(--mkcg-primary, #3b82f6);
+  color: white;
+  border: none;
+  border-radius: var(--mkcg-radius, 8px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.gfy-btn--generate:hover:not(:disabled) {
+  background: var(--mkcg-primary-dark, #2563eb);
+}
+
+.gfy-btn--generate:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .gfy-form-hint {
   text-align: center;
   font-size: 13px;
