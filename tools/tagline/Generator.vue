@@ -9,88 +9,86 @@
     :has-results="hasTaglines"
     :is-loading="isGenerating"
   >
-    <!-- Profile Selector (for logged-in users, only shown in standalone mode) -->
-    <template #profile-context>
-      <ProfileSelector
-        @profile-selected="handleProfileSelected"
-        @profile-cleared="handleProfileCleared"
-      />
-
-      <!-- History Toggle -->
-      <div v-if="hasHistory" class="gfy-history">
-        <button
-          type="button"
-          class="gfy-history__toggle"
-          @click="showHistory = !showHistory"
-          aria-expanded="showHistory"
-          aria-controls="tagline-history-panel"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12 6 12 12 16 14"/>
-          </svg>
-          Recent Generations ({{ history.length }})
-          <svg
-            class="gfy-history__chevron"
-            :class="{ 'gfy-history__chevron--open': showHistory }"
-            width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          >
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        </button>
-        <div v-if="showHistory" id="tagline-history-panel" class="gfy-history__panel">
-          <div class="gfy-history__list">
-            <div v-for="entry in history" :key="entry.id" class="gfy-history__item">
-              <div class="gfy-history__item-content">
-                <span class="gfy-history__item-preview">{{ entry.preview }}</span>
-                <span class="gfy-history__item-time">{{ formatTimestamp(entry.timestamp) }}</span>
-              </div>
-              <div class="gfy-history__item-actions">
-                <button
-                  type="button"
-                  class="gfy-history__action-btn gfy-history__action-btn--primary"
-                  title="Restore inputs"
-                  aria-label="Restore inputs from this generation"
-                  @click="restoreFromHistory(entry)"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="1 4 1 10 7 10"/>
-                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  class="gfy-history__action-btn gfy-history__action-btn--danger"
-                  title="Delete"
-                  aria-label="Delete this history entry"
-                  @click="removeFromHistory(entry.id)"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="3 6 5 6 21 6"/>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-          <button type="button" class="gfy-history__clear-btn" @click="clearHistory">
-            Clear All History
-          </button>
-        </div>
-      </div>
-
-      <!-- Auto-save indicator -->
-      <div v-if="isAutoSaving" class="gfy-auto-save-indicator">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin">
-          <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"/>
-        </svg>
-        Saving draft...
-      </div>
-    </template>
-
     <!-- Left Panel: Form -->
     <template #left>
       <div class="gmkb-plg-tool-embed">
+        <!-- Profile Selector (for logged-in users in standalone mode) -->
+        <ProfileSelector
+          @profile-selected="handleProfileSelected"
+          @profile-cleared="handleProfileCleared"
+        />
+
+        <!-- Auto-save indicator -->
+        <div v-if="isAutoSaving" class="gfy-auto-save-indicator">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin">
+            <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"/>
+          </svg>
+          Saving draft...
+        </div>
+
+        <!-- History Toggle -->
+        <div v-if="hasHistory" class="gfy-history">
+          <button
+            type="button"
+            class="gfy-history__toggle"
+            @click="showHistory = !showHistory"
+            aria-expanded="showHistory"
+            aria-controls="tagline-history-panel"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            Recent Generations ({{ history.length }})
+            <svg
+              class="gfy-history__chevron"
+              :class="{ 'gfy-history__chevron--open': showHistory }"
+              width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            >
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+          <div v-if="showHistory" id="tagline-history-panel" class="gfy-history__panel">
+            <div class="gfy-history__list">
+              <div v-for="entry in history" :key="entry.id" class="gfy-history__item">
+                <div class="gfy-history__item-content">
+                  <span class="gfy-history__item-preview">{{ entry.preview }}</span>
+                  <span class="gfy-history__item-time">{{ formatTimestamp(entry.timestamp) }}</span>
+                </div>
+                <div class="gfy-history__item-actions">
+                  <button
+                    type="button"
+                    class="gfy-history__action-btn gfy-history__action-btn--primary"
+                    title="Restore inputs"
+                    aria-label="Restore inputs from this generation"
+                    @click="restoreFromHistory(entry)"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="1 4 1 10 7 10"/>
+                      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    class="gfy-history__action-btn gfy-history__action-btn--danger"
+                    title="Delete"
+                    aria-label="Delete this history entry"
+                    @click="removeFromHistory(entry.id)"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="gfy-history__clear-btn" @click="clearHistory">
+              Clear All History
+            </button>
+          </div>
+        </div>
+
         <!-- Form Progress Indicator -->
         <div class="gfy-form-progress" :class="{ 'gfy-form-progress--complete': formCompletion.isComplete }">
           <div class="gfy-form-progress__header">
@@ -104,20 +102,6 @@
           <div class="gfy-form-progress__bar">
             <div class="gfy-form-progress__fill" :style="{ width: `${formCompletion.percentage}%` }"></div>
           </div>
-        </div>
-
-        <!-- Intent Tabs -->
-        <div class="gfy-intent-tabs">
-          <button
-            v-for="option in INTENT_OPTIONS"
-            :key="option.value"
-            type="button"
-            class="gfy-intent-tab"
-            :class="{ 'active': intent === option.value }"
-            @click="intent = option.value"
-          >
-            {{ option.label }}
-          </button>
         </div>
 
         <!-- STEP 1: Authority Framework -->
