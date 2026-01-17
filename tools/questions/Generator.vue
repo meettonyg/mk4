@@ -882,19 +882,13 @@ const targetAudience = ref('');
 const selectedTone = ref('professional');
 const questionCount = ref(10);
 
-// Available topics (from props or default examples)
+// Available topics (from props only - no defaults, must come from profile)
 const availableTopics = computed(() => {
   if (props.topics && props.topics.length > 0) {
     return props.topics;
   }
-  // Default example topics if none provided
-  return [
-    'The 3 Hidden Revenue Leaks Killing Your Growth',
-    'Why Most Scaling Strategies Fail',
-    'From Overwhelmed Owner to Strategic CEO',
-    'Building Systems That Scale',
-    'The 7-Figure Timeline'
-  ];
+  // Return empty array - topics should come from profile selection
+  return [];
 });
 
 // Authority Hook live preview
