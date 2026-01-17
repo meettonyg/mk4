@@ -118,7 +118,7 @@ const exportAs = async (format) => {
       theme: store.theme,
       themeCustomizations: store.themeCustomizations,
       globalSettings: store.globalSettings,
-      podsData: store.podsData,
+      profileData: store.profileData,
       postTitle: window.gmkbData?.postTitle || 'Media Kit'
     };
     

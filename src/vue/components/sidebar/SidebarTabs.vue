@@ -676,7 +676,7 @@ export default {
 
     // Check if profile has SEO data available
     const hasProfileSeo = computed(() => {
-      return !!(window.gmkbData?.profile_id || window.gmkbVueData?.pods_data);
+      return !!(window.gmkbData?.profile_id || window.gmkbVueData?.profile_data);
     });
 
     // Get AEO grade class based on score

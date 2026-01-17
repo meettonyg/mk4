@@ -261,11 +261,11 @@ onMounted(async () => {
     console.log('✅ MediaKitApp: Store already initialized and ready');
     loadingProgress.value = 75;
     
-    // ROOT FIX: Log Pods data status for debugging
-    const podsFieldCount = store.podsData ? Object.keys(store.podsData).length : 0;
-    console.log(`📊 MediaKitApp: Pods data loaded: ${podsFieldCount} fields`);
-    if (podsFieldCount > 0 && window.gmkbData?.debugMode) {
-      console.log('📊 Pods data fields:', Object.keys(store.podsData));
+    // ROOT FIX: Log Profile data status for debugging
+    const profileFieldCount = store.profileData ? Object.keys(store.profileData).length : 0;
+    console.log(`📊 MediaKitApp: Profile data loaded: ${profileFieldCount} fields`);
+    if (profileFieldCount > 0 && window.gmkbData?.debugMode) {
+      console.log('📊 Profile data fields:', Object.keys(store.profileData));
     }
     
     // Apply theme after data loaded
@@ -291,7 +291,7 @@ onMounted(async () => {
     document.body.classList.add('gmkb-vue-ready');
 
     console.log('✅ MediaKitApp: Phase 1 initialization complete');
-    console.log('📊 MediaKitApp: Pods data loaded:', store.podsData ? Object.keys(store.podsData).length : 0, 'fields');
+    console.log('📊 MediaKitApp: Profile data loaded:', store.profileData ? Object.keys(store.profileData).length : 0, 'fields');
     
     // ROOT FIX: Listen for BOTH combined and separate import/export events
     document.addEventListener('gmkb:open-import-export', handleOpenImportExport);

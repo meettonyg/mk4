@@ -20,6 +20,7 @@ class TemplateDiscovery {
     private $templates_dir;
     private $templates = array();
     private $cache_key = 'gmkb_starter_templates_cache';
+    private $manifest_cache_key = 'gmkb_filter_manifest_cache';
     private $cache_duration = 3600; // 1 hour
 
     /**
@@ -167,10 +168,122 @@ class TemplateDiscovery {
     }
 
     /**
-     * Clear template cache
+     * Get templates by use case
+     *
+     * @param string $use_case Use case string (e.g., 'General Bio', 'Book Launch')
+     * @return array Filtered templates
+     */
+    public function getTemplatesByUseCase($use_case) {
+        $templates = $this->getTemplates();
+        return array_filter($templates, function($template) use ($use_case) {
+            return isset($template['persona']['use_case']) && $template['persona']['use_case'] === $use_case;
+        });
+    }
+
+    /**
+     * Get templates by layout variant
+     *
+     * @param string $layout_variant Layout variant (e.g., 'standard', 'split-layout', 'center-stack')
+     * @return array Filtered templates
+     */
+    public function getTemplatesByLayoutVariant($layout_variant) {
+        $templates = $this->getTemplates();
+        return array_filter($templates, function($template) use ($layout_variant) {
+            return isset($template['persona']['layout_variant']) && $template['persona']['layout_variant'] === $layout_variant;
+        });
+    }
+
+    /**
+     * Get filter manifest for multi-dimensional template filtering
+     *
+     * Returns a nested structure for powering the tiered filter UI:
+     * - personas: Array of unique persona types with their labels and icons
+     * - use_cases: Array of unique use cases across all templates
+     * - layout_variants: Array of unique layout variants across all templates
+     * - manifest: Nested map of Persona -> Use Cases -> Layout Variants
+     *
+     * Results are cached for performance (same duration as template cache).
+     *
+     * @param bool $force_fresh Force fresh build without cache
+     * @return array Filter manifest for frontend consumption
+     */
+    public function getFilterManifest($force_fresh = false) {
+        // Try cache first unless forced fresh
+        if (!$force_fresh) {
+            $cached_manifest = get_transient($this->manifest_cache_key);
+            if ($cached_manifest !== false) {
+                return $cached_manifest;
+            }
+        }
+
+        $templates = $this->getTemplates();
+
+        $personas = array();
+        $use_cases = array();
+        $layout_variants = array();
+        $manifest = array();
+
+        foreach ($templates as $template) {
+            // Use null coalescing operator for cleaner code
+            $persona = $template['persona'] ?? [];
+            $persona_type = $persona['type'] ?? 'unknown';
+            $persona_label = $persona['label'] ?? ucfirst($persona_type);
+            $persona_icon = $persona['icon'] ?? 'fa-solid fa-user';
+            $use_case = $persona['use_case'] ?? 'General Bio';
+            $layout_variant = $persona['layout_variant'] ?? 'standard';
+
+            // Collect unique personas
+            if (!isset($personas[$persona_type])) {
+                $personas[$persona_type] = array(
+                    'type' => $persona_type,
+                    'label' => $persona_label,
+                    'icon' => $persona_icon
+                );
+            }
+
+            // Collect unique use cases (using array keys for O(1) lookups)
+            $use_cases[$use_case] = true;
+
+            // Collect unique layout variants (using array keys for O(1) lookups)
+            $layout_variants[$layout_variant] = true;
+
+            // Build the nested manifest: persona -> use_case -> layout_variants[]
+            if (!isset($manifest[$persona_type])) {
+                $manifest[$persona_type] = array();
+            }
+            if (!isset($manifest[$persona_type][$use_case])) {
+                $manifest[$persona_type][$use_case] = array();
+            }
+            if (!in_array($layout_variant, $manifest[$persona_type][$use_case])) {
+                $manifest[$persona_type][$use_case][] = $layout_variant;
+            }
+        }
+
+        // Extract keys and sort for consistent ordering
+        $use_cases = array_keys($use_cases);
+        $layout_variants = array_keys($layout_variants);
+        sort($use_cases);
+        sort($layout_variants);
+
+        $result = array(
+            'personas' => array_values($personas),
+            'use_cases' => $use_cases,
+            'layout_variants' => $layout_variants,
+            'manifest' => $manifest
+        );
+
+        // Cache the result
+        set_transient($this->manifest_cache_key, $result, $this->cache_duration);
+
+        return $result;
+    }
+
+    /**
+     * Clear template cache (includes filter manifest cache)
      */
     public function clearCache() {
         delete_transient($this->cache_key);
+        delete_transient($this->manifest_cache_key);
     }
 
     /**

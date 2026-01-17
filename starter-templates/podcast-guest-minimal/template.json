@@ -1,0 +1,281 @@
+{
+  "template_id": "podcast-guest-minimal",
+  "template_name": "Podcast Guest: Minimal",
+  "version": "1.0.0",
+  "description": "Clean, distraction-free layout that gets straight to the point. Perfect for busy podcast hosts who want essential info fast. Streamlined sections with elegant typography.",
+  "persona": {
+    "type": "podcast-guest",
+    "label": "Podcast Guests",
+    "icon": "fa-solid fa-podcast",
+    "use_case": "Podcast Booking",
+    "layout_variant": "minimal",
+    "use_cases": [
+      "Subject matter experts seeking podcast appearances",
+      "Authors promoting books",
+      "Entrepreneurs sharing their story",
+      "Thought leaders building audience",
+      "Anyone seeking podcast interviews"
+    ]
+  },
+  "metadata": {
+    "tags": [
+      "podcast",
+      "interview",
+      "guest",
+      "audio",
+      "media",
+      "appearance",
+      "minimal",
+      "clean"
+    ],
+    "is_premium": false,
+    "sort_order": 32,
+    "recommended_themes": [
+      "minimal-elegant",
+      "professional-clean",
+      "modern-light"
+    ]
+  },
+  "preview_image": "preview.svg",
+  "sections": [
+    {
+      "id": "hero-section",
+      "type": "two_column",
+      "background": "light",
+      "columns": {
+        "1": [
+          {
+            "type": "profile-photo",
+            "settings": {
+              "style": "square",
+              "size": "medium",
+              "border": "none"
+            },
+            "data": {
+              "alt": "Professional headshot"
+            }
+          }
+        ],
+        "2": [
+          {
+            "type": "hero",
+            "settings": {
+              "layout": "left_aligned",
+              "showImage": false,
+              "showCTA": false,
+              "style": "minimal"
+            },
+            "data": {
+              "headline": "Your Name",
+              "subheadline": "[Topic] Expert",
+              "description": "Featured on 100+ podcasts. I help hosts create memorable conversations that drive downloads and engage listeners."
+            }
+          },
+          {
+            "type": "social",
+            "settings": {
+              "layout": "horizontal",
+              "showLabels": false,
+              "iconSize": "small",
+              "style": "minimal"
+            },
+            "data": {}
+          }
+        ],
+        "ratio": "35-65"
+      }
+    },
+    {
+      "id": "quick-stats",
+      "type": "full_width",
+      "background": "surface",
+      "components": [
+        {
+          "type": "stats",
+          "settings": {
+            "layout": "inline",
+            "columns": 4,
+            "showIcons": false,
+            "style": "minimal",
+            "separator": "dot"
+          },
+          "data": {
+            "stats": [
+              {
+                "value": "150+",
+                "label": "Podcasts"
+              },
+              {
+                "value": "2M+",
+                "label": "Downloads"
+              },
+              {
+                "value": "4.9",
+                "label": "Avg Rating"
+              },
+              {
+                "value": "48hr",
+                "label": "Response"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "topics-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "topics",
+          "settings": {
+            "layout": "tags",
+            "showDescriptions": false,
+            "showIcons": false,
+            "style": "pills"
+          },
+          "data": {
+            "title": "Topics I Discuss",
+            "topics": [
+              {
+                "title": "Industry Insights"
+              },
+              {
+                "title": "Leadership"
+              },
+              {
+                "title": "Personal Journey"
+              },
+              {
+                "title": "Practical Strategies"
+              },
+              {
+                "title": "Future Trends"
+              },
+              {
+                "title": "Behind the Scenes"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "bio-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "biography",
+          "settings": {
+            "style": "minimal",
+            "showTitle": true,
+            "maxWidth": "720px",
+            "alignment": "center"
+          },
+          "data": {
+            "title": "About",
+            "biography": "Share your story in 2-3 short paragraphs. Focus on what makes you a compelling guest: your expertise, your unique perspective, and your ability to deliver value to listeners.\n\nMention your background briefly and what hosts can expect from having you on their show."
+          }
+        }
+      ]
+    },
+    {
+      "id": "episodes-section",
+      "type": "full_width",
+      "background": "surface",
+      "components": [
+        {
+          "type": "podcast-player",
+          "settings": {
+            "layout": "list",
+            "showEpisodeList": true,
+            "maxEpisodes": 3,
+            "style": "minimal",
+            "showPodcastName": true,
+            "showDuration": true
+          },
+          "data": {
+            "title": "Featured Episodes",
+            "episodes": [
+              {
+                "podcast_name": "Podcast Name",
+                "episode_title": "Episode Title",
+                "duration": "45 min"
+              },
+              {
+                "podcast_name": "Another Podcast",
+                "episode_title": "Great Conversation",
+                "duration": "52 min"
+              },
+              {
+                "podcast_name": "Third Podcast",
+                "episode_title": "Insights and Stories",
+                "duration": "38 min"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "questions-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "questions",
+          "settings": {
+            "layout": "accordion",
+            "style": "minimal",
+            "showNumbers": false,
+            "maxWidth": "720px"
+          },
+          "data": {
+            "title": "Conversation Starters",
+            "subtitle": "Questions that lead to great content",
+            "questions": [
+              {
+                "question": "What's the biggest myth in your industry?",
+                "answer": "I love debunking common misconceptions with data and real examples."
+              },
+              {
+                "question": "What was your biggest failure and what did it teach you?",
+                "answer": "A vulnerable story that connects with audiences on a human level."
+              },
+              {
+                "question": "What's one thing listeners can do today to improve?",
+                "answer": "Clear, actionable advice they can implement immediately."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "contact-section",
+      "type": "full_width",
+      "background": "dark",
+      "components": [
+        {
+          "type": "contact",
+          "settings": {
+            "style": "minimal",
+            "fields": [
+              "name",
+              "email",
+              "podcast_name",
+              "message"
+            ],
+            "showLabels": true,
+            "maxWidth": "560px",
+            "alignment": "center"
+          },
+          "data": {
+            "title": "Book Me for Your Podcast",
+            "subtitle": "I typically respond within 48 hours",
+            "button_text": "Send Request"
+          }
+        }
+      ]
+    }
+  ]
+}

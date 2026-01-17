@@ -13,9 +13,20 @@
         {{ photo.caption }}
       </p>
     </div>
-    <div v-else class="profile-photo-placeholder">
-      <i class="fa-solid fa-user-circle"></i>
-      <p>No profile photo available</p>
+    <div v-else class="profile-photo-placeholder" :class="placeholderClasses">
+      <div class="placeholder-avatar">
+        <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="60" cy="60" r="58" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4" opacity="0.3"/>
+          <circle cx="60" cy="45" r="20" fill="currentColor" opacity="0.15"/>
+          <path d="M30 95c0-16.569 13.431-30 30-30s30 13.431 30 30" fill="currentColor" opacity="0.15"/>
+          <circle cx="60" cy="45" r="18" stroke="currentColor" stroke-width="2" opacity="0.4"/>
+          <path d="M32 95c0-15.464 12.536-28 28-28s28 12.536 28 28" stroke="currentColor" stroke-width="2" opacity="0.4"/>
+        </svg>
+      </div>
+      <div class="placeholder-content">
+        <p class="placeholder-title">Add Your Photo</p>
+        <p class="placeholder-hint">Click to upload a professional headshot</p>
+      </div>
     </div>
   </div>
 </template>
@@ -121,6 +132,12 @@ const containerClasses = computed(() => {
   const alignment = props.settings?.advanced?.layout?.alignment || 'center';
   return `align-${alignment}`;
 });
+
+// Placeholder styling based on size
+const placeholderClasses = computed(() => {
+  const size = props.data?.size || props.settings?.size || 'medium';
+  return `placeholder-size-${size}`;
+});
 </script>
 
 <style scoped>
@@ -205,22 +222,68 @@ const containerClasses = computed(() => {
   align-items: center;
   justify-content: center;
   padding: var(--spacing-xl, 2rem);
-  color: var(--color-text-muted, #94a3b8);
-  background: var(--color-surface, #f8fafc);
+  color: var(--color-primary, #6366f1);
+  background: linear-gradient(135deg, var(--color-surface, #f8fafc) 0%, rgba(99, 102, 241, 0.05) 100%);
   border-radius: var(--border-radius, 8px);
-  border: 2px dashed var(--color-border, #e2e8f0);
+  border: 2px dashed rgba(99, 102, 241, 0.3);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 200px;
 }
 
-.profile-photo-placeholder i {
-  font-size: 4rem;
+.profile-photo-placeholder:hover {
+  border-color: var(--color-primary, #6366f1);
+  background: linear-gradient(135deg, var(--color-surface, #f8fafc) 0%, rgba(99, 102, 241, 0.1) 100%);
+  transform: translateY(-2px);
+}
+
+.placeholder-avatar {
+  width: 100px;
+  height: 100px;
   margin-bottom: var(--spacing-md, 1rem);
-  opacity: 0.5;
 }
 
-.profile-photo-placeholder p {
+.placeholder-avatar svg {
+  width: 100%;
+  height: 100%;
+}
+
+.placeholder-content {
+  text-align: center;
+}
+
+.placeholder-title {
+  margin: 0 0 4px 0;
+  font-size: var(--font-size-base, 1rem);
+  font-weight: 600;
+  color: var(--color-text, #1e293b);
+}
+
+.placeholder-hint {
   margin: 0;
   font-size: var(--font-size-sm, 0.875rem);
-  font-style: italic;
+  color: var(--color-text-muted, #64748b);
+}
+
+/* Size variations for placeholder */
+.profile-photo-placeholder.placeholder-size-small {
+  min-height: 150px;
+  padding: var(--spacing-md, 1rem);
+}
+
+.profile-photo-placeholder.placeholder-size-small .placeholder-avatar {
+  width: 60px;
+  height: 60px;
+}
+
+.profile-photo-placeholder.placeholder-size-large {
+  min-height: 300px;
+  padding: var(--spacing-2xl, 3rem);
+}
+
+.profile-photo-placeholder.placeholder-size-large .placeholder-avatar {
+  width: 140px;
+  height: 140px;
 }
 
 /* Responsive adjustments */
@@ -236,8 +299,19 @@ const containerClasses = computed(() => {
 
 /* Dark mode support */
 body.dark-mode .profile-photo-placeholder {
-  background: var(--color-surface-dark, #1e293b);
-  border-color: var(--color-border-dark, #334155);
+  background: linear-gradient(135deg, var(--color-surface-dark, #1e293b) 0%, rgba(99, 102, 241, 0.1) 100%);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+body.dark-mode .profile-photo-placeholder:hover {
+  background: linear-gradient(135deg, var(--color-surface-dark, #1e293b) 0%, rgba(99, 102, 241, 0.2) 100%);
+}
+
+body.dark-mode .placeholder-title {
+  color: var(--color-text-dark, #f1f5f9);
+}
+
+body.dark-mode .placeholder-hint {
   color: var(--color-text-muted-dark, #94a3b8);
 }
 

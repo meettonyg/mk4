@@ -37,8 +37,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
     },
     globalSettings: {},
     
-    // CRITICAL: Pods data stored here, fetched ONCE on initialize
-    podsData: {},
+    // CRITICAL: Profile data stored here, fetched ONCE on initialize
+    profileData: {},
     
     // CRITICAL FIX: API Service instance
     apiService: null,
@@ -346,25 +346,25 @@ export const useMediaKitStore = defineStore('mediaKit', {
           data = savedState;
           this.applyState(savedState);
           
-          // ROOT FIX: If Pods data not in savedState, get it from window.gmkbData
-          if (!this.podsData || Object.keys(this.podsData).length === 0) {
-            const podsDataFromWindow = window.gmkbData?.pods_data || window.gmkbData?.podsData || {};
-            if (Object.keys(podsDataFromWindow).length > 0) {
-              this.podsData = podsDataFromWindow;
-              console.log('✅ Loaded Pods data from window.gmkbData:', Object.keys(this.podsData).length, 'fields');
+          // ROOT FIX: If Profile data not in savedState, get it from window.gmkbData
+          if (!this.profileData || Object.keys(this.profileData).length === 0) {
+            const profileDataFromWindow = window.gmkbData?.profile_data || window.gmkbData?.profileData || {};
+            if (Object.keys(profileDataFromWindow).length > 0) {
+              this.profileData = profileDataFromWindow;
+              console.log('✅ Loaded Profile data from window.gmkbData:', Object.keys(this.profileData).length, 'fields');
             }
           }
           
           // DEPRECATED: Pods enrichment disabled to fix data loss bug
           // The "Write Arc" (component-field-sync.php) was broken due to action hook typo,
           // meaning Pods fields were NEVER being updated when users saved in the Builder.
-          // However, the "Read Arc" (this enrichment) WAS active, causing stale Pods data
+          // However, the "Read Arc" (this enrichment) WAS active, causing stale Profile data
           // to overwrite valid JSON state on every load - resulting in DATA LOSS.
           //
           // The JSON state (gmkb_media_kit_state) is now the single source of truth.
           // Tech debt removed: See _archive/PODS-SYNC-REMOVAL-2025-12-11/
           //
-          // if (window.podsDataIntegration || window.gmkbPodsIntegration) { ... }
+          // if (window.profileDataIntegration || window.gmkbPodsIntegration) { ... }
           console.log('ℹ️ Pods enrichment DISABLED - JSON state is now single source of truth');
           
           // PHASE 4: Handle deprecated components
@@ -406,7 +406,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
             sections: data.sections || [],
             theme: data.theme || 'professional_clean',
             themeCustomizations: data.themeCustomizations || {},
-            podsData: data.podsData || {}, // CRITICAL: Store Pods data
+            profileData: data.profileData || {}, // CRITICAL: Store Profile data
             lastSaved: Date.now(),
             isDirty: false
           });
@@ -421,7 +421,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
           // See comment above in savedState branch for full explanation.
           // JSON state (gmkb_media_kit_state) is now the single source of truth.
           //
-          // if (window.podsDataIntegration || window.gmkbPodsIntegration) { ... }
+          // if (window.profileDataIntegration || window.gmkbPodsIntegration) { ... }
           console.log('ℹ️ Pods enrichment DISABLED (API branch) - JSON state is single source of truth');
         }
         
@@ -1187,7 +1187,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
       // PERFORMANCE FIX: Only clone on mutation, not on read
       // Use Object.assign for shallow clone - much faster than deepClone
       if (savedState.themeCustomizations) this.themeCustomizations = Object.assign({}, savedState.themeCustomizations);
-      if (savedState.podsData) this.podsData = Object.assign({}, savedState.podsData);
+      if (savedState.profileData) this.profileData = Object.assign({}, savedState.profileData);
       if (savedState.globalSettings) this.globalSettings = Object.assign({}, savedState.globalSettings);
       
       // P0 FIX #7: Normalize component IDs after applying state
@@ -1210,9 +1210,9 @@ export const useMediaKitStore = defineStore('mediaKit', {
         // Apply loaded state
         this.applyState(data);
         
-        // Store pods data separately
-        if (data.podsData) {
-          this.podsData = data.podsData;
+        // Store profile data separately
+        if (data.profileData) {
+          this.profileData = data.profileData;
         }
         
         console.log('✅ Loaded via APIService (admin-ajax)');
@@ -2229,7 +2229,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
 
     // Set profile data (for profile switching)
     setProfileData(profileData) {
-      this.podsData = profileData;
+      this.profileData = profileData;
     },
 
     // Section selection management

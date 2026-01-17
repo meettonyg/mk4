@@ -1,0 +1,222 @@
+{
+  "template_id": "author-minimal",
+  "template_name": "Author: Minimal",
+  "version": "1.0.0",
+  "description": "Clean, typography-focused layout that lets your writing speak for itself. Elegant simplicity perfect for literary authors and essayists.",
+  "persona": {
+    "type": "author",
+    "label": "Authors & Writers",
+    "icon": "fa-solid fa-book",
+    "use_case": "General Bio",
+    "layout_variant": "minimal",
+    "use_cases": [
+      "Bestselling authors",
+      "Non-fiction writers",
+      "Public intellectuals",
+      "Journalists and columnists",
+      "Academic authors"
+    ]
+  },
+  "metadata": {
+    "tags": [
+      "author",
+      "writer",
+      "book",
+      "literary",
+      "publishing",
+      "press",
+      "minimal",
+      "elegant"
+    ],
+    "is_premium": false,
+    "sort_order": 12,
+    "recommended_themes": [
+      "minimal-elegant",
+      "professional-clean",
+      "modern-light"
+    ]
+  },
+  "preview_image": "preview.svg",
+  "sections": [
+    {
+      "id": "hero-section",
+      "type": "two_column",
+      "background": "light",
+      "columns": {
+        "1": [
+          {
+            "type": "profile-photo",
+            "settings": {
+              "style": "square",
+              "size": "medium",
+              "border": "none"
+            },
+            "data": {
+              "alt": "Author portrait"
+            }
+          }
+        ],
+        "2": [
+          {
+            "type": "hero",
+            "settings": {
+              "layout": "left_aligned",
+              "showImage": false,
+              "showCTA": false,
+              "style": "minimal"
+            },
+            "data": {
+              "headline": "Your Name",
+              "subheadline": "Author",
+              "description": "Author of [X] books exploring [themes]. My work has been featured in The New York Times, The Atlantic, and NPR."
+            }
+          }
+        ],
+        "ratio": "30-70"
+      }
+    },
+    {
+      "id": "bio-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "biography",
+          "settings": {
+            "style": "minimal",
+            "showTitle": false,
+            "maxWidth": "680px",
+            "alignment": "center"
+          },
+          "data": {
+            "biography": "A brief, compelling narrative about your journey as a writer. What drives your work? What themes do you explore? What do readers say about your voice?\n\nKeep it personal but professional. Two to three paragraphs that capture who you are as an author."
+          }
+        }
+      ]
+    },
+    {
+      "id": "books-section",
+      "type": "full_width",
+      "background": "surface",
+      "components": [
+        {
+          "type": "photo-gallery",
+          "settings": {
+            "layout": "grid",
+            "columns": 3,
+            "style": "book-covers",
+            "gap": "large"
+          },
+          "data": {
+            "title": "Books",
+            "images": [
+              {
+                "alt": "Book 1",
+                "caption": "Title One (Year)"
+              },
+              {
+                "alt": "Book 2",
+                "caption": "Title Two (Year)"
+              },
+              {
+                "alt": "Book 3",
+                "caption": "Title Three (Year)"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "press-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "testimonials",
+          "settings": {
+            "layout": "stacked",
+            "showPhotos": false,
+            "showCompany": true,
+            "quoteStyle": "minimal",
+            "maxWidth": "680px"
+          },
+          "data": {
+            "title": "Press",
+            "testimonials": [
+              {
+                "quote": "A must-read for anyone interested in [topic].",
+                "company": "The New York Times"
+              },
+              {
+                "quote": "Compelling, insightful, and beautifully written.",
+                "company": "The Atlantic"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "topics-section",
+      "type": "full_width",
+      "background": "surface",
+      "components": [
+        {
+          "type": "topics",
+          "settings": {
+            "layout": "tags",
+            "showDescriptions": false,
+            "showIcons": false,
+            "style": "pills"
+          },
+          "data": {
+            "title": "Speaking & Interview Topics",
+            "topics": [
+              {
+                "title": "The Writing Process"
+              },
+              {
+                "title": "Research & Discovery"
+              },
+              {
+                "title": "[Topic Expertise]"
+              },
+              {
+                "title": "Publishing Industry"
+              },
+              {
+                "title": "Creative Life"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "contact-section",
+      "type": "full_width",
+      "background": "dark",
+      "components": [
+        {
+          "type": "contact",
+          "settings": {
+            "style": "minimal",
+            "fields": [
+              "name",
+              "email",
+              "organization",
+              "message"
+            ],
+            "showLabels": true,
+            "maxWidth": "520px",
+            "alignment": "center"
+          },
+          "data": {
+            "title": "Get in Touch",
+            "subtitle": "For media inquiries, speaking engagements, or book events",
+            "button_text": "Send Message"
+          }
+        }
+      ]
+    }
+  ]
+}

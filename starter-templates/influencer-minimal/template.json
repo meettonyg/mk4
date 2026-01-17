@@ -1,0 +1,318 @@
+{
+  "template_id": "influencer-minimal",
+  "template_name": "Creator: Minimal",
+  "version": "1.0.0",
+  "description": "Clean, professional layout that lets your numbers speak. Perfect for creators working with agencies and brands who want essential stats upfront.",
+  "persona": {
+    "type": "influencer",
+    "label": "Creators & Influencers",
+    "icon": "fa-solid fa-hashtag",
+    "use_case": "Brand Partnerships",
+    "layout_variant": "minimal",
+    "use_cases": [
+      "Content creators",
+      "Social media influencers",
+      "YouTubers and streamers",
+      "Digital entrepreneurs",
+      "Brand ambassadors",
+      "Lifestyle bloggers"
+    ]
+  },
+  "metadata": {
+    "tags": [
+      "creator",
+      "influencer",
+      "social",
+      "content",
+      "brand",
+      "collaboration",
+      "minimal",
+      "professional"
+    ],
+    "is_premium": false,
+    "sort_order": 52,
+    "recommended_themes": [
+      "minimal-elegant",
+      "professional-clean",
+      "modern-light"
+    ]
+  },
+  "preview_image": "preview.svg",
+  "sections": [
+    {
+      "id": "hero-section",
+      "type": "two_column",
+      "background": "light",
+      "columns": {
+        "1": [
+          {
+            "type": "profile-photo",
+            "settings": {
+              "style": "circle",
+              "size": "medium"
+            },
+            "data": {
+              "alt": "Creator photo"
+            }
+          }
+        ],
+        "2": [
+          {
+            "type": "hero",
+            "settings": {
+              "layout": "left_aligned",
+              "showImage": false,
+              "showCTA": false,
+              "style": "minimal"
+            },
+            "data": {
+              "headline": "Your Name",
+              "subheadline": "Content Creator",
+              "description": "500K+ followers. 8.5% engagement. Creating content that inspires and converts."
+            }
+          },
+          {
+            "type": "social",
+            "settings": {
+              "layout": "horizontal",
+              "showLabels": false,
+              "iconSize": "small"
+            },
+            "data": {}
+          }
+        ],
+        "ratio": "30-70"
+      }
+    },
+    {
+      "id": "stats-section",
+      "type": "full_width",
+      "background": "surface",
+      "components": [
+        {
+          "type": "stats",
+          "settings": {
+            "layout": "inline",
+            "columns": 4,
+            "showIcons": false,
+            "style": "minimal",
+            "separator": "dot"
+          },
+          "data": {
+            "stats": [
+              {
+                "value": "500K+",
+                "label": "Followers"
+              },
+              {
+                "value": "10M+",
+                "label": "Reach"
+              },
+              {
+                "value": "8.5%",
+                "label": "Engagement"
+              },
+              {
+                "value": "50+",
+                "label": "Partners"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "platforms-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "stats",
+          "settings": {
+            "layout": "grid",
+            "columns": 4,
+            "showIcons": true,
+            "style": "minimal"
+          },
+          "data": {
+            "title": "Platforms",
+            "stats": [
+              {
+                "value": "250K",
+                "label": "Instagram",
+                "icon": "instagram"
+              },
+              {
+                "value": "150K",
+                "label": "YouTube",
+                "icon": "youtube"
+              },
+              {
+                "value": "75K",
+                "label": "TikTok",
+                "icon": "tiktok"
+              },
+              {
+                "value": "25K",
+                "label": "Twitter",
+                "icon": "twitter"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "topics-section",
+      "type": "full_width",
+      "background": "surface",
+      "components": [
+        {
+          "type": "topics",
+          "settings": {
+            "layout": "tags",
+            "showDescriptions": false,
+            "showIcons": false,
+            "style": "pills"
+          },
+          "data": {
+            "title": "Content Categories",
+            "topics": [
+              {
+                "title": "Lifestyle"
+              },
+              {
+                "title": "Product Reviews"
+              },
+              {
+                "title": "Tutorials"
+              },
+              {
+                "title": "Behind the Scenes"
+              },
+              {
+                "title": "Brand Campaigns"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "bio-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "biography",
+          "settings": {
+            "style": "minimal",
+            "showTitle": true,
+            "maxWidth": "680px",
+            "alignment": "center"
+          },
+          "data": {
+            "title": "About",
+            "biography": "Brief, punchy bio focused on what makes you valuable to brands. Your niche, your audience demographics, and your content style.\n\nAudience: 70% women, 18-34, interested in [topics]."
+          }
+        }
+      ]
+    },
+    {
+      "id": "brands-section",
+      "type": "full_width",
+      "background": "surface",
+      "components": [
+        {
+          "type": "logo-grid",
+          "settings": {
+            "layout": "row",
+            "columns": 5,
+            "showLabels": false,
+            "grayscale": true,
+            "style": "minimal"
+          },
+          "data": {
+            "title": "Past Partners",
+            "logos": [
+              {
+                "name": "Brand 1",
+                "alt": "Brand logo"
+              },
+              {
+                "name": "Brand 2",
+                "alt": "Brand logo"
+              },
+              {
+                "name": "Brand 3",
+                "alt": "Brand logo"
+              },
+              {
+                "name": "Brand 4",
+                "alt": "Brand logo"
+              },
+              {
+                "name": "Brand 5",
+                "alt": "Brand logo"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "content-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "photo-gallery",
+          "settings": {
+            "layout": "grid",
+            "columns": 3,
+            "style": "minimal",
+            "gap": "small"
+          },
+          "data": {
+            "title": "Recent Work",
+            "images": [
+              {
+                "alt": "Content 1"
+              },
+              {
+                "alt": "Content 2"
+              },
+              {
+                "alt": "Content 3"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "contact-section",
+      "type": "full_width",
+      "background": "dark",
+      "components": [
+        {
+          "type": "contact",
+          "settings": {
+            "style": "minimal",
+            "fields": [
+              "name",
+              "email",
+              "company",
+              "campaign_type",
+              "message"
+            ],
+            "showLabels": true,
+            "maxWidth": "520px"
+          },
+          "data": {
+            "title": "Partnership Inquiry",
+            "subtitle": "I respond within 24 hours",
+            "button_text": "Send Inquiry"
+          }
+        }
+      ]
+    }
+  ]
+}

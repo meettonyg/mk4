@@ -1,0 +1,62 @@
+<svg width="400" height="600" viewBox="0 0 400 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="600" fill="#022c22"/>
+
+  <!-- Split Hero -->
+  <rect x="20" y="20" width="175" height="180" rx="8" fill="#064e3b"/>
+  <circle cx="107" cy="90" r="45" fill="#065f46"/>
+  <rect x="55" y="150" width="105" height="7" rx="3" fill="#10b981"/>
+
+  <rect x="205" y="20" width="175" height="180" rx="8" fill="url(#consultHero)"/>
+  <rect x="225" y="50" width="130" height="10" rx="5" fill="rgba(255,255,255,0.9)"/>
+  <rect x="225" y="70" width="100" height="6" rx="3" fill="rgba(255,255,255,0.5)"/>
+  <rect x="225" y="95" width="130" height="4" rx="2" fill="rgba(255,255,255,0.3)"/>
+  <rect x="225" y="107" width="110" height="4" rx="2" fill="rgba(255,255,255,0.3)"/>
+  <rect x="225" y="135" width="80" height="22" rx="11" fill="white"/>
+
+  <!-- Stats -->
+  <rect x="20" y="215" width="360" height="55" rx="8" fill="#064e3b"/>
+  <rect x="40" y="228" width="70" height="28" rx="4" fill="#065f46"/>
+  <rect x="125" y="228" width="70" height="28" rx="4" fill="#065f46"/>
+  <rect x="210" y="228" width="70" height="28" rx="4" fill="#065f46"/>
+  <rect x="295" y="228" width="70" height="28" rx="4" fill="#065f46"/>
+
+  <!-- Two Column -->
+  <rect x="20" y="285" width="175" height="130" rx="8" fill="#064e3b"/>
+  <rect x="40" y="305" width="80" height="7" rx="3" fill="#10b981"/>
+  <rect x="40" y="325" width="135" height="18" rx="4" fill="#065f46"/>
+  <rect x="40" y="353" width="135" height="18" rx="4" fill="#065f46"/>
+  <rect x="40" y="381" width="135" height="18" rx="4" fill="#065f46"/>
+
+  <rect x="205" y="285" width="175" height="130" rx="8" fill="#064e3b"/>
+  <rect x="225" y="305" width="100" height="7" rx="3" fill="#34d399"/>
+  <rect x="225" y="325" width="135" height="5" rx="2" fill="#047857"/>
+  <rect x="225" y="340" width="120" height="5" rx="2" fill="#047857"/>
+  <rect x="225" y="355" width="130" height="5" rx="2" fill="#047857"/>
+  <rect x="225" y="370" width="115" height="5" rx="2" fill="#047857"/>
+  <rect x="225" y="385" width="125" height="5" rx="2" fill="#047857"/>
+  <rect x="225" y="400" width="100" height="5" rx="2" fill="#047857"/>
+
+  <!-- Testimonials -->
+  <rect x="20" y="430" width="360" height="65" rx="8" fill="#064e3b"/>
+  <rect x="40" y="448" width="280" height="5" rx="2" fill="#047857"/>
+  <rect x="40" y="463" width="240" height="5" rx="2" fill="#047857"/>
+  <rect x="40" y="478" width="100" height="5" rx="2" fill="#10b981"/>
+
+  <!-- CTA -->
+  <rect x="20" y="510" width="175" height="70" rx="8" fill="url(#consultCtaSplit)"/>
+  <rect x="40" y="535" width="120" height="8" rx="4" fill="rgba(255,255,255,0.9)"/>
+
+  <rect x="205" y="510" width="175" height="70" rx="8" fill="#064e3b"/>
+  <rect x="225" y="535" width="135" height="24" rx="12" fill="#10b981"/>
+
+  <defs>
+    <linearGradient id="consultHero" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+    <linearGradient id="consultCtaSplit" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#059669"/>
+      <stop offset="100%" style="stop-color:#10b981"/>
+    </linearGradient>
+  </defs>
+</svg>
