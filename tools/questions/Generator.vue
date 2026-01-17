@@ -165,6 +165,7 @@
                   when: 'e.g. When scaling rapidly',
                   how: 'e.g. My proven 90-day system'
                 }"
+                :prefilled-fields="prefilledFields"
               />
             </div>
 
@@ -874,6 +875,8 @@ function handleProfileCleared() {
   profileTopics.value = [];
   selectedTopicIndex.value = -1;
   refinedTopic.value = '';
+  // Clear prefilled fields tracking
+  prefilledFields.value = new Set();
 }
 
 // ===========================================
@@ -1036,16 +1039,30 @@ const copyQuestion = async (index, event) => {
 function populateFromProfile(profileData) {
   if (!profileData) return;
 
+  const newPrefilledFields = new Set();
+
   // Populate authority hook fields (check multiple field name patterns)
   const hookWho = profileData.hook_who || profileData.authority_hook_who || '';
   const hookWhat = profileData.hook_what || profileData.authority_hook_what || '';
   const hookWhen = profileData.hook_when || profileData.authority_hook_when || '';
   const hookHow = profileData.hook_how || profileData.authority_hook_how || '';
 
-  if (hookWho && !authorityHook.who) authorityHook.who = hookWho;
-  if (hookWhat && !authorityHook.what) authorityHook.what = hookWhat;
-  if (hookWhen && !authorityHook.when) authorityHook.when = hookWhen;
-  if (hookHow && !authorityHook.how) authorityHook.how = hookHow;
+  if (hookWho) {
+    authorityHook.who = hookWho;
+    newPrefilledFields.add('who');
+  }
+  if (hookWhat) {
+    authorityHook.what = hookWhat;
+    newPrefilledFields.add('what');
+  }
+  if (hookWhen) {
+    authorityHook.when = hookWhen;
+    newPrefilledFields.add('when');
+  }
+  if (hookHow) {
+    authorityHook.how = hookHow;
+    newPrefilledFields.add('how');
+  }
 
   // Populate authority hook fields from profile data (for cross-tool sync)
   loadFromProfileData(profileData);
@@ -1065,6 +1082,9 @@ function populateFromProfile(profileData) {
       selectTopic(0);
     }
   }
+
+  // Update prefilled fields tracking
+  prefilledFields.value = newPrefilledFields;
 }
 
 /**
