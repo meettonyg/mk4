@@ -7,20 +7,6 @@
       @profile-cleared="handleProfileCleared"
     />
 
-    <!-- Restore Link (subtle text link) -->
-    <button
-      v-if="showDraftPrompt && mode === 'default'"
-      type="button"
-      class="gfy-restore-link"
-      @click="handleRestoreDraft"
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M1 4v6h6"/>
-        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
-      </svg>
-      Unsaved changes found. <strong>Restore?</strong>
-    </button>
-
     <!-- Form Section (shown when no results) -->
     <div v-if="!hasIntros" class="gfy-impact-intro-form">
       <!-- Impact Intro Builder -->
@@ -148,6 +134,31 @@
         <!-- Live Preview -->
         <div class="gfy-live-preview">
           "{{ introPreview }}"
+        </div>
+
+        <!-- Actions & Restore Link -->
+        <div v-if="mode === 'default'" class="gfy-actions-wrapper">
+          <button
+            v-if="showDraftPrompt"
+            type="button"
+            class="gfy-restore-link"
+            @click="handleRestoreDraft"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 4v6h6"/>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+            </svg>
+            Unsaved changes found. <strong>Restore?</strong>
+          </button>
+          <button
+            type="button"
+            class="gfy-btn gfy-btn--generate"
+            :disabled="!canGenerate || isGenerating"
+            @click="handleGenerate"
+          >
+            <span v-if="isGenerating" class="gfy-spinner"></span>
+            {{ isGenerating ? 'Generating...' : 'Generate Impact Intro' }}
+          </button>
         </div>
       </div>
     </div>
@@ -854,6 +865,8 @@ defineExpose({
 </script>
 
 <style scoped>
+@import "../_shared/gfy-form-base.css";
+
 /* CSS Variables (inherit from parent or set defaults) */
 .gfy-impact-intro-generator {
   --gfy-primary-color: #2563eb;

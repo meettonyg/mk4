@@ -1264,6 +1264,8 @@ defineExpose({
 </script>
 
 <style scoped>
+@import "../_shared/gfy-form-base.css";
+
 .gfy-intro-generator {
   --gfy-primary-color: #2563eb;
   --gfy-primary-light: #eff6ff;
