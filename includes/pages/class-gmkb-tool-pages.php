@@ -1945,8 +1945,13 @@ get_footer();
                     </div>
                     <?php endif; ?>
 
+                    <?php
+                    // Determine if hero tabs should be shown (non-logged-in users with multiple intents)
+                    $show_hero_tabs = !$is_logged_in && !empty($intents) && count($intents) > 1;
+                    ?>
+
                     <!-- Intent Tabs (shown in hero for non-logged-in users only) -->
-                    <?php if (!$is_logged_in && !empty($intents) && count($intents) > 1): ?>
+                    <?php if ($show_hero_tabs): ?>
                     <div class="gmkb-intent-tabs" role="tablist" id="gmkb-hero-intent-tabs">
                         <?php foreach ($intents as $index => $intent): ?>
                         <button
@@ -1969,7 +1974,7 @@ get_footer();
                          data-mode="embedded"
                          data-intents="<?php echo esc_attr(wp_json_encode($intents)); ?>"
                          data-meta="<?php echo esc_attr(wp_json_encode($vue_meta)); ?>"
-                         data-tabs-in-hero="<?php echo (!$is_logged_in && !empty($intents) && count($intents) > 1) ? 'true' : 'false'; ?>">
+                         data-tabs-in-hero="<?php echo $show_hero_tabs ? 'true' : 'false'; ?>">
                         <!-- Vue app will mount here -->
                         <noscript>
                             <div class="gmkb-plg-noscript">
@@ -2150,15 +2155,15 @@ get_footer();
             <?php endif; ?>
         </div>
 
-        <?php if (!$is_logged_in && !empty($intents) && count($intents) > 1): ?>
+        <?php if ($show_hero_tabs): ?>
         <!-- Hero Intent Tabs JavaScript -->
         <script>
         (function() {
-            var heroTabs = document.getElementById('gmkb-hero-intent-tabs');
+            const heroTabs = document.getElementById('gmkb-hero-intent-tabs');
             if (!heroTabs) return;
 
             heroTabs.addEventListener('click', function(e) {
-                var tab = e.target.closest('.gmkb-intent-tab');
+                const tab = e.target.closest('.gmkb-intent-tab');
                 if (!tab) return;
 
                 // Update active states
@@ -2170,7 +2175,7 @@ get_footer();
                 tab.setAttribute('aria-selected', 'true');
 
                 // Dispatch event for Vue component
-                var intentId = tab.getAttribute('data-intent-id');
+                const intentId = tab.getAttribute('data-intent-id');
                 document.dispatchEvent(new CustomEvent('gmkb:hero-intent-change', {
                     detail: { intentId: intentId }
                 }));
