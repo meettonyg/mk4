@@ -842,21 +842,28 @@ function handleDiscardDraft() {
 
 /**
  * Handle profile selected from ProfileSelector (standalone mode)
+ * Sets selectedProfileId so saveMultipleToProfile can work correctly
  */
-function handleProfileSelected({ data }) {
-  if (data && props.mode === 'default') {
-    // Track which fields are being prefilled
-    const newPrefilledFields = new Set();
+function handleProfileSelected({ id, data }) {
+  if (props.mode === 'default') {
+    // Set the profile ID in our composable instance so saves work correctly
+    if (id) {
+      selectedProfileId.value = id;
+    }
+    if (data) {
+      // Track which fields are being prefilled
+      const newPrefilledFields = new Set();
 
-    if (data.hook_what && !formData.services) newPrefilledFields.add('services');
-    if (data.industry && !formData.industry) newPrefilledFields.add('industry');
-    if (data.hook_who && !authorityHook.who) newPrefilledFields.add('hook_who');
-    if (data.hook_what && !authorityHook.what) newPrefilledFields.add('hook_what');
-    if (data.hook_when && !authorityHook.when) newPrefilledFields.add('hook_when');
-    if (data.hook_how && !authorityHook.how) newPrefilledFields.add('hook_how');
+      if (data.hook_what && !formData.services) newPrefilledFields.add('services');
+      if (data.industry && !formData.industry) newPrefilledFields.add('industry');
+      if (data.hook_who && !authorityHook.who) newPrefilledFields.add('hook_who');
+      if (data.hook_what && !authorityHook.what) newPrefilledFields.add('hook_what');
+      if (data.hook_when && !authorityHook.when) newPrefilledFields.add('hook_when');
+      if (data.hook_how && !authorityHook.how) newPrefilledFields.add('hook_how');
 
-    prefilledFields.value = newPrefilledFields;
-    populateFromProfile(data);
+      prefilledFields.value = newPrefilledFields;
+      populateFromProfile(data);
+    }
   }
 }
 
@@ -864,8 +871,8 @@ function handleProfileSelected({ data }) {
  * Handle profile cleared from ProfileSelector (standalone mode)
  */
 function handleProfileCleared() {
-  // Optionally clear form fields when profile is deselected
-  // For now, we keep the existing data to avoid losing user input
+  // Clear the profile ID so saves are disabled
+  selectedProfileId.value = null;
 }
 
 // Use the generic AI generator

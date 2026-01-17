@@ -992,10 +992,17 @@ function populateFromProfile(profileData) {
 
 /**
  * Handle profile selected from ProfileSelector (standalone mode)
+ * Sets selectedProfileId so saveMultipleToProfile can work correctly
  */
-function handleProfileSelected({ data }) {
-  if (data && props.mode === 'default') {
-    populateFromProfile(data);
+function handleProfileSelected({ id, data }) {
+  if (props.mode === 'default') {
+    // Set the profile ID in our composable instance so saves work correctly
+    if (id) {
+      selectedProfileId.value = id;
+    }
+    if (data) {
+      populateFromProfile(data);
+    }
   }
 }
 
@@ -1003,8 +1010,8 @@ function handleProfileSelected({ data }) {
  * Handle profile cleared from ProfileSelector (standalone mode)
  */
 function handleProfileCleared() {
-  // Optionally clear form fields when profile is deselected
-  // For now, we keep the existing data to avoid losing user input
+  // Clear the profile ID so saves are disabled
+  selectedProfileId.value = null;
 }
 
 /**
