@@ -7,8 +7,8 @@
       @profile-cleared="handleProfileCleared"
     />
 
-    <!-- Intent Tabs (hidden when tabs are in hero section, or when showing results in single column mode) -->
-    <div v-if="intents && intents.length > 0 && !tabsInHero && !(singleColumn && hasGenerated)" class="gmkb-intent-tabs" role="tablist">
+    <!-- Intent Tabs (only shown for non-logged-in users; hidden when tabs are in hero section or showing results in single column mode) -->
+    <div v-if="!isLoggedIn && intents && intents.length > 0 && !tabsInHero && !(singleColumn && hasGenerated)" class="gmkb-intent-tabs" role="tablist">
       <button
         v-for="intent in intents"
         :key="intent.id"
