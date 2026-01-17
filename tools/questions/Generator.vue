@@ -2,39 +2,11 @@
   <!-- Standalone Mode: Tool card content (hero is provided by landing page wrapper) -->
   <div v-if="mode === 'default'" class="gfy-questions-wrapper gmkb-generator-root">
     <div class="gmkb-plg-tool-embed">
-            <!-- Profile Selector (Top of Form, inside Card) -->
-            <div class="gfy-profile-selector-container">
-              <label class="gfy-profile-label">Pre-fill from Profile:</label>
-              <div class="gfy-profile-selector-row">
-                <select
-                  v-model="selectedProfileIdLocal"
-                  class="gfy-profile-select"
-                  @change="handleProfileSelect"
-                >
-                  <option value="" disabled>Select a guest profile to pre-fill...</option>
-                  <option
-                    v-for="profile in availableProfiles"
-                    :key="profile.id"
-                    :value="profile.id"
-                  >
-                    {{ profile.title }}{{ profile.guest_title ? ` - ${profile.guest_title}` : '' }}
-                  </option>
-                  <option value="new">+ Create New Profile</option>
-                </select>
-                <a
-                  v-if="hasSelectedProfile && selectedProfile"
-                  :href="selectedProfile.editUrl || `/app/profiles/guest/profile/?entry=${selectedProfile.slug}`"
-                  class="gfy-profile-link"
-                  title="Edit this profile"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                  </svg>
-                  Edit Profile
-                </a>
-              </div>
-            </div>
+            <!-- Profile Selector (for logged-in users in standalone mode) -->
+            <ProfileSelector
+              @profile-selected="handleProfileSelected"
+              @profile-cleared="handleProfileCleared"
+            />
 
             <!-- Auto-save Indicator -->
             <div v-if="isAutoSaving" class="gfy-auto-save-indicator">
@@ -193,6 +165,7 @@
                   when: 'e.g. When scaling rapidly',
                   how: 'e.g. My proven 90-day system'
                 }"
+                :prefilled-fields="prefilledFields"
               />
             </div>
 
@@ -289,7 +262,7 @@
             </div>
 
           <!-- Results Container (appears below when generated) -->
-          <div v-if="hasQuestions" class="gfy-results-container">
+          <div v-if="hasQuestions" ref="resultsContainer" class="gfy-results-container">
             <div class="questions-results">
               <div class="questions-results__layout">
                 <!-- SIDEBAR: Interview Set (5 Lockable Slots) -->
@@ -696,7 +669,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useAIQuestions, QUESTION_CATEGORIES } from '../../src/composables/useAIQuestions';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
@@ -709,7 +682,7 @@ import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
 import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ProfileContextBanner } from '../_shared';
+import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ProfileSelector } from '../_shared';
 
 const props = defineProps({
   /**
@@ -756,13 +729,9 @@ const { syncFromStore, loadFromProfileData } = useAuthorityHook();
 
 // Profile functionality (standalone mode)
 const {
-  profiles: availableProfiles,
   selectedProfileId,
   profileData,
   hasSelectedProfile,
-  selectedProfile,
-  loadProfiles,
-  selectProfile: selectProfileFromComposable,
   saveMultipleToProfile,
   getAuthorityHookData
 } = useStandaloneProfile();
@@ -877,6 +846,7 @@ const showDraftPrompt = ref(false);
 // Local state
 const selectedTopicIndex = ref(-1);
 const refinedTopic = ref('');
+const resultsContainer = ref(null);
 
 // Authority Hook state (reactive object for 4 W's)
 const authorityHook = reactive({
@@ -887,23 +857,27 @@ const authorityHook = reactive({
 });
 
 // ===========================================
-// PROFILE SELECTOR STATE
+// PROFILE SELECTOR HANDLERS
 // ===========================================
-// Local ref for v-model binding (synced with composable)
-const selectedProfileIdLocal = ref('');
-
-// Handle profile selection from dropdown
-async function handleProfileSelect() {
-  if (!selectedProfileIdLocal.value) return;
-
-  if (selectedProfileIdLocal.value === 'new') {
-    // Navigate to create new profile
-    window.location.href = '/profile/new/';
-    return;
+/**
+ * Handle profile selected from ProfileSelector (standalone mode)
+ */
+function handleProfileSelected({ data }) {
+  if (data && props.mode === 'default') {
+    populateFromProfile(data);
   }
+}
 
-  // Use composable to select and load profile data
-  await selectProfileFromComposable(selectedProfileIdLocal.value);
+/**
+ * Handle profile cleared from ProfileSelector (standalone mode)
+ */
+function handleProfileCleared() {
+  // Clear topics loaded from profile when profile is deselected
+  profileTopics.value = [];
+  selectedTopicIndex.value = -1;
+  refinedTopic.value = '';
+  // Clear prefilled fields tracking
+  prefilledFields.value = new Set();
 }
 
 // ===========================================
@@ -914,19 +888,21 @@ const targetAudience = ref('');
 const selectedTone = ref('professional');
 const questionCount = ref(10);
 
-// Available topics (from props or default examples)
+// Topics loaded from selected profile (standalone mode)
+const profileTopics = ref([]);
+
+// Available topics (from props or profile selection)
 const availableTopics = computed(() => {
+  // First check props (from embedded/integrated mode)
   if (props.topics && props.topics.length > 0) {
     return props.topics;
   }
-  // Default example topics if none provided
-  return [
-    'The 3 Hidden Revenue Leaks Killing Your Growth',
-    'Why Most Scaling Strategies Fail',
-    'From Overwhelmed Owner to Strategic CEO',
-    'Building Systems That Scale',
-    'The 7-Figure Timeline'
-  ];
+  // Then check topics loaded from selected profile (standalone mode)
+  if (profileTopics.value.length > 0) {
+    return profileTopics.value;
+  }
+  // Return empty array - topics should come from profile selection
+  return [];
 });
 
 // Authority Hook live preview
@@ -1064,19 +1040,52 @@ const copyQuestion = async (index, event) => {
 function populateFromProfile(profileData) {
   if (!profileData) return;
 
+  const newPrefilledFields = new Set();
+
   // Populate authority hook fields (check multiple field name patterns)
   const hookWho = profileData.hook_who || profileData.authority_hook_who || '';
   const hookWhat = profileData.hook_what || profileData.authority_hook_what || '';
   const hookWhen = profileData.hook_when || profileData.authority_hook_when || '';
   const hookHow = profileData.hook_how || profileData.authority_hook_how || '';
 
-  if (hookWho && !authorityHook.who) authorityHook.who = hookWho;
-  if (hookWhat && !authorityHook.what) authorityHook.what = hookWhat;
-  if (hookWhen && !authorityHook.when) authorityHook.when = hookWhen;
-  if (hookHow && !authorityHook.how) authorityHook.how = hookHow;
+  if (hookWho) {
+    authorityHook.who = hookWho;
+    newPrefilledFields.add('who');
+  }
+  if (hookWhat) {
+    authorityHook.what = hookWhat;
+    newPrefilledFields.add('what');
+  }
+  if (hookWhen) {
+    authorityHook.when = hookWhen;
+    newPrefilledFields.add('when');
+  }
+  if (hookHow) {
+    authorityHook.how = hookHow;
+    newPrefilledFields.add('how');
+  }
 
   // Populate authority hook fields from profile data (for cross-tool sync)
   loadFromProfileData(profileData);
+
+  // Extract topics from profile (stored as topic_1, topic_2, etc.)
+  const topics = [];
+  for (let i = 1; i <= 5; i++) {
+    const topicText = profileData[`topic_${i}`];
+    if (topicText && topicText.trim()) {
+      topics.push(topicText.trim());
+    }
+  }
+  if (topics.length > 0) {
+    profileTopics.value = topics;
+    // Auto-select first topic if none selected
+    if (selectedTopicIndex.value === -1) {
+      selectTopic(0);
+    }
+  }
+
+  // Update prefilled fields tracking
+  prefilledFields.value = newPrefilledFields;
 }
 
 /**
@@ -1160,36 +1169,6 @@ function restoreFullHistory(entry) {
   }
 }
 
-/**
- * Handle profile loaded from ProfileContextBanner (standalone mode)
- */
-function handleProfileLoaded(data) {
-  if (data && props.mode === 'default') {
-    // Track which fields are being prefilled
-    const newPrefilledFields = new Set();
-
-    const hookWho = data.hook_who || data.authority_hook_who;
-    const hookWhat = data.hook_what || data.authority_hook_what;
-    const hookWhen = data.hook_when || data.authority_hook_when;
-    const hookHow = data.hook_how || data.authority_hook_how;
-
-    if (hookWho && !authorityHook.who) newPrefilledFields.add('hook_who');
-    if (hookWhat && !authorityHook.what) newPrefilledFields.add('hook_what');
-    if (hookWhen && !authorityHook.when) newPrefilledFields.add('hook_when');
-    if (hookHow && !authorityHook.how) newPrefilledFields.add('hook_how');
-
-    prefilledFields.value = newPrefilledFields;
-    populateFromProfile(data);
-  }
-}
-
-/**
- * Handle profile cleared from ProfileContextBanner (standalone mode)
- */
-function handleProfileCleared() {
-  // Optionally clear form fields when profile is deselected
-  // For now, we keep the existing data to avoid losing user input
-}
 
 /**
  * Questions formula for guidance panel
@@ -1296,6 +1275,14 @@ const handleGenerate = async () => {
     emit('generated', {
       questions: questions.value
     });
+
+    // Scroll to results after generation (standalone mode only)
+    if (props.mode === 'default' && questions.value && questions.value.length > 0) {
+      await nextTick();
+      if (resultsContainer.value) {
+        resultsContainer.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
   } catch (err) {
     console.error('[QuestionsGenerator] Generation failed:', err);
   }

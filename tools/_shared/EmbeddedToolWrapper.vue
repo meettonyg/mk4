@@ -1,14 +1,14 @@
 <template>
   <div class="gmkb-tool-embed">
-    <!-- Profile Context Banner (logged-in users with profile-saveable tools only, hidden in single-column/embedded mode) -->
-    <ProfileContextBanner
+    <!-- Profile Selector (logged-in users with profile-saveable tools only, hidden in single-column/embedded mode) -->
+    <ProfileSelector
       v-if="isLoggedIn && supportsProfileSave && !singleColumn"
-      @profile-loaded="handleProfileLoaded"
+      @profile-selected="handleProfileSelected"
       @profile-cleared="handleProfileCleared"
     />
 
-    <!-- Intent Tabs (hidden when showing results in single column mode) -->
-    <div v-if="intents && intents.length > 0 && !(singleColumn && hasGenerated)" class="gmkb-intent-tabs" role="tablist">
+    <!-- Intent Tabs (only shown for non-logged-in users; hidden when tabs are in hero section or showing results in single column mode) -->
+    <div v-if="!isLoggedIn && intents && intents.length > 0 && !tabsInHero && !(singleColumn && hasGenerated)" class="gmkb-intent-tabs" role="tablist">
       <button
         v-for="intent in intents"
         :key="intent.id"
@@ -304,7 +304,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, provide } from 'vue';
-import ProfileContextBanner from './ProfileContextBanner.vue';
+import ProfileSelector from './ProfileSelector.vue';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 import { EMBEDDED_PROFILE_DATA_KEY, IS_EMBEDDED_CONTEXT_KEY } from './constants';
 
@@ -466,6 +466,14 @@ const props = defineProps({
   singleColumn: {
     type: Boolean,
     default: true
+  },
+  /**
+   * Whether intent tabs are rendered in the hero section (PHP)
+   * When true, hides the internal tabs in this wrapper
+   */
+  tabsInHero: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -717,7 +725,7 @@ provide(EMBEDDED_PROFILE_DATA_KEY, loadedProfileData);
 // Signal to child components (like GeneratorLayout) that they're inside embedded wrapper
 provide(IS_EMBEDDED_CONTEXT_KEY, true);
 
-function handleProfileLoaded(data) {
+function handleProfileSelected({ data }) {
   loadedProfileData.value = data;
   emit('profile-loaded', data);
   // Reset saved state when profile changes

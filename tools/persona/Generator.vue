@@ -9,10 +9,10 @@
     :has-results="hasContent"
     :is-loading="isGenerating"
   >
-    <!-- Profile Context Banner (for logged-in users) -->
+    <!-- Profile Selector (for logged-in users) -->
     <template #profile-context>
-      <ProfileContextBanner
-        @profile-loaded="handleProfileLoaded"
+      <ProfileSelector
+        @profile-selected="handleProfileSelected"
         @profile-cleared="handleProfileCleared"
       />
     </template>
@@ -530,7 +530,7 @@ import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ProfileContextBanner, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
+import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ProfileSelector, EMBEDDED_PROFILE_DATA_KEY } from '../_shared';
 
 // Awareness level options (Eugene Schwartz's 5 levels)
 const AWARENESS_OPTIONS = [
@@ -841,9 +841,9 @@ function handleDiscardDraft() {
 }
 
 /**
- * Handle profile loaded from ProfileContextBanner (standalone mode)
+ * Handle profile selected from ProfileSelector (standalone mode)
  */
-function handleProfileLoaded(data) {
+function handleProfileSelected({ data }) {
   if (data && props.mode === 'default') {
     // Track which fields are being prefilled
     const newPrefilledFields = new Set();
@@ -861,7 +861,7 @@ function handleProfileLoaded(data) {
 }
 
 /**
- * Handle profile cleared from ProfileContextBanner (standalone mode)
+ * Handle profile cleared from ProfileSelector (standalone mode)
  */
 function handleProfileCleared() {
   // Optionally clear form fields when profile is deselected

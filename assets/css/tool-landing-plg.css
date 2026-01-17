@@ -148,6 +148,47 @@
     margin-right: 6px;
 }
 
+.gmkb-plg-trust-item svg {
+    color: var(--mkcg-success);
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+/* Intent Tabs (Hero Section) */
+.gmkb-intent-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+}
+
+.gmkb-intent-tab {
+    padding: 12px 28px;
+    font-size: 1rem;
+    font-weight: 600;
+    border: 1px solid var(--mkcg-border);
+    background: var(--mkcg-bg-primary);
+    color: var(--mkcg-text-secondary);
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    font-family: inherit;
+}
+
+.gmkb-intent-tab:hover {
+    background: var(--mkcg-bg-secondary);
+    border-color: var(--mkcg-text-light);
+}
+
+.gmkb-intent-tab.active {
+    background: var(--mkcg-primary-light);
+    color: var(--mkcg-primary);
+    border-color: var(--mkcg-border-lighter);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
 /* Tool Embed Container */
 .gmkb-plg-tool-embed {
     background: white;

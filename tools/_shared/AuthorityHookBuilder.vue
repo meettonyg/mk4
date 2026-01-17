@@ -12,6 +12,7 @@
           :value="modelValue.who"
           type="text"
           class="authority-hook-builder__input"
+          :class="{ 'authority-hook-builder__input--prefilled': isFieldPrefilled('who') }"
           :placeholder="placeholders.who"
           @input="updateField('who', $event.target.value)"
         />
@@ -22,6 +23,7 @@
           :value="modelValue.what"
           type="text"
           class="authority-hook-builder__input"
+          :class="{ 'authority-hook-builder__input--prefilled': isFieldPrefilled('what') }"
           :placeholder="placeholders.what"
           @input="updateField('what', $event.target.value)"
         />
@@ -32,6 +34,7 @@
           :value="modelValue.when"
           type="text"
           class="authority-hook-builder__input"
+          :class="{ 'authority-hook-builder__input--prefilled': isFieldPrefilled('when') }"
           :placeholder="placeholders.when"
           @input="updateField('when', $event.target.value)"
         />
@@ -42,6 +45,7 @@
           :value="modelValue.how"
           type="text"
           class="authority-hook-builder__input"
+          :class="{ 'authority-hook-builder__input--prefilled': isFieldPrefilled('how') }"
           :placeholder="placeholders.how"
           @input="updateField('how', $event.target.value)"
         />
@@ -91,8 +95,23 @@ const props = defineProps({
       when: 'e.g. When scaling rapidly',
       how: 'e.g. My proven 90-day system'
     })
+  },
+
+  /**
+   * Set of field names that were prefilled from profile
+   */
+  prefilledFields: {
+    type: Set,
+    default: () => new Set()
   }
 });
+
+/**
+ * Check if a field is prefilled
+ */
+const isFieldPrefilled = (field) => {
+  return props.prefilledFields.has(field);
+};
 
 const emit = defineEmits(['update:modelValue']);
 
@@ -198,6 +217,16 @@ const previewText = computed(() => {
 
 .authority-hook-builder__input::placeholder {
   color: var(--mkcg-text-light, #94a3b8);
+}
+
+.authority-hook-builder__input--prefilled {
+  background-color: #f0f9ff;
+  border-color: #7dd3fc;
+}
+
+.authority-hook-builder__input--prefilled:focus {
+  border-color: var(--mkcg-primary, #3b82f6);
+  background-color: #fff;
 }
 
 .authority-hook-builder__preview {

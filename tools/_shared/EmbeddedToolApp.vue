@@ -18,6 +18,7 @@
       :testimonial="testimonial"
       :authority-hook-data="authorityHookData"
       :single-column="singleColumn"
+      :tabs-in-hero="tabsInHero"
       register-url="/register/"
       :social-login-html="socialLoginHtml"
       @intent-change="handleIntentChange"
@@ -45,7 +46,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import EmbeddedToolWrapper from './EmbeddedToolWrapper.vue';
 import { buildRelatedTools } from '../index.js';
 
@@ -55,13 +56,37 @@ const props = defineProps({
   meta: { type: Object, default: () => ({}) },
   generatorComponent: { type: Object, required: true },
   isLoggedIn: { type: Boolean, default: false },
-  socialLoginHtml: { type: String, default: '' }
+  socialLoginHtml: { type: String, default: '' },
+  tabsInHero: { type: Boolean, default: false }
 });
 
 const emit = defineEmits(['generated', 'save-click', 'gate-shown', 'gate-signup']);
 
 // State
 const currentIntent = ref(props.intents[0] || null);
+
+// Listen for hero intent tab changes (when tabs are in hero section)
+function handleHeroIntentChange(e) {
+  const intentId = e.detail?.intentId;
+  if (intentId) {
+    const intent = props.intents.find(i => i.id === intentId);
+    if (intent) {
+      currentIntent.value = intent;
+    }
+  }
+}
+
+onMounted(() => {
+  if (props.tabsInHero) {
+    document.addEventListener('gmkb:hero-intent-change', handleHeroIntentChange);
+  }
+});
+
+onUnmounted(() => {
+  if (props.tabsInHero) {
+    document.removeEventListener('gmkb:hero-intent-change', handleHeroIntentChange);
+  }
+});
 const previewContent = ref('');
 const hasGenerated = ref(false);
 const generator = ref(null);
