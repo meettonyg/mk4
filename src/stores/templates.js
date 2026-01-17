@@ -127,14 +127,19 @@ export const useTemplateStore = defineStore('templates', {
          * Centralized fetch helper with REST API authentication
          * Reduces code duplication across all API methods (DRY principle)
          *
-         * @param {string} endpoint - API endpoint (relative to restUrl)
+         * @param {string} endpoint - API endpoint (full path from wp-json root, e.g., 'gmkb/v1/starter-templates')
          * @param {Object} options - Fetch options (method, body, headers, etc.)
          * @returns {Promise<Response>} Fetch response
          */
         async _fetchWithAuth(endpoint, options = {}) {
+            // CRITICAL FIX: Use base WP-JSON URL, not the v2 namespace URL
+            // Templates API uses gmkb/v1 namespace, while restUrl points to gmkb/v2
+            // We need to construct the URL from the base /wp-json/ path
             const restUrl = window.gmkbData?.restUrl || '/wp-json/';
+            // Extract base WP-JSON URL by removing any namespace suffix
+            const baseUrl = restUrl.replace(/gmkb\/v\d+\/?$/, '');
             const nonce = window.gmkbData?.restNonce || '';
-            const url = `${restUrl}${endpoint}`;
+            const url = `${baseUrl}${endpoint}`;
 
             const fetchOptions = {
                 ...options,
@@ -254,8 +259,12 @@ export const useTemplateStore = defineStore('templates', {
          * IMPORTANT: This method handles two different template structures:
          * - Starter templates: sections at root level (template.sections)
          * - User templates: sections nested (template.defaultContent.sections or template.content.defaultContent.sections)
+         *
+         * @param {string} templateId - The template ID to initialize from
+         * @param {Object} options - Optional initialization options
+         * @param {string} options.themeOverride - Override theme ID from URL parameter (e.g., ?theme=minimal-elegant)
          */
-        async initializeFromTemplate(templateId) {
+        async initializeFromTemplate(templateId, options = {}) {
             const mediaKitStore = useMediaKitStore();
             const themeStore = useThemeStore();
             const uiStore = useUIStore();
@@ -274,8 +283,14 @@ export const useTemplateStore = defineStore('templates', {
                 mediaKitStore.sections = [];
                 mediaKitStore.components = {};
 
-                // 3. Apply theme styles (fall back to 'professional_clean' for starter templates)
-                const themeId = template.theme_id || template.theme || 'professional_clean';
+                // 3. Apply theme styles
+                // Priority: URL override > template theme_id > template theme > default
+                // URL override allows ?theme=minimal-elegant to work
+                let themeId = options.themeOverride || template.theme_id || template.theme || 'professional_clean';
+
+                // Normalize theme ID: convert hyphens to underscores (URLs use hyphens, theme IDs use underscores)
+                themeId = themeId.replace(/-/g, '_');
+
                 themeStore.selectTheme(themeId);
 
                 // 4. Apply theme customizations if present

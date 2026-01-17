@@ -8,7 +8,7 @@
       <div class="topics-grid" :style="gridStyle">
         <div v-for="(topic, index) in topics" :key="index" class="topic-item">
           <span v-if="showIcons" class="topic-icon">💡</span>
-          <div class="topic-title">{{ topic.name || topic.text || topic }}</div>
+          <div class="topic-title">{{ topic.title || topic.name || topic.text || topic }}</div>
           <p v-if="topic.description" class="topic-description">{{ topic.description }}</p>
         </div>
       </div>
