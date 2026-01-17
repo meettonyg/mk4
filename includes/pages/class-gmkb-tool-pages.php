@@ -2501,10 +2501,12 @@ get_footer();
                 display: flex;
                 flex-direction: column;
                 transition: all 0.2s ease;
+                position: relative;
             }
             .gmkb-dir-tool-card:hover {
                 border-color: #3b82f6;
                 box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+                cursor: pointer;
             }
             .gmkb-dir-tool-icon {
                 width: 40px;
@@ -2543,7 +2545,13 @@ get_footer();
                 gap: 0.5rem;
                 transition: color 0.2s;
             }
-            .gmkb-dir-tool-link:hover {
+            .gmkb-dir-tool-link::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                border-radius: 12px;
+            }
+            .gmkb-dir-tool-card:hover .gmkb-dir-tool-link {
                 color: #3b82f6;
             }
             .gmkb-dir-tool-link i {
