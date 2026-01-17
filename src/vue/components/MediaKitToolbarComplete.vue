@@ -10,7 +10,7 @@
         </div>
       </div>
 
-      <!-- Profile Selector for logged-in users -->
+      <!-- Profile Selector for logged-in users with existing media kits -->
       <div v-if="isLoggedIn && !isNewMediaKit" class="gmkb-toolbar__profile-selector">
         <ProfileSelector
           v-model="selectedProfileId"
@@ -21,6 +21,20 @@
           @select="handleProfileSwitch"
         />
       </div>
+
+      <!-- Profile Selector button for new media kits -->
+      <button
+        v-if="isLoggedIn && isNewMediaKit"
+        class="gmkb-toolbar__btn gmkb-toolbar__btn--profile"
+        @click="openProfileSelector"
+        title="Select or switch profile to pre-populate data"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span>Profile</span>
+      </button>
     </div>
 
     <!-- Center Section - Device Preview -->
@@ -432,6 +446,11 @@ function handleShare() {
   showShareModal.value = true
 }
 
+function openProfileSelector() {
+  // Dispatch event to open the profile selector modal in MediaKitApp
+  document.dispatchEvent(new CustomEvent('gmkb:open-profile-selector'))
+}
+
 function copyShareLink() {
   if (navigator.clipboard) {
     navigator.clipboard.writeText(shareLink.value).then(() => {
@@ -829,6 +848,21 @@ onUnmounted(() => {
   background: linear-gradient(135deg, #059669 0%, #047857 100%);
   border-color: #059669;
   box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Profile selector button for new media kits */
+.gmkb-toolbar__btn--profile {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  border-color: #8b5cf6;
+  color: white;
+  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
+}
+
+.gmkb-toolbar__btn--profile:hover:not(:disabled) {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  border-color: #7c3aed;
+  box-shadow: 0 4px 8px rgba(139, 92, 246, 0.4);
   transform: translateY(-1px);
 }
 

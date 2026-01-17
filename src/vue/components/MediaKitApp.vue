@@ -59,6 +59,17 @@
           :initial-tab="importExportModalTab"
           @import-success="handleImportSuccess"
         />
+
+        <!-- Profile Selector Modal -->
+        <ProfileSelectorModal
+          :is-open="showProfileModal"
+          :title="selectedProfileId ? 'Switch Profile' : 'Choose a Profile'"
+          :subtitle="selectedProfileId ? 'Switch to a different profile to update your media kit data.' : 'Select a profile to pre-populate your media kit with your existing data.'"
+          :confirm-button-text="selectedProfileId ? 'Switch Profile' : 'Use This Profile'"
+          @close="closeProfileModal"
+          @select="handleProfileSelected"
+          @select-fresh="handleProfileFresh"
+        />
       </Teleport>
     </template>
   </div>
@@ -84,7 +95,9 @@ import MediaKitToolbarComplete from './MediaKitToolbarComplete.vue';
 import ErrorBoundary from './ErrorBoundary.vue';
 import ToastContainer from './ToastContainer.vue';
 import TemplatePicker from './TemplatePicker.vue';
+import ProfileSelectorModal from './ProfileSelectorModal.vue';
 import storageService from '../../services/StorageService';
+import profileDataIntegration from '../../core/ProfileDataIntegration';
 
 // Store references
 const store = useMediaKitStore();
@@ -101,10 +114,16 @@ const previewMountReady = ref(false); // ROOT FIX: Track preview mount point ava
 const showImportExportModal = ref(false);
 const importExportModalTab = ref('export'); // Track which tab to open
 
+// Profile selector modal state
+const showProfileModal = ref(false);
+const selectedProfileId = ref(null);
+const profileModalShownOnLoad = ref(false);
+
 // Template picker state
 const urlParams = new URLSearchParams(window.location.search);
 const hasTemplateParam = urlParams.has('template') || urlParams.has('resume');
 const isNewMediaKit = window.gmkbData?.isNewMediaKit === true;
+const isLoggedIn = window.gmkbData?.user?.isLoggedIn === true;
 
 // Show template picker for new media kits without a template selection
 const showTemplatePicker = computed(() => {
@@ -142,6 +161,80 @@ function handleCloseImportExport() {
 function handleImportSuccess() {
   console.log('✅ Import completed successfully');
   // The store will automatically reload, no need to do anything else
+}
+
+// Profile selector modal handlers
+function openProfileModal() {
+  showProfileModal.value = true;
+}
+
+function closeProfileModal() {
+  showProfileModal.value = false;
+}
+
+async function handleProfileSelected({ id, profile }) {
+  console.log('👤 Profile selected:', id, profile?.name);
+  selectedProfileId.value = id;
+  showProfileModal.value = false;
+
+  // Fetch full profile data and apply to components
+  await applyProfileToComponents(id);
+}
+
+function handleProfileFresh() {
+  console.log('✨ Starting fresh without profile');
+  selectedProfileId.value = null;
+  showProfileModal.value = false;
+  // Keep template placeholders, no data to apply
+}
+
+async function applyProfileToComponents(profileId) {
+  try {
+    // Fetch full profile data
+    const restUrl = window.gmkbData?.restUrl || '/wp-json/gmkb/v2/';
+    const baseUrl = restUrl.replace(/gmkb\/v\d+\/?$/, '');
+    const nonce = window.gmkbData?.restNonce || '';
+
+    const response = await fetch(`${baseUrl}gmkb/v2/profile/${profileId}`, {
+      headers: { 'X-WP-Nonce': nonce }
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch profile');
+
+    const result = await response.json();
+    if (!result.success || !result.data) throw new Error('Invalid profile data');
+
+    const profileData = result.data;
+    console.log('📊 Applying profile data to components:', Object.keys(profileData).length, 'fields');
+
+    // Update window.gmkbData.profile_data for ProfileDataIntegration
+    if (!window.gmkbData) window.gmkbData = {};
+    window.gmkbData.profile_data = profileData;
+
+    // Apply to existing components (Option B: only fill empty fields)
+    Object.entries(store.components).forEach(([compId, component]) => {
+      const prePopData = profileDataIntegration.getPrePopulatedData(component.type);
+      if (prePopData && Object.keys(prePopData).length > 0) {
+        // Merge: only fill empty fields in component data
+        const mergedData = { ...component.data };
+        Object.entries(prePopData).forEach(([key, value]) => {
+          // Only fill if current value is empty/null/undefined
+          if (mergedData[key] === undefined || mergedData[key] === null || mergedData[key] === '') {
+            mergedData[key] = value;
+          } else if (Array.isArray(mergedData[key]) && mergedData[key].length === 0) {
+            mergedData[key] = value;
+          }
+        });
+        store.components[compId].data = mergedData;
+      }
+    });
+
+    store._trackChange();
+    console.log('✅ Profile data applied to components');
+
+  } catch (error) {
+    console.error('❌ Failed to apply profile:', error);
+  }
 }
 
 // Template picker handlers
@@ -291,12 +384,25 @@ onMounted(async () => {
 
     console.log('✅ MediaKitApp: Phase 1 initialization complete');
     console.log('📊 MediaKitApp: Profile data loaded:', store.profileData ? Object.keys(store.profileData).length : 0, 'fields');
-    
+
+    // Show profile selector modal for logged-in users with new template-based media kits
+    // This allows them to pre-populate the template with their profile data
+    if (isNewMediaKit && hasTemplateParam && isLoggedIn && !profileModalShownOnLoad.value) {
+      profileModalShownOnLoad.value = true;
+      // Small delay to let the UI render first
+      setTimeout(() => {
+        showProfileModal.value = true;
+      }, 500);
+    }
+
     // ROOT FIX: Listen for BOTH combined and separate import/export events
     document.addEventListener('gmkb:open-import-export', handleOpenImportExport);
     document.addEventListener('gmkb:open-export', handleOpenExport);
     document.addEventListener('gmkb:open-import', handleOpenImport);
     document.addEventListener('gmkb:close-import-export', handleCloseImportExport);
+
+    // Listen for profile modal open event (from toolbar)
+    document.addEventListener('gmkb:open-profile-selector', openProfileModal);
     
   } catch (error) {
     console.error('❌ MediaKitApp: Initialization failed:', error);
@@ -314,6 +420,7 @@ onMounted(async () => {
 // Cleanup on unmount
 onUnmounted(() => {
   document.removeEventListener('gmkb:open-import-export', handleOpenImportExport);
+  document.removeEventListener('gmkb:open-profile-selector', openProfileModal);
   document.removeEventListener('gmkb:open-export', handleOpenExport);
   document.removeEventListener('gmkb:open-import', handleOpenImport);
   document.removeEventListener('gmkb:close-import-export', handleCloseImportExport);
