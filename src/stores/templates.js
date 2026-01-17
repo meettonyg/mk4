@@ -254,8 +254,12 @@ export const useTemplateStore = defineStore('templates', {
          * IMPORTANT: This method handles two different template structures:
          * - Starter templates: sections at root level (template.sections)
          * - User templates: sections nested (template.defaultContent.sections or template.content.defaultContent.sections)
+         *
+         * @param {string} templateId - The template ID to initialize from
+         * @param {Object} options - Optional initialization options
+         * @param {string} options.themeOverride - Override theme ID from URL parameter (e.g., ?theme=minimal-elegant)
          */
-        async initializeFromTemplate(templateId) {
+        async initializeFromTemplate(templateId, options = {}) {
             const mediaKitStore = useMediaKitStore();
             const themeStore = useThemeStore();
             const uiStore = useUIStore();
@@ -274,8 +278,15 @@ export const useTemplateStore = defineStore('templates', {
                 mediaKitStore.sections = [];
                 mediaKitStore.components = {};
 
-                // 3. Apply theme styles (fall back to 'professional_clean' for starter templates)
-                const themeId = template.theme_id || template.theme || 'professional_clean';
+                // 3. Apply theme styles
+                // Priority: URL override > template theme_id > template theme > default
+                // URL override allows ?theme=minimal-elegant to work
+                let themeId = options.themeOverride || template.theme_id || template.theme || 'professional_clean';
+
+                // Normalize theme ID: convert hyphens to underscores (URLs use hyphens, theme IDs use underscores)
+                themeId = themeId.replace(/-/g, '_');
+
+                console.log('🎨 Applying theme:', themeId, options.themeOverride ? '(from URL override)' : '(from template)');
                 themeStore.selectTheme(themeId);
 
                 // 4. Apply theme customizations if present
