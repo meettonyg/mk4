@@ -92,29 +92,10 @@
 
       <!-- Profile Selector (for logged-in users in standalone mode) -->
       <ProfileSelector
-        v-if="mode === 'default' && !isEmbedded"
+        v-if="mode === 'default'"
         @profile-selected="handleProfileSelected"
         @profile-cleared="handleProfileCleared"
       />
-
-      <!-- Draft Restore Prompt -->
-      <div v-if="showDraftPrompt" class="gfy-draft-prompt">
-        <div class="gfy-draft-prompt__content">
-          <i class="fas fa-file-alt"></i>
-          <div>
-            <strong>Restore previous work?</strong>
-            <p>You have a saved draft from {{ getLastSavedText() }}.</p>
-          </div>
-        </div>
-        <div class="gfy-draft-prompt__actions">
-          <button type="button" class="gfy-btn gfy-btn--primary gfy-btn--small" @click="handleRestoreDraft">
-            Restore Draft
-          </button>
-          <button type="button" class="gfy-btn gfy-btn--ghost gfy-btn--small" @click="handleDiscardDraft">
-            Start Fresh
-          </button>
-        </div>
-      </div>
 
       <!-- Auto-save indicator -->
       <div v-if="isAutoSaving" class="gfy-autosave-indicator">
@@ -233,8 +214,23 @@
           </div>
         </div>
 
-        <!-- Generate Button (only show in default mode - landing page provides its own button) -->
-        <div v-if="mode === 'default'" class="gfy-form-actions">
+        <!-- Actions & Restore Link (only show in default mode - landing page provides its own button) -->
+        <div v-if="mode === 'default'" class="gfy-actions-wrapper">
+          <!-- Restore Link (subtle text link) -->
+          <button
+            v-if="showDraftPrompt"
+            type="button"
+            class="gfy-restore-link"
+            @click="handleRestoreDraft"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 4v6h6"/>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+            </svg>
+            Unsaved changes found. <strong>Restore?</strong>
+          </button>
+
+          <!-- Main Generate Button -->
           <button
             type="button"
             class="gfy-btn gfy-btn--primary gfy-btn--large gfy-btn--generate"
@@ -245,7 +241,7 @@
             <span v-if="isGenerating" class="gfy-spinner"></span>
             {{ isGenerating ? 'Generating...' : 'Generate Guest Introduction Toolkit' }}
           </button>
-          <p class="gfy-form-actions__hint">
+          <p class="gfy-form-hint">
             We'll create multiple variations for Short, Medium, and Long introductions
           </p>
         </div>
@@ -532,10 +528,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, inject, onMounted, onUnmounted } from 'vue';
+import { ref, reactive, computed, watch, inject, onMounted, onUnmounted, toRef } from 'vue';
 import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
+import { useProfileSelectionHandler } from '../../src/composables/useProfileSelectionHandler';
 import { useDraftState } from '../../src/composables/useDraftState';
 import { EMBEDDED_PROFILE_DATA_KEY, IS_EMBEDDED_CONTEXT_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileSelector } from '../_shared';
 
@@ -1195,22 +1192,12 @@ function populateFromProfile(data) {
   prefilledFields.value = newPrefilledFields;
 }
 
-/**
- * Handle profile selected from ProfileSelector (standalone mode)
- */
-function handleProfileSelected({ data }) {
-  if (data && props.mode === 'default') {
-    populateFromProfile(data);
-  }
-}
-
-/**
- * Handle profile cleared from ProfileSelector (standalone mode)
- */
-function handleProfileCleared() {
-  // Optionally clear form fields when profile is deselected
-  // For now, we keep the existing data to avoid losing user input
-}
+// Profile selection handlers (using shared composable)
+const { handleProfileSelected, handleProfileCleared } = useProfileSelectionHandler({
+  profileIdRef: selectedProfileId,
+  onDataLoaded: populateFromProfile,
+  mode: toRef(props, 'mode'),
+});
 
 // Watchers
 watch(injectedProfileData, (newData) => {
@@ -1277,6 +1264,8 @@ defineExpose({
 </script>
 
 <style scoped>
+@import "../_shared/gfy-form-base.css";
+
 .gfy-intro-generator {
   --gfy-primary-color: #2563eb;
   --gfy-primary-light: #eff6ff;

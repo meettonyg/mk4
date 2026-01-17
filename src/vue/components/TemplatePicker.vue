@@ -1,14 +1,19 @@
 <template>
-  <div class="template-picker">
+  <div
+    class="template-picker"
+    @keydown="handleGlobalKeydown"
+    role="application"
+    aria-label="Media Kit Template Picker"
+  >
     <!-- Header -->
-    <header class="template-picker__header">
+    <header class="template-picker__header" role="banner">
       <div class="template-picker__brand">
         <span class="template-picker__logo">Guestify</span>
         <span class="template-picker__tagline">Media Kit Builder</span>
       </div>
       <div class="template-picker__actions">
         <a v-if="hasBackup" @click.prevent="resumeSession" href="#" class="template-picker__resume-btn">
-          <i class="fa-solid fa-clock-rotate-left"></i>
+          <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
           Resume Previous Session
         </a>
         <a :href="loginUrl" class="template-picker__login-link">
@@ -18,45 +23,85 @@
     </header>
 
     <!-- Hero Section -->
-    <section class="template-picker__hero">
-      <h1 class="template-picker__title">Create Your Professional Media Kit</h1>
+    <section class="template-picker__hero" aria-labelledby="picker-title">
+      <h1 id="picker-title" class="template-picker__title">Create Your Professional Media Kit</h1>
       <p class="template-picker__subtitle">
         Choose a template to get started. You can customize everything later.
       </p>
     </section>
 
-    <!-- Filters -->
-    <section class="template-picker__filters">
+    <!-- Filters - Multi-Dimensional (Persona > Use Case > Layout) -->
+    <section class="template-picker__filters" aria-label="Template filters">
       <div class="filter-section">
-        <!-- Audience Filter -->
-        <div class="filter-group">
-          <label class="filter-label">I am a...</label>
-          <div class="filter-tabs">
+        <!-- Persona Filter (Primary) -->
+        <div class="filter-group" role="group" aria-labelledby="persona-label">
+          <label id="persona-label" class="filter-label">
+            <span class="filter-step" aria-hidden="true">1</span>
+            I am a...
+          </label>
+          <div class="filter-tabs" role="tablist" aria-label="Persona filter">
             <button
-              v-for="audience in audienceFilters"
-              :key="audience.value"
-              @click="activeAudienceFilter = audience.value"
+              v-for="(persona, index) in personaFilters"
+              :key="persona.value"
+              @click="activePersonaFilter = persona.value"
+              @keydown="handleFilterKeydown($event, 'persona', index)"
               class="filter-tab"
-              :class="{ active: activeAudienceFilter === audience.value }"
+              :class="{ active: activePersonaFilter === persona.value }"
+              role="tab"
+              :aria-selected="activePersonaFilter === persona.value"
+              :tabindex="activePersonaFilter === persona.value ? 0 : -1"
+              :id="`persona-tab-${persona.value}`"
             >
-              <i v-if="audience.icon" :class="audience.icon"></i>
-              {{ audience.label }}
+              <i v-if="persona.icon" :class="persona.icon" aria-hidden="true"></i>
+              {{ persona.label }}
             </button>
           </div>
         </div>
 
-        <!-- Style Filter -->
-        <div class="filter-group">
-          <label class="filter-label">Style preference</label>
-          <div class="filter-tabs">
+        <!-- Use Case Filter (Secondary) -->
+        <div class="filter-group" v-if="useCaseFilters.length > 1" role="group" aria-labelledby="usecase-label">
+          <label id="usecase-label" class="filter-label">
+            <span class="filter-step" aria-hidden="true">2</span>
+            Use case
+          </label>
+          <div class="filter-tabs" role="tablist" aria-label="Use case filter">
             <button
-              v-for="style in styleFilters"
-              :key="style.value"
-              @click="activeStyleFilter = style.value"
-              class="filter-tab"
-              :class="{ active: activeStyleFilter === style.value }"
+              v-for="(useCase, index) in useCaseFilters"
+              :key="useCase.value"
+              @click="activeUseCaseFilter = useCase.value"
+              @keydown="handleFilterKeydown($event, 'usecase', index)"
+              class="filter-tab filter-tab--secondary"
+              :class="{ active: activeUseCaseFilter === useCase.value }"
+              role="tab"
+              :aria-selected="activeUseCaseFilter === useCase.value"
+              :tabindex="activeUseCaseFilter === useCase.value ? 0 : -1"
+              :id="`usecase-tab-${useCase.value}`"
             >
-              {{ style.label }}
+              {{ useCase.label }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Layout Variant Filter (Tertiary) -->
+        <div class="filter-group" v-if="layoutFilters.length > 1" role="group" aria-labelledby="layout-label">
+          <label id="layout-label" class="filter-label">
+            <span class="filter-step" aria-hidden="true">3</span>
+            Layout style
+          </label>
+          <div class="filter-tabs" role="tablist" aria-label="Layout style filter">
+            <button
+              v-for="(layout, index) in layoutFilters"
+              :key="layout.value"
+              @click="activeLayoutFilter = layout.value"
+              @keydown="handleFilterKeydown($event, 'layout', index)"
+              class="filter-tab filter-tab--layout"
+              :class="{ active: activeLayoutFilter === layout.value }"
+              role="tab"
+              :aria-selected="activeLayoutFilter === layout.value"
+              :tabindex="activeLayoutFilter === layout.value ? 0 : -1"
+              :id="`layout-tab-${layout.value}`"
+            >
+              {{ layout.label }}
             </button>
           </div>
         </div>
@@ -64,66 +109,95 @@
     </section>
 
     <!-- Results Count -->
-    <div class="template-picker__count">
+    <div class="template-picker__count" role="status" aria-live="polite">
       {{ filteredTemplates.length }} template{{ filteredTemplates.length !== 1 ? 's' : '' }} available
     </div>
 
     <!-- Template Grid -->
-    <section class="template-picker__grid">
+    <section
+      ref="templateGridRef"
+      class="template-picker__grid"
+      role="listbox"
+      aria-label="Available templates"
+      @keydown="handleGridKeydown"
+    >
       <div
-        v-for="template in filteredTemplates"
+        v-for="(template, index) in filteredTemplates"
         :key="template.id"
         @click="selectTemplate(template)"
+        @keydown.enter.prevent="selectTemplate(template)"
+        @keydown.space.prevent="selectTemplate(template)"
         class="template-card"
-        :class="{ 'is-new': template.metadata?.is_new }"
+        :class="{
+          'is-new': template.metadata?.is_new,
+          'is-focused': focusedTemplateIndex === index
+        }"
+        role="option"
+        :aria-selected="focusedTemplateIndex === index"
+        :tabindex="focusedTemplateIndex === index ? 0 : -1"
+        :id="`template-card-${template.id}`"
+        :ref="el => { if (el) templateCardRefs[index] = el }"
       >
         <!-- Badge -->
-        <div v-if="template.metadata?.is_new" class="template-card__badge">NEW</div>
+        <div v-if="template.metadata?.is_new" class="template-card__badge" aria-label="New template">NEW</div>
 
         <!-- Preview -->
-        <div class="template-card__preview" :style="getPreviewStyle(template)">
+        <div class="template-card__preview" :style="getPreviewStyle(template)" aria-hidden="true">
           <i :class="getTemplateIcon(template)"></i>
         </div>
 
         <!-- Info -->
         <div class="template-card__info">
-          <h3 class="template-card__name">{{ template.name }}</h3>
+          <h3 class="template-card__name" :id="`template-name-${template.id}`">{{ template.name }}</h3>
           <p class="template-card__description">{{ template.description }}</p>
           <div class="template-card__meta">
-            <span class="template-card__audience" v-if="template.metadata?.audience_label">
-              <i :class="template.metadata?.icon || 'fa-solid fa-user'"></i>
-              {{ template.metadata.audience_label }}
+            <span class="template-card__persona" v-if="template.persona?.label">
+              <i :class="template.persona?.icon || 'fa-solid fa-user'" aria-hidden="true"></i>
+              {{ template.persona.label }}
             </span>
-            <span class="template-card__style" v-if="template.metadata?.style_label">
-              {{ template.metadata.style_label }}
+            <span class="template-card__use-case" v-if="template.use_case || template.persona?.use_case">
+              {{ template.use_case || template.persona?.use_case }}
+            </span>
+            <span class="template-card__layout" v-if="template.layout_variant || template.persona?.layout_variant">
+              {{ getLayoutLabel(template.layout_variant || template.persona?.layout_variant) }}
             </span>
           </div>
         </div>
 
         <!-- Select Button -->
-        <button class="template-card__select">
-          <i class="fa-solid fa-arrow-right"></i>
+        <button
+          class="template-card__select"
+          @click.stop="selectTemplate(template)"
+          :aria-label="`Use ${template.name} template`"
+          tabindex="-1"
+        >
+          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
           Use This Template
         </button>
       </div>
     </section>
 
     <!-- Empty State -->
-    <div v-if="filteredTemplates.length === 0" class="template-picker__empty">
-      <i class="fa-solid fa-search"></i>
+    <div v-if="filteredTemplates.length === 0" class="template-picker__empty" role="status" aria-live="polite">
+      <i class="fa-solid fa-search" aria-hidden="true"></i>
       <p>No templates match your filters</p>
       <button @click="resetFilters" class="template-picker__reset-btn">Show All Templates</button>
     </div>
 
     <!-- Footer -->
-    <footer class="template-picker__footer">
+    <footer class="template-picker__footer" role="contentinfo">
       <p>Free to create. Register only when you're ready to save.</p>
     </footer>
+
+    <!-- Screen reader announcements -->
+    <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">
+      {{ screenReaderAnnouncement }}
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import storageService from '../../services/StorageService';
 
 const emit = defineEmits(['template-selected', 'resume-session']);
@@ -140,48 +214,211 @@ const props = defineProps({
   }
 });
 
-// Filter state
-const activeAudienceFilter = ref('all');
-const activeStyleFilter = ref('all');
+// Filter state - Multi-dimensional filtering
+const activePersonaFilter = ref('all');
+const activeUseCaseFilter = ref('all');
+const activeLayoutFilter = ref('all');
 const hasBackup = ref(false);
 
-// Audience filter options
-const audienceFilters = [
-  { value: 'all', label: 'Anyone', icon: null },
-  { value: 'speaker', label: 'Speaker', icon: 'fa-solid fa-microphone' },
-  { value: 'author', label: 'Author', icon: 'fa-solid fa-book' },
-  { value: 'podcaster', label: 'Podcaster', icon: 'fa-solid fa-podcast' },
-  { value: 'creator', label: 'Creator', icon: 'fa-solid fa-video' },
-  { value: 'developer', label: 'Developer', icon: 'fa-solid fa-code' },
-  { value: 'executive', label: 'Executive', icon: 'fa-solid fa-user-tie' },
-  { value: 'professional', label: 'Professional', icon: 'fa-solid fa-briefcase' },
-  { value: 'creative', label: 'Creative', icon: 'fa-solid fa-palette' }
-];
+// Keyboard navigation state
+const focusedTemplateIndex = ref(0);
+const templateGridRef = ref(null);
+const templateCardRefs = ref([]);
+const screenReaderAnnouncement = ref('');
 
-// Style filter options
-const styleFilters = [
-  { value: 'all', label: 'All Styles' },
-  { value: 'classic', label: 'Classic' },
-  { value: 'bold', label: 'Bold' },
-  { value: 'minimal', label: 'Minimal' },
-  { value: 'modern', label: 'Modern' },
-  { value: 'dark', label: 'Dark' }
-];
+// Dynamic filter options from API manifest
+const filterManifest = ref(null);
+const isLoadingManifest = ref(false);
 
-// Filter templates
+// Layout variant labels for display (constant, defined once)
+const LAYOUT_LABELS = {
+  'standard': 'Standard',
+  'image-left': 'Image Left',
+  'image-right': 'Image Right',
+  'center-stack': 'Centered',
+  'split-layout': 'Split Screen',
+  'minimal': 'Minimal',
+  'bold': 'Bold'
+};
+
+/**
+ * Helper to extract unique filter options from templates
+ * @param {Function} keyExtractor - Function to extract the key from a template
+ * @param {Function} labelExtractor - Function to create the filter object
+ * @returns {Array} Array of unique filter options
+ */
+function extractUniqueFromTemplates(keyExtractor, labelExtractor) {
+  const seen = new Set();
+  const results = [];
+  props.templates.forEach(template => {
+    const value = keyExtractor(template);
+    if (value && !seen.has(value)) {
+      seen.add(value);
+      results.push(labelExtractor(template, value));
+    }
+  });
+  return results;
+}
+
+// Fetch filter manifest from API
+async function fetchFilterManifest() {
+  isLoadingManifest.value = true;
+  try {
+    const restUrl = window.gmkbData?.restUrl || '/wp-json/';
+    const response = await fetch(`${restUrl}gmkb/v1/filter-manifest`);
+    const data = await response.json();
+    if (data.success) {
+      filterManifest.value = data.manifest;
+    }
+  } catch (err) {
+    console.error('Failed to load filter manifest:', err);
+  } finally {
+    isLoadingManifest.value = false;
+  }
+}
+
+// Computed: Persona filter options (dynamic from manifest or fallback to templates)
+const personaFilters = computed(() => {
+  const filters = [{ value: 'all', label: 'All Personas', icon: null }];
+
+  if (filterManifest.value?.personas) {
+    filterManifest.value.personas.forEach(persona => {
+      filters.push({
+        value: persona.type,
+        label: persona.label,
+        icon: persona.icon
+      });
+    });
+  } else {
+    // Fallback: Extract from templates using helper
+    const extracted = extractUniqueFromTemplates(
+      template => template.persona?.type,
+      (template, value) => ({
+        value,
+        label: template.persona?.label || value,
+        icon: template.persona?.icon || 'fa-solid fa-user'
+      })
+    );
+    filters.push(...extracted);
+  }
+
+  return filters;
+});
+
+// Computed: Use Case filter options (dynamic based on selected persona)
+const useCaseFilters = computed(() => {
+  const filters = [{ value: 'all', label: 'All Use Cases' }];
+
+  if (filterManifest.value?.use_cases) {
+    // If a persona is selected, only show use cases available for that persona
+    if (activePersonaFilter.value !== 'all' && filterManifest.value?.manifest) {
+      const personaUseCases = filterManifest.value.manifest?.[activePersonaFilter.value];
+      if (personaUseCases) {
+        Object.keys(personaUseCases).forEach(useCase => {
+          filters.push({ value: useCase, label: useCase });
+        });
+      }
+    } else {
+      // Show all use cases
+      filterManifest.value.use_cases.forEach(useCase => {
+        filters.push({ value: useCase, label: useCase });
+      });
+    }
+  } else {
+    // Fallback: Extract from templates using helper
+    const extracted = extractUniqueFromTemplates(
+      template => template.use_case || template.persona?.use_case,
+      (template, value) => ({ value, label: value })
+    );
+    filters.push(...extracted);
+  }
+
+  return filters;
+});
+
+// Computed: Layout Variant filter options (dynamic based on selected persona + use case)
+const layoutFilters = computed(() => {
+  const filters = [{ value: 'all', label: 'All Layouts' }];
+
+  if (filterManifest.value?.layout_variants) {
+    // If persona and use case selected, filter layouts accordingly
+    if (activePersonaFilter.value !== 'all' && activeUseCaseFilter.value !== 'all' && filterManifest.value?.manifest) {
+      const personaManifest = filterManifest.value.manifest?.[activePersonaFilter.value];
+      const useCaseLayouts = personaManifest?.[activeUseCaseFilter.value];
+      if (useCaseLayouts) {
+        useCaseLayouts.forEach(layout => {
+          filters.push({ value: layout, label: LAYOUT_LABELS[layout] || layout });
+        });
+      }
+    } else if (activePersonaFilter.value !== 'all' && filterManifest.value?.manifest) {
+      // Show all layouts for selected persona
+      const personaManifest = filterManifest.value.manifest?.[activePersonaFilter.value];
+      if (personaManifest) {
+        const seenLayouts = new Set();
+        Object.values(personaManifest).forEach(layouts => {
+          layouts.forEach(layout => {
+            if (!seenLayouts.has(layout)) {
+              seenLayouts.add(layout);
+              filters.push({ value: layout, label: LAYOUT_LABELS[layout] || layout });
+            }
+          });
+        });
+      }
+    } else {
+      // Show all layouts
+      filterManifest.value.layout_variants.forEach(layout => {
+        filters.push({ value: layout, label: LAYOUT_LABELS[layout] || layout });
+      });
+    }
+  } else {
+    // Fallback: Extract from templates using helper
+    const extracted = extractUniqueFromTemplates(
+      template => template.layout_variant || template.persona?.layout_variant,
+      (template, value) => ({ value, label: LAYOUT_LABELS[value] || value })
+    );
+    filters.push(...extracted);
+  }
+
+  return filters;
+});
+
+// Reset dependent filters when parent filter changes
+watch(activePersonaFilter, () => {
+  activeUseCaseFilter.value = 'all';
+  activeLayoutFilter.value = 'all';
+});
+
+watch(activeUseCaseFilter, () => {
+  activeLayoutFilter.value = 'all';
+});
+
+// Filter templates - Multi-dimensional
 const filteredTemplates = computed(() => {
   return props.templates.filter(template => {
-    const audienceMatch = activeAudienceFilter.value === 'all' ||
-      template.metadata?.audience_type === activeAudienceFilter.value;
-    const styleMatch = activeStyleFilter.value === 'all' ||
-      template.metadata?.style_variant === activeStyleFilter.value;
-    return audienceMatch && styleMatch;
+    // Persona filter
+    const personaType = template.persona?.type;
+    const personaMatch = activePersonaFilter.value === 'all' || personaType === activePersonaFilter.value;
+
+    // Use Case filter
+    const useCase = template.use_case || template.persona?.use_case || 'General Bio';
+    const useCaseMatch = activeUseCaseFilter.value === 'all' || useCase === activeUseCaseFilter.value;
+
+    // Layout Variant filter
+    const layoutVariant = template.layout_variant || template.persona?.layout_variant || 'standard';
+    const layoutMatch = activeLayoutFilter.value === 'all' || layoutVariant === activeLayoutFilter.value;
+
+    return personaMatch && useCaseMatch && layoutMatch;
   });
 });
 
 // Get template icon
 function getTemplateIcon(template) {
-  return template.metadata?.icon || 'fa-solid fa-palette';
+  return template.persona?.icon || template.metadata?.icon || 'fa-solid fa-palette';
+}
+
+// Get human-readable layout label
+function getLayoutLabel(layoutVariant) {
+  return LAYOUT_LABELS[layoutVariant] || layoutVariant;
 }
 
 // Get preview style
@@ -214,17 +451,184 @@ function resumeSession() {
   window.location.href = currentUrl.toString();
 }
 
-// Reset filters
+// Reset all filters
 function resetFilters() {
-  activeAudienceFilter.value = 'all';
-  activeStyleFilter.value = 'all';
+  activePersonaFilter.value = 'all';
+  activeUseCaseFilter.value = 'all';
+  activeLayoutFilter.value = 'all';
 }
 
-// Check for existing backup on mount
+// Check for existing backup on mount and fetch filter manifest
 onMounted(() => {
   const backup = storageService.get('gmkb_anonymous_backup');
   hasBackup.value = !!backup;
+
+  // Fetch the filter manifest for dynamic filtering
+  fetchFilterManifest();
 });
+
+// Reset focused index when filters change
+watch(filteredTemplates, () => {
+  focusedTemplateIndex.value = 0;
+  templateCardRefs.value = [];
+});
+
+/**
+ * Calculate grid columns based on container width
+ * Used for arrow key navigation to move up/down rows
+ */
+function getGridColumns() {
+  if (!templateGridRef.value) return 3;
+  const containerWidth = templateGridRef.value.offsetWidth;
+  const cardMinWidth = 320;
+  const gap = 24;
+  return Math.max(1, Math.floor((containerWidth + gap) / (cardMinWidth + gap)));
+}
+
+/**
+ * Focus a template card by index
+ */
+function focusTemplateCard(index) {
+  if (index < 0 || index >= filteredTemplates.value.length) return;
+  focusedTemplateIndex.value = index;
+  nextTick(() => {
+    const card = templateCardRefs.value[index];
+    if (card) {
+      card.focus();
+      announceTemplate(filteredTemplates.value[index]);
+    }
+  });
+}
+
+/**
+ * Announce template to screen readers
+ */
+function announceTemplate(template) {
+  const parts = [template.name];
+  if (template.persona?.label) parts.push(template.persona.label);
+  if (template.description) parts.push(template.description);
+  screenReaderAnnouncement.value = parts.join('. ');
+}
+
+/**
+ * Handle keyboard navigation within the template grid
+ */
+function handleGridKeydown(event) {
+  const { key } = event;
+  const totalTemplates = filteredTemplates.value.length;
+  if (totalTemplates === 0) return;
+
+  const columns = getGridColumns();
+  let newIndex = focusedTemplateIndex.value;
+
+  switch (key) {
+    case 'ArrowRight':
+      event.preventDefault();
+      newIndex = Math.min(totalTemplates - 1, focusedTemplateIndex.value + 1);
+      break;
+    case 'ArrowLeft':
+      event.preventDefault();
+      newIndex = Math.max(0, focusedTemplateIndex.value - 1);
+      break;
+    case 'ArrowDown':
+      event.preventDefault();
+      newIndex = Math.min(totalTemplates - 1, focusedTemplateIndex.value + columns);
+      break;
+    case 'ArrowUp':
+      event.preventDefault();
+      newIndex = Math.max(0, focusedTemplateIndex.value - columns);
+      break;
+    case 'Home':
+      event.preventDefault();
+      newIndex = 0;
+      break;
+    case 'End':
+      event.preventDefault();
+      newIndex = totalTemplates - 1;
+      break;
+    default:
+      return;
+  }
+
+  if (newIndex !== focusedTemplateIndex.value) {
+    focusTemplateCard(newIndex);
+  }
+}
+
+/**
+ * Handle keyboard navigation within filter tabs (left/right arrows)
+ */
+function handleFilterKeydown(event, filterType, currentIndex) {
+  const { key } = event;
+  let filters;
+  let setFilter;
+
+  switch (filterType) {
+    case 'persona':
+      filters = personaFilters.value;
+      setFilter = (val) => { activePersonaFilter.value = val; };
+      break;
+    case 'usecase':
+      filters = useCaseFilters.value;
+      setFilter = (val) => { activeUseCaseFilter.value = val; };
+      break;
+    case 'layout':
+      filters = layoutFilters.value;
+      setFilter = (val) => { activeLayoutFilter.value = val; };
+      break;
+    default:
+      return;
+  }
+
+  let newIndex = currentIndex;
+
+  switch (key) {
+    case 'ArrowRight':
+    case 'ArrowDown':
+      event.preventDefault();
+      newIndex = (currentIndex + 1) % filters.length;
+      break;
+    case 'ArrowLeft':
+    case 'ArrowUp':
+      event.preventDefault();
+      newIndex = (currentIndex - 1 + filters.length) % filters.length;
+      break;
+    case 'Home':
+      event.preventDefault();
+      newIndex = 0;
+      break;
+    case 'End':
+      event.preventDefault();
+      newIndex = filters.length - 1;
+      break;
+    default:
+      return;
+  }
+
+  if (newIndex !== currentIndex) {
+    setFilter(filters[newIndex].value);
+    nextTick(() => {
+      const tabId = `${filterType}-tab-${filters[newIndex].value}`;
+      document.getElementById(tabId)?.focus();
+    });
+  }
+}
+
+/**
+ * Global keyboard handler for Escape key
+ */
+function handleGlobalKeydown(event) {
+  if (event.key === 'Escape') {
+    // Reset filters on Escape
+    if (activePersonaFilter.value !== 'all' ||
+        activeUseCaseFilter.value !== 'all' ||
+        activeLayoutFilter.value !== 'all') {
+      event.preventDefault();
+      resetFilters();
+      screenReaderAnnouncement.value = 'Filters reset. Showing all templates.';
+    }
+  }
+}
 </script>
 
 <style scoped>
@@ -348,9 +752,25 @@ onMounted(() => {
 }
 
 .filter-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: 14px;
   font-weight: 600;
   color: #1e293b;
+}
+
+.filter-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #3b82f6;
+  background: #eff6ff;
+  border-radius: 50%;
 }
 
 .filter-tabs {
@@ -383,6 +803,38 @@ onMounted(() => {
   background: #3b82f6;
   color: white;
   border-color: #3b82f6;
+}
+
+.filter-tab--secondary {
+  background: #f0fdf4;
+  color: #059669;
+}
+
+.filter-tab--secondary:hover {
+  background: #dcfce7;
+  color: #059669;
+}
+
+.filter-tab--secondary.active {
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
+}
+
+.filter-tab--layout {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.filter-tab--layout:hover {
+  background: #fde68a;
+  color: #d97706;
+}
+
+.filter-tab--layout.active {
+  background: #f59e0b;
+  color: white;
+  border-color: #f59e0b;
 }
 
 .filter-tab i {
@@ -490,20 +942,38 @@ onMounted(() => {
 .template-card__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 6px;
 }
 
-.template-card__audience,
-.template-card__style {
+.template-card__persona,
+.template-card__use-case,
+.template-card__layout {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
-  color: #94a3b8;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
 }
 
-.template-card__audience i {
-  font-size: 12px;
+.template-card__persona {
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+.template-card__persona i {
+  font-size: 11px;
+}
+
+.template-card__use-case {
+  background: #f0fdf4;
+  color: #059669;
+}
+
+.template-card__layout {
+  background: #fef3c7;
+  color: #d97706;
 }
 
 .template-card__select {
@@ -591,6 +1061,12 @@ onMounted(() => {
   .template-picker__actions {
     flex-direction: column;
     gap: 12px;
+    width: 100%;
+  }
+
+  .template-picker__resume-btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .template-picker__hero {
@@ -618,8 +1094,9 @@ onMounted(() => {
   }
 
   .filter-tab {
-    padding: 8px 14px;
+    padding: 10px 16px; /* Larger touch target */
     font-size: 13px;
+    min-height: 44px; /* iOS minimum touch target */
   }
 
   .template-picker__grid {
@@ -635,6 +1112,88 @@ onMounted(() => {
   .template-card__select {
     opacity: 1;
     transform: translateY(0);
+    min-height: 52px; /* Larger touch target */
   }
+}
+
+/* Touch-friendly styles for touch devices */
+@media (hover: none) and (pointer: coarse) {
+  /* Remove hover-only effects on touch devices */
+  .template-card:hover {
+    transform: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Use active state for touch feedback */
+  .template-card:active {
+    transform: scale(0.98);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Always show select button on touch */
+  .template-card__select {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Touch feedback for filter tabs */
+  .filter-tab:active {
+    transform: scale(0.95);
+  }
+
+  /* Touch feedback for buttons */
+  .template-picker__resume-btn:active,
+  .template-picker__reset-btn:active {
+    transform: scale(0.98);
+  }
+}
+
+/* Focus styles for keyboard navigation */
+.template-card:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px #3b82f6, 0 12px 40px rgba(0, 0, 0, 0.12);
+  transform: translateY(-4px);
+}
+
+.template-card:focus .template-card__select {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.template-card.is-focused {
+  box-shadow: 0 0 0 3px #3b82f6, 0 12px 40px rgba(0, 0, 0, 0.12);
+}
+
+.filter-tab:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #3b82f6;
+}
+
+.filter-tab:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.template-picker__reset-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+}
+
+.template-picker__resume-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.5);
+}
+
+/* Screen reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 </style>

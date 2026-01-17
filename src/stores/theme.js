@@ -452,6 +452,27 @@ export const useThemeStore = defineStore('theme', {
       this.activePanel = THEME_CUSTOMIZER_PANEL_IDS.includes(panel) ? panel : fallbackPanel;
     },
     
+    /**
+     * CARRD-LIKE UX: Preview a theme without committing
+     * Applies visual changes only - does not update state or save
+     * Used for hover preview in theme selector
+     *
+     * @param {string} themeId - Theme ID to preview
+     */
+    previewTheme(themeId) {
+      const theme = this.allThemes.find(t => t.id === themeId);
+      if (theme) {
+        // Only apply visual changes via ThemeStyleInjector
+        // Do NOT update activeThemeId or sync to mediaKit store
+        try {
+          ThemeStyleInjector.applyTheme(theme, themeId);
+          console.log('[Theme Store] 👁️ Preview theme applied:', themeId);
+        } catch (error) {
+          console.error('[Theme Store] Failed to preview theme:', error);
+        }
+      }
+    },
+
     // Select a theme
     selectTheme(themeId) {
       console.log('[Theme Store] selectTheme called with:', themeId);

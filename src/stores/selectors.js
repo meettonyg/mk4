@@ -122,17 +122,17 @@ export function createStoreSelectors(store) {
             return stats;
         }, 'getComponentTypeStats'),
         
-        // Pods data selectors
+        // Profile data selectors
         getPodsField: memoize((field) => {
-            return store.podsData?.[field] || null;
+            return store.profileData?.[field] || null;
         }, 'getPodsField'),
         
         getPodsFieldsCount: memoize(() => {
-            return store.podsData ? Object.keys(store.podsData).length : 0;
+            return store.profileData ? Object.keys(store.profileData).length : 0;
         }, 'getPodsFieldsCount'),
         
         hasPodsData: memoize(() => {
-            return store.podsData && Object.keys(store.podsData).length > 0;
+            return store.profileData && Object.keys(store.profileData).length > 0;
         }, 'hasPodsData'),
         
         // Theme selectors

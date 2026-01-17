@@ -669,10 +669,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick, toRef } from 'vue';
 import { useAIQuestions, QUESTION_CATEGORIES } from '../../src/composables/useAIQuestions';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
+import { useProfileSelectionHandler } from '../../src/composables/useProfileSelectionHandler';
 import { useProfilePrePopulation } from '../../src/composables/useProfilePrePopulation';
 import { useDraftState } from '../../src/composables/useDraftState';
 import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
@@ -860,18 +861,9 @@ const authorityHook = reactive({
 // PROFILE SELECTOR HANDLERS
 // ===========================================
 /**
- * Handle profile selected from ProfileSelector (standalone mode)
+ * Clear profile-specific data when profile is deselected
  */
-function handleProfileSelected({ data }) {
-  if (data && props.mode === 'default') {
-    populateFromProfile(data);
-  }
-}
-
-/**
- * Handle profile cleared from ProfileSelector (standalone mode)
- */
-function handleProfileCleared() {
+function clearProfileData() {
   // Clear topics loaded from profile when profile is deselected
   profileTopics.value = [];
   selectedTopicIndex.value = -1;
@@ -879,6 +871,14 @@ function handleProfileCleared() {
   // Clear prefilled fields tracking
   prefilledFields.value = new Set();
 }
+
+// Profile selection handlers (using shared composable)
+const { handleProfileSelected, handleProfileCleared } = useProfileSelectionHandler({
+  profileIdRef: selectedProfileId,
+  onDataLoaded: populateFromProfile,
+  onCleared: clearProfileData,
+  mode: toRef(props, 'mode'),
+});
 
 // ===========================================
 // STEP 3: CUSTOMIZE DETAILS STATE
@@ -1346,10 +1346,10 @@ const handleSaveToMediaKit = async () => {
     saveError.value = null;
 
     try {
-      // Build question fields object (question_1 through question_10)
+      // Build question fields object (question_1 through question_25)
       const questionFields = {};
       savedQuestions.forEach((question, index) => {
-        if (index < 10) { // Max 10 questions
+        if (index < 25) { // Max 25 questions per meta.json
           questionFields[`question_${index + 1}`] = question;
         }
       });
@@ -1509,6 +1509,44 @@ watch(
 .gfy-highlight-box--green {
   border-left: 4px solid #10b981;
   background: #ecfdf5;
+}
+
+/* Actions wrapper - ensure full width and centered content */
+.gfy-actions-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  width: 100%;
+}
+
+.gfy-btn--generate {
+  width: 100%;
+  max-width: 400px;
+  padding: 14px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  background: var(--mkcg-primary, #3b82f6);
+  color: white;
+  border: none;
+  border-radius: var(--mkcg-radius, 8px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.gfy-btn--generate:hover:not(:disabled) {
+  background: var(--mkcg-primary-dark, #2563eb);
+}
+
+.gfy-btn--generate:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .gfy-form-hint {

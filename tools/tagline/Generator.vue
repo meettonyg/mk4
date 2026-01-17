@@ -9,113 +9,86 @@
     :has-results="hasTaglines"
     :is-loading="isGenerating"
   >
-    <!-- Profile Selector (for logged-in users, only shown in standalone mode) -->
-    <template #profile-context>
-      <ProfileSelector
-        @profile-selected="handleProfileSelected"
-        @profile-cleared="handleProfileCleared"
-      />
-
-      <!-- Draft Restore Prompt -->
-      <div v-if="showDraftPrompt" class="gfy-draft-prompt">
-        <div class="gfy-draft-prompt__content">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="16" y1="13" x2="8" y2="13"/>
-            <line x1="16" y1="17" x2="8" y2="17"/>
-            <polyline points="10 9 9 9 8 9"/>
-          </svg>
-          <div>
-            <strong>Restore your draft?</strong>
-            <p>You have an unsaved draft from {{ getLastSavedText() }}</p>
-          </div>
-        </div>
-        <div class="gfy-draft-prompt__actions">
-          <button type="button" class="gfy-btn gfy-btn--primary gfy-btn--small" @click="restoreFromDraft(loadDraft())">
-            Restore
-          </button>
-          <button type="button" class="gfy-btn gfy-btn--outline gfy-btn--small" @click="dismissDraftPrompt">
-            Discard
-          </button>
-        </div>
-      </div>
-
-      <!-- History Toggle -->
-      <div v-if="hasHistory" class="gfy-history">
-        <button
-          type="button"
-          class="gfy-history__toggle"
-          @click="showHistory = !showHistory"
-          aria-expanded="showHistory"
-          aria-controls="tagline-history-panel"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12 6 12 12 16 14"/>
-          </svg>
-          Recent Generations ({{ history.length }})
-          <svg
-            class="gfy-history__chevron"
-            :class="{ 'gfy-history__chevron--open': showHistory }"
-            width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          >
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        </button>
-        <div v-if="showHistory" id="tagline-history-panel" class="gfy-history__panel">
-          <div class="gfy-history__list">
-            <div v-for="entry in history" :key="entry.id" class="gfy-history__item">
-              <div class="gfy-history__item-content">
-                <span class="gfy-history__item-preview">{{ entry.preview }}</span>
-                <span class="gfy-history__item-time">{{ formatTimestamp(entry.timestamp) }}</span>
-              </div>
-              <div class="gfy-history__item-actions">
-                <button
-                  type="button"
-                  class="gfy-history__action-btn gfy-history__action-btn--primary"
-                  title="Restore inputs"
-                  aria-label="Restore inputs from this generation"
-                  @click="restoreFromHistory(entry)"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="1 4 1 10 7 10"/>
-                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  class="gfy-history__action-btn gfy-history__action-btn--danger"
-                  title="Delete"
-                  aria-label="Delete this history entry"
-                  @click="removeFromHistory(entry.id)"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="3 6 5 6 21 6"/>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-          <button type="button" class="gfy-history__clear-btn" @click="clearHistory">
-            Clear All History
-          </button>
-        </div>
-      </div>
-
-      <!-- Auto-save indicator -->
-      <div v-if="isAutoSaving" class="gfy-auto-save-indicator">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin">
-          <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"/>
-        </svg>
-        Saving draft...
-      </div>
-    </template>
-
     <!-- Left Panel: Form -->
     <template #left>
       <div class="gmkb-plg-tool-embed">
+        <!-- Profile Selector (for logged-in users in standalone mode) -->
+        <ProfileSelector
+          @profile-selected="handleProfileSelected"
+          @profile-cleared="handleProfileCleared"
+        />
+
+        <!-- Auto-save indicator -->
+        <div v-if="isAutoSaving" class="gfy-auto-save-indicator">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin">
+            <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"/>
+          </svg>
+          Saving draft...
+        </div>
+
+        <!-- History Toggle -->
+        <div v-if="hasHistory" class="gfy-history">
+          <button
+            type="button"
+            class="gfy-history__toggle"
+            @click="showHistory = !showHistory"
+            aria-expanded="showHistory"
+            aria-controls="tagline-history-panel"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            Recent Generations ({{ history.length }})
+            <svg
+              class="gfy-history__chevron"
+              :class="{ 'gfy-history__chevron--open': showHistory }"
+              width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            >
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+          <div v-if="showHistory" id="tagline-history-panel" class="gfy-history__panel">
+            <div class="gfy-history__list">
+              <div v-for="entry in history" :key="entry.id" class="gfy-history__item">
+                <div class="gfy-history__item-content">
+                  <span class="gfy-history__item-preview">{{ entry.preview }}</span>
+                  <span class="gfy-history__item-time">{{ formatTimestamp(entry.timestamp) }}</span>
+                </div>
+                <div class="gfy-history__item-actions">
+                  <button
+                    type="button"
+                    class="gfy-history__action-btn gfy-history__action-btn--primary"
+                    title="Restore inputs"
+                    aria-label="Restore inputs from this generation"
+                    @click="restoreFromHistory(entry)"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="1 4 1 10 7 10"/>
+                      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    class="gfy-history__action-btn gfy-history__action-btn--danger"
+                    title="Delete"
+                    aria-label="Delete this history entry"
+                    @click="removeFromHistory(entry.id)"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="gfy-history__clear-btn" @click="clearHistory">
+              Clear All History
+            </button>
+          </div>
+        </div>
+
         <!-- Form Progress Indicator -->
         <div class="gfy-form-progress" :class="{ 'gfy-form-progress--complete': formCompletion.isComplete }">
           <div class="gfy-form-progress__header">
@@ -131,51 +104,33 @@
           </div>
         </div>
 
-        <!-- Intent Tabs -->
-        <div class="gfy-intent-tabs">
-          <button
-            v-for="option in INTENT_OPTIONS"
-            :key="option.value"
-            type="button"
-            class="gfy-intent-tab"
-            :class="{ 'active': intent === option.value }"
-            @click="intent = option.value"
-          >
-            {{ option.label }}
-          </button>
-        </div>
-
         <!-- STEP 1: Authority Framework -->
         <div class="gfy-form-section">
           <h3 class="gfy-form-section__title">Step 1: Your Authority Framework</h3>
 
-          <!-- Authority Hook Box -->
-          <div class="gfy-highlight-box gfy-highlight-box--blue">
-            <AuthorityHookBuilder
-              :model-value="authorityHook"
-              @update:model-value="Object.assign(authorityHook, $event)"
-              title="Your Authority Hook"
-              :placeholders="{
-                who: 'e.g. SaaS Founders',
-                what: 'e.g. Scale to 7-figures',
-                when: 'e.g. Feeling plateaued',
-                how: 'e.g. 90-day framework'
-              }"
-            />
-          </div>
+          <!-- Authority Hook Builder (component has its own styling) -->
+          <AuthorityHookBuilder
+            :model-value="authorityHook"
+            @update:model-value="Object.assign(authorityHook, $event)"
+            title="Your Authority Hook"
+            :placeholders="{
+              who: 'e.g. SaaS Founders',
+              what: 'e.g. Scale to 7-figures',
+              when: 'e.g. Feeling plateaued',
+              how: 'e.g. 90-day framework'
+            }"
+          />
 
-          <!-- Impact Intro Box -->
-          <div class="gfy-highlight-box gfy-highlight-box--green">
-            <ImpactIntroBuilder
-              :model-value="impactIntro"
-              @update:model-value="Object.assign(impactIntro, $event)"
-              title="Your Impact Intro"
-              :placeholders="{
-                where: 'e.g. Helped 200+ startups achieve milestones',
-                why: 'e.g. Democratize elite growth strategies'
-              }"
-            />
-          </div>
+          <!-- Impact Intro Builder (component has its own styling) -->
+          <ImpactIntroBuilder
+            :model-value="impactIntro"
+            @update:model-value="Object.assign(impactIntro, $event)"
+            title="Your Impact Intro"
+            :placeholders="{
+              where: 'e.g. Helped 200+ startups achieve milestones',
+              why: 'e.g. Democratize elite growth strategies'
+            }"
+          />
         </div>
 
         <!-- Section Divider -->
@@ -252,11 +207,26 @@
           </div>
         </div>
 
-        <!-- Generate Button -->
-        <div class="gfy-form-actions">
+        <!-- Actions & Restore Link -->
+        <div class="gfy-actions-wrapper">
+          <!-- Restore Link (subtle text link) -->
+          <button
+            v-if="showDraftPrompt"
+            type="button"
+            class="gfy-restore-link"
+            @click="restoreFromDraft(loadDraft()); showDraftPrompt = false"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 4v6h6"/>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+            </svg>
+            Unsaved changes found. <strong>Restore?</strong>
+          </button>
+
+          <!-- Main Generate Button -->
           <button
             type="button"
-            class="gfy-btn gfy-btn--primary"
+            class="gfy-btn gfy-btn--generate"
             :class="{ 'gfy-btn--loading': isGenerating }"
             :disabled="!canGenerate || isGenerating"
             @click="handleGenerate"
@@ -612,10 +582,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, toRef } from 'vue';
 import { useAITagline, STYLE_FOCUS_OPTIONS, TONE_OPTIONS, INTENT_OPTIONS } from '../../src/composables/useAITagline';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
+import { useProfileSelectionHandler } from '../../src/composables/useProfileSelectionHandler';
 import { useDraftState } from '../../src/composables/useDraftState';
 import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 
@@ -990,22 +961,12 @@ function populateFromProfile(profileData) {
   loadFromProfileData(profileData);
 }
 
-/**
- * Handle profile selected from ProfileSelector (standalone mode)
- */
-function handleProfileSelected({ data }) {
-  if (data && props.mode === 'default') {
-    populateFromProfile(data);
-  }
-}
-
-/**
- * Handle profile cleared from ProfileSelector (standalone mode)
- */
-function handleProfileCleared() {
-  // Optionally clear form fields when profile is deselected
-  // For now, we keep the existing data to avoid losing user input
-}
+// Profile selection handlers (using shared composable)
+const { handleProfileSelected, handleProfileCleared } = useProfileSelectionHandler({
+  profileIdRef: selectedProfileId,
+  onDataLoaded: populateFromProfile,
+  mode: toRef(props, 'mode'),
+});
 
 /**
  * Get current form state for draft saving

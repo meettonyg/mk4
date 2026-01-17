@@ -1,0 +1,261 @@
+{
+  "template_id": "speaker-minimal",
+  "template_name": "Speaker: Minimal",
+  "version": "1.0.0",
+  "description": "Clean, distraction-free layout for speakers. Gets straight to the point with essential info event planners need. Perfect for busy bookers.",
+  "persona": {
+    "type": "speaker",
+    "label": "Speakers & Trainers",
+    "icon": "fa-solid fa-microphone",
+    "use_case": "General Bio",
+    "layout_variant": "minimal",
+    "use_cases": [
+      "Keynote speakers",
+      "Corporate trainers",
+      "TEDx speakers",
+      "Conference presenters",
+      "Workshop facilitators"
+    ]
+  },
+  "metadata": {
+    "tags": [
+      "speaker",
+      "keynote",
+      "trainer",
+      "presentation",
+      "conference",
+      "workshop",
+      "minimal"
+    ],
+    "is_premium": false,
+    "sort_order": 22,
+    "recommended_themes": [
+      "minimal-elegant",
+      "professional-clean",
+      "modern-light"
+    ]
+  },
+  "preview_image": "preview.svg",
+  "sections": [
+    {
+      "id": "hero-section",
+      "type": "two_column",
+      "background": "light",
+      "columns": {
+        "1": [
+          {
+            "type": "profile-photo",
+            "settings": {
+              "style": "square",
+              "size": "medium"
+            },
+            "data": {
+              "alt": "Speaker headshot"
+            }
+          }
+        ],
+        "2": [
+          {
+            "type": "hero",
+            "settings": {
+              "layout": "left_aligned",
+              "showImage": false,
+              "showCTA": false,
+              "style": "minimal"
+            },
+            "data": {
+              "headline": "Your Name",
+              "subheadline": "Keynote Speaker",
+              "description": "500+ keynotes delivered. Helping organizations transform through powerful storytelling and actionable insights."
+            }
+          },
+          {
+            "type": "social",
+            "settings": {
+              "layout": "horizontal",
+              "showLabels": false,
+              "iconSize": "small"
+            },
+            "data": {}
+          }
+        ],
+        "ratio": "35-65"
+      }
+    },
+    {
+      "id": "stats-section",
+      "type": "full_width",
+      "background": "surface",
+      "components": [
+        {
+          "type": "stats",
+          "settings": {
+            "layout": "inline",
+            "columns": 4,
+            "showIcons": false,
+            "style": "minimal",
+            "separator": "dot"
+          },
+          "data": {
+            "stats": [
+              {
+                "value": "500+",
+                "label": "Keynotes"
+              },
+              {
+                "value": "100K+",
+                "label": "Attendees"
+              },
+              {
+                "value": "25+",
+                "label": "Countries"
+              },
+              {
+                "value": "98%",
+                "label": "Satisfaction"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "topics-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "topics",
+          "settings": {
+            "layout": "tags",
+            "showDescriptions": false,
+            "showIcons": false,
+            "style": "pills"
+          },
+          "data": {
+            "title": "Speaking Topics",
+            "topics": [
+              {
+                "title": "Leadership"
+              },
+              {
+                "title": "Innovation"
+              },
+              {
+                "title": "Team Building"
+              },
+              {
+                "title": "Digital Transformation"
+              },
+              {
+                "title": "Culture"
+              },
+              {
+                "title": "Strategy"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "bio-section",
+      "type": "full_width",
+      "background": "surface",
+      "components": [
+        {
+          "type": "biography",
+          "settings": {
+            "style": "minimal",
+            "showTitle": true,
+            "maxWidth": "680px",
+            "alignment": "center"
+          },
+          "data": {
+            "title": "About",
+            "biography": "A concise bio covering your expertise, notable clients, and what makes your presentations unique. Event planners want to know: what will their audience take away?\n\nInclude 2-3 sentences about your background and speaking style."
+          }
+        }
+      ]
+    },
+    {
+      "id": "video-section",
+      "type": "full_width",
+      "components": [
+        {
+          "type": "video-intro",
+          "settings": {
+            "autoplay": false,
+            "showControls": true,
+            "aspectRatio": "16:9",
+            "style": "minimal",
+            "maxWidth": "720px"
+          },
+          "data": {
+            "title": "Speaker Reel",
+            "video_url": "",
+            "thumbnail": ""
+          }
+        }
+      ]
+    },
+    {
+      "id": "testimonials-section",
+      "type": "full_width",
+      "background": "surface",
+      "components": [
+        {
+          "type": "testimonials",
+          "settings": {
+            "layout": "stacked",
+            "showPhotos": false,
+            "showCompany": true,
+            "quoteStyle": "minimal",
+            "maxWidth": "680px"
+          },
+          "data": {
+            "title": "Reviews",
+            "testimonials": [
+              {
+                "quote": "One of the most impactful speakers we've ever had.",
+                "author": "Event Director",
+                "company": "Organization Name"
+              },
+              {
+                "quote": "Incredible energy and actionable takeaways.",
+                "author": "VP of Learning",
+                "company": "Company Name"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "contact-section",
+      "type": "full_width",
+      "background": "dark",
+      "components": [
+        {
+          "type": "contact",
+          "settings": {
+            "style": "minimal",
+            "fields": [
+              "name",
+              "email",
+              "organization",
+              "event_date",
+              "message"
+            ],
+            "showLabels": true,
+            "maxWidth": "520px"
+          },
+          "data": {
+            "title": "Check Availability",
+            "subtitle": "I respond within 24 hours",
+            "button_text": "Send Inquiry"
+          }
+        }
+      ]
+    }
+  ]
+}

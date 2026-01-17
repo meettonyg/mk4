@@ -72,6 +72,12 @@ class GMKB_REST_Template_Controller {
             'permission_callback' => '__return_true',
         ));
 
+        register_rest_route(self::NAMESPACE, '/filter-manifest', array(
+            'methods'             => WP_REST_Server::READABLE,
+            'callback'            => array($this, 'get_filter_manifest'),
+            'permission_callback' => '__return_true',
+        ));
+
         // Themes (visual styles)
         register_rest_route(self::NAMESPACE, '/themes', array(
             'methods'             => WP_REST_Server::READABLE,
@@ -168,11 +174,14 @@ class GMKB_REST_Template_Controller {
         $templates = array();
 
         foreach ($discovery->getTemplates() as $id => $template) {
+            $persona = $template['persona'] ?? array();
             $templates[] = array(
                 'id'                 => $id,
                 'name'               => $template['template_name'] ?? $id,
                 'description'        => $template['description'] ?? '',
-                'persona'            => $template['persona'] ?? null,
+                'persona'            => $persona,
+                'use_case'           => $persona['use_case'] ?? 'General Bio',
+                'layout_variant'     => $persona['layout_variant'] ?? 'standard',
                 'preview_url'        => $template['preview_url'] ?? null,
                 'tags'               => $template['metadata']['tags'] ?? array(),
                 'is_premium'         => $template['metadata']['is_premium'] ?? false,
@@ -216,6 +225,20 @@ class GMKB_REST_Template_Controller {
         return rest_ensure_response(array(
             'success'  => true,
             'personas' => $discovery->getPersonaTypes(),
+        ));
+    }
+
+    /**
+     * GET /filter-manifest
+     * Get multi-dimensional filter manifest for template picker
+     */
+    public function get_filter_manifest($request) {
+        $discovery = $this->get_template_discovery();
+        $manifest = $discovery->getFilterManifest();
+
+        return rest_ensure_response(array(
+            'success'  => true,
+            'manifest' => $manifest,
         ));
     }
 

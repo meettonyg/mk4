@@ -13,6 +13,7 @@ import { useMediaKitStore } from './mediaKit';
 import { useThemeStore } from './theme';
 import { useUIStore } from './ui';
 import { mergeWithDefaults } from '../utils/componentSchema';
+import profileDataIntegration from '../core/ProfileDataIntegration.js';
 
 export const useTemplateStore = defineStore('templates', {
     state: () => ({
@@ -154,7 +155,8 @@ export const useTemplateStore = defineStore('templates', {
             this.error = null;
 
             try {
-                const response = await this._fetchWithAuth('gmkb/v1/templates');
+                // Fetch starter templates (built-in)
+                const response = await this._fetchWithAuth('gmkb/v1/starter-templates');
 
                 if (!response.ok) {
                     throw new Error(`Failed to fetch templates: ${response.status}`);
@@ -163,10 +165,24 @@ export const useTemplateStore = defineStore('templates', {
                 const data = await response.json();
 
                 if (data.success) {
-                    // Separate built-in and user templates
-                    this.templates = data.templates.filter(t => t.type === 'built_in');
-                    this.userTemplates = data.templates.filter(t => t.type === 'user');
-                    console.log('✅ Templates loaded:', this.templates.length, 'built-in,', this.userTemplates.length, 'user');
+                    // All starter templates are built-in
+                    this.templates = data.templates.map(t => ({ ...t, type: 'built_in' }));
+                    console.log('✅ Starter templates loaded:', this.templates.length);
+
+                    // Optionally fetch user templates (if logged in)
+                    try {
+                        const userResponse = await this._fetchWithAuth('gmkb/v1/user-templates');
+                        if (userResponse.ok) {
+                            const userData = await userResponse.json();
+                            if (userData.success) {
+                                this.userTemplates = userData.templates.map(t => ({ ...t, type: 'user' }));
+                                console.log('✅ User templates loaded:', this.userTemplates.length);
+                            }
+                        }
+                    } catch (userErr) {
+                        // User templates are optional - don't fail if not logged in
+                        console.log('ℹ️ User templates not available (user may not be logged in)');
+                    }
                 } else {
                     throw new Error(data.message || 'Unknown error');
                 }
@@ -212,7 +228,7 @@ export const useTemplateStore = defineStore('templates', {
          */
         async fetchTemplate(templateId) {
             try {
-                const response = await this._fetchWithAuth(`gmkb/v1/templates/${templateId}`);
+                const response = await this._fetchWithAuth(`gmkb/v1/starter-templates/${templateId}`);
 
                 if (!response.ok) {
                     throw new Error(`Failed to fetch template: ${response.status}`);
@@ -234,6 +250,10 @@ export const useTemplateStore = defineStore('templates', {
         /**
          * CRITICAL: Initialize builder from a template
          * Generates fresh UUIDs for all sections/components
+         *
+         * IMPORTANT: This method handles two different template structures:
+         * - Starter templates: sections at root level (template.sections)
+         * - User templates: sections nested (template.defaultContent.sections or template.content.defaultContent.sections)
          */
         async initializeFromTemplate(templateId) {
             const mediaKitStore = useMediaKitStore();
@@ -254,8 +274,8 @@ export const useTemplateStore = defineStore('templates', {
                 mediaKitStore.sections = [];
                 mediaKitStore.components = {};
 
-                // 3. Apply theme styles
-                const themeId = template.theme_id || template.id || templateId;
+                // 3. Apply theme styles (fall back to 'professional_clean' for starter templates)
+                const themeId = template.theme_id || template.theme || 'professional_clean';
                 themeStore.selectTheme(themeId);
 
                 // 4. Apply theme customizations if present
@@ -263,11 +283,20 @@ export const useTemplateStore = defineStore('templates', {
                     mediaKitStore.themeCustomizations = template.themeCustomizations;
                 }
 
-                // 5. Instantiate defaultContent with fresh IDs
-                const defaultContent = template.defaultContent;
+                // 5. CRITICAL FIX: Resolve sections from different possible structures
+                // - Starter templates (flat): sections at root level
+                // - User templates (nested): sections inside defaultContent
+                const sectionsSource = template.sections ||
+                                       template.defaultContent?.sections ||
+                                       template.content?.defaultContent?.sections;
 
-                if (defaultContent?.sections) {
-                    for (const sectionDef of defaultContent.sections) {
+                if (!sectionsSource || !Array.isArray(sectionsSource)) {
+                    throw new Error('Template data structure invalid: No sections found. Expected template.sections, template.defaultContent.sections, or template.content.defaultContent.sections');
+                }
+
+                // 6. Instantiate sections with fresh IDs
+                if (sectionsSource.length > 0) {
+                    for (const sectionDef of sectionsSource) {
                         const sectionId = this._generateId('sec');
 
                         const section = {
@@ -287,6 +316,13 @@ export const useTemplateStore = defineStore('templates', {
                                 const compId = this._generateId('comp');
                                 section.components.push(compId);
 
+                                // CARRD-LIKE UX: Merge template data with profile data
+                                // This personalizes templates with user's existing data
+                                const mergedData = this._mergeWithProfileData(
+                                    compDef.type,
+                                    compDef.data || {}
+                                );
+
                                 // ROOT FIX: Merge template settings with DEFAULT_SETTINGS
                                 // This ensures components have proper style/advanced structure
                                 mediaKitStore.components[compId] = {
@@ -294,7 +330,7 @@ export const useTemplateStore = defineStore('templates', {
                                     type: compDef.type,
                                     section_id: sectionId,
                                     settings: mergeWithDefaults(compDef.settings || {}),
-                                    data: compDef.data || {},
+                                    data: mergedData,
                                     customization: {}
                                 };
                             }
@@ -319,6 +355,13 @@ export const useTemplateStore = defineStore('templates', {
                                     const compId = this._generateId('comp');
                                     section.columns[colNum].push(compId);
 
+                                    // CARRD-LIKE UX: Merge template data with profile data
+                                    // This personalizes templates with user's existing data
+                                    const mergedData = this._mergeWithProfileData(
+                                        compDef.type,
+                                        compDef.data || {}
+                                    );
+
                                     // ROOT FIX: Merge template settings with DEFAULT_SETTINGS
                                     // This ensures components have proper style/advanced structure
                                     mediaKitStore.components[compId] = {
@@ -327,7 +370,7 @@ export const useTemplateStore = defineStore('templates', {
                                         section_id: sectionId,
                                         column: parseInt(colNum),
                                         settings: mergeWithDefaults(compDef.settings || {}),
-                                        data: compDef.data || {},
+                                        data: mergedData,
                                         customization: {}
                                     };
                                 }
@@ -338,13 +381,13 @@ export const useTemplateStore = defineStore('templates', {
                     }
                 }
 
-                // 6. Mark as dirty (unsaved)
+                // 7. Mark as dirty (unsaved)
                 mediaKitStore.isDirty = true;
 
-                // 7. Set selected template
+                // 8. Set selected template
                 this.selectedTemplateId = templateId;
 
-                // 8. Navigate to builder
+                // 9. Navigate to builder
                 uiStore.showBuilder();
 
                 console.log('✅ Template initialized successfully:', {
@@ -516,6 +559,44 @@ export const useTemplateStore = defineStore('templates', {
          */
         _generateId(prefix) {
             return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        },
+
+        /**
+         * CARRD-LIKE UX: Merge profile data with template placeholder data
+         * Profile data takes precedence over template placeholders
+         * This creates a personalized starting point for new templates
+         *
+         * @param {string} componentType - The component type
+         * @param {Object} templateData - Original template data
+         * @returns {Object} Merged data with profile values
+         */
+        _mergeWithProfileData(componentType, templateData) {
+            // Get pre-populated data from user's profile
+            const profileData = profileDataIntegration.getPrePopulatedData(componentType);
+
+            // If no profile data, return template data as-is
+            if (!profileData || Object.keys(profileData).length === 0) {
+                return templateData;
+            }
+
+            // Merge: profile data overwrites template placeholders
+            // But only for fields that have actual values
+            const merged = { ...templateData };
+
+            for (const [key, value] of Object.entries(profileData)) {
+                // Only merge non-empty values
+                if (value !== null && value !== undefined && value !== '') {
+                    // For arrays, only merge if we have actual items
+                    if (Array.isArray(value) && value.length > 0) {
+                        merged[key] = value;
+                    } else if (!Array.isArray(value)) {
+                        merged[key] = value;
+                    }
+                }
+            }
+
+            console.log(`🔄 Merged profile data for ${componentType}:`, merged);
+            return merged;
         },
 
         /**

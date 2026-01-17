@@ -121,7 +121,7 @@ export class ChunkedExportService {
       metadata: {},
       theme: {},
       settings: {},
-      pods: {}
+      profile: {}
     };
     
     // Metadata
@@ -147,9 +147,9 @@ export class ChunkedExportService {
     // Global settings
     data.settings = store.globalSettings || {};
     
-    // Pods data (if requested)
-    if (options.includePods) {
-      data.pods = store.podsData || {};
+    // Profile data (if requested)
+    if (options.includeProfile) {
+      data.profile = store.profileData || {};
     }
     
     return data;
@@ -304,9 +304,9 @@ export class ChunkedExportService {
     structure.themeCustomizations = exportData.theme.customizations;
     structure.globalSettings = exportData.settings;
     
-    // Add Pods data if included
-    if (exportData.pods && Object.keys(exportData.pods).length > 0) {
-      structure.podsData = exportData.pods;
+    // Add Profile data if included
+    if (exportData.profile && Object.keys(exportData.profile).length > 0) {
+      structure.profileData = exportData.profile;
     }
     
     return structure;

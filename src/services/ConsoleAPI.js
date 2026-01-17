@@ -62,7 +62,7 @@ export class ConsoleAPI {
           components: store.components,
           sections: store.sections,
           theme: store.theme,
-          podsData: store.podsData
+          profileData: store.profileData
         };
       },
       

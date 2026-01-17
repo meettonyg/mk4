@@ -92,7 +92,7 @@
               <li>{{ componentCount }} components</li>
               <li>{{ sectionCount }} sections</li>
               <li v-if="includeTheme">Theme: {{ currentTheme }}</li>
-              <li v-if="includePodsData && exportFormat === 'full'">Pods data included</li>
+              <li v-if="includePodsData && exportFormat === 'full'">Profile data included</li>
             </ul>
           </div>
 

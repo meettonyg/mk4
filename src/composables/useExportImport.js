@@ -25,7 +25,7 @@ export function useExportImport() {
       theme: store.theme,
       themeCustomizations: store.themeCustomizations,
       globalSettings: store.globalSettings,
-      podsData: store.podsData,
+      profileData: store.profileData,
       metadata: {
         componentCount: Object.keys(store.components).length,
         sectionCount: store.sections.length,
@@ -244,7 +244,7 @@ export function useExportImport() {
         componentCount: validation.summary?.components_count || (importData.components ? Object.keys(importData.components).length : 0),
         sectionCount: validation.summary?.sections_count || (importData.sections ? importData.sections.length : 0),
         hasTheme: !!importData.theme,
-        hasPodsData: !!importData.podsData
+        hasPodsData: !!importData.profileData
       };
 
       importConflicts.value = conflicts;

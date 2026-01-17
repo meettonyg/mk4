@@ -9,40 +9,14 @@
     :has-results="hasOffers"
     :is-loading="isGenerating"
   >
-    <!-- Profile Selector (for logged-in users, only shown in standalone mode) -->
-    <template #profile-context>
-      <ProfileSelector
-        @profile-selected="handleProfileSelected"
-        @profile-cleared="handleProfileCleared"
-      />
-    </template>
-
     <!-- Left Panel: Form -->
     <template #left>
       <div class="gmkb-plg-tool-embed">
-        <!-- Draft Restore Prompt -->
-        <div v-if="showDraftPrompt" class="gfy-draft-prompt">
-          <div class="gfy-draft-prompt__content">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-              <line x1="16" y1="13" x2="8" y2="13"/>
-              <line x1="16" y1="17" x2="8" y2="17"/>
-            </svg>
-            <div>
-              <strong>Restore previous work?</strong>
-              <p>You have a saved draft from {{ getLastSavedText() }}.</p>
-            </div>
-          </div>
-          <div class="gfy-draft-prompt__actions">
-            <button type="button" class="gfy-btn gfy-btn--primary gfy-btn--small" @click="handleRestoreDraft">
-              Restore Draft
-            </button>
-            <button type="button" class="gfy-btn gfy-btn--ghost gfy-btn--small" @click="handleDiscardDraft">
-              Start Fresh
-            </button>
-          </div>
-        </div>
+        <!-- Profile Selector (for logged-in users in standalone mode) -->
+        <ProfileSelector
+          @profile-selected="handleProfileSelected"
+          @profile-cleared="handleProfileCleared"
+        />
 
         <!-- Auto-save Indicator -->
         <div v-if="isAutoSaving" class="gfy-auto-save-indicator">
@@ -245,11 +219,26 @@
           </div>
         </div>
 
-        <!-- Generate Button -->
-        <div class="gfy-form-actions">
+        <!-- Actions & Restore Link -->
+        <div class="gfy-actions-wrapper">
+          <!-- Restore Link (subtle text link) -->
+          <button
+            v-if="showDraftPrompt"
+            type="button"
+            class="gfy-restore-link"
+            @click="handleRestoreDraft"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 4v6h6"/>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+            </svg>
+            Unsaved changes found. <strong>Restore?</strong>
+          </button>
+
+          <!-- Main Generate Button -->
           <button
             type="button"
-            class="gfy-btn gfy-btn--primary"
+            class="gfy-btn gfy-btn--generate"
             :class="{ 'gfy-btn--loading': isGenerating }"
             :disabled="!canGenerate || isGenerating"
             @click="handleGenerate"
@@ -739,10 +728,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, watch, toRef } from 'vue';
 import { useAIOffers, PACKAGE_TIERS } from '../../src/composables/useAIOffers';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
+import { useProfileSelectionHandler } from '../../src/composables/useProfileSelectionHandler';
 import { useDraftState } from '../../src/composables/useDraftState';
 import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 
@@ -1000,32 +990,31 @@ function restoreFullHistory(entry) {
 }
 
 /**
- * Handle profile selected from ProfileSelector (standalone mode)
+ * Load profile data with prefilled field tracking
  */
-function handleProfileSelected({ data }) {
-  if (data && props.mode === 'default') {
-    // Track which fields are being prefilled
-    const newPrefilledFields = new Set();
+function loadProfileDataWithTracking(data) {
+  if (!data) return;
 
-    if (data.hook_what && !services.value) newPrefilledFields.add('services');
-    if (data.authority_hook && !authorityHookText.value) newPrefilledFields.add('authorityHookText');
-    if (data.hook_who && !authorityHook.who) newPrefilledFields.add('hook_who');
-    if (data.hook_what && !authorityHook.what) newPrefilledFields.add('hook_what');
-    if (data.hook_when && !authorityHook.when) newPrefilledFields.add('hook_when');
-    if (data.hook_how && !authorityHook.how) newPrefilledFields.add('hook_how');
+  // Track which fields are being prefilled
+  const newPrefilledFields = new Set();
 
-    prefilledFields.value = newPrefilledFields;
-    populateFromProfile(data);
-  }
+  if (data.hook_what && !services.value) newPrefilledFields.add('services');
+  if (data.authority_hook && !authorityHookText.value) newPrefilledFields.add('authorityHookText');
+  if (data.hook_who && !authorityHook.who) newPrefilledFields.add('hook_who');
+  if (data.hook_what && !authorityHook.what) newPrefilledFields.add('hook_what');
+  if (data.hook_when && !authorityHook.when) newPrefilledFields.add('hook_when');
+  if (data.hook_how && !authorityHook.how) newPrefilledFields.add('hook_how');
+
+  prefilledFields.value = newPrefilledFields;
+  populateFromProfile(data);
 }
 
-/**
- * Handle profile cleared from ProfileSelector (standalone mode)
- */
-function handleProfileCleared() {
-  // Optionally clear form fields when profile is deselected
-  // For now, we keep the existing data to avoid losing user input
-}
+// Profile selection handlers (using shared composable)
+const { handleProfileSelected, handleProfileCleared } = useProfileSelectionHandler({
+  profileIdRef: selectedProfileId,
+  onDataLoaded: loadProfileDataWithTracking,
+  mode: toRef(props, 'mode'),
+});
 
 /**
  * Offers formula for guidance panel

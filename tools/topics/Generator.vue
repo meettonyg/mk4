@@ -1,31 +1,14 @@
 <template>
   <div class="gfy-topics-generator">
+    <!-- Profile Selector (for logged-in users in standalone mode) -->
+    <ProfileSelector
+      v-if="mode === 'default'"
+      @profile-selected="handleProfileSelected"
+      @profile-cleared="handleProfileCleared"
+    />
+
     <!-- Form Section -->
     <div v-if="!hasTopics" class="gfy-topics-form">
-      <!-- Draft Restore Prompt -->
-      <div v-if="showDraftPrompt" class="gfy-draft-prompt">
-        <div class="gfy-draft-prompt__content">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="16" y1="13" x2="8" y2="13"/>
-            <line x1="16" y1="17" x2="8" y2="17"/>
-          </svg>
-          <div>
-            <strong>Restore previous work?</strong>
-            <p>You have a saved draft from {{ getLastSavedText() }}.</p>
-          </div>
-        </div>
-        <div class="gfy-draft-prompt__actions">
-          <button type="button" class="gfy-btn gfy-btn--primary gfy-btn--small" @click="handleRestoreDraft">
-            Restore Draft
-          </button>
-          <button type="button" class="gfy-btn gfy-btn--text gfy-btn--small" @click="handleDiscardDraft">
-            Start Fresh
-          </button>
-        </div>
-      </div>
-
       <!-- Auto-save Indicator -->
       <div v-if="isAutoSaving" class="gfy-auto-save-indicator">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -164,6 +147,30 @@
           how: 'e.g. My proven 90-day system'
         }"
       />
+
+      <!-- Actions & Restore Link -->
+      <div class="gfy-actions-wrapper">
+        <button
+          v-if="showDraftPrompt"
+          type="button"
+          class="gfy-restore-link"
+          @click="handleRestoreDraft"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 4v6h6"/>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+          </svg>
+          Unsaved changes found. <strong>Restore?</strong>
+        </button>
+        <button
+          type="button"
+          class="gfy-btn gfy-btn--generate"
+          :disabled="!canGenerate || isGenerating"
+          @click="handleGenerate"
+        >
+          {{ isGenerating ? 'Generating...' : 'Generate Topics' }}
+        </button>
+      </div>
     </div>
 
     <!-- Loading Skeleton -->
@@ -457,8 +464,9 @@ import { useAITopics } from '../../src/composables/useAITopics';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { useDraftState } from '../../src/composables/useDraftState';
 import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
+import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
-import { AuthorityHookBuilder } from '../_shared';
+import { AuthorityHookBuilder, ProfileSelector } from '../_shared';
 
 // Constants
 const MAX_SELECTED_TOPICS = 5;
@@ -498,6 +506,14 @@ const {
   saveToProfile
 } = useProfileContext();
 
+// Profile functionality (standalone mode)
+const {
+  selectedProfileId,
+  profileData: standaloneProfileData,
+  hasSelectedProfile,
+  saveMultipleToProfile
+} = useStandaloneProfile();
+
 // Inject profile data from parent (EmbeddedToolWrapper provides this)
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
 
@@ -505,7 +521,6 @@ const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
 const expertise = ref('');
 const selectedTopics = ref([]);
 const saveSuccess = ref(false);
-const selectedProfileId = ref(null);
 const viewMode = ref('list'); // 'card' or 'list' - default to list for single-column display
 const saveAuthorityHook = ref(true); // Whether to also save authority hook fields
 const copiedIndex = ref(null); // Track which topic was just copied for visual feedback
@@ -705,6 +720,30 @@ function populateFromProfile(profileData) {
     });
   }
   currentTopics.value = loadedTopics;
+}
+
+/**
+ * Handle profile selected from ProfileSelector (standalone mode)
+ * Sets selectedProfileId so save functionality can work correctly
+ */
+function handleProfileSelected({ id, data }) {
+  if (props.mode === 'default') {
+    // Set the profile ID in our composable instance so saves work correctly
+    if (id) {
+      selectedProfileId.value = id;
+    }
+    if (data) {
+      populateFromProfile(data);
+    }
+  }
+}
+
+/**
+ * Handle profile cleared from ProfileSelector (standalone mode)
+ */
+function handleProfileCleared() {
+  // Clear the profile ID so saves are disabled
+  selectedProfileId.value = null;
 }
 
 /**
@@ -2590,5 +2629,65 @@ defineExpose({
   .gfy-history__item-actions {
     justify-content: flex-end;
   }
+}
+
+/* ===========================================
+   ACTIONS WRAPPER & GENERATE BUTTON
+   =========================================== */
+.gfy-actions-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.gfy-restore-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  font-size: 0.8125rem;
+  color: var(--gfy-primary-color, #2563eb);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gfy-restore-link:hover {
+  text-decoration: underline;
+}
+
+.gfy-restore-link svg {
+  flex-shrink: 0;
+}
+
+.gfy-restore-link strong {
+  font-weight: 600;
+}
+
+.gfy-btn--generate {
+  width: 100%;
+  padding: 14px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  background: var(--gfy-primary-color, #2563eb);
+  color: white;
+  border: none;
+  border-radius: var(--gfy-radius-md, 6px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gfy-btn--generate:hover:not(:disabled) {
+  background: var(--gfy-primary-dark, #1d4ed8);
+}
+
+.gfy-btn--generate:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

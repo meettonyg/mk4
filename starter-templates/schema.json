@@ -39,10 +39,19 @@
           "type": "string",
           "description": "FontAwesome icon class"
         },
+        "use_case": {
+          "type": "string",
+          "description": "Primary use case for this template variant (e.g., 'General Bio', 'Book Launch', 'Event Promotion')"
+        },
+        "layout_variant": {
+          "type": "string",
+          "enum": ["standard", "image-left", "image-right", "center-stack", "split-layout", "minimal", "bold"],
+          "description": "The layout style variant (e.g., 'image-left', 'center-stack', 'split-layout')"
+        },
         "use_cases": {
           "type": "array",
           "items": { "type": "string" },
-          "description": "Specific use cases this template serves"
+          "description": "List of specific use cases this template serves (legacy array format)"
         }
       }
     },
