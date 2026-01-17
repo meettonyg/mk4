@@ -1,5 +1,26 @@
 <template>
   <div class="gfy-authority-hook-generator">
+    <!-- Profile Selector (for logged-in users in standalone mode) -->
+    <ProfileSelector
+      v-if="mode === 'default'"
+      @profile-selected="handleProfileSelected"
+      @profile-cleared="handleProfileCleared"
+    />
+
+    <!-- Restore Link (subtle text link) -->
+    <button
+      v-if="showDraftPrompt && mode === 'default'"
+      type="button"
+      class="gfy-restore-link"
+      @click="handleRestoreDraft"
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M1 4v6h6"/>
+        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+      </svg>
+      Unsaved changes found. <strong>Restore?</strong>
+    </button>
+
     <!-- Form Section (shown when no results) -->
     <div v-if="!hasHooks" class="gfy-authority-hook-form">
       <!-- Authority Hook Builder -->
@@ -287,9 +308,23 @@ import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 import { useAIAuthorityHooks } from '../../src/composables/useAIAuthorityHooks';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
+import { useDraftState } from '../../src/composables/useDraftState';
+import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
+import { ProfileSelector } from '../_shared';
 
 const props = defineProps({
+  /**
+   * Mode: 'default' or 'integrated'
+   */
+  mode: {
+    type: String,
+    default: 'default',
+    validator: (v) => ['default', 'integrated'].includes(v)
+  },
+  /**
+   * Profile data for pre-population
+   */
   profileData: {
     type: Object,
     default: null
@@ -336,13 +371,34 @@ const {
 
 const showHistory = ref(false);
 
+// Profile functionality (standalone mode)
+const {
+  selectedProfileId,
+  profileData: standaloneProfileData,
+  hasSelectedProfile,
+  saveMultipleToProfile
+} = useStandaloneProfile();
+
+// Draft state for auto-save
+const {
+  hasDraft,
+  lastSaved,
+  isAutoSaving,
+  saveDraft,
+  loadDraft,
+  clearDraft,
+  startAutoSave,
+  getLastSavedText
+} = useDraftState('authority-hook');
+
+const showDraftPrompt = ref(false);
+
 // Inject profile data from parent (EmbeddedToolWrapper provides this)
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
 
 // Local state
 const selectedHookIndex = ref(null);
 const saveSuccess = ref(false);
-const selectedProfileId = ref(null);
 const viewMode = ref('list'); // 'card' or 'list' - default to list
 const localIsSaving = ref(false);
 const localSaveError = ref(null);
@@ -446,6 +502,52 @@ function populateFromProfile(profileData) {
   if (profileData.authority_statement) {
     currentHookText.value = profileData.authority_statement;
   }
+}
+
+/**
+ * Handle profile selected from ProfileSelector (standalone mode)
+ * Sets selectedProfileId so save functionality can work correctly
+ */
+function handleProfileSelected({ id, data }) {
+  if (props.mode === 'default') {
+    // Set the profile ID in our composable instance so saves work correctly
+    if (id) {
+      selectedProfileId.value = id;
+    }
+    if (data) {
+      populateFromProfile(data);
+    }
+  }
+}
+
+/**
+ * Handle profile cleared from ProfileSelector (standalone mode)
+ */
+function handleProfileCleared() {
+  // Clear the profile ID so saves are disabled
+  selectedProfileId.value = null;
+}
+
+/**
+ * Handle restore draft button click
+ */
+function handleRestoreDraft() {
+  const draft = loadDraft();
+  if (draft) {
+    if (draft.hookWho) hookWho.value = draft.hookWho;
+    if (draft.hookWhat) hookWhat.value = draft.hookWhat;
+    if (draft.hookWhen) hookWhen.value = draft.hookWhen;
+    if (draft.hookHow) hookHow.value = draft.hookHow;
+  }
+  showDraftPrompt.value = false;
+}
+
+/**
+ * Handle discard draft button click
+ */
+function handleDiscardDraft() {
+  showDraftPrompt.value = false;
+  clearDraft();
 }
 
 /**
@@ -629,6 +731,21 @@ watch(
 onMounted(() => {
   // Add keyboard shortcut listener
   document.addEventListener('keydown', handleKeyboardShortcut);
+
+  // Check for saved draft (only in standalone mode)
+  if (props.mode === 'default' && hasDraft.value) {
+    showDraftPrompt.value = true;
+  }
+
+  // Start auto-save for draft state
+  if (props.mode === 'default') {
+    startAutoSave(() => ({
+      hookWho: hookWho.value,
+      hookWhat: hookWhat.value,
+      hookWhen: hookWhen.value,
+      hookHow: hookHow.value
+    }));
+  }
 });
 
 // Cleanup on unmount
