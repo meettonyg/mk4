@@ -286,7 +286,6 @@ export const useTemplateStore = defineStore('templates', {
                 // Normalize theme ID: convert hyphens to underscores (URLs use hyphens, theme IDs use underscores)
                 themeId = themeId.replace(/-/g, '_');
 
-                console.log('🎨 Applying theme:', themeId, options.themeOverride ? '(from URL override)' : '(from template)');
                 themeStore.selectTheme(themeId);
 
                 // 4. Apply theme customizations if present

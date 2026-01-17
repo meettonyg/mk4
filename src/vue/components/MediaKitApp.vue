@@ -163,8 +163,6 @@ async function applySelectedTemplate() {
   // Get theme override from URL parameter (allows ?theme=minimal-elegant)
   const themeOverride = urlParams.get('theme');
 
-  console.log('🎨 Applying template:', templateId, themeOverride ? `with theme: ${themeOverride}` : '');
-
   // Normalize template ID: convert hyphens to underscores for matching
   // URLs use hyphens (author-bold) but theme IDs use underscores (author_bold)
   const normalizedId = templateId.replace(/-/g, '_');
@@ -179,21 +177,16 @@ async function applySelectedTemplate() {
     // NOTE: REST API uses directory names (hyphens) as lookup keys
     // Try original hyphenated ID first, then normalized underscored version
     let success = false;
-    // Options for template initialization (includes theme override from URL)
-    const initOptions = themeOverride ? { themeOverride } : undefined;
 
     try {
       // Try original (usually hyphenated from URL)
-      await templateStore.initializeFromTemplate(templateId, initOptions);
+      await templateStore.initializeFromTemplate(templateId, { themeOverride });
       success = true;
-      console.log('✅ Template initialized with ID:', templateId);
     } catch (err) {
       if (normalizedId !== templateId) {
         // Try normalized ID (underscores)
-        console.log('🔄 Trying normalized template ID:', normalizedId);
-        await templateStore.initializeFromTemplate(normalizedId, initOptions);
+        await templateStore.initializeFromTemplate(normalizedId, { themeOverride });
         success = true;
-        console.log('✅ Template initialized with normalized ID:', normalizedId);
       } else {
         throw err;
       }
