@@ -90,13 +90,11 @@
         </p>
       </div>
 
-      <!-- Profile Context Banner (only when not inside wrapper) -->
-      <ProfileContextBanner
-        v-if="mode === 'default' && !isEmbedded && isLoggedIn"
-        :profiles="profiles"
-        :selected-profile-id="selectedProfileId"
-        :is-loading="isLoadingProfiles"
-        @select="selectProfile"
+      <!-- Profile Selector (for logged-in users in standalone mode) -->
+      <ProfileSelector
+        v-if="mode === 'default' && !isEmbedded"
+        @profile-selected="handleProfileSelected"
+        @profile-cleared="handleProfileCleared"
       />
 
       <!-- Draft Restore Prompt -->
@@ -539,7 +537,7 @@ import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 import { useDraftState } from '../../src/composables/useDraftState';
-import { EMBEDDED_PROFILE_DATA_KEY, IS_EMBEDDED_CONTEXT_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileContextBanner } from '../_shared';
+import { EMBEDDED_PROFILE_DATA_KEY, IS_EMBEDDED_CONTEXT_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileSelector } from '../_shared';
 
 // Integrated mode components
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
@@ -1195,15 +1193,23 @@ function populateFromProfile(data) {
   }
 
   prefilledFields.value = newPrefilledFields;
+}
 
-  // Emit authority hook data for parent components
-  emit('authority-hook-update', {
-    who: authorityHook.who,
-    what: authorityHook.what,
-    when: authorityHook.when,
-    how: authorityHook.how,
-    complete: authorityHookSummary.value
-  });
+/**
+ * Handle profile selected from ProfileSelector (standalone mode)
+ */
+function handleProfileSelected({ data }) {
+  if (data && props.mode === 'default') {
+    populateFromProfile(data);
+  }
+}
+
+/**
+ * Handle profile cleared from ProfileSelector (standalone mode)
+ */
+function handleProfileCleared() {
+  // Optionally clear form fields when profile is deselected
+  // For now, we keep the existing data to avoid losing user input
 }
 
 // Watchers

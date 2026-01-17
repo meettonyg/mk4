@@ -9,10 +9,10 @@
     :has-results="hasTaglines"
     :is-loading="isGenerating"
   >
-    <!-- Profile Context Banner (for logged-in users, only shown in standalone mode) -->
+    <!-- Profile Selector (for logged-in users, only shown in standalone mode) -->
     <template #profile-context>
-      <ProfileContextBanner
-        @profile-loaded="handleProfileLoaded"
+      <ProfileSelector
+        @profile-selected="handleProfileSelected"
         @profile-cleared="handleProfileCleared"
       />
 
@@ -626,7 +626,7 @@ import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ImpactIntroBuilder, ProfileContextBanner } from '../_shared';
+import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ImpactIntroBuilder, ProfileSelector } from '../_shared';
 
 const props = defineProps({
   /**
@@ -991,16 +991,16 @@ function populateFromProfile(profileData) {
 }
 
 /**
- * Handle profile loaded from ProfileContextBanner (standalone mode)
+ * Handle profile selected from ProfileSelector (standalone mode)
  */
-function handleProfileLoaded(data) {
+function handleProfileSelected({ data }) {
   if (data && props.mode === 'default') {
     populateFromProfile(data);
   }
 }
 
 /**
- * Handle profile cleared from ProfileContextBanner (standalone mode)
+ * Handle profile cleared from ProfileSelector (standalone mode)
  */
 function handleProfileCleared() {
   // Optionally clear form fields when profile is deselected

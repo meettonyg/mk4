@@ -91,10 +91,10 @@
         </p>
       </div>
 
-      <!-- Profile Context Banner (for logged-in users in standalone mode) -->
-      <ProfileContextBanner
+      <!-- Profile Selector (for logged-in users in standalone mode) -->
+      <ProfileSelector
         v-if="mode === 'default' && !isEmbedded"
-        @profile-loaded="handleProfileLoaded"
+        @profile-selected="handleProfileSelected"
         @profile-cleared="handleProfileCleared"
       />
 
@@ -581,7 +581,7 @@ import { useProfileContext } from '../../src/composables/useProfileContext';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 import { useDraftState } from '../../src/composables/useDraftState';
 import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
-import { EMBEDDED_PROFILE_DATA_KEY, IS_EMBEDDED_CONTEXT_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileContextBanner } from '../_shared';
+import { EMBEDDED_PROFILE_DATA_KEY, IS_EMBEDDED_CONTEXT_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileSelector } from '../_shared';
 
 // Integrated mode components
 import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
@@ -1052,16 +1052,16 @@ function loadProfileData(data) {
 }
 
 /**
- * Handle profile loaded from ProfileContextBanner (standalone mode)
+ * Handle profile selected from ProfileSelector (standalone mode)
  */
-function handleProfileLoaded(data) {
+function handleProfileSelected({ data }) {
   if (data && props.mode === 'default') {
     loadProfileData(data);
   }
 }
 
 /**
- * Handle profile cleared from ProfileContextBanner (standalone mode)
+ * Handle profile cleared from ProfileSelector (standalone mode)
  */
 function handleProfileCleared() {
   // Optionally clear form fields when profile is deselected
