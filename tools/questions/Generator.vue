@@ -2,41 +2,11 @@
   <!-- Standalone Mode: Tool card content (hero is provided by landing page wrapper) -->
   <div v-if="mode === 'default'" class="gfy-questions-wrapper gmkb-generator-root">
     <div class="gmkb-plg-tool-embed">
-            <!-- Profile Selector (Top of Form, inside Card) -->
-            <div class="gfy-profile-selector-container">
-              <label class="gfy-profile-label">Pre-fill from Profile:</label>
-              <div class="gfy-profile-selector-row">
-                <select
-                  v-model="selectedProfileIdLocal"
-                  class="gfy-profile-select"
-                  @change="handleProfileSelect"
-                >
-                  <option value="" disabled>Select a guest profile to pre-fill...</option>
-                  <option
-                    v-for="profile in availableProfiles"
-                    :key="profile.id"
-                    :value="profile.id"
-                  >
-                    {{ profile.title }}{{ profile.guest_title ? ` - ${profile.guest_title}` : '' }}
-                  </option>
-                  <option value="new">+ Create New Profile</option>
-                </select>
-                <a
-                  v-if="hasSelectedProfile && selectedProfile"
-                  :href="selectedProfile.editUrl || `/app/profiles/guest/profile/?entry=${selectedProfile.slug}`"
-                  class="gfy-profile-link"
-                  title="Edit this profile"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                  </svg>
-                  Edit Profile
-                </a>
-              </div>
-            </div>
+            <!-- Profile Selector (for logged-in users in standalone mode) -->
+            <ProfileSelector
+              @profile-selected="handleProfileSelected"
+              @profile-cleared="handleProfileCleared"
+            />
 
             <!-- Auto-save Indicator -->
             <div v-if="isAutoSaving" class="gfy-auto-save-indicator">
@@ -711,7 +681,7 @@ import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
 import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder } from '../_shared';
+import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ProfileSelector } from '../_shared';
 
 const props = defineProps({
   /**
@@ -758,13 +728,9 @@ const { syncFromStore, loadFromProfileData } = useAuthorityHook();
 
 // Profile functionality (standalone mode)
 const {
-  profiles: availableProfiles,
   selectedProfileId,
   profileData,
   hasSelectedProfile,
-  selectedProfile,
-  loadProfiles,
-  selectProfile: selectProfileFromComposable,
   saveMultipleToProfile,
   getAuthorityHookData
 } = useStandaloneProfile();
@@ -889,23 +855,23 @@ const authorityHook = reactive({
 });
 
 // ===========================================
-// PROFILE SELECTOR STATE
+// PROFILE SELECTOR HANDLERS
 // ===========================================
-// Local ref for v-model binding (synced with composable)
-const selectedProfileIdLocal = ref('');
-
-// Handle profile selection from dropdown
-async function handleProfileSelect() {
-  if (!selectedProfileIdLocal.value) return;
-
-  if (selectedProfileIdLocal.value === 'new') {
-    // Navigate to create new profile
-    window.location.href = '/profile/new/';
-    return;
+/**
+ * Handle profile selected from ProfileSelector (standalone mode)
+ */
+function handleProfileSelected({ data }) {
+  if (data && props.mode === 'default') {
+    populateFromProfile(data);
   }
+}
 
-  // Use composable to select and load profile data
-  await selectProfileFromComposable(selectedProfileIdLocal.value);
+/**
+ * Handle profile cleared from ProfileSelector (standalone mode)
+ */
+function handleProfileCleared() {
+  // Optionally clear form fields when profile is deselected
+  // For now, we keep the existing data to avoid losing user input
 }
 
 // ===========================================

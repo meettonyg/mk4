@@ -127,6 +127,17 @@
 </template>
 
 <script setup>
+/**
+ * @deprecated This component is deprecated as of 2026-01-17.
+ * Use ProfileSelector instead for consistent UX across all tools.
+ * This component is kept for backwards compatibility only.
+ *
+ * Migration example:
+ *   <ProfileSelector
+ *     @profile-selected="handleProfileSelected"
+ *     @profile-cleared="handleProfileCleared"
+ *   />
+ */
 import { ref, watch } from 'vue';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 
