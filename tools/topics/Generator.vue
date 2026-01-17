@@ -7,20 +7,6 @@
       @profile-cleared="handleProfileCleared"
     />
 
-    <!-- Restore Link (subtle text link) -->
-    <button
-      v-if="showDraftPrompt && mode === 'default'"
-      type="button"
-      class="gfy-restore-link"
-      @click="handleRestoreDraft"
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M1 4v6h6"/>
-        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
-      </svg>
-      Unsaved changes found. <strong>Restore?</strong>
-    </button>
-
     <!-- Form Section -->
     <div v-if="!hasTopics" class="gfy-topics-form">
       <!-- Auto-save Indicator -->
@@ -161,6 +147,30 @@
           how: 'e.g. My proven 90-day system'
         }"
       />
+
+      <!-- Actions & Restore Link -->
+      <div class="gfy-actions-wrapper">
+        <button
+          v-if="showDraftPrompt"
+          type="button"
+          class="gfy-restore-link"
+          @click="handleRestoreDraft"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 4v6h6"/>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+          </svg>
+          Unsaved changes found. <strong>Restore?</strong>
+        </button>
+        <button
+          type="button"
+          class="gfy-btn gfy-btn--generate"
+          :disabled="!canGenerate || isGenerating"
+          @click="handleGenerate"
+        >
+          {{ isGenerating ? 'Generating...' : 'Generate Topics' }}
+        </button>
+      </div>
     </div>
 
     <!-- Loading Skeleton -->
@@ -2619,5 +2629,65 @@ defineExpose({
   .gfy-history__item-actions {
     justify-content: flex-end;
   }
+}
+
+/* ===========================================
+   ACTIONS WRAPPER & GENERATE BUTTON
+   =========================================== */
+.gfy-actions-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.gfy-restore-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  font-size: 0.8125rem;
+  color: var(--gfy-primary-color, #2563eb);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gfy-restore-link:hover {
+  text-decoration: underline;
+}
+
+.gfy-restore-link svg {
+  flex-shrink: 0;
+}
+
+.gfy-restore-link strong {
+  font-weight: 600;
+}
+
+.gfy-btn--generate {
+  width: 100%;
+  padding: 14px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  background: var(--gfy-primary-color, #2563eb);
+  color: white;
+  border: none;
+  border-radius: var(--gfy-radius-md, 6px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gfy-btn--generate:hover:not(:disabled) {
+  background: var(--gfy-primary-dark, #1d4ed8);
+}
+
+.gfy-btn--generate:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>
