@@ -92,7 +92,7 @@
 
       <!-- Profile Selector (for logged-in users in standalone mode) -->
       <ProfileSelector
-        v-if="mode === 'default' && !isEmbedded"
+        v-if="mode === 'default'"
         @profile-selected="handleProfileSelected"
         @profile-cleared="handleProfileCleared"
       />
