@@ -711,7 +711,7 @@ import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
 import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 
 // Full layout components (standalone mode)
-import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder, ProfileContextBanner } from '../_shared';
+import { GeneratorLayout, GuidancePanel, AuthorityHookBuilder } from '../_shared';
 
 const props = defineProps({
   /**

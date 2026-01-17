@@ -1,9 +1,9 @@
 <template>
   <div class="gmkb-tool-embed">
-    <!-- Profile Context Banner (logged-in users with profile-saveable tools only, hidden in single-column/embedded mode) -->
-    <ProfileContextBanner
+    <!-- Profile Selector (logged-in users with profile-saveable tools only, hidden in single-column/embedded mode) -->
+    <ProfileSelector
       v-if="isLoggedIn && supportsProfileSave && !singleColumn"
-      @profile-loaded="handleProfileLoaded"
+      @profile-selected="handleProfileSelected"
       @profile-cleared="handleProfileCleared"
     />
 
@@ -304,7 +304,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, provide } from 'vue';
-import ProfileContextBanner from './ProfileContextBanner.vue';
+import ProfileSelector from './ProfileSelector.vue';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 import { EMBEDDED_PROFILE_DATA_KEY, IS_EMBEDDED_CONTEXT_KEY } from './constants';
 
@@ -725,7 +725,7 @@ provide(EMBEDDED_PROFILE_DATA_KEY, loadedProfileData);
 // Signal to child components (like GeneratorLayout) that they're inside embedded wrapper
 provide(IS_EMBEDDED_CONTEXT_KEY, true);
 
-function handleProfileLoaded(data) {
+function handleProfileSelected({ data }) {
   loadedProfileData.value = data;
   emit('profile-loaded', data);
   // Reset saved state when profile changes
