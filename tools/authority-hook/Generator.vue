@@ -7,20 +7,6 @@
       @profile-cleared="handleProfileCleared"
     />
 
-    <!-- Restore Link (subtle text link) -->
-    <button
-      v-if="showDraftPrompt && mode === 'default'"
-      type="button"
-      class="gfy-restore-link"
-      @click="handleRestoreDraft"
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M1 4v6h6"/>
-        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
-      </svg>
-      Unsaved changes found. <strong>Restore?</strong>
-    </button>
-
     <!-- Form Section (shown when no results) -->
     <div v-if="!hasHooks" class="gfy-authority-hook-form">
       <!-- Authority Hook Builder -->
@@ -74,6 +60,33 @@
         <div class="gfy-live-preview">
           "{{ hookPreview }}"
         </div>
+      </div>
+
+      <!-- Actions & Restore Link -->
+      <div class="gfy-actions-wrapper">
+        <button
+          v-if="showDraftPrompt"
+          type="button"
+          class="gfy-restore-link"
+          @click="handleRestoreDraft"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 4v6h6"/>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+          </svg>
+          Unsaved changes found. <strong>Restore?</strong>
+        </button>
+        <button
+          type="button"
+          class="gfy-btn gfy-btn--generate"
+          :disabled="!canGenerate || isGenerating"
+          @click="handleGenerate"
+        >
+          <svg v-if="!isGenerating" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+          {{ isGenerating ? 'Generating...' : 'Generate Authority Hook' }}
+        </button>
       </div>
     </div>
 
@@ -765,6 +778,8 @@ defineExpose({
 </script>
 
 <style scoped>
+@import "../_shared/gfy-form-base.css";
+
 .gfy-authority-hook-generator {
   --gfy-primary-color: #2563eb;
   --gfy-primary-light: #eff6ff;
