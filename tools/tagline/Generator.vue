@@ -16,31 +16,6 @@
         @profile-cleared="handleProfileCleared"
       />
 
-      <!-- Draft Restore Prompt -->
-      <div v-if="showDraftPrompt" class="gfy-draft-prompt">
-        <div class="gfy-draft-prompt__content">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="16" y1="13" x2="8" y2="13"/>
-            <line x1="16" y1="17" x2="8" y2="17"/>
-            <polyline points="10 9 9 9 8 9"/>
-          </svg>
-          <div>
-            <strong>Restore your draft?</strong>
-            <p>You have an unsaved draft from {{ getLastSavedText() }}</p>
-          </div>
-        </div>
-        <div class="gfy-draft-prompt__actions">
-          <button type="button" class="gfy-btn gfy-btn--primary gfy-btn--small" @click="restoreFromDraft(loadDraft())">
-            Restore
-          </button>
-          <button type="button" class="gfy-btn gfy-btn--outline gfy-btn--small" @click="dismissDraftPrompt">
-            Discard
-          </button>
-        </div>
-      </div>
-
       <!-- History Toggle -->
       <div v-if="hasHistory" class="gfy-history">
         <button
@@ -252,11 +227,26 @@
           </div>
         </div>
 
-        <!-- Generate Button -->
-        <div class="gfy-form-actions">
+        <!-- Actions & Restore Link -->
+        <div class="gfy-actions-wrapper">
+          <!-- Restore Link (subtle text link) -->
+          <button
+            v-if="showDraftPrompt"
+            type="button"
+            class="gfy-restore-link"
+            @click="restoreFromDraft(loadDraft()); showDraftPrompt = false"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 4v6h6"/>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+            </svg>
+            Unsaved changes found. <strong>Restore?</strong>
+          </button>
+
+          <!-- Main Generate Button -->
           <button
             type="button"
-            class="gfy-btn gfy-btn--primary"
+            class="gfy-btn gfy-btn--generate"
             :class="{ 'gfy-btn--loading': isGenerating }"
             :disabled="!canGenerate || isGenerating"
             @click="handleGenerate"
