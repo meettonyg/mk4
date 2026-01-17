@@ -861,10 +861,17 @@ const authorityHook = reactive({
 // ===========================================
 /**
  * Handle profile selected from ProfileSelector (standalone mode)
+ * Sets selectedProfileId so saveMultipleToProfile can work correctly
  */
-function handleProfileSelected({ data }) {
-  if (data && props.mode === 'default') {
-    populateFromProfile(data);
+function handleProfileSelected({ id, data }) {
+  if (props.mode === 'default') {
+    // Set the profile ID in our composable instance so saves work correctly
+    if (id) {
+      selectedProfileId.value = id;
+    }
+    if (data) {
+      populateFromProfile(data);
+    }
   }
 }
 
@@ -872,6 +879,8 @@ function handleProfileSelected({ data }) {
  * Handle profile cleared from ProfileSelector (standalone mode)
  */
 function handleProfileCleared() {
+  // Clear the profile ID so saves are disabled
+  selectedProfileId.value = null;
   // Clear topics loaded from profile when profile is deselected
   profileTopics.value = [];
   selectedTopicIndex.value = -1;
@@ -1346,10 +1355,10 @@ const handleSaveToMediaKit = async () => {
     saveError.value = null;
 
     try {
-      // Build question fields object (question_1 through question_10)
+      // Build question fields object (question_1 through question_25)
       const questionFields = {};
       savedQuestions.forEach((question, index) => {
-        if (index < 10) { // Max 10 questions
+        if (index < 25) { // Max 25 questions per meta.json
           questionFields[`question_${index + 1}`] = question;
         }
       });
