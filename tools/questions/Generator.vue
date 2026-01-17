@@ -262,7 +262,7 @@
             </div>
 
           <!-- Results Container (appears below when generated) -->
-          <div v-if="hasQuestions" class="gfy-results-container">
+          <div v-if="hasQuestions" ref="resultsContainer" class="gfy-results-container">
             <div class="questions-results">
               <div class="questions-results__layout">
                 <!-- SIDEBAR: Interview Set (5 Lockable Slots) -->
@@ -669,7 +669,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useAIQuestions, QUESTION_CATEGORIES } from '../../src/composables/useAIQuestions';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
@@ -846,6 +846,7 @@ const showDraftPrompt = ref(false);
 // Local state
 const selectedTopicIndex = ref(-1);
 const refinedTopic = ref('');
+const resultsContainer = ref(null);
 
 // Authority Hook state (reactive object for 4 W's)
 const authorityHook = reactive({
@@ -1274,6 +1275,14 @@ const handleGenerate = async () => {
     emit('generated', {
       questions: questions.value
     });
+
+    // Scroll to results after generation (standalone mode only)
+    if (props.mode === 'default' && questions.value && questions.value.length > 0) {
+      await nextTick();
+      if (resultsContainer.value) {
+        resultsContainer.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
   } catch (err) {
     console.error('[QuestionsGenerator] Generation failed:', err);
   }
