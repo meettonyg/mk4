@@ -124,33 +124,29 @@
         <div class="gfy-form-section">
           <h3 class="gfy-form-section__title">Step 1: Your Authority Framework</h3>
 
-          <!-- Authority Hook Box -->
-          <div class="gfy-highlight-box gfy-highlight-box--blue">
-            <AuthorityHookBuilder
-              :model-value="authorityHook"
-              @update:model-value="Object.assign(authorityHook, $event)"
-              title="Your Authority Hook"
-              :placeholders="{
-                who: 'e.g. SaaS Founders',
-                what: 'e.g. Scale to 7-figures',
-                when: 'e.g. Feeling plateaued',
-                how: 'e.g. 90-day framework'
-              }"
-            />
-          </div>
+          <!-- Authority Hook Builder (component has its own styling) -->
+          <AuthorityHookBuilder
+            :model-value="authorityHook"
+            @update:model-value="Object.assign(authorityHook, $event)"
+            title="Your Authority Hook"
+            :placeholders="{
+              who: 'e.g. SaaS Founders',
+              what: 'e.g. Scale to 7-figures',
+              when: 'e.g. Feeling plateaued',
+              how: 'e.g. 90-day framework'
+            }"
+          />
 
-          <!-- Impact Intro Box -->
-          <div class="gfy-highlight-box gfy-highlight-box--green">
-            <ImpactIntroBuilder
-              :model-value="impactIntro"
-              @update:model-value="Object.assign(impactIntro, $event)"
-              title="Your Impact Intro"
-              :placeholders="{
-                where: 'e.g. Helped 200+ startups achieve milestones',
-                why: 'e.g. Democratize elite growth strategies'
-              }"
-            />
-          </div>
+          <!-- Impact Intro Builder (component has its own styling) -->
+          <ImpactIntroBuilder
+            :model-value="impactIntro"
+            @update:model-value="Object.assign(impactIntro, $event)"
+            title="Your Impact Intro"
+            :placeholders="{
+              where: 'e.g. Helped 200+ startups achieve milestones',
+              why: 'e.g. Democratize elite growth strategies'
+            }"
+          />
         </div>
 
         <!-- Section Divider -->
