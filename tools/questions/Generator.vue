@@ -870,8 +870,10 @@ function handleProfileSelected({ data }) {
  * Handle profile cleared from ProfileSelector (standalone mode)
  */
 function handleProfileCleared() {
-  // Optionally clear form fields when profile is deselected
-  // For now, we keep the existing data to avoid losing user input
+  // Clear topics loaded from profile when profile is deselected
+  profileTopics.value = [];
+  selectedTopicIndex.value = -1;
+  refinedTopic.value = '';
 }
 
 // ===========================================
@@ -882,10 +884,18 @@ const targetAudience = ref('');
 const selectedTone = ref('professional');
 const questionCount = ref(10);
 
-// Available topics (from props only - no defaults, must come from profile)
+// Topics loaded from selected profile (standalone mode)
+const profileTopics = ref([]);
+
+// Available topics (from props or profile selection)
 const availableTopics = computed(() => {
+  // First check props (from embedded/integrated mode)
   if (props.topics && props.topics.length > 0) {
     return props.topics;
+  }
+  // Then check topics loaded from selected profile (standalone mode)
+  if (profileTopics.value.length > 0) {
+    return profileTopics.value;
   }
   // Return empty array - topics should come from profile selection
   return [];
@@ -1039,6 +1049,22 @@ function populateFromProfile(profileData) {
 
   // Populate authority hook fields from profile data (for cross-tool sync)
   loadFromProfileData(profileData);
+
+  // Extract topics from profile (stored as topic_1, topic_2, etc.)
+  const topics = [];
+  for (let i = 1; i <= 5; i++) {
+    const topicText = profileData[`topic_${i}`];
+    if (topicText && topicText.trim()) {
+      topics.push(topicText.trim());
+    }
+  }
+  if (topics.length > 0) {
+    profileTopics.value = topics;
+    // Auto-select first topic if none selected
+    if (selectedTopicIndex.value === -1) {
+      selectTopic(0);
+    }
+  }
 }
 
 /**
