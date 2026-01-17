@@ -15,6 +15,14 @@
 
     <!-- Main App -->
     <template v-else>
+      <!-- Template Hint Banner for new media kits from templates -->
+      <TemplateHintBanner
+        v-if="showTemplateHint"
+        :is-logged-in="isLoggedIn"
+        @select-profile="openProfileModal"
+        @dismiss="showTemplateHint = false"
+      />
+
       <!-- Complete Toolbar with all P0 features -->
       <Teleport to="#gmkb-toolbar">
         <MediaKitToolbarComplete />
@@ -96,6 +104,7 @@ import ErrorBoundary from './ErrorBoundary.vue';
 import ToastContainer from './ToastContainer.vue';
 import TemplatePicker from './TemplatePicker.vue';
 import ProfileSelectorModal from './ProfileSelectorModal.vue';
+import TemplateHintBanner from './TemplateHintBanner.vue';
 import storageService from '../../services/StorageService';
 import profileDataIntegration from '../../core/ProfileDataIntegration';
 
@@ -118,6 +127,9 @@ const importExportModalTab = ref('export'); // Track which tab to open
 const showProfileModal = ref(false);
 const selectedProfileId = ref(null);
 const profileModalShownOnLoad = ref(false);
+
+// Template hint banner state (shown for new media kits from templates)
+const showTemplateHint = ref(false);
 
 // Template picker state
 const urlParams = new URLSearchParams(window.location.search);
@@ -385,14 +397,20 @@ onMounted(async () => {
     console.log('✅ MediaKitApp: Phase 1 initialization complete');
     console.log('📊 MediaKitApp: Profile data loaded:', store.profileData ? Object.keys(store.profileData).length : 0, 'fields');
 
-    // Show profile selector modal for logged-in users with new template-based media kits
-    // This allows them to pre-populate the template with their profile data
-    if (isNewMediaKit && hasTemplateParam && isLoggedIn && !profileModalShownOnLoad.value) {
-      profileModalShownOnLoad.value = true;
-      // Small delay to let the UI render first
-      setTimeout(() => {
-        showProfileModal.value = true;
-      }, 500);
+    // Show template hint banner and profile modal for new template-based media kits
+    if (isNewMediaKit && hasTemplateParam) {
+      // Show the hint banner to inform users about sample content
+      showTemplateHint.value = true;
+
+      // Show profile selector modal for logged-in users
+      // This allows them to pre-populate the template with their profile data
+      if (isLoggedIn && !profileModalShownOnLoad.value) {
+        profileModalShownOnLoad.value = true;
+        // Small delay to let the UI render first
+        setTimeout(() => {
+          showProfileModal.value = true;
+        }, 500);
+      }
     }
 
     // ROOT FIX: Listen for BOTH combined and separate import/export events

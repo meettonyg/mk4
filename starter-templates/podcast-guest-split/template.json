@@ -66,9 +66,9 @@
               "verticalAlign": "center"
             },
             "data": {
-              "headline": "Your Next Great Guest",
-              "subheadline": "Expert in [Topic] | Featured on 100+ Podcasts",
-              "description": "Engaging conversations that captivate your audience and boost your downloads.",
+              "headline": "[Your Name]",
+              "subheadline": "[Your Title] | [Your Expertise]",
+              "description": "[Brief description of what you bring to podcast interviews]",
               "cta_text": "Book Me on Your Show"
             }
           },
@@ -83,12 +83,12 @@
             "data": {
               "stats": [
                 {
-                  "value": "150+",
-                  "label": "Podcast Appearances"
+                  "value": "[XX]+",
+                  "label": "[Your Stat Label]"
                 },
                 {
-                  "value": "2M+",
-                  "label": "Combined Downloads"
+                  "value": "[XX]+",
+                  "label": "[Your Stat Label]"
                 }
               ]
             }
@@ -113,23 +113,23 @@
           "data": {
             "stats": [
               {
-                "value": "150+",
-                "label": "Podcast Appearances",
+                "value": "[XX]+",
+                "label": "[Stat 1 Label]",
                 "icon": "microphone"
               },
               {
-                "value": "2M+",
-                "label": "Combined Downloads",
+                "value": "[XX]+",
+                "label": "[Stat 2 Label]",
                 "icon": "headphones"
               },
               {
-                "value": "4.9",
-                "label": "Average Host Rating",
+                "value": "[X.X]",
+                "label": "[Stat 3 Label]",
                 "icon": "star"
               },
               {
-                "value": "48hrs",
-                "label": "Response Time",
+                "value": "[XXhrs]",
+                "label": "[Stat 4 Label]",
                 "icon": "clock"
               }
             ]
@@ -150,7 +150,7 @@
             },
             "data": {
               "title": "What I Bring to Your Show",
-              "biography": "I don't just answer questions—I help create memorable moments your listeners will share.\n\nWith experience on 150+ shows, I understand pacing, storytelling, and what makes an episode stand out in a crowded feed."
+              "biography": "[Write a compelling bio about what makes you a great podcast guest. Highlight your experience, unique perspective, and what value you bring to listeners.]"
             }
           }
         ],
@@ -167,23 +167,23 @@
               "title": "Topics I Cover",
               "topics": [
                 {
-                  "title": "Industry Insights",
-                  "description": "Breaking down complex trends into actionable insights.",
+                  "title": "[Topic 1]",
+                  "description": "[Brief description of this topic]",
                   "icon": "chart-line"
                 },
                 {
-                  "title": "Personal Journey",
-                  "description": "Stories of failure, resilience, and breakthrough.",
+                  "title": "[Topic 2]",
+                  "description": "[Brief description of this topic]",
                   "icon": "road"
                 },
                 {
-                  "title": "Practical Strategies",
-                  "description": "Step-by-step frameworks listeners can implement.",
+                  "title": "[Topic 3]",
+                  "description": "[Brief description of this topic]",
                   "icon": "tools"
                 },
                 {
-                  "title": "Future Predictions",
-                  "description": "Where the industry is heading and how to prepare.",
+                  "title": "[Topic 4]",
+                  "description": "[Brief description of this topic]",
                   "icon": "crystal-ball"
                 }
               ]
@@ -210,25 +210,25 @@
           },
           "data": {
             "title": "Recent Appearances",
-            "subtitle": "Listen to some of my favorite conversations",
+            "subtitle": "[Optional subtitle about your podcast appearances]",
             "episodes": [
               {
-                "podcast_name": "Podcast Name",
-                "episode_title": "Episode Title",
-                "duration": "45 min",
-                "date": "2024"
+                "podcast_name": "[Podcast Name]",
+                "episode_title": "[Episode Title]",
+                "duration": "[XX min]",
+                "date": "[Year]"
               },
               {
-                "podcast_name": "Another Podcast",
-                "episode_title": "Great Conversation Topic",
-                "duration": "52 min",
-                "date": "2024"
+                "podcast_name": "[Podcast Name]",
+                "episode_title": "[Episode Title]",
+                "duration": "[XX min]",
+                "date": "[Year]"
               },
               {
-                "podcast_name": "Third Podcast",
-                "episode_title": "Insights and Stories",
-                "duration": "38 min",
-                "date": "2024"
+                "podcast_name": "[Podcast Name]",
+                "episode_title": "[Episode Title]",
+                "duration": "[XX min]",
+                "date": "[Year]"
               }
             ]
           }
@@ -253,16 +253,16 @@
               "title": "Questions Hosts Love",
               "questions": [
                 {
-                  "question": "What's the biggest myth in your industry?",
-                  "answer": "I love debunking common misconceptions with data."
+                  "question": "[Sample question 1]",
+                  "answer": "[Your answer or talking points]"
                 },
                 {
-                  "question": "What was your biggest failure?",
-                  "answer": "A vulnerable story that connects on a human level."
+                  "question": "[Sample question 2]",
+                  "answer": "[Your answer or talking points]"
                 },
                 {
-                  "question": "One piece of advice for your younger self?",
-                  "answer": "Timeless wisdom that resonates across demographics."
+                  "question": "[Sample question 3]",
+                  "answer": "[Your answer or talking points]"
                 }
               ]
             }
@@ -281,16 +281,16 @@
             "data": {
               "questions": [
                 {
-                  "question": "Something you believe that most disagree with?",
-                  "answer": "A contrarian take that sparks interesting debate."
+                  "question": "[Sample question 4]",
+                  "answer": "[Your answer or talking points]"
                 },
                 {
-                  "question": "What are you most excited about right now?",
-                  "answer": "Current projects that bring energy to the conversation."
+                  "question": "[Sample question 5]",
+                  "answer": "[Your answer or talking points]"
                 },
                 {
-                  "question": "How can listeners take action?",
-                  "answer": "Clear, actionable next steps to implement."
+                  "question": "[Sample question 6]",
+                  "answer": "[Your answer or talking points]"
                 }
               ]
             }
@@ -315,22 +315,22 @@
             "title": "What Podcast Hosts Say",
             "testimonials": [
               {
-                "quote": "Our episode together was our most downloaded of the year!",
-                "author": "Host Name",
+                "quote": "[Testimonial quote from a podcast host]",
+                "author": "[Host Name]",
                 "role": "Host",
-                "company": "Podcast Name"
+                "company": "[Podcast Name]"
               },
               {
-                "quote": "Incredibly well-prepared and brought amazing energy to the conversation.",
-                "author": "Host Name",
+                "quote": "[Testimonial quote from a podcast host]",
+                "author": "[Host Name]",
                 "role": "Host",
-                "company": "Another Podcast"
+                "company": "[Podcast Name]"
               },
               {
-                "quote": "A true professional who understands what makes great podcast content.",
-                "author": "Host Name",
+                "quote": "[Testimonial quote from a podcast host]",
+                "author": "[Host Name]",
                 "role": "Host",
-                "company": "Great Podcast"
+                "company": "[Podcast Name]"
               }
             ]
           }
@@ -350,9 +350,9 @@
               "alignment": "left"
             },
             "data": {
-              "title": "Let's Create Something Great",
-              "description": "I'm always excited to connect with new audiences. If you think I'd be a good fit for your show, let's chat!",
-              "cta_text": "Book a Pre-Interview Call"
+              "title": "[Your Call-to-Action Title]",
+              "description": "[Compelling description encouraging hosts to book you]",
+              "cta_text": "[Button Text]"
             }
           }
         ],
