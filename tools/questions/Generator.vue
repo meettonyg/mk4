@@ -18,6 +18,8 @@
               Saving draft...
             </div>
 
+            <!-- Form Section (hidden when results are showing) -->
+            <div v-if="!hasQuestions" class="gfy-questions-form">
             <!-- Recent History Section -->
             <div v-if="hasHistory" class="gfy-history">
               <button
@@ -260,6 +262,7 @@
                 Try Again
               </button>
             </div>
+            </div><!-- End of form section -->
 
           <!-- Results Container (appears below when generated) -->
           <div v-if="hasQuestions" ref="resultsContainer" class="gfy-results-container">
@@ -1248,7 +1251,8 @@ const handleGenerate = async () => {
 
     await generate({
       topics: refinedTopic.value,
-      authorityHook: authorityHookStr
+      authorityHook: authorityHookStr,
+      count: questionCount.value
     }, context);
 
     // Clear selections (but keep locked items)
