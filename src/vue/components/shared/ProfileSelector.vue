@@ -46,7 +46,7 @@
           :key="profile.id"
           :value="profile.id"
         >
-          {{ profile.title || profile.name || `Profile #${profile.id}` }}
+          {{ profile.title || profile.name || `Profile #${profile.id}` }}{{ profile.guest_title ? ` — ${profile.guest_title}` : '' }}
         </option>
       </select>
     </div>
@@ -80,6 +80,9 @@
           <div class="profile-selector__info">
             <span class="profile-selector__name">
               {{ profile.title || profile.name || `Profile #${profile.id}` }}
+            </span>
+            <span v-if="profile.guest_title" class="profile-selector__title">
+              {{ profile.guest_title }}
             </span>
             <span v-if="profile.status" class="profile-selector__status" :class="`profile-selector__status--${profile.status}`">
               {{ profile.status }}
@@ -414,6 +417,16 @@ defineExpose({
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.profile-selector__title {
+  display: block;
+  font-size: 12px;
+  color: var(--ps-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
 }
 
 .profile-selector__status {

@@ -41,6 +41,7 @@
               </div>
               <div class="gmkb-profile-modal__info">
                 <h4>{{ profile.name || 'Unnamed Profile' }}</h4>
+                <p v-if="profile.guest_title" class="gmkb-profile-modal__title">{{ profile.guest_title }}</p>
                 <p v-if="profile.tagline">{{ profile.tagline }}</p>
                 <span class="gmkb-profile-modal__meta">
                   {{ profile.completion || 0 }}% complete
@@ -447,6 +448,12 @@ export default {
   font-size: 15px;
   font-weight: 600;
   color: #1f2937;
+}
+
+.gmkb-profile-modal__title {
+  color: #4f46e5 !important;
+  font-weight: 500 !important;
+  font-size: 13px !important;
 }
 
 .gmkb-profile-modal__info p {
