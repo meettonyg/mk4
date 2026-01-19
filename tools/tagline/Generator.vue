@@ -792,7 +792,8 @@ const handleGenerate = async () => {
   try {
     const context = props.mode === 'integrated' ? 'builder' : 'public';
     // Generate uses the reactive state directly from the composable
-    await generate({}, context);
+    // Pass the count to ensure the correct number of taglines are generated
+    await generate({ count: GENERATION_COUNT }, context);
 
     // Save to history on successful generation
     if (taglines.value && taglines.value.length > 0) {

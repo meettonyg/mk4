@@ -64,6 +64,19 @@ function getNonce(context) {
 }
 
 /**
+ * Get REST API nonce for header (needed for logged-in users)
+ * This is separate from the public AI nonce
+ * @returns {string} REST API nonce
+ */
+function getRestNonce() {
+  return window.gmkbData?.restNonce
+    || window.gmkbStandaloneTools?.restNonce
+    || window.gmkbProfileData?.nonce
+    || window.wpApiSettings?.nonce
+    || '';
+}
+
+/**
  * Check if user is logged in from available sources
  * @returns {boolean}
  */
@@ -240,6 +253,7 @@ export function useAIGenerator(type) {
     try {
       const restUrl = getRestUrl();
       const nonce = getNonce(context);
+      const restNonce = getRestNonce();
 
       // Build request body
       const body = {
@@ -252,11 +266,12 @@ export function useAIGenerator(type) {
       console.log(`[useAIGenerator] Generating ${type} content...`, { context, restUrl });
 
       // Make API request
+      // Always include X-WP-Nonce if available (needed for logged-in users even in public context)
       const response = await fetch(`${restUrl}ai/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-WP-Nonce': context === 'builder' ? nonce : ''
+          'X-WP-Nonce': restNonce
         },
         body: JSON.stringify(body)
       });
