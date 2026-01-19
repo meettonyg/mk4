@@ -698,7 +698,22 @@ export const useMediaKitStore = defineStore('mediaKit', {
           console.error('❌ Save failed:', result);
           throw new Error('Save failed');
         }
-        
+
+        // Handle new media kit creation - update store's postId
+        if (result.created && result.post_id) {
+          console.log('🆕 New media kit created with ID:', result.post_id);
+          this.postId = result.post_id;
+
+          // Update URL to reflect the new post (without full page reload)
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.delete('template');
+          newUrl.searchParams.delete('theme');
+          // Redirect to the edit URL for the new post
+          if (result.edit_url) {
+            window.history.replaceState({}, '', result.edit_url);
+          }
+        }
+
         console.log('✅ Save operation completed successfully!');
         this.isDirty = false;
         // hasUnsavedChanges removed - using isDirty only
