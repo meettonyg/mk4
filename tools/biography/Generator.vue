@@ -833,6 +833,14 @@ const handleKeyboardShortcut = (event) => {
  * Handle starting generation - goes to results view
  */
 const handleStartGeneration = async () => {
+  console.log('[Biography Generator] handleStartGeneration called');
+  console.log('[Biography Generator] canGenerate:', canGenerate.value);
+  console.log('[Biography Generator] Form data:', {
+    name: name.value,
+    authorityHook: { ...authorityHook },
+    impactIntro: { ...impactIntro }
+  });
+
   showResults.value = true;
   // Auto-generate for the active slot (long by default)
   await handleGenerateForSlot('long');
