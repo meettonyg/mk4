@@ -1390,13 +1390,17 @@ const handleGenerate = async () => {
     }, context);
 
     // Clear selections (but keep locked items)
+    // Only clear unlocked slots when user had prior selections - this preserves
+    // prefilled questions from profile on first generation
+    const shouldClearUnlockedSlots = selectedQuestionIndices.value.length > 0;
     selectedQuestionIndices.value = [];
-    // Clear unlocked slots
-    interviewSet.value.forEach(slot => {
-      if (!slot.locked) {
-        slot.question = null;
-      }
-    });
+    if (shouldClearUnlockedSlots) {
+      interviewSet.value.forEach(slot => {
+        if (!slot.locked) {
+          slot.question = null;
+        }
+      });
+    }
 
     // Save to history on successful generation
     if (questions.value && questions.value.length > 0) {
