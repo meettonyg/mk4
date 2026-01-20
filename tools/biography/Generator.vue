@@ -842,6 +842,10 @@ const handleStartGeneration = async () => {
   });
 
   showResults.value = true;
+
+  // Scroll to top to prevent page shift when switching views
+  window.scrollTo({ top: 0, behavior: 'instant' });
+
   // Auto-generate for the active slot (long by default)
   await handleGenerateForSlot('long');
 };
