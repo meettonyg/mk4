@@ -451,9 +451,9 @@ export default {
 }
 
 .gmkb-profile-modal__title {
-  color: #4f46e5 !important;
-  font-weight: 500 !important;
-  font-size: 13px !important;
+  color: #4f46e5;
+  font-weight: 500;
+  font-size: 13px;
 }
 
 .gmkb-profile-modal__info p {
