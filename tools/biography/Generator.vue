@@ -11,9 +11,9 @@
     target-component="Biography"
     :show-cta="!hasVariations"
     @apply="handleApply"
-    @regenerate="() => generateForSlot(activeSlot)"
+    @regenerate="handleGenerateForActiveSlot"
     @copy="() => copyBio(currentBio)"
-    @retry="() => generateForSlot(activeSlot)"
+    @retry="handleGenerateForActiveSlot"
   >
     <!-- Compact Input Form -->
     <div class="gmkb-ai-form">
@@ -463,7 +463,7 @@
                   <button type="button" class="gfy-btn gfy-btn--outline" @click="handleCopy(currentSlot.lockedBio)">
                     <i class="fas fa-copy"></i> Copy
                   </button>
-                  <button type="button" class="gfy-btn gfy-btn--ghost" @click="unlockBio(activeSlot)">
+                  <button type="button" class="gfy-btn gfy-btn--ghost" @click="unlockBio()">
                     <i class="fas fa-unlock"></i> Unlock & Edit
                   </button>
                 </div>
@@ -486,7 +486,7 @@
                 type="button"
                 class="gfy-generate-bio-btn"
                 :disabled="isGenerating"
-                @click="generateForSlot(activeSlot)"
+                @click="handleGenerateForActiveSlot"
               >
                 <svg v-if="!isGenerating" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 19l7-7 3 3-7 7-3-3z"/>
@@ -866,6 +866,14 @@ const handleGenerateForSlot = async (slotName) => {
   } catch (err) {
     console.error('[Biography Generator] Generation failed:', err);
   }
+};
+
+/**
+ * Handle generate for the currently active slot
+ * Wrapper that explicitly uses activeSlot.value to avoid ref issues
+ */
+const handleGenerateForActiveSlot = async () => {
+  await handleGenerateForSlot(activeSlot.value);
 };
 
 /**
