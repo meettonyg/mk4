@@ -355,28 +355,35 @@ class GMKB_AI_Service {
         $authority_hook = '';
         if (!empty($params['authorityHook'])) {
             $ah = $params['authorityHook'];
-            $parts = array();
 
-            if (!empty($ah['who'])) {
-                $parts[] = 'I help ' . $ah['who'];
-            }
-            if (!empty($ah['what'])) {
-                $parts[] = $ah['what'];
-            }
-            if (!empty($ah['when'])) {
-                $parts[] = 'when ' . $ah['when'];
-            }
-            if (!empty($ah['how'])) {
-                $parts[] = 'by ' . $ah['how'];
-            }
-            if (!empty($ah['where'])) {
-                $parts[] = 'in ' . $ah['where'];
-            }
-            if (!empty($ah['why'])) {
-                $parts[] = 'because ' . $ah['why'];
-            }
+            // If already a string, use it directly
+            if (is_string($ah)) {
+                $authority_hook = $ah;
+            } elseif (is_array($ah)) {
+                // Build from array parts
+                $parts = array();
 
-            $authority_hook = implode(' ', $parts);
+                if (!empty($ah['who'])) {
+                    $parts[] = 'I help ' . $ah['who'];
+                }
+                if (!empty($ah['what'])) {
+                    $parts[] = $ah['what'];
+                }
+                if (!empty($ah['when'])) {
+                    $parts[] = 'when ' . $ah['when'];
+                }
+                if (!empty($ah['how'])) {
+                    $parts[] = 'by ' . $ah['how'];
+                }
+                if (!empty($ah['where'])) {
+                    $parts[] = 'in ' . $ah['where'];
+                }
+                if (!empty($ah['why'])) {
+                    $parts[] = 'because ' . $ah['why'];
+                }
+
+                $authority_hook = implode(' ', $parts);
+            }
         }
 
         // Build refinement section if feedback provided
