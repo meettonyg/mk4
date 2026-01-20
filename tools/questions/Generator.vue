@@ -759,6 +759,12 @@ const getDirectProfileData = () => {
   return window.gmkbData?.pods_data || window.gmkbVueData?.pods_data || {};
 };
 
+// Normalize profile data shape (handles nested data/fields payloads)
+const normalizeProfileData = (rawData) => {
+  if (!rawData) return null;
+  return rawData.data || rawData.fields || rawData;
+};
+
 // Computed: has media kit context (for integrated mode)
 const hasMediaKitContext = computed(() => {
   if (props.mode !== 'integrated') return false;
@@ -980,6 +986,14 @@ const canSelectMore = computed(() => {
   return selectedQuestionsCount.value < availableSlotsCount.value;
 });
 
+const getQuestionText = (value) => {
+  if (typeof value === 'string') return value;
+  if (value && typeof value === 'object') {
+    return value.question || value.text || '';
+  }
+  return '';
+};
+
 /**
  * Check if a question is selected
  */
@@ -1043,7 +1057,8 @@ const selectTopic = (index) => {
 const loadExistingQuestionsForTopic = (topicIndex) => {
   // Get profile data - check loadedProfileData first (set by populateFromProfile),
   // then profileData.value (from useStandaloneProfile), then direct profile data (integrated mode)
-  const data = loadedProfileData.value || profileData.value || getDirectProfileData();
+  const rawData = loadedProfileData.value || profileData.value || getDirectProfileData();
+  const data = normalizeProfileData(rawData);
 
   if (import.meta.env.DEV) {
     console.log('[QuestionsGenerator] loadExistingQuestionsForTopic called:', {
@@ -1089,13 +1104,22 @@ const loadExistingQuestionsForTopic = (topicIndex) => {
 
   // Method 1: Try flat question_N fields first
   for (let qNum = startQuestionNum; qNum <= endQuestionNum; qNum++) {
-    const questionText = data[`question_${qNum}`];
+    const questionText = getQuestionText(data[`question_${qNum}`]);
     if (questionText && questionText.trim()) {
       questionsToLoad.push(questionText.trim());
     }
   }
 
-  // Method 2: If no flat questions found, try hierarchical topics structure
+  // Method 2: If no flat questions found, try questions array (question_1..question_25)
+  if (questionsToLoad.length === 0 && Array.isArray(data.questions)) {
+    questionsToLoad = data.questions
+      .map(getQuestionText)
+      .filter(q => q && q.trim())
+      .slice(startQuestionNum - 1, endQuestionNum)
+      .map(q => q.trim());
+  }
+
+  // Method 3: If no flat questions found, try hierarchical topics structure
   if (questionsToLoad.length === 0 && data.topics && Array.isArray(data.topics)) {
     if (import.meta.env.DEV) {
       console.log('[QuestionsGenerator] No flat questions found, trying hierarchical topics structure');
@@ -1104,6 +1128,7 @@ const loadExistingQuestionsForTopic = (topicIndex) => {
     if (topic && topic.questions && Array.isArray(topic.questions)) {
       // Limit to MAX_INTERVIEW_SLOTS to match the UI's capacity
       questionsToLoad = topic.questions
+        .map(getQuestionText)
         .filter(q => q && q.trim())
         .map(q => q.trim())
         .slice(0, MAX_INTERVIEW_SLOTS);
@@ -1180,8 +1205,10 @@ function populateFromProfile(data) {
     return;
   }
 
+  const normalizedData = normalizeProfileData(data);
+
   // Store the profile data for use by loadExistingQuestionsForTopic
-  loadedProfileData.value = data;
+  loadedProfileData.value = normalizedData;
   if (import.meta.env.DEV) {
     console.log('[QuestionsGenerator] Profile data stored in loadedProfileData');
   }
@@ -1189,10 +1216,10 @@ function populateFromProfile(data) {
   const newPrefilledFields = new Set();
 
   // Populate authority hook fields (check multiple field name patterns)
-  const hookWho = data.hook_who || data.authority_hook_who || '';
-  const hookWhat = data.hook_what || data.authority_hook_what || '';
-  const hookWhen = data.hook_when || data.authority_hook_when || '';
-  const hookHow = data.hook_how || data.authority_hook_how || '';
+  const hookWho = normalizedData.hook_who || normalizedData.authority_hook_who || '';
+  const hookWhat = normalizedData.hook_what || normalizedData.authority_hook_what || '';
+  const hookWhen = normalizedData.hook_when || normalizedData.authority_hook_when || '';
+  const hookHow = normalizedData.hook_how || normalizedData.authority_hook_how || '';
 
   if (hookWho) {
     authorityHook.who = hookWho;
@@ -1212,12 +1239,12 @@ function populateFromProfile(data) {
   }
 
   // Populate authority hook fields from profile data (for cross-tool sync)
-  loadFromProfileData(data);
+  loadFromProfileData(normalizedData);
 
   // Extract topics from profile (stored as topic_1, topic_2, etc.)
   const topics = [];
   for (let i = 1; i <= 5; i++) {
-    const topicText = data[`topic_${i}`];
+    const topicText = normalizedData[`topic_${i}`];
     if (topicText && topicText.trim()) {
       topics.push(topicText.trim());
     }
