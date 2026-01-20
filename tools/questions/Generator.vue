@@ -772,11 +772,15 @@ const hasMediaKitContext = computed(() => {
 function prefillFromMediaKitProfile() {
   const profileData = getDirectProfileData();
   if (!profileData || Object.keys(profileData).length === 0) {
-    console.log('[QuestionsGenerator] No profile data available for pre-fill');
+    if (import.meta.env.DEV) {
+      console.log('[QuestionsGenerator] No profile data available for pre-fill');
+    }
     return;
   }
 
-  console.log('[QuestionsGenerator] Pre-filling from profile data:', Object.keys(profileData));
+  if (import.meta.env.DEV) {
+    console.log('[QuestionsGenerator] Pre-filling from profile data:', Object.keys(profileData));
+  }
 
   // Authority hook fields (check multiple possible field names)
   const hookWho = profileData.hook_who || profileData.authority_hook_who || '';
@@ -798,9 +802,11 @@ function prefillFromMediaKitProfile() {
   if (bio && !guestBio.value) guestBio.value = bio;
   if (audience && !targetAudience.value) targetAudience.value = audience;
 
-  console.log('[QuestionsGenerator] Pre-fill complete:', {
-    hookWho: !!hookWho, hookWhat: !!hookWhat, hookWhen: !!hookWhen, hookHow: !!hookHow, bio: !!bio
-  });
+  if (import.meta.env.DEV) {
+    console.log('[QuestionsGenerator] Pre-fill complete:', {
+      hookWho: !!hookWho, hookWhat: !!hookWhat, hookWhen: !!hookWhen, hookHow: !!hookHow, bio: !!bio
+    });
+  }
 }
 
 // Auto-fill from media kit profile when in integrated mode (on mount)
@@ -1038,7 +1044,24 @@ const loadExistingQuestionsForTopic = (topicIndex) => {
   // Get profile data - check loadedProfileData first (set by populateFromProfile),
   // then profileData.value (from useStandaloneProfile), then direct profile data (integrated mode)
   const data = loadedProfileData.value || profileData.value || getDirectProfileData();
-  if (!data) return;
+
+  if (import.meta.env.DEV) {
+    console.log('[QuestionsGenerator] loadExistingQuestionsForTopic called:', {
+      topicIndex,
+      hasLoadedProfileData: !!loadedProfileData.value,
+      hasProfileData: !!profileData.value,
+      hasDirectData: !!getDirectProfileData(),
+      dataKeys: data ? Object.keys(data).filter(k => k.startsWith('question_')).slice(0, 10) : [],
+      hasTopicsArray: data?.topics ? true : false
+    });
+  }
+
+  if (!data) {
+    if (import.meta.env.DEV) {
+      console.log('[QuestionsGenerator] No profile data available for question loading');
+    }
+    return;
+  }
 
   // Calculate question field indices for this topic
   // Topic 0 (index 0) = question_1 to question_5
@@ -1046,6 +1069,10 @@ const loadExistingQuestionsForTopic = (topicIndex) => {
   // etc.
   const startQuestionNum = (topicIndex * MAX_INTERVIEW_SLOTS) + 1;
   const endQuestionNum = startQuestionNum + MAX_INTERVIEW_SLOTS - 1;
+
+  if (import.meta.env.DEV) {
+    console.log('[QuestionsGenerator] Loading questions:', { startQuestionNum, endQuestionNum });
+  }
 
   // Clear existing interview set (keep locked slots)
   interviewSet.value.forEach(slot => {
@@ -1055,20 +1082,59 @@ const loadExistingQuestionsForTopic = (topicIndex) => {
   });
   selectedQuestionIndices.value = [];
 
-  // Load existing questions into interview set slots
-  let slotIndex = 0;
+  // Try to load questions from multiple possible data structures:
+  // 1. Flat question_N fields (primary format)
+  // 2. Hierarchical topics array with questions (alternative format)
+  let questionsToLoad = [];
+
+  // Method 1: Try flat question_N fields first
   for (let qNum = startQuestionNum; qNum <= endQuestionNum; qNum++) {
     const questionText = data[`question_${qNum}`];
     if (questionText && questionText.trim()) {
-      // Find next available unlocked slot
-      while (slotIndex < interviewSet.value.length && interviewSet.value[slotIndex].locked) {
-        slotIndex++;
-      }
-      if (slotIndex < interviewSet.value.length) {
-        interviewSet.value[slotIndex].question = questionText.trim();
-        slotIndex++;
+      questionsToLoad.push(questionText.trim());
+    }
+  }
+
+  // Method 2: If no flat questions found, try hierarchical topics structure
+  if (questionsToLoad.length === 0 && data.topics && Array.isArray(data.topics)) {
+    if (import.meta.env.DEV) {
+      console.log('[QuestionsGenerator] No flat questions found, trying hierarchical topics structure');
+    }
+    const topic = data.topics[topicIndex];
+    if (topic && topic.questions && Array.isArray(topic.questions)) {
+      // Limit to MAX_INTERVIEW_SLOTS to match the UI's capacity
+      questionsToLoad = topic.questions
+        .filter(q => q && q.trim())
+        .map(q => q.trim())
+        .slice(0, MAX_INTERVIEW_SLOTS);
+      if (import.meta.env.DEV) {
+        console.log('[QuestionsGenerator] Found', questionsToLoad.length, 'questions from hierarchical structure');
       }
     }
+  }
+
+  // Log questions being loaded
+  if (import.meta.env.DEV) {
+    console.log('[QuestionsGenerator] Questions to load:', questionsToLoad.map(q => q.substring(0, 50) + '...'));
+  }
+
+  // Load questions into interview set slots
+  let slotIndex = 0;
+  let loadedCount = 0;
+  for (const questionText of questionsToLoad) {
+    // Find next available unlocked slot
+    while (slotIndex < interviewSet.value.length && interviewSet.value[slotIndex].locked) {
+      slotIndex++;
+    }
+    if (slotIndex < interviewSet.value.length) {
+      interviewSet.value[slotIndex].question = questionText;
+      slotIndex++;
+      loadedCount++;
+    }
+  }
+
+  if (import.meta.env.DEV) {
+    console.log('[QuestionsGenerator] Loaded', loadedCount, 'questions into interview set');
   }
 };
 
@@ -1098,10 +1164,27 @@ const copyQuestion = async (index, event) => {
  * Populate form fields from profile data
  */
 function populateFromProfile(data) {
-  if (!data) return;
+  if (import.meta.env.DEV) {
+    console.log('[QuestionsGenerator] populateFromProfile called:', {
+      hasData: !!data,
+      dataKeys: data ? Object.keys(data).length : 0,
+      sampleQuestionKeys: data ? Object.keys(data).filter(k => k.startsWith('question_')).slice(0, 5) : [],
+      topicKeys: data ? Object.keys(data).filter(k => k.startsWith('topic_')) : []
+    });
+  }
+
+  if (!data) {
+    if (import.meta.env.DEV) {
+      console.log('[QuestionsGenerator] populateFromProfile: No data provided');
+    }
+    return;
+  }
 
   // Store the profile data for use by loadExistingQuestionsForTopic
   loadedProfileData.value = data;
+  if (import.meta.env.DEV) {
+    console.log('[QuestionsGenerator] Profile data stored in loadedProfileData');
+  }
 
   const newPrefilledFields = new Set();
 
@@ -1139,14 +1222,33 @@ function populateFromProfile(data) {
       topics.push(topicText.trim());
     }
   }
+
+  if (import.meta.env.DEV) {
+    console.log('[QuestionsGenerator] Extracted topics:', {
+      topicsCount: topics.length,
+      topics: topics.map(t => t.substring(0, 50) + '...'),
+      currentSelectedTopicIndex: selectedTopicIndex.value
+    });
+  }
+
   if (topics.length > 0) {
     profileTopics.value = topics;
     // Auto-select first topic if none selected, otherwise reload questions for current topic
     if (selectedTopicIndex.value === -1) {
+      if (import.meta.env.DEV) {
+        console.log('[QuestionsGenerator] Auto-selecting first topic (index 0)');
+      }
       selectTopic(0);
     } else {
       // Topic already selected - reload questions from new profile data
+      if (import.meta.env.DEV) {
+        console.log('[QuestionsGenerator] Reloading questions for existing topic:', selectedTopicIndex.value);
+      }
       loadExistingQuestionsForTopic(selectedTopicIndex.value);
+    }
+  } else {
+    if (import.meta.env.DEV) {
+      console.log('[QuestionsGenerator] No topics found in profile data');
     }
   }
 
@@ -1319,13 +1421,17 @@ const handleGenerate = async () => {
     }, context);
 
     // Clear selections (but keep locked items)
+    // Only clear unlocked slots when user had prior selections - this preserves
+    // prefilled questions from profile on first generation
+    const shouldClearUnlockedSlots = selectedQuestionIndices.value.length > 0;
     selectedQuestionIndices.value = [];
-    // Clear unlocked slots
-    interviewSet.value.forEach(slot => {
-      if (!slot.locked) {
-        slot.question = null;
-      }
-    });
+    if (shouldClearUnlockedSlots) {
+      interviewSet.value.forEach(slot => {
+        if (!slot.locked) {
+          slot.question = null;
+        }
+      });
+    }
 
     // Save to history on successful generation
     if (questions.value && questions.value.length > 0) {
