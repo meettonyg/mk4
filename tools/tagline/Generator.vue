@@ -9,9 +9,9 @@
     :has-results="hasTaglines"
     :is-loading="isGenerating"
   >
-    <!-- Left Panel: Form -->
+    <!-- Left Panel: Form (hidden when results are showing) -->
     <template #left>
-      <div class="gmkb-plg-tool-embed">
+      <div v-if="!hasTaglines" class="gmkb-plg-tool-embed">
         <!-- Profile Selector (for logged-in users in standalone mode) -->
         <ProfileSelector
           @profile-selected="handleProfileSelected"
@@ -262,7 +262,7 @@
 
     <!-- Results -->
     <template #results>
-      <div class="tagline-results">
+      <div ref="resultsContainer" class="tagline-results">
         <div class="tagline-results__layout">
 
           <!-- SIDEBAR: Master Tagline Slot -->
@@ -582,7 +582,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, toRef } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, toRef, nextTick } from 'vue';
 import { useAITagline, STYLE_FOCUS_OPTIONS, TONE_OPTIONS, INTENT_OPTIONS } from '../../src/composables/useAITagline';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
@@ -699,6 +699,9 @@ const showHistory = ref(false);
 // Show draft restore prompt
 const showDraftPrompt = ref(false);
 
+// Results container ref for scroll-to-top
+const resultsContainer = ref(null);
+
 /**
  * The number of items to generate.
  */
@@ -809,6 +812,14 @@ const handleGenerate = async () => {
         results: taglines.value,
         preview: taglines.value[0]?.text?.substring(0, 50) || 'Generated taglines'
       });
+
+      // Scroll to results in standalone mode
+      if (props.mode === 'default') {
+        await nextTick();
+        if (resultsContainer.value) {
+          resultsContainer.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
     }
 
     emit('generated', {
