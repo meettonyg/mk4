@@ -986,6 +986,10 @@ const canSelectMore = computed(() => {
   return selectedQuestionsCount.value < availableSlotsCount.value;
 });
 
+const hasUnlockedSlot = computed(() => {
+  return interviewSet.value.some(slot => !slot.locked);
+});
+
 const getQuestionText = (value) => {
   if (typeof value === 'string') return value;
   if (value && typeof value === 'object') {
@@ -1016,15 +1020,38 @@ const toggleQuestionSelection = (index) => {
     if (slotIdx > -1) {
       interviewSet.value[slotIdx].question = null;
     }
-  } else if (canSelectMore.value) {
-    // Select
-    selectedQuestionIndices.value.push(index);
+  } else if (canSelectMore.value || hasUnlockedSlot.value) {
     // Add to first available unlocked slot
     const emptySlotIdx = interviewSet.value.findIndex(
       slot => !slot.locked && !slot.question
     );
     if (emptySlotIdx > -1) {
       interviewSet.value[emptySlotIdx].question = questions.value[index];
+      selectedQuestionIndices.value.push(index);
+      return;
+    }
+
+    const replaceSlotIdx = interviewSet.value.findIndex(slot => !slot.locked);
+    if (replaceSlotIdx > -1) {
+      const replacedQuestion = interviewSet.value[replaceSlotIdx].question;
+      if (replacedQuestion) {
+        const replacedIndex = questions.value.findIndex(
+          question => question === replacedQuestion
+        );
+        if (replacedIndex > -1) {
+          const selectedIdx = selectedQuestionIndices.value.indexOf(replacedIndex);
+          if (selectedIdx > -1) {
+            selectedQuestionIndices.value.splice(selectedIdx, 1);
+          }
+        } else if (selectedQuestionIndices.value.length >= availableSlotsCount.value) {
+          selectedQuestionIndices.value.shift();
+        }
+      } else if (selectedQuestionIndices.value.length >= availableSlotsCount.value) {
+        selectedQuestionIndices.value.shift();
+      }
+
+      interviewSet.value[replaceSlotIdx].question = questions.value[index];
+      selectedQuestionIndices.value.push(index);
     }
   }
 };
