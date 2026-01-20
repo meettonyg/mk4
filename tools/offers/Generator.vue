@@ -1354,9 +1354,10 @@ const handleCopySingleOffer = async (pkg, event, index = null) => {
 const handleCopyAll = async () => {
   // Collect all locked/generated offers
   const allOffers = [];
+  const tierIndex = { entry: 0, signature: 1, premium: 2 };
 
   ['entry', 'signature', 'premium'].forEach(tier => {
-    const offer = lockedOffers.value[tier] || offers.value[tier];
+    const offer = lockedOffers[tier] || offers.value[tierIndex[tier]];
     if (offer) {
       allOffers.push({
         tier: tier.charAt(0).toUpperCase() + tier.slice(1),
@@ -1372,7 +1373,7 @@ const handleCopyAll = async () => {
     return `== ${offer.tier} Package ==\n` +
       `Name: ${offer.name || 'N/A'}\n` +
       `Price: ${offer.price || 'N/A'}\n` +
-      `Description: ${offer.description || 'N/A'}\n` +
+      `Description: ${cleanMarkdown(offer.description) || 'N/A'}\n` +
       `Deliverables: ${offer.deliverables?.join(', ') || 'N/A'}`;
   }).join('\n\n');
 
@@ -1389,9 +1390,10 @@ const handleCopyAll = async () => {
 const handleExport = () => {
   // Collect all locked/generated offers
   const allOffers = [];
+  const tierIndex = { entry: 0, signature: 1, premium: 2 };
 
   ['entry', 'signature', 'premium'].forEach(tier => {
-    const offer = lockedOffers.value[tier] || offers.value[tier];
+    const offer = lockedOffers[tier] || offers.value[tierIndex[tier]];
     if (offer) {
       allOffers.push({
         tier: tier.charAt(0).toUpperCase() + tier.slice(1),
@@ -1411,7 +1413,7 @@ const handleExport = () => {
       return `## ${offer.tier} Package\n\n` +
         `**${offer.name || 'Untitled'}**\n\n` +
         `**Price:** ${offer.price || 'TBD'}\n\n` +
-        `${offer.description || ''}\n\n` +
+        `${cleanMarkdown(offer.description) || ''}\n\n` +
         `**Deliverables:**\n${deliverables}`;
     }).join('\n\n---\n\n') +
     `\n\n---\n*Generated with Offers Generator*`;
