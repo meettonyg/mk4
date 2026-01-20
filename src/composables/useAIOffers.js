@@ -113,7 +113,7 @@ export function useAIOffers() {
   const offersCount = computed(() => offers.value.length);
 
   // Check if offers were generated
-  const hasOffers = computed(() => offers.value.length > 0);
+  const hasOffers = computed(() => offersCount.value > 0);
 
   /**
    * Generate offers with current settings
