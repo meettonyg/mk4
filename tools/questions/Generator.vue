@@ -1988,7 +1988,7 @@ watch(
 /* Individual Interview Slot */
 .questions-interview-slot {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   padding: 10px 12px;
   background: #fff;
@@ -2037,11 +2037,8 @@ watch(
   font-weight: 500;
   color: var(--mkcg-text-primary, #0f172a);
   line-height: 1.3;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .questions-interview-slot__text--empty {
@@ -2063,6 +2060,7 @@ watch(
   align-items: center;
   justify-content: center;
   transition: all 0.15s;
+  margin-top: 2px;
 }
 
 .questions-interview-slot__lock:hover:not(:disabled) {
