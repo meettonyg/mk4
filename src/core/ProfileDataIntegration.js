@@ -299,7 +299,7 @@ export class ProfileDataIntegration {
       'authority-hook': {
         dataSource: "profile",
         fields: {
-          authority_statement: ["authority_statement", "credibility_statement", "why_me"],
+          authority_hook: ["authority_hook", "authority_statement", "credibility_statement", "why_me"],
           unique_value: ["unique_value", "unique_value_proposition", "uvp"],
           mission_statement: ["mission_statement", "mission", "purpose"],
           core_message: ["core_message", "key_message", "main_message"],
