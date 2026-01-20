@@ -11,7 +11,7 @@
   >
     <!-- Left Panel: Form -->
     <template #left>
-      <div class="gmkb-plg-tool-embed">
+      <div v-if="!hasOffers" class="gmkb-plg-tool-embed">
         <!-- Profile Selector (for logged-in users in standalone mode) -->
         <ProfileSelector
           @profile-selected="handleProfileSelected"
@@ -437,7 +437,7 @@
                 LOCKED {{ activeOfferTierLabel.toUpperCase() }} PACKAGE
               </div>
               <h4 class="offers-locked-card__name">{{ lockedOffers[activeOfferTier].name }}</h4>
-              <p class="offers-locked-card__description">{{ lockedOffers[activeOfferTier].description }}</p>
+              <p class="offers-locked-card__description">{{ cleanMarkdown(lockedOffers[activeOfferTier].description) }}</p>
               <div class="offers-locked-card__actions">
                 <button type="button" class="gfy-btn gfy-btn--outline" title="Copy this package to clipboard" aria-label="Copy package details to clipboard" @click="handleCopy">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -462,7 +462,7 @@
                 {{ activeOfferTierLabel }}
               </div>
               <h4 class="offers-card__name">{{ currentTierOffer.name }}</h4>
-              <p class="offers-card__description">{{ currentTierOffer.description }}</p>
+              <p class="offers-card__description">{{ cleanMarkdown(currentTierOffer.description) }}</p>
 
               <!-- Metadata Row -->
               <div class="offers-card__meta">
@@ -674,7 +674,7 @@
               <h4 class="gmkb-ai-package__name">{{ pkg.name }}</h4>
             </div>
 
-            <p class="gmkb-ai-package__description">{{ pkg.description }}</p>
+            <p class="gmkb-ai-package__description">{{ cleanMarkdown(pkg.description) }}</p>
 
             <div class="gmkb-ai-package__section">
               <h5 class="gmkb-ai-package__section-title">Includes:</h5>
@@ -912,6 +912,30 @@ function isFieldPrefilled(fieldName) {
  */
 function markFieldEdited(fieldName) {
   prefilledFields.value.delete(fieldName);
+}
+
+/**
+ * Clean markdown formatting from text
+ * Removes **bold**, *italic*, ###headers, ---, and other markdown syntax
+ */
+function cleanMarkdown(text) {
+  if (!text) return '';
+  return text
+    // Remove markdown headers (### Header)
+    .replace(/^#{1,6}\s+/gm, '')
+    // Remove bold (**text** or __text__)
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/__(.+?)__/g, '$1')
+    // Remove italic (*text* or _text_)
+    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/_(.+?)_/g, '$1')
+    // Remove horizontal rules (--- or ***)
+    .replace(/^[-*]{3,}\s*$/gm, '')
+    // Remove numbered list markers at start (5. **Item:**)
+    .replace(/^\d+\.\s*/gm, '')
+    // Clean up extra whitespace
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 /**
