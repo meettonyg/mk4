@@ -1013,6 +1013,50 @@ const toggleSlotLock = (slotIndex) => {
 const selectTopic = (index) => {
   selectedTopicIndex.value = index;
   refinedTopic.value = availableTopics.value[index] || '';
+
+  // Load existing questions for this topic from profile
+  loadExistingQuestionsForTopic(index);
+};
+
+/**
+ * Load existing questions for a topic from profile data
+ * Questions are stored as question_1-5 for topic 1, question_6-10 for topic 2, etc.
+ */
+const loadExistingQuestionsForTopic = (topicIndex) => {
+  // Get profile data (standalone mode) or direct profile data (integrated mode)
+  const data = profileData.value || getDirectProfileData();
+  if (!data) return;
+
+  // Calculate question field indices for this topic
+  // Topic 0 (index 0) = question_1 to question_5
+  // Topic 1 (index 1) = question_6 to question_10
+  // etc.
+  const startQuestionNum = (topicIndex * 5) + 1;
+  const endQuestionNum = startQuestionNum + 4;
+
+  // Clear existing interview set (keep locked slots)
+  interviewSet.value.forEach(slot => {
+    if (!slot.locked) {
+      slot.question = null;
+    }
+  });
+  selectedQuestionIndices.value = [];
+
+  // Load existing questions into interview set slots
+  let slotIndex = 0;
+  for (let qNum = startQuestionNum; qNum <= endQuestionNum; qNum++) {
+    const questionText = data[`question_${qNum}`];
+    if (questionText && questionText.trim()) {
+      // Find next available unlocked slot
+      while (slotIndex < interviewSet.value.length && interviewSet.value[slotIndex].locked) {
+        slotIndex++;
+      }
+      if (slotIndex < interviewSet.value.length) {
+        interviewSet.value[slotIndex].question = questionText.trim();
+        slotIndex++;
+      }
+    }
+  }
 };
 
 /**

@@ -576,14 +576,18 @@ function populateFromProfile(profileData) {
     }
   }
 
-  // Populate WHERE from profile impact_where (only if no credentials loaded)
-  if (profileData.impact_where && !introWhere.value && credentials.value.length === 0) {
-    introWhere.value = profileData.impact_where;
+  // Populate WHERE from profile (check multiple field name patterns)
+  // impact_where is the dedicated field, hook_where is from 6W's framework
+  const whereValue = profileData.impact_where || profileData.hook_where || '';
+  if (whereValue && !introWhere.value && credentials.value.length === 0) {
+    introWhere.value = whereValue;
   }
 
-  // Populate WHY from profile impact_why or similar
-  if (profileData.impact_why && !introWhy.value) {
-    introWhy.value = profileData.impact_why;
+  // Populate WHY from profile (check multiple field name patterns)
+  // impact_why is the dedicated field, hook_why is from 6W's framework
+  const whyValue = profileData.impact_why || profileData.hook_why || '';
+  if (whyValue && !introWhy.value) {
+    introWhy.value = whyValue;
   }
 
   // Set current intro text if available
