@@ -112,6 +112,9 @@ export function useAIOffers() {
   // Offers count
   const offersCount = computed(() => offers.value.length);
 
+  // Check if offers were generated
+  const hasOffers = computed(() => offers.value.length > 0);
+
   /**
    * Generate offers with current settings
    * @param {object} overrides Optional parameter overrides
@@ -215,6 +218,7 @@ export function useAIOffers() {
 
     // Offers-specific computed
     offers,
+    hasOffers,
     entryPackage,
     signaturePackage,
     premiumPackage,
