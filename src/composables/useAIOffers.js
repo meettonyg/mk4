@@ -12,53 +12,7 @@
 
 import { ref, computed } from 'vue';
 import { useAIStore } from '../stores/ai';
-
-/**
- * Get REST URL from available sources
- * Ensures trailing slash for proper URL concatenation
- * @returns {string} REST API base URL
- */
-function getRestUrl() {
-  const url = window.gmkbData?.restUrl
-    || window.gmkbProfileData?.apiUrl
-    || window.gmkbStandaloneTools?.apiBase
-    || window.gmkbPublicData?.restUrl
-    || '/wp-json/gmkb/v2/';
-
-  return url.endsWith('/') ? url : `${url}/`;
-}
-
-/**
- * Get nonce from available sources
- * @param {string} context 'builder' or 'public'
- * @returns {string} Security nonce
- */
-function getNonce(context) {
-  if (context === 'builder') {
-    return window.gmkbData?.restNonce
-      || window.gmkbData?.nonce
-      || window.gmkbProfileData?.nonce
-      || window.gmkbStandaloneTools?.restNonce
-      || '';
-  }
-  return window.gmkbPublicNonce
-    || window.gmkbPublicData?.publicNonce
-    || window.gmkbStandaloneTools?.nonce
-    || '';
-}
-
-/**
- * Check if user is logged in from available sources
- * @returns {boolean}
- */
-function isUserLoggedIn() {
-  return !!(
-    window.gmkbData?.postId
-    || window.gmkbData?.post_id
-    || window.gmkbProfileData?.postId
-    || window.gmkbStandaloneTools?.isLoggedIn
-  );
-}
+import { getRestUrl, getToolNonce, isUserLoggedIn } from '../utils/ai';
 
 /**
  * Package tier labels
@@ -182,7 +136,7 @@ export function useAIOffers() {
 
     const params = {
       services: overrides.services || services.value,
-      authorityHook: overrides.authorityHook || aiStore.authorityHook,
+      authorityHook: overrides.authorityHook || aiStore.authorityHookSummary,
       audience: overrides.audienceChallenges || overrides.audience || '',
       customContext: overrides.customContext || customContext.value,
       priceRange: overrides.priceRange || '',
@@ -196,7 +150,7 @@ export function useAIOffers() {
 
     try {
       const restUrl = getRestUrl();
-      const nonce = getNonce(requestContext);
+      const nonce = getToolNonce(requestContext);
 
       const response = await fetch(`${restUrl}ai/tool/generate`, {
         method: 'POST',
