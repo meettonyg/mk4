@@ -412,7 +412,10 @@ const {
 } = useAIImpactIntros();
 
 // Profile context for saving
-const { saveToProfile } = useProfileContext();
+const {
+  profileId: contextProfileId,
+  saveToProfile
+} = useProfileContext();
 
 // Credential Manager composable
 const {
@@ -485,8 +488,14 @@ const resolvedProfileId = computed(() => {
   // Priority: props > injected > context service
   return props.profileData?.id
     || injectedProfileData.value?.id
+    || contextProfileId.value
     || null;
 });
+
+// Keep selectedProfileId in sync with resolved ID
+watch(resolvedProfileId, (newId) => {
+  selectedProfileId.value = newId;
+}, { immediate: true });
 
 /**
  * Generate intro preview from current field values
@@ -555,9 +564,6 @@ const handleKeyboardShortcut = (event) => {
  */
 function populateFromProfile(profileData) {
   if (!profileData) return;
-
-  // Set profile ID for saving
-  selectedProfileId.value = profileData.id;
 
   // Load credentials from profile (independent field, reusable across tools)
   if (profileData.credentials && credentials.value.length === 0) {

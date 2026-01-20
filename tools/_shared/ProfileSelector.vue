@@ -13,7 +13,7 @@
           :key="profile.id"
           :value="profile.id"
         >
-          {{ profile.title }}{{ profile.guest_title ? ` - ${profile.guest_title}` : '' }}
+          {{ profile.title }}{{ profile.guest_title ? ` — ${profile.guest_title}` : '' }}
         </option>
         <option v-if="showCreateNew" value="new">+ Create New Profile</option>
       </select>

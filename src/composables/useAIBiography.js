@@ -201,8 +201,13 @@ export function useAIBiography() {
    * @returns {Promise<array>} Generated variations
    */
   const generateForSlot = async (slotName, overrides = {}) => {
+    console.log('[useAIBiography] generateForSlot called with slotName:', slotName);
+
     const slot = slots[slotName];
-    if (!slot) return [];
+    if (!slot) {
+      console.error('[useAIBiography] Invalid slot name:', slotName, 'Available slots:', Object.keys(slots));
+      return [];
+    }
 
     const variationCount = getVariationCount(slotName);
 
@@ -224,16 +229,21 @@ export function useAIBiography() {
       variationCount
     };
 
+    console.log('[useAIBiography] Calling generator.generate with params:', params);
+
     try {
       const result = await generator.generate(params);
+      console.log('[useAIBiography] generator.generate result:', result);
 
       // Parse variations from result
       const variations = parseVariations(result, slotName);
       slot.variations = variations;
       slot.status = SLOT_STATUS.HAS_VARIATIONS;
 
+      console.log('[useAIBiography] Parsed variations:', variations);
       return variations;
     } catch (error) {
+      console.error('[useAIBiography] Generation error:', error);
       slot.status = SLOT_STATUS.EMPTY;
       throw error;
     }

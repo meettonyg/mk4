@@ -511,9 +511,9 @@ function populateFromProfile(profileData) {
   // Use composable's loadFromProfileData for state persistence
   loadFromProfileData(profileData);
 
-  // Load current authority statement if exists
-  if (profileData.authority_statement) {
-    currentHookText.value = profileData.authority_statement;
+  // Load current authority hook if exists
+  if (profileData.authority_hook) {
+    currentHookText.value = profileData.authority_hook;
   }
 }
 

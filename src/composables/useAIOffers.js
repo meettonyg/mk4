@@ -115,16 +115,29 @@ export function useAIOffers() {
   /**
    * Generate offers with current settings
    * @param {object} overrides Optional parameter overrides
+   * @param {string} context Optional context ('builder' or 'public')
    * @returns {Promise<array>} Generated offers
    */
-  const generate = async (overrides = {}) => {
+  const generate = async (overrides = {}, context) => {
+    // Extract individual hook fields for validation (validation expects hookWho, hookWhat)
+    const hookFields = overrides.authorityHookFields || {};
+
     const params = {
       services: overrides.services || services.value,
       authorityHook: overrides.authorityHook || aiStore.authorityHook,
-      customContext: overrides.customContext || customContext.value
+      customContext: overrides.customContext || customContext.value,
+      // Pass individual hook fields for validation
+      hookWho: hookFields.who || '',
+      hookWhat: hookFields.what || '',
+      hookWhen: hookFields.when || '',
+      hookHow: hookFields.how || '',
+      // Pass additional offer-specific params
+      audienceChallenges: overrides.audienceChallenges || '',
+      priceRange: overrides.priceRange || '',
+      delivery: overrides.delivery || ''
     };
 
-    return generator.generate(params);
+    return generator.generate(params, context);
   };
 
   /**

@@ -259,15 +259,15 @@
 
     <!-- Phase 2: Results Dashboard -->
     <div v-else class="gfy-intro-results">
-      <!-- Results Hero (only show in default mode, not when embedded in landing page) -->
-      <div v-if="mode === 'default'" class="gfy-intro-hero gfy-intro-hero--compact">
+      <!-- Results Hero (only show in default mode, not when embedded) -->
+      <div v-if="mode === 'default' && !isEmbedded" class="gfy-intro-hero gfy-intro-hero--compact">
         <h1 class="gfy-intro-hero__title">Guest Introduction Toolkit</h1>
         <p class="gfy-intro-hero__subtitle">
           Refine your introductions. Select a length and provide feedback to iterate with AI.
         </p>
       </div>
 
-      <div class="gmkb-tool-embed">
+      <div class="gfy-intro-results__container" :class="{ 'gfy-intro-results__container--no-chrome': isEmbedded }">
         <div class="gfy-results-layout">
           <!-- SIDEBAR: Slot Selection -->
           <aside class="gfy-layout-sidebar">
@@ -430,16 +430,29 @@
 
             <!-- Empty State -->
             <div v-else-if="currentVariations.length === 0" class="gfy-empty-state">
-              <i class="fas fa-file-alt"></i>
+              <div class="gfy-empty-state__icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10 9 9 9 8 9"/>
+                </svg>
+              </div>
               <p>Click the button below to generate {{ getVariationCount(activeSlot) }} variations for your {{ activeSlotLabel }} introduction.</p>
               <button
                 type="button"
-                class="gfy-btn gfy-btn--primary"
+                class="gfy-generate-intro-btn"
                 :disabled="isGenerating"
-                @click="handleGenerateForSlot(activeSlot)"
+                @click="generateForSlot(activeSlot)"
               >
-                <i class="fas fa-magic"></i>
-                Generate {{ activeSlotLabel }} Intro
+                <svg v-if="!isGenerating" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+                  <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+                  <path d="M2 2l7.586 7.586"/>
+                </svg>
+                <span v-if="isGenerating" class="gfy-spinner"></span>
+                {{ isGenerating ? 'Generating...' : `Generate ${activeSlotLabel} Intro` }}
               </button>
             </div>
 
@@ -1712,12 +1725,24 @@ defineExpose({
    RESULTS PHASE
    ============================================ */
 
-.gmkb-tool-embed {
+.gfy-intro-results__container {
   background: var(--gfy-white);
   border-radius: 16px;
   border: 1px solid var(--gfy-border-color);
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+}
+
+/* Remove container styling when embedded */
+.gfy-intro-results__container--no-chrome {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.gfy-intro-results__container--no-chrome .gfy-results-layout {
+  padding: 0;
 }
 
 .gfy-results-layout {
@@ -1960,6 +1985,62 @@ defineExpose({
   text-align: center;
   padding: 60px 40px;
   color: var(--gfy-text-secondary);
+}
+
+.gfy-empty-state__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+  background: var(--gfy-bg-color);
+  border-radius: 50%;
+  color: var(--gfy-text-muted);
+}
+
+.gfy-empty-state p {
+  max-width: 320px;
+  margin: 0 auto 24px;
+  line-height: 1.6;
+}
+
+/* Generate Intro Button - Premium Style */
+.gfy-generate-intro-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 32px;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: white;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.35);
+}
+
+.gfy-generate-intro-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px 0 rgba(37, 99, 235, 0.45);
+}
+
+.gfy-generate-intro-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.gfy-generate-intro-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.gfy-generate-intro-btn svg {
+  flex-shrink: 0;
 }
 
 .gfy-loading-state i,
