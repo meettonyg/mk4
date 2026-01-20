@@ -450,7 +450,8 @@ class GMKB_AI_Service {
                 return $this->format_topics_response($content, $count);
 
             case 'questions':
-                return $this->format_list_response($content, 25);
+                $count = isset($params['count']) ? intval($params['count']) : 10;
+                return $this->format_list_response($content, $count);
 
             case 'tagline':
                 return $this->format_tagline_response($content);
