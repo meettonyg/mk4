@@ -1141,9 +1141,12 @@ function populateFromProfile(data) {
   }
   if (topics.length > 0) {
     profileTopics.value = topics;
-    // Auto-select first topic if none selected
+    // Auto-select first topic if none selected, otherwise reload questions for current topic
     if (selectedTopicIndex.value === -1) {
       selectTopic(0);
+    } else {
+      // Topic already selected - reload questions from new profile data
+      loadExistingQuestionsForTopic(selectedTopicIndex.value);
     }
   }
 
