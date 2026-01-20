@@ -1031,8 +1031,8 @@ const loadExistingQuestionsForTopic = (topicIndex) => {
   // Topic 0 (index 0) = question_1 to question_5
   // Topic 1 (index 1) = question_6 to question_10
   // etc.
-  const startQuestionNum = (topicIndex * 5) + 1;
-  const endQuestionNum = startQuestionNum + 4;
+  const startQuestionNum = (topicIndex * MAX_INTERVIEW_SLOTS) + 1;
+  const endQuestionNum = startQuestionNum + MAX_INTERVIEW_SLOTS - 1;
 
   // Clear existing interview set (keep locked slots)
   interviewSet.value.forEach(slot => {
