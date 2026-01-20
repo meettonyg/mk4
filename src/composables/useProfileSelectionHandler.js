@@ -48,14 +48,25 @@ export function useProfileSelectionHandler({
    * @param {Object} event.data - The profile data
    */
   function handleProfileSelected({ id, data }) {
+    console.log('[useProfileSelectionHandler] handleProfileSelected called:', {
+      id,
+      hasData: !!data,
+      dataKeys: data ? Object.keys(data).length : 0,
+      mode: modeRef.value,
+      hasOnDataLoaded: !!onDataLoaded
+    });
+
     if (modeRef.value === 'default') {
       // Set the profile ID in the composable instance so saves work correctly
       if (id) {
         profileIdRef.value = id;
       }
       if (data && onDataLoaded) {
+        console.log('[useProfileSelectionHandler] Calling onDataLoaded with profile data');
         onDataLoaded(data);
       }
+    } else {
+      console.log('[useProfileSelectionHandler] Mode is not default, skipping data load');
     }
   }
 
