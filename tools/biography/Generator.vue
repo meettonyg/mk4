@@ -381,6 +381,15 @@
 
           <!-- MAIN: Variations + Feedback Loop -->
           <main class="gfy-layout-main">
+            <!-- Error Display in Results View -->
+            <div v-if="error" class="gfy-error-box">
+              <i class="fas fa-exclamation-circle"></i>
+              <p>{{ error }}</p>
+              <button type="button" class="gfy-btn gfy-btn--outline" @click="handleGenerateForActiveSlot">
+                Try Again
+              </button>
+            </div>
+
             <!-- Results Header -->
             <div class="gfy-results__header">
               <h3 class="gfy-results__title">
@@ -844,8 +853,17 @@ const handleSlotClick = async (slotName) => {
  * Handle generate for a specific slot
  */
 const handleGenerateForSlot = async (slotName) => {
+  console.log('[Biography Generator] handleGenerateForSlot called with:', slotName);
+  console.log('[Biography Generator] Current state:', {
+    name: name.value,
+    authorityHook: { ...authorityHook },
+    impactIntro: { ...impactIntro },
+    canGenerate: canGenerate.value
+  });
+
   try {
     await generateForSlot(slotName);
+    console.log('[Biography Generator] generateForSlot completed, variations:', slots[slotName].variations);
     emit('generated', { slot: slotName, variations: slots[slotName].variations });
 
     // Save to history on success
@@ -873,6 +891,7 @@ const handleGenerateForSlot = async (slotName) => {
  * Wrapper that explicitly uses activeSlot.value to avoid ref issues
  */
 const handleGenerateForActiveSlot = async () => {
+  console.log('[Biography Generator] handleGenerateForActiveSlot called, activeSlot:', activeSlot.value);
   await handleGenerateForSlot(activeSlot.value);
 };
 
