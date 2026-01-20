@@ -917,6 +917,7 @@ function markFieldEdited(fieldName) {
 /**
  * Clean markdown formatting from text
  * Removes **bold**, *italic*, ###headers, ---, and other markdown syntax
+ * Preserves line breaks and adds breaks before key section labels
  */
 function cleanMarkdown(text) {
   if (!text) return '';
@@ -933,6 +934,17 @@ function cleanMarkdown(text) {
     .replace(/^[-*]{3,}\s*$/gm, '')
     // Remove numbered list markers at start (5. **Item:**)
     .replace(/^\d+\.\s*/gm, '')
+    // Add line breaks before key section labels (Deliverables:, Ideal Client:, Pricing:, etc.)
+    .replace(/\s+(Deliverables?:)/gi, '\n\n$1')
+    .replace(/\s+(Ideal Client:)/gi, '\n\n$1')
+    .replace(/\s+(Pricing Positioning:)/gi, '\n\n$1')
+    .replace(/\s+(Investment:)/gi, '\n\n$1')
+    .replace(/\s+(Includes?:)/gi, '\n\n$1')
+    .replace(/\s+(What You Get:)/gi, '\n\n$1')
+    .replace(/\s+(Benefits?:)/gi, '\n\n$1')
+    .replace(/\s+(Features?:)/gi, '\n\n$1')
+    .replace(/\s+(Duration:)/gi, '\n\n$1')
+    .replace(/\s+(Format:)/gi, '\n\n$1')
     // Clean up extra whitespace
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -1292,6 +1304,11 @@ const handleGenerate = async () => {
     emit('generated', {
       offers: offers.value
     });
+
+    // Scroll to top after generation (standalone mode only)
+    if (props.mode === 'default' && offers.value && offers.value.length > 0) {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
   } catch (err) {
     console.error('[OffersGenerator] Generation failed:', err);
   }
@@ -1622,6 +1639,7 @@ watch(authorityHookSummary, (newVal) => {
   font-size: 13px;
   color: var(--gmkb-ai-text-secondary, #64748b);
   line-height: 1.5;
+  white-space: pre-line;
 }
 
 .gmkb-ai-package__section {
@@ -1900,6 +1918,7 @@ watch(authorityHookSummary, (newVal) => {
   line-height: 1.6;
   color: var(--mkcg-text-secondary, #64748b);
   margin: 0 0 16px 0;
+  white-space: pre-line;
 }
 
 .offers-card__meta {
@@ -1994,6 +2013,7 @@ watch(authorityHookSummary, (newVal) => {
   line-height: 1.6;
   color: var(--mkcg-text-secondary, #64748b);
   margin: 0 0 16px 0;
+  white-space: pre-line;
 }
 
 .offers-locked-card__actions {
