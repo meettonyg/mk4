@@ -6,11 +6,11 @@
  *
  * @package GMKB
  * @subpackage Composables
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2.2.0
  */
 
-import { ref, computed } from 'vue';
+import { ref, computed, reactive } from 'vue';
 import { useAIGenerator } from './useAIGenerator';
 import { useAIStore } from '../stores/ai';
 
@@ -29,7 +29,7 @@ export const PACKAGE_TIERS = {
  * @returns {object} Reactive state and methods for offers generation
  *
  * @example
- * const { generate, offers, isGenerating } = useAIOffers();
+ * const { generate, offersByTier, isGenerating } = useAIOffers();
  * await generate({ services: ['Coaching', 'Consulting', 'Speaking'] });
  */
 export function useAIOffers() {
@@ -40,77 +40,145 @@ export function useAIOffers() {
   const services = ref([]);
   const customContext = ref('');
 
-  // Parsed offers array
-  const offers = computed(() => {
-    const content = generator.generatedContent.value;
-    if (!content) return [];
+  // Selected variation index for each tier
+  const selectedVariations = reactive({
+    entry: 0,
+    signature: 0,
+    premium: 0
+  });
 
-    // If already an array of objects, return as-is
-    if (Array.isArray(content)) {
-      return content.map((offer, index) => ({
-        id: `offer_${index + 1}`,
-        title: offer.title || `Package ${index + 1}`,
-        description: offer.description || offer,
-        tier: index === 0 ? 'entry' : (index === 1 ? 'signature' : 'premium'),
-        ...offer
-      }));
+  /**
+   * Parse content into offers by tier structure
+   * Handles both new format {entry: [], signature: [], premium: []}
+   * and legacy array format [{tier: 'entry', ...}, ...]
+   */
+  const offersByTier = computed(() => {
+    const content = generator.generatedContent.value;
+    if (!content) {
+      return { entry: [], signature: [], premium: [] };
     }
 
-    // If string, try to parse structured offers
-    if (typeof content === 'string') {
-      const parsed = [];
+    // New format: already grouped by tier
+    if (content && typeof content === 'object' && !Array.isArray(content)) {
+      if (content.entry || content.signature || content.premium) {
+        return {
+          entry: content.entry || [],
+          signature: content.signature || [],
+          premium: content.premium || []
+        };
+      }
+    }
 
-      // Try to split by package headers
+    // Legacy format: flat array
+    if (Array.isArray(content)) {
+      const result = { entry: [], signature: [], premium: [] };
+      content.forEach((offer, index) => {
+        const tier = offer.tier || (index === 0 ? 'entry' : (index === 1 ? 'signature' : 'premium'));
+        const normalizedOffer = {
+          id: offer.id || `${tier}_${result[tier].length}`,
+          tier,
+          variationIndex: result[tier].length,
+          name: offer.name || offer.title || `Package ${index + 1}`,
+          description: offer.description || '',
+          deliverables: offer.deliverables || [],
+          idealClient: offer.idealClient || '',
+          ...offer
+        };
+        if (result[tier]) {
+          result[tier].push(normalizedOffer);
+        }
+      });
+      return result;
+    }
+
+    // String format: try to parse (legacy fallback)
+    if (typeof content === 'string') {
+      const result = { entry: [], signature: [], premium: [] };
       const sections = content.split(/(?=(?:Package|Tier|Option|Level)\s*\d|(?:Basic|Standard|Premium|Enterprise|Entry|Signature))/i);
+      const tierNames = ['entry', 'signature', 'premium'];
 
       sections.forEach((section, index) => {
         section = section.trim();
-        if (section.length < 20) return;
+        if (section.length < 20 || index >= 3) return;
 
-        // Try to extract title
+        const tier = tierNames[index] || 'entry';
         const titleMatch = section.match(/^(.+?)[\n:]/m);
-        const title = titleMatch ? titleMatch[1].trim() : `Package ${index + 1}`;
+        const name = titleMatch ? titleMatch[1].trim() : `Package ${index + 1}`;
         const description = titleMatch ? section.replace(titleMatch[0], '').trim() : section;
 
-        parsed.push({
-          id: `offer_${index + 1}`,
-          title,
+        result[tier].push({
+          id: `${tier}_0`,
+          tier,
+          variationIndex: 0,
+          name,
           description,
-          tier: index === 0 ? 'entry' : (index === 1 ? 'signature' : 'premium')
+          deliverables: [],
+          idealClient: ''
         });
       });
 
-      // If no structured offers found, create single offer
-      if (parsed.length === 0) {
-        parsed.push({
-          id: 'offer_1',
-          title: 'Service Package',
-          description: content,
-          tier: 'signature'
-        });
-      }
-
-      return parsed;
+      return result;
     }
 
-    return [];
+    return { entry: [], signature: [], premium: [] };
   });
 
-  // Individual package accessors
-  const entryPackage = computed(() =>
-    offers.value.find(o => o.tier === 'entry') || offers.value[0] || null
-  );
+  /**
+   * Flat array of all offers (for backward compatibility)
+   */
+  const offers = computed(() => {
+    const byTier = offersByTier.value;
+    const result = [];
 
-  const signaturePackage = computed(() =>
-    offers.value.find(o => o.tier === 'signature') || offers.value[1] || null
-  );
+    ['entry', 'signature', 'premium'].forEach(tier => {
+      const variations = byTier[tier] || [];
+      const selectedIndex = selectedVariations[tier];
+      const selected = variations[selectedIndex] || variations[0];
+      if (selected) {
+        result.push(selected);
+      }
+    });
 
-  const premiumPackage = computed(() =>
-    offers.value.find(o => o.tier === 'premium') || offers.value[2] || null
-  );
+    return result;
+  });
 
-  // Offers count
-  const offersCount = computed(() => offers.value.length);
+  /**
+   * Get variations for a specific tier
+   */
+  const getVariationsForTier = (tier) => {
+    return offersByTier.value[tier] || [];
+  };
+
+  /**
+   * Get currently selected offer for a tier
+   */
+  const getSelectedOffer = (tier) => {
+    const variations = offersByTier.value[tier] || [];
+    const selectedIndex = selectedVariations[tier];
+    return variations[selectedIndex] || variations[0] || null;
+  };
+
+  /**
+   * Select a variation for a tier
+   */
+  const selectVariation = (tier, index) => {
+    if (selectedVariations.hasOwnProperty(tier)) {
+      selectedVariations[tier] = index;
+    }
+  };
+
+  // Individual package accessors (selected variation for each tier)
+  const entryPackage = computed(() => getSelectedOffer('entry'));
+  const signaturePackage = computed(() => getSelectedOffer('signature'));
+  const premiumPackage = computed(() => getSelectedOffer('premium'));
+
+  // Offers count (total variations across all tiers)
+  const offersCount = computed(() => {
+    const byTier = offersByTier.value;
+    return (byTier.entry?.length || 0) +
+           (byTier.signature?.length || 0) +
+           (byTier.premium?.length || 0);
+  });
 
   // Check if offers were generated
   const hasOffers = computed(() => offersCount.value > 0);
@@ -119,9 +187,14 @@ export function useAIOffers() {
    * Generate offers with current settings
    * @param {object} overrides Optional parameter overrides
    * @param {string} context Optional context ('builder' or 'public')
-   * @returns {Promise<array>} Generated offers
+   * @returns {Promise<object>} Generated offers grouped by tier
    */
   const generate = async (overrides = {}, context) => {
+    // Reset selected variations
+    selectedVariations.entry = 0;
+    selectedVariations.signature = 0;
+    selectedVariations.premium = 0;
+
     // Extract individual hook fields for validation (validation expects hookWho, hookWhat)
     const hookFields = overrides.authorityHookFields || {};
 
@@ -144,16 +217,16 @@ export function useAIOffers() {
   };
 
   /**
-   * Get offer by tier
+   * Get offer by tier (returns selected variation)
    * @param {string} tier Tier name (entry, signature, premium)
-   * @returns {object|null} Offer for tier
+   * @returns {object|null} Selected offer for tier
    */
   const getOfferByTier = (tier) => {
-    return offers.value.find(o => o.tier === tier) || null;
+    return getSelectedOffer(tier);
   };
 
   /**
-   * Get offer by index
+   * Get offer by index from flat offers array
    * @param {number} index Index (0-based)
    * @returns {object|null} Offer at index
    */
@@ -197,6 +270,9 @@ export function useAIOffers() {
     generator.reset();
     services.value = [];
     customContext.value = '';
+    selectedVariations.entry = 0;
+    selectedVariations.signature = 0;
+    selectedVariations.premium = 0;
   };
 
   return {
@@ -215,8 +291,10 @@ export function useAIOffers() {
     // Offers-specific state
     services,
     customContext,
+    selectedVariations,
 
     // Offers-specific computed
+    offersByTier,
     offers,
     hasOffers,
     entryPackage,
@@ -228,6 +306,9 @@ export function useAIOffers() {
     generate,
     getOfferByTier,
     getOfferByIndex,
+    getVariationsForTier,
+    getSelectedOffer,
+    selectVariation,
     addService,
     removeService,
     setServices,

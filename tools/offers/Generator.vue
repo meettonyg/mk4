@@ -428,6 +428,24 @@
               </div>
             </div>
 
+            <!-- Variation Selector (when multiple variations exist) -->
+            <div v-if="hasMultipleVariations && !lockedOffers[activeOfferTier]" class="offers-variations">
+              <span class="offers-variations__label">Choose a variation:</span>
+              <div class="offers-variations__options">
+                <button
+                  v-for="(variation, idx) in currentTierVariations"
+                  :key="variation.id || idx"
+                  type="button"
+                  class="offers-variations__option"
+                  :class="{ 'offers-variations__option--active': selectedVariations[activeOfferTier] === idx }"
+                  @click="selectVariation(activeOfferTier, idx)"
+                >
+                  <span class="offers-variations__option-number">{{ idx + 1 }}</span>
+                  <span class="offers-variations__option-name">{{ variation.name }}</span>
+                </button>
+              </div>
+            </div>
+
             <!-- Locked State -->
             <div v-if="lockedOffers[activeOfferTier]" class="offers-locked-card">
               <div class="offers-locked-card__badge">
@@ -790,9 +808,13 @@ const {
   usageRemaining,
   resetTime,
   offers,
+  offersByTier,
   hasOffers,
   generate,
-  copyToClipboard
+  copyToClipboard,
+  getVariationsForTier,
+  selectVariation,
+  selectedVariations
 } = useAIOffers();
 
 const { authorityHookSummary, syncFromStore, loadFromProfileData } = useAuthorityHook();
@@ -1141,12 +1163,27 @@ const activeOfferTierLabel = computed(() => {
 });
 
 /**
- * Get the current tier's offer from generated offers
+ * Get variations for the current tier
+ */
+const currentTierVariations = computed(() => {
+  return getVariationsForTier(activeOfferTier.value);
+});
+
+/**
+ * Get the current tier's selected offer
  */
 const currentTierOffer = computed(() => {
-  if (!offers.value || offers.value.length === 0) return null;
-  const tierIndex = { entry: 0, signature: 1, premium: 2 };
-  return offers.value[tierIndex[activeOfferTier.value]] || null;
+  const variations = currentTierVariations.value;
+  if (!variations || variations.length === 0) return null;
+  const selectedIndex = selectedVariations[activeOfferTier.value] || 0;
+  return variations[selectedIndex] || variations[0] || null;
+});
+
+/**
+ * Check if current tier has multiple variations
+ */
+const hasMultipleVariations = computed(() => {
+  return currentTierVariations.value.length > 1;
 });
 
 /**
@@ -1158,12 +1195,18 @@ const lockedOffersCount = computed(() => {
 
 /**
  * Get offer preview for sidebar
+ * Shows variation count or selected offer name
  */
 const getOfferPreview = (tier) => {
-  if (!offers.value || offers.value.length === 0) return null;
-  const tierIndex = { entry: 0, signature: 1, premium: 2 };
-  const offer = offers.value[tierIndex[tier]];
-  return offer?.name || null;
+  const variations = getVariationsForTier(tier);
+  if (!variations || variations.length === 0) return null;
+
+  if (variations.length > 1) {
+    const selectedIndex = selectedVariations[tier] || 0;
+    return `${variations.length} options (${selectedIndex + 1} selected)`;
+  }
+
+  return variations[0]?.name || null;
 };
 
 /**
@@ -1891,6 +1934,83 @@ watch(authorityHookSummary, (newVal) => {
   letter-spacing: 0.5px;
   border-radius: 4px;
   margin-bottom: 12px;
+}
+
+/* Variation Selector */
+.offers-variations {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.offers-variations__label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.offers-variations__options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.offers-variations__option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.offers-variations__option:hover {
+  border-color: var(--mkcg-primary, #3b82f6);
+  background: #f0f9ff;
+}
+
+.offers-variations__option--active {
+  border-color: var(--mkcg-primary, #3b82f6);
+  background: rgba(59, 130, 246, 0.08);
+  box-shadow: 0 0 0 1px var(--mkcg-primary, #3b82f6);
+}
+
+.offers-variations__option-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: #e2e8f0;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.offers-variations__option--active .offers-variations__option-number {
+  background: var(--mkcg-primary, #3b82f6);
+  color: white;
+}
+
+.offers-variations__option-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .offers-card__tier-badge--entry {

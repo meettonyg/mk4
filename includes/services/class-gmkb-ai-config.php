@@ -244,19 +244,45 @@ Requirements:
 
 Format: Write as a single flowing paragraph that a podcast host or MC could read verbatim.',
 
-            'offers' => 'Create service package descriptions for someone who:
+            'offers' => 'Create service package options for someone who:
 
 Authority Hook: {{authorityHook}}
 Services offered: {{services}}
+Target audience challenges: {{audienceChallenges}}
+Price range: {{priceRange}}
+Delivery method: {{delivery}}
 
 Requirements:
-- Create 3 tiered packages (entry, signature, premium)
-- Each package should have a compelling name
-- Include 3-5 specific deliverables per package
-- Focus on outcomes and transformations
-- Suggest relative pricing positioning (not specific numbers)
+- Create 3 VARIATIONS for EACH of the 3 tiers (Entry, Signature, Premium) = 9 total packages
+- Each package needs: name, description (2-3 sentences), 3-5 deliverables, ideal client description
+- Focus on outcomes and transformations, not just features
+- Make each variation within a tier meaningfully different (different angles, emphases, or approaches)
 
-Format: Structure each package with a name, description, deliverables, and ideal client.',
+FORMAT (follow exactly):
+=== ENTRY TIER ===
+VARIATION 1:
+Name: [Package Name]
+Description: [2-3 sentence description]
+Deliverables: [Comma-separated list of 3-5 items]
+Ideal Client: [One sentence describing ideal client]
+
+VARIATION 2:
+Name: [Package Name]
+Description: [2-3 sentence description]
+Deliverables: [Comma-separated list of 3-5 items]
+Ideal Client: [One sentence describing ideal client]
+
+VARIATION 3:
+Name: [Package Name]
+Description: [2-3 sentence description]
+Deliverables: [Comma-separated list of 3-5 items]
+Ideal Client: [One sentence describing ideal client]
+
+=== SIGNATURE TIER ===
+[Same format: 3 variations]
+
+=== PREMIUM TIER ===
+[Same format: 3 variations]',
 
             'authority_hook' => 'Generate {{count}} compelling authority hook variations using this EXACT information:
 
@@ -331,7 +357,7 @@ Generate {{count}} impact intro variations NOW using ONLY the information provid
             'questions' => 2000,  // 25 questions need more space
             'tagline' => 600,  // Increased for 10 variations
             'guest_intro' => 400,
-            'offers' => 1500,
+            'offers' => 4000,  // Increased for 9 package variations (3 per tier)
             'authority_hook' => 600,  // Increased for 5 variations
             'impact_intro' => 700     // 5 variations, slightly longer format
         );
