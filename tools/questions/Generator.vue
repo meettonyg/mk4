@@ -871,8 +871,16 @@ function clearProfileData() {
   profileTopics.value = [];
   selectedTopicIndex.value = -1;
   refinedTopic.value = '';
+  // Clear loaded profile data
+  loadedProfileData.value = null;
   // Clear prefilled fields tracking
   prefilledFields.value = new Set();
+  // Clear interview set slots
+  interviewSet.value.forEach(slot => {
+    if (!slot.locked) {
+      slot.question = null;
+    }
+  });
 }
 
 // Profile selection handlers (using shared composable)
@@ -893,6 +901,10 @@ const questionCount = ref(10);
 
 // Topics loaded from selected profile (standalone mode)
 const profileTopics = ref([]);
+
+// Store loaded profile data for use by loadExistingQuestionsForTopic
+// (ProfileSelector and Generator have separate useStandaloneProfile instances)
+const loadedProfileData = ref(null);
 
 // Available topics (from props or profile selection)
 const availableTopics = computed(() => {
@@ -1013,6 +1025,51 @@ const toggleSlotLock = (slotIndex) => {
 const selectTopic = (index) => {
   selectedTopicIndex.value = index;
   refinedTopic.value = availableTopics.value[index] || '';
+
+  // Load existing questions for this topic from profile
+  loadExistingQuestionsForTopic(index);
+};
+
+/**
+ * Load existing questions for a topic from profile data
+ * Questions are stored as question_1-5 for topic 1, question_6-10 for topic 2, etc.
+ */
+const loadExistingQuestionsForTopic = (topicIndex) => {
+  // Get profile data - check loadedProfileData first (set by populateFromProfile),
+  // then profileData.value (from useStandaloneProfile), then direct profile data (integrated mode)
+  const data = loadedProfileData.value || profileData.value || getDirectProfileData();
+  if (!data) return;
+
+  // Calculate question field indices for this topic
+  // Topic 0 (index 0) = question_1 to question_5
+  // Topic 1 (index 1) = question_6 to question_10
+  // etc.
+  const startQuestionNum = (topicIndex * MAX_INTERVIEW_SLOTS) + 1;
+  const endQuestionNum = startQuestionNum + MAX_INTERVIEW_SLOTS - 1;
+
+  // Clear existing interview set (keep locked slots)
+  interviewSet.value.forEach(slot => {
+    if (!slot.locked) {
+      slot.question = null;
+    }
+  });
+  selectedQuestionIndices.value = [];
+
+  // Load existing questions into interview set slots
+  let slotIndex = 0;
+  for (let qNum = startQuestionNum; qNum <= endQuestionNum; qNum++) {
+    const questionText = data[`question_${qNum}`];
+    if (questionText && questionText.trim()) {
+      // Find next available unlocked slot
+      while (slotIndex < interviewSet.value.length && interviewSet.value[slotIndex].locked) {
+        slotIndex++;
+      }
+      if (slotIndex < interviewSet.value.length) {
+        interviewSet.value[slotIndex].question = questionText.trim();
+        slotIndex++;
+      }
+    }
+  }
 };
 
 /**
@@ -1040,16 +1097,19 @@ const copyQuestion = async (index, event) => {
 /**
  * Populate form fields from profile data
  */
-function populateFromProfile(profileData) {
-  if (!profileData) return;
+function populateFromProfile(data) {
+  if (!data) return;
+
+  // Store the profile data for use by loadExistingQuestionsForTopic
+  loadedProfileData.value = data;
 
   const newPrefilledFields = new Set();
 
   // Populate authority hook fields (check multiple field name patterns)
-  const hookWho = profileData.hook_who || profileData.authority_hook_who || '';
-  const hookWhat = profileData.hook_what || profileData.authority_hook_what || '';
-  const hookWhen = profileData.hook_when || profileData.authority_hook_when || '';
-  const hookHow = profileData.hook_how || profileData.authority_hook_how || '';
+  const hookWho = data.hook_who || data.authority_hook_who || '';
+  const hookWhat = data.hook_what || data.authority_hook_what || '';
+  const hookWhen = data.hook_when || data.authority_hook_when || '';
+  const hookHow = data.hook_how || data.authority_hook_how || '';
 
   if (hookWho) {
     authorityHook.who = hookWho;
@@ -1069,21 +1129,24 @@ function populateFromProfile(profileData) {
   }
 
   // Populate authority hook fields from profile data (for cross-tool sync)
-  loadFromProfileData(profileData);
+  loadFromProfileData(data);
 
   // Extract topics from profile (stored as topic_1, topic_2, etc.)
   const topics = [];
   for (let i = 1; i <= 5; i++) {
-    const topicText = profileData[`topic_${i}`];
+    const topicText = data[`topic_${i}`];
     if (topicText && topicText.trim()) {
       topics.push(topicText.trim());
     }
   }
   if (topics.length > 0) {
     profileTopics.value = topics;
-    // Auto-select first topic if none selected
+    // Auto-select first topic if none selected, otherwise reload questions for current topic
     if (selectedTopicIndex.value === -1) {
       selectTopic(0);
+    } else {
+      // Topic already selected - reload questions from new profile data
+      loadExistingQuestionsForTopic(selectedTopicIndex.value);
     }
   }
 
