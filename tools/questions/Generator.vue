@@ -772,11 +772,15 @@ const hasMediaKitContext = computed(() => {
 function prefillFromMediaKitProfile() {
   const profileData = getDirectProfileData();
   if (!profileData || Object.keys(profileData).length === 0) {
-    console.log('[QuestionsGenerator] No profile data available for pre-fill');
+    if (import.meta.env.DEV) {
+      console.log('[QuestionsGenerator] No profile data available for pre-fill');
+    }
     return;
   }
 
-  console.log('[QuestionsGenerator] Pre-filling from profile data:', Object.keys(profileData));
+  if (import.meta.env.DEV) {
+    console.log('[QuestionsGenerator] Pre-filling from profile data:', Object.keys(profileData));
+  }
 
   // Authority hook fields (check multiple possible field names)
   const hookWho = profileData.hook_who || profileData.authority_hook_who || '';
@@ -798,9 +802,11 @@ function prefillFromMediaKitProfile() {
   if (bio && !guestBio.value) guestBio.value = bio;
   if (audience && !targetAudience.value) targetAudience.value = audience;
 
-  console.log('[QuestionsGenerator] Pre-fill complete:', {
-    hookWho: !!hookWho, hookWhat: !!hookWhat, hookWhen: !!hookWhen, hookHow: !!hookHow, bio: !!bio
-  });
+  if (import.meta.env.DEV) {
+    console.log('[QuestionsGenerator] Pre-fill complete:', {
+      hookWho: !!hookWho, hookWhat: !!hookWhat, hookWhen: !!hookWhen, hookHow: !!hookHow, bio: !!bio
+    });
+  }
 }
 
 // Auto-fill from media kit profile when in integrated mode (on mount)
