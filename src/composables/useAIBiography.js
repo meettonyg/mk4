@@ -218,7 +218,14 @@ export function useAIBiography() {
     const params = {
       name: overrides.name || name.value,
       title: optionalFields.title,
-      authorityHook: authorityHookSummary.value,
+      // Pass the raw object with who/what/when/how fields, not the summary string
+      // The PHP backend expects an object to build the authority hook section
+      authorityHook: {
+        who: authorityHook.who,
+        what: authorityHook.what,
+        when: authorityHook.when,
+        how: authorityHook.how
+      },
       impactIntro: impactIntroSummary.value,
       organization: optionalFields.organization,
       existingBio: optionalFields.existingBio,
@@ -263,7 +270,13 @@ export function useAIBiography() {
 
     const params = {
       name: name.value,
-      authorityHook: authorityHookSummary.value,
+      // Pass the raw object with who/what/when/how fields, not the summary string
+      authorityHook: {
+        who: authorityHook.who,
+        what: authorityHook.what,
+        when: authorityHook.when,
+        how: authorityHook.how
+      },
       impactIntro: impactIntroSummary.value,
       organization: optionalFields.organization,
       tone: tone.value,
