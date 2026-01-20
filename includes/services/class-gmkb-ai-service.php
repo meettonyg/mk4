@@ -22,6 +22,11 @@ require_once dirname(__FILE__) . '/class-gmkb-ai-config.php';
 class GMKB_AI_Service {
 
     /**
+     * Default number of questions to generate
+     */
+    const DEFAULT_QUESTION_COUNT = 10;
+
+    /**
      * Current provider (openai, gemini, anthropic)
      * @var string
      */
@@ -450,7 +455,7 @@ class GMKB_AI_Service {
                 return $this->format_topics_response($content, $count);
 
             case 'questions':
-                $count = isset($params['count']) ? intval($params['count']) : 10;
+                $count = isset($params['count']) ? intval($params['count']) : self::DEFAULT_QUESTION_COUNT;
                 return $this->format_list_response($content, $count);
 
             case 'tagline':
