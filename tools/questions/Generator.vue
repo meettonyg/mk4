@@ -1983,12 +1983,15 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 8px;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 /* Individual Interview Slot */
 .questions-interview-slot {
   display: flex;
-  align-items: flex-start;
+  align-items: flex-start !important;
   gap: 10px;
   padding: 10px 12px;
   background: #fff;
@@ -2037,8 +2040,10 @@ watch(
   font-weight: 500;
   color: var(--mkcg-text-primary, #0f172a);
   line-height: 1.3;
-  white-space: normal;
-  word-break: break-word;
+  display: block !important;
+  -webkit-line-clamp: unset !important;
+  overflow: visible !important;
+  white-space: normal !important;
 }
 
 .questions-interview-slot__text--empty {
