@@ -190,6 +190,7 @@ class GMKB_Tool_Shortcode {
                 'apiBase' => rest_url('gmkb/v2'),
                 'ajaxUrl' => admin_url('admin-ajax.php'),
                 'isLoggedIn' => $is_logged_in,
+                'signupUrl' => home_url('/pricing/'),
             );
 
             // For logged-in users, add profile context

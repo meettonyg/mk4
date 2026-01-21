@@ -250,9 +250,19 @@
         <div v-if="error" class="gfy-error-box">
           <i class="fas fa-exclamation-circle"></i>
           <p>{{ error }}</p>
-          <button type="button" class="gfy-btn gfy-btn--outline" @click="handleStartGeneration">
-            Try Again
-          </button>
+          <div class="gfy-error-actions">
+            <button type="button" class="gfy-btn gfy-btn--outline" @click="handleStartGeneration">
+              Try Again
+            </button>
+            <a
+              v-if="isRateLimitError"
+              :href="signupUrl"
+              class="gfy-btn gfy-btn--primary"
+              target="_blank"
+            >
+              Get Unlimited Access
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -714,6 +724,16 @@ const isGenerating = ref(false);
 const error = ref(null);
 const showResults = ref(false);
 const saveSuccess = ref(false);
+
+// Signup URL for rate limit CTA
+const signupUrl = window.gmkbStandaloneTools?.signupUrl || '/pricing/';
+
+// Check if current error is a rate limit error
+const isRateLimitError = computed(() => {
+  if (!error.value) return false;
+  const msg = error.value.toLowerCase();
+  return msg.includes('limit') || msg.includes('rate') || msg.includes('quota');
+});
 
 // Integrated mode state
 const authorityHookTextCompact = ref('');
@@ -1799,6 +1819,24 @@ defineExpose({
 
 .gfy-error-box p {
   margin: 0 0 12px 0;
+}
+
+.gfy-error-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.gfy-error-actions .gfy-btn--primary {
+  background: linear-gradient(135deg, #ED8936, #DD6B20);
+  color: white;
+  text-decoration: none;
+}
+
+.gfy-error-actions .gfy-btn--primary:hover {
+  background: linear-gradient(135deg, #DD6B20, #C05621);
+  color: white;
 }
 
 /* ============================================
