@@ -45,25 +45,30 @@ class GMKB_AI_Controller {
      * Rate limit for public (anonymous) users
      * @var int
      */
-    private $public_rate_limit = 3;
+    private $public_rate_limit;
 
     /**
      * Rate limit for authenticated users
      * @var int
      */
-    private $authenticated_rate_limit = 10;
+    private $authenticated_rate_limit;
 
     /**
      * Rate limit window in seconds (1 hour)
      * @var int
      */
-    private $rate_limit_window = 3600;
+    private $rate_limit_window;
 
     /**
      * Constructor
      */
     public function __construct() {
         add_action('rest_api_init', array($this, 'register_routes'), 10);
+
+        // Load rate limits from settings (with fallback defaults)
+        $this->public_rate_limit = $this->get_setting('gmkb_ai_public_rate_limit', 3);
+        $this->authenticated_rate_limit = $this->get_setting('gmkb_ai_auth_rate_limit', 10);
+        $this->rate_limit_window = $this->get_setting('gmkb_ai_rate_limit_window', 3600);
 
         // Load services
         $this->load_ai_service();
@@ -72,6 +77,18 @@ class GMKB_AI_Controller {
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('GMKB AI Controller: Initialized');
         }
+    }
+
+    /**
+     * Get setting value with fallback
+     *
+     * @param string $option Option name
+     * @param mixed $default Default value
+     * @return mixed
+     */
+    private function get_setting($option, $default) {
+        $value = get_option($option, $default);
+        return !empty($value) ? (int) $value : $default;
     }
 
     /**

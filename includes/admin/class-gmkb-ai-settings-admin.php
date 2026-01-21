@@ -23,6 +23,10 @@ class GMKB_AI_Settings_Admin {
     const OPTION_OPENAI_KEY = 'gmkb_openai_api_key';
     const OPTION_GEMINI_KEY = 'gmkb_gemini_api_key';
     const OPTION_ANTHROPIC_KEY = 'gmkb_anthropic_api_key';
+    const OPTION_PUBLIC_RATE_LIMIT = 'gmkb_ai_public_rate_limit';
+    const OPTION_AUTH_RATE_LIMIT = 'gmkb_ai_auth_rate_limit';
+    const OPTION_RATE_LIMIT_WINDOW = 'gmkb_ai_rate_limit_window';
+    const OPTION_SIGNUP_URL = 'gmkb_ai_signup_url';
 
     /**
      * Available providers and their models
@@ -119,6 +123,51 @@ class GMKB_AI_Settings_Admin {
                 'default' => '',
             ]);
         }
+
+        // Rate limit settings
+        register_setting('gmkb_ai_settings', self::OPTION_PUBLIC_RATE_LIMIT, [
+            'type' => 'integer',
+            'sanitize_callback' => 'absint',
+            'default' => 3,
+        ]);
+
+        register_setting('gmkb_ai_settings', self::OPTION_AUTH_RATE_LIMIT, [
+            'type' => 'integer',
+            'sanitize_callback' => 'absint',
+            'default' => 10,
+        ]);
+
+        register_setting('gmkb_ai_settings', self::OPTION_RATE_LIMIT_WINDOW, [
+            'type' => 'integer',
+            'sanitize_callback' => 'absint',
+            'default' => 3600,
+        ]);
+
+        register_setting('gmkb_ai_settings', self::OPTION_SIGNUP_URL, [
+            'type' => 'string',
+            'sanitize_callback' => 'esc_url_raw',
+            'default' => '/pricing/',
+        ]);
+    }
+
+    /**
+     * Get rate limit settings
+     */
+    public static function get_public_rate_limit(): int {
+        return (int) get_option(self::OPTION_PUBLIC_RATE_LIMIT, 3);
+    }
+
+    public static function get_auth_rate_limit(): int {
+        return (int) get_option(self::OPTION_AUTH_RATE_LIMIT, 10);
+    }
+
+    public static function get_rate_limit_window(): int {
+        return (int) get_option(self::OPTION_RATE_LIMIT_WINDOW, 3600);
+    }
+
+    public static function get_signup_url(): string {
+        $url = get_option(self::OPTION_SIGNUP_URL, '/pricing/');
+        return !empty($url) ? $url : '/pricing/';
     }
 
     /**
@@ -428,24 +477,79 @@ class GMKB_AI_Settings_Admin {
                     <?php endforeach; ?>
                 </table>
 
+                <hr />
+
+                <h2>Rate Limits</h2>
+                <p>Configure generation limits for public and authenticated users.</p>
+
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">Public (anonymous) limit</th>
+                        <td>
+                            <input
+                                type="number"
+                                name="<?php echo esc_attr(self::OPTION_PUBLIC_RATE_LIMIT); ?>"
+                                value="<?php echo esc_attr(self::get_public_rate_limit()); ?>"
+                                class="small-text"
+                                min="0"
+                                max="100"
+                            />
+                            <span>generations per window (per IP)</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Authenticated user limit</th>
+                        <td>
+                            <input
+                                type="number"
+                                name="<?php echo esc_attr(self::OPTION_AUTH_RATE_LIMIT); ?>"
+                                value="<?php echo esc_attr(self::get_auth_rate_limit()); ?>"
+                                class="small-text"
+                                min="0"
+                                max="1000"
+                            />
+                            <span>generations per window (per user)</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Rate limit window</th>
+                        <td>
+                            <input
+                                type="number"
+                                name="<?php echo esc_attr(self::OPTION_RATE_LIMIT_WINDOW); ?>"
+                                value="<?php echo esc_attr(self::get_rate_limit_window()); ?>"
+                                class="small-text"
+                                min="60"
+                                max="86400"
+                            />
+                            <span>seconds (3600 = 1 hour)</span>
+                        </td>
+                    </tr>
+                </table>
+
+                <hr />
+
+                <h2>Upgrade CTA</h2>
+                <p>URL shown to users when they hit the rate limit.</p>
+
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">Signup/Pricing URL</th>
+                        <td>
+                            <input
+                                type="url"
+                                name="<?php echo esc_attr(self::OPTION_SIGNUP_URL); ?>"
+                                value="<?php echo esc_attr(self::get_signup_url()); ?>"
+                                class="regular-text"
+                                placeholder="/pricing/"
+                            />
+                            <p class="description">Full URL or relative path (e.g., /pricing/ or https://example.com/pricing)</p>
+                        </td>
+                    </tr>
+                </table>
+
                 <?php submit_button('Save Settings'); ?>
             </form>
-
-            <hr />
-
-            <h2>Rate Limits</h2>
-            <table class="widefat" style="max-width: 500px;">
-                <tbody>
-                    <tr>
-                        <th>Public (anonymous)</th>
-                        <td>3 generations per hour (per IP)</td>
-                    </tr>
-                    <tr>
-                        <th>Authenticated users</th>
-                        <td>10 generations per hour (per user)</td>
-                    </tr>
-                </tbody>
-            </table>
 
             <script>
             function toggleKeyVisibility(fieldId) {
