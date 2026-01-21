@@ -809,20 +809,24 @@ async function generateForSlot(slotName) {
   error.value = null;
 
   try {
-    // Build the prompt context
+    // Build the prompt context - field names must match prompts.php expectations
     const context = {
       guestName: guestInfo.name,
-      titleCompany: guestInfo.titleCompany,
+      guestTitle: guestInfo.titleCompany,  // PHP expects guestTitle
       episodeTitle: episodeInfo.title,
-      episodeTopic: episodeInfo.topic,
-      authorityHook: authorityHookSummary.value,
-      impactIntro: impactIntroSummary.value,
-      who: authorityHook.who,
-      what: authorityHook.what,
-      when: authorityHook.when,
-      how: authorityHook.how,
-      where: impactIntro.where,
-      why: impactIntro.why,
+      topic: episodeInfo.topic,  // PHP expects topic, not episodeTopic
+      // Authority Hook as object (PHP extracts who/what/when/how from this)
+      authorityHook: {
+        who: authorityHook.who,
+        what: authorityHook.what,
+        when: authorityHook.when,
+        how: authorityHook.how
+      },
+      // Impact Intro as object (PHP expects credentials/mission)
+      impactIntro: {
+        credentials: impactIntro.where,  // PHP expects credentials
+        mission: impactIntro.why         // PHP expects mission
+      },
       tone: tone.value,
       hookStyle: hookStyle.value,
       length: slotName
@@ -840,17 +844,18 @@ async function generateForSlot(slotName) {
     });
 
     if (!response.ok) {
-      throw new Error(`Generation failed: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Generation failed: ${response.status}`);
     }
 
     const data = await response.json();
 
     // Process variations
-    slot.variations = (data.variations || data.results || []).map((text, idx) => ({
+    slot.variations = (data.variations || data.results || []).map((item, idx) => ({
       id: `${slotName}-${Date.now()}-${idx}`,
-      label: `Option ${idx + 1}`,
-      text: typeof text === 'string' ? text : text.content || text.text || ''
-    }));
+      label: typeof item === 'object' ? (item.label || `Option ${idx + 1}`) : `Option ${idx + 1}`,
+      text: typeof item === 'string' ? item : (item.content || item.text || '')
+    })).filter(v => v.text.trim().length > 0);
 
     slot.status = SLOT_STATUS.READY;
 
@@ -899,23 +904,38 @@ async function refineVariations(feedback) {
         currentVariations: slot.variations.map(v => v.text),
         context: {
           guestName: guestInfo.name,
-          authorityHook: authorityHookSummary.value,
+          guestTitle: guestInfo.titleCompany,
+          // Authority Hook as object
+          authorityHook: {
+            who: authorityHook.who,
+            what: authorityHook.what,
+            when: authorityHook.when,
+            how: authorityHook.how
+          },
+          // Impact Intro as object
+          impactIntro: {
+            credentials: impactIntro.where,
+            mission: impactIntro.why
+          },
+          tone: tone.value,
+          hookStyle: hookStyle.value,
           length: activeSlot.value
         }
       })
     });
 
     if (!response.ok) {
-      throw new Error(`Refinement failed: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Refinement failed: ${response.status}`);
     }
 
     const data = await response.json();
 
-    slot.variations = (data.variations || data.results || []).map((text, idx) => ({
+    slot.variations = (data.variations || data.results || []).map((item, idx) => ({
       id: `${activeSlot.value}-${Date.now()}-${idx}`,
-      label: `Option ${idx + 1}`,
-      text: typeof text === 'string' ? text : text.content || text.text || ''
-    }));
+      label: typeof item === 'object' ? (item.label || `Option ${idx + 1}`) : `Option ${idx + 1}`,
+      text: typeof item === 'string' ? item : (item.content || item.text || '')
+    })).filter(v => v.text.trim().length > 0);
 
     slot.status = SLOT_STATUS.READY;
     refinementFeedback.value = '';
