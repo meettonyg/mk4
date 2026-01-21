@@ -250,9 +250,19 @@
         <div v-if="error" class="gfy-error-box">
           <i class="fas fa-exclamation-circle"></i>
           <p>{{ error }}</p>
-          <button type="button" class="gfy-btn gfy-btn--outline" @click="handleStartGeneration">
-            Try Again
-          </button>
+          <div class="gfy-error-actions">
+            <button type="button" class="gfy-btn gfy-btn--outline" @click="handleStartGeneration">
+              Try Again
+            </button>
+            <a
+              v-if="isRateLimitError"
+              :href="rateLimitCta.url"
+              class="gfy-btn gfy-btn--primary"
+            >
+              <i :class="['fas', rateLimitCta.icon]"></i>
+              {{ rateLimitCta.text }}
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -494,7 +504,8 @@
               <button
                 type="button"
                 class="gfy-btn gfy-btn--primary gfy-btn--large"
-                :disabled="lockedCount === 0 || isSaving"
+                :disabled="lockedCount === 0 || isSaving || (mode === 'default' && !hasSelectedProfile)"
+                :title="mode === 'default' && !hasSelectedProfile ? 'Select a profile above to save' : ''"
                 @click="handleSaveAll"
               >
                 <i v-if="!isSaving" class="fas fa-save"></i>
@@ -504,6 +515,12 @@
               <button type="button" class="gfy-btn gfy-btn--ghost" @click="handleStartOver">
                 Start Over
               </button>
+            </div>
+
+            <!-- Profile Selection Warning -->
+            <div v-if="mode === 'default' && lockedCount > 0 && !hasSelectedProfile" class="gfy-profile-warning">
+              <i class="fas fa-exclamation-triangle"></i>
+              No profile selected. Please select a profile first.
             </div>
 
             <!-- Save Success -->
@@ -547,6 +564,7 @@ import { useProfileContext } from '../../src/composables/useProfileContext';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 import { useProfileSelectionHandler } from '../../src/composables/useProfileSelectionHandler';
 import { useDraftState } from '../../src/composables/useDraftState';
+import { getRestNonce, getPublicNonce } from '../../src/utils/ai.js';
 import { EMBEDDED_PROFILE_DATA_KEY, IS_EMBEDDED_CONTEXT_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileSelector } from '../_shared';
 
 // Integrated mode components
@@ -703,9 +721,9 @@ const refinementFeedback = ref('');
 
 // Slots state (Short, Medium, Long)
 const slots = reactive({
-  short: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY },
-  medium: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY },
-  long: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY }
+  short: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY, errorMessage: null },
+  medium: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY, errorMessage: null },
+  long: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY, errorMessage: null }
 });
 
 const activeSlot = ref('short');
@@ -713,6 +731,36 @@ const isGenerating = ref(false);
 const error = ref(null);
 const showResults = ref(false);
 const saveSuccess = ref(false);
+
+// CTA URLs (isLoggedIn already comes from useStandaloneProfile)
+const signupUrl = window.gmkbStandaloneTools?.signupUrl || '/register/';
+const pricingUrl = window.gmkbStandaloneTools?.pricingUrl || '/pricing/';
+
+// CTA configuration based on user state
+const rateLimitCta = computed(() => {
+  if (isLoggedIn.value) {
+    // Registered free user -> upgrade to paid plan
+    return {
+      url: pricingUrl,
+      text: 'Upgrade Your Plan',
+      icon: 'fa-arrow-up'
+    };
+  } else {
+    // Anonymous user -> sign up for account
+    return {
+      url: signupUrl,
+      text: 'Sign Up Free',
+      icon: 'fa-user-plus'
+    };
+  }
+});
+
+// Check if current error is a rate limit error
+const isRateLimitError = computed(() => {
+  if (!error.value) return false;
+  const msg = error.value.toLowerCase();
+  return msg.includes('limit') || msg.includes('rate') || msg.includes('quota');
+});
 
 // Integrated mode state
 const authorityHookTextCompact = ref('');
@@ -810,6 +858,16 @@ function getSlotPreview(slotName) {
   if (slot.locked && slot.lockedIntro) {
     return slot.lockedIntro.substring(0, 80) + '...';
   }
+  if (slot.status === SLOT_STATUS.GENERATING) {
+    return 'Generating variations...';
+  }
+  if (slot.errorMessage) {
+    // Show truncated error message for rate limits and other errors
+    const shortError = slot.errorMessage.length > 60
+      ? slot.errorMessage.substring(0, 57) + '...'
+      : slot.errorMessage;
+    return shortError;
+  }
   if (slot.variations.length > 0) {
     return slot.variations[0].text.substring(0, 80) + '...';
   }
@@ -824,6 +882,7 @@ function setActiveSlot(slotName) {
 async function generateForSlot(slotName) {
   const slot = slots[slotName];
   slot.status = SLOT_STATUS.GENERATING;
+  slot.errorMessage = null; // Clear any previous error
   isGenerating.value = true;
   error.value = null;
 
@@ -851,15 +910,16 @@ async function generateForSlot(slotName) {
       length: slotName
     };
 
-    // Get nonce from shortcode data
-    const nonce = window.gmkbStandaloneTools?.nonce || '';
+    // Get nonces - public nonce for body, REST nonce for header (WordPress REST API auth)
+    const nonce = getPublicNonce();
+    const restNonce = getRestNonce();
 
-    // Build headers with nonce for authentication
+    // Build headers with REST nonce for WordPress cookie authentication
     const headers = {
       'Content-Type': 'application/json'
     };
-    if (nonce) {
-      headers['X-WP-Nonce'] = nonce;
+    if (restNonce) {
+      headers['X-WP-Nonce'] = restNonce;
     }
 
     // Call the tool-based API endpoint
@@ -909,7 +969,9 @@ async function generateForSlot(slotName) {
     emit('generated', { slot: slotName, variations: slot.variations });
   } catch (err) {
     console.error('[GuestIntroGenerator] Generation failed:', err);
-    error.value = err.message || 'Failed to generate introductions. Please try again.';
+    const errorMsg = err.message || 'Failed to generate introductions. Please try again.';
+    error.value = errorMsg;
+    slot.errorMessage = errorMsg; // Show error in slot preview
     slot.status = SLOT_STATUS.EMPTY;
   } finally {
     isGenerating.value = false;
@@ -919,19 +981,21 @@ async function generateForSlot(slotName) {
 async function refineVariations(feedback) {
   const slot = currentSlot.value;
   slot.status = SLOT_STATUS.GENERATING;
+  slot.errorMessage = null; // Clear any previous error
   isGenerating.value = true;
   error.value = null;
 
   try {
-    // Get nonce from shortcode data
-    const nonce = window.gmkbStandaloneTools?.nonce || '';
+    // Get nonces - public nonce for body, REST nonce for header (WordPress REST API auth)
+    const nonce = getPublicNonce();
+    const restNonce = getRestNonce();
 
-    // Build headers with nonce for authentication
+    // Build headers with REST nonce for WordPress cookie authentication
     const headers = {
       'Content-Type': 'application/json'
     };
-    if (nonce) {
-      headers['X-WP-Nonce'] = nonce;
+    if (restNonce) {
+      headers['X-WP-Nonce'] = restNonce;
     }
 
     // Refinement uses the same generate endpoint with refinement params
@@ -982,7 +1046,9 @@ async function refineVariations(feedback) {
     refinementFeedback.value = '';
   } catch (err) {
     console.error('[GuestIntroGenerator] Refinement failed:', err);
-    error.value = err.message || 'Failed to refine introductions. Please try again.';
+    const errorMsg = err.message || 'Failed to refine introductions. Please try again.';
+    error.value = errorMsg;
+    slot.errorMessage = errorMsg; // Show error in slot preview
     slot.status = SLOT_STATUS.READY;
   } finally {
     isGenerating.value = false;
@@ -1026,7 +1092,7 @@ async function copyIntro(text) {
 
 function reset() {
   Object.keys(slots).forEach(key => {
-    slots[key] = { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY };
+    slots[key] = { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY, errorMessage: null };
   });
   activeSlot.value = 'short';
   refinementFeedback.value = '';
@@ -1079,12 +1145,29 @@ async function handleSaveAll() {
   const lockedIntros = getLockedIntros();
   if (Object.keys(lockedIntros).length === 0) return;
 
-  try {
-    const saveData = {};
-    if (lockedIntros.short) saveData.guest_intro_short = lockedIntros.short;
-    if (lockedIntros.medium) saveData.guest_intro = lockedIntros.medium;
-    if (lockedIntros.long) saveData.guest_intro_long = lockedIntros.long;
+  // Build save data
+  const saveData = {};
+  if (lockedIntros.short) saveData.guest_intro_short = lockedIntros.short;
+  if (lockedIntros.medium) saveData.guest_intro = lockedIntros.medium;
+  if (lockedIntros.long) saveData.guest_intro_long = lockedIntros.long;
 
+  // Use standalone profile save in default mode
+  if (props.mode === 'default' && hasSelectedProfile.value) {
+    try {
+      const success = await saveMultipleToProfile(saveData);
+      if (success) {
+        saveSuccess.value = true;
+        setTimeout(() => { saveSuccess.value = false; }, 3000);
+        emit('saved', { introductions: lockedIntros });
+      }
+    } catch (err) {
+      console.error('[GuestIntroGenerator] Standalone save failed:', err);
+    }
+    return;
+  }
+
+  // Fallback to useProfileContext save (for integrated/embedded modes)
+  try {
     const result = await saveToProfile('guest-intro', saveData, {
       profileId: profileId.value
     });
@@ -1782,6 +1865,24 @@ defineExpose({
   margin: 0 0 12px 0;
 }
 
+.gfy-error-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.gfy-error-actions .gfy-btn--primary {
+  background: linear-gradient(135deg, #ED8936, #DD6B20);
+  color: white;
+  text-decoration: none;
+}
+
+.gfy-error-actions .gfy-btn--primary:hover {
+  background: linear-gradient(135deg, #DD6B20, #C05621);
+  color: white;
+}
+
 /* ============================================
    RESULTS PHASE
    ============================================ */
@@ -1982,6 +2083,13 @@ defineExpose({
 
 .gfy-refinement-input-wrapper {
   position: relative;
+  overflow: hidden;
+}
+
+.gfy-refinement-input-wrapper::after,
+.gfy-refinement-input-wrapper::before {
+  content: none;
+  display: none;
 }
 
 .gfy-refinement-textarea {
@@ -1996,6 +2104,15 @@ defineExpose({
   transition: all 0.2s;
   resize: none;
   min-height: 52px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+.gfy-refinement-textarea::after,
+.gfy-refinement-textarea::before {
+  content: none;
+  display: none;
 }
 
 .gfy-refinement-textarea:focus {
@@ -2238,6 +2355,19 @@ defineExpose({
 .gfy-save-error {
   display: flex;
   align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  color: #991b1b;
+  border-radius: var(--gfy-radius-md);
+  font-weight: 600;
+  margin-top: 16px;
+}
+
+.gfy-profile-warning {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 12px 16px;
   background: #fef2f2;

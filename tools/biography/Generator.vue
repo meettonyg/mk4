@@ -282,9 +282,19 @@
         <div v-if="error" class="gfy-error-box">
           <i class="fas fa-exclamation-circle"></i>
           <p>{{ error }}</p>
-          <button type="button" class="gfy-btn gfy-btn--outline" @click="handleStartGeneration">
-            Try Again
-          </button>
+          <div class="gfy-error-actions">
+            <button type="button" class="gfy-btn gfy-btn--outline" @click="handleStartGeneration">
+              Try Again
+            </button>
+            <a
+              v-if="isRateLimitError"
+              :href="rateLimitCta.url"
+              class="gfy-btn gfy-btn--primary"
+            >
+              <i :class="['fas', rateLimitCta.icon]"></i>
+              {{ rateLimitCta.text }}
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -385,9 +395,19 @@
             <div v-if="error" class="gfy-error-box">
               <i class="fas fa-exclamation-circle"></i>
               <p>{{ error }}</p>
-              <button type="button" class="gfy-btn gfy-btn--outline" @click="handleGenerateForActiveSlot">
-                Try Again
-              </button>
+              <div class="gfy-error-actions">
+                <button type="button" class="gfy-btn gfy-btn--outline" @click="handleGenerateForActiveSlot">
+                  Try Again
+                </button>
+                <a
+                  v-if="isRateLimitError"
+                  :href="signupUrl"
+                  class="gfy-btn gfy-btn--primary"
+                  target="_blank"
+                >
+                  Get Unlimited Access
+                </a>
+              </div>
             </div>
 
             <!-- Results Header -->
@@ -600,6 +620,7 @@ import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile
 import { useProfileSelectionHandler } from '../../src/composables/useProfileSelectionHandler';
 import { useDraftState } from '../../src/composables/useDraftState';
 import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
+import { getRestNonce, getPublicNonce } from '../../src/utils/ai.js';
 import { EMBEDDED_PROFILE_DATA_KEY, IS_EMBEDDED_CONTEXT_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileSelector } from '../_shared';
 
 // Integrated mode components
@@ -678,11 +699,42 @@ const activeSlot = ref('long');
 const refinementFeedback = ref('');
 const error = ref(null);
 
+// User login state and CTA URLs
+const isLoggedIn = window.gmkbStandaloneTools?.isLoggedIn || false;
+const signupUrl = window.gmkbStandaloneTools?.signupUrl || '/register/';
+const pricingUrl = window.gmkbStandaloneTools?.pricingUrl || '/pricing/';
+
+// CTA configuration based on user state
+const rateLimitCta = computed(() => {
+  if (isLoggedIn) {
+    // Registered free user -> upgrade to paid plan
+    return {
+      url: pricingUrl,
+      text: 'Upgrade Your Plan',
+      icon: 'fa-arrow-up'
+    };
+  } else {
+    // Anonymous user -> sign up for account
+    return {
+      url: signupUrl,
+      text: 'Sign Up Free',
+      icon: 'fa-user-plus'
+    };
+  }
+});
+
+// Check if current error is a rate limit error
+const isRateLimitError = computed(() => {
+  if (!error.value) return false;
+  const msg = error.value.toLowerCase();
+  return msg.includes('limit') || msg.includes('rate') || msg.includes('quota');
+});
+
 // Slots state
 const slots = reactive({
-  short: { status: SLOT_STATUS.EMPTY, variations: [], locked: false, lockedBio: null },
-  medium: { status: SLOT_STATUS.EMPTY, variations: [], locked: false, lockedBio: null },
-  long: { status: SLOT_STATUS.EMPTY, variations: [], locked: false, lockedBio: null }
+  short: { status: SLOT_STATUS.EMPTY, variations: [], locked: false, lockedBio: null, errorMessage: null },
+  medium: { status: SLOT_STATUS.EMPTY, variations: [], locked: false, lockedBio: null, errorMessage: null },
+  long: { status: SLOT_STATUS.EMPTY, variations: [], locked: false, lockedBio: null, errorMessage: null }
 });
 
 // Authority Hook (Who-What-When-How)
@@ -782,6 +834,13 @@ function getSlotPreview(slotName) {
   if (slot.status === SLOT_STATUS.GENERATING) {
     return 'Generating variations...';
   }
+  if (slot.errorMessage) {
+    // Show truncated error message for rate limits and other errors
+    const shortError = slot.errorMessage.length > 60
+      ? slot.errorMessage.substring(0, 57) + '...'
+      : slot.errorMessage;
+    return shortError;
+  }
   if (slot.variations.length > 0) {
     return `${slot.variations.length} variations ready`;
   }
@@ -831,7 +890,8 @@ function reset() {
       status: SLOT_STATUS.EMPTY,
       variations: [],
       locked: false,
-      lockedBio: null
+      lockedBio: null,
+      errorMessage: null
     };
   });
   activeSlot.value = 'long';
@@ -1130,6 +1190,7 @@ const handleGenerateForSlot = async (slotName) => {
 
   const slot = slots[slotName];
   slot.status = SLOT_STATUS.GENERATING;
+  slot.errorMessage = null; // Clear any previous error
   setActiveSlot(slotName);
   error.value = null;
 
@@ -1155,15 +1216,16 @@ const handleGenerateForSlot = async (slotName) => {
 
     console.log('[Biography Generator] Calling API with context:', context);
 
-    // Get nonce from shortcode data
-    const nonce = window.gmkbStandaloneTools?.nonce || '';
+    // Get nonces - public nonce for body, REST nonce for header (WordPress REST API auth)
+    const nonce = getPublicNonce();
+    const restNonce = getRestNonce();
 
-    // Build headers with nonce for authentication
+    // Build headers with REST nonce for WordPress cookie authentication
     const headers = {
       'Content-Type': 'application/json'
     };
-    if (nonce) {
-      headers['X-WP-Nonce'] = nonce;
+    if (restNonce) {
+      headers['X-WP-Nonce'] = restNonce;
     }
 
     // Call the tool-based API endpoint
@@ -1211,7 +1273,9 @@ const handleGenerateForSlot = async (slotName) => {
     }
   } catch (err) {
     console.error('[Biography Generator] Generation failed:', err);
-    error.value = err.message || 'Failed to generate biographies. Please try again.';
+    const errorMsg = err.message || 'Failed to generate biographies. Please try again.';
+    error.value = errorMsg;
+    slot.errorMessage = errorMsg; // Show error in slot preview
     slot.status = SLOT_STATUS.EMPTY;
   }
 };
@@ -1235,18 +1299,20 @@ const handleRefine = async () => {
   const slot = slots[slotName];
 
   slot.status = SLOT_STATUS.GENERATING;
+  slot.errorMessage = null; // Clear any previous error
   error.value = null;
 
   try {
-    // Get nonce from shortcode data
-    const nonce = window.gmkbStandaloneTools?.nonce || '';
+    // Get nonces - public nonce for body, REST nonce for header (WordPress REST API auth)
+    const nonce = getPublicNonce();
+    const restNonce = getRestNonce();
 
-    // Build headers with nonce for authentication
+    // Build headers with REST nonce for WordPress cookie authentication
     const headers = {
       'Content-Type': 'application/json'
     };
-    if (nonce) {
-      headers['X-WP-Nonce'] = nonce;
+    if (restNonce) {
+      headers['X-WP-Nonce'] = restNonce;
     }
 
     // Refinement uses the same generate endpoint with refinement params
@@ -1291,7 +1357,9 @@ const handleRefine = async () => {
     refinementFeedback.value = '';
   } catch (err) {
     console.error('[Biography Generator] Refinement failed:', err);
-    error.value = err.message || 'Failed to refine biographies. Please try again.';
+    const errorMsg = err.message || 'Failed to refine biographies. Please try again.';
+    error.value = errorMsg;
+    slot.errorMessage = errorMsg; // Show error in slot preview
     slot.status = SLOT_STATUS.HAS_VARIATIONS; // Keep existing variations
   }
 };
@@ -2038,6 +2106,24 @@ defineExpose({
 
 .gfy-error-box p {
   margin: 0 0 12px 0;
+}
+
+.gfy-error-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.gfy-error-actions .gfy-btn--primary {
+  background: linear-gradient(135deg, #ED8936, #DD6B20);
+  color: white;
+  text-decoration: none;
+}
+
+.gfy-error-actions .gfy-btn--primary:hover {
+  background: linear-gradient(135deg, #DD6B20, #C05621);
+  color: white;
 }
 
 /* ============================================

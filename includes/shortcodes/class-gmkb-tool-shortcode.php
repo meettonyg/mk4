@@ -185,11 +185,34 @@ class GMKB_Tool_Shortcode {
 
             // Add global data for Vue
             $is_logged_in = is_user_logged_in();
+
+            // Get signup URL (for anonymous users)
+            $signup_url = get_option('gmkb_ai_signup_url', '/register/');
+            if (empty($signup_url)) {
+                $signup_url = '/register/';
+            }
+            // Make relative URLs absolute
+            if (strpos($signup_url, 'http') !== 0 && strpos($signup_url, '/') === 0) {
+                $signup_url = home_url($signup_url);
+            }
+
+            // Get pricing URL (for registered free users)
+            $pricing_url = get_option('gmkb_ai_pricing_url', '/pricing/');
+            if (empty($pricing_url)) {
+                $pricing_url = '/pricing/';
+            }
+            // Make relative URLs absolute
+            if (strpos($pricing_url, 'http') !== 0 && strpos($pricing_url, '/') === 0) {
+                $pricing_url = home_url($pricing_url);
+            }
+
             $standalone_data = array(
                 'nonce' => wp_create_nonce('gmkb_public_ai'),
                 'apiBase' => rest_url('gmkb/v2'),
                 'ajaxUrl' => admin_url('admin-ajax.php'),
                 'isLoggedIn' => $is_logged_in,
+                'signupUrl' => $signup_url,     // For anonymous users -> "Sign Up"
+                'pricingUrl' => $pricing_url,   // For free users -> "Upgrade"
             );
 
             // For logged-in users, add profile context
