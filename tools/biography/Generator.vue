@@ -621,6 +621,25 @@ const SLOT_STATUS = {
   LOCKED: 'locked'
 };
 
+// API endpoint constant
+const API_ENDPOINT = '/wp-json/gmkb/v2/ai/tool/generate';
+
+/**
+ * Process API response variations into a standardized format
+ * @param {Object} data - The API response data
+ * @param {string} slotName - The slot name for generating unique IDs
+ * @returns {Array} Processed variations array
+ */
+function processApiVariations(data, slotName) {
+  const content = data.data?.content || data.content || data;
+  const rawVariations = content.variations || content.results || content || [];
+  return (Array.isArray(rawVariations) ? rawVariations : [rawVariations]).map((item, idx) => ({
+    id: crypto.randomUUID(),
+    label: typeof item === 'object' ? (item.label || `OPTION ${idx + 1}`) : `OPTION ${idx + 1}`,
+    text: typeof item === 'string' ? item : (item.content || item.text || '')
+  })).filter(v => v.text.trim().length > 0);
+}
+
 const TONE_OPTIONS = [
   { value: 'professional', label: 'Professional' },
   { value: 'conversational', label: 'Conversational' },
@@ -1139,15 +1158,23 @@ const handleGenerateForSlot = async (slotName) => {
     // Get nonce from shortcode data
     const nonce = window.gmkbStandaloneTools?.nonce || '';
 
+    // Build headers with nonce for authentication
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    if (nonce) {
+      headers['X-WP-Nonce'] = nonce;
+    }
+
     // Call the tool-based API endpoint
-    const response = await fetch('/wp-json/gmkb/v2/ai/tool/generate', {
+    const response = await fetch(API_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         tool: 'biography-generator',
         params: context,
         context: 'public',
-        nonce
+        nonce: nonce
       })
     });
 
@@ -1159,15 +1186,8 @@ const handleGenerateForSlot = async (slotName) => {
     const data = await response.json();
     console.log('[Biography Generator] API response:', data);
 
-    // Process variations from the response
-    // API returns { success, data: { content: { variations: [...] } } }
-    const content = data.data?.content || data.content || data;
-    const rawVariations = content.variations || content.results || content || [];
-    slot.variations = (Array.isArray(rawVariations) ? rawVariations : [rawVariations]).map((item, idx) => ({
-      id: `${slotName}-${Date.now()}-${idx}`,
-      label: typeof item === 'object' ? (item.label || `OPTION ${idx + 1}`) : `OPTION ${idx + 1}`,
-      text: typeof item === 'string' ? item : (item.content || item.text || '')
-    })).filter(v => v.text.trim().length > 0);
+    // Process variations from the response using helper function
+    slot.variations = processApiVariations(data, slotName);
 
     slot.status = SLOT_STATUS.HAS_VARIATIONS;
     console.log('[Biography Generator] Parsed variations:', slot.variations);
@@ -1221,10 +1241,18 @@ const handleRefine = async () => {
     // Get nonce from shortcode data
     const nonce = window.gmkbStandaloneTools?.nonce || '';
 
+    // Build headers with nonce for authentication
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    if (nonce) {
+      headers['X-WP-Nonce'] = nonce;
+    }
+
     // Refinement uses the same generate endpoint with refinement params
-    const response = await fetch('/wp-json/gmkb/v2/ai/tool/generate', {
+    const response = await fetch(API_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         tool: 'biography-generator',
         params: {
@@ -1244,7 +1272,7 @@ const handleRefine = async () => {
           refinementInstructions: refinementFeedback.value
         },
         context: 'public',
-        nonce
+        nonce: nonce
       })
     });
 
@@ -1256,15 +1284,8 @@ const handleRefine = async () => {
     const data = await response.json();
     console.log('[Biography Generator] Refine API response:', data);
 
-    // Process variations from the response
-    // API returns { success, data: { content: { variations: [...] } } }
-    const content = data.data?.content || data.content || data;
-    const rawVariations = content.variations || content.results || content || [];
-    slot.variations = (Array.isArray(rawVariations) ? rawVariations : [rawVariations]).map((item, idx) => ({
-      id: `${slotName}-${Date.now()}-${idx}`,
-      label: typeof item === 'object' ? (item.label || `OPTION ${idx + 1}`) : `OPTION ${idx + 1}`,
-      text: typeof item === 'string' ? item : (item.content || item.text || '')
-    })).filter(v => v.text.trim().length > 0);
+    // Process variations from the response using helper function
+    slot.variations = processApiVariations(data, slotName);
 
     slot.status = SLOT_STATUS.HAS_VARIATIONS;
     refinementFeedback.value = '';
