@@ -600,6 +600,7 @@ import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile
 import { useProfileSelectionHandler } from '../../src/composables/useProfileSelectionHandler';
 import { useDraftState } from '../../src/composables/useDraftState';
 import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
+import { getRestNonce } from '../../src/utils/ai.js';
 import { EMBEDDED_PROFILE_DATA_KEY, IS_EMBEDDED_CONTEXT_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileSelector } from '../_shared';
 
 // Integrated mode components
@@ -1155,15 +1156,16 @@ const handleGenerateForSlot = async (slotName) => {
 
     console.log('[Biography Generator] Calling API with context:', context);
 
-    // Get nonce from shortcode data
+    // Get nonces - public nonce for body, REST nonce for header (WordPress REST API auth)
     const nonce = window.gmkbStandaloneTools?.nonce || '';
+    const restNonce = getRestNonce();
 
-    // Build headers with nonce for authentication
+    // Build headers with REST nonce for WordPress cookie authentication
     const headers = {
       'Content-Type': 'application/json'
     };
-    if (nonce) {
-      headers['X-WP-Nonce'] = nonce;
+    if (restNonce) {
+      headers['X-WP-Nonce'] = restNonce;
     }
 
     // Call the tool-based API endpoint
@@ -1238,15 +1240,16 @@ const handleRefine = async () => {
   error.value = null;
 
   try {
-    // Get nonce from shortcode data
+    // Get nonces - public nonce for body, REST nonce for header (WordPress REST API auth)
     const nonce = window.gmkbStandaloneTools?.nonce || '';
+    const restNonce = getRestNonce();
 
-    // Build headers with nonce for authentication
+    // Build headers with REST nonce for WordPress cookie authentication
     const headers = {
       'Content-Type': 'application/json'
     };
-    if (nonce) {
-      headers['X-WP-Nonce'] = nonce;
+    if (restNonce) {
+      headers['X-WP-Nonce'] = restNonce;
     }
 
     // Refinement uses the same generate endpoint with refinement params
