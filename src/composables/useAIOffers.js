@@ -154,6 +154,7 @@ export function useAIOffers() {
 
       const response = await fetch(`${restUrl}ai/tool/generate`, {
         method: 'POST',
+        credentials: requestContext === 'builder' ? 'same-origin' : 'omit',
         headers: {
           'Content-Type': 'application/json',
           'X-WP-Nonce': requestContext === 'builder' ? nonce : ''
