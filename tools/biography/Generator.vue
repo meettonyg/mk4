@@ -600,7 +600,7 @@ import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile
 import { useProfileSelectionHandler } from '../../src/composables/useProfileSelectionHandler';
 import { useDraftState } from '../../src/composables/useDraftState';
 import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
-import { getRestNonce } from '../../src/utils/ai.js';
+import { getRestNonce, getPublicNonce } from '../../src/utils/ai.js';
 import { EMBEDDED_PROFILE_DATA_KEY, IS_EMBEDDED_CONTEXT_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileSelector } from '../_shared';
 
 // Integrated mode components
@@ -1157,7 +1157,7 @@ const handleGenerateForSlot = async (slotName) => {
     console.log('[Biography Generator] Calling API with context:', context);
 
     // Get nonces - public nonce for body, REST nonce for header (WordPress REST API auth)
-    const nonce = window.gmkbStandaloneTools?.nonce || '';
+    const nonce = getPublicNonce();
     const restNonce = getRestNonce();
 
     // Build headers with REST nonce for WordPress cookie authentication
@@ -1241,7 +1241,7 @@ const handleRefine = async () => {
 
   try {
     // Get nonces - public nonce for body, REST nonce for header (WordPress REST API auth)
-    const nonce = window.gmkbStandaloneTools?.nonce || '';
+    const nonce = getPublicNonce();
     const restNonce = getRestNonce();
 
     // Build headers with REST nonce for WordPress cookie authentication
