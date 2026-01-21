@@ -27,6 +27,16 @@ class GMKB_AI_Settings_Admin {
     const OPTION_AUTH_RATE_LIMIT = 'gmkb_ai_auth_rate_limit';
     const OPTION_RATE_LIMIT_WINDOW = 'gmkb_ai_rate_limit_window';
     const OPTION_SIGNUP_URL = 'gmkb_ai_signup_url';
+    const OPTION_PRICING_URL = 'gmkb_ai_pricing_url';
+
+    /**
+     * Credit system options (stubbed for future implementation)
+     * These will enable tier-based credit limits for AI generations
+     */
+    const OPTION_CREDITS_ENABLED = 'gmkb_ai_credits_enabled';
+    const OPTION_FREE_TIER_CREDITS = 'gmkb_ai_free_tier_credits';
+    const OPTION_PRO_TIER_CREDITS = 'gmkb_ai_pro_tier_credits';
+    const OPTION_PREMIUM_TIER_CREDITS = 'gmkb_ai_premium_tier_credits';
 
     /**
      * Available providers and their models
@@ -146,7 +156,38 @@ class GMKB_AI_Settings_Admin {
         register_setting('gmkb_ai_settings', self::OPTION_SIGNUP_URL, [
             'type' => 'string',
             'sanitize_callback' => 'esc_url_raw',
+            'default' => '/register/',
+        ]);
+
+        register_setting('gmkb_ai_settings', self::OPTION_PRICING_URL, [
+            'type' => 'string',
+            'sanitize_callback' => 'esc_url_raw',
             'default' => '/pricing/',
+        ]);
+
+        // Credit system settings (stubbed for future)
+        register_setting('gmkb_ai_settings', self::OPTION_CREDITS_ENABLED, [
+            'type' => 'boolean',
+            'sanitize_callback' => 'rest_sanitize_boolean',
+            'default' => false,
+        ]);
+
+        register_setting('gmkb_ai_settings', self::OPTION_FREE_TIER_CREDITS, [
+            'type' => 'integer',
+            'sanitize_callback' => 'absint',
+            'default' => 10,
+        ]);
+
+        register_setting('gmkb_ai_settings', self::OPTION_PRO_TIER_CREDITS, [
+            'type' => 'integer',
+            'sanitize_callback' => 'absint',
+            'default' => 100,
+        ]);
+
+        register_setting('gmkb_ai_settings', self::OPTION_PREMIUM_TIER_CREDITS, [
+            'type' => 'integer',
+            'sanitize_callback' => 'absint',
+            'default' => 0, // 0 = unlimited
         ]);
     }
 
@@ -166,8 +207,49 @@ class GMKB_AI_Settings_Admin {
     }
 
     public static function get_signup_url(): string {
-        $url = get_option(self::OPTION_SIGNUP_URL, '/pricing/');
+        $url = get_option(self::OPTION_SIGNUP_URL, '/register/');
+        return !empty($url) ? $url : '/register/';
+    }
+
+    public static function get_pricing_url(): string {
+        $url = get_option(self::OPTION_PRICING_URL, '/pricing/');
         return !empty($url) ? $url : '/pricing/';
+    }
+
+    /**
+     * Credit system getters (stubbed for future implementation)
+     */
+    public static function is_credits_enabled(): bool {
+        return (bool) get_option(self::OPTION_CREDITS_ENABLED, false);
+    }
+
+    public static function get_free_tier_credits(): int {
+        return (int) get_option(self::OPTION_FREE_TIER_CREDITS, 10);
+    }
+
+    public static function get_pro_tier_credits(): int {
+        return (int) get_option(self::OPTION_PRO_TIER_CREDITS, 100);
+    }
+
+    public static function get_premium_tier_credits(): int {
+        return (int) get_option(self::OPTION_PREMIUM_TIER_CREDITS, 0);
+    }
+
+    /**
+     * Get credits for a specific user tier
+     * @param string $tier User tier (free, pro, premium)
+     * @return int Credits for the tier (0 = unlimited)
+     */
+    public static function get_tier_credits(string $tier): int {
+        switch ($tier) {
+            case 'premium':
+                return self::get_premium_tier_credits();
+            case 'pro':
+                return self::get_pro_tier_credits();
+            case 'free':
+            default:
+                return self::get_free_tier_credits();
+        }
     }
 
     /**
@@ -529,21 +611,106 @@ class GMKB_AI_Settings_Admin {
 
                 <hr />
 
-                <h2>Upgrade CTA</h2>
-                <p>URL shown to users when they hit the rate limit.</p>
+                <h2>Rate Limit CTAs</h2>
+                <p>URLs shown to users when they hit the rate limit. Different CTAs for different user states.</p>
 
                 <table class="form-table">
                     <tr>
-                        <th scope="row">Signup/Pricing URL</th>
+                        <th scope="row">Signup URL (for anonymous users)</th>
                         <td>
                             <input
                                 type="url"
                                 name="<?php echo esc_attr(self::OPTION_SIGNUP_URL); ?>"
                                 value="<?php echo esc_attr(self::get_signup_url()); ?>"
                                 class="regular-text"
+                                placeholder="/register/"
+                            />
+                            <p class="description">Shown to non-logged-in visitors (e.g., /register/ or https://example.com/signup)</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Pricing URL (for free users)</th>
+                        <td>
+                            <input
+                                type="url"
+                                name="<?php echo esc_attr(self::OPTION_PRICING_URL); ?>"
+                                value="<?php echo esc_attr(self::get_pricing_url()); ?>"
+                                class="regular-text"
                                 placeholder="/pricing/"
                             />
-                            <p class="description">Full URL or relative path (e.g., /pricing/ or https://example.com/pricing)</p>
+                            <p class="description">Shown to logged-in free users (e.g., /pricing/ or https://example.com/upgrade)</p>
+                        </td>
+                    </tr>
+                </table>
+
+                <hr />
+
+                <h2>Credit System <span style="background: #f0f0f1; padding: 2px 8px; border-radius: 3px; font-size: 12px; font-weight: normal; color: #646970;">Coming Soon</span></h2>
+                <p>Future feature: Tier-based credit limits for AI generations. Configure credits per user tier.</p>
+
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">Enable Credit System</th>
+                        <td>
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    name="<?php echo esc_attr(self::OPTION_CREDITS_ENABLED); ?>"
+                                    value="1"
+                                    <?php checked(self::is_credits_enabled()); ?>
+                                    disabled
+                                />
+                                Enable credit-based limits (not yet implemented)
+                            </label>
+                            <p class="description">When enabled, users will have monthly credit allocations instead of rate limits.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Free Tier Credits</th>
+                        <td>
+                            <input
+                                type="number"
+                                name="<?php echo esc_attr(self::OPTION_FREE_TIER_CREDITS); ?>"
+                                value="<?php echo esc_attr(self::get_free_tier_credits()); ?>"
+                                class="small-text"
+                                min="0"
+                                max="1000"
+                                disabled
+                            />
+                            <span>credits per month</span>
+                            <p class="description">For registered users on the free plan.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Pro Tier Credits</th>
+                        <td>
+                            <input
+                                type="number"
+                                name="<?php echo esc_attr(self::OPTION_PRO_TIER_CREDITS); ?>"
+                                value="<?php echo esc_attr(self::get_pro_tier_credits()); ?>"
+                                class="small-text"
+                                min="0"
+                                max="10000"
+                                disabled
+                            />
+                            <span>credits per month</span>
+                            <p class="description">For users on the Pro plan.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Premium Tier Credits</th>
+                        <td>
+                            <input
+                                type="number"
+                                name="<?php echo esc_attr(self::OPTION_PREMIUM_TIER_CREDITS); ?>"
+                                value="<?php echo esc_attr(self::get_premium_tier_credits()); ?>"
+                                class="small-text"
+                                min="0"
+                                max="100000"
+                                disabled
+                            />
+                            <span>credits per month (0 = unlimited)</span>
+                            <p class="description">For users on the Premium plan.</p>
                         </td>
                     </tr>
                 </table>

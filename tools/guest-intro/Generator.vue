@@ -256,11 +256,11 @@
             </button>
             <a
               v-if="isRateLimitError"
-              :href="signupUrl"
+              :href="rateLimitCta.url"
               class="gfy-btn gfy-btn--primary"
-              target="_blank"
             >
-              Get Unlimited Access
+              <i :class="['fas', rateLimitCta.icon]"></i>
+              {{ rateLimitCta.text }}
             </a>
           </div>
         </div>
@@ -725,8 +725,29 @@ const error = ref(null);
 const showResults = ref(false);
 const saveSuccess = ref(false);
 
-// Signup URL for rate limit CTA
-const signupUrl = window.gmkbStandaloneTools?.signupUrl || '/pricing/';
+// User login state and CTA URLs
+const isLoggedIn = window.gmkbStandaloneTools?.isLoggedIn || false;
+const signupUrl = window.gmkbStandaloneTools?.signupUrl || '/register/';
+const pricingUrl = window.gmkbStandaloneTools?.pricingUrl || '/pricing/';
+
+// CTA configuration based on user state
+const rateLimitCta = computed(() => {
+  if (isLoggedIn) {
+    // Registered free user -> upgrade to paid plan
+    return {
+      url: pricingUrl,
+      text: 'Upgrade Your Plan',
+      icon: 'fa-arrow-up'
+    };
+  } else {
+    // Anonymous user -> sign up for account
+    return {
+      url: signupUrl,
+      text: 'Sign Up Free',
+      icon: 'fa-user-plus'
+    };
+  }
+});
 
 // Check if current error is a rate limit error
 const isRateLimitError = computed(() => {
