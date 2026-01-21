@@ -360,28 +360,35 @@ class GMKB_AI_Service {
         $authority_hook = '';
         if (!empty($params['authorityHook'])) {
             $ah = $params['authorityHook'];
-            $parts = array();
 
-            if (!empty($ah['who'])) {
-                $parts[] = 'I help ' . $ah['who'];
-            }
-            if (!empty($ah['what'])) {
-                $parts[] = $ah['what'];
-            }
-            if (!empty($ah['when'])) {
-                $parts[] = 'when ' . $ah['when'];
-            }
-            if (!empty($ah['how'])) {
-                $parts[] = 'by ' . $ah['how'];
-            }
-            if (!empty($ah['where'])) {
-                $parts[] = 'in ' . $ah['where'];
-            }
-            if (!empty($ah['why'])) {
-                $parts[] = 'because ' . $ah['why'];
-            }
+            // If already a string, use it directly
+            if (is_string($ah)) {
+                $authority_hook = $ah;
+            } elseif (is_array($ah)) {
+                // Build from array parts
+                $parts = array();
 
-            $authority_hook = implode(' ', $parts);
+                if (!empty($ah['who'])) {
+                    $parts[] = 'I help ' . $ah['who'];
+                }
+                if (!empty($ah['what'])) {
+                    $parts[] = $ah['what'];
+                }
+                if (!empty($ah['when'])) {
+                    $parts[] = 'when ' . $ah['when'];
+                }
+                if (!empty($ah['how'])) {
+                    $parts[] = 'by ' . $ah['how'];
+                }
+                if (!empty($ah['where'])) {
+                    $parts[] = 'in ' . $ah['where'];
+                }
+                if (!empty($ah['why'])) {
+                    $parts[] = 'because ' . $ah['why'];
+                }
+
+                $authority_hook = implode(' ', $parts);
+            }
         }
 
         // Build refinement section if feedback provided
@@ -423,6 +430,10 @@ class GMKB_AI_Service {
             '{{where}}' => $params['where'] ?? '',
             '{{why}}' => $params['why'] ?? '',
             '{{count}}' => $params['count'] ?? '5',
+            // Offers-specific params
+            '{{audienceChallenges}}' => $params['audienceChallenges'] ?? '',
+            '{{priceRange}}' => $params['priceRange'] ?? '',
+            '{{delivery}}' => $params['delivery'] ?? '',
             // Refinement support
             '{{refinementSection}}' => $refinement_section,
             '{{wordCountRequirement}}' => $word_count_requirement
@@ -623,50 +634,104 @@ class GMKB_AI_Service {
     }
 
     /**
-     * Format offers response
+     * Format offers response - parses multiple variations per tier
      *
      * @param string $content Raw content
-     * @return array Offer packages
+     * @return array Offer packages grouped by tier with variations
      */
     private function format_offers_response($content) {
-        $offers = array();
+        $result = array(
+            'entry' => array(),
+            'signature' => array(),
+            'premium' => array()
+        );
 
-        // Try to extract structured offers
-        $sections = preg_split('/(?=(?:Package|Tier|Option|Level)\s*\d|(?:Basic|Standard|Premium|Enterprise))/i', $content);
+        // Split by tier sections
+        $tier_patterns = array(
+            'entry' => '/===\s*ENTRY\s*TIER\s*===(.+?)(?====\s*(?:SIGNATURE|PREMIUM)\s*TIER|$)/is',
+            'signature' => '/===\s*SIGNATURE\s*TIER\s*===(.+?)(?====\s*PREMIUM\s*TIER|$)/is',
+            'premium' => '/===\s*PREMIUM\s*TIER\s*===(.+?)$/is'
+        );
 
-        foreach ($sections as $section) {
-            $section = trim($section);
-            if (strlen($section) > 20) {
-                // Try to extract title
-                if (preg_match('/^(.+?)[\n:]/m', $section, $match)) {
-                    $title = trim($match[1]);
-                    $description = trim(str_replace($match[0], '', $section));
+        foreach ($tier_patterns as $tier => $pattern) {
+            if (preg_match($pattern, $content, $tier_match)) {
+                $tier_content = $tier_match[1];
 
-                    $offers[] = array(
-                        'title' => $title,
-                        'description' => $description
+                // Split by variations
+                $variations = preg_split('/VARIATION\s*\d+\s*:/i', $tier_content, -1, PREG_SPLIT_NO_EMPTY);
+
+                $variation_index = 0;
+                foreach ($variations as $var_content) {
+                    $var_content = trim($var_content);
+                    if (strlen($var_content) < 20) continue;
+
+                    $package = array(
+                        'id' => $tier . '_' . $variation_index,
+                        'tier' => $tier,
+                        'variationIndex' => $variation_index
                     );
-                } else {
-                    $offers[] = array(
-                        'title' => 'Package',
-                        'description' => $section
-                    );
+
+                    // Extract Name
+                    if (preg_match('/Name:\s*(.+?)(?:\n|$)/i', $var_content, $m)) {
+                        $package['name'] = trim($m[1]);
+                    }
+
+                    // Extract Description
+                    if (preg_match('/Description:\s*(.+?)(?=Deliverables:|Ideal Client:|$)/is', $var_content, $m)) {
+                        $package['description'] = trim($m[1]);
+                    }
+
+                    // Extract Deliverables
+                    if (preg_match('/Deliverables:\s*(.+?)(?=Ideal Client:|$)/is', $var_content, $m)) {
+                        $deliverables_str = trim($m[1]);
+                        // Split by comma or newline
+                        $deliverables = preg_split('/[,\n]+/', $deliverables_str);
+                        $package['deliverables'] = array_values(array_filter(array_map('trim', $deliverables)));
+                    }
+
+                    // Extract Ideal Client
+                    if (preg_match('/Ideal Client:\s*(.+?)(?:\n\n|$)/is', $var_content, $m)) {
+                        $package['idealClient'] = trim($m[1]);
+                    }
+
+                    // Only add if we have at least a name
+                    if (!empty($package['name'])) {
+                        $result[$tier][] = $package;
+                        $variation_index++;
+                    }
                 }
             }
         }
 
-        // Fallback to list format if no structured offers found
-        if (empty($offers)) {
-            $items = $this->format_list_response($content, 5);
-            foreach ($items as $item) {
-                $offers[] = array(
-                    'title' => '',
-                    'description' => $item
-                );
+        // Fallback: if structured parsing failed, try legacy parsing
+        $total_found = count($result['entry']) + count($result['signature']) + count($result['premium']);
+        if ($total_found === 0) {
+            // Try to extract any structured offers
+            $sections = preg_split('/(?=(?:Package|Tier|Option|Level)\s*\d|(?:Basic|Standard|Premium|Enterprise))/i', $content);
+            $tier_names = array('entry', 'signature', 'premium');
+            $tier_index = 0;
+
+            foreach ($sections as $section) {
+                $section = trim($section);
+                if (strlen($section) > 20 && $tier_index < 3) {
+                    $tier = $tier_names[$tier_index];
+                    if (preg_match('/^(.+?)[\n:]/m', $section, $match)) {
+                        $result[$tier][] = array(
+                            'id' => $tier . '_0',
+                            'tier' => $tier,
+                            'variationIndex' => 0,
+                            'name' => trim($match[1]),
+                            'description' => trim(str_replace($match[0], '', $section)),
+                            'deliverables' => array(),
+                            'idealClient' => ''
+                        );
+                    }
+                    $tier_index++;
+                }
             }
         }
 
-        return $offers;
+        return $result;
     }
 
     /**

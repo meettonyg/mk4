@@ -161,20 +161,14 @@ class GMKB_Tool_Shortcode {
 
         $version = defined('GMKB_VERSION') ? GMKB_VERSION : '1.0.0';
 
-        // Check for standalone tools bundle
-        $js_file = GMKB_PLUGIN_DIR . 'dist/standalone-tools/standalone-tools.iife.js';
-        $css_file = GMKB_PLUGIN_DIR . 'dist/standalone-tools/standalone-tools.css';
-
-        // Fallback to seo-tools bundle
-        if (!file_exists($js_file)) {
-            $js_file = GMKB_PLUGIN_DIR . 'dist/seo-tools/seo-tools.iife.js';
-            $css_file = GMKB_PLUGIN_DIR . 'dist/seo-tools/seo-tools.css';
-        }
+        // Use unified gmkb bundle
+        $js_file = GMKB_PLUGIN_DIR . 'dist/gmkb.iife.js';
+        $css_file = GMKB_PLUGIN_DIR . 'dist/gmkb.css';
 
         if (file_exists($js_file)) {
             wp_enqueue_script(
-                'gmkb-standalone-tools',
-                str_replace(GMKB_PLUGIN_DIR, GMKB_PLUGIN_URL, $js_file),
+                'gmkb-tools',
+                GMKB_PLUGIN_URL . 'dist/gmkb.iife.js',
                 array(),
                 $version,
                 true
@@ -182,8 +176,8 @@ class GMKB_Tool_Shortcode {
 
             if (file_exists($css_file)) {
                 wp_enqueue_style(
-                    'gmkb-standalone-tools',
-                    str_replace(GMKB_PLUGIN_DIR, GMKB_PLUGIN_URL, $css_file),
+                    'gmkb-tools',
+                    GMKB_PLUGIN_URL . 'dist/gmkb.css',
                     array(),
                     $version
                 );
@@ -206,7 +200,7 @@ class GMKB_Tool_Shortcode {
                 $standalone_data['profileEndpoint'] = rest_url('gmkb/v2/profile');
             }
 
-            wp_localize_script('gmkb-standalone-tools', 'gmkbStandaloneTools', $standalone_data);
+            wp_localize_script('gmkb-tools', 'gmkbStandaloneTools', $standalone_data);
         }
 
         $this->enqueued = true;

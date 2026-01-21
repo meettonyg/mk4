@@ -512,29 +512,29 @@ class GMKB_Tool_Pages_Shortcode {
             return;
         }
 
-        // Check if the SEO tools bundle exists
-        $seo_tools_js = GMKB_PLUGIN_DIR . 'dist/seo-tools/seo-tools.iife.js';
-        $seo_tools_css = GMKB_PLUGIN_DIR . 'dist/seo-tools/seo-tools.css';
+        // Use unified gmkb bundle
+        $gmkb_js = GMKB_PLUGIN_DIR . 'dist/gmkb.iife.js';
+        $gmkb_css = GMKB_PLUGIN_DIR . 'dist/gmkb.css';
 
-        $use_standalone = file_exists($seo_tools_js);
+        $use_bundle = file_exists($gmkb_js);
 
-        if ($use_standalone) {
+        if ($use_bundle) {
             wp_enqueue_style(
-                'gmkb-seo-tools',
-                GMKB_PLUGIN_URL . 'dist/seo-tools/seo-tools.css',
+                'gmkb-tools',
+                GMKB_PLUGIN_URL . 'dist/gmkb.css',
                 array(),
                 GMKB_VERSION
             );
 
             wp_enqueue_script(
-                'gmkb-seo-tools',
-                GMKB_PLUGIN_URL . 'dist/seo-tools/seo-tools.iife.js',
+                'gmkb-tools',
+                GMKB_PLUGIN_URL . 'dist/gmkb.iife.js',
                 array(),
                 GMKB_VERSION,
                 true
             );
 
-            $script_handle = 'gmkb-seo-tools';
+            $script_handle = 'gmkb-tools';
         } else {
             // Fallback: Use placeholder styles
             wp_enqueue_style(

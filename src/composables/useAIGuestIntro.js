@@ -267,13 +267,17 @@ export function useAIGuestIntro() {
       const restUrl = getRestUrl();
       const nonce = getNonce(context);
 
+      // Build headers - only include X-WP-Nonce for builder context
+      // For public context, empty header triggers WordPress cookie auth which fails
+      const headers = { 'Content-Type': 'application/json' };
+      if (context === 'builder') {
+        headers['X-WP-Nonce'] = nonce;
+      }
+
       // Call the tool-based API endpoint (uses prompts.php)
       const response = await fetch(`${restUrl}ai/tool/generate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': context === 'builder' ? nonce : ''
-        },
+        headers,
         body: JSON.stringify({
           tool: 'guest-intro',
           params,
@@ -361,12 +365,15 @@ export function useAIGuestIntro() {
       const restUrl = getRestUrl();
       const nonce = getNonce(context);
 
+      // Build headers - only include X-WP-Nonce for builder context
+      const refineHeaders = { 'Content-Type': 'application/json' };
+      if (context === 'builder') {
+        refineHeaders['X-WP-Nonce'] = nonce;
+      }
+
       const response = await fetch(`${restUrl}ai/tool/generate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': context === 'builder' ? nonce : ''
-        },
+        headers: refineHeaders,
         body: JSON.stringify({
           tool: 'guest-intro',
           params,
