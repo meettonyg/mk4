@@ -1173,7 +1173,8 @@ const handleGenerateForSlot = async (slotName) => {
       body: JSON.stringify({
         tool: 'biography-generator',
         params: context,
-        context: 'public'
+        context: 'public',
+        nonce: nonce
       })
     });
 
@@ -1270,7 +1271,8 @@ const handleRefine = async () => {
           currentDraft: slot.variations.map(v => v.text).join('\n\n---\n\n'),
           refinementInstructions: refinementFeedback.value
         },
-        context: 'public'
+        context: 'public',
+        nonce: nonce
       })
     });
 

@@ -869,7 +869,8 @@ async function generateForSlot(slotName) {
       body: JSON.stringify({
         tool: 'guest-intro-generator',
         params: context,
-        context: 'public'
+        context: 'public',
+        nonce: nonce
       })
     });
 
@@ -961,7 +962,8 @@ async function refineVariations(feedback) {
           currentDraft: slot.variations.map(v => v.text).join('\n\n---\n\n'),
           refinementInstructions: feedback
         },
-        context: 'public'
+        context: 'public',
+        nonce: nonce
       })
     });
 
