@@ -1013,8 +1013,8 @@ class GMKB_REST_API_V2 {
             return GMKB_Permissions::can_create('mkcg');
         }
 
-        // FALLBACK: Check if user can publish mkcg posts
-        return current_user_can('publish_posts');
+        // FALLBACK: Check if user can edit posts (draft creation only needs edit capability)
+        return current_user_can('edit_posts');
     }
 
     /**

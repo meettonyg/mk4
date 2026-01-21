@@ -705,12 +705,14 @@ export const useMediaKitStore = defineStore('mediaKit', {
           this.postId = result.post_id;
 
           // Update URL to reflect the new post (without full page reload)
-          const newUrl = new URL(window.location.href);
-          newUrl.searchParams.delete('template');
-          newUrl.searchParams.delete('theme');
-          // Redirect to the edit URL for the new post
+          // Use URL object to ensure well-formed URL
           if (result.edit_url) {
-            window.history.replaceState({}, '', result.edit_url);
+            try {
+              const newEditUrl = new URL(result.edit_url);
+              window.history.replaceState({}, '', newEditUrl.toString());
+            } catch (e) {
+              console.warn('Invalid edit_url received:', result.edit_url);
+            }
           }
         }
 

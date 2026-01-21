@@ -553,6 +553,10 @@ export class APIService {
    * @returns {Promise<Object>} Create result with new post_id
    */
   async create(state, options = {}) {
+    // Accept profileId as explicit parameter for better testability,
+    // falling back to window.gmkbData for backwards compatibility
+    const profileId = options.profileId ?? window.gmkbData?.profileId ?? null;
+
     try {
       // Validate and sanitize state before creating
       DataValidator.validateState(state);
@@ -568,8 +572,7 @@ export class APIService {
         themeCustomizations: sanitizedState.themeCustomizations || {},
         rendered_content: sanitizedState.rendered_content || '',
         rendered_css: sanitizedState.rendered_css || '',
-        // Include profile_id if available (for linking to profile)
-        profile_id: window.gmkbData?.profileId || null
+        profile_id: profileId
       };
 
       if (!options.silent) {
