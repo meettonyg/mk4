@@ -228,13 +228,17 @@ export function useAIOffers() {
       const restUrl = getRestUrl();
       const nonce = getToolNonce(requestContext);
 
+      // Build headers - only include X-WP-Nonce for builder context
+      // For public context, empty header triggers WordPress cookie auth which fails
+      const headers = { 'Content-Type': 'application/json' };
+      if (requestContext === 'builder') {
+        headers['X-WP-Nonce'] = nonce;
+      }
+
       const response = await fetch(`${restUrl}ai/generate`, {
         method: 'POST',
         credentials: requestContext === 'builder' ? 'same-origin' : 'omit',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': requestContext === 'builder' ? nonce : ''
-        },
+        headers,
         body: JSON.stringify({
           type: 'offers',
           params,
