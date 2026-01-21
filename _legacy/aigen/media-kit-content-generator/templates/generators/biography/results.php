@@ -374,6 +374,9 @@ $display_date = date_i18n(get_option('date_format') . ' ' . get_option('time_for
         ajaxUrl: '<?php echo admin_url('admin-ajax.php'); ?>',
         nonce: '<?php echo wp_create_nonce('mkcg_nonce'); ?>'
     };
+
+    // Add public nonce for new tool-based API
+    window.gmkbPublicNonce = '<?php echo wp_create_nonce('gmkb_public_ai'); ?>';
     
     // Initialize results page tabs
     document.addEventListener('DOMContentLoaded', function() {

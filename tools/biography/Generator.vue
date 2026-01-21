@@ -1139,7 +1139,8 @@ const handleGenerateForSlot = async (slotName) => {
     // Get the public nonce for API authentication
     const nonce = window.gmkbStandaloneTools?.nonce ||
                   window.gmkbPublicNonce ||
-                  window.gmkbPublicData?.publicNonce || '';
+                  window.gmkbPublicData?.publicNonce ||
+                  window.mkcg_vars?.nonce || '';
 
     // Call the tool-based API endpoint
     const response = await fetch('/wp-json/gmkb/v2/ai/tool/generate', {
