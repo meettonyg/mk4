@@ -17,6 +17,7 @@ export const getRestUrl = () => {
     || window.gmkbProfileData?.apiUrl
     || window.gmkbStandaloneTools?.apiBase
     || window.gmkbPublicData?.restUrl
+    || window.gmkbToolPageData?.restUrl
     || '/wp-json/gmkb/v2/';
 
   return url.endsWith('/') ? url : `${url}/`;
@@ -37,6 +38,7 @@ export const getToolNonce = (context) => {
   }
   return window.gmkbPublicNonce
     || window.gmkbPublicData?.publicNonce
+    || window.gmkbToolPageData?.publicNonce
     || window.gmkbStandaloneTools?.nonce
     || '';
 };
