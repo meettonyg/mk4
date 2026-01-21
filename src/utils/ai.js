@@ -18,6 +18,7 @@ export const getRestUrl = () => {
     || window.gmkbStandaloneTools?.apiBase
     || window.gmkbPublicData?.restUrl
     || window.gmkbToolPageData?.restUrl
+    || window.gmkbToolLanding?.apiBase
     || '/wp-json/gmkb/v2/';
 
   return url.endsWith('/') ? url : `${url}/`;
@@ -25,12 +26,19 @@ export const getRestUrl = () => {
 
 /**
  * Get public nonce from available sources (for anonymous/public API requests)
+ * Sources come from different shortcodes:
+ * - gmkbPublicNonce: class-gmkb-free-tools-shortcode.php (inline script)
+ * - gmkbPublicData.publicNonce: class-gmkb-free-tools-shortcode.php
+ * - gmkbToolPageData.publicNonce: class-gmkb-tool-pages-shortcode.php
+ * - gmkbToolLanding.nonce: class-gmkb-tool-landing-shortcode.php
+ * - gmkbStandaloneTools.nonce: class-gmkb-tool-shortcode.php
  * @returns {string} Public security nonce
  */
 export const getPublicNonce = () => {
   return window.gmkbPublicNonce
     || window.gmkbPublicData?.publicNonce
     || window.gmkbToolPageData?.publicNonce
+    || window.gmkbToolLanding?.nonce
     || window.gmkbStandaloneTools?.nonce
     || '';
 };
