@@ -538,6 +538,11 @@ async function initializeVue() {
 async function initialize() {
   console.log('🐛 DEBUG: initialize() called, guard value:', window.gmkbIsInitialized);
   console.log('🐛 DEBUG: window.GMKB.services at start of initialize():', window.GMKB.services);
+
+  if (typeof window.gmkbData === 'undefined' && window.gmkbStandaloneTools) {
+    console.info('ℹ️ GMKB: gmkbData not found, skipping builder initialization for standalone tools.');
+    return;
+  }
   
   // ARCHITECTURE FIX: Initialization guard - prevents race conditions
   // Phase 1 Compliance: Event-driven, single execution only
