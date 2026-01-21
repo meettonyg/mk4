@@ -576,7 +576,7 @@ function processGuestIntroVariations(data, slotName) {
   const content = data.data?.content || data.content || data;
   const rawVariations = content.variations || content.results || content || [];
   return (Array.isArray(rawVariations) ? rawVariations : [rawVariations]).map((item, idx) => ({
-    id: `${slotName}-${Date.now()}-${idx}`,
+    id: crypto.randomUUID(),
     label: typeof item === 'object' ? (item.label || `Option ${idx + 1}`) : `Option ${idx + 1}`,
     text: typeof item === 'string' ? item : (item.content || item.text || '')
   })).filter(v => v.text.trim().length > 0);
