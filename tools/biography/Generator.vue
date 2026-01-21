@@ -681,9 +681,9 @@ const error = ref(null);
 
 // Slots state
 const slots = reactive({
-  short: { status: SLOT_STATUS.EMPTY, variations: [], locked: false, lockedBio: null },
-  medium: { status: SLOT_STATUS.EMPTY, variations: [], locked: false, lockedBio: null },
-  long: { status: SLOT_STATUS.EMPTY, variations: [], locked: false, lockedBio: null }
+  short: { status: SLOT_STATUS.EMPTY, variations: [], locked: false, lockedBio: null, errorMessage: null },
+  medium: { status: SLOT_STATUS.EMPTY, variations: [], locked: false, lockedBio: null, errorMessage: null },
+  long: { status: SLOT_STATUS.EMPTY, variations: [], locked: false, lockedBio: null, errorMessage: null }
 });
 
 // Authority Hook (Who-What-When-How)
@@ -783,6 +783,13 @@ function getSlotPreview(slotName) {
   if (slot.status === SLOT_STATUS.GENERATING) {
     return 'Generating variations...';
   }
+  if (slot.errorMessage) {
+    // Show truncated error message for rate limits and other errors
+    const shortError = slot.errorMessage.length > 60
+      ? slot.errorMessage.substring(0, 57) + '...'
+      : slot.errorMessage;
+    return shortError;
+  }
   if (slot.variations.length > 0) {
     return `${slot.variations.length} variations ready`;
   }
@@ -832,7 +839,8 @@ function reset() {
       status: SLOT_STATUS.EMPTY,
       variations: [],
       locked: false,
-      lockedBio: null
+      lockedBio: null,
+      errorMessage: null
     };
   });
   activeSlot.value = 'long';
@@ -1131,6 +1139,7 @@ const handleGenerateForSlot = async (slotName) => {
 
   const slot = slots[slotName];
   slot.status = SLOT_STATUS.GENERATING;
+  slot.errorMessage = null; // Clear any previous error
   setActiveSlot(slotName);
   error.value = null;
 
@@ -1213,7 +1222,9 @@ const handleGenerateForSlot = async (slotName) => {
     }
   } catch (err) {
     console.error('[Biography Generator] Generation failed:', err);
-    error.value = err.message || 'Failed to generate biographies. Please try again.';
+    const errorMsg = err.message || 'Failed to generate biographies. Please try again.';
+    error.value = errorMsg;
+    slot.errorMessage = errorMsg; // Show error in slot preview
     slot.status = SLOT_STATUS.EMPTY;
   }
 };
@@ -1237,6 +1248,7 @@ const handleRefine = async () => {
   const slot = slots[slotName];
 
   slot.status = SLOT_STATUS.GENERATING;
+  slot.errorMessage = null; // Clear any previous error
   error.value = null;
 
   try {
@@ -1294,7 +1306,9 @@ const handleRefine = async () => {
     refinementFeedback.value = '';
   } catch (err) {
     console.error('[Biography Generator] Refinement failed:', err);
-    error.value = err.message || 'Failed to refine biographies. Please try again.';
+    const errorMsg = err.message || 'Failed to refine biographies. Please try again.';
+    error.value = errorMsg;
+    slot.errorMessage = errorMsg; // Show error in slot preview
     slot.status = SLOT_STATUS.HAS_VARIATIONS; // Keep existing variations
   }
 };

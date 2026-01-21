@@ -704,9 +704,9 @@ const refinementFeedback = ref('');
 
 // Slots state (Short, Medium, Long)
 const slots = reactive({
-  short: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY },
-  medium: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY },
-  long: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY }
+  short: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY, errorMessage: null },
+  medium: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY, errorMessage: null },
+  long: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY, errorMessage: null }
 });
 
 const activeSlot = ref('short');
@@ -811,6 +811,16 @@ function getSlotPreview(slotName) {
   if (slot.locked && slot.lockedIntro) {
     return slot.lockedIntro.substring(0, 80) + '...';
   }
+  if (slot.status === SLOT_STATUS.GENERATING) {
+    return 'Generating variations...';
+  }
+  if (slot.errorMessage) {
+    // Show truncated error message for rate limits and other errors
+    const shortError = slot.errorMessage.length > 60
+      ? slot.errorMessage.substring(0, 57) + '...'
+      : slot.errorMessage;
+    return shortError;
+  }
   if (slot.variations.length > 0) {
     return slot.variations[0].text.substring(0, 80) + '...';
   }
@@ -825,6 +835,7 @@ function setActiveSlot(slotName) {
 async function generateForSlot(slotName) {
   const slot = slots[slotName];
   slot.status = SLOT_STATUS.GENERATING;
+  slot.errorMessage = null; // Clear any previous error
   isGenerating.value = true;
   error.value = null;
 
@@ -911,7 +922,9 @@ async function generateForSlot(slotName) {
     emit('generated', { slot: slotName, variations: slot.variations });
   } catch (err) {
     console.error('[GuestIntroGenerator] Generation failed:', err);
-    error.value = err.message || 'Failed to generate introductions. Please try again.';
+    const errorMsg = err.message || 'Failed to generate introductions. Please try again.';
+    error.value = errorMsg;
+    slot.errorMessage = errorMsg; // Show error in slot preview
     slot.status = SLOT_STATUS.EMPTY;
   } finally {
     isGenerating.value = false;
@@ -921,6 +934,7 @@ async function generateForSlot(slotName) {
 async function refineVariations(feedback) {
   const slot = currentSlot.value;
   slot.status = SLOT_STATUS.GENERATING;
+  slot.errorMessage = null; // Clear any previous error
   isGenerating.value = true;
   error.value = null;
 
@@ -985,7 +999,9 @@ async function refineVariations(feedback) {
     refinementFeedback.value = '';
   } catch (err) {
     console.error('[GuestIntroGenerator] Refinement failed:', err);
-    error.value = err.message || 'Failed to refine introductions. Please try again.';
+    const errorMsg = err.message || 'Failed to refine introductions. Please try again.';
+    error.value = errorMsg;
+    slot.errorMessage = errorMsg; // Show error in slot preview
     slot.status = SLOT_STATUS.READY;
   } finally {
     isGenerating.value = false;
@@ -1029,7 +1045,7 @@ async function copyIntro(text) {
 
 function reset() {
   Object.keys(slots).forEach(key => {
-    slots[key] = { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY };
+    slots[key] = { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY, errorMessage: null };
   });
   activeSlot.value = 'short';
   refinementFeedback.value = '';
