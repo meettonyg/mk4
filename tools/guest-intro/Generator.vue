@@ -851,18 +851,25 @@ async function generateForSlot(slotName) {
       length: slotName
     };
 
-    // Get nonce from shortcode data
-    const nonce = window.gmkbStandaloneTools?.nonce || '';
+    // Get nonce from shortcode data (check multiple sources)
+    const nonce = window.gmkbStandaloneTools?.nonce || window.gmkbData?.nonce || window.wpApiSettings?.nonce || '';
+
+    // Build headers with nonce for authentication
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    if (nonce) {
+      headers['X-WP-Nonce'] = nonce;
+    }
 
     // Call the tool-based API endpoint
     const response = await fetch(API_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         tool: 'guest-intro-generator',
         params: context,
-        context: 'public',
-        nonce
+        context: 'public'
       })
     });
 
@@ -915,13 +922,21 @@ async function refineVariations(feedback) {
   error.value = null;
 
   try {
-    // Get nonce from shortcode data
-    const nonce = window.gmkbStandaloneTools?.nonce || '';
+    // Get nonce from shortcode data (check multiple sources)
+    const nonce = window.gmkbStandaloneTools?.nonce || window.gmkbData?.nonce || window.wpApiSettings?.nonce || '';
+
+    // Build headers with nonce for authentication
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    if (nonce) {
+      headers['X-WP-Nonce'] = nonce;
+    }
 
     // Refinement uses the same generate endpoint with refinement params
     const response = await fetch(API_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         tool: 'guest-intro-generator',
         params: {
@@ -946,8 +961,7 @@ async function refineVariations(feedback) {
           currentDraft: slot.variations.map(v => v.text).join('\n\n---\n\n'),
           refinementInstructions: feedback
         },
-        context: 'public',
-        nonce
+        context: 'public'
       })
     });
 
