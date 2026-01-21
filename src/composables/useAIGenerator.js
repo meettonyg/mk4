@@ -27,67 +27,7 @@
 import { ref, computed } from 'vue';
 import { useAIStore } from '../stores/ai';
 import { toolModules } from '../../tools/index.js';
-
-/**
- * Get REST URL from available sources
- * Ensures trailing slash for proper URL concatenation
- * @returns {string} REST API base URL
- */
-function getRestUrl() {
-  const url = window.gmkbData?.restUrl
-    || window.gmkbProfileData?.apiUrl
-    || window.gmkbStandaloneTools?.apiBase
-    || window.gmkbPublicData?.restUrl
-    || '/wp-json/gmkb/v2/';
-
-  // Ensure trailing slash for proper URL concatenation
-  return url.endsWith('/') ? url : url + '/';
-}
-
-/**
- * Get nonce from available sources
- * @param {string} context 'builder' or 'public'
- * @returns {string} Security nonce
- */
-function getNonce(context) {
-  if (context === 'builder') {
-    return window.gmkbData?.restNonce
-      || window.gmkbData?.nonce
-      || window.gmkbProfileData?.nonce
-      || window.gmkbStandaloneTools?.restNonce
-      || '';
-  }
-  return window.gmkbPublicNonce
-    || window.gmkbPublicData?.publicNonce
-    || window.gmkbStandaloneTools?.nonce
-    || '';
-}
-
-/**
- * Get REST API nonce for header (needed for logged-in users)
- * This is separate from the public AI nonce
- * @returns {string} REST API nonce
- */
-function getRestNonce() {
-  return window.gmkbData?.restNonce
-    || window.gmkbStandaloneTools?.restNonce
-    || window.gmkbProfileData?.nonce
-    || window.wpApiSettings?.nonce
-    || '';
-}
-
-/**
- * Check if user is logged in from available sources
- * @returns {boolean}
- */
-function isUserLoggedIn() {
-  return !!(
-    window.gmkbData?.postId
-    || window.gmkbData?.post_id
-    || window.gmkbProfileData?.postId
-    || window.gmkbStandaloneTools?.isLoggedIn
-  );
-}
+import { getRestUrl, getToolNonce, getRestNonce, isUserLoggedIn } from '../utils/ai';
 
 /**
  * Generate cache key from type and params
@@ -286,7 +226,7 @@ export function useAIGenerator(type) {
 
     try {
       const restUrl = getRestUrl();
-      const nonce = getNonce(context);
+      const nonce = getToolNonce(context);
       const restNonce = getRestNonce();
 
       // Build request body

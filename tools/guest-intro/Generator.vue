@@ -547,6 +547,7 @@ import { useProfileContext } from '../../src/composables/useProfileContext';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 import { useProfileSelectionHandler } from '../../src/composables/useProfileSelectionHandler';
 import { useDraftState } from '../../src/composables/useDraftState';
+import { getRestUrl, getToolNonce, isUserLoggedIn } from '../../src/utils/ai';
 import { EMBEDDED_PROFILE_DATA_KEY, IS_EMBEDDED_CONTEXT_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileSelector } from '../_shared';
 
 // Integrated mode components
@@ -832,14 +833,31 @@ async function generateForSlot(slotName) {
       length: slotName
     };
 
+<<<<<<< HEAD
     // Get nonce from shortcode data
     const nonce = window.gmkbStandaloneTools?.nonce || '';
 
     // Call the tool-based API endpoint
     const response = await fetch('/wp-json/gmkb/v2/ai/tool/generate', {
+=======
+    // Get API configuration
+    const restUrl = getRestUrl();
+    const requestContext = isUserLoggedIn() ? 'builder' : 'public';
+    const nonce = getToolNonce(requestContext);
+
+    // Build headers - only include X-WP-Nonce for builder context
+    const headers = { 'Content-Type': 'application/json' };
+    if (requestContext === 'builder') {
+      headers['X-WP-Nonce'] = nonce;
+    }
+
+    // Call the tool-based API endpoint
+    const response = await fetch(`${restUrl}ai/tool/generate`, {
+>>>>>>> origin/main
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
+<<<<<<< HEAD
         tool: 'guest-intro-generator',
         params: context,
         context: 'public',
@@ -852,13 +870,36 @@ async function generateForSlot(slotName) {
       throw new Error(errorData.message || `Generation failed: ${response.status}`);
     }
 
+=======
+        tool: 'guest-intro',
+        params: {
+          ...context,
+          count: getVariationCount(slotName)
+        },
+        context: requestContext,
+        nonce: requestContext === 'public' ? nonce : undefined
+      })
+    });
+
+>>>>>>> origin/main
     const data = await response.json();
     console.log('[GuestIntroGenerator] API response:', data);
 
+<<<<<<< HEAD
     // Process variations from the response
     // API returns { success, data: { content: { variations: [...] } } }
     const content = data.data?.content || data.content || data;
     const rawVariations = content.variations || content.results || content || [];
+=======
+    if (!response.ok) {
+      const errorMessage = data.message || `Generation failed: ${response.status}`;
+      throw new Error(errorMessage);
+    }
+
+    // Process variations - handle GMKB API response format { success, data: { content: { variations } } }
+    const content = data.data?.content || data.content || data;
+    const rawVariations = content.variations || content.results || data.variations || data.results || [];
+>>>>>>> origin/main
     slot.variations = (Array.isArray(rawVariations) ? rawVariations : [rawVariations]).map((item, idx) => ({
       id: `${slotName}-${Date.now()}-${idx}`,
       label: typeof item === 'object' ? (item.label || `Option ${idx + 1}`) : `Option ${idx + 1}`,
@@ -903,14 +944,31 @@ async function refineVariations(feedback) {
   error.value = null;
 
   try {
+<<<<<<< HEAD
     // Get nonce from shortcode data
     const nonce = window.gmkbStandaloneTools?.nonce || '';
 
     // Refinement uses the same generate endpoint with refinement params
     const response = await fetch('/wp-json/gmkb/v2/ai/tool/generate', {
+=======
+    // Get API configuration
+    const restUrl = getRestUrl();
+    const requestContext = isUserLoggedIn() ? 'builder' : 'public';
+    const nonce = getToolNonce(requestContext);
+
+    // Build headers - only include X-WP-Nonce for builder context
+    const headers = { 'Content-Type': 'application/json' };
+    if (requestContext === 'builder') {
+      headers['X-WP-Nonce'] = nonce;
+    }
+
+    // Call the tool-based API endpoint for refinement
+    const response = await fetch(`${restUrl}ai/tool/refine`, {
+>>>>>>> origin/main
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
+<<<<<<< HEAD
         tool: 'guest-intro-generator',
         params: {
           guestName: guestInfo.name,
@@ -944,13 +1002,39 @@ async function refineVariations(feedback) {
       throw new Error(errorData.message || `Refinement failed: ${response.status}`);
     }
 
+=======
+        tool: 'guest-intro',
+        params: {
+          feedback,
+          currentVariations: slot.variations.map(v => v.text),
+          guestName: guestInfo.name,
+          authorityHook: authorityHookSummary.value,
+          length: activeSlot.value
+        },
+        context: requestContext,
+        nonce: requestContext === 'public' ? nonce : undefined
+      })
+    });
+
+>>>>>>> origin/main
     const data = await response.json();
     console.log('[GuestIntroGenerator] Refine API response:', data);
 
+<<<<<<< HEAD
     // Process variations from the response
     // API returns { success, data: { content: { variations: [...] } } }
     const content = data.data?.content || data.content || data;
     const rawVariations = content.variations || content.results || content || [];
+=======
+    if (!response.ok) {
+      const errorMessage = data.message || `Refinement failed: ${response.status}`;
+      throw new Error(errorMessage);
+    }
+
+    // Process variations - handle GMKB API response format
+    const content = data.data?.content || data.content || data;
+    const rawVariations = content.variations || content.results || data.variations || data.results || [];
+>>>>>>> origin/main
     slot.variations = (Array.isArray(rawVariations) ? rawVariations : [rawVariations]).map((item, idx) => ({
       id: `${activeSlot.value}-${Date.now()}-${idx}`,
       label: typeof item === 'object' ? (item.label || `Option ${idx + 1}`) : `Option ${idx + 1}`,
