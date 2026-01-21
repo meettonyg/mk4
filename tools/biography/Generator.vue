@@ -660,9 +660,7 @@ const {
   authorityHookSummary,
   impactIntroSummary,
   canGenerate,
-  // Methods
-  generateForSlot,
-  refineVariations,
+  // Methods (note: generateForSlot and refineVariations now use direct API calls in this component)
   lockBio,
   unlockBio,
   setActiveSlot,
@@ -749,7 +747,7 @@ const handleGenerateIntegrated = async () => {
   // Parse the compact authority hook text into the structured format
   authorityHook.who = authorityHookTextCompact.value;
   setActiveSlot(integratedLength.value);
-  await generateForSlot(integratedLength.value);
+  await handleGenerateForSlot(integratedLength.value);
 };
 
 /**
@@ -863,7 +861,15 @@ const handleSlotClick = async (slotName) => {
 };
 
 /**
- * Handle generate for a specific slot
+ * Get variation count for a slot
+ */
+function getSlotVariationCount(slotName) {
+  const counts = { short: 5, medium: 3, long: 2 };
+  return counts[slotName] || 3;
+}
+
+/**
+ * Handle generate for a specific slot - using direct API call
  */
 const handleGenerateForSlot = async (slotName) => {
   console.log('[Biography Generator] handleGenerateForSlot called with:', slotName);
@@ -874,13 +880,67 @@ const handleGenerateForSlot = async (slotName) => {
     canGenerate: canGenerate.value
   });
 
+  const slot = slots[slotName];
+  slot.status = SLOT_STATUS.GENERATING;
+  setActiveSlot(slotName);
+  error.value = null;
+
   try {
-    await generateForSlot(slotName);
-    console.log('[Biography Generator] generateForSlot completed, variations:', slots[slotName].variations);
-    emit('generated', { slot: slotName, variations: slots[slotName].variations });
+    // Build context for the API
+    const context = {
+      name: name.value,
+      title: optionalFields.title,
+      organization: optionalFields.organization,
+      authorityHook: {
+        who: authorityHook.who,
+        what: authorityHook.what,
+        when: authorityHook.when,
+        how: authorityHook.how
+      },
+      impactIntro: impactIntroSummary.value,
+      existingBio: optionalFields.existingBio,
+      additionalNotes: optionalFields.additionalNotes,
+      tone: tone.value,
+      length: slotName,
+      pov: pov.value
+    };
+
+    console.log('[Biography Generator] Calling API with context:', context);
+
+    // Call the tool-based API endpoint directly
+    const response = await fetch('/wp-json/mkcg/v1/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        generator: 'biography',
+        context,
+        count: getSlotVariationCount(slotName)
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Generation failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('[Biography Generator] API response:', data);
+
+    // Process variations from the response
+    const rawVariations = data.variations || data.results || data.content || [];
+    slot.variations = (Array.isArray(rawVariations) ? rawVariations : [rawVariations]).map((item, idx) => ({
+      id: `${slotName}-${Date.now()}-${idx}`,
+      label: `OPTION ${idx + 1}`,
+      text: typeof item === 'string' ? item : (item.content || item.text || '')
+    })).filter(v => v.text.trim().length > 0);
+
+    slot.status = SLOT_STATUS.HAS_VARIATIONS;
+    console.log('[Biography Generator] Parsed variations:', slot.variations);
+
+    emit('generated', { slot: slotName, variations: slot.variations });
 
     // Save to history on success
-    if (slots[slotName].variations.length > 0) {
+    if (slot.variations.length > 0) {
       addToHistory({
         inputs: {
           name: name.value,
@@ -890,12 +950,14 @@ const handleGenerateForSlot = async (slotName) => {
           pov: pov.value,
           slot: slotName
         },
-        results: slots[slotName].variations,
-        preview: slots[slotName].variations[0]?.text?.substring(0, 50) || 'Generated biography'
+        results: slot.variations,
+        preview: slot.variations[0]?.text?.substring(0, 50) || 'Generated biography'
       });
     }
   } catch (err) {
     console.error('[Biography Generator] Generation failed:', err);
+    error.value = err.message || 'Failed to generate biographies. Please try again.';
+    slot.status = SLOT_STATUS.EMPTY;
   }
 };
 
@@ -909,15 +971,63 @@ const handleGenerateForActiveSlot = async () => {
 };
 
 /**
- * Handle refinement
+ * Handle refinement - using direct API call
  */
 const handleRefine = async () => {
   if (!refinementFeedback.value.trim()) return;
 
+  const slotName = activeSlot.value;
+  const slot = slots[slotName];
+
+  slot.status = SLOT_STATUS.GENERATING;
+  error.value = null;
+
   try {
-    await refineVariations(refinementFeedback.value);
+    const response = await fetch('/wp-json/mkcg/v1/refine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        generator: 'biography',
+        feedback: refinementFeedback.value,
+        currentVariations: slot.variations.map(v => v.text),
+        context: {
+          name: name.value,
+          authorityHook: {
+            who: authorityHook.who,
+            what: authorityHook.what,
+            when: authorityHook.when,
+            how: authorityHook.how
+          },
+          impactIntro: impactIntroSummary.value,
+          tone: tone.value,
+          length: slotName,
+          pov: pov.value
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Refinement failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('[Biography Generator] Refine API response:', data);
+
+    // Process variations from the response
+    const rawVariations = data.variations || data.results || data.content || [];
+    slot.variations = (Array.isArray(rawVariations) ? rawVariations : [rawVariations]).map((item, idx) => ({
+      id: `${slotName}-${Date.now()}-${idx}`,
+      label: `OPTION ${idx + 1}`,
+      text: typeof item === 'string' ? item : (item.content || item.text || '')
+    })).filter(v => v.text.trim().length > 0);
+
+    slot.status = SLOT_STATUS.HAS_VARIATIONS;
+    refinementFeedback.value = '';
   } catch (err) {
     console.error('[Biography Generator] Refinement failed:', err);
+    error.value = err.message || 'Failed to refine biographies. Please try again.';
+    slot.status = SLOT_STATUS.HAS_VARIATIONS; // Keep existing variations
   }
 };
 
