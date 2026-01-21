@@ -621,7 +621,10 @@ error_log('MKCG Biography Template: Rendering with post_id=' . $post_id . ', has
     };
     
     console.log('✅ MKCG Biography: Final data loaded', window.MKCG_Biography_Data);
-    
+
+    // Add public nonce for new tool-based API
+    window.gmkbPublicNonce = '<?php echo wp_create_nonce('gmkb_public_ai'); ?>';
+
     // Set up AJAX URL for WordPress
     if (!window.ajaxurl) {
         window.ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
