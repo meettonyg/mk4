@@ -12,7 +12,7 @@
 
 import { ref, computed, reactive } from 'vue';
 import { useAIStore } from '../stores/ai';
-import { getRestUrl, getToolNonce, isUserLoggedIn } from '../utils/ai';
+import { getRestUrl, getToolNonce, getRestNonce, isUserLoggedIn } from '../utils/ai';
 
 /**
  * Package tier labels
@@ -227,18 +227,15 @@ export function useAIOffers() {
     try {
       const restUrl = getRestUrl();
       const nonce = getToolNonce(requestContext);
+      const restNonce = getRestNonce();
 
-      // Build headers - only include X-WP-Nonce for builder context
-      // For public context, empty header triggers WordPress cookie auth which fails
-      const headers = { 'Content-Type': 'application/json' };
-      if (requestContext === 'builder') {
-        headers['X-WP-Nonce'] = nonce;
-      }
-
+      // Make API request - always include X-WP-Nonce header (matches useAIGenerator pattern)
       const response = await fetch(`${restUrl}ai/generate`, {
         method: 'POST',
-        credentials: requestContext === 'builder' ? 'same-origin' : 'omit',
-        headers,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': restNonce
+        },
         body: JSON.stringify({
           type: 'offers',
           params,

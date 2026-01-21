@@ -15,47 +15,7 @@
 
 import { ref, computed, reactive, watch } from 'vue';
 import { useAIStore } from '../stores/ai';
-
-/**
- * Get REST URL from available sources
- */
-function getRestUrl() {
-  const url = window.gmkbData?.restUrl
-    || window.gmkbProfileData?.apiUrl
-    || window.gmkbStandaloneTools?.apiBase
-    || window.gmkbPublicData?.restUrl
-    || '/wp-json/gmkb/v2/';
-  return url.endsWith('/') ? url : url + '/';
-}
-
-/**
- * Get nonce from available sources
- */
-function getNonce(context) {
-  if (context === 'builder') {
-    return window.gmkbData?.restNonce
-      || window.gmkbData?.nonce
-      || window.gmkbProfileData?.nonce
-      || window.gmkbStandaloneTools?.restNonce
-      || '';
-  }
-  return window.gmkbPublicNonce
-    || window.gmkbPublicData?.publicNonce
-    || window.gmkbStandaloneTools?.nonce
-    || '';
-}
-
-/**
- * Check if user is logged in
- */
-function isUserLoggedIn() {
-  return !!(
-    window.gmkbData?.postId
-    || window.gmkbData?.post_id
-    || window.gmkbProfileData?.postId
-    || window.gmkbStandaloneTools?.isLoggedIn
-  );
-}
+import { getRestUrl, getToolNonce, isUserLoggedIn } from '../utils/ai';
 
 /**
  * Length slot configuration
@@ -265,7 +225,7 @@ export function useAIGuestIntro() {
       };
 
       const restUrl = getRestUrl();
-      const nonce = getNonce(context);
+      const nonce = getToolNonce(context);
 
       // Build headers - only include X-WP-Nonce for builder context
       // For public context, empty header triggers WordPress cookie auth which fails
@@ -363,7 +323,7 @@ export function useAIGuestIntro() {
       };
 
       const restUrl = getRestUrl();
-      const nonce = getNonce(context);
+      const nonce = getToolNonce(context);
 
       // Build headers - only include X-WP-Nonce for builder context
       const refineHeaders = { 'Content-Type': 'application/json' };

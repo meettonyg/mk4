@@ -392,6 +392,13 @@ class GMKB_Tool_Landing_Shortcode {
 
                 var data = JSON.parse(dataEl.textContent);
 
+                // Set nonce in global variable for API requests
+                if (data.nonce) {
+                    window.gmkbToolLanding = window.gmkbToolLanding || {};
+                    window.gmkbToolLanding.nonce = data.nonce;
+                    window.gmkbToolLanding.apiBase = data.apiBase;
+                }
+
                 if (window.GMKB && window.GMKB.mountToolLanding) {
                     window.GMKB.mountToolLanding(container, data);
                 } else if (window.GMKBSeoTools && window.GMKBSeoTools.mountLanding) {
