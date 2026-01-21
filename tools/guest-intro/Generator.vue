@@ -732,14 +732,13 @@ const error = ref(null);
 const showResults = ref(false);
 const saveSuccess = ref(false);
 
-// User login state and CTA URLs
-const isLoggedIn = window.gmkbStandaloneTools?.isLoggedIn || false;
+// CTA URLs (isLoggedIn already comes from useStandaloneProfile)
 const signupUrl = window.gmkbStandaloneTools?.signupUrl || '/register/';
 const pricingUrl = window.gmkbStandaloneTools?.pricingUrl || '/pricing/';
 
 // CTA configuration based on user state
 const rateLimitCta = computed(() => {
-  if (isLoggedIn) {
+  if (isLoggedIn.value) {
     // Registered free user -> upgrade to paid plan
     return {
       url: pricingUrl,
