@@ -832,6 +832,11 @@ async function generateForSlot(slotName) {
       length: slotName
     };
 
+    // Get the public nonce for API authentication
+    const nonce = window.gmkbStandaloneTools?.nonce ||
+                  window.gmkbPublicNonce ||
+                  window.gmkbPublicData?.publicNonce || '';
+
     // Call the tool-based API endpoint
     const response = await fetch('/wp-json/gmkb/v2/ai/tool/generate', {
       method: 'POST',
@@ -839,7 +844,8 @@ async function generateForSlot(slotName) {
       body: JSON.stringify({
         tool: 'guest-intro-generator',
         params: context,
-        context: 'public'
+        context: 'public',
+        nonce
       })
     });
 
@@ -899,6 +905,11 @@ async function refineVariations(feedback) {
   error.value = null;
 
   try {
+    // Get the public nonce for API authentication
+    const nonce = window.gmkbStandaloneTools?.nonce ||
+                  window.gmkbPublicNonce ||
+                  window.gmkbPublicData?.publicNonce || '';
+
     // Refinement uses the same generate endpoint with refinement params
     const response = await fetch('/wp-json/gmkb/v2/ai/tool/generate', {
       method: 'POST',
@@ -927,7 +938,8 @@ async function refineVariations(feedback) {
           currentDraft: slot.variations.map(v => v.text).join('\n\n---\n\n'),
           refinementInstructions: feedback
         },
-        context: 'public'
+        context: 'public',
+        nonce
       })
     });
 

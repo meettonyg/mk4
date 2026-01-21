@@ -1136,6 +1136,11 @@ const handleGenerateForSlot = async (slotName) => {
 
     console.log('[Biography Generator] Calling API with context:', context);
 
+    // Get the public nonce for API authentication
+    const nonce = window.gmkbStandaloneTools?.nonce ||
+                  window.gmkbPublicNonce ||
+                  window.gmkbPublicData?.publicNonce || '';
+
     // Call the tool-based API endpoint
     const response = await fetch('/wp-json/gmkb/v2/ai/tool/generate', {
       method: 'POST',
@@ -1143,7 +1148,8 @@ const handleGenerateForSlot = async (slotName) => {
       body: JSON.stringify({
         tool: 'biography-generator',
         params: context,
-        context: 'public'
+        context: 'public',
+        nonce
       })
     });
 
@@ -1214,6 +1220,11 @@ const handleRefine = async () => {
   error.value = null;
 
   try {
+    // Get the public nonce for API authentication
+    const nonce = window.gmkbStandaloneTools?.nonce ||
+                  window.gmkbPublicNonce ||
+                  window.gmkbPublicData?.publicNonce || '';
+
     // Refinement uses the same generate endpoint with refinement params
     const response = await fetch('/wp-json/gmkb/v2/ai/tool/generate', {
       method: 'POST',
@@ -1236,7 +1247,8 @@ const handleRefine = async () => {
           currentDraft: slot.variations.map(v => v.text).join('\n\n---\n\n'),
           refinementInstructions: refinementFeedback.value
         },
-        context: 'public'
+        context: 'public',
+        nonce
       })
     });
 
