@@ -34,7 +34,7 @@ return [
     'settings' => [
         'model' => 'gpt-4o-mini',
         'temperature' => 0.7,
-        'max_tokens' => 1000
+        'max_tokens' => 2000
     ],
 
     /**
@@ -51,6 +51,30 @@ return [
 Always write in clear, engaging prose without bullet points unless specifically requested.',
 
     /**
+     * Length slot configuration - defines variation counts for economical token usage
+     */
+    'lengthSlots' => [
+        'short' => [
+            'label' => 'Short (50-75 words)',
+            'wordRange' => '50-75',
+            'variationCount' => 5,
+            'description' => 'Social media profiles or brief introductions'
+        ],
+        'medium' => [
+            'label' => 'Medium (150-200 words)',
+            'wordRange' => '150-200',
+            'variationCount' => 3,
+            'description' => 'Speaker profiles, book jackets, or professional websites'
+        ],
+        'long' => [
+            'label' => 'Long (300-400 words)',
+            'wordRange' => '300-400',
+            'variationCount' => 2,
+            'description' => 'Press kits, detailed speaker pages, or formal introductions'
+        ]
+    ],
+
+    /**
      * User prompt builder function
      *
      * @param array $params Input parameters from the request
@@ -63,6 +87,17 @@ Always write in clear, engaging prose without bullet points unless specifically 
         $tone = sanitize_text_field($params['tone'] ?? 'professional');
         $pov = sanitize_text_field($params['pov'] ?? 'third');
         $length = sanitize_text_field($params['length'] ?? 'medium');
+
+        // Length configuration
+        $length_slots = [
+            'short' => ['wordRange' => '50-75', 'variationCount' => 5, 'description' => 'social media profiles or brief introductions'],
+            'medium' => ['wordRange' => '150-200', 'variationCount' => 3, 'description' => 'speaker profiles, book jackets, or professional websites'],
+            'long' => ['wordRange' => '300-400', 'variationCount' => 2, 'description' => 'press kits, detailed speaker pages, or formal introductions']
+        ];
+        $slot = $length_slots[$length] ?? $length_slots['medium'];
+        $word_range = $slot['wordRange'];
+        $variation_count = $slot['variationCount'];
+        $length_description = $slot['description'];
 
         // Tone guidelines
         $tones = [
@@ -83,16 +118,8 @@ Always write in clear, engaging prose without bullet points unless specifically 
         ];
         $selected_pov = $povs[$pov] ?? $povs['third'];
 
-        // Length guidelines
-        $lengths = [
-            'short' => '50-75 words, suitable for social media profiles or brief introductions',
-            'medium' => '150-200 words, suitable for speaker profiles, book jackets, or professional websites',
-            'long' => '300-400 words, suitable for press kits, detailed speaker pages, or formal introductions'
-        ];
-        $selected_length = $lengths[$length] ?? $lengths['medium'];
-
         // Build the prompt
-        $prompt = "Create a professional biography for {$name}";
+        $prompt = "Create {$variation_count} distinct professional biography variations for {$name}";
         if ($title) {
             $prompt .= ", a {$title}";
         }
@@ -101,10 +128,12 @@ Always write in clear, engaging prose without bullet points unless specifically 
         }
         $prompt .= ".\n\n";
 
-        $prompt .= "Requirements:\n";
+        $prompt .= "Requirements for ALL variations:\n";
         $prompt .= "1. Use a {$selected_tone} tone.\n";
         $prompt .= "2. Write in {$selected_pov}.\n";
-        $prompt .= "3. Length: {$selected_length}.\n";
+        $prompt .= "3. Length: {$word_range} words each (suitable for {$length_description}).\n";
+        $prompt .= "4. Each variation should have a different opening hook, structure, or emphasis.\n";
+        $prompt .= "5. Maintain factual consistency across variations.\n";
 
         // Add context fields if provided
         if (!empty($params['authorityHook'])) {
@@ -138,12 +167,24 @@ Always write in clear, engaging prose without bullet points unless specifically 
             $prompt .= "\nKEY ACHIEVEMENTS:\n" . $achievements . "\n";
         }
 
-        // Request all three lengths for flexibility
-        $prompt .= "\n\nGenerate THREE versions of the biography:\n";
-        $prompt .= "Format your response exactly as follows:\n\n";
-        $prompt .= "SHORT BIO:\n[50-75 word version]\n\n";
-        $prompt .= "MEDIUM BIO:\n[150-200 word version]\n\n";
-        $prompt .= "LONG BIO:\n[300-400 word version]";
+        // Handle refinement requests
+        if (!empty($params['currentDraft']) && !empty($params['refinementInstructions'])) {
+            $prompt .= "\n\nCURRENT DRAFT TO REFINE:\n" . sanitize_textarea_field($params['currentDraft']) . "\n";
+            $prompt .= "\nREFINEMENT INSTRUCTIONS:\n" . sanitize_textarea_field($params['refinementInstructions']) . "\n";
+            $prompt .= "\nProvide {$variation_count} refined variations based on the feedback.\n";
+        }
+
+        // Request JSON format for easy parsing
+        $prompt .= "\n\nRespond with valid JSON in this exact format:\n";
+        $prompt .= "{\n";
+        $prompt .= "  \"variations\": [\n";
+        for ($i = 1; $i <= $variation_count; $i++) {
+            $prompt .= "    {\"id\": {$i}, \"label\": \"Option {$i}\", \"text\": \"[Biography text here]\"}";
+            $prompt .= ($i < $variation_count) ? ",\n" : "\n";
+        }
+        $prompt .= "  ]\n";
+        $prompt .= "}\n";
+        $prompt .= "\nIMPORTANT: Return ONLY the JSON object, no markdown code blocks or other text.";
 
         return $prompt;
     },
@@ -152,34 +193,95 @@ Always write in clear, engaging prose without bullet points unless specifically 
      * Response parser function
      *
      * @param string $response_content Raw response from OpenAI
-     * @return array Structured biography data
+     * @return array Structured variations data matching frontend expectations
      */
     'parser' => function($response_content) {
-        $biographies = [
-            'short' => '',
-            'medium' => '',
-            'long' => ''
+        // Try to parse as JSON first
+        $decoded = json_decode($response_content, true);
+
+        if (json_last_error() === JSON_ERROR_NONE && isset($decoded['variations'])) {
+            // Valid JSON with variations
+            return [
+                'variations' => array_map(function($v) {
+                    return [
+                        'id' => $v['id'] ?? 0,
+                        'label' => $v['label'] ?? 'Option',
+                        'text' => trim($v['text'] ?? ''),
+                        'wordCount' => str_word_count(trim($v['text'] ?? ''))
+                    ];
+                }, $decoded['variations']),
+                'count' => count($decoded['variations'])
+            ];
+        }
+
+        // Try to extract JSON from response (sometimes wrapped in markdown code blocks)
+        if (preg_match('/\{[\s\S]*"variations"[\s\S]*\}/m', $response_content, $matches)) {
+            $decoded = json_decode($matches[0], true);
+            if (json_last_error() === JSON_ERROR_NONE && isset($decoded['variations'])) {
+                return [
+                    'variations' => array_map(function($v) {
+                        return [
+                            'id' => $v['id'] ?? 0,
+                            'label' => $v['label'] ?? 'Option',
+                            'text' => trim($v['text'] ?? ''),
+                            'wordCount' => str_word_count(trim($v['text'] ?? ''))
+                        ];
+                    }, $decoded['variations']),
+                    'count' => count($decoded['variations'])
+                ];
+            }
+        }
+
+        // Fallback: Try to parse legacy format (SHORT BIO: / MEDIUM BIO: / LONG BIO:)
+        $variations = [];
+        $patterns = [
+            'short' => '/SHORT BIO:\s*(.*?)(?=\s*(?:MEDIUM BIO:|LONG BIO:|$))/is',
+            'medium' => '/MEDIUM BIO:\s*(.*?)(?=\s*(?:LONG BIO:|$))/is',
+            'long' => '/LONG BIO:\s*(.*?)$/is'
         ];
 
-        // Parse labeled sections using regex
-        if (preg_match('/SHORT BIO:\s*(.*?)(?=\s*MEDIUM BIO:|$)/is', $response_content, $matches)) {
-            $biographies['short'] = trim($matches[1]);
+        $id = 1;
+        foreach ($patterns as $key => $pattern) {
+            if (preg_match($pattern, $response_content, $matches)) {
+                $text = trim($matches[1]);
+                if (!empty($text)) {
+                    $variations[] = [
+                        'id' => $id++,
+                        'label' => ucfirst($key) . ' Bio',
+                        'text' => $text,
+                        'wordCount' => str_word_count($text)
+                    ];
+                }
+            }
         }
 
-        if (preg_match('/MEDIUM BIO:\s*(.*?)(?=\s*LONG BIO:|$)/is', $response_content, $matches)) {
-            $biographies['medium'] = trim($matches[1]);
+        if (!empty($variations)) {
+            return [
+                'variations' => $variations,
+                'count' => count($variations)
+            ];
         }
 
-        if (preg_match('/LONG BIO:\s*(.*?)$/is', $response_content, $matches)) {
-            $biographies['long'] = trim($matches[1]);
+        // Final fallback: treat entire response as single variation
+        if (!empty(trim($response_content))) {
+            return [
+                'variations' => [
+                    [
+                        'id' => 1,
+                        'label' => 'Generated',
+                        'text' => trim($response_content),
+                        'wordCount' => str_word_count(trim($response_content))
+                    ]
+                ],
+                'count' => 1
+            ];
         }
 
-        // Fallback: if parsing fails, use the whole content for the requested length
-        if (empty($biographies['short']) && empty($biographies['medium']) && empty($biographies['long'])) {
-            $biographies['medium'] = trim($response_content);
-        }
-
-        return $biographies;
+        return [
+            'variations' => [],
+            'count' => 0,
+            'error' => 'Failed to parse response'
+        ];
     },
 
     /**
