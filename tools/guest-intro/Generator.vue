@@ -547,6 +547,7 @@ import { useProfileContext } from '../../src/composables/useProfileContext';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 import { useProfileSelectionHandler } from '../../src/composables/useProfileSelectionHandler';
 import { useDraftState } from '../../src/composables/useDraftState';
+import { getRestNonce, getPublicNonce } from '../../src/utils/ai.js';
 import { EMBEDDED_PROFILE_DATA_KEY, IS_EMBEDDED_CONTEXT_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileSelector } from '../_shared';
 
 // Integrated mode components
@@ -851,15 +852,16 @@ async function generateForSlot(slotName) {
       length: slotName
     };
 
-    // Get nonce from shortcode data
-    const nonce = window.gmkbStandaloneTools?.nonce || '';
+    // Get nonces - public nonce for body, REST nonce for header (WordPress REST API auth)
+    const nonce = getPublicNonce();
+    const restNonce = getRestNonce();
 
-    // Build headers with nonce for authentication
+    // Build headers with REST nonce for WordPress cookie authentication
     const headers = {
       'Content-Type': 'application/json'
     };
-    if (nonce) {
-      headers['X-WP-Nonce'] = nonce;
+    if (restNonce) {
+      headers['X-WP-Nonce'] = restNonce;
     }
 
     // Call the tool-based API endpoint
@@ -923,15 +925,16 @@ async function refineVariations(feedback) {
   error.value = null;
 
   try {
-    // Get nonce from shortcode data
-    const nonce = window.gmkbStandaloneTools?.nonce || '';
+    // Get nonces - public nonce for body, REST nonce for header (WordPress REST API auth)
+    const nonce = getPublicNonce();
+    const restNonce = getRestNonce();
 
-    // Build headers with nonce for authentication
+    // Build headers with REST nonce for WordPress cookie authentication
     const headers = {
       'Content-Type': 'application/json'
     };
-    if (nonce) {
-      headers['X-WP-Nonce'] = nonce;
+    if (restNonce) {
+      headers['X-WP-Nonce'] = restNonce;
     }
 
     // Refinement uses the same generate endpoint with refinement params
