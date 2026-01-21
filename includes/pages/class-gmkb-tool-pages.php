@@ -245,24 +245,41 @@ class GMKB_Tool_Pages {
     public function enqueue_tool_assets() {
         global $wp_query;
 
+        // DEBUG: Add inline script to help diagnose loading issues
+        add_action('wp_head', function() {
+            echo "<!-- GMKB Tool Assets Debug: enqueue_tool_assets() was called -->\n";
+        }, 1);
+
         // Check if this is a tool page
         $tool_slug = get_query_var($this->query_var);
         if (empty($tool_slug)) {
+            add_action('wp_head', function() {
+                echo "<!-- GMKB Debug: No tool_slug, returning early -->\n";
+            }, 1);
             return;
         }
 
         // Verify tool exists
         if (!$this->discovery) {
+            add_action('wp_head', function() {
+                echo "<!-- GMKB Debug: No discovery service, returning early -->\n";
+            }, 1);
             return;
         }
 
         $tool = $this->discovery->get_tool($tool_slug);
         if (!$tool) {
+            add_action('wp_head', function() use ($tool_slug) {
+                echo "<!-- GMKB Debug: Tool not found for slug: {$tool_slug} -->\n";
+            }, 1);
             return;
         }
 
         // Don't enqueue assets for unpublished tools
         if (!$this->discovery->is_tool_published($tool_slug)) {
+            add_action('wp_head', function() use ($tool_slug) {
+                echo "<!-- GMKB Debug: Tool not published: {$tool_slug} -->\n";
+            }, 1);
             return;
         }
 
@@ -275,6 +292,9 @@ class GMKB_Tool_Pages {
         $use_param = isset($_GET['use']) ? sanitize_text_field(wp_unslash($_GET['use'])) : null;
         $is_tool_app = get_query_var('gmkb_tool_app') || ('1' === $use_param);
         if (!$is_tool_app && !$is_plg_landing) {
+            add_action('wp_head', function() use ($tool_slug, $is_tool_app, $is_plg_landing) {
+                echo "<!-- GMKB Debug: Not tool app ({$is_tool_app}) and not PLG landing ({$is_plg_landing}) for: {$tool_slug} -->\n";
+            }, 1);
             return;
         }
 
@@ -290,10 +310,21 @@ class GMKB_Tool_Pages {
             $css_file = GMKB_PLUGIN_DIR . 'dist/seo-tools/seo-tools.css';
         }
 
+        // DEBUG: Log file path and existence
+        add_action('wp_head', function() use ($js_file) {
+            $exists = file_exists($js_file) ? 'YES' : 'NO';
+            echo "<!-- GMKB Debug: JS file path: {$js_file} -->\n";
+            echo "<!-- GMKB Debug: File exists: {$exists} -->\n";
+        }, 1);
+
         if (file_exists($js_file)) {
+            $script_url = str_replace(GMKB_PLUGIN_DIR, GMKB_PLUGIN_URL, $js_file);
+            add_action('wp_head', function() use ($script_url) {
+                echo "<!-- GMKB Debug: Enqueueing script URL: {$script_url} -->\n";
+            }, 1);
             wp_enqueue_script(
                 'gmkb-standalone-tools',
-                str_replace(GMKB_PLUGIN_DIR, GMKB_PLUGIN_URL, $js_file),
+                $script_url,
                 array(),
                 $version,
                 true
