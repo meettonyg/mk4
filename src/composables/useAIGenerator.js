@@ -119,7 +119,19 @@ function base64EncodeUtf8(value) {
     return btoa(binary);
   }
 
-  return btoa(unescape(encodeURIComponent(value)));
+  const utf8Encoded = encodeURIComponent(value);
+  let binaryString = '';
+  for (let i = 0; i < utf8Encoded.length; i++) {
+    const char = utf8Encoded[i];
+    if (char === '%') {
+      const hex = utf8Encoded.substring(i + 1, i + 3);
+      binaryString += String.fromCharCode(parseInt(hex, 16));
+      i += 2;
+    } else {
+      binaryString += char;
+    }
+  }
+  return btoa(binaryString);
 }
 
 /**
