@@ -32,15 +32,40 @@ export const getRestUrl = () => {
  * - gmkbToolPageData.publicNonce: class-gmkb-tool-pages-shortcode.php
  * - gmkbToolLanding.nonce: class-gmkb-tool-landing-shortcode.php
  * - gmkbStandaloneTools.nonce: class-gmkb-tool-shortcode.php
+ * - DOM fallback: JSON data embedded in script tags by shortcodes
  * @returns {string} Public security nonce
  */
 export const getPublicNonce = () => {
-  return window.gmkbPublicNonce
+  // Check global variables first (set by wp_localize_script or mount scripts)
+  const nonce = window.gmkbPublicNonce
     || window.gmkbPublicData?.publicNonce
     || window.gmkbToolPageData?.publicNonce
     || window.gmkbToolLanding?.nonce
-    || window.gmkbStandaloneTools?.nonce
-    || '';
+    || window.gmkbStandaloneTools?.nonce;
+
+  if (nonce) return nonce;
+
+  // Fallback: Try to extract nonce from JSON data embedded in DOM
+  // Tool landing pages embed data in <script type="application/json" id="...-data">
+  try {
+    const dataScripts = document.querySelectorAll('script[type="application/json"][id$="-data"]');
+    for (const script of dataScripts) {
+      const data = JSON.parse(script.textContent || '{}');
+      if (data.nonce) {
+        // Cache it in global for future calls
+        window.gmkbToolLanding = window.gmkbToolLanding || {};
+        window.gmkbToolLanding.nonce = data.nonce;
+        if (data.apiBase) {
+          window.gmkbToolLanding.apiBase = data.apiBase;
+        }
+        return data.nonce;
+      }
+    }
+  } catch (e) {
+    // Silently fail if DOM parsing fails
+  }
+
+  return '';
 };
 
 /**
