@@ -832,11 +832,8 @@ async function generateForSlot(slotName) {
       length: slotName
     };
 
-    // Get the public nonce for API authentication
-    const nonce = window.gmkbStandaloneTools?.nonce ||
-                  window.gmkbPublicNonce ||
-                  window.gmkbPublicData?.publicNonce ||
-                  window.mkcg_vars?.nonce || '';
+    // Get nonce from shortcode data
+    const nonce = window.gmkbStandaloneTools?.nonce || '';
 
     // Call the tool-based API endpoint
     const response = await fetch('/wp-json/gmkb/v2/ai/tool/generate', {
@@ -906,11 +903,8 @@ async function refineVariations(feedback) {
   error.value = null;
 
   try {
-    // Get the public nonce for API authentication
-    const nonce = window.gmkbStandaloneTools?.nonce ||
-                  window.gmkbPublicNonce ||
-                  window.gmkbPublicData?.publicNonce ||
-                  window.mkcg_vars?.nonce || '';
+    // Get nonce from shortcode data
+    const nonce = window.gmkbStandaloneTools?.nonce || '';
 
     // Refinement uses the same generate endpoint with refinement params
     const response = await fetch('/wp-json/gmkb/v2/ai/tool/generate', {
