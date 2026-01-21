@@ -594,8 +594,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject, onMounted, onUnmounted, toRef } from 'vue';
-import { useAIBiography, SLOT_STATUS, LENGTH_OPTIONS, getVariationCount } from '../../src/composables/useAIBiography';
+import { ref, computed, watch, inject, reactive, onMounted, onUnmounted, toRef } from 'vue';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 import { useProfileSelectionHandler } from '../../src/composables/useProfileSelectionHandler';
@@ -610,6 +609,280 @@ import AiLengthSelector from '../../src/vue/components/ai/AiLengthSelector.vue';
 import AiPovSelector from '../../src/vue/components/ai/AiPovSelector.vue';
 import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
+
+// ============================================================================
+// CONSTANTS (previously from useAIBiography composable)
+// ============================================================================
+
+const SLOT_STATUS = {
+  EMPTY: 'empty',
+  GENERATING: 'generating',
+  HAS_VARIATIONS: 'has_variations',
+  LOCKED: 'locked'
+};
+
+const TONE_OPTIONS = [
+  { value: 'professional', label: 'Professional' },
+  { value: 'conversational', label: 'Conversational' },
+  { value: 'inspirational', label: 'Inspirational' },
+  { value: 'authoritative', label: 'Authoritative' },
+  { value: 'friendly', label: 'Friendly & Approachable' },
+  { value: 'bold', label: 'Bold & Confident' }
+];
+
+const LENGTH_OPTIONS = [
+  { value: 'short', label: 'Short (50 words)', description: 'Social media, brief intros', wordCount: 50, variations: 5 },
+  { value: 'medium', label: 'Medium (150 words)', description: 'Speaker profiles, websites', wordCount: 150, variations: 3 },
+  { value: 'long', label: 'Long (300 words)', description: 'Press kits, formal intros', wordCount: 300, variations: 2 }
+];
+
+const POV_OPTIONS = [
+  { value: 'first', label: 'First Person (I/My)' },
+  { value: 'second', label: 'Second Person (You/Your)' },
+  { value: 'third', label: 'Third Person (He/She/They)' }
+];
+
+function getVariationCount(length) {
+  const option = LENGTH_OPTIONS.find(o => o.value === length);
+  return option?.variations || 3;
+}
+
+// ============================================================================
+// LOCAL STATE (previously from useAIBiography composable)
+// ============================================================================
+
+// Core form state
+const name = ref('');
+const tone = ref('professional');
+const pov = ref('third');
+const activeSlot = ref('long');
+const refinementFeedback = ref('');
+const error = ref(null);
+
+// Slots state
+const slots = reactive({
+  short: { status: SLOT_STATUS.EMPTY, variations: [], locked: false, lockedBio: null },
+  medium: { status: SLOT_STATUS.EMPTY, variations: [], locked: false, lockedBio: null },
+  long: { status: SLOT_STATUS.EMPTY, variations: [], locked: false, lockedBio: null }
+});
+
+// Authority Hook (Who-What-When-How)
+const authorityHook = reactive({
+  who: '',
+  what: '',
+  when: '',
+  how: ''
+});
+
+// Impact Intro (Where-Why)
+const impactIntro = reactive({
+  where: '',
+  why: ''
+});
+
+// Optional fields
+const optionalFields = reactive({
+  title: '',
+  organization: '',
+  existingBio: '',
+  additionalNotes: ''
+});
+
+// ============================================================================
+// COMPUTED PROPERTIES (previously from useAIBiography composable)
+// ============================================================================
+
+const currentSlot = computed(() => slots[activeSlot.value]);
+const currentVariations = computed(() => currentSlot.value?.variations || []);
+const hasVariations = computed(() => currentVariations.value.length > 0);
+
+const isGenerating = computed(() => {
+  return Object.values(slots).some(s => s.status === SLOT_STATUS.GENERATING);
+});
+
+const lockedCount = computed(() => {
+  return Object.values(slots).filter(s => s.locked).length;
+});
+
+const authorityHookSummary = computed(() => {
+  const parts = [];
+  if (authorityHook.who) parts.push(`I help ${authorityHook.who}`);
+  if (authorityHook.what) parts.push(`achieve ${authorityHook.what}`);
+  if (authorityHook.when) parts.push(`when ${authorityHook.when}`);
+  if (authorityHook.how) parts.push(`through ${authorityHook.how}`);
+  return parts.length > 0 ? parts.join(' ') + '.' : '';
+});
+
+const impactIntroSummary = computed(() => {
+  const parts = [];
+  if (impactIntro.where) parts.push(`I've ${impactIntro.where}`);
+  if (impactIntro.why) parts.push(`My mission is to ${impactIntro.why}`);
+  return parts.join('. ') + (parts.length > 0 ? '.' : '');
+});
+
+const canGenerate = computed(() => {
+  const hasName = name.value.trim();
+  const hasAuthorityHook = authorityHook.who || authorityHook.what || authorityHook.when || authorityHook.how;
+  const hasImpactIntro = impactIntro.where || impactIntro.why;
+  return hasName && (hasAuthorityHook || hasImpactIntro);
+});
+
+// ============================================================================
+// HELPER METHODS (previously from useAIBiography composable)
+// ============================================================================
+
+function setActiveSlot(slotName) {
+  if (slots[slotName]) {
+    activeSlot.value = slotName;
+  }
+}
+
+function lockBio(variationIndex) {
+  const slot = slots[activeSlot.value];
+  if (!slot || !slot.variations[variationIndex]) return;
+  slot.locked = true;
+  slot.lockedBio = slot.variations[variationIndex].text;
+  slot.status = SLOT_STATUS.LOCKED;
+}
+
+function unlockBio(slotName = null) {
+  const targetSlot = slotName || activeSlot.value;
+  const slot = slots[targetSlot];
+  if (!slot) return;
+  slot.locked = false;
+  slot.lockedBio = null;
+  slot.status = slot.variations.length > 0 ? SLOT_STATUS.HAS_VARIATIONS : SLOT_STATUS.EMPTY;
+}
+
+function getSlotPreview(slotName) {
+  const slot = slots[slotName];
+  if (!slot) return '';
+  if (slot.locked && slot.lockedBio) {
+    return slot.lockedBio.substring(0, 80) + '...';
+  }
+  if (slot.status === SLOT_STATUS.GENERATING) {
+    return 'Generating variations...';
+  }
+  if (slot.variations.length > 0) {
+    return `${slot.variations.length} variations ready`;
+  }
+  const variationCount = getVariationCount(slotName);
+  return `Click to generate ${variationCount} variations`;
+}
+
+function getLockedBios() {
+  const result = {};
+  Object.entries(slots).forEach(([key, slot]) => {
+    if (slot.locked && slot.lockedBio) {
+      result[key] = slot.lockedBio;
+    }
+  });
+  return result;
+}
+
+async function copyBio(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (err) {
+    console.error('[Biography] Failed to copy:', err);
+    return false;
+  }
+}
+
+function reset() {
+  name.value = '';
+  tone.value = 'professional';
+  pov.value = 'third';
+  authorityHook.who = '';
+  authorityHook.what = '';
+  authorityHook.when = '';
+  authorityHook.how = '';
+  impactIntro.where = '';
+  impactIntro.why = '';
+  optionalFields.title = '';
+  optionalFields.organization = '';
+  optionalFields.existingBio = '';
+  optionalFields.additionalNotes = '';
+  refinementFeedback.value = '';
+  error.value = null;
+
+  Object.keys(slots).forEach(key => {
+    slots[key] = {
+      status: SLOT_STATUS.EMPTY,
+      variations: [],
+      locked: false,
+      lockedBio: null
+    };
+  });
+  activeSlot.value = 'long';
+}
+
+function populateFromProfile(profileData) {
+  if (!profileData) return;
+
+  // Name
+  const firstName = profileData.first_name || profileData.firstName || '';
+  const lastName = profileData.last_name || profileData.lastName || '';
+  const fullName = profileData.full_name || profileData.fullName || profileData.name || '';
+  name.value = fullName || [firstName, lastName].filter(Boolean).join(' ');
+
+  // Title/Role
+  const title = profileData.guest_title || profileData.title || profileData.professional_title || '';
+  if (title) optionalFields.title = title;
+
+  // Organization/Company
+  const org = profileData.organization || profileData.company || profileData.org || '';
+  if (org) optionalFields.organization = org;
+
+  // Authority Hook
+  const hookWho = profileData.hook_who || profileData.hookWho || profileData.who || '';
+  const hookWhat = profileData.hook_what || profileData.hookWhat || profileData.what || '';
+  const hookWhen = profileData.hook_when || profileData.hookWhen || profileData.when || '';
+  const hookHow = profileData.hook_how || profileData.hookHow || profileData.how || '';
+  if (hookWho) authorityHook.who = hookWho;
+  if (hookWhat) authorityHook.what = hookWhat;
+  if (hookWhen) authorityHook.when = hookWhen;
+  if (hookHow) authorityHook.how = hookHow;
+
+  // Impact Intro
+  const impactData = profileData.impact_intro || profileData.impactIntro || {};
+  const whereVal = profileData.hook_where || profileData.hookWhere ||
+                   profileData.impact_where || profileData.impactWhere ||
+                   impactData.where || profileData.where ||
+                   profileData.credentials || profileData.achievements || '';
+  const whyVal = profileData.hook_why || profileData.hookWhy ||
+                 profileData.impact_why || profileData.impactWhy ||
+                 impactData.why || profileData.why ||
+                 profileData.mission || profileData.purpose || '';
+  if (whereVal) impactIntro.where = whereVal;
+  if (whyVal) impactIntro.why = whyVal;
+
+  // Existing biography
+  const existingBio = profileData.biography || profileData.bio || '';
+  if (existingBio) optionalFields.existingBio = existingBio;
+
+  // Pre-populate locked bios if they exist
+  if (profileData.biography_short || profileData.biographyShort) {
+    slots.short.locked = true;
+    slots.short.lockedBio = profileData.biography_short || profileData.biographyShort;
+    slots.short.status = SLOT_STATUS.LOCKED;
+  }
+  if (profileData.biography) {
+    slots.medium.locked = true;
+    slots.medium.lockedBio = profileData.biography;
+    slots.medium.status = SLOT_STATUS.LOCKED;
+  }
+  if (profileData.biography_long || profileData.biographyLong) {
+    slots.long.locked = true;
+    slots.long.lockedBio = profileData.biography_long || profileData.biographyLong;
+    slots.long.status = SLOT_STATUS.LOCKED;
+  }
+}
+
+// ============================================================================
+// COMPONENT SETUP
+// ============================================================================
 
 // Auto-detect if we're inside EmbeddedToolWrapper
 const isEmbedded = inject(IS_EMBEDDED_CONTEXT_KEY, false);
@@ -638,41 +911,6 @@ const emit = defineEmits(['generated', 'saved', 'applied', 'update:can-generate'
 
 // Inject profile data from parent
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
-
-// Use composables
-const {
-  // State
-  name,
-  tone,
-  pov,
-  authorityHook,
-  impactIntro,
-  optionalFields,
-  refinementFeedback,
-  slots,
-  activeSlot,
-  currentSlot,
-  currentVariations,
-  isGenerating,
-  lockedCount,
-  error,
-  // Computed
-  authorityHookSummary,
-  impactIntroSummary,
-  canGenerate,
-  // Methods (note: generateForSlot and refineVariations now use direct API calls in this component)
-  lockBio,
-  unlockBio,
-  setActiveSlot,
-  getSlotPreview,
-  getLockedBios,
-  copyBio,
-  reset,
-  populateFromProfile,
-  // Options
-  TONE_OPTIONS,
-  POV_OPTIONS
-} = useAIBiography();
 
 const {
   profileId,
@@ -859,15 +1097,6 @@ const handleSlotClick = async (slotName) => {
     await handleGenerateForSlot(slotName);
   }
 };
-
-/**
- * Get variation count for a slot
- */
-function getSlotVariationCount(slotName) {
-  const counts = { short: 5, medium: 3, long: 2 };
-  return counts[slotName] || 3;
-}
-
 /**
  * Handle generate for a specific slot - using direct API call
  */
