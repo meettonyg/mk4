@@ -1,0 +1,64 @@
+/**
+ * Media Kit List Styles
+ *
+ * Base styles for the media kit list view
+ */
+
+/* Reset and base */
+.media-kit-list-app *,
+.media-kit-list-app *::before,
+.media-kit-list-app *::after {
+    box-sizing: border-box;
+}
+
+.media-kit-list-app {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    line-height: 1.5;
+    color: #334155;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Links */
+.media-kit-list-app a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.media-kit-list-app a:hover {
+    text-decoration: none;
+}
+
+/* Error styling for login required state */
+.gmkb-media-kit-list-login-required {
+    max-width: 400px;
+    margin: 40px auto;
+    text-align: center;
+    padding: 40px 20px;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.gmkb-media-kit-list-login-required p {
+    font-size: 16px;
+    color: #64748b;
+    margin: 0 0 20px 0;
+}
+
+.gmkb-login-button {
+    display: inline-block;
+    background: linear-gradient(135deg, #ED8936, #DD6B20);
+    color: white !important;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none !important;
+    transition: all 0.2s ease;
+}
+
+.gmkb-login-button:hover {
+    background: linear-gradient(135deg, #DD6B20, #C05621);
+    transform: translateY(-1px);
+}

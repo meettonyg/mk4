@@ -235,6 +235,13 @@ class GMKB_REST_API_V2 {
             'permission_callback' => array($this, 'check_create_permissions'),
         ));
 
+        // Endpoint to LIST all media kits for current user
+        register_rest_route($this->namespace, '/mediakits', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'list_mediakits'),
+            'permission_callback' => array($this, 'check_list_permissions'),
+        ));
+
         // Optional: Component metadata endpoint
         register_rest_route($this->namespace, '/components', array(
             'methods' => 'GET',
@@ -265,6 +272,7 @@ class GMKB_REST_API_V2 {
             error_log('  - GET  /' . $this->namespace . '/mediakit/{id}');
             error_log('  - POST /' . $this->namespace . '/mediakit/{id}');
             error_log('  - POST /' . $this->namespace . '/mediakit (create new)');
+            error_log('  - GET  /' . $this->namespace . '/mediakits (list all)');
             error_log('  - GET  /' . $this->namespace . '/components');
             error_log('  - POST /' . $this->namespace . '/pods/{id}/field/{field}');
             error_log('  - (Offers API routes handled by GMKB_Offers_API)');
@@ -1015,6 +1023,163 @@ class GMKB_REST_API_V2 {
 
         // FALLBACK: Check if user can edit posts (draft creation only needs edit capability)
         return current_user_can('edit_posts');
+    }
+
+    /**
+     * Check list permissions for media kits
+     *
+     * @param WP_REST_Request $request The request
+     * @return bool Whether the user can list media kits
+     */
+    public function check_list_permissions($request) {
+        // User must be logged in to list their media kits
+        return is_user_logged_in();
+    }
+
+    /**
+     * GET /gmkb/v2/mediakits
+     *
+     * Lists all media kits for the current user
+     *
+     * @param WP_REST_Request $request The request
+     * @return WP_REST_Response|WP_Error The response with media kits array
+     */
+    public function list_mediakits($request) {
+        $user_id = get_current_user_id();
+
+        if (!$user_id) {
+            return new WP_Error(
+                'not_authenticated',
+                'You must be logged in to list media kits',
+                array('status' => 401)
+            );
+        }
+
+        try {
+            // Query media kits by author or owner_user_id meta
+            $args = array(
+                'post_type' => 'mkcg',
+                'posts_per_page' => 100,
+                'post_status' => array('publish', 'draft', 'private'),
+                'orderby' => 'modified',
+                'order' => 'DESC',
+                'meta_query' => array(
+                    'relation' => 'OR',
+                    array(
+                        'key' => 'owner_user_id',
+                        'value' => $user_id,
+                        'compare' => '=',
+                    ),
+                ),
+            );
+
+            // Also include posts where user is the author
+            $author_args = array(
+                'post_type' => 'mkcg',
+                'posts_per_page' => 100,
+                'post_status' => array('publish', 'draft', 'private'),
+                'author' => $user_id,
+                'orderby' => 'modified',
+                'order' => 'DESC',
+            );
+
+            // Get posts by meta
+            $meta_posts = get_posts($args);
+            // Get posts by author
+            $author_posts = get_posts($author_args);
+
+            // Merge and deduplicate
+            $all_posts = array_merge($meta_posts, $author_posts);
+            $unique_posts = array();
+            $seen_ids = array();
+
+            foreach ($all_posts as $post) {
+                if (!in_array($post->ID, $seen_ids)) {
+                    $seen_ids[] = $post->ID;
+                    $unique_posts[] = $post;
+                }
+            }
+
+            // Sort by modified date
+            usort($unique_posts, function($a, $b) {
+                return strtotime($b->post_modified) - strtotime($a->post_modified);
+            });
+
+            // Format response
+            $mediakits = array();
+            foreach ($unique_posts as $post) {
+                $mediakits[] = $this->format_mediakit_card($post);
+            }
+
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('📋 GMKB REST API v2: Listed ' . count($mediakits) . ' media kits for user #' . $user_id);
+            }
+
+            return rest_ensure_response(array(
+                'success' => true,
+                'mediakits' => $mediakits,
+                'total' => count($mediakits),
+            ));
+
+        } catch (Exception $e) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB REST API v2: List mediakits error: ' . $e->getMessage());
+            }
+
+            return new WP_Error(
+                'list_failed',
+                'Failed to list media kits: ' . $e->getMessage(),
+                array('status' => 500)
+            );
+        }
+    }
+
+    /**
+     * Format a media kit post for card display
+     *
+     * @param WP_Post $post The media kit post
+     * @return array Formatted media kit data
+     */
+    private function format_mediakit_card($post) {
+        // Get state data for theme info
+        $state = get_post_meta($post->ID, 'gmkb_media_kit_state', true);
+        $state_data = is_string($state) ? json_decode($state, true) : $state;
+
+        // Get profile link if any
+        $profile_id = get_post_meta($post->ID, '_gmkb_profile_id', true) ?: get_post_meta($post->ID, 'profile_id', true);
+
+        // Get thumbnail/preview
+        $thumbnail = '';
+        if (has_post_thumbnail($post->ID)) {
+            $thumbnail = get_the_post_thumbnail_url($post->ID, 'medium');
+        }
+
+        // Determine theme
+        $theme = 'professional_clean';
+        if (!empty($state_data['theme'])) {
+            $theme = $state_data['theme'];
+        }
+
+        // Count sections
+        $section_count = 0;
+        if (!empty($state_data['sections']) && is_array($state_data['sections'])) {
+            $section_count = count($state_data['sections']);
+        }
+
+        return array(
+            'id' => $post->ID,
+            'title' => $post->post_title ?: 'Untitled Media Kit',
+            'slug' => $post->post_name,
+            'status' => $post->post_status,
+            'theme' => $theme,
+            'section_count' => $section_count,
+            'profile_id' => $profile_id ? (int) $profile_id : null,
+            'thumbnail' => $thumbnail,
+            'created' => $post->post_date,
+            'modified' => $post->post_modified,
+            'editUrl' => admin_url('post.php?post=' . $post->ID . '&action=edit'),
+            'viewUrl' => get_permalink($post->ID),
+        );
     }
 
     /**

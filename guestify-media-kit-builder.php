@@ -340,6 +340,12 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/profile-list-shortcod
     require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/profile-list-shortcode.php';
 }
 
+// Media Kit List Shortcode - Vue-based media kit listing
+// Usage: [gmkb_mediakits]
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/media-kit-list-shortcode.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/media-kit-list-shortcode.php';
+}
+
 // Onboarding Dashboard Shortcode - Vue-based gamification dashboard
 // Usage: [gmkb_onboarding] or [gmkb_profile_strength profile_id="123" size="medium"]
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/onboarding-shortcode.php')) {
