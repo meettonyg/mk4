@@ -2,7 +2,7 @@
  * useAIOffers - Composable for AI offers/packages generation
  *
  * Part of the Unified AI Generator Architecture ("Modular Widgets")
- * Wraps useAIGenerator with offers-specific logic.
+ * Handles offers generation with multiple variations per tier.
  *
  * @package GMKB
  * @subpackage Composables
@@ -11,8 +11,8 @@
  */
 
 import { ref, computed, reactive } from 'vue';
-import { useAIGenerator } from './useAIGenerator';
 import { useAIStore } from '../stores/ai';
+import { getRestUrl, getToolNonce, isUserLoggedIn } from '../utils/ai';
 
 /**
  * Package tier labels
@@ -34,7 +34,13 @@ export const PACKAGE_TIERS = {
  */
 export function useAIOffers() {
   const aiStore = useAIStore();
-  const generator = useAIGenerator('offers');
+
+  // Generation state
+  const isGenerating = ref(false);
+  const error = ref(null);
+  const usageRemaining = ref(null);
+  const resetTime = ref(null);
+  const generatedContent = ref(null);
 
   // Offers-specific state
   const services = ref([]);
@@ -53,7 +59,7 @@ export function useAIOffers() {
    * and legacy array format [{tier: 'entry', ...}, ...]
    */
   const offersByTier = computed(() => {
-    const content = generator.generatedContent.value;
+    const content = generatedContent.value;
     if (!content) {
       return { entry: [], signature: [], premium: [] };
     }
@@ -80,8 +86,8 @@ export function useAIOffers() {
           variationIndex: result[tier].length,
           name: offer.name || offer.title || `Package ${index + 1}`,
           description: offer.description || '',
-          deliverables: offer.deliverables || [],
-          idealClient: offer.idealClient || '',
+          deliverables: offer.deliverables || offer.includes || [],
+          idealClient: offer.idealClient || offer.idealFor || '',
           ...offer
         };
         if (result[tier]) {
@@ -195,12 +201,14 @@ export function useAIOffers() {
     selectedVariations.signature = 0;
     selectedVariations.premium = 0;
 
-    // Extract individual hook fields for validation (validation expects hookWho, hookWhat)
+    const requestContext = context || (isUserLoggedIn() ? 'builder' : 'public');
+
+    // Extract individual hook fields for validation
     const hookFields = overrides.authorityHookFields || {};
 
     const params = {
       services: overrides.services || services.value,
-      authorityHook: overrides.authorityHook || aiStore.authorityHook,
+      authorityHook: overrides.authorityHook || aiStore.authorityHookSummary,
       customContext: overrides.customContext || customContext.value,
       // Pass individual hook fields for validation
       hookWho: hookFields.who || '',
@@ -213,7 +221,77 @@ export function useAIOffers() {
       delivery: overrides.delivery || ''
     };
 
-    return generator.generate(params, context);
+    isGenerating.value = true;
+    error.value = null;
+
+    try {
+      const restUrl = getRestUrl();
+      const nonce = getToolNonce(requestContext);
+
+      const response = await fetch(`${restUrl}ai/generate`, {
+        method: 'POST',
+        credentials: requestContext === 'builder' ? 'same-origin' : 'omit',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': requestContext === 'builder' ? nonce : ''
+        },
+        body: JSON.stringify({
+          type: 'offers',
+          params,
+          context: requestContext,
+          nonce: requestContext === 'public' ? nonce : undefined
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const errorMessage = data.message || `Generation failed (${response.status})`;
+        error.value = errorMessage;
+        throw new Error(errorMessage);
+      }
+
+      if (data.success && data.data?.content) {
+        generatedContent.value = data.data.content;
+
+        if (data.usage) {
+          usageRemaining.value = data.usage.remaining;
+          resetTime.value = data.usage.reset_time;
+          aiStore.updateUsage(data.usage);
+        }
+
+        return data.data.content;
+      }
+
+      throw new Error('Unexpected response format from AI service');
+    } catch (err) {
+      error.value = err.message;
+      throw err;
+    } finally {
+      isGenerating.value = false;
+    }
+  };
+
+  /**
+   * Copy generated offers to clipboard
+   * @returns {Promise<boolean>} Success status
+   */
+  const copyToClipboard = async () => {
+    if (!generatedContent.value) {
+      return false;
+    }
+
+    try {
+      const textToCopy = typeof generatedContent.value === 'string'
+        ? generatedContent.value
+        : JSON.stringify(generatedContent.value, null, 2);
+
+      await navigator.clipboard.writeText(textToCopy);
+      return true;
+    } catch (err) {
+      console.error('[useAIOffers] Failed to copy:', err);
+      return false;
+    }
   };
 
   /**
@@ -267,7 +345,8 @@ export function useAIOffers() {
    * Reset all offers state
    */
   const reset = () => {
-    generator.reset();
+    generatedContent.value = null;
+    error.value = null;
     services.value = [];
     customContext.value = '';
     selectedVariations.entry = 0;
@@ -276,17 +355,11 @@ export function useAIOffers() {
   };
 
   return {
-    // From base generator
-    isGenerating: generator.isGenerating,
-    error: generator.error,
-    usageRemaining: generator.usageRemaining,
-    resetTime: generator.resetTime,
-    hasContent: generator.hasContent,
-    hasError: generator.hasError,
-    isRateLimited: generator.isRateLimited,
-    copyToClipboard: generator.copyToClipboard,
-    regenerate: generator.regenerate,
-    getContext: generator.getContext,
+    // Generation state
+    isGenerating,
+    error,
+    usageRemaining,
+    resetTime,
 
     // Offers-specific state
     services,
@@ -304,6 +377,7 @@ export function useAIOffers() {
 
     // Offers-specific methods
     generate,
+    copyToClipboard,
     getOfferByTier,
     getOfferByIndex,
     getVariationsForTier,

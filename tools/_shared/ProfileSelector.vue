@@ -137,6 +137,15 @@ watch(() => props.modelValue, (newVal) => {
 // Watch for profile data changes from composable
 watch(profileData, (newData) => {
   if (newData) {
+    if (import.meta.env.DEV) {
+      console.log('[ProfileSelector] Profile data loaded, emitting profile-selected:', {
+        id: selectedProfileId.value,
+        hasData: !!newData,
+        dataKeys: Object.keys(newData).length,
+        questionKeys: Object.keys(newData).filter(k => k.startsWith('question_')).slice(0, 5),
+        topicKeys: Object.keys(newData).filter(k => k.startsWith('topic_'))
+      });
+    }
     emit('profile-selected', {
       id: selectedProfileId.value,
       profile: selectedProfile.value,
