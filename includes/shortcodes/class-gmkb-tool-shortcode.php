@@ -329,6 +329,15 @@ class GMKB_Tool_Shortcode {
 
                 var data = JSON.parse(dataEl.textContent);
 
+                // Set nonce in global variable for API requests
+                if (data.nonce) {
+                    window.gmkbStandaloneTools = window.gmkbStandaloneTools || {};
+                    window.gmkbStandaloneTools.nonce = data.nonce;
+                    if (data.apiBase) {
+                        window.gmkbStandaloneTools.apiBase = data.apiBase;
+                    }
+                }
+
                 // Try different mount methods based on available globals
                 if (window.GMKB && window.GMKB.mountTool) {
                     window.GMKB.mountTool(mountPoint, data);
