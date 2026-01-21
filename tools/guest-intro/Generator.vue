@@ -504,7 +504,8 @@
               <button
                 type="button"
                 class="gfy-btn gfy-btn--primary gfy-btn--large"
-                :disabled="lockedCount === 0 || isSaving"
+                :disabled="lockedCount === 0 || isSaving || (mode === 'default' && !hasSelectedProfile)"
+                :title="mode === 'default' && !hasSelectedProfile ? 'Select a profile above to save' : ''"
                 @click="handleSaveAll"
               >
                 <i v-if="!isSaving" class="fas fa-save"></i>
@@ -514,6 +515,12 @@
               <button type="button" class="gfy-btn gfy-btn--ghost" @click="handleStartOver">
                 Start Over
               </button>
+            </div>
+
+            <!-- Profile Selection Warning -->
+            <div v-if="mode === 'default' && lockedCount > 0 && !hasSelectedProfile" class="gfy-profile-warning">
+              <i class="fas fa-exclamation-triangle"></i>
+              No profile selected. Please select a profile first.
             </div>
 
             <!-- Save Success -->
@@ -1139,12 +1146,29 @@ async function handleSaveAll() {
   const lockedIntros = getLockedIntros();
   if (Object.keys(lockedIntros).length === 0) return;
 
-  try {
-    const saveData = {};
-    if (lockedIntros.short) saveData.guest_intro_short = lockedIntros.short;
-    if (lockedIntros.medium) saveData.guest_intro = lockedIntros.medium;
-    if (lockedIntros.long) saveData.guest_intro_long = lockedIntros.long;
+  // Build save data
+  const saveData = {};
+  if (lockedIntros.short) saveData.guest_intro_short = lockedIntros.short;
+  if (lockedIntros.medium) saveData.guest_intro = lockedIntros.medium;
+  if (lockedIntros.long) saveData.guest_intro_long = lockedIntros.long;
 
+  // Use standalone profile save in default mode
+  if (props.mode === 'default' && hasSelectedProfile.value) {
+    try {
+      const success = await saveMultipleToProfile(saveData);
+      if (success) {
+        saveSuccess.value = true;
+        setTimeout(() => { saveSuccess.value = false; }, 3000);
+        emit('saved', { introductions: lockedIntros });
+      }
+    } catch (err) {
+      console.error('[GuestIntroGenerator] Standalone save failed:', err);
+    }
+    return;
+  }
+
+  // Fallback to useProfileContext save (for integrated/embedded modes)
+  try {
     const result = await saveToProfile('guest-intro', saveData, {
       profileId: profileId.value
     });
@@ -2060,6 +2084,13 @@ defineExpose({
 
 .gfy-refinement-input-wrapper {
   position: relative;
+  overflow: hidden;
+}
+
+.gfy-refinement-input-wrapper::after,
+.gfy-refinement-input-wrapper::before {
+  content: none;
+  display: none;
 }
 
 .gfy-refinement-textarea {
@@ -2074,6 +2105,15 @@ defineExpose({
   transition: all 0.2s;
   resize: none;
   min-height: 52px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+.gfy-refinement-textarea::after,
+.gfy-refinement-textarea::before {
+  content: none;
+  display: none;
 }
 
 .gfy-refinement-textarea:focus {
@@ -2316,6 +2356,19 @@ defineExpose({
 .gfy-save-error {
   display: flex;
   align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  color: #991b1b;
+  border-radius: var(--gfy-radius-md);
+  font-weight: 600;
+  margin-top: 16px;
+}
+
+.gfy-profile-warning {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 12px 16px;
   background: #fef2f2;
