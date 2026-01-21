@@ -851,8 +851,8 @@ async function generateForSlot(slotName) {
       length: slotName
     };
 
-    // Get nonce from shortcode data (check multiple sources)
-    const nonce = window.gmkbStandaloneTools?.nonce || window.gmkbData?.nonce || window.wpApiSettings?.nonce || '';
+    // Get nonce from shortcode data
+    const nonce = window.gmkbStandaloneTools?.nonce || '';
 
     // Build headers with nonce for authentication
     const headers = {
@@ -922,8 +922,8 @@ async function refineVariations(feedback) {
   error.value = null;
 
   try {
-    // Get nonce from shortcode data (check multiple sources)
-    const nonce = window.gmkbStandaloneTools?.nonce || window.gmkbData?.nonce || window.wpApiSettings?.nonce || '';
+    // Get nonce from shortcode data
+    const nonce = window.gmkbStandaloneTools?.nonce || '';
 
     // Build headers with nonce for authentication
     const headers = {

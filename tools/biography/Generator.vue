@@ -1155,8 +1155,8 @@ const handleGenerateForSlot = async (slotName) => {
 
     console.log('[Biography Generator] Calling API with context:', context);
 
-    // Get nonce from shortcode data (check multiple sources)
-    const nonce = window.gmkbStandaloneTools?.nonce || window.gmkbData?.nonce || window.wpApiSettings?.nonce || '';
+    // Get nonce from shortcode data
+    const nonce = window.gmkbStandaloneTools?.nonce || '';
 
     // Build headers with nonce for authentication
     const headers = {
@@ -1237,8 +1237,8 @@ const handleRefine = async () => {
   error.value = null;
 
   try {
-    // Get nonce from shortcode data (check multiple sources)
-    const nonce = window.gmkbStandaloneTools?.nonce || window.gmkbData?.nonce || window.wpApiSettings?.nonce || '';
+    // Get nonce from shortcode data
+    const nonce = window.gmkbStandaloneTools?.nonce || '';
 
     // Build headers with nonce for authentication
     const headers = {
