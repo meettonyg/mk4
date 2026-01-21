@@ -1985,7 +1985,6 @@ watch(
   gap: 8px;
   max-height: 70vh;
   overflow-y: auto;
-  padding-right: 4px;
 }
 
 /* Individual Interview Slot */
