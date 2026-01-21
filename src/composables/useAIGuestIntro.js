@@ -15,7 +15,7 @@
 
 import { ref, computed, reactive, watch } from 'vue';
 import { useAIStore } from '../stores/ai';
-import { getRestUrl, getToolNonce, isUserLoggedIn } from '../utils/ai';
+import { getRestUrl, getToolNonce, getRestNonce, isUserLoggedIn } from '../utils/ai';
 
 /**
  * Length slot configuration
@@ -226,13 +226,13 @@ export function useAIGuestIntro() {
 
       const restUrl = getRestUrl();
       const nonce = getToolNonce(context);
+      const restNonce = getRestNonce();
 
-      // Build headers - only include X-WP-Nonce for builder context
-      // For public context, empty header triggers WordPress cookie auth which fails
-      const headers = { 'Content-Type': 'application/json' };
-      if (context === 'builder') {
-        headers['X-WP-Nonce'] = nonce;
-      }
+      // Always include X-WP-Nonce header (matches useAIGenerator pattern)
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-WP-Nonce': restNonce
+      };
 
       // Call the tool-based API endpoint (uses prompts.php)
       const response = await fetch(`${restUrl}ai/tool/generate`, {
@@ -324,12 +324,13 @@ export function useAIGuestIntro() {
 
       const restUrl = getRestUrl();
       const nonce = getToolNonce(context);
+      const restNonce = getRestNonce();
 
-      // Build headers - only include X-WP-Nonce for builder context
-      const refineHeaders = { 'Content-Type': 'application/json' };
-      if (context === 'builder') {
-        refineHeaders['X-WP-Nonce'] = nonce;
-      }
+      // Always include X-WP-Nonce header (matches useAIGenerator pattern)
+      const refineHeaders = {
+        'Content-Type': 'application/json',
+        'X-WP-Nonce': restNonce
+      };
 
       const response = await fetch(`${restUrl}ai/tool/generate`, {
         method: 'POST',
