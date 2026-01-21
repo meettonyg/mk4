@@ -97,7 +97,41 @@ function isUserLoggedIn() {
  */
 function generateCacheKey(type, params) {
   const paramsStr = JSON.stringify(params, Object.keys(params).sort());
-  return `${type}_${btoa(paramsStr).substring(0, 32)}`;
+  return `${type}_${base64EncodeUtf8(paramsStr).substring(0, 32)}`;
+}
+
+/**
+ * Base64-encode UTF-8 strings safely (supports non-Latin1 characters)
+ * @param {string} value
+ * @returns {string}
+ */
+function base64EncodeUtf8(value) {
+  if (typeof btoa === 'undefined') {
+    return '';
+  }
+
+  if (typeof TextEncoder !== 'undefined') {
+    const bytes = new TextEncoder().encode(value);
+    let binary = '';
+    for (const byte of bytes) {
+      binary += String.fromCharCode(byte);
+    }
+    return btoa(binary);
+  }
+
+  const utf8Encoded = encodeURIComponent(value);
+  let binaryString = '';
+  for (let i = 0; i < utf8Encoded.length; i++) {
+    const char = utf8Encoded[i];
+    if (char === '%') {
+      const hex = utf8Encoded.substring(i + 1, i + 3);
+      binaryString += String.fromCharCode(parseInt(hex, 16));
+      i += 2;
+    } else {
+      binaryString += char;
+    }
+  }
+  return btoa(binaryString);
 }
 
 /**
