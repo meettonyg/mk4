@@ -832,14 +832,14 @@ async function generateForSlot(slotName) {
       length: slotName
     };
 
-    // Call the API
-    const response = await fetch('/wp-json/mkcg/v1/generate', {
+    // Call the tool-based API endpoint
+    const response = await fetch('/wp-json/gmkb/v2/ai/tool/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        generator: 'guest-intro',
-        context,
-        count: getVariationCount(slotName)
+        tool: 'guest-intro-generator',
+        params: context,
+        context: 'public'
       })
     });
 
@@ -849,9 +849,13 @@ async function generateForSlot(slotName) {
     }
 
     const data = await response.json();
+    console.log('[GuestIntroGenerator] API response:', data);
 
-    // Process variations
-    slot.variations = (data.variations || data.results || []).map((item, idx) => ({
+    // Process variations from the response
+    // API returns { success, data: { content: { variations: [...] } } }
+    const content = data.data?.content || data.content || data;
+    const rawVariations = content.variations || content.results || content || [];
+    slot.variations = (Array.isArray(rawVariations) ? rawVariations : [rawVariations]).map((item, idx) => ({
       id: `${slotName}-${Date.now()}-${idx}`,
       label: typeof item === 'object' ? (item.label || `Option ${idx + 1}`) : `Option ${idx + 1}`,
       text: typeof item === 'string' ? item : (item.content || item.text || '')
@@ -895,14 +899,13 @@ async function refineVariations(feedback) {
   error.value = null;
 
   try {
-    const response = await fetch('/wp-json/mkcg/v1/refine', {
+    // Refinement uses the same generate endpoint with refinement params
+    const response = await fetch('/wp-json/gmkb/v2/ai/tool/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        generator: 'guest-intro',
-        feedback,
-        currentVariations: slot.variations.map(v => v.text),
-        context: {
+        tool: 'guest-intro-generator',
+        params: {
           guestName: guestInfo.name,
           guestTitle: guestInfo.titleCompany,
           // Authority Hook as object
@@ -919,8 +922,12 @@ async function refineVariations(feedback) {
           },
           tone: tone.value,
           hookStyle: hookStyle.value,
-          length: activeSlot.value
-        }
+          length: activeSlot.value,
+          // Refinement-specific params
+          currentDraft: slot.variations.map(v => v.text).join('\n\n---\n\n'),
+          refinementInstructions: feedback
+        },
+        context: 'public'
       })
     });
 
@@ -930,8 +937,13 @@ async function refineVariations(feedback) {
     }
 
     const data = await response.json();
+    console.log('[GuestIntroGenerator] Refine API response:', data);
 
-    slot.variations = (data.variations || data.results || []).map((item, idx) => ({
+    // Process variations from the response
+    // API returns { success, data: { content: { variations: [...] } } }
+    const content = data.data?.content || data.content || data;
+    const rawVariations = content.variations || content.results || content || [];
+    slot.variations = (Array.isArray(rawVariations) ? rawVariations : [rawVariations]).map((item, idx) => ({
       id: `${activeSlot.value}-${Date.now()}-${idx}`,
       label: typeof item === 'object' ? (item.label || `Option ${idx + 1}`) : `Option ${idx + 1}`,
       text: typeof item === 'string' ? item : (item.content || item.text || '')

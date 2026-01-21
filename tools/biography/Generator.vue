@@ -907,14 +907,14 @@ const handleGenerateForSlot = async (slotName) => {
 
     console.log('[Biography Generator] Calling API with context:', context);
 
-    // Call the tool-based API endpoint directly
-    const response = await fetch('/wp-json/mkcg/v1/generate', {
+    // Call the tool-based API endpoint
+    const response = await fetch('/wp-json/gmkb/v2/ai/tool/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        generator: 'biography',
-        context,
-        count: getSlotVariationCount(slotName)
+        tool: 'biography-generator',
+        params: context,
+        context: 'public'
       })
     });
 
@@ -927,10 +927,12 @@ const handleGenerateForSlot = async (slotName) => {
     console.log('[Biography Generator] API response:', data);
 
     // Process variations from the response
-    const rawVariations = data.variations || data.results || data.content || [];
+    // API returns { success, data: { content: { variations: [...] } } }
+    const content = data.data?.content || data.content || data;
+    const rawVariations = content.variations || content.results || content || [];
     slot.variations = (Array.isArray(rawVariations) ? rawVariations : [rawVariations]).map((item, idx) => ({
       id: `${slotName}-${Date.now()}-${idx}`,
-      label: `OPTION ${idx + 1}`,
+      label: typeof item === 'object' ? (item.label || `OPTION ${idx + 1}`) : `OPTION ${idx + 1}`,
       text: typeof item === 'string' ? item : (item.content || item.text || '')
     })).filter(v => v.text.trim().length > 0);
 
@@ -983,14 +985,13 @@ const handleRefine = async () => {
   error.value = null;
 
   try {
-    const response = await fetch('/wp-json/mkcg/v1/refine', {
+    // Refinement uses the same generate endpoint with refinement params
+    const response = await fetch('/wp-json/gmkb/v2/ai/tool/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        generator: 'biography',
-        feedback: refinementFeedback.value,
-        currentVariations: slot.variations.map(v => v.text),
-        context: {
+        tool: 'biography-generator',
+        params: {
           name: name.value,
           authorityHook: {
             who: authorityHook.who,
@@ -1001,8 +1002,12 @@ const handleRefine = async () => {
           impactIntro: impactIntroSummary.value,
           tone: tone.value,
           length: slotName,
-          pov: pov.value
-        }
+          pov: pov.value,
+          // Refinement-specific params
+          currentDraft: slot.variations.map(v => v.text).join('\n\n---\n\n'),
+          refinementInstructions: refinementFeedback.value
+        },
+        context: 'public'
       })
     });
 
@@ -1015,10 +1020,12 @@ const handleRefine = async () => {
     console.log('[Biography Generator] Refine API response:', data);
 
     // Process variations from the response
-    const rawVariations = data.variations || data.results || data.content || [];
+    // API returns { success, data: { content: { variations: [...] } } }
+    const content = data.data?.content || data.content || data;
+    const rawVariations = content.variations || content.results || content || [];
     slot.variations = (Array.isArray(rawVariations) ? rawVariations : [rawVariations]).map((item, idx) => ({
       id: `${slotName}-${Date.now()}-${idx}`,
-      label: `OPTION ${idx + 1}`,
+      label: typeof item === 'object' ? (item.label || `OPTION ${idx + 1}`) : `OPTION ${idx + 1}`,
       text: typeof item === 'string' ? item : (item.content || item.text || '')
     })).filter(v => v.text.trim().length > 0);
 
