@@ -11,8 +11,8 @@
  */
 
 import { ref, computed } from 'vue';
-import { useAIGenerator } from './useAIGenerator';
 import { useAIStore } from '../stores/ai';
+import { getRestUrl, getToolNonce, isUserLoggedIn } from '../utils/ai';
 
 /**
  * Package tier labels
@@ -34,7 +34,13 @@ export const PACKAGE_TIERS = {
  */
 export function useAIOffers() {
   const aiStore = useAIStore();
-  const generator = useAIGenerator('offers');
+
+  // Generation state
+  const isGenerating = ref(false);
+  const error = ref(null);
+  const usageRemaining = ref(null);
+  const resetTime = ref(null);
+  const generatedContent = ref(null);
 
   // Offers-specific state
   const services = ref([]);
@@ -42,15 +48,17 @@ export function useAIOffers() {
 
   // Parsed offers array
   const offers = computed(() => {
-    const content = generator.generatedContent.value;
+    const content = generatedContent.value;
     if (!content) return [];
 
     // If already an array of objects, return as-is
     if (Array.isArray(content)) {
       return content.map((offer, index) => ({
         id: `offer_${index + 1}`,
-        title: offer.title || `Package ${index + 1}`,
-        description: offer.description || offer,
+        name: offer.name || offer.title || `Package ${index + 1}`,
+        description: offer.description || offer.outcome || '',
+        deliverables: offer.includes || offer.deliverables || [],
+        idealClient: offer.idealFor || offer.idealClient || '',
         tier: index === 0 ? 'entry' : (index === 1 ? 'signature' : 'premium'),
         ...offer
       }));
@@ -74,8 +82,10 @@ export function useAIOffers() {
 
         parsed.push({
           id: `offer_${index + 1}`,
-          title,
+          name: title,
           description,
+          deliverables: [],
+          idealClient: '',
           tier: index === 0 ? 'entry' : (index === 1 ? 'signature' : 'premium')
         });
       });
@@ -84,8 +94,10 @@ export function useAIOffers() {
       if (parsed.length === 0) {
         parsed.push({
           id: 'offer_1',
-          title: 'Service Package',
+          name: 'Service Package',
           description: content,
+          deliverables: [],
+          idealClient: '',
           tier: 'signature'
         });
       }
@@ -111,6 +123,7 @@ export function useAIOffers() {
 
   // Offers count
   const offersCount = computed(() => offers.value.length);
+  const hasOffers = computed(() => offers.value.length > 0);
 
   /**
    * Generate offers with current settings
@@ -119,25 +132,90 @@ export function useAIOffers() {
    * @returns {Promise<array>} Generated offers
    */
   const generate = async (overrides = {}, context) => {
-    // Extract individual hook fields for validation (validation expects hookWho, hookWhat)
-    const hookFields = overrides.authorityHookFields || {};
+    const requestContext = context || (isUserLoggedIn() ? 'builder' : 'public');
 
     const params = {
       services: overrides.services || services.value,
-      authorityHook: overrides.authorityHook || aiStore.authorityHook,
+      authorityHook: overrides.authorityHook || aiStore.authorityHookSummary,
+      audience: overrides.audienceChallenges || overrides.audience || '',
       customContext: overrides.customContext || customContext.value,
-      // Pass individual hook fields for validation
-      hookWho: hookFields.who || '',
-      hookWhat: hookFields.what || '',
-      hookWhen: hookFields.when || '',
-      hookHow: hookFields.how || '',
-      // Pass additional offer-specific params
-      audienceChallenges: overrides.audienceChallenges || '',
       priceRange: overrides.priceRange || '',
-      delivery: overrides.delivery || ''
+      delivery: overrides.delivery || '',
+      count: overrides.count || 3,
+      type: overrides.type || 'packages'
     };
 
-    return generator.generate(params, context);
+    isGenerating.value = true;
+    error.value = null;
+
+    try {
+      const restUrl = getRestUrl();
+      const nonce = getToolNonce(requestContext);
+
+      const response = await fetch(`${restUrl}ai/tool/generate`, {
+        method: 'POST',
+        credentials: requestContext === 'builder' ? 'same-origin' : 'omit',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': requestContext === 'builder' ? nonce : ''
+        },
+        body: JSON.stringify({
+          tool: 'offers',
+          params,
+          context: requestContext,
+          nonce: requestContext === 'public' ? nonce : undefined
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const errorMessage = data.message || `Generation failed (${response.status})`;
+        error.value = errorMessage;
+        throw new Error(errorMessage);
+      }
+
+      if (data.success && data.data?.content) {
+        generatedContent.value = data.data.content;
+
+        if (data.usage) {
+          usageRemaining.value = data.usage.remaining;
+          resetTime.value = data.usage.reset_time;
+          aiStore.updateUsage(data.usage);
+        }
+
+        return data.data.content;
+      }
+
+      throw new Error('Unexpected response format from AI service');
+    } catch (err) {
+      error.value = err.message;
+      throw err;
+    } finally {
+      isGenerating.value = false;
+    }
+  };
+
+  /**
+   * Copy generated offers to clipboard
+   * @returns {Promise<boolean>} Success status
+   */
+  const copyToClipboard = async () => {
+    if (!generatedContent.value) {
+      return false;
+    }
+
+    try {
+      const textToCopy = typeof generatedContent.value === 'string'
+        ? generatedContent.value
+        : JSON.stringify(generatedContent.value, null, 2);
+
+      await navigator.clipboard.writeText(textToCopy);
+      return true;
+    } catch (err) {
+      console.error('[useAIOffers] Failed to copy:', err);
+      return false;
+    }
   };
 
   /**
@@ -191,23 +269,18 @@ export function useAIOffers() {
    * Reset all offers state
    */
   const reset = () => {
-    generator.reset();
+    generatedContent.value = null;
+    error.value = null;
     services.value = [];
     customContext.value = '';
   };
 
   return {
     // From base generator
-    isGenerating: generator.isGenerating,
-    error: generator.error,
-    usageRemaining: generator.usageRemaining,
-    resetTime: generator.resetTime,
-    hasContent: generator.hasContent,
-    hasError: generator.hasError,
-    isRateLimited: generator.isRateLimited,
-    copyToClipboard: generator.copyToClipboard,
-    regenerate: generator.regenerate,
-    getContext: generator.getContext,
+    isGenerating,
+    error,
+    usageRemaining,
+    resetTime,
 
     // Offers-specific state
     services,
@@ -219,9 +292,11 @@ export function useAIOffers() {
     signaturePackage,
     premiumPackage,
     offersCount,
+    hasOffers,
 
     // Offers-specific methods
     generate,
+    copyToClipboard,
     getOfferByTier,
     getOfferByIndex,
     addService,
