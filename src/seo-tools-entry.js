@@ -39,7 +39,11 @@ const mountedApps = new Map();
 function ensureNonce() {
   if (!window.gmkbSeoTools) {
     window.gmkbSeoTools = {
-      nonce: window.gmkbPublicNonce || window.gmkbPublicData?.publicNonce || ''
+      nonce: window.gmkbPublicNonce
+        || window.gmkbPublicData?.publicNonce
+        || window.gmkbToolPageData?.publicNonce
+        || window.gmkbStandaloneTools?.nonce
+        || ''
     };
   }
 }

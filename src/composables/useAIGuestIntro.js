@@ -41,6 +41,7 @@ function getNonce(context) {
   }
   return window.gmkbPublicNonce
     || window.gmkbPublicData?.publicNonce
+    || window.gmkbToolPageData?.publicNonce
     || window.gmkbStandaloneTools?.nonce
     || '';
 }
