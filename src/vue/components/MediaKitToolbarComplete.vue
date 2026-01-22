@@ -191,8 +191,9 @@
         </svg>
       </button>
 
-      <!-- Save Button -->
+      <!-- Save Button (only show for drafts/new kits - published kits use Update button) -->
       <button
+        v-if="!isPublished"
         @click="handleSave"
         class="gmkb-toolbar__btn gmkb-toolbar__btn--primary"
         title="Save (Ctrl+S)"
@@ -204,28 +205,57 @@
         <span>Save</span>
       </button>
 
-      <!-- Publish/Unpublish Button -->
+      <!-- Publish Button (when draft) -->
       <button
-        v-if="!isNewMediaKit"
-        @click="isPublished ? confirmUnpublish() : confirmPublish()"
+        v-if="!isNewMediaKit && !isPublished"
+        @click="confirmPublish()"
         :disabled="store.isPublishing"
-        class="gmkb-toolbar__btn"
-        :class="isPublished ? 'gmkb-toolbar__btn--unpublish' : 'gmkb-toolbar__btn--publish'"
-        :title="isPublished ? 'Unpublish (make draft)' : 'Publish media kit'"
+        class="gmkb-toolbar__btn gmkb-toolbar__btn--publish"
+        title="Publish media kit"
       >
         <svg v-if="store.isPublishing" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="gmkb-toolbar__spinner">
           <circle cx="12" cy="12" r="10"></circle>
           <path d="M12 6v6l4 2"></path>
         </svg>
-        <svg v-else-if="isPublished" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-        </svg>
         <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M22 2L11 13"></path>
           <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
         </svg>
-        <span>{{ store.isPublishing ? 'Publishing...' : (isPublished ? 'Unpublish' : 'Publish') }}</span>
+        <span>{{ store.isPublishing ? 'Publishing...' : 'Publish' }}</span>
       </button>
+
+      <!-- Update Split Button (when published) - HubSpot style -->
+      <div v-if="!isNewMediaKit && isPublished" ref="updateDropdownRef" class="gmkb-toolbar__split-btn">
+        <button
+          @click="handleSave"
+          :disabled="store.isSaving"
+          class="gmkb-toolbar__split-main"
+          title="Save changes"
+        >
+          <svg v-if="store.isSaving" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="gmkb-toolbar__spinner">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 6v6l4 2"></path>
+          </svg>
+          <span>{{ store.isSaving ? 'Updating...' : 'Update' }}</span>
+        </button>
+        <button
+          @click="toggleUpdateMenu"
+          class="gmkb-toolbar__split-toggle"
+          title="More options"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <div v-if="showUpdateMenu" class="gmkb-toolbar__split-menu">
+          <button class="gmkb-toolbar__split-item" @click="confirmUnpublish">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+            </svg>
+            <span>Unpublish</span>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Export Modal -->
@@ -385,6 +415,10 @@ const resetModal = ref(null)
 // More actions dropdown state
 const showMoreMenu = ref(false)
 const moreDropdownRef = ref(null)
+
+// Update split button dropdown state (for published kits)
+const showUpdateMenu = ref(false)
+const updateDropdownRef = ref(null)
 
 // Auth prompt state
 const showAuthPrompt = ref(false)
@@ -627,6 +661,15 @@ function closeMoreMenu() {
   showMoreMenu.value = false
 }
 
+// Update split button dropdown methods
+function toggleUpdateMenu() {
+  showUpdateMenu.value = !showUpdateMenu.value
+}
+
+function closeUpdateMenu() {
+  showUpdateMenu.value = false
+}
+
 function handleReset() {
   showMoreMenu.value = false
   if (resetModal.value) {
@@ -655,6 +698,7 @@ function confirmPublish() {
 }
 
 function confirmUnpublish() {
+  showUpdateMenu.value = false // Close the dropdown first
   publishModalAction.value = 'unpublish'
   showPublishModal.value = true
 }
@@ -763,10 +807,13 @@ const initDarkMode = () => {
   }
 }
 
-// Click outside handler for more dropdown
+// Click outside handler for dropdowns
 const handleClickOutside = (event) => {
   if (moreDropdownRef.value && !moreDropdownRef.value.contains(event.target)) {
     showMoreMenu.value = false
+  }
+  if (updateDropdownRef.value && !updateDropdownRef.value.contains(event.target)) {
+    showUpdateMenu.value = false
   }
 }
 
@@ -1333,6 +1380,124 @@ onUnmounted(() => {
   background: rgba(251, 191, 36, 0.2);
   border-color: rgba(251, 191, 36, 0.5);
   color: #fcd34d;
+}
+
+/* Split Button (Update dropdown - HubSpot style) */
+.gmkb-toolbar__split-btn {
+  position: relative;
+  display: flex;
+}
+
+.gmkb-toolbar__split-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  border: 1px solid #f97316;
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(249, 115, 22, 0.3);
+}
+
+.gmkb-toolbar__split-main:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+  box-shadow: 0 4px 8px rgba(249, 115, 22, 0.4);
+}
+
+.gmkb-toolbar__split-main:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.gmkb-toolbar__split-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 10px;
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+  border: 1px solid #ea580c;
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0 8px 8px 0;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.gmkb-toolbar__split-toggle:hover {
+  background: linear-gradient(135deg, #c2410c 0%, #9a3412 100%);
+}
+
+.gmkb-toolbar__split-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  min-width: 140px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 4px;
+  z-index: 1000;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__split-menu {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.gmkb-toolbar__split-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.gmkb-toolbar__split-item:hover {
+  background: #f3f4f6;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__split-item {
+  color: #e2e8f0;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__split-item:hover {
+  background: #334155;
+}
+
+/* Dark mode for split button */
+.gmkb-toolbar--dark .gmkb-toolbar__split-main {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  border-color: #f97316;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__split-main:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__split-toggle {
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+  border-color: #ea580c;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__split-toggle:hover {
+  background: linear-gradient(135deg, #c2410c 0%, #9a3412 100%);
 }
 
 /* Spinner animation for loading states */
