@@ -290,6 +290,9 @@ const handleProfileSwitch = async (profileId) => {
   try {
     console.log('🔄 Switching to profile:', profileId)
 
+    // Update URL to include profile_id for persistence
+    updateUrlWithProfileId(profileId)
+
     // Fetch profile data via ProfileContextService
     const profileData = await profileContextService.loadProfileData(profileId)
 
@@ -309,6 +312,16 @@ const handleProfileSwitch = async (profileId) => {
     console.error('Failed to switch profile:', error)
     showError('Failed to switch profile')
   }
+}
+
+/**
+ * Update URL with profile_id parameter without page reload
+ */
+const updateUrlWithProfileId = (profileId) => {
+  if (!profileId) return
+  const url = new URL(window.location.href)
+  url.searchParams.set('profile_id', profileId)
+  window.history.replaceState({}, '', url.toString())
 }
 
 // Dark mode state

@@ -6,6 +6,7 @@
  * and provides methods for profile selection and retrieval.
  *
  * @since 2.2.0
+ * @version 2.2.1 - Fixed nonce usage for REST API, added loadProfileData method
  */
 
 import { ref, computed } from 'vue';
@@ -33,14 +34,43 @@ class ProfileContextService {
   }
 
   /**
+   * Get the correct REST nonce for API calls
+   * @private
+   * @returns {string} REST API nonce
+   */
+  _getRestNonce() {
+    // Priority: restNonce (correct for REST API) > wpApiSettings.nonce > empty
+    return window.gmkbData?.restNonce
+      || window.gmkbProfileData?.restNonce
+      || window.wpApiSettings?.nonce
+      || '';
+  }
+
+  /**
    * Detect the current context (media-kit, profile-editor, standalone)
    * @private
    */
   _detectContext() {
-    // Check for Media Kit Builder context
+    // Check URL parameters first - explicit profile_id takes priority
+    const urlParams = new URLSearchParams(window.location.search);
+    const profileParam = urlParams.get('profile_id');
+
+    if (profileParam) {
+      this._context.value = 'url-specified';
+      this._currentProfileId.value = parseInt(profileParam, 10);
+      return;
+    }
+
+    // Check for Media Kit Builder context with linked profile
+    // Note: gmkbData.postId is the MEDIA KIT ID, not the profile ID
+    // gmkbData.linkedProfileId or gmkbData.profileId is the linked PROFILE ID
     if (window.gmkbData?.postId || window.gmkbVueData?.postId) {
       this._context.value = 'media-kit';
-      this._currentProfileId.value = window.gmkbData?.postId || window.gmkbVueData?.postId;
+      // Use the linked profile ID if available, NOT the media kit ID
+      this._currentProfileId.value = window.gmkbData?.linkedProfileId
+        || window.gmkbData?.profileId
+        || window.gmkbVueData?.linkedProfileId
+        || null;
       return;
     }
 
@@ -51,14 +81,11 @@ class ProfileContextService {
       return;
     }
 
-    // Check URL parameters for profile context
-    const urlParams = new URLSearchParams(window.location.search);
-    const entryParam = urlParams.get('entry');
-    const profileParam = urlParams.get('profile_id') || urlParams.get('post_id');
-
-    if (profileParam) {
+    // Check URL parameters for legacy post_id parameter
+    const postIdParam = urlParams.get('post_id');
+    if (postIdParam) {
       this._context.value = 'url-specified';
-      this._currentProfileId.value = parseInt(profileParam, 10);
+      this._currentProfileId.value = parseInt(postIdParam, 10);
       return;
     }
 
@@ -140,7 +167,7 @@ class ProfileContextService {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'X-WP-Nonce': window.gmkbData?.nonce || window.wpApiSettings?.nonce || ''
+          'X-WP-Nonce': this._getRestNonce()
         },
         credentials: 'same-origin'
       });
@@ -179,7 +206,7 @@ class ProfileContextService {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'X-WP-Nonce': window.gmkbData?.nonce || window.wpApiSettings?.nonce || ''
+          'X-WP-Nonce': this._getRestNonce()
         },
         credentials: 'same-origin'
       });
@@ -194,6 +221,21 @@ class ProfileContextService {
       console.error('[ProfileContextService] Failed to fetch profile:', error);
       return null;
     }
+  }
+
+  /**
+   * Load profile data for a specific profile ID
+   * Alias for getProfile() for backwards compatibility with toolbar
+   * @param {number} profileId
+   * @returns {Promise<Object|null>}
+   */
+  async loadProfileData(profileId) {
+    const response = await this.getProfile(profileId);
+    if (response && response.success !== false) {
+      // Extract profile data from response - handle both formats
+      return response.profile || response.data || response;
+    }
+    return null;
   }
 
   /**

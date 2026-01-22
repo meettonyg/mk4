@@ -361,6 +361,7 @@ function gmkb_prepare_data_for_injection() {
     $deprecation_config = apply_filters('gmkb_deprecation_config', array());
 
     // For new media kits, provide empty defaults
+    $linked_profile_id = null;
     if ($is_new_media_kit) {
         $saved_state = null;
         $pods_data = array();
@@ -373,6 +374,19 @@ function gmkb_prepare_data_for_injection() {
         $profile_branding = gmkb_get_profile_branding($post_id);
         $post_type = get_post_type($post_id);
         $post_title = get_the_title($post_id);
+
+        // Get linked profile ID from media kit meta
+        // Check both meta keys for backwards compatibility
+        $linked_profile_id = get_post_meta($post_id, '_gmkb_profile_id', true);
+        if (empty($linked_profile_id)) {
+            $linked_profile_id = get_post_meta($post_id, 'profile_id', true);
+        }
+        $linked_profile_id = $linked_profile_id ? intval($linked_profile_id) : null;
+    }
+
+    // Also check URL parameter for profile_id (explicit override)
+    if (isset($_GET['profile_id']) && is_numeric($_GET['profile_id'])) {
+        $linked_profile_id = intval($_GET['profile_id']);
     }
 
     // Build registration URL for anonymous users
@@ -386,6 +400,8 @@ function gmkb_prepare_data_for_injection() {
         'postType'          => $post_type,
         'postTitle'         => $post_title,
         'isNewMediaKit'     => $is_new_media_kit,
+        'linkedProfileId'   => $linked_profile_id,  // Profile linked to this media kit
+        'profileId'         => $linked_profile_id,  // Alias for backwards compatibility
         'pluginUrl'         => GUESTIFY_PLUGIN_URL,
         'isDevelopment'     => defined('GMKB_DEV_MODE') && GMKB_DEV_MODE,
         'restUrl'           => esc_url_raw($rest_url),

@@ -189,8 +189,26 @@ async function handleProfileSelected({ id, profile }) {
   selectedProfileId.value = id;
   showProfileModal.value = false;
 
+  // Update URL to include profile_id for bookmarking/refresh persistence
+  updateUrlWithProfileId(id);
+
   // Fetch full profile data and apply to components
   await applyProfileToComponents(id);
+}
+
+/**
+ * Update the URL to include the profile_id parameter
+ * Uses history.pushState to avoid page reload
+ */
+function updateUrlWithProfileId(profileId) {
+  if (!profileId) return;
+
+  const url = new URL(window.location.href);
+  url.searchParams.set('profile_id', profileId);
+
+  // Use replaceState to avoid adding to browser history on every profile switch
+  window.history.replaceState({}, '', url.toString());
+  console.log('🔗 URL updated with profile_id:', profileId);
 }
 
 function handleProfileFresh() {
