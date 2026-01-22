@@ -369,12 +369,30 @@ export const useThemeStore = defineStore('theme', {
       
       if (savedTheme) {
         // Validate theme exists before setting
-        const themeExists = this.availableThemes.find(t => t.id === savedTheme);
+        // FIX: Try both exact match and normalized versions (underscore vs hyphen)
+        let themeExists = this.availableThemes.find(t => t.id === savedTheme);
+        let resolvedThemeId = savedTheme;
+
+        if (!themeExists) {
+          // Try normalizing: convert underscores to hyphens or vice versa
+          const normalizedId = savedTheme.replace(/_/g, '-');
+          const alternateId = savedTheme.replace(/-/g, '_');
+
+          themeExists = this.availableThemes.find(t =>
+            t.id === normalizedId || t.id === alternateId
+          );
+
+          if (themeExists) {
+            resolvedThemeId = themeExists.id;
+            console.log(`[Theme Store] Resolved theme ID: "${savedTheme}" → "${resolvedThemeId}"`);
+          }
+        }
+
         if (themeExists) {
-          this.activeThemeId = savedTheme;
-          console.log(`[Theme Store] Set active theme: ${savedTheme}`);
+          this.activeThemeId = resolvedThemeId;
+          console.log(`[Theme Store] Set active theme: ${resolvedThemeId}`);
         } else {
-          console.warn(`[Theme Store] Saved theme "${savedTheme}" not found in available themes:`, 
+          console.warn(`[Theme Store] Saved theme "${savedTheme}" not found in available themes:`,
             this.availableThemes.map(t => t.id));
           console.log(`[Theme Store] Using default theme instead: ${this.availableThemes[0].id}`);
           this.activeThemeId = this.availableThemes[0].id;

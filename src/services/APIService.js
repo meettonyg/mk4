@@ -1,5 +1,5 @@
 /**
- * GMKB API Service v2.0.1
+ * GMKB API Service v2.0.2
  *
  * Pure REST API implementation for Phase 2 migration
  * Uses unified gmkb/v2/mediakit/{id} endpoint
@@ -12,8 +12,11 @@
  * - Better error handling
  * - New Media Kit Support (null postId handling)
  *
+ * FIXES v2.0.2:
+ * - Solved URL duplication bug (gmkb/v2/gmkb/v2)
+ *
  * @package GMKB
- * @version 2.0.1
+ * @version 2.0.2
  */
 
 import { retryOperation } from '../utils/retry.js';
@@ -63,6 +66,7 @@ export class APIService {
   /**
    * Normalizes the REST URL to ensure it's valid and has trailing slash
    * PHASE 6 FIX: Properly handle forward slashes (not backslashes)
+   * FIX v2.0.2: Aggressively strip namespace from URL to prevent duplication
    */
   normalizeRestUrl(url) {
     if (!url) {
@@ -71,18 +75,18 @@ export class APIService {
       const origin = window.location.origin;
       return `${origin}/wp-json/`;
     }
-    
+
     // ROOT FIX: If URL contains 'admin-ajax.php', it's wrong - use fallback
     if (url.includes('admin-ajax.php')) {
       console.warn('⚠️ APIService: Detected admin-ajax.php in REST URL, using fallback');
       const origin = window.location.origin;
       return `${origin}/wp-json/`;
     }
-    
+
     try {
       // ROOT FIX: Use URL constructor for proper parsing
       let parsedUrl;
-      
+
       // Handle relative URLs
       if (url.startsWith('/')) {
         parsedUrl = new URL(url, window.location.origin);
@@ -91,17 +95,20 @@ export class APIService {
       } else {
         parsedUrl = new URL(url);
       }
-      
+
       // PHASE 6 FIX: Use correct regex for forward slashes (not backslashes)
-      // The original used /\\/+/g which targets backslashes, not forward slashes
       let pathname = parsedUrl.pathname.replace(/\/+/g, '/');
-      
-      // ROOT FIX: Check if wp-json is already in the path
+
+      // ROOT FIX & DUPLICATION FIX v2.0.2:
+      // Ensure path ends at /wp-json/ and does not include gmkb/v2 namespace.
+      // This aggressive stripping is intentional: window.gmkbData.restUrl should only
+      // provide the base REST URL, and the namespace is always explicitly appended
+      // by this class (e.g., `${this.restUrl}gmkb/v2/mediakit`). If the backend
+      // mistakenly includes the namespace in restUrl, we must strip it to prevent
+      // URL duplication like /wp-json/gmkb/v2/gmkb/v2/mediakit.
       if (pathname.includes('/wp-json')) {
-        // Already has wp-json, just ensure trailing slash
-        if (!pathname.endsWith('/')) {
-          pathname += '/';
-        }
+        const wpJsonIndex = pathname.indexOf('/wp-json');
+        pathname = pathname.substring(0, wpJsonIndex + 9); // +9 includes '/wp-json/'
       } else {
         // Doesn't have wp-json, add it
         if (pathname.endsWith('/')) {
@@ -110,18 +117,23 @@ export class APIService {
           pathname += '/wp-json/';
         }
       }
-      
+
       // PHASE 6 FIX: Final cleanup - remove any double forward slashes
       pathname = pathname.replace(/\/+/g, '/');
-      
+
+      // Ensure trailing slash
+      if (!pathname.endsWith('/')) {
+        pathname += '/';
+      }
+
       // Rebuild the URL
       const normalizedUrl = `${parsedUrl.origin}${pathname}`;
-      
+
       if (window.gmkbData?.debugMode) {
         console.log('✅ APIService: Normalized REST URL:', url, '→', normalizedUrl);
       }
       return normalizedUrl;
-      
+
     } catch (error) {
       console.error('❌ APIService: Failed to parse URL:', error);
       // Fallback to origin-based URL

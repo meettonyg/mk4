@@ -1,40 +1,55 @@
 <template>
   <div class="gmkb-toolbar" :class="{ 'gmkb-toolbar--dark': isDarkMode }">
-    <!-- Left Section -->
+    <!-- Left Section: Branding & Document Info -->
     <div class="gmkb-toolbar__section gmkb-toolbar__section--left">
-      <div class="gmkb-toolbar__branding">
-        <div class="gmkb-toolbar__logo">Guestify</div>
-        <div class="gmkb-toolbar__editing-info">
-          <span class="gmkb-toolbar__editing-label">Editing:</span>
-          <span class="gmkb-toolbar__document-title">{{ postTitle }}</span>
+      <!-- Logo -->
+      <div class="gmkb-toolbar__logo">Guestify</div>
+
+      <!-- Document Info Card -->
+      <div class="gmkb-toolbar__doc-card">
+        <div class="gmkb-toolbar__doc-info">
+          <span class="gmkb-toolbar__doc-label">Editing</span>
+          <span class="gmkb-toolbar__doc-title">{{ postTitle }}</span>
         </div>
+
+        <!-- View Link (only for saved media kits) -->
+        <a
+          v-if="viewUrl && !isNewMediaKit"
+          :href="viewUrl"
+          target="_blank"
+          class="gmkb-toolbar__view-link"
+          title="View published media kit"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+          <span>View</span>
+        </a>
       </div>
 
-      <!-- Profile Selector for logged-in users with existing media kits -->
-      <div v-if="isLoggedIn && !isNewMediaKit" class="gmkb-toolbar__profile-selector">
-        <ProfileSelector
-          v-model="selectedProfileId"
-          mode="dropdown"
-          label=""
-          :show-label="false"
-          placeholder="Switch profile..."
-          @select="handleProfileSwitch"
-        />
+      <!-- Profile Selector -->
+      <div class="gmkb-toolbar__profile-area" v-if="isLoggedIn">
+        <button
+          class="gmkb-toolbar__profile-btn"
+          @click="openProfileSelector"
+          :title="selectedProfileName ? `Profile: ${selectedProfileName}` : 'Select profile to pre-populate data'"
+        >
+          <div class="gmkb-toolbar__profile-avatar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </div>
+          <span class="gmkb-toolbar__profile-text">
+            {{ selectedProfileName || 'Select Profile' }}
+          </span>
+          <svg class="gmkb-toolbar__profile-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
       </div>
-
-      <!-- Profile Selector button for new media kits -->
-      <button
-        v-if="isLoggedIn && isNewMediaKit"
-        class="gmkb-toolbar__btn gmkb-toolbar__btn--profile"
-        @click="openProfileSelector"
-        title="Select or switch profile to pre-populate data"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
-        </svg>
-        <span>Profile</span>
-      </button>
     </div>
 
     <!-- Center Section - Device Preview -->
@@ -290,6 +305,9 @@ const handleProfileSwitch = async (profileId) => {
   try {
     console.log('🔄 Switching to profile:', profileId)
 
+    // Update URL to include profile_id for persistence
+    updateUrlWithProfileId(profileId)
+
     // Fetch profile data via ProfileContextService
     const profileData = await profileContextService.loadProfileData(profileId)
 
@@ -309,6 +327,16 @@ const handleProfileSwitch = async (profileId) => {
     console.error('Failed to switch profile:', error)
     showError('Failed to switch profile')
   }
+}
+
+/**
+ * Update URL with profile_id parameter without page reload
+ */
+const updateUrlWithProfileId = (profileId) => {
+  if (!profileId) return
+  const url = new URL(window.location.href)
+  url.searchParams.set('profile_id', profileId)
+  window.history.replaceState({}, '', url.toString())
 }
 
 // Dark mode state
@@ -341,6 +369,33 @@ const saveStatusText = computed(() => {
 const shareLink = computed(() => {
   const postId = window.gmkbData?.postId || ''
   return `${window.location.origin}/?mkcg_id=${postId}`
+})
+
+// View URL for the published media kit
+const viewUrl = computed(() => {
+  // First try the direct permalink if available
+  if (window.gmkbData?.viewUrl) {
+    return window.gmkbData.viewUrl
+  }
+  // Fallback to constructing from post ID
+  const postId = window.gmkbData?.postId
+  if (postId) {
+    return `${window.location.origin}/?p=${postId}`
+  }
+  return null
+})
+
+// Selected profile name for display
+const selectedProfileName = computed(() => {
+  // First check if we have a linked profile name from the backend
+  if (window.gmkbData?.linkedProfileName) {
+    return window.gmkbData.linkedProfileName
+  }
+  // Check postTitle if this is editing a profile-linked kit
+  if (window.gmkbData?.profileId && window.gmkbData?.postTitle) {
+    return window.gmkbData.postTitle
+  }
+  return null
 })
 
 // Methods
@@ -591,67 +646,164 @@ onUnmounted(() => {
   justify-content: flex-end;
 }
 
-/* Element: profile-selector */
-.gmkb-toolbar__profile-selector {
-  margin-left: 16px;
-  padding-left: 16px;
-  border-left: 1px solid #e5e7eb;
-}
-
-.gmkb-toolbar__profile-selector :deep(.profile-selector__select) {
-  min-width: 180px;
-  padding: 6px 32px 6px 10px;
-  font-size: 13px;
-  border-color: #e5e7eb;
-  border-radius: 6px;
-}
-
-.gmkb-toolbar--dark .gmkb-toolbar__profile-selector {
-  border-left-color: #334155;
-}
-
-.gmkb-toolbar--dark .gmkb-toolbar__profile-selector :deep(.profile-selector__select) {
-  background: #1e293b;
-  border-color: #334155;
-  color: #e2e8f0;
-}
-
-/* Element: branding */
-.gmkb-toolbar__branding {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
+/* Element: logo */
 .gmkb-toolbar__logo {
   font-size: 18px;
   font-weight: 700;
   color: #06b6d4;
   letter-spacing: -0.02em;
+  flex-shrink: 0;
 }
 
-.gmkb-toolbar__editing-info {
+/* Element: document info card */
+.gmkb-toolbar__doc-card {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 14px;
+  gap: 12px;
+  padding: 6px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-left: 16px;
 }
 
-.gmkb-toolbar__editing-label {
-  color: #6b7280;
+.gmkb-toolbar--dark .gmkb-toolbar__doc-card {
+  background: #1e293b;
+  border-color: #334155;
 }
 
-.gmkb-toolbar--dark .gmkb-toolbar__editing-label {
-  color: #9ca3af;
+.gmkb-toolbar__doc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
-.gmkb-toolbar__document-title {
+.gmkb-toolbar__doc-label {
+  font-size: 10px;
   font-weight: 500;
-  color: #111827;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
 }
 
-.gmkb-toolbar--dark .gmkb-toolbar__document-title {
-  color: #f3f4f6;
+.gmkb-toolbar--dark .gmkb-toolbar__doc-label {
+  color: #64748b;
+}
+
+.gmkb-toolbar__doc-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__doc-title {
+  color: #f1f5f9;
+}
+
+/* Element: view link */
+.gmkb-toolbar__view-link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #0ea5e9;
+  text-decoration: none;
+  background: #f0f9ff;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.gmkb-toolbar__view-link:hover {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__view-link {
+  background: rgba(14, 165, 233, 0.1);
+  color: #38bdf8;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__view-link:hover {
+  background: rgba(14, 165, 233, 0.2);
+  color: #7dd3fc;
+}
+
+/* Element: profile area */
+.gmkb-toolbar__profile-area {
+  margin-left: 12px;
+  padding-left: 12px;
+  border-left: 1px solid #e2e8f0;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__profile-area {
+  border-left-color: #334155;
+}
+
+.gmkb-toolbar__profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gmkb-toolbar__profile-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__profile-btn {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__profile-btn:hover {
+  background: #334155;
+  border-color: #475569;
+}
+
+.gmkb-toolbar__profile-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  border-radius: 50%;
+  color: white;
+}
+
+.gmkb-toolbar__profile-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e293b;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__profile-text {
+  color: #e2e8f0;
+}
+
+.gmkb-toolbar__profile-chevron {
+  color: #94a3b8;
+  transition: transform 0.15s ease;
+}
+
+.gmkb-toolbar__profile-btn:hover .gmkb-toolbar__profile-chevron {
+  transform: translateY(1px);
 }
 
 /* Element: device-selector */

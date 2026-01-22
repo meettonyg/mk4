@@ -1187,17 +1187,31 @@ export const useMediaKitStore = defineStore('mediaKit', {
       }
       
       // ROOT FIX: Validate theme before applying
-      const validThemes = ['professional_clean', 'creative_bold', 'minimal_elegant', 'modern_dark'];
+      // Support both underscore and hyphen formats for backwards compatibility
+      const validThemes = [
+        'professional_clean', 'professional-clean',
+        'creative_bold', 'creative-bold',
+        'minimal_elegant', 'minimal-elegant',
+        'modern_dark', 'modern-dark'
+      ];
       if (savedState.theme) {
-        // If theme is 'default' or 'professional', map to 'professional_clean'
+        // If theme is 'default' or 'professional', map to 'professional-clean'
         if (savedState.theme === 'default' || savedState.theme === 'professional') {
-          this.theme = 'professional_clean';
-          console.log('📝 Migrated theme from "' + savedState.theme + '" to "professional_clean"');
+          this.theme = 'professional-clean';
+          console.log('📝 Migrated theme from "' + savedState.theme + '" to "professional-clean"');
         } else if (validThemes.includes(savedState.theme)) {
-          this.theme = savedState.theme;
+          // Normalize to hyphen format (matches PHP theme discovery)
+          this.theme = savedState.theme.replace(/_/g, '-');
         } else {
-          console.warn('⚠️ Invalid theme "' + savedState.theme + '", using professional_clean');
-          this.theme = 'professional_clean';
+          // Try normalizing the saved theme before giving up
+          const normalizedTheme = savedState.theme.replace(/_/g, '-');
+          if (validThemes.includes(normalizedTheme)) {
+            this.theme = normalizedTheme;
+            console.log('📝 Normalized theme: "' + savedState.theme + '" → "' + normalizedTheme + '"');
+          } else {
+            console.warn('⚠️ Invalid theme "' + savedState.theme + '", using professional-clean');
+            this.theme = 'professional-clean';
+          }
         }
       }
       
