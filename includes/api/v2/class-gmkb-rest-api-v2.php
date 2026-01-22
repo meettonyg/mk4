@@ -1057,10 +1057,11 @@ class GMKB_REST_API_V2 {
 
         try {
             // Query media kits by author or owner_user_id meta
+            // Use 'any' status to catch all posts including auto-draft
             $args = array(
                 'post_type' => 'mkcg',
                 'posts_per_page' => 100,
-                'post_status' => array('publish', 'draft', 'private'),
+                'post_status' => 'any',
                 'orderby' => 'modified',
                 'order' => 'DESC',
                 'meta_query' => array(
@@ -1077,7 +1078,7 @@ class GMKB_REST_API_V2 {
             $author_args = array(
                 'post_type' => 'mkcg',
                 'posts_per_page' => 100,
-                'post_status' => array('publish', 'draft', 'private'),
+                'post_status' => 'any',
                 'author' => $user_id,
                 'orderby' => 'modified',
                 'order' => 'DESC',
