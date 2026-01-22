@@ -689,34 +689,33 @@ class GMKB_Free_Tools_Shortcode {
             return;
         }
 
-        // Check if the SEO tools bundle exists (built from Vue)
-        $seo_tools_js = GMKB_PLUGIN_DIR . 'dist/seo-tools/seo-tools.iife.js';
-        $seo_tools_css = GMKB_PLUGIN_DIR . 'dist/seo-tools/seo-tools.css';
+        // Use unified gmkb bundle
+        $gmkb_js = GMKB_PLUGIN_DIR . 'dist/gmkb.iife.js';
+        $gmkb_css = GMKB_PLUGIN_DIR . 'dist/gmkb.css';
 
-        // Use full builder bundle as fallback until standalone bundle is built
-        $use_standalone = file_exists($seo_tools_js);
+        $use_bundle = file_exists($gmkb_js);
 
-        if ($use_standalone) {
-            // Enqueue standalone SEO tools bundle (lightweight, ~50KB)
+        if ($use_bundle) {
+            // Enqueue unified gmkb bundle
             wp_enqueue_style(
-                'gmkb-seo-tools',
-                GMKB_PLUGIN_URL . 'dist/seo-tools/seo-tools.css',
+                'gmkb-tools',
+                GMKB_PLUGIN_URL . 'dist/gmkb.css',
                 array(),
                 GMKB_VERSION
             );
 
             wp_enqueue_script(
-                'gmkb-seo-tools',
-                GMKB_PLUGIN_URL . 'dist/seo-tools/seo-tools.iife.js',
+                'gmkb-tools',
+                GMKB_PLUGIN_URL . 'dist/gmkb.iife.js',
                 array(),
                 GMKB_VERSION,
                 true
             );
 
-            $script_handle = 'gmkb-seo-tools';
+            $script_handle = 'gmkb-tools';
 
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB Free Tools: Using standalone SEO tools bundle');
+                error_log('GMKB Free Tools: Using gmkb bundle');
             }
         } else {
             // Fallback: Use placeholder inline script until Vue bundle is built

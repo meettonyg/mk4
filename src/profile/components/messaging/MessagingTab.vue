@@ -406,7 +406,7 @@
 
                     <template #display>
                         <div class="text-area">
-                            <div v-if="store.fields.authority_statement" class="preserve-lines" v-html="formatWithLineBreaks(store.fields.authority_statement)"></div>
+                            <div v-if="store.fields.authority_hook" class="preserve-lines" v-html="formatWithLineBreaks(store.fields.authority_hook)"></div>
                             <div v-else class="empty-text">
                                 <p>
                                     <span class="info-icon">i</span>
@@ -422,7 +422,7 @@
                             <label class="form-label">Authority Hook Statement</label>
                             <textarea
                                 class="form-input textarea"
-                                v-model="editFields.authority_statement"
+                                v-model="editFields.authority_hook"
                                 rows="4"
                                 placeholder="I help [WHO] achieve [WHAT] when [WHEN] through [HOW]..."
                             ></textarea>
@@ -544,7 +544,7 @@ const sectionFields = {
     'guest-intro': ['podcast_intro', 'introduction_short', 'introduction_long'],
     'six-ws': ['hook_who', 'hook_what', 'hook_when', 'hook_how', 'hook_where', 'hook_why'],
     tagline: ['tagline'],
-    'authority-hook': ['authority_statement'],
+    'authority-hook': ['authority_hook'],
     'impact-intro': ['impact_intro'],
 };
 

@@ -25,6 +25,7 @@ import {
 import ToolDirectoryPage from '@tools/ToolDirectoryPage.vue';
 import ToolLandingPage from '@/vue/components/tools/ToolLandingPage.vue';
 import DynamicToolPage from '@tools/DynamicToolPage.vue';
+import { getPublicNonce } from '@utils/ai';
 
 // Build component registries from tool modules
 const TOOL_COMPONENTS = buildComponentRegistry('Widget', true);
@@ -39,7 +40,7 @@ const mountedApps = new Map();
 function ensureNonce() {
   if (!window.gmkbSeoTools) {
     window.gmkbSeoTools = {
-      nonce: window.gmkbPublicNonce || window.gmkbPublicData?.publicNonce || ''
+      nonce: getPublicNonce()
     };
   }
 }

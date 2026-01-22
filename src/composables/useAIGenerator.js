@@ -27,54 +27,7 @@
 import { ref, computed } from 'vue';
 import { useAIStore } from '../stores/ai';
 import { toolModules } from '../../tools/index.js';
-
-/**
- * Get REST URL from available sources
- * Ensures trailing slash for proper URL concatenation
- * @returns {string} REST API base URL
- */
-function getRestUrl() {
-  const url = window.gmkbData?.restUrl
-    || window.gmkbProfileData?.apiUrl
-    || window.gmkbStandaloneTools?.apiBase
-    || window.gmkbPublicData?.restUrl
-    || '/wp-json/gmkb/v2/';
-
-  // Ensure trailing slash for proper URL concatenation
-  return url.endsWith('/') ? url : url + '/';
-}
-
-/**
- * Get nonce from available sources
- * @param {string} context 'builder' or 'public'
- * @returns {string} Security nonce
- */
-function getNonce(context) {
-  if (context === 'builder') {
-    return window.gmkbData?.restNonce
-      || window.gmkbData?.nonce
-      || window.gmkbProfileData?.nonce
-      || window.gmkbStandaloneTools?.restNonce
-      || '';
-  }
-  return window.gmkbPublicNonce
-    || window.gmkbPublicData?.publicNonce
-    || window.gmkbStandaloneTools?.nonce
-    || '';
-}
-
-/**
- * Check if user is logged in from available sources
- * @returns {boolean}
- */
-function isUserLoggedIn() {
-  return !!(
-    window.gmkbData?.postId
-    || window.gmkbData?.post_id
-    || window.gmkbProfileData?.postId
-    || window.gmkbStandaloneTools?.isLoggedIn
-  );
-}
+import { getRestUrl, getToolNonce, getRestNonce, isUserLoggedIn } from '../utils/ai';
 
 /**
  * Generate cache key from type and params
@@ -84,7 +37,41 @@ function isUserLoggedIn() {
  */
 function generateCacheKey(type, params) {
   const paramsStr = JSON.stringify(params, Object.keys(params).sort());
-  return `${type}_${btoa(paramsStr).substring(0, 32)}`;
+  return `${type}_${base64EncodeUtf8(paramsStr).substring(0, 32)}`;
+}
+
+/**
+ * Base64-encode UTF-8 strings safely (supports non-Latin1 characters)
+ * @param {string} value
+ * @returns {string}
+ */
+function base64EncodeUtf8(value) {
+  if (typeof btoa === 'undefined') {
+    return '';
+  }
+
+  if (typeof TextEncoder !== 'undefined') {
+    const bytes = new TextEncoder().encode(value);
+    let binary = '';
+    for (const byte of bytes) {
+      binary += String.fromCharCode(byte);
+    }
+    return btoa(binary);
+  }
+
+  const utf8Encoded = encodeURIComponent(value);
+  let binaryString = '';
+  for (let i = 0; i < utf8Encoded.length; i++) {
+    const char = utf8Encoded[i];
+    if (char === '%') {
+      const hex = utf8Encoded.substring(i + 1, i + 3);
+      binaryString += String.fromCharCode(parseInt(hex, 16));
+      i += 2;
+    } else {
+      binaryString += char;
+    }
+  }
+  return btoa(binaryString);
 }
 
 /**
@@ -239,7 +226,8 @@ export function useAIGenerator(type) {
 
     try {
       const restUrl = getRestUrl();
-      const nonce = getNonce(context);
+      const nonce = getToolNonce(context);
+      const restNonce = getRestNonce();
 
       // Build request body
       const body = {
@@ -252,11 +240,12 @@ export function useAIGenerator(type) {
       console.log(`[useAIGenerator] Generating ${type} content...`, { context, restUrl });
 
       // Make API request
+      // Always include X-WP-Nonce if available (needed for logged-in users even in public context)
       const response = await fetch(`${restUrl}ai/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-WP-Nonce': context === 'builder' ? nonce : ''
+          'X-WP-Nonce': restNonce
         },
         body: JSON.stringify(body)
       });

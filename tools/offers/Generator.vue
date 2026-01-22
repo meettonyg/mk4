@@ -11,7 +11,7 @@
   >
     <!-- Left Panel: Form -->
     <template #left>
-      <div class="gmkb-plg-tool-embed">
+      <div v-if="!hasOffers" class="gmkb-plg-tool-embed">
         <!-- Profile Selector (for logged-in users in standalone mode) -->
         <ProfileSelector
           @profile-selected="handleProfileSelected"
@@ -428,6 +428,24 @@
               </div>
             </div>
 
+            <!-- Variation Selector (when multiple variations exist) -->
+            <div v-if="hasMultipleVariations && !lockedOffers[activeOfferTier]" class="offers-variations">
+              <span class="offers-variations__label">Choose a variation:</span>
+              <div class="offers-variations__options">
+                <button
+                  v-for="(variation, idx) in currentTierVariations"
+                  :key="variation.id || idx"
+                  type="button"
+                  class="offers-variations__option"
+                  :class="{ 'offers-variations__option--active': selectedVariations[activeOfferTier] === idx }"
+                  @click="selectVariation(activeOfferTier, idx)"
+                >
+                  <span class="offers-variations__option-number">{{ idx + 1 }}</span>
+                  <span class="offers-variations__option-name">{{ variation.name }}</span>
+                </button>
+              </div>
+            </div>
+
             <!-- Locked State -->
             <div v-if="lockedOffers[activeOfferTier]" class="offers-locked-card">
               <div class="offers-locked-card__badge">
@@ -437,7 +455,7 @@
                 LOCKED {{ activeOfferTierLabel.toUpperCase() }} PACKAGE
               </div>
               <h4 class="offers-locked-card__name">{{ lockedOffers[activeOfferTier].name }}</h4>
-              <p class="offers-locked-card__description">{{ lockedOffers[activeOfferTier].description }}</p>
+              <p class="offers-locked-card__description">{{ cleanMarkdown(lockedOffers[activeOfferTier].description) }}</p>
               <div class="offers-locked-card__actions">
                 <button type="button" class="gfy-btn gfy-btn--outline" title="Copy this package to clipboard" aria-label="Copy package details to clipboard" @click="handleCopy">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -462,7 +480,7 @@
                 {{ activeOfferTierLabel }}
               </div>
               <h4 class="offers-card__name">{{ currentTierOffer.name }}</h4>
-              <p class="offers-card__description">{{ currentTierOffer.description }}</p>
+              <p class="offers-card__description">{{ cleanMarkdown(currentTierOffer.description) }}</p>
 
               <!-- Metadata Row -->
               <div class="offers-card__meta">
@@ -674,7 +692,7 @@
               <h4 class="gmkb-ai-package__name">{{ pkg.name }}</h4>
             </div>
 
-            <p class="gmkb-ai-package__description">{{ pkg.description }}</p>
+            <p class="gmkb-ai-package__description">{{ cleanMarkdown(pkg.description) }}</p>
 
             <div class="gmkb-ai-package__section">
               <h5 class="gmkb-ai-package__section-title">Includes:</h5>
@@ -790,9 +808,13 @@ const {
   usageRemaining,
   resetTime,
   offers,
+  offersByTier,
   hasOffers,
   generate,
-  copyToClipboard
+  copyToClipboard,
+  getVariationsForTier,
+  selectVariation,
+  selectedVariations
 } = useAIOffers();
 
 const { authorityHookSummary, syncFromStore, loadFromProfileData } = useAuthorityHook();
@@ -912,6 +934,42 @@ function isFieldPrefilled(fieldName) {
  */
 function markFieldEdited(fieldName) {
   prefilledFields.value.delete(fieldName);
+}
+
+/**
+ * Clean markdown formatting from text
+ * Removes **bold**, *italic*, ###headers, ---, and other markdown syntax
+ * Preserves line breaks and adds breaks before key section labels
+ */
+function cleanMarkdown(text) {
+  if (!text) return '';
+  return text
+    // Remove markdown headers (### Header)
+    .replace(/^#{1,6}\s+/gm, '')
+    // Remove bold (**text** or __text__)
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/__(.+?)__/g, '$1')
+    // Remove italic (*text* or _text_)
+    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/_(.+?)_/g, '$1')
+    // Remove horizontal rules (--- or ***)
+    .replace(/^[-*]{3,}\s*$/gm, '')
+    // Remove numbered list markers at start (5. **Item:**)
+    .replace(/^\d+\.\s*/gm, '')
+    // Add line breaks before key section labels (Deliverables:, Ideal Client:, Pricing:, etc.)
+    .replace(/\s+(Deliverables?:)/gi, '\n\n$1')
+    .replace(/\s+(Ideal Client:)/gi, '\n\n$1')
+    .replace(/\s+(Pricing Positioning:)/gi, '\n\n$1')
+    .replace(/\s+(Investment:)/gi, '\n\n$1')
+    .replace(/\s+(Includes?:)/gi, '\n\n$1')
+    .replace(/\s+(What You Get:)/gi, '\n\n$1')
+    .replace(/\s+(Benefits?:)/gi, '\n\n$1')
+    .replace(/\s+(Features?:)/gi, '\n\n$1')
+    .replace(/\s+(Duration:)/gi, '\n\n$1')
+    .replace(/\s+(Format:)/gi, '\n\n$1')
+    // Clean up extra whitespace
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 /**
@@ -1105,12 +1163,27 @@ const activeOfferTierLabel = computed(() => {
 });
 
 /**
- * Get the current tier's offer from generated offers
+ * Get variations for the current tier
+ */
+const currentTierVariations = computed(() => {
+  return getVariationsForTier(activeOfferTier.value);
+});
+
+/**
+ * Get the current tier's selected offer
  */
 const currentTierOffer = computed(() => {
-  if (!offers.value || offers.value.length === 0) return null;
-  const tierIndex = { entry: 0, signature: 1, premium: 2 };
-  return offers.value[tierIndex[activeOfferTier.value]] || null;
+  const variations = currentTierVariations.value;
+  if (!variations || variations.length === 0) return null;
+  const selectedIndex = selectedVariations[activeOfferTier.value] || 0;
+  return variations[selectedIndex] || variations[0] || null;
+});
+
+/**
+ * Check if current tier has multiple variations
+ */
+const hasMultipleVariations = computed(() => {
+  return currentTierVariations.value.length > 1;
 });
 
 /**
@@ -1122,12 +1195,18 @@ const lockedOffersCount = computed(() => {
 
 /**
  * Get offer preview for sidebar
+ * Shows variation count or selected offer name
  */
 const getOfferPreview = (tier) => {
-  if (!offers.value || offers.value.length === 0) return null;
-  const tierIndex = { entry: 0, signature: 1, premium: 2 };
-  const offer = offers.value[tierIndex[tier]];
-  return offer?.name || null;
+  const variations = getVariationsForTier(tier);
+  if (!variations || variations.length === 0) return null;
+
+  if (variations.length > 1) {
+    const selectedIndex = selectedVariations[tier] || 0;
+    return `${variations.length} options (${selectedIndex + 1} selected)`;
+  }
+
+  return variations[0]?.name || null;
 };
 
 /**
@@ -1268,6 +1347,11 @@ const handleGenerate = async () => {
     emit('generated', {
       offers: offers.value
     });
+
+    // Scroll to top after generation (standalone mode only)
+    if (props.mode === 'default' && offers.value && offers.value.length > 0) {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
   } catch (err) {
     console.error('[OffersGenerator] Generation failed:', err);
   }
@@ -1313,9 +1397,10 @@ const handleCopySingleOffer = async (pkg, event, index = null) => {
 const handleCopyAll = async () => {
   // Collect all locked/generated offers
   const allOffers = [];
+  const tierIndex = { entry: 0, signature: 1, premium: 2 };
 
   ['entry', 'signature', 'premium'].forEach(tier => {
-    const offer = lockedOffers.value[tier] || offers.value[tier];
+    const offer = lockedOffers[tier] || offers.value[tierIndex[tier]];
     if (offer) {
       allOffers.push({
         tier: tier.charAt(0).toUpperCase() + tier.slice(1),
@@ -1331,7 +1416,7 @@ const handleCopyAll = async () => {
     return `== ${offer.tier} Package ==\n` +
       `Name: ${offer.name || 'N/A'}\n` +
       `Price: ${offer.price || 'N/A'}\n` +
-      `Description: ${offer.description || 'N/A'}\n` +
+      `Description: ${cleanMarkdown(offer.description) || 'N/A'}\n` +
       `Deliverables: ${offer.deliverables?.join(', ') || 'N/A'}`;
   }).join('\n\n');
 
@@ -1348,9 +1433,10 @@ const handleCopyAll = async () => {
 const handleExport = () => {
   // Collect all locked/generated offers
   const allOffers = [];
+  const tierIndex = { entry: 0, signature: 1, premium: 2 };
 
   ['entry', 'signature', 'premium'].forEach(tier => {
-    const offer = lockedOffers.value[tier] || offers.value[tier];
+    const offer = lockedOffers[tier] || offers.value[tierIndex[tier]];
     if (offer) {
       allOffers.push({
         tier: tier.charAt(0).toUpperCase() + tier.slice(1),
@@ -1370,7 +1456,7 @@ const handleExport = () => {
       return `## ${offer.tier} Package\n\n` +
         `**${offer.name || 'Untitled'}**\n\n` +
         `**Price:** ${offer.price || 'TBD'}\n\n` +
-        `${offer.description || ''}\n\n` +
+        `${cleanMarkdown(offer.description) || ''}\n\n` +
         `**Deliverables:**\n${deliverables}`;
     }).join('\n\n---\n\n') +
     `\n\n---\n*Generated with Offers Generator*`;
@@ -1598,6 +1684,7 @@ watch(authorityHookSummary, (newVal) => {
   font-size: 13px;
   color: var(--gmkb-ai-text-secondary, #64748b);
   line-height: 1.5;
+  white-space: pre-line;
 }
 
 .gmkb-ai-package__section {
@@ -1849,6 +1936,83 @@ watch(authorityHookSummary, (newVal) => {
   margin-bottom: 12px;
 }
 
+/* Variation Selector */
+.offers-variations {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.offers-variations__label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.offers-variations__options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.offers-variations__option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.offers-variations__option:hover {
+  border-color: var(--mkcg-primary, #3b82f6);
+  background: #f0f9ff;
+}
+
+.offers-variations__option--active {
+  border-color: var(--mkcg-primary, #3b82f6);
+  background: rgba(59, 130, 246, 0.08);
+  box-shadow: 0 0 0 1px var(--mkcg-primary, #3b82f6);
+}
+
+.offers-variations__option-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: #e2e8f0;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.offers-variations__option--active .offers-variations__option-number {
+  background: var(--mkcg-primary, #3b82f6);
+  color: white;
+}
+
+.offers-variations__option-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .offers-card__tier-badge--entry {
   color: #475569;
   background: #f1f5f9;
@@ -1876,6 +2040,7 @@ watch(authorityHookSummary, (newVal) => {
   line-height: 1.6;
   color: var(--mkcg-text-secondary, #64748b);
   margin: 0 0 16px 0;
+  white-space: pre-line;
 }
 
 .offers-card__meta {
@@ -1970,6 +2135,7 @@ watch(authorityHookSummary, (newVal) => {
   line-height: 1.6;
   color: var(--mkcg-text-secondary, #64748b);
   margin: 0 0 16px 0;
+  white-space: pre-line;
 }
 
 .offers-locked-card__actions {

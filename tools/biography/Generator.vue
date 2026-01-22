@@ -11,9 +11,9 @@
     target-component="Biography"
     :show-cta="!hasVariations"
     @apply="handleApply"
-    @regenerate="() => generateForSlot(activeSlot)"
+    @regenerate="handleGenerateForActiveSlot"
     @copy="() => copyBio(currentBio)"
-    @retry="() => generateForSlot(activeSlot)"
+    @retry="handleGenerateForActiveSlot"
   >
     <!-- Compact Input Form -->
     <div class="gmkb-ai-form">
@@ -282,24 +282,34 @@
         <div v-if="error" class="gfy-error-box">
           <i class="fas fa-exclamation-circle"></i>
           <p>{{ error }}</p>
-          <button type="button" class="gfy-btn gfy-btn--outline" @click="handleStartGeneration">
-            Try Again
-          </button>
+          <div class="gfy-error-actions">
+            <button type="button" class="gfy-btn gfy-btn--outline" @click="handleStartGeneration">
+              Try Again
+            </button>
+            <a
+              v-if="isRateLimitError"
+              :href="rateLimitCta.url"
+              class="gfy-btn gfy-btn--primary"
+            >
+              <i :class="['fas', rateLimitCta.icon]"></i>
+              {{ rateLimitCta.text }}
+            </a>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Phase 2: Results Dashboard -->
     <div v-else class="gfy-bio-results">
-      <!-- Results Hero -->
-      <div class="gfy-bio-hero gfy-bio-hero--compact">
+      <!-- Results Hero (only show when not embedded) -->
+      <div v-if="!isEmbedded" class="gfy-bio-hero gfy-bio-hero--compact">
         <h1 class="gfy-bio-hero__title">Biography Toolkit</h1>
         <p class="gfy-bio-hero__subtitle">
           Refine your professional presence. Select a slot and provide feedback to iterate with AI.
         </p>
       </div>
 
-      <div class="gmkb-tool-embed">
+      <div class="gfy-bio-results__container" :class="{ 'gfy-bio-results__container--no-chrome': isEmbedded }">
         <div class="gfy-results-layout">
           <!-- SIDEBAR: Slot Selection -->
           <aside class="gfy-layout-sidebar">
@@ -381,6 +391,25 @@
 
           <!-- MAIN: Variations + Feedback Loop -->
           <main class="gfy-layout-main">
+            <!-- Error Display in Results View -->
+            <div v-if="error" class="gfy-error-box">
+              <i class="fas fa-exclamation-circle"></i>
+              <p>{{ error }}</p>
+              <div class="gfy-error-actions">
+                <button type="button" class="gfy-btn gfy-btn--outline" @click="handleGenerateForActiveSlot">
+                  Try Again
+                </button>
+                <a
+                  v-if="isRateLimitError"
+                  :href="signupUrl"
+                  class="gfy-btn gfy-btn--primary"
+                  target="_blank"
+                >
+                  Get Unlimited Access
+                </a>
+              </div>
+            </div>
+
             <!-- Results Header -->
             <div class="gfy-results__header">
               <h3 class="gfy-results__title">
@@ -391,13 +420,14 @@
                 <button
                   type="button"
                   class="gfy-btn gfy-btn--outline"
-                  @click="handleGenerate"
+                  :disabled="isGenerating"
+                  @click="handleGenerateForActiveSlot"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M23 4v6h-6M1 20v-6h6"/>
                     <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
                   </svg>
-                  Regenerate
+                  {{ isGenerating ? 'Generating...' : 'Regenerate' }}
                 </button>
                 <button
                   type="button"
@@ -463,7 +493,7 @@
                   <button type="button" class="gfy-btn gfy-btn--outline" @click="handleCopy(currentSlot.lockedBio)">
                     <i class="fas fa-copy"></i> Copy
                   </button>
-                  <button type="button" class="gfy-btn gfy-btn--ghost" @click="unlockBio(activeSlot)">
+                  <button type="button" class="gfy-btn gfy-btn--ghost" @click="unlockBio()">
                     <i class="fas fa-unlock"></i> Unlock & Edit
                   </button>
                 </div>
@@ -472,16 +502,29 @@
 
             <!-- Empty State -->
             <div v-else-if="currentVariations.length === 0" class="gfy-empty-state">
-              <i class="fas fa-file-alt"></i>
+              <div class="gfy-empty-state__icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10 9 9 9 8 9"/>
+                </svg>
+              </div>
               <p>Click the button below to generate {{ getVariationCount(activeSlot) }} variations for your {{ activeSlotLabel }} biography.</p>
               <button
                 type="button"
-                class="gfy-btn gfy-btn--primary"
+                class="gfy-generate-bio-btn"
                 :disabled="isGenerating"
-                @click="handleGenerateForSlot(activeSlot)"
+                @click="handleGenerateForActiveSlot"
               >
-                <i class="fas fa-magic"></i>
-                Generate {{ activeSlotLabel }} Bio
+                <svg v-if="!isGenerating" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+                  <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+                  <path d="M2 2l7.586 7.586"/>
+                </svg>
+                <span v-if="isGenerating" class="gfy-spinner"></span>
+                {{ isGenerating ? 'Generating...' : `Generate ${activeSlotLabel} Bio` }}
               </button>
             </div>
 
@@ -571,13 +614,13 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject, onMounted, onUnmounted, toRef } from 'vue';
-import { useAIBiography, SLOT_STATUS, LENGTH_OPTIONS, getVariationCount } from '../../src/composables/useAIBiography';
+import { ref, computed, watch, inject, reactive, onMounted, onUnmounted, toRef } from 'vue';
 import { useProfileContext } from '../../src/composables/useProfileContext';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 import { useProfileSelectionHandler } from '../../src/composables/useProfileSelectionHandler';
 import { useDraftState } from '../../src/composables/useDraftState';
 import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
+import { getRestNonce, getPublicNonce } from '../../src/utils/ai.js';
 import { EMBEDDED_PROFILE_DATA_KEY, IS_EMBEDDED_CONTEXT_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileSelector } from '../_shared';
 
 // Integrated mode components
@@ -587,6 +630,338 @@ import AiLengthSelector from '../../src/vue/components/ai/AiLengthSelector.vue';
 import AiPovSelector from '../../src/vue/components/ai/AiPovSelector.vue';
 import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
 import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
+
+// ============================================================================
+// CONSTANTS (previously from useAIBiography composable)
+// ============================================================================
+
+const SLOT_STATUS = {
+  EMPTY: 'empty',
+  GENERATING: 'generating',
+  HAS_VARIATIONS: 'has_variations',
+  LOCKED: 'locked'
+};
+
+// API endpoint constant
+const API_ENDPOINT = '/wp-json/gmkb/v2/ai/tool/generate';
+
+/**
+ * Process API response variations into a standardized format
+ * @param {Object} data - The API response data
+ * @param {string} slotName - The slot name for generating unique IDs
+ * @returns {Array} Processed variations array
+ */
+function processApiVariations(data, slotName) {
+  const content = data.data?.content || data.content || data;
+  const rawVariations = content.variations || content.results || content || [];
+  return (Array.isArray(rawVariations) ? rawVariations : [rawVariations]).map((item, idx) => ({
+    id: crypto.randomUUID(),
+    label: typeof item === 'object' ? (item.label || `OPTION ${idx + 1}`) : `OPTION ${idx + 1}`,
+    text: typeof item === 'string' ? item : (item.content || item.text || '')
+  })).filter(v => v.text.trim().length > 0);
+}
+
+const TONE_OPTIONS = [
+  { value: 'professional', label: 'Professional' },
+  { value: 'conversational', label: 'Conversational' },
+  { value: 'inspirational', label: 'Inspirational' },
+  { value: 'authoritative', label: 'Authoritative' },
+  { value: 'friendly', label: 'Friendly & Approachable' },
+  { value: 'bold', label: 'Bold & Confident' }
+];
+
+const LENGTH_OPTIONS = [
+  { value: 'short', label: 'Short (50 words)', description: 'Social media, brief intros', wordCount: 50, variations: 5 },
+  { value: 'medium', label: 'Medium (150 words)', description: 'Speaker profiles, websites', wordCount: 150, variations: 3 },
+  { value: 'long', label: 'Long (300 words)', description: 'Press kits, formal intros', wordCount: 300, variations: 2 }
+];
+
+const POV_OPTIONS = [
+  { value: 'first', label: 'First Person (I/My)' },
+  { value: 'second', label: 'Second Person (You/Your)' },
+  { value: 'third', label: 'Third Person (He/She/They)' }
+];
+
+function getVariationCount(length) {
+  const option = LENGTH_OPTIONS.find(o => o.value === length);
+  return option?.variations || 3;
+}
+
+// ============================================================================
+// LOCAL STATE (previously from useAIBiography composable)
+// ============================================================================
+
+// Core form state
+const name = ref('');
+const tone = ref('professional');
+const pov = ref('third');
+const activeSlot = ref('long');
+const refinementFeedback = ref('');
+const error = ref(null);
+
+// User login state and CTA URLs
+const isLoggedIn = window.gmkbStandaloneTools?.isLoggedIn || false;
+const signupUrl = window.gmkbStandaloneTools?.signupUrl || '/register/';
+const pricingUrl = window.gmkbStandaloneTools?.pricingUrl || '/pricing/';
+
+// CTA configuration based on user state
+const rateLimitCta = computed(() => {
+  if (isLoggedIn) {
+    // Registered free user -> upgrade to paid plan
+    return {
+      url: pricingUrl,
+      text: 'Upgrade Your Plan',
+      icon: 'fa-arrow-up'
+    };
+  } else {
+    // Anonymous user -> sign up for account
+    return {
+      url: signupUrl,
+      text: 'Sign Up Free',
+      icon: 'fa-user-plus'
+    };
+  }
+});
+
+// Check if current error is a rate limit error
+const isRateLimitError = computed(() => {
+  if (!error.value) return false;
+  const msg = error.value.toLowerCase();
+  return msg.includes('limit') || msg.includes('rate') || msg.includes('quota');
+});
+
+// Slots state
+const slots = reactive({
+  short: { status: SLOT_STATUS.EMPTY, variations: [], locked: false, lockedBio: null, errorMessage: null },
+  medium: { status: SLOT_STATUS.EMPTY, variations: [], locked: false, lockedBio: null, errorMessage: null },
+  long: { status: SLOT_STATUS.EMPTY, variations: [], locked: false, lockedBio: null, errorMessage: null }
+});
+
+// Authority Hook (Who-What-When-How)
+const authorityHook = reactive({
+  who: '',
+  what: '',
+  when: '',
+  how: ''
+});
+
+// Impact Intro (Where-Why)
+const impactIntro = reactive({
+  where: '',
+  why: ''
+});
+
+// Optional fields
+const optionalFields = reactive({
+  title: '',
+  organization: '',
+  existingBio: '',
+  additionalNotes: ''
+});
+
+// ============================================================================
+// COMPUTED PROPERTIES (previously from useAIBiography composable)
+// ============================================================================
+
+const currentSlot = computed(() => slots[activeSlot.value]);
+const currentVariations = computed(() => currentSlot.value?.variations || []);
+const hasVariations = computed(() => currentVariations.value.length > 0);
+
+const isGenerating = computed(() => {
+  return Object.values(slots).some(s => s.status === SLOT_STATUS.GENERATING);
+});
+
+const lockedCount = computed(() => {
+  return Object.values(slots).filter(s => s.locked).length;
+});
+
+const authorityHookSummary = computed(() => {
+  const parts = [];
+  if (authorityHook.who) parts.push(`I help ${authorityHook.who}`);
+  if (authorityHook.what) parts.push(`achieve ${authorityHook.what}`);
+  if (authorityHook.when) parts.push(`when ${authorityHook.when}`);
+  if (authorityHook.how) parts.push(`through ${authorityHook.how}`);
+  return parts.length > 0 ? parts.join(' ') + '.' : '';
+});
+
+const impactIntroSummary = computed(() => {
+  const parts = [];
+  if (impactIntro.where) parts.push(`I've ${impactIntro.where}`);
+  if (impactIntro.why) parts.push(`My mission is to ${impactIntro.why}`);
+  return parts.join('. ') + (parts.length > 0 ? '.' : '');
+});
+
+const canGenerate = computed(() => {
+  const hasName = name.value.trim();
+  const hasAuthorityHook = authorityHook.who || authorityHook.what || authorityHook.when || authorityHook.how;
+  const hasImpactIntro = impactIntro.where || impactIntro.why;
+  return hasName && (hasAuthorityHook || hasImpactIntro);
+});
+
+// ============================================================================
+// HELPER METHODS (previously from useAIBiography composable)
+// ============================================================================
+
+function setActiveSlot(slotName) {
+  if (slots[slotName]) {
+    activeSlot.value = slotName;
+  }
+}
+
+function lockBio(variationIndex) {
+  const slot = slots[activeSlot.value];
+  if (!slot || !slot.variations[variationIndex]) return;
+  slot.locked = true;
+  slot.lockedBio = slot.variations[variationIndex].text;
+  slot.status = SLOT_STATUS.LOCKED;
+}
+
+function unlockBio(slotName = null) {
+  const targetSlot = slotName || activeSlot.value;
+  const slot = slots[targetSlot];
+  if (!slot) return;
+  slot.locked = false;
+  slot.lockedBio = null;
+  slot.status = slot.variations.length > 0 ? SLOT_STATUS.HAS_VARIATIONS : SLOT_STATUS.EMPTY;
+}
+
+function getSlotPreview(slotName) {
+  const slot = slots[slotName];
+  if (!slot) return '';
+  if (slot.locked && slot.lockedBio) {
+    return slot.lockedBio.substring(0, 80) + '...';
+  }
+  if (slot.status === SLOT_STATUS.GENERATING) {
+    return 'Generating variations...';
+  }
+  if (slot.errorMessage) {
+    // Show truncated error message for rate limits and other errors
+    const shortError = slot.errorMessage.length > 60
+      ? slot.errorMessage.substring(0, 57) + '...'
+      : slot.errorMessage;
+    return shortError;
+  }
+  if (slot.variations.length > 0) {
+    return `${slot.variations.length} variations ready`;
+  }
+  const variationCount = getVariationCount(slotName);
+  return `Click to generate ${variationCount} variations`;
+}
+
+function getLockedBios() {
+  const result = {};
+  Object.entries(slots).forEach(([key, slot]) => {
+    if (slot.locked && slot.lockedBio) {
+      result[key] = slot.lockedBio;
+    }
+  });
+  return result;
+}
+
+async function copyBio(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (err) {
+    console.error('[Biography] Failed to copy:', err);
+    return false;
+  }
+}
+
+function reset() {
+  name.value = '';
+  tone.value = 'professional';
+  pov.value = 'third';
+  authorityHook.who = '';
+  authorityHook.what = '';
+  authorityHook.when = '';
+  authorityHook.how = '';
+  impactIntro.where = '';
+  impactIntro.why = '';
+  optionalFields.title = '';
+  optionalFields.organization = '';
+  optionalFields.existingBio = '';
+  optionalFields.additionalNotes = '';
+  refinementFeedback.value = '';
+  error.value = null;
+
+  Object.keys(slots).forEach(key => {
+    slots[key] = {
+      status: SLOT_STATUS.EMPTY,
+      variations: [],
+      locked: false,
+      lockedBio: null,
+      errorMessage: null
+    };
+  });
+  activeSlot.value = 'long';
+}
+
+function populateFromProfile(profileData) {
+  if (!profileData) return;
+
+  // Name
+  const firstName = profileData.first_name || profileData.firstName || '';
+  const lastName = profileData.last_name || profileData.lastName || '';
+  const fullName = profileData.full_name || profileData.fullName || profileData.name || '';
+  name.value = fullName || [firstName, lastName].filter(Boolean).join(' ');
+
+  // Title/Role
+  const title = profileData.guest_title || profileData.title || profileData.professional_title || '';
+  if (title) optionalFields.title = title;
+
+  // Organization/Company
+  const org = profileData.organization || profileData.company || profileData.org || '';
+  if (org) optionalFields.organization = org;
+
+  // Authority Hook
+  const hookWho = profileData.hook_who || profileData.hookWho || profileData.who || '';
+  const hookWhat = profileData.hook_what || profileData.hookWhat || profileData.what || '';
+  const hookWhen = profileData.hook_when || profileData.hookWhen || profileData.when || '';
+  const hookHow = profileData.hook_how || profileData.hookHow || profileData.how || '';
+  if (hookWho) authorityHook.who = hookWho;
+  if (hookWhat) authorityHook.what = hookWhat;
+  if (hookWhen) authorityHook.when = hookWhen;
+  if (hookHow) authorityHook.how = hookHow;
+
+  // Impact Intro
+  const impactData = profileData.impact_intro || profileData.impactIntro || {};
+  const whereVal = profileData.hook_where || profileData.hookWhere ||
+                   profileData.impact_where || profileData.impactWhere ||
+                   impactData.where || profileData.where ||
+                   profileData.credentials || profileData.achievements || '';
+  const whyVal = profileData.hook_why || profileData.hookWhy ||
+                 profileData.impact_why || profileData.impactWhy ||
+                 impactData.why || profileData.why ||
+                 profileData.mission || profileData.purpose || '';
+  if (whereVal) impactIntro.where = whereVal;
+  if (whyVal) impactIntro.why = whyVal;
+
+  // Existing biography
+  const existingBio = profileData.biography || profileData.bio || '';
+  if (existingBio) optionalFields.existingBio = existingBio;
+
+  // Pre-populate locked bios if they exist
+  if (profileData.biography_short || profileData.biographyShort) {
+    slots.short.locked = true;
+    slots.short.lockedBio = profileData.biography_short || profileData.biographyShort;
+    slots.short.status = SLOT_STATUS.LOCKED;
+  }
+  if (profileData.biography) {
+    slots.medium.locked = true;
+    slots.medium.lockedBio = profileData.biography;
+    slots.medium.status = SLOT_STATUS.LOCKED;
+  }
+  if (profileData.biography_long || profileData.biographyLong) {
+    slots.long.locked = true;
+    slots.long.lockedBio = profileData.biography_long || profileData.biographyLong;
+    slots.long.status = SLOT_STATUS.LOCKED;
+  }
+}
+
+// ============================================================================
+// COMPONENT SETUP
+// ============================================================================
 
 // Auto-detect if we're inside EmbeddedToolWrapper
 const isEmbedded = inject(IS_EMBEDDED_CONTEXT_KEY, false);
@@ -615,43 +990,6 @@ const emit = defineEmits(['generated', 'saved', 'applied', 'update:can-generate'
 
 // Inject profile data from parent
 const injectedProfileData = inject(EMBEDDED_PROFILE_DATA_KEY, ref(null));
-
-// Use composables
-const {
-  // State
-  name,
-  tone,
-  pov,
-  authorityHook,
-  impactIntro,
-  optionalFields,
-  refinementFeedback,
-  slots,
-  activeSlot,
-  currentSlot,
-  currentVariations,
-  isGenerating,
-  lockedCount,
-  error,
-  // Computed
-  authorityHookSummary,
-  impactIntroSummary,
-  canGenerate,
-  // Methods
-  generateForSlot,
-  refineVariations,
-  lockBio,
-  unlockBio,
-  setActiveSlot,
-  getSlotPreview,
-  getLockedBios,
-  copyBio,
-  reset,
-  populateFromProfile,
-  // Options
-  TONE_OPTIONS,
-  POV_OPTIONS
-} = useAIBiography();
 
 const {
   profileId,
@@ -726,7 +1064,7 @@ const handleGenerateIntegrated = async () => {
   // Parse the compact authority hook text into the structured format
   authorityHook.who = authorityHookTextCompact.value;
   setActiveSlot(integratedLength.value);
-  await generateForSlot(integratedLength.value);
+  await handleGenerateForSlot(integratedLength.value);
 };
 
 /**
@@ -810,7 +1148,19 @@ const handleKeyboardShortcut = (event) => {
  * Handle starting generation - goes to results view
  */
 const handleStartGeneration = async () => {
+  console.log('[Biography Generator] handleStartGeneration called');
+  console.log('[Biography Generator] canGenerate:', canGenerate.value);
+  console.log('[Biography Generator] Form data:', {
+    name: name.value,
+    authorityHook: { ...authorityHook },
+    impactIntro: { ...impactIntro }
+  });
+
   showResults.value = true;
+
+  // Scroll to top to prevent page shift when switching views
+  window.scrollTo({ top: 0, behavior: 'instant' });
+
   // Auto-generate for the active slot (long by default)
   await handleGenerateForSlot('long');
 };
@@ -826,17 +1176,88 @@ const handleSlotClick = async (slotName) => {
     await handleGenerateForSlot(slotName);
   }
 };
-
 /**
- * Handle generate for a specific slot
+ * Handle generate for a specific slot - using direct API call
  */
 const handleGenerateForSlot = async (slotName) => {
+  console.log('[Biography Generator] handleGenerateForSlot called with:', slotName);
+  console.log('[Biography Generator] Current state:', {
+    name: name.value,
+    authorityHook: { ...authorityHook },
+    impactIntro: { ...impactIntro },
+    canGenerate: canGenerate.value
+  });
+
+  const slot = slots[slotName];
+  slot.status = SLOT_STATUS.GENERATING;
+  slot.errorMessage = null; // Clear any previous error
+  setActiveSlot(slotName);
+  error.value = null;
+
   try {
-    await generateForSlot(slotName);
-    emit('generated', { slot: slotName, variations: slots[slotName].variations });
+    // Build context for the API
+    const context = {
+      name: name.value,
+      title: optionalFields.title,
+      organization: optionalFields.organization,
+      authorityHook: {
+        who: authorityHook.who,
+        what: authorityHook.what,
+        when: authorityHook.when,
+        how: authorityHook.how
+      },
+      impactIntro: impactIntroSummary.value,
+      existingBio: optionalFields.existingBio,
+      additionalNotes: optionalFields.additionalNotes,
+      tone: tone.value,
+      length: slotName,
+      pov: pov.value
+    };
+
+    console.log('[Biography Generator] Calling API with context:', context);
+
+    // Get nonces - public nonce for body, REST nonce for header (WordPress REST API auth)
+    const nonce = getPublicNonce();
+    const restNonce = getRestNonce();
+
+    // Build headers with REST nonce for WordPress cookie authentication
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    if (restNonce) {
+      headers['X-WP-Nonce'] = restNonce;
+    }
+
+    // Call the tool-based API endpoint
+    const response = await fetch(API_ENDPOINT, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        tool: 'biography-generator',
+        params: context,
+        context: 'public',
+        nonce: nonce
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Generation failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('[Biography Generator] API response:', data);
+
+    // Process variations from the response using helper function
+    slot.variations = processApiVariations(data, slotName);
+
+    slot.status = SLOT_STATUS.HAS_VARIATIONS;
+    console.log('[Biography Generator] Parsed variations:', slot.variations);
+
+    emit('generated', { slot: slotName, variations: slot.variations });
 
     // Save to history on success
-    if (slots[slotName].variations.length > 0) {
+    if (slot.variations.length > 0) {
       addToHistory({
         inputs: {
           name: name.value,
@@ -846,25 +1267,100 @@ const handleGenerateForSlot = async (slotName) => {
           pov: pov.value,
           slot: slotName
         },
-        results: slots[slotName].variations,
-        preview: slots[slotName].variations[0]?.text?.substring(0, 50) || 'Generated biography'
+        results: slot.variations,
+        preview: slot.variations[0]?.text?.substring(0, 50) || 'Generated biography'
       });
     }
   } catch (err) {
     console.error('[Biography Generator] Generation failed:', err);
+    const errorMsg = err.message || 'Failed to generate biographies. Please try again.';
+    error.value = errorMsg;
+    slot.errorMessage = errorMsg; // Show error in slot preview
+    slot.status = SLOT_STATUS.EMPTY;
   }
 };
 
 /**
- * Handle refinement
+ * Handle generate for the currently active slot
+ * Wrapper that explicitly uses activeSlot.value to avoid ref issues
+ */
+const handleGenerateForActiveSlot = async () => {
+  console.log('[Biography Generator] handleGenerateForActiveSlot called, activeSlot:', activeSlot.value);
+  await handleGenerateForSlot(activeSlot.value);
+};
+
+/**
+ * Handle refinement - using direct API call
  */
 const handleRefine = async () => {
   if (!refinementFeedback.value.trim()) return;
 
+  const slotName = activeSlot.value;
+  const slot = slots[slotName];
+
+  slot.status = SLOT_STATUS.GENERATING;
+  slot.errorMessage = null; // Clear any previous error
+  error.value = null;
+
   try {
-    await refineVariations(refinementFeedback.value);
+    // Get nonces - public nonce for body, REST nonce for header (WordPress REST API auth)
+    const nonce = getPublicNonce();
+    const restNonce = getRestNonce();
+
+    // Build headers with REST nonce for WordPress cookie authentication
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    if (restNonce) {
+      headers['X-WP-Nonce'] = restNonce;
+    }
+
+    // Refinement uses the same generate endpoint with refinement params
+    const response = await fetch(API_ENDPOINT, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        tool: 'biography-generator',
+        params: {
+          name: name.value,
+          authorityHook: {
+            who: authorityHook.who,
+            what: authorityHook.what,
+            when: authorityHook.when,
+            how: authorityHook.how
+          },
+          impactIntro: impactIntroSummary.value,
+          tone: tone.value,
+          length: slotName,
+          pov: pov.value,
+          // Refinement-specific params
+          currentDraft: slot.variations.map(v => v.text).join('\n\n---\n\n'),
+          refinementInstructions: refinementFeedback.value
+        },
+        context: 'public',
+        nonce: nonce
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Refinement failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('[Biography Generator] Refine API response:', data);
+
+    // Process variations from the response using helper function
+    slot.variations = processApiVariations(data, slotName);
+
+    slot.status = SLOT_STATUS.HAS_VARIATIONS;
+    refinementFeedback.value = '';
   } catch (err) {
     console.error('[Biography Generator] Refinement failed:', err);
+    const errorMsg = err.message || 'Failed to refine biographies. Please try again.';
+    error.value = errorMsg;
+    slot.errorMessage = errorMsg; // Show error in slot preview
+    slot.status = SLOT_STATUS.HAS_VARIATIONS; // Keep existing variations
   }
 };
 
@@ -1612,16 +2108,46 @@ defineExpose({
   margin: 0 0 12px 0;
 }
 
+.gfy-error-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.gfy-error-actions .gfy-btn--primary {
+  background: linear-gradient(135deg, #ED8936, #DD6B20);
+  color: white;
+  text-decoration: none;
+}
+
+.gfy-error-actions .gfy-btn--primary:hover {
+  background: linear-gradient(135deg, #DD6B20, #C05621);
+  color: white;
+}
+
 /* ============================================
    RESULTS PHASE
    ============================================ */
 
-.gmkb-tool-embed {
+.gfy-bio-results__container {
   background: var(--gfy-white);
   border-radius: 16px;
   border: 1px solid var(--gfy-border-color);
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+}
+
+/* Remove container styling when embedded */
+.gfy-bio-results__container--no-chrome {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.gfy-bio-results__container--no-chrome .gfy-results-layout {
+  padding: 0;
 }
 
 .gfy-results-layout {
@@ -1851,6 +2377,62 @@ defineExpose({
   text-align: center;
   padding: 60px 40px;
   color: var(--gfy-text-secondary);
+}
+
+.gfy-empty-state__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+  background: var(--gfy-bg-color);
+  border-radius: 50%;
+  color: var(--gfy-text-muted);
+}
+
+.gfy-empty-state p {
+  max-width: 320px;
+  margin: 0 auto 24px;
+  line-height: 1.6;
+}
+
+/* Generate Bio Button - Premium Style */
+.gfy-generate-bio-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 32px;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: white;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.35);
+}
+
+.gfy-generate-bio-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px 0 rgba(37, 99, 235, 0.45);
+}
+
+.gfy-generate-bio-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.gfy-generate-bio-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.gfy-generate-bio-btn svg {
+  flex-shrink: 0;
 }
 
 .gfy-loading-state i,

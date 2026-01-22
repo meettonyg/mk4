@@ -40,6 +40,12 @@ class UnifiedComponentRegistry {
     // Initialization flag
     this.initialized = false;
 
+    // Skip initialization on standalone tool pages (no builder data needed)
+    if (typeof window !== 'undefined' && window.gmkbStandaloneTools && !window.gmkbData) {
+      this.initialized = true;
+      return;
+    }
+
     // Initialize immediately
     this.initialize();
   }

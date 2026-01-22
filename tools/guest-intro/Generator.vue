@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <!-- Integrated Mode: Compact widget for Media Kit Builder -->
   <AiWidgetFrame
     v-if="mode === 'integrated'"
@@ -250,24 +250,34 @@
         <div v-if="error" class="gfy-error-box">
           <i class="fas fa-exclamation-circle"></i>
           <p>{{ error }}</p>
-          <button type="button" class="gfy-btn gfy-btn--outline" @click="handleStartGeneration">
-            Try Again
-          </button>
+          <div class="gfy-error-actions">
+            <button type="button" class="gfy-btn gfy-btn--outline" @click="handleStartGeneration">
+              Try Again
+            </button>
+            <a
+              v-if="isRateLimitError"
+              :href="rateLimitCta.url"
+              class="gfy-btn gfy-btn--primary"
+            >
+              <i :class="['fas', rateLimitCta.icon]"></i>
+              {{ rateLimitCta.text }}
+            </a>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Phase 2: Results Dashboard -->
     <div v-else class="gfy-intro-results">
-      <!-- Results Hero (only show in default mode, not when embedded in landing page) -->
-      <div v-if="mode === 'default'" class="gfy-intro-hero gfy-intro-hero--compact">
+      <!-- Results Hero (only show in default mode, not when embedded) -->
+      <div v-if="mode === 'default' && !isEmbedded" class="gfy-intro-hero gfy-intro-hero--compact">
         <h1 class="gfy-intro-hero__title">Guest Introduction Toolkit</h1>
         <p class="gfy-intro-hero__subtitle">
           Refine your introductions. Select a length and provide feedback to iterate with AI.
         </p>
       </div>
 
-      <div class="gmkb-tool-embed">
+      <div class="gfy-intro-results__container" :class="{ 'gfy-intro-results__container--no-chrome': isEmbedded }">
         <div class="gfy-results-layout">
           <!-- SIDEBAR: Slot Selection -->
           <aside class="gfy-layout-sidebar">
@@ -430,16 +440,29 @@
 
             <!-- Empty State -->
             <div v-else-if="currentVariations.length === 0" class="gfy-empty-state">
-              <i class="fas fa-file-alt"></i>
+              <div class="gfy-empty-state__icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10 9 9 9 8 9"/>
+                </svg>
+              </div>
               <p>Click the button below to generate {{ getVariationCount(activeSlot) }} variations for your {{ activeSlotLabel }} introduction.</p>
               <button
                 type="button"
-                class="gfy-btn gfy-btn--primary"
+                class="gfy-generate-intro-btn"
                 :disabled="isGenerating"
-                @click="handleGenerateForSlot(activeSlot)"
+                @click="generateForSlot(activeSlot)"
               >
-                <i class="fas fa-magic"></i>
-                Generate {{ activeSlotLabel }} Intro
+                <svg v-if="!isGenerating" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+                  <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+                  <path d="M2 2l7.586 7.586"/>
+                </svg>
+                <span v-if="isGenerating" class="gfy-spinner"></span>
+                {{ isGenerating ? 'Generating...' : `Generate ${activeSlotLabel} Intro` }}
               </button>
             </div>
 
@@ -481,7 +504,8 @@
               <button
                 type="button"
                 class="gfy-btn gfy-btn--primary gfy-btn--large"
-                :disabled="lockedCount === 0 || isSaving"
+                :disabled="lockedCount === 0 || isSaving || (mode === 'default' && !hasSelectedProfile)"
+                :title="mode === 'default' && !hasSelectedProfile ? 'Select a profile above to save' : ''"
                 @click="handleSaveAll"
               >
                 <i v-if="!isSaving" class="fas fa-save"></i>
@@ -491,6 +515,12 @@
               <button type="button" class="gfy-btn gfy-btn--ghost" @click="handleStartOver">
                 Start Over
               </button>
+            </div>
+
+            <!-- Profile Selection Warning -->
+            <div v-if="mode === 'default' && lockedCount > 0 && !hasSelectedProfile" class="gfy-profile-warning">
+              <i class="fas fa-exclamation-triangle"></i>
+              No profile selected. Please select a profile first.
             </div>
 
             <!-- Save Success -->
@@ -534,6 +564,7 @@ import { useProfileContext } from '../../src/composables/useProfileContext';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 import { useProfileSelectionHandler } from '../../src/composables/useProfileSelectionHandler';
 import { useDraftState } from '../../src/composables/useDraftState';
+import { getRestNonce, getPublicNonce } from '../../src/utils/ai.js';
 import { EMBEDDED_PROFILE_DATA_KEY, IS_EMBEDDED_CONTEXT_KEY, AuthorityHookBuilder, ImpactIntroBuilder, ProfileSelector } from '../_shared';
 
 // Integrated mode components
@@ -549,6 +580,25 @@ const SLOT_STATUS = {
   GENERATING: 'generating',
   READY: 'ready'
 };
+
+// API endpoint constant
+const API_ENDPOINT = '/wp-json/gmkb/v2/ai/tool/generate';
+
+/**
+ * Process API response variations into a standardized format for guest introductions
+ * @param {Object} data - The API response data
+ * @param {string} slotName - The slot name for generating unique IDs
+ * @returns {Array} Processed variations array
+ */
+function processGuestIntroVariations(data, slotName) {
+  const content = data.data?.content || data.content || data;
+  const rawVariations = content.variations || content.results || content || [];
+  return (Array.isArray(rawVariations) ? rawVariations : [rawVariations]).map((item, idx) => ({
+    id: crypto.randomUUID(),
+    label: typeof item === 'object' ? (item.label || `Option ${idx + 1}`) : `Option ${idx + 1}`,
+    text: typeof item === 'string' ? item : (item.content || item.text || '')
+  })).filter(v => v.text.trim().length > 0);
+}
 
 const TONE_OPTIONS = [
   { value: 'professional', label: 'Professional' },
@@ -671,9 +721,9 @@ const refinementFeedback = ref('');
 
 // Slots state (Short, Medium, Long)
 const slots = reactive({
-  short: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY },
-  medium: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY },
-  long: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY }
+  short: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY, errorMessage: null },
+  medium: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY, errorMessage: null },
+  long: { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY, errorMessage: null }
 });
 
 const activeSlot = ref('short');
@@ -681,6 +731,36 @@ const isGenerating = ref(false);
 const error = ref(null);
 const showResults = ref(false);
 const saveSuccess = ref(false);
+
+// CTA URLs (isLoggedIn already comes from useStandaloneProfile)
+const signupUrl = window.gmkbStandaloneTools?.signupUrl || '/register/';
+const pricingUrl = window.gmkbStandaloneTools?.pricingUrl || '/pricing/';
+
+// CTA configuration based on user state
+const rateLimitCta = computed(() => {
+  if (isLoggedIn.value) {
+    // Registered free user -> upgrade to paid plan
+    return {
+      url: pricingUrl,
+      text: 'Upgrade Your Plan',
+      icon: 'fa-arrow-up'
+    };
+  } else {
+    // Anonymous user -> sign up for account
+    return {
+      url: signupUrl,
+      text: 'Sign Up Free',
+      icon: 'fa-user-plus'
+    };
+  }
+});
+
+// Check if current error is a rate limit error
+const isRateLimitError = computed(() => {
+  if (!error.value) return false;
+  const msg = error.value.toLowerCase();
+  return msg.includes('limit') || msg.includes('rate') || msg.includes('quota');
+});
 
 // Integrated mode state
 const authorityHookTextCompact = ref('');
@@ -778,6 +858,16 @@ function getSlotPreview(slotName) {
   if (slot.locked && slot.lockedIntro) {
     return slot.lockedIntro.substring(0, 80) + '...';
   }
+  if (slot.status === SLOT_STATUS.GENERATING) {
+    return 'Generating variations...';
+  }
+  if (slot.errorMessage) {
+    // Show truncated error message for rate limits and other errors
+    const shortError = slot.errorMessage.length > 60
+      ? slot.errorMessage.substring(0, 57) + '...'
+      : slot.errorMessage;
+    return shortError;
+  }
   if (slot.variations.length > 0) {
     return slot.variations[0].text.substring(0, 80) + '...';
   }
@@ -792,52 +882,68 @@ function setActiveSlot(slotName) {
 async function generateForSlot(slotName) {
   const slot = slots[slotName];
   slot.status = SLOT_STATUS.GENERATING;
+  slot.errorMessage = null; // Clear any previous error
   isGenerating.value = true;
   error.value = null;
 
   try {
-    // Build the prompt context
+    // Build the prompt context - field names must match prompts.php expectations
     const context = {
       guestName: guestInfo.name,
-      titleCompany: guestInfo.titleCompany,
+      guestTitle: guestInfo.titleCompany,  // PHP expects guestTitle
       episodeTitle: episodeInfo.title,
-      episodeTopic: episodeInfo.topic,
-      authorityHook: authorityHookSummary.value,
-      impactIntro: impactIntroSummary.value,
-      who: authorityHook.who,
-      what: authorityHook.what,
-      when: authorityHook.when,
-      how: authorityHook.how,
-      where: impactIntro.where,
-      why: impactIntro.why,
+      topic: episodeInfo.topic,  // PHP expects topic, not episodeTopic
+      // Authority Hook as object (PHP extracts who/what/when/how from this)
+      authorityHook: {
+        who: authorityHook.who,
+        what: authorityHook.what,
+        when: authorityHook.when,
+        how: authorityHook.how
+      },
+      // Impact Intro as object (PHP expects credentials/mission)
+      impactIntro: {
+        credentials: impactIntro.where,  // PHP expects credentials
+        mission: impactIntro.why         // PHP expects mission
+      },
       tone: tone.value,
       hookStyle: hookStyle.value,
       length: slotName
     };
 
-    // Call the API
-    const response = await fetch('/wp-json/mkcg/v1/generate', {
+    // Get nonces - public nonce for body, REST nonce for header (WordPress REST API auth)
+    const nonce = getPublicNonce();
+    const restNonce = getRestNonce();
+
+    // Build headers with REST nonce for WordPress cookie authentication
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    if (restNonce) {
+      headers['X-WP-Nonce'] = restNonce;
+    }
+
+    // Call the tool-based API endpoint
+    const response = await fetch(API_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
-        generator: 'guest-intro',
-        context,
-        count: getVariationCount(slotName)
+        tool: 'guest-intro-generator',
+        params: context,
+        context: 'public',
+        nonce: nonce
       })
     });
 
     if (!response.ok) {
-      throw new Error(`Generation failed: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Generation failed: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log('[GuestIntroGenerator] API response:', data);
 
-    // Process variations
-    slot.variations = (data.variations || data.results || []).map((text, idx) => ({
-      id: `${slotName}-${Date.now()}-${idx}`,
-      label: `Option ${idx + 1}`,
-      text: typeof text === 'string' ? text : text.content || text.text || ''
-    }));
+    // Process variations from the response using helper function
+    slot.variations = processGuestIntroVariations(data, slotName);
 
     slot.status = SLOT_STATUS.READY;
 
@@ -863,7 +969,9 @@ async function generateForSlot(slotName) {
     emit('generated', { slot: slotName, variations: slot.variations });
   } catch (err) {
     console.error('[GuestIntroGenerator] Generation failed:', err);
-    error.value = err.message || 'Failed to generate introductions. Please try again.';
+    const errorMsg = err.message || 'Failed to generate introductions. Please try again.';
+    error.value = errorMsg;
+    slot.errorMessage = errorMsg; // Show error in slot preview
     slot.status = SLOT_STATUS.EMPTY;
   } finally {
     isGenerating.value = false;
@@ -873,42 +981,74 @@ async function generateForSlot(slotName) {
 async function refineVariations(feedback) {
   const slot = currentSlot.value;
   slot.status = SLOT_STATUS.GENERATING;
+  slot.errorMessage = null; // Clear any previous error
   isGenerating.value = true;
   error.value = null;
 
   try {
-    const response = await fetch('/wp-json/mkcg/v1/refine', {
+    // Get nonces - public nonce for body, REST nonce for header (WordPress REST API auth)
+    const nonce = getPublicNonce();
+    const restNonce = getRestNonce();
+
+    // Build headers with REST nonce for WordPress cookie authentication
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    if (restNonce) {
+      headers['X-WP-Nonce'] = restNonce;
+    }
+
+    // Refinement uses the same generate endpoint with refinement params
+    const response = await fetch(API_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
-        generator: 'guest-intro',
-        feedback,
-        currentVariations: slot.variations.map(v => v.text),
-        context: {
+        tool: 'guest-intro-generator',
+        params: {
           guestName: guestInfo.name,
-          authorityHook: authorityHookSummary.value,
-          length: activeSlot.value
-        }
+          guestTitle: guestInfo.titleCompany,
+          // Authority Hook as object
+          authorityHook: {
+            who: authorityHook.who,
+            what: authorityHook.what,
+            when: authorityHook.when,
+            how: authorityHook.how
+          },
+          // Impact Intro as object
+          impactIntro: {
+            credentials: impactIntro.where,
+            mission: impactIntro.why
+          },
+          tone: tone.value,
+          hookStyle: hookStyle.value,
+          length: activeSlot.value,
+          // Refinement-specific params
+          currentDraft: slot.variations.map(v => v.text).join('\n\n---\n\n'),
+          refinementInstructions: feedback
+        },
+        context: 'public',
+        nonce: nonce
       })
     });
 
     if (!response.ok) {
-      throw new Error(`Refinement failed: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Refinement failed: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log('[GuestIntroGenerator] Refine API response:', data);
 
-    slot.variations = (data.variations || data.results || []).map((text, idx) => ({
-      id: `${activeSlot.value}-${Date.now()}-${idx}`,
-      label: `Option ${idx + 1}`,
-      text: typeof text === 'string' ? text : text.content || text.text || ''
-    }));
+    // Process variations from the response using helper function
+    slot.variations = processGuestIntroVariations(data, activeSlot.value);
 
     slot.status = SLOT_STATUS.READY;
     refinementFeedback.value = '';
   } catch (err) {
     console.error('[GuestIntroGenerator] Refinement failed:', err);
-    error.value = err.message || 'Failed to refine introductions. Please try again.';
+    const errorMsg = err.message || 'Failed to refine introductions. Please try again.';
+    error.value = errorMsg;
+    slot.errorMessage = errorMsg; // Show error in slot preview
     slot.status = SLOT_STATUS.READY;
   } finally {
     isGenerating.value = false;
@@ -952,7 +1092,7 @@ async function copyIntro(text) {
 
 function reset() {
   Object.keys(slots).forEach(key => {
-    slots[key] = { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY };
+    slots[key] = { variations: [], locked: false, lockedIntro: '', status: SLOT_STATUS.EMPTY, errorMessage: null };
   });
   activeSlot.value = 'short';
   refinementFeedback.value = '';
@@ -1005,12 +1145,29 @@ async function handleSaveAll() {
   const lockedIntros = getLockedIntros();
   if (Object.keys(lockedIntros).length === 0) return;
 
-  try {
-    const saveData = {};
-    if (lockedIntros.short) saveData.guest_intro_short = lockedIntros.short;
-    if (lockedIntros.medium) saveData.guest_intro = lockedIntros.medium;
-    if (lockedIntros.long) saveData.guest_intro_long = lockedIntros.long;
+  // Build save data
+  const saveData = {};
+  if (lockedIntros.short) saveData.guest_intro_short = lockedIntros.short;
+  if (lockedIntros.medium) saveData.guest_intro = lockedIntros.medium;
+  if (lockedIntros.long) saveData.guest_intro_long = lockedIntros.long;
 
+  // Use standalone profile save in default mode
+  if (props.mode === 'default' && hasSelectedProfile.value) {
+    try {
+      const success = await saveMultipleToProfile(saveData);
+      if (success) {
+        saveSuccess.value = true;
+        setTimeout(() => { saveSuccess.value = false; }, 3000);
+        emit('saved', { introductions: lockedIntros });
+      }
+    } catch (err) {
+      console.error('[GuestIntroGenerator] Standalone save failed:', err);
+    }
+    return;
+  }
+
+  // Fallback to useProfileContext save (for integrated/embedded modes)
+  try {
     const result = await saveToProfile('guest-intro', saveData, {
       profileId: profileId.value
     });
@@ -1708,16 +1865,46 @@ defineExpose({
   margin: 0 0 12px 0;
 }
 
+.gfy-error-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.gfy-error-actions .gfy-btn--primary {
+  background: linear-gradient(135deg, #ED8936, #DD6B20);
+  color: white;
+  text-decoration: none;
+}
+
+.gfy-error-actions .gfy-btn--primary:hover {
+  background: linear-gradient(135deg, #DD6B20, #C05621);
+  color: white;
+}
+
 /* ============================================
    RESULTS PHASE
    ============================================ */
 
-.gmkb-tool-embed {
+.gfy-intro-results__container {
   background: var(--gfy-white);
   border-radius: 16px;
   border: 1px solid var(--gfy-border-color);
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+}
+
+/* Remove container styling when embedded */
+.gfy-intro-results__container--no-chrome {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.gfy-intro-results__container--no-chrome .gfy-results-layout {
+  padding: 0;
 }
 
 .gfy-results-layout {
@@ -1896,6 +2083,13 @@ defineExpose({
 
 .gfy-refinement-input-wrapper {
   position: relative;
+  overflow: hidden;
+}
+
+.gfy-refinement-input-wrapper::after,
+.gfy-refinement-input-wrapper::before {
+  content: none;
+  display: none;
 }
 
 .gfy-refinement-textarea {
@@ -1910,6 +2104,15 @@ defineExpose({
   transition: all 0.2s;
   resize: none;
   min-height: 52px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+.gfy-refinement-textarea::after,
+.gfy-refinement-textarea::before {
+  content: none;
+  display: none;
 }
 
 .gfy-refinement-textarea:focus {
@@ -1960,6 +2163,62 @@ defineExpose({
   text-align: center;
   padding: 60px 40px;
   color: var(--gfy-text-secondary);
+}
+
+.gfy-empty-state__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+  background: var(--gfy-bg-color);
+  border-radius: 50%;
+  color: var(--gfy-text-muted);
+}
+
+.gfy-empty-state p {
+  max-width: 320px;
+  margin: 0 auto 24px;
+  line-height: 1.6;
+}
+
+/* Generate Intro Button - Premium Style */
+.gfy-generate-intro-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 32px;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: white;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.35);
+}
+
+.gfy-generate-intro-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px 0 rgba(37, 99, 235, 0.45);
+}
+
+.gfy-generate-intro-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.gfy-generate-intro-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.gfy-generate-intro-btn svg {
+  flex-shrink: 0;
 }
 
 .gfy-loading-state i,
@@ -2096,6 +2355,19 @@ defineExpose({
 .gfy-save-error {
   display: flex;
   align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  color: #991b1b;
+  border-radius: var(--gfy-radius-md);
+  font-weight: 600;
+  margin-top: 16px;
+}
+
+.gfy-profile-warning {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 12px 16px;
   background: #fef2f2;

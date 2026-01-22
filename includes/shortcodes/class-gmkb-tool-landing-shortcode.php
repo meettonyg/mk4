@@ -105,14 +105,14 @@ class GMKB_Tool_Landing_Shortcode {
         // Get plugin version for cache busting
         $version = defined('GMKB_VERSION') ? GMKB_VERSION : '1.0.0';
 
-        // Check if built assets exist
-        $js_file = GMKB_PLUGIN_DIR . 'dist/seo-tools/seo-tools.js';
-        $css_file = GMKB_PLUGIN_DIR . 'dist/seo-tools/seo-tools.css';
+        // Use unified gmkb bundle
+        $js_file = GMKB_PLUGIN_DIR . 'dist/gmkb.iife.js';
+        $css_file = GMKB_PLUGIN_DIR . 'dist/gmkb.css';
 
         if (file_exists($js_file)) {
             wp_enqueue_script(
-                'gmkb-seo-tools',
-                GMKB_PLUGIN_URL . 'dist/seo-tools/seo-tools.js',
+                'gmkb-tools',
+                GMKB_PLUGIN_URL . 'dist/gmkb.iife.js',
                 array(),
                 $version,
                 true
@@ -120,15 +120,15 @@ class GMKB_Tool_Landing_Shortcode {
 
             if (file_exists($css_file)) {
                 wp_enqueue_style(
-                    'gmkb-seo-tools',
-                    GMKB_PLUGIN_URL . 'dist/seo-tools/seo-tools.css',
+                    'gmkb-tools',
+                    GMKB_PLUGIN_URL . 'dist/gmkb.css',
                     array(),
                     $version
                 );
             }
 
             // Add public nonce and API data
-            wp_localize_script('gmkb-seo-tools', 'gmkbToolLanding', array(
+            wp_localize_script('gmkb-tools', 'gmkbToolLanding', array(
                 'nonce' => wp_create_nonce('gmkb_public_ai'),
                 'apiBase' => rest_url('gmkb/v2'),
                 'ajaxUrl' => admin_url('admin-ajax.php'),
@@ -391,6 +391,13 @@ class GMKB_Tool_Landing_Shortcode {
                 if (!container || !dataEl) return;
 
                 var data = JSON.parse(dataEl.textContent);
+
+                // Set nonce in global variable for API requests
+                if (data.nonce) {
+                    window.gmkbToolLanding = window.gmkbToolLanding || {};
+                    window.gmkbToolLanding.nonce = data.nonce;
+                    window.gmkbToolLanding.apiBase = data.apiBase;
+                }
 
                 if (window.GMKB && window.GMKB.mountToolLanding) {
                     window.GMKB.mountToolLanding(container, data);

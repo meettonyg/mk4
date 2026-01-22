@@ -538,6 +538,11 @@ async function initializeVue() {
 async function initialize() {
   console.log('🐛 DEBUG: initialize() called, guard value:', window.gmkbIsInitialized);
   console.log('🐛 DEBUG: window.GMKB.services at start of initialize():', window.GMKB.services);
+
+  if (typeof window.gmkbData === 'undefined' && window.gmkbStandaloneTools) {
+    console.info('ℹ️ GMKB: gmkbData not found, skipping builder initialization for standalone tools.');
+    return;
+  }
   
   // ARCHITECTURE FIX: Initialization guard - prevents race conditions
   // Phase 1 Compliance: Event-driven, single execution only
@@ -657,11 +662,67 @@ async function initialize() {
   }
 }
 
+/**
+ * Check if we're on a standalone tools page (not Media Kit Builder)
+ */
+function isStandaloneToolsPage() {
+  // Check for standalone tools global data (set by PHP)
+  if (window.gmkbStandaloneTools || window.gmkbPublicData || window.gmkbToolPageData) {
+    // But only if gmkbData is NOT set (Media Kit Builder context)
+    if (!window.gmkbData) {
+      return true;
+    }
+  }
+
+  // Check for standalone tool DOM elements
+  const standaloneSelectors = [
+    '[data-gmkb-tool]',
+    '[data-mode="embedded"]',
+    '[data-gmkb-page-type="tool"]',
+    '[data-gmkb-page-type="directory"]'
+  ];
+
+  for (const selector of standaloneSelectors) {
+    if (document.querySelector(selector)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Initialize standalone tools using seo-tools-entry logic
+ */
+async function initializeStandaloneTools() {
+  console.log('🔧 Initializing Standalone Tools mode...');
+
+  // Dynamically import the seo-tools-entry module
+  try {
+    const seoToolsModule = await import('./seo-tools-entry.js');
+    console.log('✅ Standalone Tools initialized');
+  } catch (error) {
+    console.error('❌ Failed to initialize standalone tools:', error);
+  }
+}
+
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initialize);
+  document.addEventListener('DOMContentLoaded', () => {
+    if (isStandaloneToolsPage()) {
+      initializeStandaloneTools();
+    } else {
+      initialize();
+    }
+  });
 } else {
-  setTimeout(initialize, 0);
+  setTimeout(() => {
+    if (isStandaloneToolsPage()) {
+      initializeStandaloneTools();
+    } else {
+      initialize();
+    }
+  }, 0);
 }
 
 // ROOT FIX: No exports needed - everything accessible via window.GMKB

@@ -18,6 +18,8 @@
               Saving draft...
             </div>
 
+            <!-- Form Section (hidden when results are showing) -->
+            <div v-if="!hasQuestions" class="gfy-questions-form">
             <!-- Recent History Section -->
             <div v-if="hasHistory" class="gfy-history">
               <button
@@ -260,6 +262,7 @@
                 Try Again
               </button>
             </div>
+            </div><!-- End of form section -->
 
           <!-- Results Container (appears below when generated) -->
           <div v-if="hasQuestions" ref="resultsContainer" class="gfy-results-container">
@@ -756,6 +759,12 @@ const getDirectProfileData = () => {
   return window.gmkbData?.pods_data || window.gmkbVueData?.pods_data || {};
 };
 
+// Normalize profile data shape (handles nested data/fields payloads)
+const normalizeProfileData = (rawData) => {
+  if (!rawData) return null;
+  return rawData.data || rawData.fields || rawData;
+};
+
 // Computed: has media kit context (for integrated mode)
 const hasMediaKitContext = computed(() => {
   if (props.mode !== 'integrated') return false;
@@ -769,11 +778,15 @@ const hasMediaKitContext = computed(() => {
 function prefillFromMediaKitProfile() {
   const profileData = getDirectProfileData();
   if (!profileData || Object.keys(profileData).length === 0) {
-    console.log('[QuestionsGenerator] No profile data available for pre-fill');
+    if (import.meta.env.DEV) {
+      console.log('[QuestionsGenerator] No profile data available for pre-fill');
+    }
     return;
   }
 
-  console.log('[QuestionsGenerator] Pre-filling from profile data:', Object.keys(profileData));
+  if (import.meta.env.DEV) {
+    console.log('[QuestionsGenerator] Pre-filling from profile data:', Object.keys(profileData));
+  }
 
   // Authority hook fields (check multiple possible field names)
   const hookWho = profileData.hook_who || profileData.authority_hook_who || '';
@@ -795,9 +808,11 @@ function prefillFromMediaKitProfile() {
   if (bio && !guestBio.value) guestBio.value = bio;
   if (audience && !targetAudience.value) targetAudience.value = audience;
 
-  console.log('[QuestionsGenerator] Pre-fill complete:', {
-    hookWho: !!hookWho, hookWhat: !!hookWhat, hookWhen: !!hookWhen, hookHow: !!hookHow, bio: !!bio
-  });
+  if (import.meta.env.DEV) {
+    console.log('[QuestionsGenerator] Pre-fill complete:', {
+      hookWho: !!hookWho, hookWhat: !!hookWhat, hookWhen: !!hookWhen, hookHow: !!hookHow, bio: !!bio
+    });
+  }
 }
 
 // Auto-fill from media kit profile when in integrated mode (on mount)
@@ -868,8 +883,16 @@ function clearProfileData() {
   profileTopics.value = [];
   selectedTopicIndex.value = -1;
   refinedTopic.value = '';
+  // Clear loaded profile data
+  loadedProfileData.value = null;
   // Clear prefilled fields tracking
   prefilledFields.value = new Set();
+  // Clear interview set slots
+  interviewSet.value.forEach(slot => {
+    if (!slot.locked) {
+      slot.question = null;
+    }
+  });
 }
 
 // Profile selection handlers (using shared composable)
@@ -890,6 +913,10 @@ const questionCount = ref(10);
 
 // Topics loaded from selected profile (standalone mode)
 const profileTopics = ref([]);
+
+// Store loaded profile data for use by loadExistingQuestionsForTopic
+// (ProfileSelector and Generator have separate useStandaloneProfile instances)
+const loadedProfileData = ref(null);
 
 // Available topics (from props or profile selection)
 const availableTopics = computed(() => {
@@ -959,6 +986,18 @@ const canSelectMore = computed(() => {
   return selectedQuestionsCount.value < availableSlotsCount.value;
 });
 
+const hasUnlockedSlot = computed(() => {
+  return interviewSet.value.some(slot => !slot.locked);
+});
+
+const getQuestionText = (value) => {
+  if (typeof value === 'string') return value;
+  if (value && typeof value === 'object') {
+    return value.question || value.text || '';
+  }
+  return '';
+};
+
 /**
  * Check if a question is selected
  */
@@ -981,15 +1020,38 @@ const toggleQuestionSelection = (index) => {
     if (slotIdx > -1) {
       interviewSet.value[slotIdx].question = null;
     }
-  } else if (canSelectMore.value) {
-    // Select
-    selectedQuestionIndices.value.push(index);
+  } else if (canSelectMore.value || hasUnlockedSlot.value) {
     // Add to first available unlocked slot
     const emptySlotIdx = interviewSet.value.findIndex(
       slot => !slot.locked && !slot.question
     );
     if (emptySlotIdx > -1) {
       interviewSet.value[emptySlotIdx].question = questions.value[index];
+      selectedQuestionIndices.value.push(index);
+      return;
+    }
+
+    const replaceSlotIdx = interviewSet.value.findIndex(slot => !slot.locked);
+    if (replaceSlotIdx > -1) {
+      const replacedQuestion = interviewSet.value[replaceSlotIdx].question;
+      if (replacedQuestion) {
+        const replacedIndex = questions.value.findIndex(
+          question => question === replacedQuestion
+        );
+        if (replacedIndex > -1) {
+          const selectedIdx = selectedQuestionIndices.value.indexOf(replacedIndex);
+          if (selectedIdx > -1) {
+            selectedQuestionIndices.value.splice(selectedIdx, 1);
+          }
+        } else if (selectedQuestionIndices.value.length >= availableSlotsCount.value) {
+          selectedQuestionIndices.value.shift();
+        }
+      } else if (selectedQuestionIndices.value.length >= availableSlotsCount.value) {
+        selectedQuestionIndices.value.shift();
+      }
+
+      interviewSet.value[replaceSlotIdx].question = questions.value[index];
+      selectedQuestionIndices.value.push(index);
     }
   }
 };
@@ -1010,6 +1072,122 @@ const toggleSlotLock = (slotIndex) => {
 const selectTopic = (index) => {
   selectedTopicIndex.value = index;
   refinedTopic.value = availableTopics.value[index] || '';
+
+  // Load existing questions for this topic from profile
+  loadExistingQuestionsForTopic(index);
+};
+
+/**
+ * Load existing questions for a topic from profile data
+ * Questions are stored as question_1-5 for topic 1, question_6-10 for topic 2, etc.
+ */
+const loadExistingQuestionsForTopic = (topicIndex) => {
+  // Get profile data - check loadedProfileData first (set by populateFromProfile),
+  // then profileData.value (from useStandaloneProfile), then direct profile data (integrated mode)
+  const rawData = loadedProfileData.value || profileData.value || getDirectProfileData();
+  const data = normalizeProfileData(rawData);
+
+  if (import.meta.env.DEV) {
+    console.log('[QuestionsGenerator] loadExistingQuestionsForTopic called:', {
+      topicIndex,
+      hasLoadedProfileData: !!loadedProfileData.value,
+      hasProfileData: !!profileData.value,
+      hasDirectData: !!getDirectProfileData(),
+      dataKeys: data ? Object.keys(data).filter(k => k.startsWith('question_')).slice(0, 10) : [],
+      hasTopicsArray: data?.topics ? true : false
+    });
+  }
+
+  if (!data) {
+    if (import.meta.env.DEV) {
+      console.log('[QuestionsGenerator] No profile data available for question loading');
+    }
+    return;
+  }
+
+  // Calculate question field indices for this topic
+  // Topic 0 (index 0) = question_1 to question_5
+  // Topic 1 (index 1) = question_6 to question_10
+  // etc.
+  const startQuestionNum = (topicIndex * MAX_INTERVIEW_SLOTS) + 1;
+  const endQuestionNum = startQuestionNum + MAX_INTERVIEW_SLOTS - 1;
+
+  if (import.meta.env.DEV) {
+    console.log('[QuestionsGenerator] Loading questions:', { startQuestionNum, endQuestionNum });
+  }
+
+  // Clear existing interview set (keep locked slots)
+  interviewSet.value.forEach(slot => {
+    if (!slot.locked) {
+      slot.question = null;
+    }
+  });
+  selectedQuestionIndices.value = [];
+
+  // Try to load questions from multiple possible data structures:
+  // 1. Flat question_N fields (primary format)
+  // 2. Hierarchical topics array with questions (alternative format)
+  let questionsToLoad = [];
+
+  // Method 1: Try flat question_N fields first
+  for (let qNum = startQuestionNum; qNum <= endQuestionNum; qNum++) {
+    const questionText = getQuestionText(data[`question_${qNum}`]);
+    if (questionText && questionText.trim()) {
+      questionsToLoad.push(questionText.trim());
+    }
+  }
+
+  // Method 2: If no flat questions found, try questions array (question_1..question_25)
+  if (questionsToLoad.length === 0 && Array.isArray(data.questions)) {
+    questionsToLoad = data.questions
+      .map(getQuestionText)
+      .filter(q => q && q.trim())
+      .slice(startQuestionNum - 1, endQuestionNum)
+      .map(q => q.trim());
+  }
+
+  // Method 3: If no flat questions found, try hierarchical topics structure
+  if (questionsToLoad.length === 0 && data.topics && Array.isArray(data.topics)) {
+    if (import.meta.env.DEV) {
+      console.log('[QuestionsGenerator] No flat questions found, trying hierarchical topics structure');
+    }
+    const topic = data.topics[topicIndex];
+    if (topic && topic.questions && Array.isArray(topic.questions)) {
+      // Limit to MAX_INTERVIEW_SLOTS to match the UI's capacity
+      questionsToLoad = topic.questions
+        .map(getQuestionText)
+        .filter(q => q && q.trim())
+        .map(q => q.trim())
+        .slice(0, MAX_INTERVIEW_SLOTS);
+      if (import.meta.env.DEV) {
+        console.log('[QuestionsGenerator] Found', questionsToLoad.length, 'questions from hierarchical structure');
+      }
+    }
+  }
+
+  // Log questions being loaded
+  if (import.meta.env.DEV) {
+    console.log('[QuestionsGenerator] Questions to load:', questionsToLoad.map(q => q.substring(0, 50) + '...'));
+  }
+
+  // Load questions into interview set slots
+  let slotIndex = 0;
+  let loadedCount = 0;
+  for (const questionText of questionsToLoad) {
+    // Find next available unlocked slot
+    while (slotIndex < interviewSet.value.length && interviewSet.value[slotIndex].locked) {
+      slotIndex++;
+    }
+    if (slotIndex < interviewSet.value.length) {
+      interviewSet.value[slotIndex].question = questionText;
+      slotIndex++;
+      loadedCount++;
+    }
+  }
+
+  if (import.meta.env.DEV) {
+    console.log('[QuestionsGenerator] Loaded', loadedCount, 'questions into interview set');
+  }
 };
 
 /**
@@ -1037,16 +1215,38 @@ const copyQuestion = async (index, event) => {
 /**
  * Populate form fields from profile data
  */
-function populateFromProfile(profileData) {
-  if (!profileData) return;
+function populateFromProfile(data) {
+  if (import.meta.env.DEV) {
+    console.log('[QuestionsGenerator] populateFromProfile called:', {
+      hasData: !!data,
+      dataKeys: data ? Object.keys(data).length : 0,
+      sampleQuestionKeys: data ? Object.keys(data).filter(k => k.startsWith('question_')).slice(0, 5) : [],
+      topicKeys: data ? Object.keys(data).filter(k => k.startsWith('topic_')) : []
+    });
+  }
+
+  if (!data) {
+    if (import.meta.env.DEV) {
+      console.log('[QuestionsGenerator] populateFromProfile: No data provided');
+    }
+    return;
+  }
+
+  const normalizedData = normalizeProfileData(data);
+
+  // Store the profile data for use by loadExistingQuestionsForTopic
+  loadedProfileData.value = normalizedData;
+  if (import.meta.env.DEV) {
+    console.log('[QuestionsGenerator] Profile data stored in loadedProfileData');
+  }
 
   const newPrefilledFields = new Set();
 
   // Populate authority hook fields (check multiple field name patterns)
-  const hookWho = profileData.hook_who || profileData.authority_hook_who || '';
-  const hookWhat = profileData.hook_what || profileData.authority_hook_what || '';
-  const hookWhen = profileData.hook_when || profileData.authority_hook_when || '';
-  const hookHow = profileData.hook_how || profileData.authority_hook_how || '';
+  const hookWho = normalizedData.hook_who || normalizedData.authority_hook_who || '';
+  const hookWhat = normalizedData.hook_what || normalizedData.authority_hook_what || '';
+  const hookWhen = normalizedData.hook_when || normalizedData.authority_hook_when || '';
+  const hookHow = normalizedData.hook_how || normalizedData.authority_hook_how || '';
 
   if (hookWho) {
     authorityHook.who = hookWho;
@@ -1066,21 +1266,43 @@ function populateFromProfile(profileData) {
   }
 
   // Populate authority hook fields from profile data (for cross-tool sync)
-  loadFromProfileData(profileData);
+  loadFromProfileData(normalizedData);
 
   // Extract topics from profile (stored as topic_1, topic_2, etc.)
   const topics = [];
   for (let i = 1; i <= 5; i++) {
-    const topicText = profileData[`topic_${i}`];
+    const topicText = normalizedData[`topic_${i}`];
     if (topicText && topicText.trim()) {
       topics.push(topicText.trim());
     }
   }
+
+  if (import.meta.env.DEV) {
+    console.log('[QuestionsGenerator] Extracted topics:', {
+      topicsCount: topics.length,
+      topics: topics.map(t => t.substring(0, 50) + '...'),
+      currentSelectedTopicIndex: selectedTopicIndex.value
+    });
+  }
+
   if (topics.length > 0) {
     profileTopics.value = topics;
-    // Auto-select first topic if none selected
+    // Auto-select first topic if none selected, otherwise reload questions for current topic
     if (selectedTopicIndex.value === -1) {
+      if (import.meta.env.DEV) {
+        console.log('[QuestionsGenerator] Auto-selecting first topic (index 0)');
+      }
       selectTopic(0);
+    } else {
+      // Topic already selected - reload questions from new profile data
+      if (import.meta.env.DEV) {
+        console.log('[QuestionsGenerator] Reloading questions for existing topic:', selectedTopicIndex.value);
+      }
+      loadExistingQuestionsForTopic(selectedTopicIndex.value);
+    }
+  } else {
+    if (import.meta.env.DEV) {
+      console.log('[QuestionsGenerator] No topics found in profile data');
     }
   }
 
@@ -1248,17 +1470,22 @@ const handleGenerate = async () => {
 
     await generate({
       topics: refinedTopic.value,
-      authorityHook: authorityHookStr
+      authorityHook: authorityHookStr,
+      count: questionCount.value
     }, context);
 
     // Clear selections (but keep locked items)
+    // Only clear unlocked slots when user had prior selections - this preserves
+    // prefilled questions from profile on first generation
+    const shouldClearUnlockedSlots = selectedQuestionIndices.value.length > 0;
     selectedQuestionIndices.value = [];
-    // Clear unlocked slots
-    interviewSet.value.forEach(slot => {
-      if (!slot.locked) {
-        slot.question = null;
-      }
-    });
+    if (shouldClearUnlockedSlots) {
+      interviewSet.value.forEach(slot => {
+        if (!slot.locked) {
+          slot.question = null;
+        }
+      });
+    }
 
     // Save to history on successful generation
     if (questions.value && questions.value.length > 0) {
@@ -1756,12 +1983,14 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 8px;
+  max-height: 70vh;
+  overflow-y: auto;
 }
 
 /* Individual Interview Slot */
 .questions-interview-slot {
   display: flex;
-  align-items: center;
+  align-items: flex-start !important;
   gap: 10px;
   padding: 10px 12px;
   background: #fff;
@@ -1810,11 +2039,10 @@ watch(
   font-weight: 500;
   color: var(--mkcg-text-primary, #0f172a);
   line-height: 1.3;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  display: block !important;
+  -webkit-line-clamp: unset !important;
+  overflow: visible !important;
+  white-space: normal !important;
 }
 
 .questions-interview-slot__text--empty {
@@ -1836,6 +2064,7 @@ watch(
   align-items: center;
   justify-content: center;
   transition: all 0.15s;
+  margin-top: 2px;
 }
 
 .questions-interview-slot__lock:hover:not(:disabled) {

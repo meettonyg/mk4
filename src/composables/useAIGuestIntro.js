@@ -15,47 +15,7 @@
 
 import { ref, computed, reactive, watch } from 'vue';
 import { useAIStore } from '../stores/ai';
-
-/**
- * Get REST URL from available sources
- */
-function getRestUrl() {
-  const url = window.gmkbData?.restUrl
-    || window.gmkbProfileData?.apiUrl
-    || window.gmkbStandaloneTools?.apiBase
-    || window.gmkbPublicData?.restUrl
-    || '/wp-json/gmkb/v2/';
-  return url.endsWith('/') ? url : url + '/';
-}
-
-/**
- * Get nonce from available sources
- */
-function getNonce(context) {
-  if (context === 'builder') {
-    return window.gmkbData?.restNonce
-      || window.gmkbData?.nonce
-      || window.gmkbProfileData?.nonce
-      || window.gmkbStandaloneTools?.restNonce
-      || '';
-  }
-  return window.gmkbPublicNonce
-    || window.gmkbPublicData?.publicNonce
-    || window.gmkbStandaloneTools?.nonce
-    || '';
-}
-
-/**
- * Check if user is logged in
- */
-function isUserLoggedIn() {
-  return !!(
-    window.gmkbData?.postId
-    || window.gmkbData?.post_id
-    || window.gmkbProfileData?.postId
-    || window.gmkbStandaloneTools?.isLoggedIn
-  );
-}
+import { getRestUrl, getToolNonce, getRestNonce, isUserLoggedIn } from '../utils/ai';
 
 /**
  * Length slot configuration
@@ -265,15 +225,19 @@ export function useAIGuestIntro() {
       };
 
       const restUrl = getRestUrl();
-      const nonce = getNonce(context);
+      const nonce = getToolNonce(context);
+      const restNonce = getRestNonce();
+
+      // Always include X-WP-Nonce header (matches useAIGenerator pattern)
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-WP-Nonce': restNonce
+      };
 
       // Call the tool-based API endpoint (uses prompts.php)
       const response = await fetch(`${restUrl}ai/tool/generate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': context === 'builder' ? nonce : ''
-        },
+        headers,
         body: JSON.stringify({
           tool: 'guest-intro',
           params,
@@ -359,14 +323,18 @@ export function useAIGuestIntro() {
       };
 
       const restUrl = getRestUrl();
-      const nonce = getNonce(context);
+      const nonce = getToolNonce(context);
+      const restNonce = getRestNonce();
+
+      // Always include X-WP-Nonce header (matches useAIGenerator pattern)
+      const refineHeaders = {
+        'Content-Type': 'application/json',
+        'X-WP-Nonce': restNonce
+      };
 
       const response = await fetch(`${restUrl}ai/tool/generate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': context === 'builder' ? nonce : ''
-        },
+        headers: refineHeaders,
         body: JSON.stringify({
           tool: 'guest-intro',
           params,

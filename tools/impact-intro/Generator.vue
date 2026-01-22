@@ -412,7 +412,10 @@ const {
 } = useAIImpactIntros();
 
 // Profile context for saving
-const { saveToProfile } = useProfileContext();
+const {
+  profileId: contextProfileId,
+  saveToProfile
+} = useProfileContext();
 
 // Credential Manager composable
 const {
@@ -485,8 +488,14 @@ const resolvedProfileId = computed(() => {
   // Priority: props > injected > context service
   return props.profileData?.id
     || injectedProfileData.value?.id
+    || contextProfileId.value
     || null;
 });
+
+// Keep selectedProfileId in sync with resolved ID
+watch(resolvedProfileId, (newId) => {
+  selectedProfileId.value = newId;
+}, { immediate: true });
 
 /**
  * Generate intro preview from current field values
@@ -556,9 +565,6 @@ const handleKeyboardShortcut = (event) => {
 function populateFromProfile(profileData) {
   if (!profileData) return;
 
-  // Set profile ID for saving
-  selectedProfileId.value = profileData.id;
-
   // Load credentials from profile (independent field, reusable across tools)
   if (profileData.credentials && credentials.value.length === 0) {
     const creds = Array.isArray(profileData.credentials)
@@ -570,14 +576,18 @@ function populateFromProfile(profileData) {
     }
   }
 
-  // Populate WHERE from profile impact_where (only if no credentials loaded)
-  if (profileData.impact_where && !introWhere.value && credentials.value.length === 0) {
-    introWhere.value = profileData.impact_where;
+  // Populate WHERE from profile (check multiple field name patterns)
+  // impact_where is the dedicated field, hook_where is from 6W's framework
+  const whereValue = profileData.impact_where || profileData.hook_where || '';
+  if (whereValue && !introWhere.value && credentials.value.length === 0) {
+    introWhere.value = whereValue;
   }
 
-  // Populate WHY from profile impact_why or similar
-  if (profileData.impact_why && !introWhy.value) {
-    introWhy.value = profileData.impact_why;
+  // Populate WHY from profile (check multiple field name patterns)
+  // impact_why is the dedicated field, hook_why is from 6W's framework
+  const whyValue = profileData.impact_why || profileData.hook_why || '';
+  if (whyValue && !introWhy.value) {
+    introWhy.value = whyValue;
   }
 
   // Set current intro text if available

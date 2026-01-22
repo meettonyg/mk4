@@ -448,6 +448,11 @@ class GMKB_Profile_Repository implements GMKB_Profile_Repository_Interface {
         $guest_title = get_post_meta($post_id, 'guest_title', true);
         $profile_icon = get_post_meta($post_id, 'profile_icon', true);
 
+        // Fallback to professional_title if guest_title is empty
+        if (empty($guest_title)) {
+            $guest_title = get_post_meta($post_id, 'professional_title', true);
+        }
+
         $display_name = trim("{$first_name} {$last_name}");
         if (empty($display_name)) {
             $display_name = $post->post_title;

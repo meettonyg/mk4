@@ -11,8 +11,7 @@
       "what": "hook_what",
       "when": "hook_when",
       "how": "hook_how",
-      "statement": "authority_statement",
-      "summary": "authority_hook_summary"
+      "statement": "authority_hook"
     }
   },
   "validation": {

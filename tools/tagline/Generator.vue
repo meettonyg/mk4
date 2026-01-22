@@ -9,9 +9,9 @@
     :has-results="hasTaglines"
     :is-loading="isGenerating"
   >
-    <!-- Left Panel: Form -->
+    <!-- Left Panel: Form (hidden when results are showing) -->
     <template #left>
-      <div class="gmkb-plg-tool-embed">
+      <div v-if="!hasTaglines" class="gmkb-plg-tool-embed">
         <!-- Profile Selector (for logged-in users in standalone mode) -->
         <ProfileSelector
           @profile-selected="handleProfileSelected"
@@ -262,7 +262,7 @@
 
     <!-- Results -->
     <template #results>
-      <div class="tagline-results">
+      <div ref="resultsContainer" class="tagline-results">
         <div class="tagline-results__layout">
 
           <!-- SIDEBAR: Master Tagline Slot -->
@@ -280,9 +280,17 @@
                   <span class="tagline-master-slot__label">
                     {{ lockedTagline ? 'Active Tagline' : 'Select a Tagline' }}
                   </span>
-                  <svg v-if="lockedTagline" class="tagline-master-slot__lock" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 1C8.676 1 6 3.676 6 7v2H4v14h16V9h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4zm0 10c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/>
-                  </svg>
+                  <button
+                    v-if="lockedTagline"
+                    type="button"
+                    class="tagline-master-slot__unlock-btn"
+                    title="Unlock tagline"
+                    @click="unlockTagline"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 1C8.676 1 6 3.676 6 7v2H4v14h16V9h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4zm0 10c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/>
+                    </svg>
+                  </button>
                 </div>
                 <div class="tagline-master-slot__preview">
                   {{ lockedTagline || selectedTagline || 'Click a tagline below to preview it here' }}
@@ -582,7 +590,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, toRef } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, toRef, nextTick } from 'vue';
 import { useAITagline, STYLE_FOCUS_OPTIONS, TONE_OPTIONS, INTENT_OPTIONS } from '../../src/composables/useAITagline';
 import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
@@ -699,6 +707,9 @@ const showHistory = ref(false);
 // Show draft restore prompt
 const showDraftPrompt = ref(false);
 
+// Results container ref for scroll-to-top
+const resultsContainer = ref(null);
+
 /**
  * The number of items to generate.
  */
@@ -792,7 +803,8 @@ const handleGenerate = async () => {
   try {
     const context = props.mode === 'integrated' ? 'builder' : 'public';
     // Generate uses the reactive state directly from the composable
-    await generate({}, context);
+    // Pass the count to ensure the correct number of taglines are generated
+    await generate({ count: GENERATION_COUNT }, context);
 
     // Save to history on successful generation
     if (taglines.value && taglines.value.length > 0) {
@@ -808,6 +820,14 @@ const handleGenerate = async () => {
         results: taglines.value,
         preview: taglines.value[0]?.text?.substring(0, 50) || 'Generated taglines'
       });
+
+      // Scroll to results in standalone mode
+      if (props.mode === 'default') {
+        await nextTick();
+        if (resultsContainer.value) {
+          resultsContainer.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
     }
 
     emit('generated', {
@@ -878,6 +898,11 @@ const handleLockTagline = (index) => {
  * Handle save to profile
  */
 const handleSaveToProfile = async () => {
+  // If no tagline is locked but one is selected, auto-lock it first
+  if (!lockedTagline.value && selectedTagline.value && selectedIndex.value >= 0) {
+    lockTagline(selectedIndex.value);
+  }
+
   const taglineToSave = lockedTagline.value || selectedTagline.value;
   if (!taglineToSave) return;
 
@@ -1282,6 +1307,21 @@ onUnmounted(() => {
 
 .tagline-master-slot__lock {
   color: var(--mkcg-primary, #3b82f6);
+}
+
+.tagline-master-slot__unlock-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--mkcg-primary, #3b82f6);
+  border-radius: 4px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.tagline-master-slot__unlock-btn:hover {
+  background-color: var(--mkcg-danger-bg, #fef2f2);
+  color: var(--mkcg-danger, #ef4444);
 }
 
 .tagline-master-slot__preview {

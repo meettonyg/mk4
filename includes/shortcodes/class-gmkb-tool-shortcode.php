@@ -161,20 +161,14 @@ class GMKB_Tool_Shortcode {
 
         $version = defined('GMKB_VERSION') ? GMKB_VERSION : '1.0.0';
 
-        // Check for standalone tools bundle
-        $js_file = GMKB_PLUGIN_DIR . 'dist/standalone-tools/standalone-tools.iife.js';
-        $css_file = GMKB_PLUGIN_DIR . 'dist/standalone-tools/standalone-tools.css';
-
-        // Fallback to seo-tools bundle
-        if (!file_exists($js_file)) {
-            $js_file = GMKB_PLUGIN_DIR . 'dist/seo-tools/seo-tools.iife.js';
-            $css_file = GMKB_PLUGIN_DIR . 'dist/seo-tools/seo-tools.css';
-        }
+        // Use unified gmkb bundle
+        $js_file = GMKB_PLUGIN_DIR . 'dist/gmkb.iife.js';
+        $css_file = GMKB_PLUGIN_DIR . 'dist/gmkb.css';
 
         if (file_exists($js_file)) {
             wp_enqueue_script(
-                'gmkb-standalone-tools',
-                str_replace(GMKB_PLUGIN_DIR, GMKB_PLUGIN_URL, $js_file),
+                'gmkb-tools',
+                GMKB_PLUGIN_URL . 'dist/gmkb.iife.js',
                 array(),
                 $version,
                 true
@@ -182,8 +176,8 @@ class GMKB_Tool_Shortcode {
 
             if (file_exists($css_file)) {
                 wp_enqueue_style(
-                    'gmkb-standalone-tools',
-                    str_replace(GMKB_PLUGIN_DIR, GMKB_PLUGIN_URL, $css_file),
+                    'gmkb-tools',
+                    GMKB_PLUGIN_URL . 'dist/gmkb.css',
                     array(),
                     $version
                 );
@@ -191,11 +185,34 @@ class GMKB_Tool_Shortcode {
 
             // Add global data for Vue
             $is_logged_in = is_user_logged_in();
+
+            // Get signup URL (for anonymous users)
+            $signup_url = get_option('gmkb_ai_signup_url', '/register/');
+            if (empty($signup_url)) {
+                $signup_url = '/register/';
+            }
+            // Make relative URLs absolute
+            if (strpos($signup_url, 'http') !== 0 && strpos($signup_url, '/') === 0) {
+                $signup_url = home_url($signup_url);
+            }
+
+            // Get pricing URL (for registered free users)
+            $pricing_url = get_option('gmkb_ai_pricing_url', '/pricing/');
+            if (empty($pricing_url)) {
+                $pricing_url = '/pricing/';
+            }
+            // Make relative URLs absolute
+            if (strpos($pricing_url, 'http') !== 0 && strpos($pricing_url, '/') === 0) {
+                $pricing_url = home_url($pricing_url);
+            }
+
             $standalone_data = array(
                 'nonce' => wp_create_nonce('gmkb_public_ai'),
                 'apiBase' => rest_url('gmkb/v2'),
                 'ajaxUrl' => admin_url('admin-ajax.php'),
                 'isLoggedIn' => $is_logged_in,
+                'signupUrl' => $signup_url,     // For anonymous users -> "Sign Up"
+                'pricingUrl' => $pricing_url,   // For free users -> "Upgrade"
             );
 
             // For logged-in users, add profile context
@@ -206,7 +223,7 @@ class GMKB_Tool_Shortcode {
                 $standalone_data['profileEndpoint'] = rest_url('gmkb/v2/profile');
             }
 
-            wp_localize_script('gmkb-standalone-tools', 'gmkbStandaloneTools', $standalone_data);
+            wp_localize_script('gmkb-tools', 'gmkbStandaloneTools', $standalone_data);
         }
 
         $this->enqueued = true;
@@ -334,6 +351,15 @@ class GMKB_Tool_Shortcode {
                 if (!container || !dataEl || !mountPoint) return;
 
                 var data = JSON.parse(dataEl.textContent);
+
+                // Set nonce in global variable for API requests
+                if (data.nonce) {
+                    window.gmkbStandaloneTools = window.gmkbStandaloneTools || {};
+                    window.gmkbStandaloneTools.nonce = data.nonce;
+                    if (data.apiBase) {
+                        window.gmkbStandaloneTools.apiBase = data.apiBase;
+                    }
+                }
 
                 // Try different mount methods based on available globals
                 if (window.GMKB && window.GMKB.mountTool) {

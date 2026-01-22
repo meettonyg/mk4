@@ -201,8 +201,13 @@ export function useAIBiography() {
    * @returns {Promise<array>} Generated variations
    */
   const generateForSlot = async (slotName, overrides = {}) => {
+    console.log('[useAIBiography] generateForSlot called with slotName:', slotName);
+
     const slot = slots[slotName];
-    if (!slot) return [];
+    if (!slot) {
+      console.error('[useAIBiography] Invalid slot name:', slotName, 'Available slots:', Object.keys(slots));
+      return [];
+    }
 
     const variationCount = getVariationCount(slotName);
 
@@ -213,7 +218,14 @@ export function useAIBiography() {
     const params = {
       name: overrides.name || name.value,
       title: optionalFields.title,
-      authorityHook: authorityHookSummary.value,
+      // Pass the raw object with who/what/when/how fields, not the summary string
+      // The PHP backend expects an object to build the authority hook section
+      authorityHook: {
+        who: authorityHook.who,
+        what: authorityHook.what,
+        when: authorityHook.when,
+        how: authorityHook.how
+      },
       impactIntro: impactIntroSummary.value,
       organization: optionalFields.organization,
       existingBio: optionalFields.existingBio,
@@ -224,16 +236,21 @@ export function useAIBiography() {
       variationCount
     };
 
+    console.log('[useAIBiography] Calling generator.generate with params:', params);
+
     try {
       const result = await generator.generate(params);
+      console.log('[useAIBiography] generator.generate result:', result);
 
       // Parse variations from result
       const variations = parseVariations(result, slotName);
       slot.variations = variations;
       slot.status = SLOT_STATUS.HAS_VARIATIONS;
 
+      console.log('[useAIBiography] Parsed variations:', variations);
       return variations;
     } catch (error) {
+      console.error('[useAIBiography] Generation error:', error);
       slot.status = SLOT_STATUS.EMPTY;
       throw error;
     }
@@ -253,7 +270,13 @@ export function useAIBiography() {
 
     const params = {
       name: name.value,
-      authorityHook: authorityHookSummary.value,
+      // Pass the raw object with who/what/when/how fields, not the summary string
+      authorityHook: {
+        who: authorityHook.who,
+        what: authorityHook.what,
+        when: authorityHook.when,
+        how: authorityHook.how
+      },
       impactIntro: impactIntroSummary.value,
       organization: optionalFields.organization,
       tone: tone.value,
