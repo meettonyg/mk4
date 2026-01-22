@@ -3,7 +3,7 @@
     <!-- Left Section: Back Button & Consolidated Profile -->
     <div class="gmkb-toolbar__section gmkb-toolbar__section--left">
       <!-- Back Button -->
-      <a href="https://guestify.ai/app/media-kits/" class="gmkb-toolbar__back-link" title="Back to Media Kits">
+      <a :href="dashboardUrl" class="gmkb-toolbar__back-link" title="Back to Media Kits">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
@@ -27,7 +27,14 @@
             </svg>
           </div>
           <div class="gmkb-toolbar__profile-info">
-            <span class="gmkb-toolbar__profile-label">Editing</span>
+            <span class="gmkb-toolbar__profile-label">
+              <span
+                class="gmkb-toolbar__status-badge"
+                :class="isPublished ? 'gmkb-toolbar__status-badge--published' : 'gmkb-toolbar__status-badge--draft'"
+              >
+                {{ isPublished ? 'Published' : 'Draft' }}
+              </span>
+            </span>
             <span class="gmkb-toolbar__profile-name">{{ selectedProfileName || postTitle }}</span>
           </div>
           <svg class="gmkb-toolbar__profile-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -35,18 +42,23 @@
           </svg>
         </button>
 
-        <!-- View Icon Button -->
+        <!-- View/Preview Icon Button -->
         <a
-          v-if="viewUrl && !isNewMediaKit"
-          :href="viewUrl"
+          v-if="(viewUrl || previewUrl) && !isNewMediaKit"
+          :href="isPublished ? viewUrl : previewUrl"
           target="_blank"
           class="gmkb-toolbar__view-btn"
-          title="View Published Kit"
+          :class="{ 'gmkb-toolbar__view-btn--preview': !isPublished }"
+          :title="isPublished ? 'View Published Kit' : 'Preview Draft'"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg v-if="isPublished" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
             <polyline points="15 3 21 3 21 9"></polyline>
             <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+          <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
           </svg>
         </a>
       </div>
@@ -116,32 +128,42 @@
         <span>Export</span>
       </button>
 
-      <!-- Share Button -->
-      <button class="gmkb-toolbar__btn" @click="handleShare">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="18" cy="5" r="3"></circle>
-          <circle cx="6" cy="12" r="3"></circle>
-          <circle cx="18" cy="19" r="3"></circle>
-          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-        </svg>
-        <span>Share</span>
-      </button>
-
-      <!-- RESET FUNCTIONALITY: Global Reset Button -->
-      <button
-        @click="resetModal.open()"
-        class="gmkb-toolbar__btn gmkb-toolbar__btn--danger"
-        title="Reset entire media kit"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
-          <path d="M21 3v5h-5"></path>
-          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
-          <path d="M3 21v-5h5"></path>
-        </svg>
-        <span>Reset All</span>
-      </button>
+      <!-- More Actions Dropdown -->
+      <div ref="moreDropdownRef" class="gmkb-toolbar__more-dropdown">
+        <button
+          class="gmkb-toolbar__btn gmkb-toolbar__btn--icon"
+          @click="toggleMoreMenu"
+          title="More actions"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="1"></circle>
+            <circle cx="12" cy="5" r="1"></circle>
+            <circle cx="12" cy="19" r="1"></circle>
+          </svg>
+        </button>
+        <div v-if="showMoreMenu" class="gmkb-toolbar__more-menu">
+          <button class="gmkb-toolbar__more-item" @click="handleShare">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="18" cy="5" r="3"></circle>
+              <circle cx="6" cy="12" r="3"></circle>
+              <circle cx="18" cy="19" r="3"></circle>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+            </svg>
+            <span>Share</span>
+          </button>
+          <div class="gmkb-toolbar__more-divider"></div>
+          <button class="gmkb-toolbar__more-item gmkb-toolbar__more-item--danger" @click="handleReset">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+              <path d="M21 3v5h-5"></path>
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+              <path d="M3 21v-5h5"></path>
+            </svg>
+            <span>Reset All</span>
+          </button>
+        </div>
+      </div>
 
       <!-- Undo -->
       <button
@@ -181,8 +203,31 @@
         </svg>
         <span>Save</span>
       </button>
+
+      <!-- Publish/Unpublish Button -->
+      <button
+        v-if="!isNewMediaKit"
+        @click="isPublished ? confirmUnpublish() : confirmPublish()"
+        :disabled="store.isPublishing"
+        class="gmkb-toolbar__btn"
+        :class="isPublished ? 'gmkb-toolbar__btn--unpublish' : 'gmkb-toolbar__btn--publish'"
+        :title="isPublished ? 'Unpublish (make draft)' : 'Publish media kit'"
+      >
+        <svg v-if="store.isPublishing" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="gmkb-toolbar__spinner">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M12 6v6l4 2"></path>
+        </svg>
+        <svg v-else-if="isPublished" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+        </svg>
+        <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 2L11 13"></path>
+          <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
+        </svg>
+        <span>{{ store.isPublishing ? 'Publishing...' : (isPublished ? 'Unpublish' : 'Publish') }}</span>
+      </button>
     </div>
-    
+
     <!-- Export Modal -->
     <ExportModal ref="exportModal" />
     
@@ -198,16 +243,70 @@
             <button @click="showShareModal = false" class="gmkb-modal__close">×</button>
           </div>
           <div class="gmkb-modal__body">
-            <p>Share functionality coming soon!</p>
-            <div class="gmkb-modal__share-link">
+            <p v-if="viewUrl">Share your media kit with this link:</p>
+            <p v-else>Save your media kit first to get a shareable link.</p>
+            <div v-if="viewUrl" class="gmkb-modal__share-link">
               <input
                 type="text"
-                :value="shareLink"
+                :value="viewUrl"
                 readonly
                 class="gmkb-modal__share-input"
                 @click="$event.target.select()"
               />
               <button @click="copyShareLink" class="gmkb-btn gmkb-btn--primary">Copy Link</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Publish Confirmation Modal -->
+    <Teleport to="body">
+      <div v-if="showPublishModal" class="gmkb-modal-overlay" @click.self="showPublishModal = false">
+        <div class="gmkb-modal gmkb-modal--publish">
+          <div class="gmkb-modal__header">
+            <h2>{{ publishModalAction === 'publish' ? 'Publish Media Kit' : 'Unpublish Media Kit' }}</h2>
+            <button @click="showPublishModal = false" class="gmkb-modal__close">×</button>
+          </div>
+          <div class="gmkb-modal__body">
+            <div class="gmkb-publish-prompt">
+              <div class="gmkb-publish-prompt__icon" :class="publishModalAction === 'publish' ? '' : 'gmkb-publish-prompt__icon--warning'">
+                <svg v-if="publishModalAction === 'publish'" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M22 2L11 13"></path>
+                  <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
+                </svg>
+                <svg v-else width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                </svg>
+              </div>
+              <p class="gmkb-publish-prompt__message">
+                {{ publishModalAction === 'publish'
+                  ? 'Your media kit will be publicly visible at:'
+                  : 'Your media kit will be set to draft and will no longer be publicly accessible.'
+                }}
+              </p>
+              <div v-if="publishModalAction === 'publish' && viewUrl" class="gmkb-publish-prompt__url">
+                {{ viewUrl }}
+              </div>
+              <p class="gmkb-publish-prompt__subtext">
+                {{ publishModalAction === 'publish'
+                  ? 'Anyone with the link will be able to view your media kit.'
+                  : 'You can publish it again at any time.'
+                }}
+              </p>
+              <div class="gmkb-publish-prompt__actions">
+                <button
+                  @click="executePublish"
+                  class="gmkb-btn gmkb-btn--lg"
+                  :class="publishModalAction === 'publish' ? 'gmkb-btn--publish' : 'gmkb-btn--warning'"
+                  :disabled="store.isPublishing"
+                >
+                  {{ store.isPublishing ? 'Please wait...' : (publishModalAction === 'publish' ? 'Publish Now' : 'Unpublish') }}
+                </button>
+                <button @click="showPublishModal = false" class="gmkb-btn gmkb-btn--secondary">
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -283,6 +382,9 @@ const exportModal = ref(null)
 const showShareModal = ref(false)
 // RESET FUNCTIONALITY: Global reset modal ref
 const resetModal = ref(null)
+// More actions dropdown state
+const showMoreMenu = ref(false)
+const moreDropdownRef = ref(null)
 
 // Auth prompt state
 const showAuthPrompt = ref(false)
@@ -293,9 +395,14 @@ const authPromptData = ref({
   message: ''
 })
 
+// Publish modal state
+const showPublishModal = ref(false)
+const publishModalAction = ref('publish') // 'publish' or 'unpublish'
+
 // Profile switching state
 const isLoggedIn = computed(() => !!window.gmkbData?.user?.isLoggedIn)
 const isNewMediaKit = computed(() => !!window.gmkbData?.isNewMediaKit)
+const isPublished = computed(() => store.postStatus === 'publish')
 const selectedProfileId = ref(window.gmkbData?.profileId || null)
 
 // Handle profile switch - updates store's profileData with new profile data
@@ -351,6 +458,7 @@ const deviceMode = ref('desktop')
 
 // Computed properties
 const postTitle = computed(() => window.gmkbData?.postTitle || 'Untitled Media Kit')
+const dashboardUrl = computed(() => window.gmkbData?.dashboardUrl || '/app/media-kits/')
 const saveStatus = computed(() => store.saveStatus)
 
 const saveStatusText = computed(() => {
@@ -366,12 +474,7 @@ const saveStatusText = computed(() => {
   }
 })
 
-const shareLink = computed(() => {
-  const postId = window.gmkbData?.postId || ''
-  return `${window.location.origin}/?mkcg_id=${postId}`
-})
-
-// View URL for the published media kit
+// View URL for the published media kit (also used for sharing)
 const viewUrl = computed(() => {
   // First try the direct permalink if available
   if (window.gmkbData?.viewUrl) {
@@ -381,6 +484,19 @@ const viewUrl = computed(() => {
   const postId = window.gmkbData?.postId
   if (postId) {
     return `${window.location.origin}/?p=${postId}`
+  }
+  return null
+})
+
+// Preview URL for draft media kits (requires authentication)
+const previewUrl = computed(() => {
+  if (window.gmkbData?.previewUrl) {
+    return window.gmkbData.previewUrl
+  }
+  // Fallback to constructing preview URL
+  const postId = window.gmkbData?.postId
+  if (postId && !isPublished.value) {
+    return `${window.location.origin}/?p=${postId}&preview=true`
   }
   return null
 })
@@ -498,7 +614,24 @@ function handleExport() {
 }
 
 function handleShare() {
+  showMoreMenu.value = false
   showShareModal.value = true
+}
+
+// More actions dropdown methods
+function toggleMoreMenu() {
+  showMoreMenu.value = !showMoreMenu.value
+}
+
+function closeMoreMenu() {
+  showMoreMenu.value = false
+}
+
+function handleReset() {
+  showMoreMenu.value = false
+  if (resetModal.value) {
+    resetModal.value.open()
+  }
 }
 
 function openProfileSelector() {
@@ -507,10 +640,52 @@ function openProfileSelector() {
 }
 
 function copyShareLink() {
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(shareLink.value).then(() => {
-      alert('Link copied to clipboard!')
+  if (navigator.clipboard && viewUrl.value) {
+    navigator.clipboard.writeText(viewUrl.value).then(() => {
+      showSuccess('Link copied to clipboard!')
+      showShareModal.value = false
     })
+  }
+}
+
+// Publish/Unpublish methods
+function confirmPublish() {
+  publishModalAction.value = 'publish'
+  showPublishModal.value = true
+}
+
+function confirmUnpublish() {
+  publishModalAction.value = 'unpublish'
+  showPublishModal.value = true
+}
+
+async function executePublish() {
+  try {
+    const status = publishModalAction.value === 'publish' ? 'publish' : 'draft'
+    const result = await store.publish(status)
+
+    if (result.requiresAuth) {
+      showPublishModal.value = false
+      showInfo('Please log in to publish your media kit')
+      return
+    }
+
+    if (result.success) {
+      showPublishModal.value = false
+
+      if (status === 'publish') {
+        showSuccess('Media kit published successfully!')
+        // Update viewUrl if returned
+        if (result.viewUrl && window.gmkbData) {
+          window.gmkbData.viewUrl = result.viewUrl
+        }
+      } else {
+        showInfo('Media kit set to draft')
+      }
+    }
+  } catch (error) {
+    console.error('Publish error:', error)
+    showError('Failed to update status: ' + error.message)
   }
 }
 
@@ -588,16 +763,25 @@ const initDarkMode = () => {
   }
 }
 
+// Click outside handler for more dropdown
+const handleClickOutside = (event) => {
+  if (moreDropdownRef.value && !moreDropdownRef.value.contains(event.target)) {
+    showMoreMenu.value = false
+  }
+}
+
 onMounted(() => {
   initDarkMode()
   document.addEventListener('keydown', handleKeyboard)
   document.addEventListener('gmkb:save-requires-auth', handleSaveRequiresAuth)
+  document.addEventListener('click', handleClickOutside)
   console.log('✅ Perfected toolbar mounted with BEM conventions')
 })
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeyboard)
   document.removeEventListener('gmkb:save-requires-auth', handleSaveRequiresAuth)
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
@@ -764,6 +948,37 @@ onUnmounted(() => {
   color: #64748b;
 }
 
+/* Element: status badge */
+.gmkb-toolbar__status-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.gmkb-toolbar__status-badge--draft {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.gmkb-toolbar__status-badge--published {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__status-badge--draft {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__status-badge--published {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
 /* Element: profile name */
 .gmkb-toolbar__profile-name {
   font-size: 13px;
@@ -818,6 +1033,27 @@ onUnmounted(() => {
 .gmkb-toolbar--dark .gmkb-toolbar__view-btn:hover {
   background: rgba(14, 165, 233, 0.2);
   color: #7dd3fc;
+}
+
+/* View button preview variant (for drafts) */
+.gmkb-toolbar__view-btn--preview {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.gmkb-toolbar__view-btn--preview:hover {
+  background: #fde68a;
+  color: #b45309;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__view-btn--preview {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__view-btn--preview:hover {
+  background: rgba(251, 191, 36, 0.25);
+  color: #fcd34d;
 }
 
 /* Element: device-selector */
@@ -1059,9 +1295,144 @@ onUnmounted(() => {
   color: white;
 }
 
+/* Element Modifier: publish button */
+.gmkb-toolbar__btn--publish {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-color: #10b981;
+  color: white;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+}
+
+.gmkb-toolbar__btn--publish:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  border-color: #059669;
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Element Modifier: unpublish button */
+.gmkb-toolbar__btn--unpublish {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: #fde68a;
+  color: #d97706;
+}
+
+.gmkb-toolbar__btn--unpublish:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: #fbbf24;
+  color: #b45309;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__btn--unpublish {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.3);
+  color: #fbbf24;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__btn--unpublish:hover:not(:disabled) {
+  background: rgba(251, 191, 36, 0.2);
+  border-color: rgba(251, 191, 36, 0.5);
+  color: #fcd34d;
+}
+
+/* Spinner animation for loading states */
+.gmkb-toolbar__spinner {
+  animation: gmkb-spin 1s linear infinite;
+}
+
+@keyframes gmkb-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* SVG Icons */
 .gmkb-toolbar__btn svg {
   flex-shrink: 0;
+}
+
+/* Element: More actions dropdown */
+.gmkb-toolbar__more-dropdown {
+  position: relative;
+}
+
+.gmkb-toolbar__more-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  min-width: 160px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 4px;
+  z-index: 1000;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__more-menu {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.gmkb-toolbar__more-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.gmkb-toolbar__more-item:hover {
+  background: #f3f4f6;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__more-item {
+  color: #e2e8f0;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__more-item:hover {
+  background: #334155;
+}
+
+.gmkb-toolbar__more-item--danger {
+  color: #dc2626;
+}
+
+.gmkb-toolbar__more-item--danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #b91c1c;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__more-item--danger {
+  color: #fca5a5;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__more-item--danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fecaca;
+}
+
+.gmkb-toolbar__more-divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 4px 0;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__more-divider {
+  background: #334155;
 }
 
 /* Block: gmkb-modal */
@@ -1159,6 +1530,80 @@ onUnmounted(() => {
 
 .gmkb-btn--primary:hover {
   background: #2563eb;
+}
+
+.gmkb-btn--publish {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.gmkb-btn--publish:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.gmkb-btn--warning {
+  background: #f59e0b;
+  color: white;
+}
+
+.gmkb-btn--warning:hover {
+  background: #d97706;
+}
+
+/* Publish prompt modal */
+.gmkb-modal--publish {
+  max-width: 440px;
+}
+
+.gmkb-publish-prompt {
+  text-align: center;
+  padding: 16px 8px;
+}
+
+.gmkb-publish-prompt__icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-radius: 16px;
+  color: white;
+}
+
+.gmkb-publish-prompt__icon--warning {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.gmkb-publish-prompt__message {
+  font-size: 16px;
+  font-weight: 500;
+  color: #1e293b;
+  margin: 0 0 12px;
+}
+
+.gmkb-publish-prompt__url {
+  font-size: 14px;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+  color: #0ea5e9;
+  background: #f0f9ff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  margin: 0 0 12px;
+  word-break: break-all;
+}
+
+.gmkb-publish-prompt__subtext {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0 0 24px;
+}
+
+.gmkb-publish-prompt__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 /* Device Preview Styles - Applied to #media-kit-preview */
@@ -1265,22 +1710,14 @@ body.dark-mode .gmkb-toolbar__btn:hover:not(:disabled) {
   }
 
   /* Hide profile text on mobile, show only avatar */
-  .gmkb-toolbar__profile-name,
-  .gmkb-toolbar__profile-label {
+  .gmkb-toolbar__profile-info,
+  .gmkb-toolbar__profile-chevron {
     display: none;
   }
 
   .gmkb-toolbar__profile-combo-btn {
     padding: 6px;
     gap: 0;
-  }
-
-  .gmkb-toolbar__profile-info {
-    display: none;
-  }
-
-  .gmkb-toolbar__profile-chevron {
-    display: none;
   }
 
   .gmkb-toolbar__divider {

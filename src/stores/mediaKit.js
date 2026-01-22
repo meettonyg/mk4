@@ -71,16 +71,20 @@ export const useMediaKitStore = defineStore('mediaKit', {
       const urlParams = new URLSearchParams(window.location.search);
       const mkcgId = urlParams.get('mkcg_id');
       if (mkcgId) return parseInt(mkcgId);
-      
+
       if (window.gmkbData?.postId) return window.gmkbData.postId;
       if (window.gmkbData?.post_id) return window.gmkbData.post_id;
       if (window.gmkbData?.mkcg_id) return window.gmkbData.mkcg_id;
-      
+
       const postIdFromUrl = urlParams.get('post_id');
       if (postIdFromUrl) return parseInt(postIdFromUrl);
-      
+
       return null;
-    })()
+    })(),
+
+    // Post status tracking (draft/publish)
+    postStatus: window.gmkbData?.postStatus || 'draft',
+    isPublishing: false
   }),
 
   getters: {
@@ -760,6 +764,69 @@ export const useMediaKitStore = defineStore('mediaKit', {
       } finally {
         this.isSaving = false;
         console.log('➡️ Save operation finished (isSaving = false)');
+      }
+    },
+
+    /**
+     * Publish or unpublish a media kit
+     * @param {string} status - 'publish' or 'draft'
+     * @returns {Promise<{success: boolean, status: string, viewUrl?: string, previewUrl?: string}>}
+     */
+    async publish(status = 'publish') {
+      // Check if user can publish
+      const userData = window.gmkbData?.user;
+      if (!userData?.canSave) {
+        console.log('⚠️ Publish blocked: User does not have permissions');
+        return { success: false, requiresAuth: true };
+      }
+
+      if (!this.postId) {
+        console.log('⚠️ Publish blocked: No post ID - save first');
+        return { success: false, error: 'Save the media kit first before publishing' };
+      }
+
+      try {
+        this.isPublishing = true;
+        console.log(`📤 ${status === 'publish' ? 'Publishing' : 'Unpublishing'} media kit...`);
+
+        // Ensure APIService exists
+        if (!this.apiService) {
+          this.apiService = new APIService(
+            window.gmkbData?.restUrl,
+            window.gmkbData?.restNonce,
+            this.postId
+          );
+        }
+
+        // CRITICAL FIX: Use APIService.publish() which has proper URL normalization
+        // This prevents the URL duplication bug (gmkb/v2/gmkb/v2/...)
+        const result = await this.apiService.publish(status);
+
+        // Update local state
+        this.postStatus = result.status;
+
+        // Update gmkbData for other components
+        if (window.gmkbData) {
+          window.gmkbData.postStatus = result.status;
+          if (result.view_url) {
+            window.gmkbData.viewUrl = result.view_url;
+          }
+        }
+
+        console.log(`✅ Media kit ${status === 'publish' ? 'published' : 'unpublished'} successfully`);
+
+        return {
+          success: true,
+          status: result.status,
+          viewUrl: result.view_url,
+          previewUrl: result.preview_url
+        };
+
+      } catch (error) {
+        console.error('❌ Publish failed:', error);
+        throw error;
+      } finally {
+        this.isPublishing = false;
       }
     },
 
