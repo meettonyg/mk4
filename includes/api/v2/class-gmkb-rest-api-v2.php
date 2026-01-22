@@ -1239,9 +1239,10 @@ class GMKB_REST_API_V2 {
             $user = get_userdata($user_id);
             $display_name = $user ? $user->display_name : 'User';
 
-            // Create the post
+            // Create the post as 'guests' (modern post type)
+            // Note: 'mkcg' is legacy and should not be used for new posts
             $post_data = array(
-                'post_type'   => 'mkcg',
+                'post_type'   => 'guests',
                 'post_title'  => sprintf('%s\'s Media Kit', $display_name),
                 'post_status' => 'draft',
                 'post_author' => $user_id,
@@ -1259,6 +1260,9 @@ class GMKB_REST_API_V2 {
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log('✅ GMKB REST API v2: Created post #' . $post_id);
             }
+
+            // Set owner meta for consistent querying
+            update_post_meta($post_id, 'owner_user_id', $user_id);
 
             // Link to profile if provided
             if (!empty($body['profile_id'])) {
