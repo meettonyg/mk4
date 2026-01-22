@@ -389,6 +389,28 @@ function gmkb_prepare_data_for_injection() {
         $linked_profile_id = intval($_GET['profile_id']);
     }
 
+    // Get linked profile name for display in header
+    $linked_profile_name = null;
+    if ($linked_profile_id) {
+        $profile_post = get_post($linked_profile_id);
+        if ($profile_post) {
+            // Try to get a display name from meta, fall back to post title
+            $linked_profile_name = get_post_meta($linked_profile_id, 'guest_name', true);
+            if (empty($linked_profile_name)) {
+                $linked_profile_name = get_post_meta($linked_profile_id, 'name', true);
+            }
+            if (empty($linked_profile_name)) {
+                $linked_profile_name = $profile_post->post_title;
+            }
+        }
+    }
+
+    // Get view URL for the media kit (public permalink)
+    $view_url = null;
+    if ($post_id && !$is_new_media_kit) {
+        $view_url = get_permalink($post_id);
+    }
+
     // Build registration URL for anonymous users
     $register_url = wp_registration_url();
     $current_url = $_SERVER['REQUEST_URI'] ?? '/tools/media-kit/';
@@ -402,6 +424,8 @@ function gmkb_prepare_data_for_injection() {
         'isNewMediaKit'     => $is_new_media_kit,
         'linkedProfileId'   => $linked_profile_id,  // Profile linked to this media kit
         'profileId'         => $linked_profile_id,  // Alias for backwards compatibility
+        'linkedProfileName' => $linked_profile_name, // Display name for header
+        'viewUrl'           => $view_url,           // Public permalink for "View" link
         'pluginUrl'         => GUESTIFY_PLUGIN_URL,
         'isDevelopment'     => defined('GMKB_DEV_MODE') && GMKB_DEV_MODE,
         'restUrl'           => esc_url_raw($rest_url),
