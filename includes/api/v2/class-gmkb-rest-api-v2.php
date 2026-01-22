@@ -679,14 +679,8 @@ class GMKB_REST_API_V2 {
         $post_id = (int) $request['id'];
         $status = $request->get_param('status') ?? 'publish';
 
-        // Validate status
-        if (!in_array($status, array('publish', 'draft'), true)) {
-            return new WP_Error(
-                'invalid_status',
-                'Status must be either "publish" or "draft"',
-                array('status' => 400)
-            );
-        }
+        // Note: Status validation is handled by route's validate_callback
+        // Note: edit_post permission is handled by route's permission_callback (check_write_permissions)
 
         // Verify post exists and is correct type
         $post = get_post($post_id);
@@ -698,16 +692,7 @@ class GMKB_REST_API_V2 {
             );
         }
 
-        // Check user can publish/unpublish
-        if (!current_user_can('edit_post', $post_id)) {
-            return new WP_Error(
-                'forbidden',
-                'You do not have permission to change this media kit\'s status',
-                array('status' => 403)
-            );
-        }
-
-        // For publishing, check publish capability
+        // For publishing, check publish capability (not covered by check_write_permissions)
         if ($status === 'publish' && !current_user_can('publish_posts')) {
             return new WP_Error(
                 'forbidden',
