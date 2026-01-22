@@ -290,55 +290,117 @@
       </div>
     </Teleport>
 
-    <!-- Publish Confirmation Modal -->
+    <!-- Publish Confirmation / Success Modal -->
     <Teleport to="body">
-      <div v-if="showPublishModal" class="gmkb-modal-overlay" @click.self="showPublishModal = false">
-        <div class="gmkb-modal gmkb-modal--publish">
-          <div class="gmkb-modal__header">
-            <h2>{{ publishModalAction === 'publish' ? 'Publish Media Kit' : 'Unpublish Media Kit' }}</h2>
-            <button @click="showPublishModal = false" class="gmkb-modal__close">×</button>
-          </div>
-          <div class="gmkb-modal__body">
-            <div class="gmkb-publish-prompt">
-              <div class="gmkb-publish-prompt__icon" :class="publishModalAction === 'publish' ? '' : 'gmkb-publish-prompt__icon--warning'">
-                <svg v-if="publishModalAction === 'publish'" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M22 2L11 13"></path>
-                  <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
-                </svg>
-                <svg v-else width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                </svg>
-              </div>
-              <p class="gmkb-publish-prompt__message">
-                {{ publishModalAction === 'publish'
-                  ? 'Your media kit will be publicly visible at:'
-                  : 'Your media kit will be set to draft and will no longer be publicly accessible.'
-                }}
-              </p>
-              <div v-if="publishModalAction === 'publish' && viewUrl" class="gmkb-publish-prompt__url">
-                {{ viewUrl }}
-              </div>
-              <p class="gmkb-publish-prompt__subtext">
-                {{ publishModalAction === 'publish'
-                  ? 'Anyone with the link will be able to view your media kit.'
-                  : 'You can publish it again at any time.'
-                }}
-              </p>
-              <div class="gmkb-publish-prompt__actions">
-                <button
-                  @click="executePublish"
-                  class="gmkb-btn gmkb-btn--lg"
-                  :class="publishModalAction === 'publish' ? 'gmkb-btn--publish' : 'gmkb-btn--warning'"
-                  :disabled="store.isPublishing"
-                >
-                  {{ store.isPublishing ? 'Please wait...' : (publishModalAction === 'publish' ? 'Publish Now' : 'Unpublish') }}
-                </button>
-                <button @click="showPublishModal = false" class="gmkb-btn gmkb-btn--secondary">
-                  Cancel
-                </button>
+      <div v-if="showPublishModal" class="gmkb-modal-overlay" @click.self="closePublishModal">
+        <div class="gmkb-modal" :class="publishSuccess ? 'gmkb-modal--success' : 'gmkb-modal--publish'">
+          <!-- Success View (shown after successful publish) -->
+          <template v-if="publishSuccess">
+            <div class="gmkb-modal__header gmkb-modal__header--success">
+              <button @click="closePublishModal" class="gmkb-modal__close gmkb-modal__close--success">×</button>
+            </div>
+            <div class="gmkb-modal__body">
+              <div class="gmkb-success-celebration">
+                <!-- Celebration Icon with confetti-like elements -->
+                <div class="gmkb-success-celebration__icon">
+                  <div class="gmkb-success-celebration__sparkle gmkb-success-celebration__sparkle--1"></div>
+                  <div class="gmkb-success-celebration__sparkle gmkb-success-celebration__sparkle--2"></div>
+                  <div class="gmkb-success-celebration__sparkle gmkb-success-celebration__sparkle--3"></div>
+                  <div class="gmkb-success-celebration__sparkle gmkb-success-celebration__sparkle--4"></div>
+                  <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                  </svg>
+                </div>
+                <h2 class="gmkb-success-celebration__title">Nicely done!</h2>
+                <p class="gmkb-success-celebration__message">Your media kit is now live and ready to share</p>
+
+                <!-- URL Box with Copy -->
+                <div class="gmkb-success-celebration__url-box">
+                  <div class="gmkb-success-celebration__url-label">Your media kit URL</div>
+                  <div class="gmkb-success-celebration__url-row">
+                    <input
+                      type="text"
+                      :value="viewUrl"
+                      readonly
+                      class="gmkb-success-celebration__url-input"
+                      @click="$event.target.select()"
+                    />
+                    <button @click="copyPublishedUrl" class="gmkb-success-celebration__copy-btn">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                      </svg>
+                      Copy
+                    </button>
+                  </div>
+                </div>
+
+                <div class="gmkb-success-celebration__actions">
+                  <a :href="viewUrl" target="_blank" class="gmkb-btn gmkb-btn--lg gmkb-btn--guestify">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                      <polyline points="15 3 21 3 21 9"></polyline>
+                      <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                    View Media Kit
+                  </a>
+                  <button @click="closePublishModal" class="gmkb-btn gmkb-btn--secondary">
+                    Done
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          </template>
+
+          <!-- Confirmation View (before publish/unpublish) -->
+          <template v-else>
+            <div class="gmkb-modal__header">
+              <h2>{{ publishModalAction === 'publish' ? 'Publish Media Kit' : 'Unpublish Media Kit' }}</h2>
+              <button @click="closePublishModal" class="gmkb-modal__close">×</button>
+            </div>
+            <div class="gmkb-modal__body">
+              <div class="gmkb-publish-prompt">
+                <div class="gmkb-publish-prompt__icon" :class="publishModalAction === 'publish' ? '' : 'gmkb-publish-prompt__icon--warning'">
+                  <svg v-if="publishModalAction === 'publish'" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M22 2L11 13"></path>
+                    <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
+                  </svg>
+                  <svg v-else width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                  </svg>
+                </div>
+                <p class="gmkb-publish-prompt__message">
+                  {{ publishModalAction === 'publish'
+                    ? 'Your media kit will be publicly visible at:'
+                    : 'Your media kit will be set to draft and will no longer be publicly accessible.'
+                  }}
+                </p>
+                <div v-if="publishModalAction === 'publish' && viewUrl" class="gmkb-publish-prompt__url">
+                  {{ viewUrl }}
+                </div>
+                <p class="gmkb-publish-prompt__subtext">
+                  {{ publishModalAction === 'publish'
+                    ? 'Anyone with the link will be able to view your media kit.'
+                    : 'You can publish it again at any time.'
+                  }}
+                </p>
+                <div class="gmkb-publish-prompt__actions">
+                  <button
+                    @click="executePublish"
+                    class="gmkb-btn gmkb-btn--lg"
+                    :class="publishModalAction === 'publish' ? 'gmkb-btn--publish' : 'gmkb-btn--warning'"
+                    :disabled="store.isPublishing"
+                  >
+                    {{ store.isPublishing ? 'Please wait...' : (publishModalAction === 'publish' ? 'Publish Now' : 'Unpublish') }}
+                  </button>
+                  <button @click="closePublishModal" class="gmkb-btn gmkb-btn--secondary">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </template>
         </div>
       </div>
     </Teleport>
@@ -432,6 +494,7 @@ const authPromptData = ref({
 // Publish modal state
 const showPublishModal = ref(false)
 const publishModalAction = ref('publish') // 'publish' or 'unpublish'
+const publishSuccess = ref(false) // Track successful publish for celebration modal
 
 // Profile switching state
 const isLoggedIn = computed(() => !!window.gmkbData?.user?.isLoggedIn)
@@ -694,6 +757,7 @@ function copyShareLink() {
 // Publish/Unpublish methods
 function confirmPublish() {
   publishModalAction.value = 'publish'
+  publishSuccess.value = false // Reset success state
   showPublishModal.value = true
 }
 
@@ -715,21 +779,38 @@ async function executePublish() {
     }
 
     if (result.success) {
-      showPublishModal.value = false
-
       if (status === 'publish') {
-        showSuccess('Media kit published successfully!')
         // Update viewUrl if returned
         if (result.viewUrl && window.gmkbData) {
           window.gmkbData.viewUrl = result.viewUrl
         }
+        // Show celebration modal instead of closing
+        publishSuccess.value = true
       } else {
+        // For unpublish, close modal and show info
+        showPublishModal.value = false
+        publishSuccess.value = false
         showInfo('Media kit set to draft')
       }
     }
   } catch (error) {
     console.error('Publish error:', error)
     showError('Failed to update status: ' + error.message)
+  }
+}
+
+// Close publish modal and reset success state
+function closePublishModal() {
+  showPublishModal.value = false
+  publishSuccess.value = false
+}
+
+// Copy URL to clipboard from success modal
+function copyPublishedUrl() {
+  if (navigator.clipboard && viewUrl.value) {
+    navigator.clipboard.writeText(viewUrl.value).then(() => {
+      showSuccess('Link copied to clipboard!')
+    })
   }
 }
 
@@ -1769,6 +1850,229 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+/* Success Modal - Guestify Branding */
+.gmkb-modal--success {
+  max-width: 480px;
+  overflow: hidden;
+}
+
+.gmkb-modal__header--success {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  border-bottom: none;
+  padding: 16px 24px;
+  position: relative;
+}
+
+.gmkb-modal__close--success {
+  color: rgba(255, 255, 255, 0.8);
+  position: absolute;
+  right: 16px;
+  top: 16px;
+}
+
+.gmkb-modal__close--success:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Success Celebration Content */
+.gmkb-success-celebration {
+  text-align: center;
+  padding: 40px 32px 32px;
+}
+
+.gmkb-success-celebration__icon {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 50%;
+  color: white;
+  animation: gmkb-success-pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes gmkb-success-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Sparkle decorations */
+.gmkb-success-celebration__sparkle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #f97316;
+  border-radius: 50%;
+  animation: gmkb-sparkle 1s ease-out forwards;
+}
+
+.gmkb-success-celebration__sparkle--1 {
+  top: -8px;
+  left: 50%;
+  animation-delay: 0.1s;
+}
+
+.gmkb-success-celebration__sparkle--2 {
+  top: 50%;
+  right: -8px;
+  animation-delay: 0.2s;
+  background: #fbbf24;
+}
+
+.gmkb-success-celebration__sparkle--3 {
+  bottom: -8px;
+  left: 50%;
+  animation-delay: 0.3s;
+  background: #34d399;
+}
+
+.gmkb-success-celebration__sparkle--4 {
+  top: 50%;
+  left: -8px;
+  animation-delay: 0.4s;
+  background: #60a5fa;
+}
+
+@keyframes gmkb-sparkle {
+  0% {
+    transform: scale(0) translateY(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.5) translateY(-10px);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0) translateY(-20px);
+    opacity: 0;
+  }
+}
+
+.gmkb-success-celebration__title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px;
+  animation: gmkb-fade-in 0.4s ease-out 0.2s both;
+}
+
+@keyframes gmkb-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.gmkb-success-celebration__message {
+  font-size: 16px;
+  color: #64748b;
+  margin: 0 0 24px;
+  animation: gmkb-fade-in 0.4s ease-out 0.3s both;
+}
+
+/* URL Box */
+.gmkb-success-celebration__url-box {
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+  animation: gmkb-fade-in 0.4s ease-out 0.4s both;
+}
+
+.gmkb-success-celebration__url-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #ea580c;
+  margin-bottom: 8px;
+}
+
+.gmkb-success-celebration__url-row {
+  display: flex;
+  gap: 8px;
+}
+
+.gmkb-success-celebration__url-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+  color: #c2410c;
+  background: white;
+}
+
+.gmkb-success-celebration__url-input:focus {
+  outline: none;
+  border-color: #f97316;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+}
+
+.gmkb-success-celebration__copy-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: white;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #c2410c;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gmkb-success-celebration__copy-btn:hover {
+  background: #fff7ed;
+  border-color: #f97316;
+}
+
+/* Action Buttons */
+.gmkb-success-celebration__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: gmkb-fade-in 0.4s ease-out 0.5s both;
+}
+
+/* Guestify branded button */
+.gmkb-btn--guestify {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+  text-decoration: none;
+}
+
+.gmkb-btn--guestify:hover {
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.4);
+  transform: translateY(-1px);
+  text-decoration: none;
+  color: white;
 }
 
 /* Device Preview Styles - Applied to #media-kit-preview */
