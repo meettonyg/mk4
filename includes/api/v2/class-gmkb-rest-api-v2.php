@@ -264,6 +264,22 @@ class GMKB_REST_API_V2 {
             )
         ));
 
+        // Endpoint to publish/unpublish a media kit
+        register_rest_route($this->namespace, '/mediakit/(?P<id>\d+)/publish', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'publish_mediakit'),
+            'permission_callback' => array($this, 'check_write_permissions'),
+            'args' => array(
+                'id' => array(
+                    'validate_callback' => fn($param, $request, $key): bool => is_numeric($param)
+                ),
+                'status' => array(
+                    'default' => 'publish',
+                    'validate_callback' => fn($param, $request, $key): bool => in_array($param, array('publish', 'draft'), true)
+                )
+            )
+        ));
+
         // NOTE: Offers API endpoints are handled by the self-contained GMKB_Offers_API class
         // in class-gmkb-offers-api.php (following component self-containment architecture)
 
@@ -272,6 +288,7 @@ class GMKB_REST_API_V2 {
             error_log('  - GET  /' . $this->namespace . '/mediakit/{id}');
             error_log('  - POST /' . $this->namespace . '/mediakit/{id}');
             error_log('  - POST /' . $this->namespace . '/mediakit (create new)');
+            error_log('  - POST /' . $this->namespace . '/mediakit/{id}/publish');
             error_log('  - GET  /' . $this->namespace . '/mediakits (list all)');
             error_log('  - GET  /' . $this->namespace . '/components');
             error_log('  - POST /' . $this->namespace . '/pods/{id}/field/{field}');
@@ -645,6 +662,97 @@ class GMKB_REST_API_V2 {
             return new WP_Error(
                 'save_failed',
                 'Failed to save media kit: ' . $e->getMessage(),
+                array('status' => 500)
+            );
+        }
+    }
+
+    /**
+     * Publish or unpublish a media kit
+     *
+     * Changes the post status between 'publish' and 'draft'.
+     *
+     * @param WP_REST_Request $request The request containing 'id' and 'status'
+     * @return WP_REST_Response|WP_Error Response on success, error on failure
+     */
+    public function publish_mediakit($request) {
+        $post_id = (int) $request['id'];
+        $status = $request->get_param('status') ?? 'publish';
+
+        // Validate status
+        if (!in_array($status, array('publish', 'draft'), true)) {
+            return new WP_Error(
+                'invalid_status',
+                'Status must be either "publish" or "draft"',
+                array('status' => 400)
+            );
+        }
+
+        // Verify post exists and is correct type
+        $post = get_post($post_id);
+        if (!$post || $post->post_type !== 'guests') {
+            return new WP_Error(
+                'post_not_found',
+                'Media kit not found',
+                array('status' => 404)
+            );
+        }
+
+        // Check user can publish/unpublish
+        if (!current_user_can('edit_post', $post_id)) {
+            return new WP_Error(
+                'forbidden',
+                'You do not have permission to change this media kit\'s status',
+                array('status' => 403)
+            );
+        }
+
+        // For publishing, check publish capability
+        if ($status === 'publish' && !current_user_can('publish_posts')) {
+            return new WP_Error(
+                'forbidden',
+                'You do not have permission to publish this media kit',
+                array('status' => 403)
+            );
+        }
+
+        try {
+            // Update the post status
+            $update_result = wp_update_post(array(
+                'ID' => $post_id,
+                'post_status' => $status
+            ), true);
+
+            if (is_wp_error($update_result)) {
+                throw new Exception($update_result->get_error_message());
+            }
+
+            // Clear cache
+            $cache_key = 'gmkb_mediakit_' . $post_id;
+            delete_transient($cache_key);
+
+            // Trigger action for extensibility
+            do_action('gmkb_after_publish_mediakit', $post_id, $status);
+
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB REST API v2: Media kit #' . $post_id . ' status changed to "' . $status . '"');
+            }
+
+            return rest_ensure_response(array(
+                'success' => true,
+                'post_id' => $post_id,
+                'status' => $status,
+                'message' => $status === 'publish' ? 'Media kit published' : 'Media kit unpublished'
+            ));
+
+        } catch (Exception $e) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB REST API v2: Publish failed for post #' . $post_id . ': ' . $e->getMessage());
+            }
+
+            return new WP_Error(
+                'publish_failed',
+                'Failed to update media kit status: ' . $e->getMessage(),
                 array('status' => 500)
             );
         }

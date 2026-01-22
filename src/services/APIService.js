@@ -701,6 +701,64 @@ export class APIService {
   }
 
   /**
+   * Publish or unpublish a media kit
+   *
+   * @param {string} status - 'publish' to publish, 'draft' to unpublish
+   * @returns {Promise<Object>} Result with success status
+   */
+  async publish(status = 'publish') {
+    if (!this.postId) {
+      throw new Error('Cannot publish: No post ID available');
+    }
+
+    try {
+      // CRITICAL FIX: Use properly normalized restUrl which already strips gmkb/v2
+      // The normalizeRestUrl() method ensures restUrl ends at /wp-json/
+      // so we manually construct the full path here
+      const url = `${this.restUrl}gmkb/v2/mediakit/${this.postId}/publish`;
+
+      if (window.gmkbData?.debugMode) {
+        console.log('📤 Publish request:', { url, status, postId: this.postId });
+      }
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': this.restNonce
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({ status })
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        console.error('❌ Publish failed:', error);
+        throw new Error(error.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || 'Publish failed');
+      }
+
+      // Clear cache after status change
+      this.clearCache();
+
+      if (window.gmkbData?.debugMode) {
+        console.log('✅ Publish successful:', result);
+      }
+
+      return result;
+
+    } catch (error) {
+      console.error('Publish error:', error);
+      throw error;
+    }
+  }
+
+  /**
    * PHASE 6: Enhanced cache management
    */
   getFromCache(key) {
