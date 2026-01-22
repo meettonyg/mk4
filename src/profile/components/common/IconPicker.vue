@@ -1,7 +1,7 @@
 <template>
     <div class="icon-picker">
-        <!-- Current Icon Display -->
-        <div class="current-icon-wrapper" @click="openModal">
+        <!-- Current Icon Display (only shown in standalone mode) -->
+        <div v-if="!isControlled" class="current-icon-wrapper" @click="openModal">
             <div class="current-icon" :class="{ 'has-icon': modelValue }">
                 <i v-if="modelValue" :class="modelValue"></i>
                 <span v-else class="placeholder-icon">
@@ -17,7 +17,7 @@
 
         <!-- Modal -->
         <Teleport to="body">
-            <div v-if="isOpen" class="icon-picker-modal-overlay" @click.self="closeModal">
+            <div v-if="isModalOpen" class="icon-picker-modal-overlay" @click.self="closeModal">
                 <div class="icon-picker-modal">
                     <div class="modal-header">
                         <h3>Select Profile Icon</h3>
@@ -100,23 +100,54 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue';
+import { ref, computed, nextTick, watch } from 'vue';
 
 const props = defineProps({
     modelValue: {
         type: String,
         default: '',
     },
+    isOpen: {
+        type: Boolean,
+        default: null, // null means standalone mode, true/false means controlled mode
+    },
 });
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue', 'close']);
 
-// Modal state
-const isOpen = ref(false);
+// Check if we're in controlled mode (parent passes isOpen prop)
+const isControlled = computed(() => props.isOpen !== null);
+
+// Internal modal state (for standalone mode)
+const internalOpen = ref(false);
+
+// Computed modal open state - use prop if controlled, internal state if standalone
+const isModalOpen = computed(() => {
+    return isControlled.value ? props.isOpen : internalOpen.value;
+});
+
+// Watch for external open state changes to reset form
+watch(() => props.isOpen, (newVal) => {
+    if (newVal) {
+        resetForm();
+    }
+});
+
 const searchQuery = ref('');
 const selectedCategory = ref('all');
 const tempSelection = ref('');
 const searchInput = ref(null);
+
+const resetForm = () => {
+    tempSelection.value = props.modelValue || '';
+    searchQuery.value = '';
+    selectedCategory.value = 'all';
+    nextTick(() => {
+        if (searchInput.value) {
+            searchInput.value.focus();
+        }
+    });
+};
 
 // Icon categories and data
 const categories = [
@@ -274,20 +305,18 @@ const filteredIcons = computed(() => {
 
 // Methods
 const openModal = () => {
-    isOpen.value = true;
-    tempSelection.value = props.modelValue || '';
-    searchQuery.value = '';
-    selectedCategory.value = 'all';
-
-    nextTick(() => {
-        if (searchInput.value) {
-            searchInput.value.focus();
-        }
-    });
+    if (!isControlled.value) {
+        internalOpen.value = true;
+    }
+    resetForm();
 };
 
 const closeModal = () => {
-    isOpen.value = false;
+    if (isControlled.value) {
+        emit('close');
+    } else {
+        internalOpen.value = false;
+    }
     tempSelection.value = '';
 };
 

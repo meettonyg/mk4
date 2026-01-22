@@ -374,37 +374,6 @@
 
             <!-- Sidebar -->
             <div class="sidebar">
-                <!-- Profile Icon Panel -->
-                <EditablePanel
-                    title="Profile Icon"
-                    section-id="icon"
-                    :is-editing="editingSection === 'icon'"
-                    :is-saving="isSaving"
-                    @edit="startEditing"
-                    @save="saveSection"
-                    @cancel="cancelEditing"
-                >
-                    <template #display>
-                        <div class="profile-icon-display">
-                            <div class="profile-icon" :class="{ 'has-icon': store.fields.profile_icon }">
-                                <i v-if="store.fields.profile_icon" :class="store.fields.profile_icon"></i>
-                                <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="18" y1="20" x2="18" y2="10"></line>
-                                    <line x1="12" y1="20" x2="12" y2="4"></line>
-                                    <line x1="6" y1="20" x2="6" y2="14"></line>
-                                </svg>
-                            </div>
-                            <p class="icon-help-text">
-                                {{ store.fields.profile_icon ? 'Click Edit to change your profile icon' : 'Add an icon to help identify this profile' }}
-                            </p>
-                        </div>
-                    </template>
-
-                    <template #edit>
-                        <IconPicker v-model="editFields.profile_icon" />
-                    </template>
-                </EditablePanel>
-
                 <!-- Profile Strength Meter -->
                 <ProfileStrengthMeter
                     v-if="store.postId"
@@ -500,7 +469,6 @@ import { useProfileStore } from '../../stores/profile.js';
 import { useInterviews } from '../../../composables/useInterviews.js';
 import EditablePanel from '../layout/EditablePanel.vue';
 import ProfileStrengthMeter from '../strength/ProfileStrengthMeter.vue';
-import IconPicker from '../common/IconPicker.vue';
 
 const store = useProfileStore();
 const {
@@ -659,7 +627,6 @@ onMounted(async () => {
 
 // Section field mappings
 const sectionFields = {
-    icon: ['profile_icon'],
     audience: ['expertise_tags', 'hook_who'],
     'why-book': ['why_book_you'],
     links: [
@@ -784,49 +751,6 @@ const truncateText = (text, maxLength) => {
     flex-direction: column;
     gap: 20px;
     min-width: 0; /* Prevent content from overflowing grid cell */
-}
-
-/* Profile Icon */
-.profile-icon-display {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 16px;
-    text-align: center;
-}
-
-.profile-icon {
-    width: 64px;
-    height: 64px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f8fafc;
-    border-radius: 50%;
-    border: 2px solid #e2e8f0;
-    margin-bottom: 12px;
-}
-
-.profile-icon.has-icon {
-    background: linear-gradient(135deg, #fff8f0, #fff);
-    border-color: #ED8936;
-}
-
-.profile-icon i {
-    font-size: 28px;
-    color: #ED8936;
-}
-
-.profile-icon svg {
-    width: 24px;
-    height: 24px;
-    color: #94a3b8;
-}
-
-.icon-help-text {
-    font-size: 13px;
-    color: #64748b;
-    margin: 0;
 }
 
 /* Text areas */
