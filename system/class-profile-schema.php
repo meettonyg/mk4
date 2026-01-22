@@ -126,6 +126,12 @@ class GMKB_Profile_Schema {
             'label' => 'Areas of Expertise',
             'group' => 'identity',
         ],
+        'profile_icon' => [
+            'type' => self::TYPE_STRING,
+            'sanitize' => 'text',
+            'label' => 'Profile Icon',
+            'group' => 'identity',
+        ],
 
         // =====================
         // Contact - Private

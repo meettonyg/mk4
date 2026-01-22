@@ -4,8 +4,9 @@
             <!-- Header -->
             <div class="guestify-card-header">
                 <div class="guestify-title-wrapper">
-                    <div class="guestify-icon-wrapper">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="guestify-icon" viewBox="0 0 24 24"
+                    <div class="guestify-icon-wrapper" :class="{ 'has-custom-icon': profile.icon }">
+                        <i v-if="profile.icon" :class="profile.icon" class="guestify-custom-icon"></i>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="guestify-icon" viewBox="0 0 24 24"
                             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                         </svg>
@@ -114,12 +115,27 @@ const formattedDate = computed(() => {
     border-radius: 6px;
     margin-right: 12px;
     flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.guestify-icon-wrapper.has-custom-icon {
+    background: linear-gradient(135deg, #fff8f0, #fff);
+    border: 1px solid #ED8936;
 }
 
 .guestify-icon {
     width: 16px;
     height: 16px;
     color: #516f90;
+}
+
+.guestify-custom-icon {
+    font-size: 16px;
+    color: #ED8936;
 }
 
 .guestify-card-title {

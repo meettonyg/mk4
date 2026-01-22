@@ -18,8 +18,9 @@
                 >
                     <td class="pit-td pit-td-title">
                         <div class="pit-title-cell">
-                            <div class="pit-icon-wrapper">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="pit-icon" viewBox="0 0 24 24"
+                            <div class="pit-icon-wrapper" :class="{ 'has-custom-icon': profile.icon }">
+                                <i v-if="profile.icon" :class="profile.icon" class="pit-custom-icon"></i>
+                                <svg v-else xmlns="http://www.w3.org/2000/svg" class="pit-icon" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                                 </svg>
@@ -142,12 +143,27 @@ const formatDate = (dateString) => {
     padding: 8px;
     border-radius: 6px;
     flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pit-icon-wrapper.has-custom-icon {
+    background: linear-gradient(135deg, #fff8f0, #fff);
+    border: 1px solid #ED8936;
 }
 
 .pit-icon {
     width: 16px;
     height: 16px;
     color: #516f90;
+}
+
+.pit-custom-icon {
+    font-size: 16px;
+    color: #ED8936;
 }
 
 .pit-title-text {
