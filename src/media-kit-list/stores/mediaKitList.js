@@ -20,6 +20,8 @@ export const useMediaKitListStore = defineStore('mediaKitList', {
         // UI state
         isLoading: false,
         isDeleting: false,
+        viewMode: 'cards', // 'cards' or 'table'
+        searchQuery: '',
 
         // Errors
         lastError: null,
@@ -33,6 +35,25 @@ export const useMediaKitListStore = defineStore('mediaKitList', {
             return [...state.mediakits].sort((a, b) => {
                 return new Date(b.modified) - new Date(a.modified);
             });
+        },
+
+        /**
+         * Get filtered and sorted media kits based on search query
+         */
+        filteredMediaKits: (state) => {
+            let filtered = [...state.mediakits];
+
+            // Apply search filter
+            if (state.searchQuery.trim()) {
+                const query = state.searchQuery.toLowerCase();
+                filtered = filtered.filter(mk =>
+                    (mk.title && mk.title.toLowerCase().includes(query)) ||
+                    (mk.theme && mk.theme.toLowerCase().includes(query))
+                );
+            }
+
+            // Sort by modified date
+            return filtered.sort((a, b) => new Date(b.modified) - new Date(a.modified));
         },
 
         /**
@@ -69,6 +90,20 @@ export const useMediaKitListStore = defineStore('mediaKitList', {
             if (apiUrl) this.apiUrl = apiUrl;
             if (createUrl) this.createUrl = createUrl;
             if (typeof showCreate === 'boolean') this.showCreate = showCreate;
+        },
+
+        /**
+         * Set view mode
+         */
+        setViewMode(mode) {
+            this.viewMode = mode;
+        },
+
+        /**
+         * Set search query
+         */
+        setSearchQuery(query) {
+            this.searchQuery = query;
         },
 
         /**

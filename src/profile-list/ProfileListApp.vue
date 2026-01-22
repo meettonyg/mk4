@@ -13,6 +13,58 @@
             </p>
         </div>
 
+        <!-- Toolbar -->
+        <div v-if="!store.isLoading && !store.lastError && store.hasProfiles" class="pit-toolbar">
+            <div class="pit-toolbar-left">
+                <div class="pit-search-wrapper">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="pit-search-icon" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input
+                        type="text"
+                        class="pit-search-input"
+                        placeholder="Search profiles..."
+                        :value="store.searchQuery"
+                        @input="store.setSearchQuery($event.target.value)"
+                    />
+                </div>
+            </div>
+            <div class="pit-toolbar-right">
+                <div class="pit-view-toggle">
+                    <button
+                        class="pit-view-btn"
+                        :class="{ 'pit-view-btn-active': store.viewMode === 'cards' }"
+                        @click="store.setViewMode('cards')"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                        Cards
+                    </button>
+                    <button
+                        class="pit-view-btn"
+                        :class="{ 'pit-view-btn-active': store.viewMode === 'table' }"
+                        @click="store.setViewMode('table')"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="8" y1="6" x2="21" y2="6"></line>
+                            <line x1="8" y1="12" x2="21" y2="12"></line>
+                            <line x1="8" y1="18" x2="21" y2="18"></line>
+                            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                        </svg>
+                        Table
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Loading State -->
         <div v-if="store.isLoading" class="loading-container">
             <div class="loading-spinner"></div>
@@ -27,11 +79,18 @@
             </button>
         </div>
 
-        <!-- Profile Grid -->
+        <!-- Table View -->
+        <ProfileTableView
+            v-else-if="store.viewMode === 'table' && store.hasProfiles"
+            :profiles="store.filteredProfiles"
+            @delete="handleDelete"
+        />
+
+        <!-- Card Grid View -->
         <div v-else class="guestify-card-grid">
             <!-- Profile Cards -->
             <ProfileCard
-                v-for="profile in store.sortedProfiles"
+                v-for="profile in store.filteredProfiles"
                 :key="profile.id"
                 :profile="profile"
                 @delete="handleDelete"
@@ -87,6 +146,7 @@
 import { onMounted } from 'vue';
 import { useProfileListStore } from './stores/profileList.js';
 import ProfileCard from './components/ProfileCard.vue';
+import ProfileTableView from './components/ProfileTableView.vue';
 import CreateProfileModal from './components/CreateProfileModal.vue';
 
 // Store
@@ -118,7 +178,106 @@ const handleCreate = async () => {
 }
 
 .guestify-page-header {
-    margin-bottom: 30px;
+    margin-bottom: 20px;
+}
+
+/* Toolbar Styles */
+.pit-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.pit-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 200px;
+}
+
+.pit-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.pit-search-wrapper {
+    position: relative;
+    flex: 1;
+    max-width: 300px;
+}
+
+.pit-search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: #94a3b8;
+    pointer-events: none;
+}
+
+.pit-search-input {
+    width: 100%;
+    padding: 8px 12px 8px 36px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #334155;
+    background: #fff;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pit-search-input:focus {
+    outline: none;
+    border-color: #ED8936;
+    box-shadow: 0 0 0 3px rgba(237, 137, 54, 0.1);
+}
+
+.pit-search-input::placeholder {
+    color: #94a3b8;
+}
+
+.pit-view-toggle {
+    display: flex;
+    background: #f1f5f9;
+    border-radius: 6px;
+    padding: 2px;
+}
+
+.pit-view-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pit-view-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.pit-view-btn:hover {
+    color: #334155;
+}
+
+.pit-view-btn-active {
+    background: #fff;
+    color: #334155;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .guestify-page-title {
