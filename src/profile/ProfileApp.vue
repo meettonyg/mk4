@@ -31,8 +31,10 @@
                 :post-data="store.postData"
                 :full-name="store.fullName"
                 :professional-title="store.fields.guest_title"
+                :profile-icon="store.fields.profile_icon"
                 :completeness="store.completeness"
                 @edit="handleEditProfile"
+                @update:profile-icon="handleIconChange"
             />
 
             <!-- Tabs -->
@@ -128,6 +130,12 @@ const handleBeforeUnload = (e) => {
 const handleEditProfile = () => {
     // Could open a modal or navigate to edit mode
     console.log('Edit profile clicked');
+};
+
+// Handle icon change from header
+const handleIconChange = async (newIcon) => {
+    store.updateField('profile_icon', newIcon);
+    await store.saveField('profile_icon');
 };
 
 // Handle manual save

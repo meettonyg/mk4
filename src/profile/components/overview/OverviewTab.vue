@@ -14,27 +14,29 @@
                     @cancel="cancelEditing"
                 >
                     <template #display>
-                        <div class="text-area">
-                            <h3>Areas of Expertise</h3>
-                            <div class="tags-container">
-                                <span
-                                    v-for="tag in expertiseTags"
-                                    :key="tag"
-                                    class="tag"
-                                >
-                                    {{ tag }}
-                                </span>
-                                <span v-if="!expertiseTags.length" class="empty-text">
-                                    No expertise tags added
-                                </span>
+                        <div class="audience-display">
+                            <div class="text-area">
+                                <h3>Areas of Expertise</h3>
+                                <div class="tags-container">
+                                    <span
+                                        v-for="tag in expertiseTags"
+                                        :key="tag"
+                                        class="tag"
+                                    >
+                                        {{ tag }}
+                                    </span>
+                                    <span v-if="!expertiseTags.length" class="empty-text">
+                                        No expertise tags added
+                                    </span>
+                                </div>
                             </div>
-                        </div>
-                        <div class="text-area">
-                            <h3>Audiences</h3>
-                            <div class="tags-container">
-                                <span class="empty-text">
-                                    {{ store.fields.hook_who || 'No audience defined' }}
-                                </span>
+                            <div class="text-area">
+                                <h3>Audiences</h3>
+                                <div class="tags-container">
+                                    <span class="empty-text">
+                                        {{ store.fields.hook_who || 'No audience defined' }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </template>

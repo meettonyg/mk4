@@ -2,13 +2,26 @@
     <div class="profile-header">
         <div class="profile-title-row">
             <div class="profile-title-section">
-                <div class="profile-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                <div
+                    class="profile-icon"
+                    :class="{ 'has-custom-icon': profileIcon, 'is-clickable': true }"
+                    @click="openIconPicker"
+                    title="Click to change icon"
+                >
+                    <i v-if="profileIcon" :class="profileIcon"></i>
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="18" y1="20" x2="18" y2="10"></line>
                         <line x1="12" y1="20" x2="12" y2="4"></line>
                         <line x1="6" y1="20" x2="6" y2="14"></line>
                     </svg>
+                    <div class="icon-edit-overlay">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </div>
                 </div>
                 <div class="profile-title-info">
                     <h1>{{ fullName }}</h1>
@@ -52,6 +65,15 @@
                 </a>
             </div>
         </div>
+
+        <!-- Icon Picker Modal -->
+        <IconPicker
+            v-if="showIconPicker"
+            :model-value="profileIcon"
+            :is-open="showIconPicker"
+            @update:model-value="handleIconChange"
+            @close="showIconPicker = false"
+        />
 
         <div class="profile-status">
             <div class="status-item">
@@ -132,8 +154,9 @@
 </template>
 
 <script setup>
-import { computed, watch } from 'vue';
+import { computed, watch, ref } from 'vue';
 import { useOnboardingProgress } from '@/composables/useOnboardingProgress.js';
+import IconPicker from '../common/IconPicker.vue';
 
 const props = defineProps({
     postData: {
@@ -160,7 +183,25 @@ const props = defineProps({
         type: Number,
         default: null,
     },
+    profileIcon: {
+        type: String,
+        default: '',
+    },
 });
+
+const emit = defineEmits(['update:profileIcon']);
+
+// Icon picker state
+const showIconPicker = ref(false);
+
+const openIconPicker = () => {
+    showIconPicker.value = true;
+};
+
+const handleIconChange = (newIcon) => {
+    emit('update:profileIcon', newIcon);
+    showIconPicker.value = false;
+};
 
 // Initialize onboarding progress composable
 const profileId = computed(() => props.postData?.id || null);
@@ -275,12 +316,67 @@ const mediaKitBuilderUrl = computed(() => {
     padding: 12px;
     border-radius: 8px;
     margin-right: 16px;
+    position: relative;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-icon.is-clickable {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.profile-icon.is-clickable:hover {
+    background-color: #e2e8f0;
+}
+
+.profile-icon.has-custom-icon {
+    background: linear-gradient(135deg, #fff8f0, #fff);
+    border: 2px solid #ED8936;
+}
+
+.profile-icon.has-custom-icon:hover {
+    background: linear-gradient(135deg, #fff3e0, #fff8f0);
+}
+
+.profile-icon i {
+    font-size: 24px;
+    color: #ED8936;
 }
 
 .profile-icon svg {
     width: 24px;
     height: 24px;
     color: #0284c7;
+}
+
+.icon-edit-overlay {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    width: 20px;
+    height: 20px;
+    background: #ED8936;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.profile-icon.is-clickable:hover .icon-edit-overlay {
+    opacity: 1;
+}
+
+.icon-edit-overlay svg {
+    width: 10px;
+    height: 10px;
+    color: white;
 }
 
 .profile-title-info h1 {

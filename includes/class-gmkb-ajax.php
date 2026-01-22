@@ -285,8 +285,7 @@ class GMKB_Ajax {
         
         // Verify post exists and is correct type
         $post = get_post($post_id);
-        // ARCHITECTURE FIX: Accept both 'mkcg' and 'guests' post types
-        if (!$post || !in_array($post->post_type, array('mkcg', 'guests'))) {
+        if (!$post || $post->post_type !== 'guests') {
             wp_send_json_error(array('message' => 'Invalid post'));
             return;
         }

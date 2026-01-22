@@ -24,6 +24,8 @@ export const useProfileListStore = defineStore('profileList', {
         isLoading: false,
         isCreating: false,
         showCreateModal: false,
+        viewMode: 'cards', // 'cards' or 'table'
+        searchQuery: '',
 
         // Errors
         lastError: null,
@@ -43,6 +45,25 @@ export const useProfileListStore = defineStore('profileList', {
             return [...state.profiles].sort((a, b) => {
                 return new Date(b.modified) - new Date(a.modified);
             });
+        },
+
+        /**
+         * Get filtered and sorted profiles based on search query
+         */
+        filteredProfiles: (state) => {
+            let filtered = [...state.profiles];
+
+            // Apply search filter
+            if (state.searchQuery.trim()) {
+                const query = state.searchQuery.toLowerCase();
+                filtered = filtered.filter(p =>
+                    (p.title && p.title.toLowerCase().includes(query)) ||
+                    (p.tagline && p.tagline.toLowerCase().includes(query))
+                );
+            }
+
+            // Sort by modified date
+            return filtered.sort((a, b) => new Date(b.modified) - new Date(a.modified));
         },
 
         /**
@@ -122,6 +143,20 @@ export const useProfileListStore = defineStore('profileList', {
             if (nonce) this.nonce = nonce;
             if (apiUrl) this.apiUrl = apiUrl;
             if (createUrl) this.createUrl = createUrl;
+        },
+
+        /**
+         * Set view mode
+         */
+        setViewMode(mode) {
+            this.viewMode = mode;
+        },
+
+        /**
+         * Set search query
+         */
+        setSearchQuery(query) {
+            this.searchQuery = query;
         },
 
         /**

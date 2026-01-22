@@ -1,20 +1,15 @@
 <template>
-    <div class="profile-list-app">
+    <div class="media-kit-list-app">
         <!-- Page Header -->
-        <div class="guestify-page-header">
-            <h1 class="guestify-page-title">Your Guest Profiles</h1>
-            <p class="guestify-page-subtitle">
-                Create and manage different expertise profiles for your podcast guest appearances
-            </p>
-            <!-- Profile limit indicator -->
-            <p v-if="store.limitStatus && !store.isUnlimited" class="guestify-limit-indicator">
-                {{ store.profileCount }} of {{ store.profileLimit }} profiles used
-                <span v-if="store.membershipTier" class="tier-badge">{{ store.membershipTier.name }}</span>
+        <div class="gmkb-page-header">
+            <h1 class="gmkb-page-title">Your Media Kits</h1>
+            <p class="gmkb-page-subtitle">
+                Create and manage your professional media kits for podcast appearances
             </p>
         </div>
 
         <!-- Toolbar -->
-        <div v-if="!store.isLoading && !store.lastError && store.hasProfiles" class="pit-toolbar">
+        <div v-if="!store.isLoading && !store.lastError && store.hasMediaKits" class="pit-toolbar">
             <div class="pit-toolbar-left">
                 <div class="pit-search-wrapper">
                     <svg xmlns="http://www.w3.org/2000/svg" class="pit-search-icon" viewBox="0 0 24 24"
@@ -25,7 +20,7 @@
                     <input
                         type="text"
                         class="pit-search-input"
-                        placeholder="Search profiles..."
+                        placeholder="Search media kits..."
                         :value="store.searchQuery"
                         @input="store.setSearchQuery($event.target.value)"
                     />
@@ -68,116 +63,98 @@
         <!-- Loading State -->
         <div v-if="store.isLoading" class="loading-container">
             <div class="loading-spinner"></div>
-            <p>Loading profiles...</p>
+            <p>Loading media kits...</p>
         </div>
 
         <!-- Error State -->
         <div v-else-if="store.lastError" class="error-banner">
             <p>{{ store.lastError }}</p>
-            <button @click="store.loadProfiles()" class="retry-button">
+            <button @click="store.loadMediaKits()" class="retry-button">
                 Retry
             </button>
         </div>
 
+        <!-- Empty State -->
+        <div v-else-if="!store.hasMediaKits && !store.isLoading" class="empty-state">
+            <svg xmlns="http://www.w3.org/2000/svg" class="empty-icon" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="3" y1="9" x2="21" y2="9"></line>
+                <line x1="9" y1="21" x2="9" y2="9"></line>
+            </svg>
+            <h2>No Media Kits Yet</h2>
+            <p>Create your first media kit to showcase your expertise to podcast hosts.</p>
+            <a v-if="store.showCreate" :href="store.createUrl" class="gmkb-create-button">
+                Create Your First Media Kit
+            </a>
+        </div>
+
         <!-- Table View -->
-        <ProfileTableView
-            v-else-if="store.viewMode === 'table' && store.hasProfiles"
-            :profiles="store.filteredProfiles"
+        <MediaKitTableView
+            v-else-if="store.viewMode === 'table' && store.hasMediaKits"
+            :mediakits="store.filteredMediaKits"
             @delete="handleDelete"
         />
 
-        <!-- Card Grid View -->
-        <div v-else class="guestify-card-grid">
-            <!-- Profile Cards -->
-            <ProfileCard
-                v-for="profile in store.filteredProfiles"
-                :key="profile.id"
-                :profile="profile"
+        <!-- Media Kit Grid -->
+        <div v-else class="gmkb-card-grid">
+            <!-- Media Kit Cards -->
+            <MediaKitCard
+                v-for="mediakit in store.filteredMediaKits"
+                :key="mediakit.id"
+                :mediakit="mediakit"
                 @delete="handleDelete"
             />
 
-            <!-- Add New Profile Card (only show if can create) -->
-            <div
-                v-if="store.canCreateProfile"
-                class="guestify-profile-card guestify-add-card"
-                @click="store.openCreateModal()"
+            <!-- Add New Media Kit Card -->
+            <a
+                v-if="store.showCreate"
+                :href="store.createUrl"
+                class="gmkb-card gmkb-add-card"
             >
-                <svg xmlns="http://www.w3.org/2000/svg" class="guestify-add-icon" viewBox="0 0 24 24"
+                <svg xmlns="http://www.w3.org/2000/svg" class="gmkb-add-icon" viewBox="0 0 24 24"
                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
                     <line x1="12" y1="8" x2="12" y2="16"></line>
                     <line x1="8" y1="12" x2="16" y2="12"></line>
                 </svg>
-                <p class="guestify-add-title">Create New Profile</p>
-                <p class="guestify-add-subtitle">Add another expertise area</p>
-            </div>
-
-            <!-- Upgrade CTA Card (show when at limit) -->
-            <div
-                v-else-if="store.isAtLimit"
-                class="guestify-profile-card guestify-upgrade-card"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" class="guestify-upgrade-icon" viewBox="0 0 24 24"
-                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                    <path d="M2 17l10 5 10-5"></path>
-                    <path d="M2 12l10 5 10-5"></path>
-                </svg>
-                <p class="guestify-upgrade-title">Profile Limit Reached</p>
-                <p class="guestify-upgrade-subtitle">
-                    You've used all {{ store.profileLimit }} profile{{ store.profileLimit === 1 ? '' : 's' }} on your {{ store.membershipTier?.name || 'current' }} plan
-                </p>
-                <a :href="store.upgradeLink" class="guestify-upgrade-button">
-                    Upgrade to Create Unlimited One Sheets
-                </a>
-            </div>
+                <p class="gmkb-add-title">Create New Media Kit</p>
+                <p class="gmkb-add-subtitle">Start from a template</p>
+            </a>
         </div>
-
-        <!-- Create Profile Modal -->
-        <CreateProfileModal
-            v-if="store.showCreateModal"
-            @close="store.closeCreateModal()"
-            @create="handleCreate"
-        />
     </div>
 </template>
 
 <script setup>
 import { onMounted } from 'vue';
-import { useProfileListStore } from './stores/profileList.js';
-import ProfileCard from './components/ProfileCard.vue';
-import ProfileTableView from './components/ProfileTableView.vue';
-import CreateProfileModal from './components/CreateProfileModal.vue';
+import { useMediaKitListStore } from './stores/mediaKitList.js';
+import MediaKitCard from './components/MediaKitCard.vue';
+import MediaKitTableView from './components/MediaKitTableView.vue';
 
 // Store
-const store = useProfileListStore();
+const store = useMediaKitListStore();
 
-// Load profiles on mount
+// Load media kits on mount
 onMounted(() => {
-    store.loadProfiles();
+    store.loadMediaKits();
 });
 
 // Handle delete
-const handleDelete = async (profileId) => {
-    if (confirm('Are you sure you want to delete this profile? This action cannot be undone.')) {
-        await store.deleteProfile(profileId);
+const handleDelete = async (mediakitId) => {
+    if (confirm('Are you sure you want to delete this media kit? This action cannot be undone.')) {
+        await store.deleteMediaKit(mediakitId);
     }
-};
-
-// Handle create
-const handleCreate = async () => {
-    await store.createProfile();
 };
 </script>
 
 <style scoped>
-.profile-list-app {
+.media-kit-list-app {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
 }
 
-.guestify-page-header {
+.gmkb-page-header {
     margin-bottom: 20px;
 }
 
@@ -280,14 +257,14 @@ const handleCreate = async () => {
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.guestify-page-title {
+.gmkb-page-title {
     font-size: 28px;
     font-weight: 600;
     color: #4A5568;
     margin: 0 0 8px 0;
 }
 
-.guestify-page-subtitle {
+.gmkb-page-subtitle {
     font-size: 16px;
     color: #516f90;
     margin: 0;
@@ -348,20 +325,71 @@ const handleCreate = async () => {
     background: #b91c1c;
 }
 
-.guestify-card-grid {
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 2px dashed #e2e8f0;
+}
+
+.empty-icon {
+    width: 64px;
+    height: 64px;
+    color: #94a3b8;
+    margin-bottom: 16px;
+}
+
+.empty-state h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #4A5568;
+    margin: 0 0 8px 0;
+}
+
+.empty-state p {
+    font-size: 15px;
+    color: #64748b;
+    margin: 0 0 24px 0;
+}
+
+.gmkb-create-button {
+    display: inline-block;
+    background: linear-gradient(135deg, #ED8936, #DD6B20);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(237, 137, 54, 0.3);
+}
+
+.gmkb-create-button:hover {
+    background: linear-gradient(135deg, #DD6B20, #C05621);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(237, 137, 54, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
+/* Card Grid */
+.gmkb-card-grid {
     display: flex;
     flex-wrap: wrap;
     margin: -10px;
 }
 
-.guestify-add-card {
+.gmkb-add-card {
     flex: 1 0 calc(33.333% - 20px);
     max-width: calc(33.333% - 20px);
     margin: 10px;
     min-width: 280px;
     min-height: 200px;
     background-color: #ffffff;
-    border: 1px dashed #cbd6e2;
+    border: 2px dashed #cbd6e2;
     border-radius: 8px;
     display: flex;
     flex-direction: column;
@@ -370,125 +398,45 @@ const handleCreate = async () => {
     padding: 24px 16px;
     cursor: pointer;
     transition: all 0.2s ease;
+    text-decoration: none;
 }
 
-.guestify-add-card:hover {
+.gmkb-add-card:hover {
     border-color: #ED8936;
     background-color: #fffbf5;
+    text-decoration: none;
 }
 
-.guestify-add-icon {
+.gmkb-add-icon {
     width: 32px;
     height: 32px;
     color: #ED8936;
     margin-bottom: 12px;
 }
 
-.guestify-add-title {
+.gmkb-add-title {
     font-size: 14px;
     font-weight: 500;
     color: #4A5568;
     margin: 0 0 4px 0;
 }
 
-.guestify-add-subtitle {
+.gmkb-add-subtitle {
     font-size: 12px;
     color: #516f90;
     margin: 0;
 }
 
-/* Profile Limit Indicator */
-.guestify-limit-indicator {
-    font-size: 14px;
-    color: #516f90;
-    margin: 8px 0 0 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.tier-badge {
-    background: linear-gradient(135deg, #ED8936, #F6AD55);
-    color: white;
-    padding: 2px 10px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 500;
-    text-transform: capitalize;
-}
-
-/* Upgrade Card Styles */
-.guestify-upgrade-card {
-    flex: 1 0 calc(33.333% - 20px);
-    max-width: calc(33.333% - 20px);
-    margin: 10px;
-    min-width: 280px;
-    min-height: 200px;
-    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
-    border: 2px dashed #ED8936;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 24px 16px;
-    text-align: center;
-}
-
-.guestify-upgrade-icon {
-    width: 40px;
-    height: 40px;
-    color: #ED8936;
-    margin-bottom: 16px;
-}
-
-.guestify-upgrade-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #4A5568;
-    margin: 0 0 8px 0;
-}
-
-.guestify-upgrade-subtitle {
-    font-size: 14px;
-    color: #516f90;
-    margin: 0 0 16px 0;
-    line-height: 1.4;
-}
-
-.guestify-upgrade-button {
-    display: inline-block;
-    background: linear-gradient(135deg, #ED8936, #DD6B20);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    text-decoration: none;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 4px rgba(237, 137, 54, 0.3);
-}
-
-.guestify-upgrade-button:hover {
-    background: linear-gradient(135deg, #DD6B20, #C05621);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(237, 137, 54, 0.4);
-    color: white;
-    text-decoration: none;
-}
-
 /* Responsive */
 @media (max-width: 1024px) {
-    .guestify-add-card,
-    .guestify-upgrade-card {
+    .gmkb-add-card {
         flex: 1 0 calc(50% - 20px);
         max-width: calc(50% - 20px);
     }
 }
 
 @media (max-width: 768px) {
-    .guestify-add-card,
-    .guestify-upgrade-card {
+    .gmkb-add-card {
         flex: 1 0 calc(100% - 20px);
         max-width: calc(100% - 20px);
     }

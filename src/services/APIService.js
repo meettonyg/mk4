@@ -352,8 +352,31 @@ export class APIService {
         return await this.inflightRequests.get('save');
       }
 
+      // For new media kits, create the post first
       if (!this.postId) {
-        throw new Error('Cannot save: No post ID available');
+        console.log('🆕 No post ID - creating new media kit...');
+        const createResult = await this.create(state, options);
+        if (createResult.success && createResult.post_id) {
+          // Update instance with new post ID
+          this.postId = createResult.post_id;
+          this.baseUrl = `${this.restUrl}gmkb/v2/mediakit/${this.postId}`;
+          console.log('✅ Created media kit #' + this.postId);
+
+          // Update window.gmkbData so future saves work
+          if (window.gmkbData) {
+            window.gmkbData.postId = this.postId;
+            window.gmkbData.isNewMediaKit = false;
+          }
+
+          // Dispatch event to notify UI of new post ID
+          document.dispatchEvent(new CustomEvent('gmkb:post-created', {
+            detail: { postId: this.postId, editUrl: createResult.edit_url }
+          }));
+
+          return createResult;
+        } else {
+          throw new Error(createResult.message || 'Failed to create media kit');
+        }
       }
       
       // PHASE 6: Validate and sanitize state before saving
@@ -523,8 +546,114 @@ export class APIService {
   }
 
   /**
+   * Create a new media kit
+   *
+   * @param {Object} state - Initial state to save
+   * @param {Object} options - Create options
+   * @returns {Promise<Object>} Create result with new post_id
+   */
+  async create(state, options = {}) {
+    // Accept profileId as explicit parameter for better testability,
+    // falling back to window.gmkbData for backwards compatibility
+    const profileId = options.profileId ?? window.gmkbData?.profileId ?? null;
+
+    try {
+      // Validate and sanitize state before creating
+      DataValidator.validateState(state);
+      const sanitizedState = DataValidator.sanitizeState(state);
+
+      // Prepare payload - similar to save but with optional profile_id
+      const payload = {
+        components: sanitizedState.components || {},
+        sections: sanitizedState.sections || [],
+        layout: sanitizedState.layout || [],
+        globalSettings: sanitizedState.globalSettings || {},
+        theme: sanitizedState.theme || 'professional_clean',
+        themeCustomizations: sanitizedState.themeCustomizations || {},
+        rendered_content: sanitizedState.rendered_content || '',
+        rendered_css: sanitizedState.rendered_css || '',
+        profile_id: profileId
+      };
+
+      if (!options.silent) {
+        console.log('🆕 Creating new media kit:', {
+          components: Object.keys(payload.components).length,
+          sections: payload.sections.length,
+          profile_id: payload.profile_id
+        });
+      }
+
+      // POST to /gmkb/v2/mediakit (without ID) to create
+      const createUrl = `${this.restUrl}gmkb/v2/mediakit`;
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+      try {
+        const response = await fetch(createUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-WP-Nonce': this.restNonce
+          },
+          credentials: 'same-origin',
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        });
+
+        if (response.status === 401) {
+          throw new Error('You must be logged in to create a media kit');
+        }
+
+        if (response.status === 403) {
+          const error = await response.json();
+          if (error.code === 'rest_cookie_invalid_nonce') {
+            document.dispatchEvent(new CustomEvent('gmkb:nonce-expired', {
+              detail: { action: 'create', unsavedData: payload }
+            }));
+            throw new Error('Session expired. Please refresh the page.');
+          }
+          throw new Error(error.message || 'Permission denied');
+        }
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || `HTTP ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.message || 'Failed to create media kit');
+        }
+
+        if (!options.silent) {
+          console.log('✅ Media kit created:', {
+            post_id: result.post_id,
+            edit_url: result.edit_url
+          });
+        }
+
+        return result;
+
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
+    } catch (error) {
+      console.error('Failed to create media kit:', error);
+
+      document.dispatchEvent(new CustomEvent('gmkb:create-error', {
+        detail: { error: error.message }
+      }));
+
+      return { success: false, message: error.message };
+    }
+  }
+
+  /**
    * Load component metadata
-   * 
+   *
    * @returns {Promise<Array>} Array of component definitions
    */
   async loadComponents() {

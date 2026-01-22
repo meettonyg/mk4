@@ -73,17 +73,6 @@ class GMKB_Core_Schema {
             ],
         ]);
 
-        // Legacy CPT (if needed for backward compatibility)
-        register_post_type('mkcg', [
-            'labels' => [
-                'name' => __('Media Kit CG (Legacy)', 'gmkb'),
-            ],
-            'public' => false,
-            'show_in_rest' => true,
-            'rest_base' => 'media-kits-legacy',
-            'supports' => ['title', 'custom-fields'],
-        ]);
-
         // Offers CPT - Reusable offer assets for Media Kits
         register_post_type('gmkb_offer', [
             'labels' => [

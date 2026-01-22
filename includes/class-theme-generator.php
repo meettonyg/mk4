@@ -886,11 +886,11 @@ class GMKB_Theme_Generator {
         // Check admin pages
         if (is_admin()) {
             $screen = get_current_screen();
-            return $screen && ($screen->id === 'guests_page_media-kit-builder' || $screen->post_type === 'guests' || $screen->post_type === 'mkcg');
+            return $screen && ($screen->id === 'guests_page_media-kit-builder' || $screen->post_type === 'guests');
         }
 
         // Check frontend pages
-        return $post && ($post->post_type === 'guests' || $post->post_type === 'mkcg' || has_shortcode($post->post_content, 'display_media_kit'));
+        return $post && ($post->post_type === 'guests' || has_shortcode($post->post_content, 'display_media_kit'));
     }
 }
 

@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
  */
 function gmkb_get_used_components_for_page() {
     global $post;
-    if (!$post || !is_singular(array('mkcg', 'guests'))) {
+    if (!$post || !is_singular('guests')) {
         return array();
     }
 
@@ -44,7 +44,7 @@ function gmkb_is_builder_page() {
     // Admin edit screen
     if (is_admin()) {
         $screen = get_current_screen();
-        if ($screen && $screen->post_type === 'mkcg' && $screen->base === 'post') {
+        if ($screen && $screen->post_type === 'guests' && $screen->base === 'post') {
             return true;
         }
         return false;
@@ -68,7 +68,7 @@ function gmkb_is_frontend_display() {
     if (isset($_GET['mkcg_id']) || is_admin()) {
         return false;
     }
-    return is_singular('mkcg') || is_singular('guests');
+    return is_singular('guests');
 }
 
 // ===============================================
@@ -365,7 +365,7 @@ function gmkb_prepare_data_for_injection() {
         $saved_state = null;
         $pods_data = array();
         $profile_branding = null;
-        $post_type = 'mkcg';
+        $post_type = 'guests';
         $post_title = 'New Media Kit';
     } else {
         $saved_state = gmkb_get_saved_state($post_id);
@@ -570,7 +570,7 @@ function gmkb_get_pods_data($post_id) {
 
         $post_type = $post->post_type;
 
-        if (!in_array($post_type, array('mkcg', 'guests'))) {
+        if ($post_type !== 'guests') {
             return $pods_data;
         }
 

@@ -83,7 +83,7 @@ class GMKB_Field_Migration {
      */
     public static function migrate_all($batch_size = 50) {
         $posts = get_posts([
-            'post_type' => ['guests', 'mkcg'],
+            'post_type' => 'guests',
             'posts_per_page' => $batch_size,
             'meta_query' => [
                 [
@@ -120,7 +120,7 @@ class GMKB_Field_Migration {
             LEFT JOIN {$wpdb->postmeta} pm
                 ON p.ID = pm.post_id
                 AND pm.meta_key = '_gmkb_fields_migrated'
-            WHERE p.post_type IN ('guests', 'mkcg')
+            WHERE p.post_type = 'guests'
             AND pm.meta_id IS NULL
         ");
     }

@@ -228,6 +228,20 @@ class GMKB_REST_API_V2 {
             )
         ));
 
+        // Endpoint to CREATE a new media kit (no ID required)
+        register_rest_route($this->namespace, '/mediakit', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'create_mediakit'),
+            'permission_callback' => array($this, 'check_create_permissions'),
+        ));
+
+        // Endpoint to LIST all media kits for current user
+        register_rest_route($this->namespace, '/mediakits', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'list_mediakits'),
+            'permission_callback' => array($this, 'check_list_permissions'),
+        ));
+
         // Optional: Component metadata endpoint
         register_rest_route($this->namespace, '/components', array(
             'methods' => 'GET',
@@ -257,6 +271,8 @@ class GMKB_REST_API_V2 {
             error_log('✅ GMKB REST API v2: Routes registered successfully:');
             error_log('  - GET  /' . $this->namespace . '/mediakit/{id}');
             error_log('  - POST /' . $this->namespace . '/mediakit/{id}');
+            error_log('  - POST /' . $this->namespace . '/mediakit (create new)');
+            error_log('  - GET  /' . $this->namespace . '/mediakits (list all)');
             error_log('  - GET  /' . $this->namespace . '/components');
             error_log('  - POST /' . $this->namespace . '/pods/{id}/field/{field}');
             error_log('  - (Offers API routes handled by GMKB_Offers_API)');
@@ -296,7 +312,7 @@ class GMKB_REST_API_V2 {
 
         // Verify post exists
         $post = get_post($post_id);
-        if (!$post || !in_array($post->post_type, array('mkcg', 'guests'))) {
+        if (!$post || $post->post_type !== 'guests') {
             return new WP_Error(
                 'post_not_found',
                 'Media kit not found',
@@ -414,7 +430,7 @@ class GMKB_REST_API_V2 {
 
         // Verify post exists and user can edit
         $post = get_post($post_id);
-        if (!$post || !in_array($post->post_type, array('mkcg', 'guests'))) {
+        if (!$post || $post->post_type !== 'guests') {
             return new WP_Error(
                 'post_not_found',
                 'Media kit not found',
@@ -667,7 +683,7 @@ class GMKB_REST_API_V2 {
             return $this->fetch_native_meta_data($post_id);
         }
         
-        if (!in_array($post_type, array('mkcg', 'guests'))) {
+        if ($post_type !== 'guests') {
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log('⚠️ GMKB API v2: Skipping Pods data - invalid post_type: ' . $post_type);
             }
@@ -989,6 +1005,329 @@ class GMKB_REST_API_V2 {
     }
 
     /**
+     * Check create permissions for new media kits
+     *
+     * @param WP_REST_Request $request The request
+     * @return bool Whether the user can create media kits
+     */
+    public function check_create_permissions($request) {
+        // User must be logged in
+        if (!is_user_logged_in()) {
+            return false;
+        }
+
+        // PHASE 8: Use GMKB_Permissions if available
+        if (class_exists('GMKB_Permissions') && method_exists('GMKB_Permissions', 'can_create')) {
+            return GMKB_Permissions::can_create('guests');
+        }
+
+        // FALLBACK: Check if user can edit posts (draft creation only needs edit capability)
+        return current_user_can('edit_posts');
+    }
+
+    /**
+     * Check list permissions for media kits
+     *
+     * @param WP_REST_Request $request The request
+     * @return bool Whether the user can list media kits
+     */
+    public function check_list_permissions($request) {
+        // User must be logged in to list their media kits
+        return is_user_logged_in();
+    }
+
+    /**
+     * GET /gmkb/v2/mediakits
+     *
+     * Lists all media kits for the current user
+     *
+     * @param WP_REST_Request $request The request
+     * @return WP_REST_Response|WP_Error The response with media kits array
+     */
+    public function list_mediakits($request) {
+        $user_id = get_current_user_id();
+
+        if (!$user_id) {
+            return new WP_Error(
+                'not_authenticated',
+                'You must be logged in to list media kits',
+                array('status' => 401)
+            );
+        }
+
+        try {
+            // Query media kits - posts with gmkb_media_kit_state meta
+            $args = array(
+                'post_type' => 'guests',
+                'posts_per_page' => 100,
+                'post_status' => 'any',
+                'orderby' => 'modified',
+                'order' => 'DESC',
+                'author' => $user_id,
+                'meta_query' => array(
+                    array(
+                        'key' => 'gmkb_media_kit_state',
+                        'compare' => 'EXISTS',
+                    ),
+                ),
+            );
+
+            // Also query by owner_user_id meta (for posts not authored by user)
+            $owner_args = array(
+                'post_type' => 'guests',
+                'posts_per_page' => 100,
+                'post_status' => 'any',
+                'orderby' => 'modified',
+                'order' => 'DESC',
+                'meta_query' => array(
+                    'relation' => 'AND',
+                    array(
+                        'key' => 'gmkb_media_kit_state',
+                        'compare' => 'EXISTS',
+                    ),
+                    array(
+                        'key' => 'owner_user_id',
+                        'value' => $user_id,
+                        'compare' => '=',
+                    ),
+                ),
+            );
+
+            // Get posts by author with media kit state
+            $author_posts = get_posts($args);
+            // Get posts by owner meta with media kit state
+            $owner_posts = get_posts($owner_args);
+
+            // Merge and deduplicate
+            $all_posts = array_merge($author_posts, $owner_posts);
+            $unique_posts = array();
+            $seen_ids = array();
+
+            foreach ($all_posts as $post) {
+                if (!in_array($post->ID, $seen_ids)) {
+                    $seen_ids[] = $post->ID;
+                    $unique_posts[] = $post;
+                }
+            }
+
+            // Sort by modified date
+            usort($unique_posts, function($a, $b) {
+                return strtotime($b->post_modified) - strtotime($a->post_modified);
+            });
+
+            // Format response
+            $mediakits = array();
+            foreach ($unique_posts as $post) {
+                $mediakits[] = $this->format_mediakit_card($post);
+            }
+
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('📋 GMKB REST API v2: Listed ' . count($mediakits) . ' media kits for user #' . $user_id);
+            }
+
+            return rest_ensure_response(array(
+                'success' => true,
+                'mediakits' => $mediakits,
+                'total' => count($mediakits),
+            ));
+
+        } catch (Exception $e) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB REST API v2: List mediakits error: ' . $e->getMessage());
+            }
+
+            return new WP_Error(
+                'list_failed',
+                'Failed to list media kits: ' . $e->getMessage(),
+                array('status' => 500)
+            );
+        }
+    }
+
+    /**
+     * Format a media kit post for card display
+     *
+     * @param WP_Post $post The media kit post
+     * @return array Formatted media kit data
+     */
+    private function format_mediakit_card($post) {
+        // Get state data for theme info
+        $state = get_post_meta($post->ID, 'gmkb_media_kit_state', true);
+        $state_data = is_string($state) ? json_decode($state, true) : $state;
+
+        // Get profile link if any
+        $profile_id = get_post_meta($post->ID, '_gmkb_profile_id', true) ?: get_post_meta($post->ID, 'profile_id', true);
+
+        // Get thumbnail/preview
+        $thumbnail = '';
+        if (has_post_thumbnail($post->ID)) {
+            $thumbnail = get_the_post_thumbnail_url($post->ID, 'medium');
+        }
+
+        // Determine theme
+        $theme = 'professional_clean';
+        if (!empty($state_data['theme'])) {
+            $theme = $state_data['theme'];
+        }
+
+        // Count sections
+        $section_count = 0;
+        if (!empty($state_data['sections']) && is_array($state_data['sections'])) {
+            $section_count = count($state_data['sections']);
+        }
+
+        // Build edit URL - use the media kit builder page
+        $edit_url = home_url('/tools/media-kit/?mkcg_id=' . $post->ID);
+
+        return array(
+            'id' => $post->ID,
+            'title' => $post->post_title ?: 'Untitled Media Kit',
+            'slug' => $post->post_name,
+            'status' => $post->post_status,
+            'post_type' => $post->post_type,
+            'theme' => $theme,
+            'section_count' => $section_count,
+            'profile_id' => $profile_id ? (int) $profile_id : null,
+            'thumbnail' => $thumbnail,
+            'created' => $post->post_date,
+            'modified' => $post->post_modified,
+            'editUrl' => $edit_url,
+            'viewUrl' => get_permalink($post->ID),
+        );
+    }
+
+    /**
+     * POST /gmkb/v2/mediakit (no ID)
+     *
+     * Creates a NEW media kit post
+     *
+     * Request body:
+     * {
+     *   "components": {...},
+     *   "sections": [...],
+     *   "layout": [...],
+     *   "theme": "...",
+     *   "globalSettings": {...},
+     *   "profile_id": 123  // Optional: profile to link
+     * }
+     *
+     * @param WP_REST_Request $request The request
+     * @return WP_REST_Response|WP_Error The response with new post ID
+     */
+    public function create_mediakit($request) {
+        $user_id = get_current_user_id();
+
+        if (!$user_id) {
+            return new WP_Error(
+                'not_authenticated',
+                'You must be logged in to create a media kit',
+                array('status' => 401)
+            );
+        }
+
+        try {
+            $body = $request->get_json_params();
+
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('🆕 GMKB REST API v2: Creating new media kit for user #' . $user_id);
+                error_log('  - Profile ID: ' . ($body['profile_id'] ?? 'none'));
+                error_log('  - Theme: ' . ($body['theme'] ?? 'default'));
+            }
+
+            // Get user info for post title
+            $user = get_userdata($user_id);
+            $display_name = $user ? $user->display_name : 'User';
+
+            // Create the post as 'guests' post type
+            $post_data = array(
+                'post_type'   => 'guests',
+                'post_title'  => sprintf('%s\'s Media Kit', $display_name),
+                'post_status' => 'draft',
+                'post_author' => $user_id,
+            );
+
+            $post_id = wp_insert_post($post_data, true);
+
+            if (is_wp_error($post_id)) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('❌ GMKB REST API v2: Failed to create post: ' . $post_id->get_error_message());
+                }
+                return $post_id;
+            }
+
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB REST API v2: Created post #' . $post_id);
+            }
+
+            // Set owner meta for consistent querying
+            update_post_meta($post_id, 'owner_user_id', $user_id);
+
+            // Link to profile if provided
+            if (!empty($body['profile_id'])) {
+                $profile_id = absint($body['profile_id']);
+                // Verify user owns the profile
+                $profile = get_post($profile_id);
+                if ($profile && $profile->post_author == $user_id) {
+                    update_post_meta($post_id, '_gmkb_profile_id', $profile_id);
+                    update_post_meta($post_id, 'profile_id', $profile_id);
+
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('  - Linked to profile #' . $profile_id);
+                    }
+                }
+            }
+
+            // Now save the media kit state using the existing save logic
+            // Create a fake request with the ID to reuse save_mediakit
+            if (!empty($body['components']) || !empty($body['sections'])) {
+                $save_request = new WP_REST_Request('POST', '/gmkb/v2/mediakit/' . $post_id);
+                $save_request->set_body(wp_json_encode($body));
+                $save_request->set_header('Content-Type', 'application/json');
+                $save_request['id'] = $post_id;
+
+                $save_result = $this->save_mediakit($save_request);
+
+                if (is_wp_error($save_result)) {
+                    // Post was created but save failed - return the post ID anyway
+                    // so the frontend can retry saves
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('⚠️ GMKB REST API v2: Post created but initial save failed: ' . $save_result->get_error_message());
+                    }
+
+                    return rest_ensure_response(array(
+                        'success' => true,
+                        'post_id' => $post_id,
+                        'created' => true,
+                        'warning' => 'Post created but initial data save failed: ' . $save_result->get_error_message(),
+                        'edit_url' => admin_url('post.php?post=' . $post_id . '&action=edit'),
+                    ));
+                }
+            }
+
+            // Return success with new post ID
+            return rest_ensure_response(array(
+                'success' => true,
+                'post_id' => $post_id,
+                'created' => true,
+                'edit_url' => admin_url('post.php?post=' . $post_id . '&action=edit'),
+                'view_url' => get_permalink($post_id),
+                'timestamp' => time(),
+            ));
+
+        } catch (Exception $e) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB REST API v2: Create exception: ' . $e->getMessage());
+            }
+
+            return new WP_Error(
+                'create_failed',
+                'Failed to create media kit: ' . $e->getMessage(),
+                array('status' => 500)
+            );
+        }
+    }
+
+    /**
      * POST /gmkb/v2/pods/{id}/field/{field}
      * 
      * Updates a single Pods field value
@@ -1007,7 +1346,7 @@ class GMKB_REST_API_V2 {
         
         // Verify post exists
         $post = get_post($post_id);
-        if (!$post || !in_array($post->post_type, array('mkcg', 'guests'))) {
+        if (!$post || $post->post_type !== 'guests') {
             return new WP_Error(
                 'post_not_found',
                 'Post not found or invalid post type',
