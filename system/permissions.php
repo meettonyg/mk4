@@ -283,7 +283,7 @@ class GMKB_Permissions {
 // Backfill owner_user_id function (run once via admin or WP-CLI)
 function gmkb_backfill_owner_user_id() {
     $posts = get_posts([
-        'post_type' => ['guests', 'mkcg'],
+        'post_type' => 'guests',
         'posts_per_page' => -1,
         'meta_query' => [
             [

@@ -37,7 +37,7 @@ if (php_sapi_name() === 'cli') {
 echo "Starting font encoding fix...\n\n";
 
 // Get all media kit posts
-$post_types = ['mkcg', 'guests'];
+$post_types = ['guests'];
 $fixed_count = 0;
 $total_count = 0;
 

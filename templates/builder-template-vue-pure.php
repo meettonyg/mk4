@@ -42,10 +42,9 @@ if ($post_id > 0) {
         );
     }
 
-    // Support multiple post types
-    $allowed_post_types = array('guests', 'mkcg');
-    if (!in_array($post->post_type, $allowed_post_types)) {
-        wp_die('Invalid media kit ID: Post type "' . esc_html($post->post_type) . '" is not supported. Expected: guests or mkcg');
+    // Verify post type
+    if ($post->post_type !== 'guests') {
+        wp_die('Invalid media kit ID: Post type "' . esc_html($post->post_type) . '" is not supported.');
     }
 } else {
     // "Create new" mode - no post ID provided

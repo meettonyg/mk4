@@ -312,7 +312,7 @@ class GMKB_REST_API_V2 {
 
         // Verify post exists
         $post = get_post($post_id);
-        if (!$post || !in_array($post->post_type, array('mkcg', 'guests'))) {
+        if (!$post || $post->post_type !== 'guests') {
             return new WP_Error(
                 'post_not_found',
                 'Media kit not found',
@@ -430,7 +430,7 @@ class GMKB_REST_API_V2 {
 
         // Verify post exists and user can edit
         $post = get_post($post_id);
-        if (!$post || !in_array($post->post_type, array('mkcg', 'guests'))) {
+        if (!$post || $post->post_type !== 'guests') {
             return new WP_Error(
                 'post_not_found',
                 'Media kit not found',
@@ -683,7 +683,7 @@ class GMKB_REST_API_V2 {
             return $this->fetch_native_meta_data($post_id);
         }
         
-        if (!in_array($post_type, array('mkcg', 'guests'))) {
+        if ($post_type !== 'guests') {
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log('⚠️ GMKB API v2: Skipping Pods data - invalid post_type: ' . $post_type);
             }
@@ -1018,7 +1018,7 @@ class GMKB_REST_API_V2 {
 
         // PHASE 8: Use GMKB_Permissions if available
         if (class_exists('GMKB_Permissions') && method_exists('GMKB_Permissions', 'can_create')) {
-            return GMKB_Permissions::can_create('mkcg');
+            return GMKB_Permissions::can_create('guests');
         }
 
         // FALLBACK: Check if user can edit posts (draft creation only needs edit capability)
@@ -1056,10 +1056,9 @@ class GMKB_REST_API_V2 {
         }
 
         try {
-            // Query media kits - can be stored on either 'mkcg' or 'guests' post types
-            // A media kit is any post that has the gmkb_media_kit_state meta
+            // Query media kits - posts with gmkb_media_kit_state meta
             $args = array(
-                'post_type' => array('mkcg', 'guests'),
+                'post_type' => 'guests',
                 'posts_per_page' => 100,
                 'post_status' => 'any',
                 'orderby' => 'modified',
@@ -1075,7 +1074,7 @@ class GMKB_REST_API_V2 {
 
             // Also query by owner_user_id meta (for posts not authored by user)
             $owner_args = array(
-                'post_type' => array('mkcg', 'guests'),
+                'post_type' => 'guests',
                 'posts_per_page' => 100,
                 'post_status' => 'any',
                 'orderby' => 'modified',
@@ -1239,8 +1238,7 @@ class GMKB_REST_API_V2 {
             $user = get_userdata($user_id);
             $display_name = $user ? $user->display_name : 'User';
 
-            // Create the post as 'guests' (modern post type)
-            // Note: 'mkcg' is legacy and should not be used for new posts
+            // Create the post as 'guests' post type
             $post_data = array(
                 'post_type'   => 'guests',
                 'post_title'  => sprintf('%s\'s Media Kit', $display_name),
@@ -1348,7 +1346,7 @@ class GMKB_REST_API_V2 {
         
         // Verify post exists
         $post = get_post($post_id);
-        if (!$post || !in_array($post->post_type, array('mkcg', 'guests'))) {
+        if (!$post || $post->post_type !== 'guests') {
             return new WP_Error(
                 'post_not_found',
                 'Post not found or invalid post type',
