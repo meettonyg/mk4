@@ -407,8 +407,15 @@ function gmkb_prepare_data_for_injection() {
 
     // Get view URL for the media kit (public permalink)
     $view_url = null;
+    $preview_url = null;
     if ($post_id && !$is_new_media_kit) {
         $view_url = get_permalink($post_id);
+        // For draft posts, provide a preview URL
+        // Note: get_sample_permalink() is admin-only, so we construct the preview URL manually
+        $post_status = get_post_status($post_id);
+        if ($post_status !== 'publish') {
+            $preview_url = add_query_arg('preview', 'true', $view_url);
+        }
     }
 
     // Build registration URL for anonymous users
@@ -426,6 +433,7 @@ function gmkb_prepare_data_for_injection() {
         'profileId'         => $linked_profile_id,  // Alias for backwards compatibility
         'linkedProfileName' => $linked_profile_name, // Display name for header
         'viewUrl'           => $view_url,           // Public permalink for "View" link
+        'previewUrl'        => $preview_url,        // Preview URL for draft posts
         'pluginUrl'         => GUESTIFY_PLUGIN_URL,
         'isDevelopment'     => defined('GMKB_DEV_MODE') && GMKB_DEV_MODE,
         'restUrl'           => esc_url_raw($rest_url),
