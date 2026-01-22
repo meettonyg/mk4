@@ -1,40 +1,24 @@
 <template>
   <div class="gmkb-toolbar" :class="{ 'gmkb-toolbar--dark': isDarkMode }">
-    <!-- Left Section: Branding & Document Info -->
+    <!-- Left Section: Back Button & Consolidated Profile -->
     <div class="gmkb-toolbar__section gmkb-toolbar__section--left">
-      <!-- Logo -->
-      <div class="gmkb-toolbar__logo">Guestify</div>
+      <!-- Back Button -->
+      <a href="https://guestify.ai/app/media-kits/" class="gmkb-toolbar__back-link" title="Back to Media Kits">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+      </a>
 
-      <!-- Document Info Card -->
-      <div class="gmkb-toolbar__doc-card">
-        <div class="gmkb-toolbar__doc-info">
-          <span class="gmkb-toolbar__doc-label">Editing</span>
-          <span class="gmkb-toolbar__doc-title">{{ postTitle }}</span>
-        </div>
+      <div class="gmkb-toolbar__divider"></div>
 
-        <!-- View Link (only for saved media kits) -->
-        <a
-          v-if="viewUrl && !isNewMediaKit"
-          :href="viewUrl"
-          target="_blank"
-          class="gmkb-toolbar__view-link"
-          title="View published media kit"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-            <polyline points="15 3 21 3 21 9"></polyline>
-            <line x1="10" y1="14" x2="21" y2="3"></line>
-          </svg>
-          <span>View</span>
-        </a>
-      </div>
-
-      <!-- Profile Selector -->
-      <div class="gmkb-toolbar__profile-area" v-if="isLoggedIn">
+      <!-- Consolidated Profile Group -->
+      <div class="gmkb-toolbar__profile-group">
+        <!-- Merged Profile Button -->
         <button
-          class="gmkb-toolbar__profile-btn"
+          class="gmkb-toolbar__profile-combo-btn"
           @click="openProfileSelector"
-          :title="selectedProfileName ? `Profile: ${selectedProfileName}` : 'Select profile to pre-populate data'"
+          :title="selectedProfileName ? `Switch Profile: ${selectedProfileName}` : 'Select profile to pre-populate data'"
         >
           <div class="gmkb-toolbar__profile-avatar">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -42,13 +26,29 @@
               <circle cx="12" cy="7" r="4"></circle>
             </svg>
           </div>
-          <span class="gmkb-toolbar__profile-text">
-            {{ selectedProfileName || 'Select Profile' }}
-          </span>
-          <svg class="gmkb-toolbar__profile-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <div class="gmkb-toolbar__profile-info">
+            <span class="gmkb-toolbar__profile-label">Editing</span>
+            <span class="gmkb-toolbar__profile-name">{{ selectedProfileName || postTitle }}</span>
+          </div>
+          <svg class="gmkb-toolbar__profile-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
         </button>
+
+        <!-- View Icon Button -->
+        <a
+          v-if="viewUrl && !isNewMediaKit"
+          :href="viewUrl"
+          target="_blank"
+          class="gmkb-toolbar__view-btn"
+          title="View Published Kit"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+        </a>
       </div>
     </div>
 
@@ -646,132 +646,92 @@ onUnmounted(() => {
   justify-content: flex-end;
 }
 
-/* Element: logo */
-.gmkb-toolbar__logo {
-  font-size: 18px;
-  font-weight: 700;
-  color: #06b6d4;
-  letter-spacing: -0.02em;
+/* Element: back link button */
+.gmkb-toolbar__back-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  background: #fff;
+  transition: all 0.2s ease;
+  text-decoration: none;
   flex-shrink: 0;
 }
 
-/* Element: document info card */
-.gmkb-toolbar__doc-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 6px 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  margin-left: 16px;
+.gmkb-toolbar__back-link:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+  transform: translateX(-2px);
 }
 
-.gmkb-toolbar--dark .gmkb-toolbar__doc-card {
+.gmkb-toolbar--dark .gmkb-toolbar__back-link {
   background: #1e293b;
   border-color: #334155;
-}
-
-.gmkb-toolbar__doc-info {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.gmkb-toolbar__doc-label {
-  font-size: 10px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   color: #94a3b8;
 }
 
-.gmkb-toolbar--dark .gmkb-toolbar__doc-label {
-  color: #64748b;
-}
-
-.gmkb-toolbar__doc-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #1e293b;
-  max-width: 180px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.gmkb-toolbar--dark .gmkb-toolbar__doc-title {
+.gmkb-toolbar--dark .gmkb-toolbar__back-link:hover {
+  background: #334155;
+  border-color: #475569;
   color: #f1f5f9;
 }
 
-/* Element: view link */
-.gmkb-toolbar__view-link {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #0ea5e9;
-  text-decoration: none;
-  background: #f0f9ff;
-  border-radius: 4px;
-  transition: all 0.15s ease;
+/* Element: divider */
+.gmkb-toolbar__divider {
+  width: 1px;
+  height: 24px;
+  background-color: #e2e8f0;
+  margin: 0 4px;
 }
 
-.gmkb-toolbar__view-link:hover {
-  background: #e0f2fe;
-  color: #0284c7;
+.gmkb-toolbar--dark .gmkb-toolbar__divider {
+  background-color: #334155;
 }
 
-.gmkb-toolbar--dark .gmkb-toolbar__view-link {
-  background: rgba(14, 165, 233, 0.1);
-  color: #38bdf8;
-}
-
-.gmkb-toolbar--dark .gmkb-toolbar__view-link:hover {
-  background: rgba(14, 165, 233, 0.2);
-  color: #7dd3fc;
-}
-
-/* Element: profile area */
-.gmkb-toolbar__profile-area {
-  margin-left: 12px;
-  padding-left: 12px;
-  border-left: 1px solid #e2e8f0;
-}
-
-.gmkb-toolbar--dark .gmkb-toolbar__profile-area {
-  border-left-color: #334155;
-}
-
-.gmkb-toolbar__profile-btn {
+/* Element: profile group (consolidated container) */
+.gmkb-toolbar__profile-group {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 10px;
-  background: white;
+}
+
+/* Element: profile combo button (merged profile selector) */
+.gmkb-toolbar__profile-combo-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 4px 6px;
+  background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s ease;
+  text-align: left;
+  height: 40px;
 }
 
-.gmkb-toolbar__profile-btn:hover {
+.gmkb-toolbar__profile-combo-btn:hover {
   background: #f8fafc;
   border-color: #cbd5e1;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.gmkb-toolbar--dark .gmkb-toolbar__profile-btn {
+.gmkb-toolbar--dark .gmkb-toolbar__profile-combo-btn {
   background: #1e293b;
   border-color: #334155;
 }
 
-.gmkb-toolbar--dark .gmkb-toolbar__profile-btn:hover {
+.gmkb-toolbar--dark .gmkb-toolbar__profile-combo-btn:hover {
   background: #334155;
   border-color: #475569;
 }
 
+/* Element: profile avatar */
 .gmkb-toolbar__profile-avatar {
   display: flex;
   align-items: center;
@@ -781,11 +741,33 @@ onUnmounted(() => {
   background: linear-gradient(135deg, #8b5cf6, #6366f1);
   border-radius: 50%;
   color: white;
+  flex-shrink: 0;
 }
 
-.gmkb-toolbar__profile-text {
+/* Element: profile info (container for label and name) */
+.gmkb-toolbar__profile-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+/* Element: profile label ("Editing") */
+.gmkb-toolbar__profile-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__profile-label {
+  color: #64748b;
+}
+
+/* Element: profile name */
+.gmkb-toolbar__profile-name {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   color: #1e293b;
   max-width: 140px;
   white-space: nowrap;
@@ -793,17 +775,49 @@ onUnmounted(() => {
   text-overflow: ellipsis;
 }
 
-.gmkb-toolbar--dark .gmkb-toolbar__profile-text {
-  color: #e2e8f0;
+.gmkb-toolbar--dark .gmkb-toolbar__profile-name {
+  color: #f1f5f9;
 }
 
+/* Element: profile chevron */
 .gmkb-toolbar__profile-chevron {
   color: #94a3b8;
+  margin-left: 4px;
   transition: transform 0.15s ease;
 }
 
-.gmkb-toolbar__profile-btn:hover .gmkb-toolbar__profile-chevron {
+.gmkb-toolbar__profile-combo-btn:hover .gmkb-toolbar__profile-chevron {
   transform: translateY(1px);
+}
+
+/* Element: view button (icon-only) */
+.gmkb-toolbar__view-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  width: 40px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #0ea5e9;
+  background: #f0f9ff;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.gmkb-toolbar__view-btn:hover {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__view-btn {
+  background: rgba(14, 165, 233, 0.1);
+  color: #38bdf8;
+}
+
+.gmkb-toolbar--dark .gmkb-toolbar__view-btn:hover {
+  background: rgba(14, 165, 233, 0.2);
+  color: #7dd3fc;
 }
 
 /* Element: device-selector */
@@ -1233,21 +1247,44 @@ body.dark-mode .gmkb-toolbar__btn:hover:not(:disabled) {
     padding: 8px 12px;
     gap: 8px;
   }
-  
+
   .gmkb-toolbar__btn span {
     display: none;
   }
-  
+
   .gmkb-toolbar__btn--icon span {
     display: none;
   }
-  
+
   .gmkb-toolbar__save-status {
     display: none;
   }
-  
+
   .gmkb-toolbar__device-selector {
     display: none;
+  }
+
+  /* Hide profile text on mobile, show only avatar */
+  .gmkb-toolbar__profile-name,
+  .gmkb-toolbar__profile-label {
+    display: none;
+  }
+
+  .gmkb-toolbar__profile-combo-btn {
+    padding: 6px;
+    gap: 0;
+  }
+
+  .gmkb-toolbar__profile-info {
+    display: none;
+  }
+
+  .gmkb-toolbar__profile-chevron {
+    display: none;
+  }
+
+  .gmkb-toolbar__divider {
+    margin: 0 2px;
   }
 }
 
