@@ -1056,16 +1056,36 @@ class GMKB_REST_API_V2 {
         }
 
         try {
-            // Query media kits by author or owner_user_id meta
-            // Use 'any' status to catch all posts including auto-draft
+            // Query media kits - can be stored on either 'mkcg' or 'guests' post types
+            // A media kit is any post that has the gmkb_media_kit_state meta
             $args = array(
-                'post_type' => 'mkcg',
+                'post_type' => array('mkcg', 'guests'),
+                'posts_per_page' => 100,
+                'post_status' => 'any',
+                'orderby' => 'modified',
+                'order' => 'DESC',
+                'author' => $user_id,
+                'meta_query' => array(
+                    array(
+                        'key' => 'gmkb_media_kit_state',
+                        'compare' => 'EXISTS',
+                    ),
+                ),
+            );
+
+            // Also query by owner_user_id meta (for posts not authored by user)
+            $owner_args = array(
+                'post_type' => array('mkcg', 'guests'),
                 'posts_per_page' => 100,
                 'post_status' => 'any',
                 'orderby' => 'modified',
                 'order' => 'DESC',
                 'meta_query' => array(
-                    'relation' => 'OR',
+                    'relation' => 'AND',
+                    array(
+                        'key' => 'gmkb_media_kit_state',
+                        'compare' => 'EXISTS',
+                    ),
                     array(
                         'key' => 'owner_user_id',
                         'value' => $user_id,
@@ -1074,23 +1094,13 @@ class GMKB_REST_API_V2 {
                 ),
             );
 
-            // Also include posts where user is the author
-            $author_args = array(
-                'post_type' => 'mkcg',
-                'posts_per_page' => 100,
-                'post_status' => 'any',
-                'author' => $user_id,
-                'orderby' => 'modified',
-                'order' => 'DESC',
-            );
-
-            // Get posts by meta
-            $meta_posts = get_posts($args);
-            // Get posts by author
-            $author_posts = get_posts($author_args);
+            // Get posts by author with media kit state
+            $author_posts = get_posts($args);
+            // Get posts by owner meta with media kit state
+            $owner_posts = get_posts($owner_args);
 
             // Merge and deduplicate
-            $all_posts = array_merge($meta_posts, $author_posts);
+            $all_posts = array_merge($author_posts, $owner_posts);
             $unique_posts = array();
             $seen_ids = array();
 
@@ -1167,18 +1177,22 @@ class GMKB_REST_API_V2 {
             $section_count = count($state_data['sections']);
         }
 
+        // Build edit URL - use the media kit builder page
+        $edit_url = home_url('/tools/media-kit/?mkcg_id=' . $post->ID);
+
         return array(
             'id' => $post->ID,
             'title' => $post->post_title ?: 'Untitled Media Kit',
             'slug' => $post->post_name,
             'status' => $post->post_status,
+            'post_type' => $post->post_type,
             'theme' => $theme,
             'section_count' => $section_count,
             'profile_id' => $profile_id ? (int) $profile_id : null,
             'thumbnail' => $thumbnail,
             'created' => $post->post_date,
             'modified' => $post->post_modified,
-            'editUrl' => admin_url('post.php?post=' . $post->ID . '&action=edit'),
+            'editUrl' => $edit_url,
             'viewUrl' => get_permalink($post->ID),
         );
     }
