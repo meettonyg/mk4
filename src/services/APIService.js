@@ -100,10 +100,14 @@ export class APIService {
       let pathname = parsedUrl.pathname.replace(/\/+/g, '/');
 
       // ROOT FIX & DUPLICATION FIX v2.0.2:
-      // Ensure path ends at /wp-json/ and does not include gmkb/v2 namespace
+      // Ensure path ends at /wp-json/ and does not include gmkb/v2 namespace.
+      // This aggressive stripping is intentional: window.gmkbData.restUrl should only
+      // provide the base REST URL, and the namespace is always explicitly appended
+      // by this class (e.g., `${this.restUrl}gmkb/v2/mediakit`). If the backend
+      // mistakenly includes the namespace in restUrl, we must strip it to prevent
+      // URL duplication like /wp-json/gmkb/v2/gmkb/v2/mediakit.
       if (pathname.includes('/wp-json')) {
         const wpJsonIndex = pathname.indexOf('/wp-json');
-        // Cut off everything after /wp-json/ - this strips any namespace that might be included
         pathname = pathname.substring(0, wpJsonIndex + 9); // +9 includes '/wp-json/'
       } else {
         // Doesn't have wp-json, add it
