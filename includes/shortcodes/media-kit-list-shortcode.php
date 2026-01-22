@@ -97,7 +97,7 @@ function gmkb_enqueue_media_kit_list_assets($atts = []) {
         'apiUrl' => rest_url(),
         'userId' => get_current_user_id(),
         'isAdmin' => current_user_can('edit_others_posts'),
-        'createUrl' => home_url('/tools/media-kit/'),
+        'createUrl' => home_url('/templates/'),
         'showCreate' => $atts['show_create'] === 'true',
     ]);
 }

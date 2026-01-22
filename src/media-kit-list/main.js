@@ -30,7 +30,7 @@ if (window.gmkbMediaKitListInitialized) {
         // Get configuration from global
         const nonce = window.gmkbMediaKitListData?.nonce || window.wpApiSettings?.nonce;
         const apiUrl = window.gmkbMediaKitListData?.apiUrl || window.wpApiSettings?.root;
-        const createUrl = window.gmkbMediaKitListData?.createUrl || '/tools/media-kit/';
+        const createUrl = window.gmkbMediaKitListData?.createUrl || '/templates/';
         const showCreate = window.gmkbMediaKitListData?.showCreate !== false;
 
         console.log('Initializing Media Kit List');

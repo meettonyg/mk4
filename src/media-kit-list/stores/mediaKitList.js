@@ -11,7 +11,7 @@ export const useMediaKitListStore = defineStore('mediaKitList', {
         // Configuration
         nonce: null,
         apiUrl: '/wp-json/',
-        createUrl: '/tools/media-kit/',
+        createUrl: '/templates/',
         showCreate: true,
 
         // Media kits data
