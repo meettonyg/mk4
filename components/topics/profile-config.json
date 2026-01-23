@@ -1,4 +1,5 @@
 {
+  "_note": "Field lists in fieldMappings and saveBackFields are intentionally separate for bidirectional mapping flexibility",
   "profileIntegration": {
     "enabled": true,
     "autoPopulate": true,

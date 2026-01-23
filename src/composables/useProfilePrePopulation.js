@@ -36,6 +36,7 @@ import profileDataIntegration from '../core/ProfileDataIntegration.js';
 import { useMediaKitStore } from '../stores/mediaKit.js';
 import aiSaveBridge from '../services/AISaveBridge.js';
 import { useComponentProfileConfig } from './useComponentProfileConfig.js';
+import { ProfileDataTransformer } from '../core/ProfileDataTransformer.js';
 
 /**
  * Profile Pre-Population composable for component editors
@@ -292,6 +293,7 @@ export function useProfilePrePopulation(componentType = null) {
 
   /**
    * Save component data back to the profile/custom post
+   * Now uses component-level saveBackFields configuration when available
    *
    * @param {object} data - The data to save (should match the component's data structure)
    * @returns {Promise<{success: boolean, saved: object, errors: array}>}
@@ -313,35 +315,58 @@ export function useProfilePrePopulation(componentType = null) {
       return { success: false, saved: {}, errors: [error] };
     }
 
-    const saveType = COMPONENT_TO_SAVE_TYPE[componentType];
-    if (!saveType) {
-      const error = `Component type "${componentType}" is not supported for saving to profile.`;
-      console.error('[useProfilePrePopulation]', error);
-      saveError.value = error;
-      return { success: false, saved: {}, errors: [error] };
+    // Check if component has saveBackFields config (new pattern)
+    const saveBackFields = configLoaded.value ? componentConfig?.getSaveBackFields() : null;
+
+    // Verify save capability
+    if (!saveBackFields) {
+      const saveType = COMPONENT_TO_SAVE_TYPE[componentType];
+      if (!saveType) {
+        const error = `Component type "${componentType}" is not supported for saving to profile.`;
+        console.error('[useProfilePrePopulation]', error);
+        saveError.value = error;
+        return { success: false, saved: {}, errors: [error] };
+      }
     }
 
     isSaving.value = true;
     saveError.value = null;
 
     try {
-      // Transform data to match AISaveBridge expected format
-      let saveData = data;
+      let saveData;
+      let saveType;
 
-      // For some types, we need to transform the data
-      if (componentType === 'questions' && Array.isArray(data.questions)) {
-        // Questions editor uses { question, answer } format
-        // AISaveBridge expects array of questions (strings or objects with question property)
-        saveData = data.questions.map(q => q.question || q);
-      } else if (componentType === 'topics' && Array.isArray(data.topics)) {
-        // Topics are already in the right format (array of strings)
-        saveData = data.topics;
-      } else if (componentType === 'biography' && data.biography) {
-        // Biography can be a string or object with short/medium/long
-        saveData = data.biography;
-      } else if (componentType === 'guest-intro' && data.introduction) {
-        // Guest intro is a string
-        saveData = data.introduction;
+      // Use component-level saveBackFields config if available
+      if (saveBackFields && Object.keys(saveBackFields).length > 0) {
+        // Transform using ProfileDataTransformer with saveBackFields
+        saveData = ProfileDataTransformer.transformForSave(data, saveBackFields);
+        saveType = componentType; // Use component type directly
+
+        console.log(`[useProfilePrePopulation] Using saveBackFields config for "${componentType}":`, {
+          input: data,
+          transformed: saveData,
+          saveBackFields
+        });
+      } else {
+        // Fallback to legacy transformation logic
+        saveType = COMPONENT_TO_SAVE_TYPE[componentType];
+        saveData = data;
+
+        // Legacy transformations for backward compatibility
+        if (componentType === 'questions' && Array.isArray(data.questions)) {
+          // Questions editor uses { question, answer } format
+          // AISaveBridge expects array of questions (strings or objects with question property)
+          saveData = data.questions.map(q => q.question || q);
+        } else if (componentType === 'topics' && Array.isArray(data.topics)) {
+          // Topics are already in the right format (array of strings)
+          saveData = data.topics;
+        } else if (componentType === 'biography' && data.biography) {
+          // Biography can be a string or object with short/medium/long
+          saveData = data.biography;
+        } else if (componentType === 'guest-intro' && data.introduction) {
+          // Guest intro is a string
+          saveData = data.introduction;
+        }
       }
 
       console.log(`[useProfilePrePopulation] Saving ${componentType} to profile #${profileId}:`, saveData);

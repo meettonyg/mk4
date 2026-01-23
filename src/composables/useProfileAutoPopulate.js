@@ -22,7 +22,7 @@
  * <textarea v-model="localData.biography" @input="markEdited('biography')" />
  */
 
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useComponentProfileConfig } from './useComponentProfileConfig.js';
 import { useProfilePrePopulation } from './useProfilePrePopulation.js';
 
