@@ -2,17 +2,31 @@
   <!-- ROOT FIX: Use design system classes -->
   <div class="gmkb-component gmkb-component--social" :data-component-id="componentId">
     <div class="component-root social-links">
-      <a
-        v-for="(link, index) in links"
-        :key="index"
-        :href="link.url"
-        :title="link.platform"
-        class="social-link"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <i :class="getSocialIcon(link.platform)"></i>
-      </a>
+      <!-- Placeholder icons (non-clickable) when editing with no configured links -->
+      <template v-if="links.length > 0 && links[0].isPlaceholder">
+        <span
+          v-for="(link, index) in links"
+          :key="index"
+          :title="`${link.platform} (click to configure)`"
+          class="social-link social-link--placeholder"
+        >
+          <i :class="getSocialIcon(link.platform)"></i>
+        </span>
+      </template>
+      <!-- Actual links when URLs are configured -->
+      <template v-else>
+        <a
+          v-for="(link, index) in links"
+          :key="index"
+          :href="link.url"
+          :title="link.platform"
+          class="social-link"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <i :class="getSocialIcon(link.platform)"></i>
+        </a>
+      </template>
     </div>
   </div>
 </template>
@@ -25,6 +39,9 @@ const SOCIAL_PLATFORMS = [
   'facebook', 'twitter', 'linkedin', 'instagram',
   'youtube', 'tiktok', 'pinterest', 'website'
 ];
+
+// Default platforms to show as placeholders when editing with no configured links
+const DEFAULT_PLACEHOLDER_PLATFORMS = ['linkedin', 'twitter', 'instagram', 'youtube'];
 
 const SOCIAL_ICONS = {
   'facebook': 'fab fa-facebook-f',
@@ -86,6 +103,15 @@ export default {
           builtLinks.push({ platform, url });
         }
       });
+
+      // Show placeholder icons when in editing mode with no configured links
+      if (builtLinks.length === 0 && (props.isEditing || props.isSelected)) {
+        return DEFAULT_PLACEHOLDER_PLATFORMS.map(platform => ({
+          platform,
+          url: '#',
+          isPlaceholder: true
+        }));
+      }
 
       return builtLinks;
     });

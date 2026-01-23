@@ -143,3 +143,34 @@
 
 /* Dark mode adjustments */
 body.dark-mode .social-link i.fa-tiktok { color: #ffffff; }
+
+/* Placeholder styles for editing mode when no URLs are configured */
+.social-link--placeholder {
+    cursor: default;
+    opacity: 0.7;
+    background: var(--gmkb-color-surface, #f8fafc);
+    border: 2px dashed var(--gmkb-color-border, #cbd5e1);
+    position: relative;
+}
+
+.social-link--placeholder:hover {
+    transform: none;
+    box-shadow: var(--gmkb-shadow-sm, 0 2px 4px rgba(0, 0, 0, 0.05));
+}
+
+/* Ensure placeholder icons retain their platform colors for visibility */
+.social-link--placeholder i.fa-facebook-f { color: #1877F2; }
+.social-link--placeholder i.fa-twitter { color: #1DA1F2; }
+.social-link--placeholder i.fa-linkedin-in { color: #0A66C2; }
+.social-link--placeholder i.fa-instagram { color: #E4405F; }
+.social-link--placeholder i.fa-youtube { color: #FF0000; }
+.social-link--placeholder i.fa-tiktok { color: #000000; }
+.social-link--placeholder i.fa-pinterest { color: #E60023; }
+.social-link--placeholder i.fa-globe { color: #3b82f6; }
+
+body.dark-mode .social-link--placeholder {
+    background: var(--gmkb-color-surface-elevated, #1e293b);
+    border-color: var(--gmkb-color-border, #475569);
+}
+
+body.dark-mode .social-link--placeholder i.fa-tiktok { color: #ffffff; }
