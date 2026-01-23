@@ -160,7 +160,7 @@ const getSocialIcon = (platform) => {
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
   background: var(--card-bg, rgba(248, 250, 252, 0.8));
-  color: inherit;
+  color: var(--text-color, #1f2937);
   text-decoration: none;
   border-radius: 50px;
   transition: all 0.3s ease;
@@ -176,6 +176,7 @@ const getSocialIcon = (platform) => {
 
 .social-link i {
   font-size: 1.25rem;
+  color: var(--icon-color, currentColor);
 }
 
 .social-label {
