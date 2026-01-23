@@ -28,11 +28,6 @@ import { ref, computed } from 'vue';
 import { useAIStore } from '../stores/ai';
 import { getRestUrl, getToolNonce, getRestNonce, isUserLoggedIn } from '../utils/ai';
 
-// Lazy reference to toolModules - breaks circular dependency by deferring access
-// The import happens statically but we only access the value at runtime
-let _toolModulesRef = null;
-import('../../tools/index.js').then(m => { _toolModulesRef = m.toolModules; });
-
 /**
  * Generate cache key from type and params
  * @param {string} type Content type
@@ -82,19 +77,13 @@ function base64EncodeUtf8(value) {
  * Get validation configuration from a tool's meta.json
  * @param {string} type - The API type (e.g., 'biography', 'topics')
  * @returns {Object|null} Validation config or null if not found
+ * @deprecated Validation config lookup removed to break circular dependency.
+ *             This deprecated composable now skips meta-based validation.
  */
 function getValidationConfig(type) {
-  // Use lazy-loaded toolModules reference
-  if (!_toolModulesRef) {
-    // If not yet loaded, skip validation (will be available on retry)
-    return null;
-  }
-  // Find the tool module by apiType
-  for (const [, module] of Object.entries(_toolModulesRef)) {
-    if (module.meta?.apiType === type && module.meta?.validation) {
-      return module.meta.validation;
-    }
-  }
+  // Circular dependency with tools/index.js prevents meta-based validation lookup.
+  // Since this composable is deprecated, validation is skipped (returns null).
+  // New tools should use the tool-based API which handles validation differently.
   return null;
 }
 
