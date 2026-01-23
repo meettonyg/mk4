@@ -23,8 +23,7 @@
 
     <!-- ✅ CAROUSEL LAYOUT: Use CarouselGrid component -->
     <CarouselGrid
-      v-else-if="layoutStyle === 'carousel' && carouselSettings" 
-      v-if="layoutStyle === 'carousel' && carouselSettings"
+      v-else-if="layoutStyle === 'carousel' && carouselSettings"
       :items="logos"
       :settings="carouselSettings"
       :space-between="32"
