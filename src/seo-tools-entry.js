@@ -18,9 +18,10 @@ import './styles/ai-shared.css';
 import {
   toolModules,
   buildComponentRegistry,
-  resolveSlug,
-  EmbeddedToolApp
+  resolveSlug
 } from '@tools';
+// Import EmbeddedToolApp directly to avoid circular dependency via barrel export
+import EmbeddedToolApp from '@tools/_shared/EmbeddedToolApp.vue';
 
 import ToolDirectoryPage from '@tools/ToolDirectoryPage.vue';
 import ToolLandingPage from '@/vue/components/tools/ToolLandingPage.vue';

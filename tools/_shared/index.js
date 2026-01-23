@@ -29,7 +29,8 @@ export { default as ProfileContextBanner } from './ProfileContextBanner.vue';
 
 // Embedded Tool Components
 export { default as EmbeddedToolWrapper } from './EmbeddedToolWrapper.vue';
-export { default as EmbeddedToolApp } from './EmbeddedToolApp.vue';
+// NOTE: EmbeddedToolApp is NOT exported here to avoid circular dependency.
+// Import it directly: import EmbeddedToolApp from '@tools/_shared/EmbeddedToolApp.vue'
 
 // Constants
 export { EMBEDDED_PROFILE_DATA_KEY, IS_EMBEDDED_CONTEXT_KEY } from './constants';
