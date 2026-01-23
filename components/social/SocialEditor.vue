@@ -134,32 +134,61 @@ const activeTab = ref('content');
 
 // Profile pre-population and save
 const {
-  hasProfileData,
+  hasProfileData: composableHasProfileData,
   getPrePopulatedData,
   canSaveToProfile,
   isSaving,
-  saveToProfile
+  saveToProfile,
+  profileDataIntegration
 } = useProfilePrePopulation('social');
 
+// Social field names to check in profile data (fallback if config loading fails)
+const SOCIAL_PROFILE_FIELDS = {
+  linkedin: ['1_linkedin', 'social_linkedin', 'linkedin', 'linkedin_url'],
+  twitter: ['1_twitter', 'social_twitter', 'twitter', 'twitter_handle', 'x_handle'],
+  facebook: ['1_facebook', 'social_facebook', 'facebook', 'facebook_url'],
+  instagram: ['1_instagram', 'social_instagram', 'instagram', 'instagram_handle'],
+  youtube: ['guest_youtube', 'social_youtube', 'youtube', 'youtube_channel'],
+  tiktok: ['1_tiktok', 'social_tiktok', 'tiktok', 'tiktok_handle'],
+  website: ['1_website', '2_website', 'website_primary', 'website_secondary', 'website']
+};
+
+// Check if profile has ANY social data (fallback check)
+const hasProfileSocialData = computed(() => {
+  const profileData = profileDataIntegration?.getProfileData() || store.profileData || {};
+  if (!profileData || Object.keys(profileData).length === 0) return false;
+
+  // Check if any social field has data
+  for (const fields of Object.values(SOCIAL_PROFILE_FIELDS)) {
+    for (const field of fields) {
+      if (profileData[field]) return true;
+    }
+  }
+  return false;
+});
+
+// Combined check: use composable OR fallback
+const hasProfileData = computed(() => composableHasProfileData.value || hasProfileSocialData.value);
+
 const socialNetworks = {
-  facebook: { name: 'Facebook', icon: '👤', placeholder: 'https://facebook.com/username' },
-  twitter: { name: 'Twitter/X', icon: '🐦', placeholder: 'https://twitter.com/username' },
   linkedin: { name: 'LinkedIn', icon: '💼', placeholder: 'https://linkedin.com/in/username' },
-  instagram: { name: 'Instagram', icon: '📷', placeholder: 'https://instagram.com/instagram' },
+  twitter: { name: 'Twitter/X', icon: '🐦', placeholder: 'https://twitter.com/username' },
+  facebook: { name: 'Facebook', icon: '👤', placeholder: 'https://facebook.com/username' },
+  instagram: { name: 'Instagram', icon: '📷', placeholder: 'https://instagram.com/username' },
   youtube: { name: 'YouTube', icon: '📺', placeholder: 'https://youtube.com/@channel' },
   tiktok: { name: 'TikTok', icon: '🎵', placeholder: 'https://tiktok.com/@username' },
-  pinterest: { name: 'Pinterest', icon: '📌', placeholder: 'https://pinterest.com/username' }
+  website: { name: 'Website', icon: '🌐', placeholder: 'https://yourwebsite.com' }
 };
 
 // Data from component JSON state (single source of truth)
 const socialUrls = ref({
-  facebook: '',
-  twitter: '',
   linkedin: '',
+  twitter: '',
+  facebook: '',
   instagram: '',
   youtube: '',
   tiktok: '',
-  pinterest: ''
+  website: ''
 });
 
 const displaySettings = ref({
@@ -175,13 +204,33 @@ const hasSocialLinks = computed(() => {
 
 // Load data from profile
 const handleLoadFromProfile = () => {
-  const profileData = getPrePopulatedData();
+  // Try composable first
+  let profileData = getPrePopulatedData();
+
+  // If composable returns empty, use fallback with raw profile data
+  if (!profileData || Object.keys(profileData).length === 0) {
+    const rawProfileData = profileDataIntegration?.getProfileData() || store.profileData || {};
+    profileData = {};
+
+    // Extract social data using fallback field mappings
+    for (const [socialKey, fieldNames] of Object.entries(SOCIAL_PROFILE_FIELDS)) {
+      for (const fieldName of fieldNames) {
+        if (rawProfileData[fieldName]) {
+          profileData[socialKey] = rawProfileData[fieldName];
+          break;
+        }
+      }
+    }
+  }
+
+  // Apply to form fields
   if (profileData.linkedin) socialUrls.value.linkedin = profileData.linkedin;
   if (profileData.twitter) socialUrls.value.twitter = profileData.twitter;
   if (profileData.facebook) socialUrls.value.facebook = profileData.facebook;
   if (profileData.instagram) socialUrls.value.instagram = profileData.instagram;
   if (profileData.youtube) socialUrls.value.youtube = profileData.youtube;
   if (profileData.tiktok) socialUrls.value.tiktok = profileData.tiktok;
+  if (profileData.website) socialUrls.value.website = profileData.website;
   updateDisplaySettings();
 };
 
@@ -216,13 +265,13 @@ const loadComponentData = () => {
 
     // Load social URLs from component data
     socialUrls.value = {
-      facebook: component.data.facebook || '',
-      twitter: component.data.twitter || '',
       linkedin: component.data.linkedin || '',
+      twitter: component.data.twitter || '',
+      facebook: component.data.facebook || '',
       instagram: component.data.instagram || '',
       youtube: component.data.youtube || '',
       tiktok: component.data.tiktok || '',
-      pinterest: component.data.pinterest || ''
+      website: component.data.website || ''
     };
   }
 };

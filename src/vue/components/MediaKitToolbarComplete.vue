@@ -911,6 +911,18 @@ watch(isDarkMode, (newValue) => {
   storageService.set('dark-mode', newValue)
 }, { immediate: true })
 
+// Watch store profile data changes to update profile edit link
+watch(() => store.profileData, (newProfileData) => {
+  if (newProfileData) {
+    // Extract slug from profile data
+    const slug = newProfileData.post_name || newProfileData.slug || newProfileData.entry || null
+    if (slug && slug !== selectedProfileSlug.value) {
+      selectedProfileSlug.value = slug
+      console.log('[MediaKitToolbar] Profile slug updated from store:', slug)
+    }
+  }
+}, { deep: true })
+
 // ROOT FIX: Use StorageService instead of direct localStorage
 // Initialize dark mode from localStorage
 const initDarkMode = () => {

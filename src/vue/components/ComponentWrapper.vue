@@ -483,6 +483,9 @@ function handleKeydown(event) {
   display: block;
   border-radius: 8px;
   overflow: hidden;
+  /* Ensure component content stays below edit-hint overlay (z-index: 100) */
+  position: relative;
+  z-index: 1;
 }
 
 /* Component Placeholder */
