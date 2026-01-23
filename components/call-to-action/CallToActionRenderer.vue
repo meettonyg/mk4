@@ -60,28 +60,68 @@ export default {
     const description = computed(() => props.data?.description || props.props?.description || '');
 
     // Buttons from component data
+    // ROOT FIX: Support multiple data formats from profile pre-population
     const buttons = computed(() => {
-      if (props.data?.buttons && Array.isArray(props.data.buttons)) {
-        return props.data.buttons;
+      const data = props.data || props.props || {};
+
+      // 1. Check for pre-built buttons array
+      if (data.buttons && Array.isArray(data.buttons) && data.buttons.length > 0) {
+        return data.buttons;
       }
 
-      // Build from individual button fields
       const buttonsList = [];
+
+      // 2. Check for single cta_button_text/url fields (from profile pre-population)
+      if (data.cta_button_text && data.cta_button_url) {
+        buttonsList.push({
+          text: data.cta_button_text,
+          url: data.cta_button_url,
+          style: 'primary',
+          target: '_self'
+        });
+      }
+
+      // 3. Check for booking_url as secondary button
+      if (data.booking_url) {
+        buttonsList.push({
+          text: 'Book Now',
+          url: data.booking_url,
+          style: buttonsList.length > 0 ? 'secondary' : 'primary',
+          target: '_blank'
+        });
+      }
+
+      // 4. Check for contact_email as button
+      if (data.contact_email && buttonsList.length < 2) {
+        buttonsList.push({
+          text: 'Contact Me',
+          url: `mailto:${data.contact_email}`,
+          style: buttonsList.length > 0 ? 'secondary' : 'primary',
+          target: '_self'
+        });
+      }
+
+      // Return if we found profile-populated buttons
+      if (buttonsList.length > 0) {
+        return buttonsList;
+      }
+
+      // 5. Fall back to numbered button fields (legacy format)
       for (let i = 1; i <= 5; i++) {
         const textKey = `cta_button_${i}_text`;
         const urlKey = `cta_button_${i}_url`;
         const styleKey = `cta_button_${i}_style`;
         const targetKey = `cta_button_${i}_target`;
 
-        const buttonText = props.data?.[textKey] || props.props?.[textKey];
-        const buttonUrl = props.data?.[urlKey] || props.props?.[urlKey];
+        const buttonText = data[textKey];
+        const buttonUrl = data[urlKey];
 
         if (buttonText && buttonUrl) {
           buttonsList.push({
             text: buttonText,
             url: buttonUrl,
-            style: props.data?.[styleKey] || props.props?.[styleKey] || 'primary',
-            target: props.data?.[targetKey] || props.props?.[targetKey] || '_self'
+            style: data[styleKey] || 'primary',
+            target: data[targetKey] || '_self'
           });
         }
       }

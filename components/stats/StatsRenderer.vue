@@ -66,11 +66,43 @@ export default {
     const description = computed(() => props.data?.description || props.props?.description || '');
 
     // Stats from component data
+    // ROOT FIX: Build stats array from individual fields if data.stats array not present
     const stats = computed(() => {
-      if (props.data?.stats && Array.isArray(props.data.stats)) {
+      // First check for pre-built stats array
+      if (props.data?.stats && Array.isArray(props.data.stats) && props.data.stats.length > 0) {
         return props.data.stats;
       }
-      return [];
+
+      // Build from individual stat fields (profile pre-population format)
+      const builtStats = [];
+      const data = props.data || props.props || {};
+
+      // Define stat fields that can be populated from profile data
+      const statFields = [
+        { key: 'years_experience', label: 'Years of Experience', suffix: '+' },
+        { key: 'projects_completed', label: 'Projects Completed' },
+        { key: 'clients_served', label: 'Clients Served' },
+        { key: 'awards_won', label: 'Awards Won', icon: '🏆' },
+        { key: 'books_written', label: 'Books Written', icon: '📚' },
+        { key: 'speaking_engagements', label: 'Speaking Engagements', icon: '🎤' },
+        { key: 'countries_visited', label: 'Countries', icon: '🌍' },
+        { key: 'team_size', label: 'Team Members', icon: '👥' }
+      ];
+
+      statFields.forEach(field => {
+        const value = data[field.key];
+        if (value !== undefined && value !== null && value !== '') {
+          builtStats.push({
+            value: value,
+            label: field.label,
+            icon: field.icon || '',
+            prefix: field.prefix || '',
+            suffix: field.suffix || ''
+          });
+        }
+      });
+
+      return builtStats;
     });
 
     // Display options from editor

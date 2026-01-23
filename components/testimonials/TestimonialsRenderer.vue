@@ -59,24 +59,53 @@ export default {
     const title = computed(() => props.data?.title || props.props?.title || 'What People Say');
 
     // Testimonials from component data
+    // ROOT FIX: Support multiple data formats from profile pre-population
     const testimonials = computed(() => {
-      if (props.data?.testimonials && Array.isArray(props.data.testimonials)) {
-        return props.data.testimonials;
+      const data = props.data || props.props || {};
+
+      // 1. Check for pre-built testimonials array of objects
+      if (data.testimonials && Array.isArray(data.testimonials) && data.testimonials.length > 0) {
+        // If first item is an object with text property, use as-is
+        if (typeof data.testimonials[0] === 'object' && data.testimonials[0].text) {
+          return data.testimonials;
+        }
       }
 
-      // Build from individual testimonial fields
+      // 2. Check for separate arrays format (from profile pre-population)
+      // Profile config provides: testimonials[], testimonial_authors[], testimonial_roles[]
+      const textsArray = data.testimonials || [];
+      const authorsArray = data.testimonial_authors || [];
+      const rolesArray = data.testimonial_roles || [];
+
+      if (Array.isArray(textsArray) && textsArray.length > 0 && typeof textsArray[0] === 'string') {
+        const combinedList = [];
+        textsArray.forEach((text, index) => {
+          if (text && text.trim()) {
+            combinedList.push({
+              text: text,
+              author: authorsArray[index] || 'Anonymous',
+              title: rolesArray[index] || ''
+            });
+          }
+        });
+        if (combinedList.length > 0) {
+          return combinedList;
+        }
+      }
+
+      // 3. Build from individual testimonial fields (legacy format)
       const testimonialsList = [];
       for (let i = 1; i <= 10; i++) {
         const textKey = `testimonial_${i}_text`;
         const authorKey = `testimonial_${i}_author`;
         const titleKey = `testimonial_${i}_title`;
 
-        const testimonialText = props.data?.[textKey] || props.props?.[textKey];
+        const testimonialText = data[textKey];
         if (testimonialText) {
           testimonialsList.push({
             text: testimonialText,
-            author: props.data?.[authorKey] || props.props?.[authorKey] || 'Anonymous',
-            title: props.data?.[titleKey] || props.props?.[titleKey] || ''
+            author: data[authorKey] || 'Anonymous',
+            title: data[titleKey] || ''
           });
         }
       }
