@@ -131,7 +131,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted, nextTick } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
 import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 import { useProfilePrePopulation } from '@composables/useProfilePrePopulation';
@@ -221,6 +221,32 @@ watch(
   },
   { immediate: true, deep: true }
 );
+
+// Auto-populate from profile on mount if component has no contact data
+onMounted(() => {
+  loadComponentData();
+
+  // Use nextTick to ensure component data is fully loaded first
+  nextTick(() => {
+    const hasContactData = localData.value.email || localData.value.phone || localData.value.skype || localData.value.location;
+
+    if (!hasContactData && hasProfileData.value) {
+      console.log('[ContactEditor] Auto-populating contact info from profile (new component detected)');
+      handleLoadFromProfile();
+      // Use immediate update to bypass 300ms debounce for new components
+      immediateUpdateComponent();
+    }
+  });
+});
+
+// Immediate update function (bypasses debounce) - used for auto-population
+const immediateUpdateComponent = () => {
+  store.updateComponent(props.componentId, {
+    data: { ...localData.value }
+  });
+  store.isDirty = true;
+  console.log('[ContactEditor] Immediate update applied');
+};
 
 // Update component with debouncing
 let updateTimeout = null;
