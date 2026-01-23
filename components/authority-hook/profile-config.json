@@ -1,0 +1,56 @@
+{
+  "_note": "Field lists in fieldMappings and saveBackFields are intentionally separate for bidirectional mapping flexibility",
+  "profileIntegration": {
+    "enabled": true,
+    "autoPopulate": true,
+    "showBadges": true
+  },
+  "fieldMappings": {
+    "authority_hook": {
+      "profileFields": ["authority_hook", "authority_statement", "credibility_statement", "why_me"],
+      "type": "textarea",
+      "label": "Authority Hook"
+    },
+    "unique_value": {
+      "profileFields": ["unique_value", "unique_value_proposition", "uvp"],
+      "type": "textarea",
+      "label": "Unique Value Proposition"
+    },
+    "mission_statement": {
+      "profileFields": ["mission_statement", "mission", "purpose"],
+      "type": "textarea",
+      "label": "Mission Statement"
+    },
+    "core_message": {
+      "profileFields": ["core_message", "key_message", "main_message"],
+      "type": "textarea",
+      "label": "Core Message"
+    },
+    "achievements": {
+      "type": "array",
+      "fields": ["achievement_1", "achievement_2", "achievement_3", "achievement_4", "achievement_5"],
+      "filter": "non-empty",
+      "label": "Key Achievements"
+    },
+    "credentials": {
+      "type": "array",
+      "fields": ["credential_1", "credential_2", "credential_3", "credential_4", "credential_5"],
+      "filter": "non-empty",
+      "label": "Credentials"
+    }
+  },
+  "saveBackFields": {
+    "authority_hook": "authority_hook",
+    "unique_value": "unique_value",
+    "mission_statement": "mission_statement",
+    "core_message": "core_message",
+    "achievements": {
+      "type": "array",
+      "targetFields": ["achievement_1", "achievement_2", "achievement_3", "achievement_4", "achievement_5"]
+    },
+    "credentials": {
+      "type": "array",
+      "targetFields": ["credential_1", "credential_2", "credential_3", "credential_4", "credential_5"]
+    }
+  }
+}

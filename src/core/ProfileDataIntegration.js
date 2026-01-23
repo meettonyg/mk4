@@ -60,10 +60,18 @@ export class ProfileDataIntegration {
   }
 
   /**
-   * Embedded configs - These match what's in each component's profile-config.json
-   * This is a fallback for when configs aren't loaded from PHP
+   * @deprecated 2.6.0 - Embedded configs are deprecated in favor of component-level profile-config.json files.
+   * Components should define their own profile integration config in:
+   *   components/{type}/profile-config.json
+   *
+   * These embedded configs are kept as a fallback for backward compatibility.
+   * They will be removed in a future version once all components have migrated.
+   *
+   * Migration: Create a profile-config.json in your component's directory.
+   * See components/biography/profile-config.json for an example.
    */
   getEmbeddedConfigs() {
+    console.warn('[ProfileDataIntegration] Using deprecated embedded configs. Components should use profile-config.json instead.');
     return {
       biography: {
         dataSource: "profile",

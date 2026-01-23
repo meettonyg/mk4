@@ -10,6 +10,7 @@
  * @package GMKB
  * @subpackage Composables
  * @since 2.5.0
+ * @updated 2.6.0 - Now uses component-level profile-config.json via useComponentProfileConfig
  *
  * @example
  * // In a component editor
@@ -34,6 +35,8 @@ import { ref, computed, onMounted } from 'vue';
 import profileDataIntegration from '../core/ProfileDataIntegration.js';
 import { useMediaKitStore } from '../stores/mediaKit.js';
 import aiSaveBridge from '../services/AISaveBridge.js';
+import { useComponentProfileConfig } from './useComponentProfileConfig.js';
+import { ProfileDataTransformer } from '../core/ProfileDataTransformer.js';
 
 /**
  * Profile Pre-Population composable for component editors
@@ -62,6 +65,7 @@ export function useProfilePrePopulation(componentType = null) {
   const saveError = ref(null);
   const lastSaveResult = ref(null);
   const prePopulatedData = ref({});
+  const configLoaded = ref(false);
 
   // Get the media kit store for accessing profileData
   let store = null;
@@ -71,19 +75,50 @@ export function useProfilePrePopulation(componentType = null) {
     // Not in a context where the store is available
   }
 
+  // Initialize component profile config loader (Phase 2 integration)
+  const componentConfig = componentType ? useComponentProfileConfig(componentType) : null;
+
   /**
    * Initialize and check for profile data availability
+   * Now uses component-level profile-config.json when available
    */
-  const initialize = () => {
+  const initialize = async () => {
     if (!componentType) return;
 
+    // Try to load component-level config first (new pattern)
+    if (componentConfig) {
+      try {
+        await componentConfig.loadConfig();
+        configLoaded.value = true;
+
+        if (componentConfig.config.value) {
+          // Use component-level config for transformation
+          const rawProfileData = profileDataIntegration.getProfileData();
+          const data = componentConfig.transformProfileData(rawProfileData);
+          prePopulatedData.value = data;
+          profileDataAvailable.value = Object.keys(data).length > 0;
+
+          console.log(`[useProfilePrePopulation] Initialized "${componentType}" with component config:`, {
+            available: profileDataAvailable.value,
+            fields: Object.keys(data),
+            configSource: 'profile-config.json'
+          });
+          return;
+        }
+      } catch (e) {
+        console.log(`[useProfilePrePopulation] No component config for "${componentType}", using fallback`);
+      }
+    }
+
+    // Fallback to embedded configs in ProfileDataIntegration
     const data = profileDataIntegration.getPrePopulatedData(componentType);
     prePopulatedData.value = data;
     profileDataAvailable.value = Object.keys(data).length > 0;
 
     console.log(`[useProfilePrePopulation] Initialized for "${componentType}":`, {
       available: profileDataAvailable.value,
-      fields: Object.keys(data)
+      fields: Object.keys(data),
+      configSource: 'embedded-fallback'
     });
   };
 
@@ -101,6 +136,8 @@ export function useProfilePrePopulation(componentType = null) {
 
   /**
    * Get pre-populated data for a specific component type
+   * Now prefers component-level config when available
+   *
    * @param {string} type - Component type (optional, uses constructor type if not provided)
    * @returns {object} Pre-populated data for the component
    */
@@ -110,6 +147,14 @@ export function useProfilePrePopulation(componentType = null) {
       console.warn('[useProfilePrePopulation] No component type specified');
       return {};
     }
+
+    // If we have a loaded component config and it matches the target type, use it
+    if (configLoaded.value && componentConfig?.config.value && targetType === componentType) {
+      const rawProfileData = profileDataIntegration.getProfileData();
+      return componentConfig.transformProfileData(rawProfileData);
+    }
+
+    // Fallback to ProfileDataIntegration (embedded configs)
     return profileDataIntegration.getPrePopulatedData(targetType);
   };
 
@@ -185,11 +230,20 @@ export function useProfilePrePopulation(componentType = null) {
 
   /**
    * Get the data mapping config for a component type
+   * Now prefers component-level config when available
+   *
    * Useful for understanding what fields are available
    */
   const getFieldMappings = (type = null) => {
     const targetType = type || componentType;
     if (!targetType) return null;
+
+    // Prefer component-level config
+    if (configLoaded.value && componentConfig?.config.value && targetType === componentType) {
+      return componentConfig.getFieldMappings();
+    }
+
+    // Fallback to ProfileDataIntegration
     return profileDataIntegration.getComponentFieldConfig(targetType);
   };
 
@@ -222,15 +276,24 @@ export function useProfilePrePopulation(componentType = null) {
   /**
    * Check if we can save to profile
    * Returns true if we have a valid profile ID and the component type is supported
+   * Now also checks component-level config for saveBackFields
    */
   const canSaveToProfile = computed(() => {
     const profileId = getProfileId();
+
+    // Check component-level config first
+    if (configLoaded.value && componentConfig?.supportsSaveBack()) {
+      return !!profileId;
+    }
+
+    // Fallback to hardcoded mapping
     const saveType = COMPONENT_TO_SAVE_TYPE[componentType];
     return !!profileId && !!saveType;
   });
 
   /**
    * Save component data back to the profile/custom post
+   * Now uses component-level saveBackFields configuration when available
    *
    * @param {object} data - The data to save (should match the component's data structure)
    * @returns {Promise<{success: boolean, saved: object, errors: array}>}
@@ -252,35 +315,58 @@ export function useProfilePrePopulation(componentType = null) {
       return { success: false, saved: {}, errors: [error] };
     }
 
-    const saveType = COMPONENT_TO_SAVE_TYPE[componentType];
-    if (!saveType) {
-      const error = `Component type "${componentType}" is not supported for saving to profile.`;
-      console.error('[useProfilePrePopulation]', error);
-      saveError.value = error;
-      return { success: false, saved: {}, errors: [error] };
+    // Check if component has saveBackFields config (new pattern)
+    const saveBackFields = configLoaded.value ? componentConfig?.getSaveBackFields() : null;
+
+    // Verify save capability
+    if (!saveBackFields) {
+      const saveType = COMPONENT_TO_SAVE_TYPE[componentType];
+      if (!saveType) {
+        const error = `Component type "${componentType}" is not supported for saving to profile.`;
+        console.error('[useProfilePrePopulation]', error);
+        saveError.value = error;
+        return { success: false, saved: {}, errors: [error] };
+      }
     }
 
     isSaving.value = true;
     saveError.value = null;
 
     try {
-      // Transform data to match AISaveBridge expected format
-      let saveData = data;
+      let saveData;
+      let saveType;
 
-      // For some types, we need to transform the data
-      if (componentType === 'questions' && Array.isArray(data.questions)) {
-        // Questions editor uses { question, answer } format
-        // AISaveBridge expects array of questions (strings or objects with question property)
-        saveData = data.questions.map(q => q.question || q);
-      } else if (componentType === 'topics' && Array.isArray(data.topics)) {
-        // Topics are already in the right format (array of strings)
-        saveData = data.topics;
-      } else if (componentType === 'biography' && data.biography) {
-        // Biography can be a string or object with short/medium/long
-        saveData = data.biography;
-      } else if (componentType === 'guest-intro' && data.introduction) {
-        // Guest intro is a string
-        saveData = data.introduction;
+      // Use component-level saveBackFields config if available
+      if (saveBackFields && Object.keys(saveBackFields).length > 0) {
+        // Transform using ProfileDataTransformer with saveBackFields
+        saveData = ProfileDataTransformer.transformForSave(data, saveBackFields);
+        saveType = componentType; // Use component type directly
+
+        console.log(`[useProfilePrePopulation] Using saveBackFields config for "${componentType}":`, {
+          input: data,
+          transformed: saveData,
+          saveBackFields
+        });
+      } else {
+        // Fallback to legacy transformation logic
+        saveType = COMPONENT_TO_SAVE_TYPE[componentType];
+        saveData = data;
+
+        // Legacy transformations for backward compatibility
+        if (componentType === 'questions' && Array.isArray(data.questions)) {
+          // Questions editor uses { question, answer } format
+          // AISaveBridge expects array of questions (strings or objects with question property)
+          saveData = data.questions.map(q => q.question || q);
+        } else if (componentType === 'topics' && Array.isArray(data.topics)) {
+          // Topics are already in the right format (array of strings)
+          saveData = data.topics;
+        } else if (componentType === 'biography' && data.biography) {
+          // Biography can be a string or object with short/medium/long
+          saveData = data.biography;
+        } else if (componentType === 'guest-intro' && data.introduction) {
+          // Guest intro is a string
+          saveData = data.introduction;
+        }
       }
 
       console.log(`[useProfilePrePopulation] Saving ${componentType} to profile #${profileId}:`, saveData);
@@ -311,9 +397,9 @@ export function useProfilePrePopulation(componentType = null) {
   };
 
   // Initialize on mount if component type is provided
-  onMounted(() => {
+  onMounted(async () => {
     if (componentType) {
-      initialize();
+      await initialize();
     }
   });
 
@@ -326,6 +412,7 @@ export function useProfilePrePopulation(componentType = null) {
     lastSaveResult,
     prePopulatedData,
     canSaveToProfile,
+    configLoaded,
 
     // Methods
     initialize,
@@ -342,7 +429,8 @@ export function useProfilePrePopulation(componentType = null) {
 
     // Direct access to services (for advanced use)
     profileDataIntegration,
-    aiSaveBridge
+    aiSaveBridge,
+    componentConfig // Access to the component's profile config loader
   };
 }
 

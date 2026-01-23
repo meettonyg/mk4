@@ -1,0 +1,53 @@
+{
+  "profileIntegration": {
+    "enabled": true,
+    "autoPopulate": true,
+    "showBadges": true
+  },
+  "fieldMappings": {
+    "first_name": {
+      "profileFields": ["first_name", "fname"],
+      "type": "text",
+      "label": "First Name"
+    },
+    "last_name": {
+      "profileFields": ["last_name", "lname"],
+      "type": "text",
+      "label": "Last Name"
+    },
+    "full_name": {
+      "type": "composite",
+      "fields": ["first_name", "last_name"],
+      "format": "{first_name} {last_name}",
+      "label": "Full Name"
+    },
+    "title": {
+      "profileFields": ["guest_title", "professional_title", "job_title"],
+      "type": "text",
+      "label": "Title"
+    },
+    "company": {
+      "profileFields": ["company", "organization", "employer"],
+      "type": "text",
+      "label": "Company/Organization"
+    },
+    "introduction": {
+      "profileFields": ["introduction", "intro", "guest_intro"],
+      "type": "textarea",
+      "label": "Introduction"
+    },
+    "tagline": {
+      "profileFields": ["tagline", "slogan", "motto"],
+      "type": "text",
+      "label": "Tagline"
+    }
+  },
+  "saveBackFields": {
+    "first_name": "first_name",
+    "last_name": "last_name",
+    "title": "guest_title",
+    "company": "company",
+    "introduction": "introduction",
+    "tagline": "tagline"
+  }
+}

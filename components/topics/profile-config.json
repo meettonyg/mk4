@@ -1,0 +1,22 @@
+{
+  "_note": "Field lists in fieldMappings and saveBackFields are intentionally separate for bidirectional mapping flexibility",
+  "profileIntegration": {
+    "enabled": true,
+    "autoPopulate": true,
+    "showBadges": true
+  },
+  "fieldMappings": {
+    "topics": {
+      "type": "array",
+      "fields": ["topic_1", "topic_2", "topic_3", "topic_4", "topic_5"],
+      "filter": "non-empty",
+      "label": "Speaking Topics"
+    }
+  },
+  "saveBackFields": {
+    "topics": {
+      "type": "array",
+      "targetFields": ["topic_1", "topic_2", "topic_3", "topic_4", "topic_5"]
+    }
+  }
+}

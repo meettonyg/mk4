@@ -1,0 +1,47 @@
+{
+  "profileIntegration": {
+    "enabled": true,
+    "autoPopulate": true,
+    "showBadges": true
+  },
+  "fieldMappings": {
+    "email": {
+      "profileFields": ["email", "contact_email"],
+      "type": "email",
+      "label": "Email Address"
+    },
+    "phone": {
+      "profileFields": ["phone", "contact_phone"],
+      "type": "phone",
+      "label": "Phone Number"
+    },
+    "website": {
+      "profileFields": ["website", "web_url"],
+      "type": "url",
+      "label": "Website"
+    },
+    "linkedin": {
+      "profileFields": ["linkedin", "linkedin_url"],
+      "type": "url",
+      "label": "LinkedIn"
+    },
+    "twitter": {
+      "profileFields": ["twitter", "twitter_handle"],
+      "type": "text",
+      "label": "Twitter/X"
+    },
+    "facebook": {
+      "profileFields": ["facebook", "facebook_url"],
+      "type": "url",
+      "label": "Facebook"
+    }
+  },
+  "saveBackFields": {
+    "email": "email",
+    "phone": "phone",
+    "website": "website",
+    "linkedin": "linkedin",
+    "twitter": "twitter",
+    "facebook": "facebook"
+  }
+}

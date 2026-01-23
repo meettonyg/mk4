@@ -1046,7 +1046,102 @@ export const useMediaKitStore = defineStore('mediaKit', {
       }
     },
 
+    /**
+     * PHASE 6: Hydrate component from profile data
+     *
+     * Asynchronously loads the component's profile-config.json and applies
+     * profile data to the component. This uses optimistic addition pattern:
+     * component is added immediately, then hydrated in background.
+     *
+     * @param {string} componentId - The component ID to hydrate
+     * @param {object} options - Hydration options
+     * @param {boolean} options.onlyEmpty - Only fill empty fields (default: true)
+     * @param {boolean} options.force - Force hydration even if disabled in config
+     * @returns {Promise<{success: boolean, populated: string[]}>}
+     */
+    async hydrateComponentFromProfile(componentId, options = {}) {
+      const { onlyEmpty = true, force = false } = options;
 
+      const component = this.components[componentId];
+      if (!component) {
+        console.warn(`[Store] hydrateComponentFromProfile: Component ${componentId} not found`);
+        return { success: false, populated: [] };
+      }
+
+      try {
+        // Dynamically import the config loader to avoid circular dependencies
+        const { useComponentProfileConfig } = await import('../composables/useComponentProfileConfig.js');
+        const configLoader = useComponentProfileConfig(component.type);
+
+        // Load the component's profile config
+        await configLoader.loadConfig();
+
+        // Check if auto-populate is enabled (or forced)
+        if (!force && !configLoader.shouldAutoPopulate()) {
+          console.log(`[Store] Auto-populate disabled for "${component.type}"`);
+          return { success: true, populated: [] };
+        }
+
+        // Get raw profile data and transform it
+        const rawProfileData = profileDataIntegration.getProfileData();
+        const transformedData = configLoader.transformProfileData(rawProfileData);
+
+        if (!transformedData || Object.keys(transformedData).length === 0) {
+          return { success: true, populated: [] };
+        }
+
+        const populated = [];
+        const currentData = component.data || {};
+
+        // Build the update object
+        const dataUpdate = {};
+
+        for (const [fieldName, value] of Object.entries(transformedData)) {
+          // Skip empty values
+          if (value === null || value === undefined || value === '') {
+            continue;
+          }
+          if (Array.isArray(value) && value.length === 0) {
+            continue;
+          }
+
+          // Check if field is empty in current data
+          const currentValue = currentData[fieldName];
+          const isEmpty = currentValue === null ||
+                         currentValue === undefined ||
+                         currentValue === '' ||
+                         (Array.isArray(currentValue) && currentValue.length === 0);
+
+          // Only update if empty (or not onlyEmpty mode)
+          if (!onlyEmpty || isEmpty) {
+            dataUpdate[fieldName] = value;
+            populated.push(fieldName);
+          }
+        }
+
+        // Apply updates if we have any
+        if (populated.length > 0) {
+          this.updateComponent(componentId, {
+            data: { ...currentData, ...dataUpdate },
+            _hydratedFromProfile: true,
+            _hydratedFields: populated
+          });
+
+          console.log(`[Store] Hydrated "${component.type}" (${componentId}) with profile fields:`, populated);
+
+          // Dispatch event for UI feedback
+          document.dispatchEvent(new CustomEvent('gmkb:component-hydrated', {
+            detail: { componentId, populated, componentType: component.type }
+          }));
+        }
+
+        return { success: true, populated };
+
+      } catch (error) {
+        console.error(`[Store] Failed to hydrate component ${componentId}:`, error);
+        return { success: false, populated: [], error: error.message };
+      }
+    },
 
     /**
      * P0 FIX #7: Component ID Normalization

@@ -1,0 +1,45 @@
+{
+  "profileIntegration": {
+    "enabled": true,
+    "autoPopulate": true,
+    "showBadges": true
+  },
+  "fieldMappings": {
+    "calendar_url": {
+      "profileFields": ["calendar_url", "booking_url", "calendly_url", "schedule_link"],
+      "type": "url",
+      "label": "Calendar URL"
+    },
+    "calendar_embed_code": {
+      "profileFields": ["calendar_embed", "booking_embed", "calendly_embed"],
+      "type": "textarea",
+      "label": "Calendar Embed Code"
+    },
+    "availability_text": {
+      "profileFields": ["availability_text", "booking_instructions"],
+      "type": "textarea",
+      "label": "Availability Information"
+    },
+    "timezone": {
+      "profileFields": ["timezone", "time_zone"],
+      "type": "text",
+      "label": "Timezone"
+    },
+    "meeting_duration": {
+      "profileFields": ["meeting_duration", "session_length", "appointment_length"],
+      "type": "text",
+      "label": "Meeting Duration"
+    },
+    "booking_email": {
+      "profileFields": ["booking_email", "appointment_email", "email"],
+      "type": "email",
+      "label": "Booking Email"
+    }
+  },
+  "saveBackFields": {
+    "calendar_url": "calendar_url",
+    "availability_text": "availability_text",
+    "timezone": "timezone",
+    "meeting_duration": "meeting_duration"
+  }
+}

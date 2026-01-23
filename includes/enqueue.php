@@ -463,6 +463,9 @@ function gmkb_prepare_data_for_injection() {
         'componentRegistry' => $component_registry,
         'themes'            => $themes,
         'savedState'        => $saved_state,
+        // Profile data - preferred key for component profile integration (Phase 7)
+        'profile_data'      => $pods_data,
+        // @deprecated 2.6.0 - Use profile_data instead. Kept for backward compatibility.
         'pods_data'         => $pods_data,
         'profileBranding'   => $profile_branding,
         'deprecationConfig' => $deprecation_config,
