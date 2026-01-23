@@ -1530,7 +1530,7 @@ body.dark-mode .search-container {
 
 .search-input {
   width: 100%;
-  padding: 8px 12px 8px 36px;
+  padding: 8px 12px 8px 36px !important;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 14px;
