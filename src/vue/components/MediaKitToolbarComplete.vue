@@ -43,17 +43,17 @@
           </svg>
         </button>
 
-        <!-- Edit Profile Link (only when a profile is linked) -->
+        <!-- View Profile Link (only when a profile is linked) -->
         <a
           v-if="profileEditUrl"
           :href="profileEditUrl"
           target="_blank"
           class="gmkb-toolbar__view-btn"
-          title="Edit Linked Profile"
+          title="View Profile"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
           </svg>
         </a>
       </div>
@@ -623,13 +623,14 @@ const selectedProfileName = computed(() => {
 
   // Try to get from store's profileData first (most up-to-date)
   if (store.profileData) {
-    name = store.profileData.guest_name || store.profileData.name || store.profileData.title
+    name = store.profileData.guest_name || store.profileData.name
     title = store.profileData.guest_title
   }
 
   // Fallback to backend data
   if (!name && window.gmkbData?.linkedProfileName) {
-    name = window.gmkbData.linkedProfileName
+    // Strip "'s Media Kit" suffix if present in the linkedProfileName
+    name = window.gmkbData.linkedProfileName.replace(/'s Media Kit$/i, '').trim()
   }
   if (!title && window.gmkbData?.linkedProfileTitle) {
     title = window.gmkbData.linkedProfileTitle
@@ -672,6 +673,11 @@ const profileEditUrl = computed(() => {
   const profileSlug = window.gmkbData?.linkedProfileSlug
   if (profileSlug) {
     return `/app/profiles/guest/profile/?entry=${profileSlug}`
+  }
+  // Fallback to profileId if available
+  const profileId = window.gmkbData?.profileId
+  if (profileId) {
+    return `/app/profiles/guest/profile/?id=${profileId}`
   }
   return null
 })
