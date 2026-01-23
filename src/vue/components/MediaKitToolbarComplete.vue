@@ -680,6 +680,10 @@ const profileEditUrl = computed(() => {
   if (selectedProfileSlug.value) {
     return `/app/profiles/guest/profile/?entry=${selectedProfileSlug.value}`
   }
+  // Fallback to reactive profileId (updated when profile is switched)
+  if (selectedProfileId.value) {
+    return `/app/profiles/guest/profile/?id=${selectedProfileId.value}`
+  }
   // Fallback to initial data from backend
   if (window.gmkbData?.linkedProfileEditUrl) {
     return window.gmkbData.linkedProfileEditUrl
@@ -688,7 +692,7 @@ const profileEditUrl = computed(() => {
   if (profileSlug) {
     return `/app/profiles/guest/profile/?entry=${profileSlug}`
   }
-  // Fallback to profileId if available
+  // Fallback to initial profileId if available
   const profileId = window.gmkbData?.profileId
   if (profileId) {
     return `/app/profiles/guest/profile/?id=${profileId}`
