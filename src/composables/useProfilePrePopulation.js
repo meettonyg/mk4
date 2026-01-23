@@ -397,9 +397,9 @@ export function useProfilePrePopulation(componentType = null) {
   };
 
   // Initialize on mount if component type is provided
-  onMounted(() => {
+  onMounted(async () => {
     if (componentType) {
-      initialize();
+      await initialize();
     }
   });
 
