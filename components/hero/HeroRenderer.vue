@@ -50,17 +50,49 @@ export default {
   },
   setup(props, { emit }) {
     // Data from component JSON state (single source of truth)
-    const name = computed(() => props.data?.name || props.props?.name || '');
+    // ROOT FIX: Support profile pre-population field mappings
+    // Profile config provides: title (full name), subtitle, description
+    // Renderer expects: name, title, bio, imageUrl, ctaText, ctaUrl
 
-    const title = computed(() => props.data?.title || props.props?.title || '');
+    const data = computed(() => props.data || props.props || {});
 
-    const bio = computed(() => props.data?.bio || props.props?.bio || '');
+    // Name: check 'name' first, fall back to profile's 'title' (composite name)
+    const name = computed(() =>
+      data.value.name || data.value.title || ''
+    );
 
-    const imageUrl = computed(() => props.data?.imageUrl || props.props?.imageUrl || '');
+    // Title: check 'title' first (if name exists), then 'subtitle', then 'professional_title'
+    const title = computed(() => {
+      // If we have a separate name field, title can be used as-is
+      if (data.value.name && data.value.title) {
+        return data.value.title;
+      }
+      // Otherwise, use subtitle from profile pre-population
+      return data.value.subtitle || data.value.professional_title || data.value.tagline || '';
+    });
 
-    const ctaText = computed(() => props.data?.ctaText || props.props?.ctaText || '');
+    // Bio: check 'bio' first, fall back to profile's 'description'
+    const bio = computed(() =>
+      data.value.bio || data.value.description || data.value.introduction || ''
+    );
 
-    const ctaUrl = computed(() => props.data?.ctaUrl || props.props?.ctaUrl || '');
+    // Image URL: check multiple possible field names
+    const imageUrl = computed(() =>
+      data.value.imageUrl ||
+      data.value.image_url ||
+      data.value.profile_photo ||
+      data.value.avatar ||
+      data.value.photo ||
+      ''
+    );
+
+    const ctaText = computed(() =>
+      data.value.ctaText || data.value.cta_text || data.value.button_text || ''
+    );
+
+    const ctaUrl = computed(() =>
+      data.value.ctaUrl || data.value.cta_url || data.value.button_url || data.value.booking_url || ''
+    );
 
     // CTA Click handler
     const handleCtaClick = () => {
