@@ -509,6 +509,7 @@ const isNewMediaKit = computed(() => !!window.gmkbData?.isNewMediaKit)
 const isPublished = computed(() => store.postStatus === 'publish')
 const selectedProfileId = ref(window.gmkbData?.profileId || null)
 const selectedProfileSlug = ref(window.gmkbData?.linkedProfileSlug || null)
+const selectedProfileIconRef = ref(window.gmkbData?.linkedProfileIcon || null)
 
 // Handle profile switch - updates store's profileData with new profile data
 const handleProfileSwitch = async (profileId) => {
@@ -532,6 +533,9 @@ const handleProfileSwitch = async (profileId) => {
 
       // Update profile slug for edit link (use post_name or slug from profile data)
       selectedProfileSlug.value = profileData.post_name || profileData.slug || profileData.entry || null
+
+      // Update profile icon
+      selectedProfileIconRef.value = profileData.icon || null
 
       // Dispatch event for components to refresh
       document.dispatchEvent(new CustomEvent('gmkb:profile-switched', {
@@ -646,7 +650,11 @@ const selectedProfileName = computed(() => {
 
 // Selected profile icon for display
 const selectedProfileIcon = computed(() => {
-  // Try to get from store's profileData first
+  // Try to get from local ref first (updated when profile is switched)
+  if (selectedProfileIconRef.value) {
+    return selectedProfileIconRef.value
+  }
+  // Try to get from store's profileData
   if (store.profileData?.icon) {
     return store.profileData.icon
   }
