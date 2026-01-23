@@ -26,7 +26,6 @@
 
 import { ref, computed } from 'vue';
 import { useAIStore } from '../stores/ai';
-import { toolModules } from '../../tools/index.js';
 import { getRestUrl, getToolNonce, getRestNonce, isUserLoggedIn } from '../utils/ai';
 
 /**
@@ -78,14 +77,13 @@ function base64EncodeUtf8(value) {
  * Get validation configuration from a tool's meta.json
  * @param {string} type - The API type (e.g., 'biography', 'topics')
  * @returns {Object|null} Validation config or null if not found
+ * @deprecated Validation config lookup removed to break circular dependency.
+ *             This deprecated composable now skips meta-based validation.
  */
 function getValidationConfig(type) {
-  // Find the tool module by apiType
-  for (const [, module] of Object.entries(toolModules)) {
-    if (module.meta?.apiType === type && module.meta?.validation) {
-      return module.meta.validation;
-    }
-  }
+  // Circular dependency with tools/index.js prevents meta-based validation lookup.
+  // Since this composable is deprecated, validation is skipped (returns null).
+  // New tools should use the tool-based API which handles validation differently.
   return null;
 }
 
