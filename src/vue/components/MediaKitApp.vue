@@ -192,6 +192,17 @@ async function handleProfileSelected({ id, profile }) {
   // Update URL to include profile_id for bookmarking/refresh persistence
   updateUrlWithProfileId(id);
 
+  // Dispatch event for toolbar to update its display (icon, slug, name, title)
+  document.dispatchEvent(new CustomEvent('gmkb:profile-selected', {
+    detail: {
+      profileId: id,
+      slug: profile?.slug || null,
+      icon: profile?.icon || null,
+      name: profile?.name || null,
+      guest_title: profile?.guest_title || null
+    }
+  }));
+
   // Fetch full profile data and apply to components
   await applyProfileToComponents(id);
 }

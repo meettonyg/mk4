@@ -113,7 +113,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, computed } from 'vue';
+import { ref, watch, onMounted, computed, nextTick } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
 import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 import { useProfilePrePopulation } from '@composables/useProfilePrePopulation';
@@ -280,6 +280,19 @@ watch(() => props.componentId, loadComponentData, { immediate: true });
 
 onMounted(() => {
   loadComponentData();
+
+  // Auto-populate from profile if component has no social links AND profile has data
+  // Use nextTick to ensure component data is fully loaded first
+  nextTick(() => {
+    const componentHasLinks = Object.values(socialUrls.value).some(url => url && url.trim());
+
+    if (!componentHasLinks && hasProfileData.value) {
+      console.log('[SocialEditor] Auto-populating social links from profile (new component detected)');
+      handleLoadFromProfile();
+      // Use immediate update to bypass 300ms debounce for new components
+      immediateUpdateComponent();
+    }
+  });
 });
 
 // Build links array from individual social URLs (for renderer compatibility)
@@ -291,6 +304,21 @@ const buildLinksArray = () => {
     }
   }
   return links;
+};
+
+// Immediate update function (bypasses debounce) - used for auto-population
+const immediateUpdateComponent = () => {
+  const component = store.components[props.componentId];
+  store.updateComponent(props.componentId, {
+    data: {
+      ...component.data,
+      ...displaySettings.value,
+      ...socialUrls.value,
+      links: buildLinksArray() // Add links array for renderer
+    }
+  });
+  store.isDirty = true;
+  console.log('[SocialEditor] Immediate update applied');
 };
 
 // Update social URL in component data

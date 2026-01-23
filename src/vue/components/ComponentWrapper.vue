@@ -255,12 +255,13 @@ const componentAriaLabel = computed(() => {
   return `${name} - ${type} component. ${props.showControls && !uiStore.previewMode ? 'Press Enter to edit.' : ''}`;
 })
 
-// Handle clicking the edit hint
+// Handle clicking the edit hint - use same logic as ComponentControls edit button
 function handleEditClick() {
   const id = props.componentId || props.component?.id;
   if (id) {
-    store.selectComponent(id);
-    emit('edit', id);
+    // Open component editor in sidebar (same as ComponentControls edit button)
+    uiStore.openComponentEditor(id);
+    console.log('[ComponentWrapper] Opening component editor for:', id);
   }
 }
 
@@ -408,8 +409,8 @@ function handleKeydown(event) {
     case 'Enter':
     case ' ':
       event.preventDefault()
-      store.selectComponent(id)
-      emit('edit', id)
+      // Open component editor in sidebar (same as ComponentControls edit button)
+      uiStore.openComponentEditor(id)
       break
     case 'Escape':
       event.preventDefault()

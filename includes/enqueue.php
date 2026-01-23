@@ -389,8 +389,10 @@ function gmkb_prepare_data_for_injection() {
         $linked_profile_id = intval($_GET['profile_id']);
     }
 
-    // Get linked profile name for display in header
+    // Get linked profile data for display in header
     $linked_profile_name = null;
+    $linked_profile_title = null;
+    $linked_profile_icon = null;
     $linked_profile_slug = null;
     $linked_profile_edit_url = null;
     if ($linked_profile_id) {
@@ -412,6 +414,16 @@ function gmkb_prepare_data_for_injection() {
             if (empty($linked_profile_name)) {
                 $linked_profile_name = $profile_post->post_title;
             }
+
+            // Get profile title (e.g., "Speaker", "Author")
+            $linked_profile_title = get_post_meta($linked_profile_id, 'guest_title', true);
+            // Fallback to professional_title if guest_title is empty
+            if (empty($linked_profile_title)) {
+                $linked_profile_title = get_post_meta($linked_profile_id, 'professional_title', true);
+            }
+
+            // Get profile icon (meta key is profile_icon)
+            $linked_profile_icon = get_post_meta($linked_profile_id, 'profile_icon', true);
         }
     }
 
@@ -459,6 +471,8 @@ function gmkb_prepare_data_for_injection() {
         'linkedProfileId'   => $linked_profile_id,  // Profile linked to this media kit
         'profileId'         => $linked_profile_id,  // Alias for backwards compatibility
         'linkedProfileName' => $linked_profile_name, // Display name for header
+        'linkedProfileTitle' => $linked_profile_title, // Profile title (e.g., "Speaker")
+        'linkedProfileIcon' => $linked_profile_icon, // Profile icon
         'linkedProfileSlug' => $linked_profile_slug, // Profile slug for URL construction
         'linkedProfileEditUrl' => $linked_profile_edit_url, // Frontend profile edit URL
         'viewUrl'           => $view_url,           // Public permalink for "View" link

@@ -25,7 +25,9 @@
                                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                                 </svg>
                             </div>
-                            <span class="pit-title-text">{{ profile.title }}</span>
+                            <span class="pit-title-text">
+                                {{ profile.title }}<span v-if="profile.guest_title" class="pit-title-suffix"> - {{ profile.guest_title }}</span>
+                            </span>
                         </div>
                     </td>
                     <td class="pit-td pit-td-tagline">
@@ -172,6 +174,11 @@ const formatDate = (dateString) => {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.pit-title-suffix {
+    color: #6366f1;
+    font-weight: 500;
 }
 
 .pit-td-tagline {

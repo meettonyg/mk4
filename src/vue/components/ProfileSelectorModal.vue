@@ -35,13 +35,13 @@
               :class="{ 'gmkb-profile-modal__item--selected': selectedProfileId === profile.id }"
               @click="selectProfile(profile)"
             >
-              <div class="gmkb-profile-modal__avatar">
+              <div class="gmkb-profile-modal__avatar" :class="{ 'gmkb-profile-modal__avatar--icon': profile.icon && !profile.headshot }">
                 <img v-if="profile.headshot" :src="profile.headshot" :alt="profile.name" />
+                <i v-else-if="profile.icon" :class="profile.icon"></i>
                 <span v-else class="gmkb-profile-modal__initials">{{ getInitials(profile.name) }}</span>
               </div>
               <div class="gmkb-profile-modal__info">
-                <h4>{{ profile.name || 'Unnamed Profile' }}</h4>
-                <p v-if="profile.guest_title" class="gmkb-profile-modal__title">{{ profile.guest_title }}</p>
+                <h4>{{ profile.name || 'Unnamed Profile' }}<span v-if="profile.guest_title" class="gmkb-profile-modal__name-title"> - {{ profile.guest_title }}</span></h4>
                 <p v-if="profile.tagline">{{ profile.tagline }}</p>
                 <span class="gmkb-profile-modal__meta">
                   {{ profile.completion || 0 }}% complete
@@ -166,8 +166,11 @@ export default {
           profiles.value = (data.profiles || []).map(p => ({
             id: p.id,
             name: p.title || 'Unnamed Profile',
-            tagline: p.tagline || p.guest_title || '',
+            guest_title: p.guest_title || '',
+            tagline: p.tagline || '',
             headshot: p.headshot,
+            icon: p.icon || null,
+            slug: p.post_name || p.slug || p.entry || null,
             completion: p.completeness || 0,
             updated_at: p.modified
           }));
@@ -433,6 +436,15 @@ export default {
   color: #6b7280;
 }
 
+.gmkb-profile-modal__avatar--icon {
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: white;
+}
+
+.gmkb-profile-modal__avatar--icon i {
+  font-size: 20px;
+}
+
 .gmkb-profile-modal__avatar--fresh {
   background: #f3f4f6;
   color: #9ca3af;
@@ -450,10 +462,9 @@ export default {
   color: #1f2937;
 }
 
-.gmkb-profile-modal__title {
-  color: #4f46e5;
+.gmkb-profile-modal__name-title {
+  color: #6366f1;
   font-weight: 500;
-  font-size: 13px;
 }
 
 .gmkb-profile-modal__info p {

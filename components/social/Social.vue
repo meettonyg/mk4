@@ -74,7 +74,8 @@ const socialLinks = computed(() => {
     instagram: data.instagram,
     youtube: data.youtube,
     tiktok: data.tiktok,
-    pinterest: data.pinterest
+    pinterest: data.pinterest,
+    website: data.website
   };
 
   Object.entries(socialData).forEach(([platform, url]) => {
@@ -92,6 +93,8 @@ const socialLinks = computed(() => {
           finalUrl = url.includes('facebook.com') ? `https://${url}` : `https://facebook.com/${url}`;
         } else if (platform === 'youtube') {
           finalUrl = url.includes('youtube.com') ? `https://${url}` : `https://youtube.com/@${url}`;
+        } else if (platform === 'website') {
+          finalUrl = url.startsWith('http') ? url : `https://${url}`;
         } else {
           finalUrl = `https://${url}`;
         }
@@ -116,7 +119,8 @@ const getSocialIcon = (platform) => {
     'Youtube': 'fab fa-youtube',
     'GitHub': 'fab fa-github',
     'Pinterest': 'fab fa-pinterest',
-    'Tiktok': 'fab fa-tiktok'
+    'Tiktok': 'fab fa-tiktok',
+    'Website': 'fas fa-globe'
   };
   return icons[platform] || 'fas fa-link';
 };
@@ -156,7 +160,7 @@ const getSocialIcon = (platform) => {
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
   background: var(--card-bg, rgba(248, 250, 252, 0.8));
-  color: inherit;
+  color: var(--text-color, #1f2937);
   text-decoration: none;
   border-radius: 50px;
   transition: all 0.3s ease;
@@ -172,6 +176,7 @@ const getSocialIcon = (platform) => {
 
 .social-link i {
   font-size: 1.25rem;
+  color: var(--icon-color, currentColor);
 }
 
 .social-label {

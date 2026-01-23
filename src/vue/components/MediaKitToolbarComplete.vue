@@ -20,11 +20,9 @@
           @click="openProfileSelector"
           :title="selectedProfileName ? `Switch Profile: ${selectedProfileName}` : 'Select profile to pre-populate data'"
         >
-          <div class="gmkb-toolbar__profile-avatar">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
+          <div class="gmkb-toolbar__profile-avatar" :class="{ 'gmkb-toolbar__profile-avatar--icon': selectedProfileIcon }">
+            <i v-if="selectedProfileIcon" :class="selectedProfileIcon"></i>
+            <span v-else class="gmkb-toolbar__profile-initials">{{ selectedProfileInitials }}</span>
           </div>
           <div class="gmkb-toolbar__profile-info">
             <span class="gmkb-toolbar__profile-label">
@@ -42,17 +40,17 @@
           </svg>
         </button>
 
-        <!-- Edit Profile Link (only when a profile is linked) -->
+        <!-- View Profile Link (only when a profile is linked) -->
         <a
           v-if="profileEditUrl"
           :href="profileEditUrl"
           target="_blank"
           class="gmkb-toolbar__view-btn"
-          title="Edit Linked Profile"
+          title="View Profile"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
           </svg>
         </a>
       </div>
@@ -511,6 +509,9 @@ const isNewMediaKit = computed(() => !!window.gmkbData?.isNewMediaKit)
 const isPublished = computed(() => store.postStatus === 'publish')
 const selectedProfileId = ref(window.gmkbData?.profileId || null)
 const selectedProfileSlug = ref(window.gmkbData?.linkedProfileSlug || null)
+const selectedProfileIconRef = ref(window.gmkbData?.linkedProfileIcon || null)
+const selectedProfileNameRef = ref(window.gmkbData?.linkedProfileName || null)
+const selectedProfileTitleRef = ref(window.gmkbData?.linkedProfileTitle || null)
 
 // Handle profile switch - updates store's profileData with new profile data
 const handleProfileSwitch = async (profileId) => {
@@ -534,6 +535,9 @@ const handleProfileSwitch = async (profileId) => {
 
       // Update profile slug for edit link (use post_name or slug from profile data)
       selectedProfileSlug.value = profileData.post_name || profileData.slug || profileData.entry || null
+
+      // Update profile icon
+      selectedProfileIconRef.value = profileData.icon || null
 
       // Dispatch event for components to refresh
       document.dispatchEvent(new CustomEvent('gmkb:profile-switched', {
@@ -614,32 +618,85 @@ const previewUrl = computed(() => {
   return null
 })
 
-// Selected profile name for display
+// Selected profile name for display (format: "Name - Title")
 const selectedProfileName = computed(() => {
-  // First check if we have a linked profile name from the backend
-  if (window.gmkbData?.linkedProfileName) {
-    return window.gmkbData.linkedProfileName
+  // Get name from profile data or backend
+  let name = null
+  let title = null
+
+  // Try to get from local refs first (updated when profile is switched)
+  if (selectedProfileNameRef.value) {
+    name = selectedProfileNameRef.value
   }
-  // Check postTitle if this is editing a profile-linked kit
-  if (window.gmkbData?.profileId && window.gmkbData?.postTitle) {
-    return window.gmkbData.postTitle
+  if (selectedProfileTitleRef.value) {
+    title = selectedProfileTitleRef.value
+  }
+
+  // Try to get from store's profileData
+  if (!name && store.profileData) {
+    name = store.profileData.guest_name || store.profileData.name
+  }
+  if (!title && store.profileData) {
+    title = store.profileData.guest_title
+  }
+
+  // Fallback to backend data
+  if (!name && window.gmkbData?.linkedProfileName) {
+    // Strip "'s Media Kit" suffix if present in the linkedProfileName
+    name = window.gmkbData.linkedProfileName.replace(/'s Media Kit$/i, '').trim()
+  }
+  if (!title && window.gmkbData?.linkedProfileTitle) {
+    title = window.gmkbData.linkedProfileTitle
+  }
+
+  // Fallback to postTitle, but strip "'s Media Kit" suffix if present
+  if (!name && window.gmkbData?.profileId && window.gmkbData?.postTitle) {
+    name = window.gmkbData.postTitle.replace(/'s Media Kit$/i, '').trim()
+  }
+
+  if (!name) return null
+
+  // Return formatted name with title
+  return title ? `${name} - ${title}` : name
+})
+
+// Selected profile icon for display
+const selectedProfileIcon = computed(() => {
+  // Try to get from local ref first (updated when profile is switched)
+  if (selectedProfileIconRef.value) {
+    return selectedProfileIconRef.value
+  }
+  // Try to get from store's profileData
+  if (store.profileData?.icon) {
+    return store.profileData.icon
+  }
+  // Fallback to backend data
+  if (window.gmkbData?.linkedProfileIcon) {
+    return window.gmkbData.linkedProfileIcon
   }
   return null
 })
 
+// Selected profile initials for display (when no icon)
+const selectedProfileInitials = computed(() => {
+  const name = selectedProfileName.value
+  if (!name) return '?'
+  // Strip the " - Title" part if present for initials
+  const baseName = name.split(' - ')[0]
+  return baseName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+})
+
 // Profile edit URL (for linked profiles) - links to frontend profile editor
+// Always use ID since it's stable and available even for unpublished profiles
 const profileEditUrl = computed(() => {
-  // Use reactive slug first (updates when profile is switched)
-  if (selectedProfileSlug.value) {
-    return `/app/profiles/guest/profile/?entry=${selectedProfileSlug.value}`
+  // Use reactive profileId first (updated when profile is switched)
+  if (selectedProfileId.value) {
+    return `/app/profiles/guest/profile/?id=${selectedProfileId.value}`
   }
-  // Fallback to initial data from backend
-  if (window.gmkbData?.linkedProfileEditUrl) {
-    return window.gmkbData.linkedProfileEditUrl
-  }
-  const profileSlug = window.gmkbData?.linkedProfileSlug
-  if (profileSlug) {
-    return `/app/profiles/guest/profile/?entry=${profileSlug}`
+  // Fallback to initial profileId from backend
+  const profileId = window.gmkbData?.profileId
+  if (profileId) {
+    return `/app/profiles/guest/profile/?id=${profileId}`
   }
   return null
 })
@@ -943,11 +1000,28 @@ const handleClickOutside = (event) => {
   }
 }
 
+// Handle profile selection event from MediaKitApp
+function handleProfileSelectedEvent(event) {
+  const { profileId, slug, icon, name, guest_title } = event.detail || {}
+  console.log('🎯 Profile selected event received:', { profileId, slug, icon, name, guest_title })
+
+  // Update local refs for toolbar display
+  if (profileId) {
+    selectedProfileId.value = profileId
+  }
+  // Always update values (even if null) so old values don't persist
+  selectedProfileSlug.value = slug || null
+  selectedProfileIconRef.value = icon || null
+  selectedProfileNameRef.value = name || null
+  selectedProfileTitleRef.value = guest_title || null
+}
+
 onMounted(() => {
   initDarkMode()
   document.addEventListener('keydown', handleKeyboard)
   document.addEventListener('gmkb:save-requires-auth', handleSaveRequiresAuth)
   document.addEventListener('click', handleClickOutside)
+  document.addEventListener('gmkb:profile-selected', handleProfileSelectedEvent)
   console.log('✅ Perfected toolbar mounted with BEM conventions')
 })
 
@@ -955,6 +1029,7 @@ onUnmounted(() => {
   document.removeEventListener('keydown', handleKeyboard)
   document.removeEventListener('gmkb:save-requires-auth', handleSaveRequiresAuth)
   document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('gmkb:profile-selected', handleProfileSelectedEvent)
 })
 </script>
 
@@ -1099,6 +1174,16 @@ onUnmounted(() => {
   border-radius: 50%;
   color: white;
   flex-shrink: 0;
+}
+
+.gmkb-toolbar__profile-avatar--icon i {
+  font-size: 14px;
+}
+
+.gmkb-toolbar__profile-initials {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
 /* Element: profile info (container for label and name) */

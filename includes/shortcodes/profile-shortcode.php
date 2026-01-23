@@ -38,19 +38,26 @@ function gmkb_profile_shortcode_handler($atts) {
 
     // If no ID provided, try to get from query var or current post
     if (!$post_id) {
-        // Check for entry query var (from Formidable)
-        $entry_key = isset($_GET['entry']) ? sanitize_text_field($_GET['entry']) : null;
-        if ($entry_key) {
-            // Look up post by slug - include draft/pending for editing
-            // Note: get_page_by_path doesn't support post_status, so we use get_posts
-            $posts = get_posts([
-                'name' => $entry_key,
-                'post_type' => 'guests',
-                'post_status' => ['publish', 'draft', 'pending'],
-                'posts_per_page' => 1,
-            ]);
-            if (!empty($posts)) {
-                $post_id = $posts[0]->ID;
+        // Check for id query var first (most reliable - works for drafts too)
+        if (isset($_GET['id']) && is_numeric($_GET['id'])) {
+            $post_id = absint($_GET['id']);
+        }
+
+        // Fall back to entry query var (slug-based, from Formidable legacy)
+        if (!$post_id) {
+            $entry_key = isset($_GET['entry']) ? sanitize_text_field($_GET['entry']) : null;
+            if ($entry_key) {
+                // Look up post by slug - include draft/pending for editing
+                // Note: get_page_by_path doesn't support post_status, so we use get_posts
+                $posts = get_posts([
+                    'name' => $entry_key,
+                    'post_type' => 'guests',
+                    'post_status' => ['publish', 'draft', 'pending'],
+                    'posts_per_page' => 1,
+                ]);
+                if (!empty($posts)) {
+                    $post_id = $posts[0]->ID;
+                }
             }
         }
 
