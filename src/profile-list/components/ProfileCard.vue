@@ -11,7 +11,9 @@
                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                         </svg>
                     </div>
-                    <h3 class="guestify-card-title">{{ profile.title }}</h3>
+                    <h3 class="guestify-card-title">
+                        {{ profile.title }}<span v-if="profile.guest_title" class="guestify-title-suffix"> - {{ profile.guest_title }}</span>
+                    </h3>
                 </div>
                 <span class="guestify-card-date">{{ formattedDate }}</span>
             </div>
@@ -146,6 +148,11 @@ const formattedDate = computed(() => {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.guestify-title-suffix {
+    color: #6366f1;
+    font-weight: 500;
 }
 
 .guestify-card-date {
