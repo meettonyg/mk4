@@ -8,23 +8,10 @@
       @click="toggleCollapse"
       :title="sidebarCollapsed ? 'Expand Sidebar ([ or Ctrl+B)' : 'Collapse Sidebar ([ or Ctrl+B)'"
     >
-      <svg
-        class="collapse-icon"
+      <i
+        class="fa-solid fa-chevron-left collapse-icon"
         :class="{ 'collapsed': sidebarCollapsed }"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M15 18L9 12L15 6"
-          stroke="currentColor"
-          stroke-width="2.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
+      ></i>
     </button>
     
     <!-- DEFAULT MODE: Show tabs -->
@@ -1430,37 +1417,25 @@ body.dark-mode .sidebar-collapse-toggle:hover {
 }
 
 .collapse-icon {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  width: 18px;
-  height: 18px;
-  color: inherit; /* Ensure color inheritance for currentColor */
-}
-
-.collapse-icon path {
-  stroke: #374151; /* Explicit dark gray stroke */
-  stroke-width: 2.5;
-}
-
-.sidebar-collapse-toggle:hover .collapse-icon path {
-  stroke: white; /* White stroke on hover */
-}
-
-body.dark-mode .collapse-icon path {
-  stroke: #d1d5db; /* Light gray in dark mode */
-}
-
-body.dark-mode .sidebar-collapse-toggle:hover .collapse-icon path {
-  stroke: white;
+  font-size: 16px;
+  color: #374151;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s;
 }
 
 .collapse-icon.collapsed {
   transform: rotate(180deg); /* Points right when collapsed */
 }
 
-/* Enhanced icon visibility on hover */
 .sidebar-collapse-toggle:hover .collapse-icon {
-  stroke-width: 3;
-  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5));
+  color: white;
+}
+
+body.dark-mode .collapse-icon {
+  color: #d1d5db;
+}
+
+body.dark-mode .sidebar-collapse-toggle:hover .collapse-icon {
+  color: white;
 }
 
 /* Ensure button stays visible when collapsed */
