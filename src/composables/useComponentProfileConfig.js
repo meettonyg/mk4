@@ -25,19 +25,18 @@ import { ProfileDataTransformer } from '../core/ProfileDataTransformer.js';
  * This avoids the dynamic import limitation where bundlers can't
  * statically analyze variable paths in import()
  *
- * Note: Using multiple glob patterns to handle different path resolutions
+ * The path is relative from this file (src/composables/) up to project root
+ * then into components directory.
  */
-const configRegistry = import.meta.glob([
-  '../../components/*/profile-config.json',
-  '/components/*/profile-config.json',
-  '@components/*/profile-config.json'
-], { eager: false });
+const configRegistry = import.meta.glob('/components/*/profile-config.json', { eager: false });
 
 // Log available configs at startup for debugging
-if (Object.keys(configRegistry).length > 0) {
-  console.log('[useComponentProfileConfig] Available configs:', Object.keys(configRegistry));
-} else {
-  console.warn('[useComponentProfileConfig] No profile-config.json files found in glob');
+if (typeof window !== 'undefined') {
+  if (Object.keys(configRegistry).length > 0) {
+    console.log('[useComponentProfileConfig] Available configs:', Object.keys(configRegistry));
+  } else {
+    console.warn('[useComponentProfileConfig] No profile-config.json files found. Falling back to embedded configs.');
+  }
 }
 
 /**
@@ -92,26 +91,20 @@ export function useComponentProfileConfig(componentType) {
     // Create loading promise
     const loadPromise = (async () => {
       try {
-        // Try multiple path patterns to match different Vite resolutions
-        const pathPatterns = [
-          `../../components/${componentType}/profile-config.json`,
-          `/components/${componentType}/profile-config.json`,
-          `@components/${componentType}/profile-config.json`
-        ];
+        // Path pattern matching the glob: /components/{type}/profile-config.json
+        const expectedPath = `/components/${componentType}/profile-config.json`;
 
-        // Find matching path in registry
+        // Find matching path in registry (try exact match first, then partial)
         let matchingPath = null;
         let registryLoader = null;
 
-        for (const pattern of pathPatterns) {
-          if (configRegistry[pattern]) {
-            matchingPath = pattern;
-            registryLoader = configRegistry[pattern];
-            break;
-          }
+        // Exact match
+        if (configRegistry[expectedPath]) {
+          matchingPath = expectedPath;
+          registryLoader = configRegistry[expectedPath];
         }
 
-        // Also try to find by partial match (component type in path)
+        // Partial match fallback (handle different path formats)
         if (!registryLoader) {
           for (const [regPath, loader] of Object.entries(configRegistry)) {
             if (regPath.includes(`/${componentType}/profile-config.json`)) {
@@ -136,8 +129,8 @@ export function useComponentProfileConfig(componentType) {
             throw new Error(`Invalid config structure for ${componentType}`);
           }
         } else {
-          // Config doesn't exist for this component - that's OK, not all need it
-          console.log(`[useComponentProfileConfig] No profile config for "${componentType}" (tried paths: ${pathPatterns.join(', ')})`);
+          // Config doesn't exist for this component - fallback to embedded configs
+          console.log(`[useComponentProfileConfig] No profile config for "${componentType}", using embedded fallback`);
           return null;
         }
       } catch (e) {
