@@ -409,12 +409,29 @@ function gmkb_prepare_data_for_injection() {
     $view_url = null;
     $preview_url = null;
     if ($post_id && !$is_new_media_kit) {
-        $view_url = get_permalink($post_id);
-        // For draft posts, provide a preview URL
-        // Note: get_sample_permalink() is admin-only, so we construct the preview URL manually
+        $post = get_post($post_id);
         $post_status = get_post_status($post_id);
-        if ($post_status !== 'publish') {
-            $preview_url = add_query_arg('preview', 'true', $view_url);
+
+        // For published posts, use the actual permalink
+        if ($post_status === 'publish') {
+            $view_url = get_permalink($post_id);
+        } else {
+            // For draft posts, construct the URL from slug to show what it WILL be
+            // get_permalink() returns ugly URL for drafts, so we build it manually
+            $post_type_obj = get_post_type_object($post->post_type);
+            $rewrite_slug = $post_type_obj->rewrite['slug'] ?? $post->post_type;
+            $post_slug = $post->post_name;
+
+            // If no slug yet, generate one from the title
+            if (empty($post_slug)) {
+                $post_slug = sanitize_title($post->post_title);
+            }
+
+            // Construct the pretty permalink
+            $view_url = trailingslashit(home_url($rewrite_slug . '/' . $post_slug));
+
+            // Also provide a working preview URL
+            $preview_url = add_query_arg('preview', 'true', get_permalink($post_id));
         }
     }
 
