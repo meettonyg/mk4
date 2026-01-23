@@ -52,8 +52,29 @@ export default {
   },
   setup(props) {
     // Data from component JSON state (single source of truth)
+    // ROOT FIX: Handle both pre-built links array AND individual URL fields
+    // Individual URL fields come from profile pre-population when component is first added
     const links = computed(() => {
-      return props.data?.links || props.props?.links || [];
+      // First check for pre-built links array (from editor save)
+      if (props.data?.links?.length) return props.data.links;
+      if (props.props?.links?.length) return props.props.links;
+
+      // Build from individual URL fields (profile pre-population format)
+      const builtLinks = [];
+      const data = props.data || props.props || {};
+      const platforms = [
+        'facebook', 'twitter', 'linkedin', 'instagram',
+        'youtube', 'tiktok', 'pinterest', 'website'
+      ];
+
+      platforms.forEach(platform => {
+        const url = data[platform];
+        if (url && url.trim()) {
+          builtLinks.push({ platform, url: url.trim() });
+        }
+      });
+
+      return builtLinks;
     });
 
     // Social icon mapper function
