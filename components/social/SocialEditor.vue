@@ -113,7 +113,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, computed } from 'vue';
+import { ref, watch, onMounted, computed, nextTick } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
 import ComponentEditorTemplate from '../../src/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
 import { useProfilePrePopulation } from '@composables/useProfilePrePopulation';
@@ -283,7 +283,7 @@ onMounted(() => {
 
   // Auto-populate from profile if component has no social links AND profile has data
   // Use nextTick to ensure component data is fully loaded first
-  setTimeout(() => {
+  nextTick(() => {
     const componentHasLinks = Object.values(socialUrls.value).some(url => url && url.trim());
 
     if (!componentHasLinks && hasProfileData.value) {
@@ -292,7 +292,7 @@ onMounted(() => {
       // Use immediate update to bypass 300ms debounce for new components
       immediateUpdateComponent();
     }
-  }, 0);
+  });
 });
 
 // Build links array from individual social URLs (for renderer compatibility)
