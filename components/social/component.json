@@ -18,6 +18,8 @@
     "serverRender": true,
     "vueRender": true,
     "inlineEdit": true,
-    "designPanel": true
+    "designPanel": true,
+    "profilePrePopulation": true,
+    "profileSaveBack": true
   }
 }

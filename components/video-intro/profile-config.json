@@ -1,0 +1,44 @@
+{
+  "profileIntegration": {
+    "enabled": true,
+    "autoPopulate": true,
+    "showBadges": true
+  },
+  "fieldMappings": {
+    "video_url": {
+      "profileFields": ["video_url", "intro_video", "youtube_video"],
+      "type": "url",
+      "label": "Video URL"
+    },
+    "video_title": {
+      "profileFields": ["video_title", "intro_video_title"],
+      "type": "text",
+      "label": "Video Title"
+    },
+    "video_description": {
+      "profileFields": ["video_description", "intro_video_description"],
+      "type": "textarea",
+      "label": "Video Description"
+    },
+    "video_thumbnail": {
+      "profileFields": ["video_thumbnail", "video_poster"],
+      "type": "image",
+      "label": "Video Thumbnail"
+    },
+    "youtube_channel": {
+      "profileFields": ["youtube_channel", "youtube_url"],
+      "type": "url",
+      "label": "YouTube Channel"
+    },
+    "vimeo_url": {
+      "profileFields": ["vimeo_url", "vimeo_video"],
+      "type": "url",
+      "label": "Vimeo URL"
+    }
+  },
+  "saveBackFields": {
+    "video_url": "video_url",
+    "video_title": "video_title",
+    "video_description": "video_description"
+  }
+}

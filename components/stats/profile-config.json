@@ -1,0 +1,57 @@
+{
+  "profileIntegration": {
+    "enabled": true,
+    "autoPopulate": true,
+    "showBadges": true
+  },
+  "fieldMappings": {
+    "years_experience": {
+      "profileFields": ["years_experience", "experience_years", "years_in_field"],
+      "type": "number",
+      "label": "Years of Experience"
+    },
+    "projects_completed": {
+      "profileFields": ["projects_completed", "total_projects", "projects"],
+      "type": "number",
+      "label": "Projects Completed"
+    },
+    "clients_served": {
+      "profileFields": ["clients_served", "total_clients", "clients"],
+      "type": "number",
+      "label": "Clients Served"
+    },
+    "awards_won": {
+      "profileFields": ["awards_won", "total_awards", "awards"],
+      "type": "number",
+      "label": "Awards Won"
+    },
+    "books_written": {
+      "profileFields": ["books_written", "books_published", "publications"],
+      "type": "number",
+      "label": "Books Written"
+    },
+    "speaking_engagements": {
+      "profileFields": ["speaking_engagements", "talks_given", "speeches"],
+      "type": "number",
+      "label": "Speaking Engagements"
+    },
+    "countries_visited": {
+      "profileFields": ["countries_visited", "countries_worked"],
+      "type": "number",
+      "label": "Countries"
+    },
+    "team_size": {
+      "profileFields": ["team_size", "employees", "staff_count"],
+      "type": "number",
+      "label": "Team Size"
+    }
+  },
+  "saveBackFields": {
+    "years_experience": "years_experience",
+    "projects_completed": "projects_completed",
+    "clients_served": "clients_served",
+    "awards_won": "awards_won",
+    "books_written": "books_written",
+    "speaking_engagements": "speaking_engagements"
+  }
+}

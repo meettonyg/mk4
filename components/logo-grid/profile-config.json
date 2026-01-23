@@ -1,0 +1,64 @@
+{
+  "_note": "Field lists in fieldMappings and saveBackFields are intentionally separate for bidirectional mapping flexibility",
+  "profileIntegration": {
+    "enabled": true,
+    "autoPopulate": true,
+    "showBadges": true
+  },
+  "fieldMappings": {
+    "client_logos": {
+      "type": "array",
+      "fields": [
+        "client_logo_1", "client_logo_2", "client_logo_3",
+        "client_logo_4", "client_logo_5", "client_logo_6",
+        "client_logo_7", "client_logo_8", "client_logo_9",
+        "client_logo_10"
+      ],
+      "filter": "non-empty",
+      "label": "Client Logos"
+    },
+    "client_names": {
+      "type": "array",
+      "fields": [
+        "client_name_1", "client_name_2", "client_name_3",
+        "client_name_4", "client_name_5", "client_name_6",
+        "client_name_7", "client_name_8", "client_name_9",
+        "client_name_10"
+      ],
+      "filter": "non-empty",
+      "label": "Client Names"
+    },
+    "partner_logos": {
+      "type": "array",
+      "fields": ["partner_logo_1", "partner_logo_2", "partner_logo_3", "partner_logo_4", "partner_logo_5"],
+      "filter": "non-empty",
+      "label": "Partner Logos"
+    },
+    "certification_logos": {
+      "type": "array",
+      "fields": ["certification_logo_1", "certification_logo_2", "certification_logo_3", "certification_logo_4", "certification_logo_5"],
+      "filter": "non-empty",
+      "label": "Certification Logos"
+    }
+  },
+  "saveBackFields": {
+    "client_logos": {
+      "type": "array",
+      "targetFields": [
+        "client_logo_1", "client_logo_2", "client_logo_3",
+        "client_logo_4", "client_logo_5", "client_logo_6",
+        "client_logo_7", "client_logo_8", "client_logo_9",
+        "client_logo_10"
+      ]
+    },
+    "client_names": {
+      "type": "array",
+      "targetFields": [
+        "client_name_1", "client_name_2", "client_name_3",
+        "client_name_4", "client_name_5", "client_name_6",
+        "client_name_7", "client_name_8", "client_name_9",
+        "client_name_10"
+      ]
+    }
+  }
+}

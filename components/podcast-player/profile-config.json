@@ -1,0 +1,62 @@
+{
+  "profileIntegration": {
+    "enabled": true,
+    "autoPopulate": true,
+    "showBadges": true
+  },
+  "fieldMappings": {
+    "podcast_url": {
+      "profileFields": ["podcast_url", "podcast_link"],
+      "type": "url",
+      "label": "Podcast URL"
+    },
+    "podcast_name": {
+      "profileFields": ["podcast_name", "podcast_title"],
+      "type": "text",
+      "label": "Podcast Name"
+    },
+    "podcast_description": {
+      "profileFields": ["podcast_description", "podcast_about"],
+      "type": "textarea",
+      "label": "Podcast Description"
+    },
+    "spotify_url": {
+      "profileFields": ["spotify_url", "spotify_podcast"],
+      "type": "url",
+      "label": "Spotify URL"
+    },
+    "apple_podcasts_url": {
+      "profileFields": ["apple_podcasts_url", "apple_podcast"],
+      "type": "url",
+      "label": "Apple Podcasts URL"
+    },
+    "google_podcasts_url": {
+      "profileFields": ["google_podcasts_url", "google_podcast"],
+      "type": "url",
+      "label": "Google Podcasts URL"
+    },
+    "latest_episode_url": {
+      "profileFields": ["latest_episode_url", "recent_episode"],
+      "type": "url",
+      "label": "Latest Episode URL"
+    },
+    "episode_count": {
+      "profileFields": ["episode_count", "total_episodes"],
+      "type": "number",
+      "label": "Episode Count"
+    },
+    "podcast_host": {
+      "type": "composite",
+      "fields": ["first_name", "last_name"],
+      "format": "{first_name} {last_name}",
+      "label": "Podcast Host"
+    }
+  },
+  "saveBackFields": {
+    "podcast_url": "podcast_url",
+    "podcast_name": "podcast_name",
+    "podcast_description": "podcast_description",
+    "spotify_url": "spotify_url",
+    "apple_podcasts_url": "apple_podcasts_url"
+  }
+}

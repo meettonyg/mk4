@@ -1,0 +1,58 @@
+{
+  "_note": "Field lists in fieldMappings and saveBackFields are intentionally separate for bidirectional mapping flexibility",
+  "profileIntegration": {
+    "enabled": true,
+    "autoPopulate": true,
+    "showBadges": true
+  },
+  "fieldMappings": {
+    "gallery_images": {
+      "type": "array",
+      "fields": [
+        "gallery_image_1", "gallery_image_2", "gallery_image_3",
+        "gallery_image_4", "gallery_image_5", "gallery_image_6",
+        "gallery_image_7", "gallery_image_8", "gallery_image_9",
+        "gallery_image_10"
+      ],
+      "filter": "non-empty",
+      "label": "Gallery Images"
+    },
+    "gallery_captions": {
+      "type": "array",
+      "fields": [
+        "gallery_caption_1", "gallery_caption_2", "gallery_caption_3",
+        "gallery_caption_4", "gallery_caption_5", "gallery_caption_6",
+        "gallery_caption_7", "gallery_caption_8", "gallery_caption_9",
+        "gallery_caption_10"
+      ],
+      "filter": "non-empty",
+      "label": "Image Captions"
+    },
+    "portfolio_images": {
+      "type": "array",
+      "fields": ["portfolio_1", "portfolio_2", "portfolio_3", "portfolio_4", "portfolio_5"],
+      "filter": "non-empty",
+      "label": "Portfolio Images"
+    }
+  },
+  "saveBackFields": {
+    "gallery_images": {
+      "type": "array",
+      "targetFields": [
+        "gallery_image_1", "gallery_image_2", "gallery_image_3",
+        "gallery_image_4", "gallery_image_5", "gallery_image_6",
+        "gallery_image_7", "gallery_image_8", "gallery_image_9",
+        "gallery_image_10"
+      ]
+    },
+    "gallery_captions": {
+      "type": "array",
+      "targetFields": [
+        "gallery_caption_1", "gallery_caption_2", "gallery_caption_3",
+        "gallery_caption_4", "gallery_caption_5", "gallery_caption_6",
+        "gallery_caption_7", "gallery_caption_8", "gallery_caption_9",
+        "gallery_caption_10"
+      ]
+    }
+  }
+}

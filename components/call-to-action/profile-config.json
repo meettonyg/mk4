@@ -1,0 +1,51 @@
+{
+  "profileIntegration": {
+    "enabled": true,
+    "autoPopulate": true,
+    "showBadges": true
+  },
+  "fieldMappings": {
+    "cta_title": {
+      "profileFields": ["cta_title", "call_to_action_title", "action_title"],
+      "type": "text",
+      "label": "CTA Title"
+    },
+    "cta_text": {
+      "profileFields": ["cta_text", "call_to_action_text", "action_text"],
+      "type": "textarea",
+      "label": "CTA Text"
+    },
+    "cta_button_text": {
+      "profileFields": ["cta_button_text", "button_text", "action_button"],
+      "type": "text",
+      "label": "Button Text"
+    },
+    "cta_button_url": {
+      "profileFields": ["cta_button_url", "button_link", "action_link"],
+      "type": "url",
+      "label": "Button URL"
+    },
+    "booking_url": {
+      "profileFields": ["booking_url", "calendar_link", "schedule_link"],
+      "type": "url",
+      "label": "Booking URL"
+    },
+    "contact_email": {
+      "profileFields": ["email", "contact_email"],
+      "type": "email",
+      "label": "Contact Email"
+    },
+    "phone": {
+      "profileFields": ["phone", "contact_phone"],
+      "type": "text",
+      "label": "Phone"
+    }
+  },
+  "saveBackFields": {
+    "cta_title": "cta_title",
+    "cta_text": "cta_text",
+    "cta_button_text": "cta_button_text",
+    "cta_button_url": "cta_button_url",
+    "booking_url": "booking_url"
+  }
+}

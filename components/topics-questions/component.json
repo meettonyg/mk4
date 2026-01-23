@@ -16,7 +16,9 @@
     "serverRender": false,
     "vueRender": true,
     "inlineEdit": true,
-    "designPanel": true
+    "designPanel": true,
+    "profilePrePopulation": true,
+    "profileSaveBack": true
   },
   "features": {
     "displayModes": ["topics", "questions", "combined"],

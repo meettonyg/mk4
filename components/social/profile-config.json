@@ -1,0 +1,71 @@
+{
+  "profileIntegration": {
+    "enabled": true,
+    "autoPopulate": true,
+    "showBadges": true
+  },
+  "fieldMappings": {
+    "linkedin": {
+      "profileFields": ["linkedin", "linkedin_url", "linkedin_profile"],
+      "type": "url",
+      "label": "LinkedIn"
+    },
+    "twitter": {
+      "profileFields": ["twitter", "twitter_handle", "twitter_url", "x_handle"],
+      "type": "url",
+      "label": "Twitter/X"
+    },
+    "facebook": {
+      "profileFields": ["facebook", "facebook_url", "facebook_page"],
+      "type": "url",
+      "label": "Facebook"
+    },
+    "instagram": {
+      "profileFields": ["instagram", "instagram_handle", "instagram_url"],
+      "type": "url",
+      "label": "Instagram"
+    },
+    "youtube": {
+      "profileFields": ["youtube", "youtube_channel", "youtube_url"],
+      "type": "url",
+      "label": "YouTube"
+    },
+    "tiktok": {
+      "profileFields": ["tiktok", "tiktok_handle", "tiktok_url"],
+      "type": "url",
+      "label": "TikTok"
+    },
+    "website": {
+      "profileFields": ["website", "web_url", "personal_website"],
+      "type": "url",
+      "label": "Website"
+    },
+    "email": {
+      "profileFields": ["email", "contact_email"],
+      "type": "email",
+      "label": "Email"
+    },
+    "github": {
+      "profileFields": ["github", "github_url", "github_handle"],
+      "type": "url",
+      "label": "GitHub"
+    },
+    "medium": {
+      "profileFields": ["medium", "medium_url", "medium_profile"],
+      "type": "url",
+      "label": "Medium"
+    }
+  },
+  "saveBackFields": {
+    "linkedin": "linkedin",
+    "twitter": "twitter",
+    "facebook": "facebook",
+    "instagram": "instagram",
+    "youtube": "youtube",
+    "tiktok": "tiktok",
+    "website": "website",
+    "email": "email",
+    "github": "github",
+    "medium": "medium"
+  }
+}
