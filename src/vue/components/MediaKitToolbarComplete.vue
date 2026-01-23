@@ -510,6 +510,7 @@ const isLoggedIn = computed(() => !!window.gmkbData?.user?.isLoggedIn)
 const isNewMediaKit = computed(() => !!window.gmkbData?.isNewMediaKit)
 const isPublished = computed(() => store.postStatus === 'publish')
 const selectedProfileId = ref(window.gmkbData?.profileId || null)
+const selectedProfileSlug = ref(window.gmkbData?.linkedProfileSlug || null)
 
 // Handle profile switch - updates store's profileData with new profile data
 const handleProfileSwitch = async (profileId) => {
@@ -517,6 +518,9 @@ const handleProfileSwitch = async (profileId) => {
 
   try {
     console.log('🔄 Switching to profile:', profileId)
+
+    // Update selected profile ID
+    selectedProfileId.value = profileId
 
     // Update URL to include profile_id for persistence
     updateUrlWithProfileId(profileId)
@@ -528,13 +532,16 @@ const handleProfileSwitch = async (profileId) => {
       // Update store's profileData with new profile data via action
       store.setProfileData(profileData)
 
+      // Update profile slug for edit link (use post_name or slug from profile data)
+      selectedProfileSlug.value = profileData.post_name || profileData.slug || profileData.entry || null
+
       // Dispatch event for components to refresh
       document.dispatchEvent(new CustomEvent('gmkb:profile-switched', {
         detail: { profileId, profileData }
       }))
 
       showSuccess('Profile switched successfully')
-      console.log('✅ Profile switched to:', profileId)
+      console.log('✅ Profile switched to:', profileId, 'slug:', selectedProfileSlug.value)
     }
   } catch (error) {
     console.error('Failed to switch profile:', error)
@@ -622,11 +629,14 @@ const selectedProfileName = computed(() => {
 
 // Profile edit URL (for linked profiles) - links to frontend profile editor
 const profileEditUrl = computed(() => {
-  // Use the pre-built URL from the backend if available
+  // Use reactive slug first (updates when profile is switched)
+  if (selectedProfileSlug.value) {
+    return `/app/profiles/guest/profile/?entry=${selectedProfileSlug.value}`
+  }
+  // Fallback to initial data from backend
   if (window.gmkbData?.linkedProfileEditUrl) {
     return window.gmkbData.linkedProfileEditUrl
   }
-  // Fallback: construct URL from slug
   const profileSlug = window.gmkbData?.linkedProfileSlug
   if (profileSlug) {
     return `/app/profiles/guest/profile/?entry=${profileSlug}`
