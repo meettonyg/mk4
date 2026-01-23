@@ -14,7 +14,11 @@
       </button>
       
       <!-- Close Button -->
-      <button @click="handleClose" class="close-btn">×</button>
+      <button @click="handleClose" class="close-btn" aria-label="Close panel">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
     </div>
     
     <!-- Editor Tabs -->
@@ -659,9 +663,6 @@ body.dark-mode .reset-button:hover {
   border: none;
   border-radius: 6px;
   color: #6b7280;
-  font-size: 24px;
-  font-weight: 300;
-  line-height: 1;
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;

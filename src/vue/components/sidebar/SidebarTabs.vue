@@ -24,26 +24,6 @@
       </svg>
     </button>
     
-    <!-- Close Panel Button - Only visible in section/component editing modes -->
-    <button 
-      v-if="sidebarMode !== 'default'"
-      class="panel-close-button"
-      @click="closePanel"
-      title="Close Panel (Return to Main)"
-    >
-      <svg 
-        width="16" 
-        height="16" 
-        viewBox="0 0 24 24" 
-        fill="none" 
-        stroke="currentColor" 
-        stroke-width="2"
-      >
-        <line x1="18" y1="6" x2="6" y2="18"></line>
-        <line x1="6" y1="6" x2="18" y2="18"></line>
-      </svg>
-    </button>
-    
     <!-- DEFAULT MODE: Show tabs -->
     <template v-if="sidebarMode === 'default'">
     <!-- Tab Navigation -->
@@ -1444,50 +1424,6 @@ body.dark-mode .sidebar-collapse-toggle:hover {
   border-color: #ec4899;
   color: white;
   box-shadow: -6px 0 16px rgba(236, 72, 153, 0.5);
-}
-
-/* Panel Close Button - Top-Right Corner */
-.panel-close-button {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 100;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-  color: #6b7280;
-}
-
-.panel-close-button:hover {
-  background: #fee2e2;
-  border-color: #fca5a5;
-  color: #dc2626;
-  transform: scale(1.05);
-}
-
-body.dark-mode .panel-close-button {
-  background: #1e293b;
-  border-color: #334155;
-  color: #9ca3af;
-}
-
-body.dark-mode .panel-close-button:hover {
-  background: rgba(220, 38, 38, 0.2);
-  border-color: #dc2626;
-  color: #fca5a5;
-}
-
-/* Hide close button when sidebar is collapsed */
-.sidebar-collapsed .panel-close-button {
-  opacity: 0;
-  pointer-events: none;
 }
 
 .collapse-icon {
