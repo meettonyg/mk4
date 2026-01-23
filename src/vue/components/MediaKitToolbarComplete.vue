@@ -42,25 +42,6 @@
           </svg>
         </button>
 
-        <!-- View/Preview Icon Button -->
-        <a
-          v-if="(viewUrl || previewUrl) && !isNewMediaKit"
-          :href="isPublished ? viewUrl : previewUrl"
-          target="_blank"
-          class="gmkb-toolbar__view-btn"
-          :class="{ 'gmkb-toolbar__view-btn--preview': !isPublished }"
-          :title="isPublished ? 'View Published Kit' : 'Preview Draft'"
-        >
-          <svg v-if="isPublished" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-            <polyline points="15 3 21 3 21 9"></polyline>
-            <line x1="10" y1="14" x2="21" y2="3"></line>
-          </svg>
-          <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-            <circle cx="12" cy="12" r="3"></circle>
-          </svg>
-        </a>
       </div>
     </div>
 
@@ -191,19 +172,20 @@
         </svg>
       </button>
 
-      <!-- Save Button (only show for drafts/new kits - published kits use Update button) -->
-      <button
-        v-if="!isPublished"
-        @click="handleSave"
+      <!-- Preview Button -->
+      <a
+        v-if="(viewUrl || previewUrl) && !isNewMediaKit"
+        :href="isPublished ? viewUrl : previewUrl"
+        target="_blank"
         class="gmkb-toolbar__btn gmkb-toolbar__btn--primary"
-        title="Save (Ctrl+S)"
+        :title="isPublished ? 'View Published Kit' : 'Preview Draft'"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path>
-          <path d="M17 21v-8H7v8M7 3v5h8"></path>
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
         </svg>
-        <span>Save</span>
-      </button>
+        <span>Preview</span>
+      </a>
 
       <!-- Publish Button (when draft) -->
       <button
