@@ -506,15 +506,25 @@ function handleKeydown(event) {
   font-size: 24px;
 }
 
-/* Edit Hint (Carrd-like UX) */
+/* Edit Hint (Carrd-like UX) - Full overlay for better clickability */
 .edit-hint {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 100; /* Must be above component content but below ComponentControls (z-index: 10000) */
   pointer-events: auto;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.02); /* Subtle overlay to indicate clickable area */
+  transition: background 0.2s ease;
+}
+
+.edit-hint:hover {
+  background: rgba(99, 102, 241, 0.05);
 }
 
 .edit-hint-text {

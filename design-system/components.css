@@ -351,13 +351,20 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--gmkb-social-icon-size);
-  height: var(--gmkb-social-icon-size);
-  background: var(--gmkb-color-primary);
-  color: var(--gmkb-color-text-inverse);
-  border-radius: var(--gmkb-radius-full);
+  width: var(--gmkb-social-icon-size, 48px);
+  height: var(--gmkb-social-icon-size, 48px);
+  background: var(--gmkb-color-primary, #3b82f6);
+  color: var(--gmkb-color-text-inverse, #ffffff);
+  border-radius: var(--gmkb-radius-full, 50%);
   text-decoration: none;
-  transition: all var(--gmkb-transition-base);
+  transition: all var(--gmkb-transition-base, 0.2s ease);
+  font-size: 1.25rem;
+}
+
+/* Ensure icons have visible color - fallback to white if on colored bg, or brand color if on light bg */
+.social-link i,
+.social-link svg {
+  color: inherit;
 }
 
 .social-link:hover {
