@@ -170,6 +170,7 @@ export default {
             tagline: p.tagline || '',
             headshot: p.headshot,
             icon: p.icon || null,
+            slug: p.post_name || p.slug || p.entry || null,
             completion: p.completeness || 0,
             updated_at: p.modified
           }));

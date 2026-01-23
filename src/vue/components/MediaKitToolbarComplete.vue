@@ -995,11 +995,29 @@ const handleClickOutside = (event) => {
   }
 }
 
+// Handle profile selection event from MediaKitApp
+function handleProfileSelectedEvent(event) {
+  const { profileId, slug, icon, name, guest_title } = event.detail || {}
+  console.log('🎯 Profile selected event received:', { profileId, slug, icon, name, guest_title })
+
+  // Update local refs for toolbar display
+  if (profileId) {
+    selectedProfileId.value = profileId
+  }
+  if (slug) {
+    selectedProfileSlug.value = slug
+  }
+  if (icon !== undefined) {
+    selectedProfileIconRef.value = icon
+  }
+}
+
 onMounted(() => {
   initDarkMode()
   document.addEventListener('keydown', handleKeyboard)
   document.addEventListener('gmkb:save-requires-auth', handleSaveRequiresAuth)
   document.addEventListener('click', handleClickOutside)
+  document.addEventListener('gmkb:profile-selected', handleProfileSelectedEvent)
   console.log('✅ Perfected toolbar mounted with BEM conventions')
 })
 
@@ -1007,6 +1025,7 @@ onUnmounted(() => {
   document.removeEventListener('keydown', handleKeyboard)
   document.removeEventListener('gmkb:save-requires-auth', handleSaveRequiresAuth)
   document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('gmkb:profile-selected', handleProfileSelectedEvent)
 })
 </script>
 
