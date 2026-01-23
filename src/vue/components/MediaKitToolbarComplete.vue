@@ -185,6 +185,20 @@
         </svg>
       </button>
 
+      <!-- Save Button (only for drafts/new kits) -->
+      <button
+        v-if="!isPublished"
+        @click="handleSave"
+        class="gmkb-toolbar__btn gmkb-toolbar__btn--secondary"
+        title="Save (Ctrl+S)"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path>
+          <path d="M17 21v-8H7v8M7 3v5h8"></path>
+        </svg>
+        <span>Save</span>
+      </button>
+
       <!-- Preview Button -->
       <a
         v-if="(viewUrl || previewUrl) && !isNewMediaKit"
@@ -1369,6 +1383,21 @@ onUnmounted(() => {
   background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
   border-color: #0891b2;
   box-shadow: 0 4px 8px rgba(6, 182, 212, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Element Modifier: secondary button (Save for drafts) */
+.gmkb-toolbar__btn--secondary {
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
+  border-color: #475569;
+  color: white;
+  box-shadow: 0 2px 4px rgba(71, 85, 105, 0.3);
+}
+
+.gmkb-toolbar__btn--secondary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+  border-color: #334155;
+  box-shadow: 0 4px 8px rgba(71, 85, 105, 0.4);
   transform: translateY(-1px);
 }
 
