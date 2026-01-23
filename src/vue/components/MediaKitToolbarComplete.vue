@@ -620,13 +620,16 @@ const selectedProfileName = computed(() => {
   return null
 })
 
-// Profile edit URL (for linked profiles)
+// Profile edit URL (for linked profiles) - links to frontend profile editor
 const profileEditUrl = computed(() => {
-  const profileId = selectedProfileId.value || window.gmkbData?.profileId
-  if (profileId) {
-    // Use WordPress admin edit URL for the profile
-    const adminUrl = window.gmkbData?.adminUrl || '/wp-admin'
-    return `${adminUrl}/post.php?post=${profileId}&action=edit`
+  // Use the pre-built URL from the backend if available
+  if (window.gmkbData?.linkedProfileEditUrl) {
+    return window.gmkbData.linkedProfileEditUrl
+  }
+  // Fallback: construct URL from slug
+  const profileSlug = window.gmkbData?.linkedProfileSlug
+  if (profileSlug) {
+    return `/app/profiles/guest/profile/?entry=${profileSlug}`
   }
   return null
 })
