@@ -26,8 +26,12 @@
 
 import { ref, computed } from 'vue';
 import { useAIStore } from '../stores/ai';
-import { toolModules } from '../../tools/index.js';
 import { getRestUrl, getToolNonce, getRestNonce, isUserLoggedIn } from '../utils/ai';
+
+// Lazy reference to toolModules - breaks circular dependency by deferring access
+// The import happens statically but we only access the value at runtime
+let _toolModulesRef = null;
+import('../../tools/index.js').then(m => { _toolModulesRef = m.toolModules; });
 
 /**
  * Generate cache key from type and params
@@ -80,8 +84,13 @@ function base64EncodeUtf8(value) {
  * @returns {Object|null} Validation config or null if not found
  */
 function getValidationConfig(type) {
+  // Use lazy-loaded toolModules reference
+  if (!_toolModulesRef) {
+    // If not yet loaded, skip validation (will be available on retry)
+    return null;
+  }
   // Find the tool module by apiType
-  for (const [, module] of Object.entries(toolModules)) {
+  for (const [, module] of Object.entries(_toolModulesRef)) {
     if (module.meta?.apiType === type && module.meta?.validation) {
       return module.meta.validation;
     }
