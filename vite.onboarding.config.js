@@ -48,6 +48,14 @@ export default defineConfig(({ mode }) => ({
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './src'),
+            '@tools': path.resolve(__dirname, './tools'),
+            '@ai': path.resolve(__dirname, './src/vue/components/ai'),
+            '@components': path.resolve(__dirname, './components'),
+            '@renderers': path.resolve(__dirname, './src/vue/components/renderers'),
+            '@stores': path.resolve(__dirname, './src/stores'),
+            '@services': path.resolve(__dirname, './src/services'),
+            '@composables': path.resolve(__dirname, './src/composables'),
+            '@utils': path.resolve(__dirname, './src/utils'),
             'vue': 'vue/dist/vue.esm-bundler.js',
         },
         extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.vue'],
