@@ -12,12 +12,44 @@
       </button>
     </div>
 
+    <!-- Placeholder content when editing with no data -->
+    <div v-if="showPlaceholders" class="placeholder-content">
+      <div class="topics-section">
+        <h3 class="section-title">{{ topicsTitle }}</h3>
+        <div :class="['topics-container', `display-${topicsDisplay}`]">
+          <div
+            v-for="(topic, index) in placeholderTopics"
+            :key="`placeholder-topic-${index}`"
+            :class="['topic-item', 'topic-item--placeholder', { 'card-style': topicsDisplay === 'cards' }]"
+          >
+            <span class="topic-number">{{ index + 1 }}</span>
+            <span class="topic-text">{{ topic }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="questions-section">
+        <h3 class="section-title">{{ questionsTitle }}</h3>
+        <div :class="['questions-container', `display-${questionsDisplay}`]">
+          <div
+            v-for="(question, index) in placeholderQuestions"
+            :key="`placeholder-question-${index}`"
+            class="question-item question-item--placeholder"
+          >
+            <div class="question-content">
+              <span class="question-number">Q{{ index + 1 }}:</span>
+              <span class="question-text">{{ question }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Topics Only Mode -->
-    <div v-if="currentMode === 'topics' || currentMode === 'combined'" class="topics-section">
+    <div v-else-if="currentMode === 'topics' || currentMode === 'combined'" class="topics-section">
       <h3 v-if="topicsTitle" class="section-title">{{ topicsTitle }}</h3>
       <div :class="['topics-container', `display-${topicsDisplay}`]">
-        <div 
-          v-for="(topic, index) in filteredTopics" 
+        <div
+          v-for="(topic, index) in filteredTopics"
           :key="`topic-${index}`"
           :class="['topic-item', { 'card-style': topicsDisplay === 'cards' }]"
         >
@@ -28,7 +60,7 @@
     </div>
 
     <!-- Questions Only Mode -->
-    <div v-if="currentMode === 'questions' || currentMode === 'combined'" class="questions-section">
+    <div v-if="!showPlaceholders && (currentMode === 'questions' || currentMode === 'combined')" class="questions-section">
       <h3 v-if="questionsTitle" class="section-title">{{ questionsTitle }}</h3>
       <div :class="['questions-container', `display-${questionsDisplay}`]">
         <div 
@@ -147,7 +179,16 @@ export default {
 
       return questions;
     });
-    
+
+    // Show placeholders when editing with no data
+    const showPlaceholders = computed(() => {
+      return filteredTopics.value.length === 0 && filteredQuestions.value.length === 0 && (props.isEditing || props.isSelected);
+    });
+
+    // Placeholder data
+    const placeholderTopics = ['Topic 1', 'Topic 2', 'Topic 3'];
+    const placeholderQuestions = ['Question 1?', 'Question 2?'];
+
     return {
       // Configuration
       displayMode,
@@ -164,7 +205,11 @@ export default {
         { value: 'topics', label: 'Topics Only' },
         { value: 'questions', label: 'Questions Only' },
         { value: 'combined', label: 'Topics & Questions' }
-      ]
+      ],
+      // Placeholders
+      showPlaceholders,
+      placeholderTopics,
+      placeholderQuestions
     };
   },
   data() {

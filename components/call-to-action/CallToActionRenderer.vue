@@ -6,15 +6,29 @@
     <p v-if="description" class="cta-description">{{ description }}</p>
     
     <div class="cta-buttons">
-      <a
-        v-for="(button, index) in buttons"
-        :key="index"
-        :href="button.url"
-        :class="['cta-button', button.style || 'primary']"
-        :target="button.target || '_self'"
-      >
-        {{ button.text }}
-      </a>
+      <!-- Placeholder buttons when editing with no data -->
+      <template v-if="showPlaceholders">
+        <span
+          v-for="(button, index) in placeholderButtons"
+          :key="index"
+          :class="['cta-button', 'cta-button--placeholder', button.style || 'primary']"
+        >
+          {{ button.text }}
+        </span>
+      </template>
+
+      <!-- Actual buttons when data exists -->
+      <template v-else>
+        <a
+          v-for="(button, index) in buttons"
+          :key="index"
+          :href="button.url"
+          :class="['cta-button', button.style || 'primary']"
+          :target="button.target || '_self'"
+        >
+          {{ button.text }}
+        </a>
+      </template>
     </div>
     </div>
   </div>
@@ -129,10 +143,23 @@ export default {
       return buttonsList;
     });
 
+    // Show placeholders when editing with no buttons
+    const showPlaceholders = computed(() => {
+      return buttons.value.length === 0 && (props.isEditing || props.isSelected);
+    });
+
+    // Placeholder buttons
+    const placeholderButtons = [
+      { text: 'Primary Action', url: '#', style: 'primary' },
+      { text: 'Secondary Action', url: '#', style: 'secondary' }
+    ];
+
     return {
       title,
       description,
-      buttons
+      buttons,
+      showPlaceholders,
+      placeholderButtons
     };
   }
 }

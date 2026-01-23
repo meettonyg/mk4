@@ -5,17 +5,35 @@
     <h2 v-if="title" class="section-title">{{ title }}</h2>
     
     <div class="testimonials-grid">
-      <div
-        v-for="(testimonial, index) in testimonials"
-        :key="index"
-        class="testimonial-item"
-      >
-        <div class="testimonial-quote">"{{ testimonial.text }}"</div>
-        <div class="testimonial-author">
-          <div class="author-name">{{ testimonial.author }}</div>
-          <div v-if="testimonial.title" class="author-title">{{ testimonial.title }}</div>
+      <!-- Placeholder testimonials when editing with no data -->
+      <template v-if="showPlaceholders">
+        <div
+          v-for="(testimonial, index) in placeholderTestimonials"
+          :key="index"
+          class="testimonial-item testimonial-item--placeholder"
+        >
+          <div class="testimonial-quote">"{{ testimonial.text }}"</div>
+          <div class="testimonial-author">
+            <div class="author-name">{{ testimonial.author }}</div>
+            <div class="author-title">{{ testimonial.title }}</div>
+          </div>
         </div>
-      </div>
+      </template>
+
+      <!-- Actual testimonials when data exists -->
+      <template v-else>
+        <div
+          v-for="(testimonial, index) in testimonials"
+          :key="index"
+          class="testimonial-item"
+        >
+          <div class="testimonial-quote">"{{ testimonial.text }}"</div>
+          <div class="testimonial-author">
+            <div class="author-name">{{ testimonial.author }}</div>
+            <div v-if="testimonial.title" class="author-title">{{ testimonial.title }}</div>
+          </div>
+        </div>
+      </template>
     </div>
     </div>
   </div>
@@ -113,9 +131,22 @@ export default {
       return testimonialsList;
     });
 
+    // Show placeholders when editing with no testimonials
+    const showPlaceholders = computed(() => {
+      return testimonials.value.length === 0 && (props.isEditing || props.isSelected);
+    });
+
+    // Placeholder testimonials
+    const placeholderTestimonials = [
+      { text: 'Add a testimonial from a satisfied client or colleague', author: 'Client Name', title: 'Company/Role' },
+      { text: 'Share what others say about working with you', author: 'Another Client', title: 'Their Position' }
+    ];
+
     return {
       title,
-      testimonials
+      testimonials,
+      showPlaceholders,
+      placeholderTestimonials
     };
   }
 }

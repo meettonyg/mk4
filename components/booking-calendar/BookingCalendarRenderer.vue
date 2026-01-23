@@ -4,8 +4,17 @@
       <h2 v-if="title" class="booking-title">{{ title }}</h2>
       <p v-if="description" class="booking-description">{{ description }}</p>
       
+      <!-- Placeholder when editing with no calendar URL -->
+      <div v-if="showPlaceholders" class="calendar-placeholder">
+        <div class="placeholder-icon">
+          <i class="fas fa-calendar-alt"></i>
+        </div>
+        <p class="placeholder-text">Configure your calendar integration</p>
+        <p class="placeholder-hint">Add a Calendly or Google Calendar URL to display your booking calendar</p>
+      </div>
+
       <!-- Calendar embed based on service -->
-      <div v-if="calendarService === 'calendly' && calendarUrl" class="calendar-embed">
+      <div v-else-if="calendarService === 'calendly' && calendarUrl" class="calendar-embed">
         <div 
           class="calendly-inline-widget" 
           :data-url="calendarUrl"
@@ -140,6 +149,11 @@ export default {
       ];
     });
 
+    // Show placeholders when editing with no calendar configured
+    const showPlaceholders = computed(() => {
+      return !calendarUrl.value && (props.isEditing || props.isSelected);
+    });
+
     // Methods
     const handleBookingSubmit = () => {
       const submissionData = {
@@ -209,7 +223,8 @@ export default {
       calendarService,
       calendarUrl,
       availableTimes,
-      handleBookingSubmit
+      handleBookingSubmit,
+      showPlaceholders
     };
   }
 };
@@ -289,5 +304,33 @@ export default {
 
 .submit-button:hover {
   background: var(--gmkb-color-primary-hover, #005a87);
+}
+
+/* Placeholder styles */
+.calendar-placeholder {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: var(--gmkb-color-background, #f8f9fa);
+  border: 2px dashed var(--gmkb-color-border, #cbd5e1);
+  border-radius: var(--gmkb-border-radius, 8px);
+  opacity: 0.7;
+}
+
+.calendar-placeholder .placeholder-icon {
+  font-size: 3rem;
+  color: var(--gmkb-color-text-muted, #94a3b8);
+  margin-bottom: 1rem;
+}
+
+.calendar-placeholder .placeholder-text {
+  font-size: 1.1rem;
+  color: var(--gmkb-color-text, #333);
+  margin-bottom: 0.5rem;
+}
+
+.calendar-placeholder .placeholder-hint {
+  font-size: 0.9rem;
+  color: var(--gmkb-color-text-muted, #94a3b8);
+  font-style: italic;
 }
 </style>

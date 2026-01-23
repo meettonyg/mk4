@@ -5,40 +5,58 @@
       <p v-if="description" class="podcast-description">{{ description }}</p>
       
       <div class="podcast-episodes">
-        <div
-          v-for="(episode, index) in episodes"
-          :key="index"
-          class="episode-card"
-        >
-          <div class="episode-header">
-            <h3 class="episode-title">{{ episode.title }}</h3>
-            <span class="episode-duration">{{ episode.duration || '30:00' }}</span>
+        <!-- Placeholder episodes when editing with no data -->
+        <template v-if="showPlaceholders">
+          <div
+            v-for="(episode, index) in placeholderEpisodes"
+            :key="index"
+            class="episode-card episode-card--placeholder"
+          >
+            <div class="episode-header">
+              <h3 class="episode-title">{{ episode.title }}</h3>
+              <span class="episode-duration">{{ episode.duration }}</span>
+            </div>
+            <p class="episode-description">{{ episode.description }}</p>
           </div>
-          
-          <p class="episode-description">{{ episode.description }}</p>
-          
-          <div class="episode-player">
-            <audio v-if="episode.audio_url" controls>
-              <source :src="episode.audio_url" type="audio/mpeg">
-              Your browser does not support the audio element.
-            </audio>
-            
-            <div v-else class="episode-links">
-              <a v-if="episode.spotify_url" 
-                 :href="episode.spotify_url" 
-                 target="_blank"
-                 class="podcast-link spotify">
-                Listen on Spotify
-              </a>
-              <a v-if="episode.apple_url" 
-                 :href="episode.apple_url" 
-                 target="_blank"
-                 class="podcast-link apple">
-                Listen on Apple Podcasts
-              </a>
+        </template>
+
+        <!-- Actual episodes when data exists -->
+        <template v-else>
+          <div
+            v-for="(episode, index) in episodes"
+            :key="index"
+            class="episode-card"
+          >
+            <div class="episode-header">
+              <h3 class="episode-title">{{ episode.title }}</h3>
+              <span class="episode-duration">{{ episode.duration || '30:00' }}</span>
+            </div>
+
+            <p class="episode-description">{{ episode.description }}</p>
+
+            <div class="episode-player">
+              <audio v-if="episode.audio_url" controls>
+                <source :src="episode.audio_url" type="audio/mpeg">
+                Your browser does not support the audio element.
+              </audio>
+
+              <div v-else class="episode-links">
+                <a v-if="episode.spotify_url"
+                   :href="episode.spotify_url"
+                   target="_blank"
+                   class="podcast-link spotify">
+                  Listen on Spotify
+                </a>
+                <a v-if="episode.apple_url"
+                   :href="episode.apple_url"
+                   target="_blank"
+                   class="podcast-link apple">
+                  Listen on Apple Podcasts
+                </a>
+              </div>
             </div>
           </div>
-        </div>
+        </template>
       </div>
     </div>
   </div>
@@ -116,6 +134,17 @@ export default {
       return episodesList;
     });
 
+    // Show placeholders when editing with no episodes
+    const showPlaceholders = computed(() => {
+      return episodes.value.length === 0 && (props.isEditing || props.isSelected);
+    });
+
+    // Placeholder episodes
+    const placeholderEpisodes = [
+      { title: 'Episode Title', description: 'Add your first podcast episode', duration: '30:00' },
+      { title: 'Another Episode', description: 'Add more episodes to your list', duration: '45:00' }
+    ];
+
     // Lifecycle
     onMounted(() => {
       if (store.components[props.componentId]) {
@@ -135,7 +164,9 @@ export default {
     return {
       title,
       description,
-      episodes
+      episodes,
+      showPlaceholders,
+      placeholderEpisodes
     };
   }
 };

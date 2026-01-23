@@ -4,8 +4,26 @@
     <div class="component-root logo-grid-content">
     <h2 v-if="title" class="section-title">{{ title }}</h2>
     
+    <!-- Placeholder logos when editing with no data -->
+    <div
+      v-if="showPlaceholders"
+      class="logo-grid logo-grid--grid logo-grid--columns-4"
+    >
+      <div
+        v-for="(logo, index) in placeholderLogos"
+        :key="index"
+        class="logo-item logo-item--placeholder"
+      >
+        <div class="logo-placeholder-icon">
+          <i class="fas fa-image"></i>
+        </div>
+        <div class="logo-name">{{ logo.name }}</div>
+      </div>
+    </div>
+
     <!-- ✅ CAROUSEL LAYOUT: Use CarouselGrid component -->
-    <CarouselGrid 
+    <CarouselGrid
+      v-else-if="layoutStyle === 'carousel' && carouselSettings" 
       v-if="layoutStyle === 'carousel' && carouselSettings"
       :items="logos"
       :settings="carouselSettings"
@@ -53,8 +71,8 @@
     </CarouselGrid>
     
     <!-- ✅ GRID/MASONRY LAYOUTS: Use CSS grid -->
-    <div 
-      v-else
+    <div
+      v-else-if="!showPlaceholders"
       class="logo-grid"
       :class="[
         `logo-grid--${layoutStyle}`,
@@ -204,6 +222,19 @@ export default {
 
       return [];
     });
+
+    // Show placeholders when editing with no logos
+    const showPlaceholders = computed(() => {
+      return logos.value.length === 0 && (props.isEditing || props.isSelected);
+    });
+
+    // Placeholder logos
+    const placeholderLogos = [
+      { name: 'Logo 1' },
+      { name: 'Logo 2' },
+      { name: 'Logo 3' },
+      { name: 'Logo 4' }
+    ];
     
     // Open lightbox at specific index
     const openLightbox = (index) => {
@@ -220,7 +251,9 @@ export default {
       carouselSettings,
       lightboxRef,
       currentLogoIndex,
-      openLightbox
+      openLightbox,
+      showPlaceholders,
+      placeholderLogos
     };
   }
 }
