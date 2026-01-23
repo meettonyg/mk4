@@ -434,12 +434,58 @@
                 </div>
             </div>
         </div>
+
+        <!-- AI Generator Modals -->
+        <!-- Authority Hook Generator Modal -->
+        <AiModal
+            v-model="showAuthorityHookModal"
+            title="Define Your Authority Hook"
+            width="900px"
+        >
+            <AuthorityHookGenerator
+                mode="integrated"
+                :profile-data="currentProfileForGenerators"
+                @saved="handleAiToolSaved('authority_hook')"
+            />
+        </AiModal>
+
+        <!-- Impact Intro Generator Modal -->
+        <AiModal
+            v-model="showImpactIntroModal"
+            title="Write Your Impact Intro"
+            width="900px"
+        >
+            <ImpactIntroGenerator
+                mode="integrated"
+                :profile-data="currentProfileForGenerators"
+                @saved="handleAiToolSaved('impact_intro')"
+            />
+        </AiModal>
+
+        <!-- Topics Generator Modal -->
+        <AiModal
+            v-model="showTopicsModal"
+            title="Select Your Key Topics"
+            width="900px"
+        >
+            <TopicsGenerator
+                mode="integrated"
+                :profile-data="currentProfileForGenerators"
+                @saved="handleAiToolSaved('topics')"
+            />
+        </AiModal>
     </div>
 </template>
 
 <script setup>
 import { ref, computed, reactive, onMounted } from 'vue';
 import { useOnboardingStore } from './stores/onboarding.js';
+
+// AI Modal and Generator imports
+import AiModal from '../vue/components/ai/AiModal.vue';
+import AuthorityHookGenerator from '../../tools/authority-hook/Generator.vue';
+import ImpactIntroGenerator from '../../tools/impact-intro/Generator.vue';
+import TopicsGenerator from '../../tools/topics/Generator.vue';
 
 // Store
 const store = useOnboardingStore();
@@ -453,6 +499,29 @@ const showQuickProfileModal = ref(false);
 const showSurveyModal = ref(false);
 const isSubmittingProfile = ref(false);
 const isSubmittingSurvey = ref(false);
+
+// AI Generator Modal state
+const showAuthorityHookModal = ref(false);
+const showImpactIntroModal = ref(false);
+const showTopicsModal = ref(false);
+
+// Current profile data for AI generators
+const currentProfileForGenerators = computed(() => {
+    // If user has a specific profile selected, use that
+    if (store.currentProfileId) {
+        const profile = store.availableProfiles.find(p => p.id === store.currentProfileId);
+        return profile || { id: store.currentProfileId };
+    }
+    // If user has only one profile, use that
+    if (store.availableProfiles.length === 1) {
+        return store.availableProfiles[0];
+    }
+    // If user has multiple profiles but none selected, use the first one
+    if (store.availableProfiles.length > 0) {
+        return store.availableProfiles[0];
+    }
+    return null;
+});
 
 // Quick Profile form data
 const quickProfile = reactive({
@@ -542,7 +611,27 @@ const handleModalLink = (task) => {
         showQuickProfileModal.value = true;
     } else if (task.link === '#surveyModal') {
         showSurveyModal.value = true;
+    } else if (task.link === '#authorityHookModal') {
+        showAuthorityHookModal.value = true;
+    } else if (task.link === '#impactIntroModal') {
+        showImpactIntroModal.value = true;
+    } else if (task.link === '#topicsModal') {
+        showTopicsModal.value = true;
     }
+};
+
+// Handle AI tool saved - refresh progress and close modal
+const handleAiToolSaved = async (toolName) => {
+    // Close the respective modal
+    if (toolName === 'authority_hook') {
+        showAuthorityHookModal.value = false;
+    } else if (toolName === 'impact_intro') {
+        showImpactIntroModal.value = false;
+    } else if (toolName === 'topics') {
+        showTopicsModal.value = false;
+    }
+    // Refresh progress to reflect completed task
+    await store.fetchProgress(true);
 };
 
 // Quick Profile Modal handlers

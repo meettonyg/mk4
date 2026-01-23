@@ -144,7 +144,8 @@ class GMKB_Onboarding_Schema {
             'source' => 'postmeta',
             'check_type' => 'not_empty',
             'meta_key' => 'authority_hook',
-            'link' => '/tools/authority-hook-builder/',
+            'link' => '#authorityHookModal',
+            'link_type' => 'modal',  // Opens AI generator modal
             'order' => 1,
         ],
         'impact_intro' => [
@@ -155,7 +156,8 @@ class GMKB_Onboarding_Schema {
             'source' => 'postmeta',
             'check_type' => 'not_empty',
             'meta_key' => 'impact_intro',
-            'link' => '/tools/impact-intro-builder/',
+            'link' => '#impactIntroModal',
+            'link_type' => 'modal',  // Opens AI generator modal
             'order' => 2,
         ],
         'topics' => [
@@ -167,7 +169,8 @@ class GMKB_Onboarding_Schema {
             'check_type' => 'category',
             'meta_keys' => ['topic_1', 'topic_2', 'topic_3', 'topic_4', 'topic_5'],
             'min_required' => 3,
-            'link' => '/tools/topics-generator/',
+            'link' => '#topicsModal',
+            'link_type' => 'modal',  // Opens AI generator modal
             'order' => 3,
         ],
         'first_pitch' => [

@@ -103,16 +103,16 @@
  */
 
 import { ref, computed, watch, onMounted } from 'vue';
-import { useAIBiography } from '@composables/useAIBiography';
-import { useAuthorityHook } from '@composables/useAuthorityHook';
+import { useAIBiography } from '../../src/composables/useAIBiography';
+import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 
-// Shared AI Components - these will be moved to /tools/_shared/ in Phase 4
-import AiWidgetFrame from '@ai/AiWidgetFrame.vue';
-import AiToneSelector from '@ai/AiToneSelector.vue';
-import AiLengthSelector from '@ai/AiLengthSelector.vue';
-import AiPovSelector from '@ai/AiPovSelector.vue';
-import AiGenerateButton from '@ai/AiGenerateButton.vue';
-import AiResultsDisplay from '@ai/AiResultsDisplay.vue';
+// Shared AI Components
+import AiWidgetFrame from '../../src/vue/components/ai/AiWidgetFrame.vue';
+import AiToneSelector from '../../src/vue/components/ai/AiToneSelector.vue';
+import AiLengthSelector from '../../src/vue/components/ai/AiLengthSelector.vue';
+import AiPovSelector from '../../src/vue/components/ai/AiPovSelector.vue';
+import AiGenerateButton from '../../src/vue/components/ai/AiGenerateButton.vue';
+import AiResultsDisplay from '../../src/vue/components/ai/AiResultsDisplay.vue';
 
 const props = defineProps({
   /**
