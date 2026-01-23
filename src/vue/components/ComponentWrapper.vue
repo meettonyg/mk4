@@ -442,6 +442,7 @@ function handleKeydown(event) {
   overflow: visible; /* ROOT FIX: Allow absolutely positioned controls to render outside bounds */
   /* Margin applied via inline styles from ComponentStyleService */
   /* No default margins - all spacing controlled by component settings */
+  isolation: isolate; /* Create stacking context for z-index to work properly */
 }
 
 .component-wrapper--hovering {
@@ -508,7 +509,7 @@ function handleKeydown(event) {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 10;
+  z-index: 100; /* Must be above component content but below ComponentControls (z-index: 10000) */
   pointer-events: auto;
   cursor: pointer;
 }
