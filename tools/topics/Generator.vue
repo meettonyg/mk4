@@ -466,7 +466,8 @@ import { useDraftState } from '../../src/composables/useDraftState';
 import { useGeneratorHistory } from '../../src/composables/useGeneratorHistory';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
-import { AuthorityHookBuilder, ProfileSelector } from '../_shared';
+import AuthorityHookBuilder from '../_shared/AuthorityHookBuilder.vue';
+import ProfileSelector from '../_shared/ProfileSelector.vue';
 
 // Constants
 const MAX_SELECTED_TOPICS = 5;

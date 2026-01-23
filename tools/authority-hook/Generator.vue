@@ -324,7 +324,7 @@ import { useAuthorityHook } from '../../src/composables/useAuthorityHook';
 import { useDraftState } from '../../src/composables/useDraftState';
 import { useStandaloneProfile } from '../../src/composables/useStandaloneProfile';
 import { EMBEDDED_PROFILE_DATA_KEY } from '../_shared/constants';
-import { ProfileSelector } from '../_shared';
+import ProfileSelector from '../_shared/ProfileSelector.vue';
 
 const props = defineProps({
   /**
