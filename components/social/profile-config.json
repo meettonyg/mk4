@@ -6,37 +6,37 @@
   },
   "fieldMappings": {
     "linkedin": {
-      "profileFields": ["linkedin", "linkedin_url", "linkedin_profile"],
+      "profileFields": ["1_linkedin", "social_linkedin", "linkedin", "linkedin_url"],
       "type": "url",
       "label": "LinkedIn"
     },
     "twitter": {
-      "profileFields": ["twitter", "twitter_handle", "twitter_url", "x_handle"],
+      "profileFields": ["1_twitter", "social_twitter", "twitter", "twitter_handle", "x_handle"],
       "type": "url",
       "label": "Twitter/X"
     },
     "facebook": {
-      "profileFields": ["facebook", "facebook_url", "facebook_page"],
+      "profileFields": ["1_facebook", "social_facebook", "facebook", "facebook_url"],
       "type": "url",
       "label": "Facebook"
     },
     "instagram": {
-      "profileFields": ["instagram", "instagram_handle", "instagram_url"],
+      "profileFields": ["1_instagram", "social_instagram", "instagram", "instagram_handle"],
       "type": "url",
       "label": "Instagram"
     },
     "youtube": {
-      "profileFields": ["youtube", "youtube_channel", "youtube_url"],
+      "profileFields": ["guest_youtube", "social_youtube", "youtube", "youtube_channel"],
       "type": "url",
       "label": "YouTube"
     },
     "tiktok": {
-      "profileFields": ["tiktok", "tiktok_handle", "tiktok_url"],
+      "profileFields": ["1_tiktok", "social_tiktok", "tiktok", "tiktok_handle"],
       "type": "url",
       "label": "TikTok"
     },
     "website": {
-      "profileFields": ["website", "web_url", "personal_website"],
+      "profileFields": ["1_website", "2_website", "website_primary", "website_secondary", "website"],
       "type": "url",
       "label": "Website"
     },
@@ -44,28 +44,16 @@
       "profileFields": ["email", "contact_email"],
       "type": "email",
       "label": "Email"
-    },
-    "github": {
-      "profileFields": ["github", "github_url", "github_handle"],
-      "type": "url",
-      "label": "GitHub"
-    },
-    "medium": {
-      "profileFields": ["medium", "medium_url", "medium_profile"],
-      "type": "url",
-      "label": "Medium"
     }
   },
   "saveBackFields": {
-    "linkedin": "linkedin",
-    "twitter": "twitter",
-    "facebook": "facebook",
-    "instagram": "instagram",
-    "youtube": "youtube",
-    "tiktok": "tiktok",
-    "website": "website",
-    "email": "email",
-    "github": "github",
-    "medium": "medium"
+    "linkedin": "1_linkedin",
+    "twitter": "1_twitter",
+    "facebook": "1_facebook",
+    "instagram": "1_instagram",
+    "youtube": "guest_youtube",
+    "tiktok": "1_tiktok",
+    "website": "1_website",
+    "email": "email"
   }
 }

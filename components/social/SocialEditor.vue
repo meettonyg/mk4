@@ -5,7 +5,7 @@
     :show-typography="false"
     :active-tab="activeTab"
     @update:active-tab="activeTab = $event"
-    @back="handleBack"
+    @close="handleClose"
   >
     <!-- Content Tab -->
     <template #content>
@@ -284,8 +284,8 @@ const updateDisplaySettings = () => {
   }, 300);
 };
 
-// Handle back button
-const handleBack = () => {
+// Handle close button
+const handleClose = () => {
   emit('close');
 };
 </script>
