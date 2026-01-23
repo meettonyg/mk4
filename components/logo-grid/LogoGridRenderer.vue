@@ -165,6 +165,10 @@ export default {
     isSelected: {
       type: Boolean,
       default: false
+    },
+    isBuilderMode: {
+      type: Boolean,
+      default: false
     }
   },
   components: {
@@ -222,9 +226,9 @@ export default {
       return [];
     });
 
-    // Show placeholders when editing with no logos
+    // Show placeholders when in builder mode with no logos
     const showPlaceholders = computed(() => {
-      return logos.value.length === 0 && (props.isEditing || props.isSelected);
+      return logos.value.length === 0 && (props.isBuilderMode || props.isEditing || props.isSelected);
     });
 
     // Placeholder logos

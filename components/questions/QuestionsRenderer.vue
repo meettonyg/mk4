@@ -56,6 +56,10 @@ export default {
     isSelected: {
       type: Boolean,
       default: false
+    },
+    isBuilderMode: {
+      type: Boolean,
+      default: false
     }
   },
   setup(props) {
@@ -85,9 +89,9 @@ export default {
       return questionsList;
     });
 
-    // Show placeholders when editing with no questions
+    // Show placeholders when in builder mode with no questions
     const showPlaceholders = computed(() => {
-      return questions.value.length === 0 && (props.isEditing || props.isSelected);
+      return questions.value.length === 0 && (props.isBuilderMode || props.isEditing || props.isSelected);
     });
 
     // Placeholder questions

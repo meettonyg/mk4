@@ -75,6 +75,10 @@ export default {
     isSelected: {
       type: Boolean,
       default: false
+    },
+    isBuilderMode: {
+      type: Boolean,
+      default: false
     }
   },
   setup(props) {
@@ -89,9 +93,9 @@ export default {
       return email.value || phone.value || skype.value || location.value;
     });
 
-    // Show placeholders when editing with no data configured
+    // Show placeholders when in builder mode with no data configured
     const showPlaceholders = computed(() => {
-      return !hasContactData.value && (props.isEditing || props.isSelected);
+      return !hasContactData.value && (props.isBuilderMode || props.isEditing || props.isSelected);
     });
 
     return {

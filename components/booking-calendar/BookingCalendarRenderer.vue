@@ -104,6 +104,10 @@ export default {
     isSelected: {
       type: Boolean,
       default: false
+    },
+    isBuilderMode: {
+      type: Boolean,
+      default: false
     }
   },
   setup(props, { emit }) {
@@ -149,9 +153,9 @@ export default {
       ];
     });
 
-    // Show placeholders when editing with no calendar configured
+    // Show placeholders when in builder mode with no calendar configured
     const showPlaceholders = computed(() => {
-      return !calendarUrl.value && (props.isEditing || props.isSelected);
+      return !calendarUrl.value && (props.isBuilderMode || props.isEditing || props.isSelected);
     });
 
     // Methods

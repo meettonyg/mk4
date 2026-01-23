@@ -177,6 +177,10 @@ export default {
     isSelected: {
       type: Boolean,
       default: false
+    },
+    isBuilderMode: {
+      type: Boolean,
+      default: false
     }
   },
   components: {
@@ -239,9 +243,9 @@ export default {
       return [];
     });
 
-    // Show placeholders when editing with no photos
+    // Show placeholders when in builder mode with no photos
     const showPlaceholders = computed(() => {
-      return photos.value.length === 0 && (props.isEditing || props.isSelected);
+      return photos.value.length === 0 && (props.isBuilderMode || props.isEditing || props.isSelected);
     });
 
     // Placeholder photos

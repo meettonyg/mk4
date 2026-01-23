@@ -82,6 +82,10 @@ export default {
     isSelected: {
       type: Boolean,
       default: false
+    },
+    isBuilderMode: {
+      type: Boolean,
+      default: false
     }
   },
   setup(props) {
@@ -104,8 +108,9 @@ export default {
         }
       });
 
-      // Show placeholder icons when in editing mode with no configured links
-      if (builtLinks.length === 0 && (props.isEditing || props.isSelected)) {
+      // Show placeholder icons when in builder mode with no configured links
+      // Use isBuilderMode for reliable detection (doesn't depend on selection timing)
+      if (builtLinks.length === 0 && (props.isBuilderMode || props.isEditing || props.isSelected)) {
         return DEFAULT_PLACEHOLDER_PLATFORMS.map(platform => ({
           platform,
           url: '#',

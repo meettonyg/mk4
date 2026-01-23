@@ -82,6 +82,10 @@ export default {
     isSelected: {
       type: Boolean,
       default: false
+    },
+    isBuilderMode: {
+      type: Boolean,
+      default: false
     }
   },
   setup(props) {
@@ -117,9 +121,9 @@ export default {
       return builtStats;
     });
 
-    // Show placeholders when editing with no stats
+    // Show placeholders when in builder mode with no stats configured
     const showPlaceholders = computed(() => {
-      return stats.value.length === 0 && (props.isEditing || props.isSelected);
+      return stats.value.length === 0 && (props.isBuilderMode || props.isEditing || props.isSelected);
     });
 
     // Placeholder stats

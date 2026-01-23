@@ -65,6 +65,10 @@ export default {
     isSelected: {
       type: Boolean,
       default: false
+    },
+    isBuilderMode: {
+      type: Boolean,
+      default: false
     }
   },
   setup(props) {
@@ -143,9 +147,9 @@ export default {
       return buttonsList;
     });
 
-    // Show placeholders when editing with no buttons
+    // Show placeholders when in builder mode with no buttons
     const showPlaceholders = computed(() => {
-      return buttons.value.length === 0 && (props.isEditing || props.isSelected);
+      return buttons.value.length === 0 && (props.isBuilderMode || props.isEditing || props.isSelected);
     });
 
     // Placeholder buttons

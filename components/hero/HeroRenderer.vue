@@ -59,6 +59,10 @@ export default {
     isSelected: {
       type: Boolean,
       default: false
+    },
+    isBuilderMode: {
+      type: Boolean,
+      default: false
     }
   },
   setup(props, { emit }) {
@@ -107,8 +111,9 @@ export default {
     });
 
     // Show placeholders when editing with no data configured
+    // Show placeholders when in builder mode with no data configured
     const showPlaceholders = computed(() => {
-      return !hasContent.value && (props.isEditing || props.isSelected);
+      return !hasContent.value && (props.isBuilderMode || props.isEditing || props.isSelected);
     });
 
     // CTA Click handler

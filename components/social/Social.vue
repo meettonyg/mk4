@@ -66,6 +66,10 @@ const props = defineProps({
   isSelected: {
     type: Boolean,
     default: false
+  },
+  isBuilderMode: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -125,8 +129,9 @@ const socialLinks = computed(() => {
     }
   });
 
-  // Show placeholder icons when in editing mode with no configured links
-  if (links.length === 0 && (props.isEditing || props.isSelected)) {
+  // Show placeholder icons when in builder mode with no configured links
+  // Use isBuilderMode for reliable detection (doesn't depend on selection timing)
+  if (links.length === 0 && (props.isBuilderMode || props.isEditing || props.isSelected)) {
     return defaultPlatforms.map(platform => ({
       platform: platform.charAt(0).toUpperCase() + platform.slice(1),
       url: '#', // Placeholder URL

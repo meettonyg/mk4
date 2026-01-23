@@ -109,6 +109,10 @@ const props = defineProps({
   isSelected: {
     type: Boolean,
     default: false
+  },
+  isBuilderMode: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -141,8 +145,10 @@ const hasContactData = computed(() => {
 });
 
 // Show placeholders when editing with no data configured
+// Show placeholders when in builder mode with no data configured
+// Use isBuilderMode for reliable detection (doesn't depend on selection timing)
 const showPlaceholders = computed(() => {
-  return !hasContactData.value && (props.isEditing || props.isSelected);
+  return !hasContactData.value && (props.isBuilderMode || props.isEditing || props.isSelected);
 });
 </script>
 

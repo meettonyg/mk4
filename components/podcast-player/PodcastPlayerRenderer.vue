@@ -94,6 +94,10 @@ export default {
     isSelected: {
       type: Boolean,
       default: false
+    },
+    isBuilderMode: {
+      type: Boolean,
+      default: false
     }
   },
   setup(props) {
@@ -134,9 +138,9 @@ export default {
       return episodesList;
     });
 
-    // Show placeholders when editing with no episodes
+    // Show placeholders when in builder mode with no episodes
     const showPlaceholders = computed(() => {
-      return episodes.value.length === 0 && (props.isEditing || props.isSelected);
+      return episodes.value.length === 0 && (props.isBuilderMode || props.isEditing || props.isSelected);
     });
 
     // Placeholder episodes
