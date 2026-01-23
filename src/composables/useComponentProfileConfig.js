@@ -24,8 +24,21 @@ import { ProfileDataTransformer } from '../core/ProfileDataTransformer.js';
  * Pre-map ALL profile-config.json files at build time (Vite-safe)
  * This avoids the dynamic import limitation where bundlers can't
  * statically analyze variable paths in import()
+ *
+ * Note: Using multiple glob patterns to handle different path resolutions
  */
-const configRegistry = import.meta.glob('../../components/**/profile-config.json');
+const configRegistry = import.meta.glob([
+  '../../components/*/profile-config.json',
+  '/components/*/profile-config.json',
+  '@components/*/profile-config.json'
+], { eager: false });
+
+// Log available configs at startup for debugging
+if (Object.keys(configRegistry).length > 0) {
+  console.log('[useComponentProfileConfig] Available configs:', Object.keys(configRegistry));
+} else {
+  console.warn('[useComponentProfileConfig] No profile-config.json files found in glob');
+}
 
 /**
  * Cache for loaded configs to avoid repeated async fetches
@@ -79,11 +92,39 @@ export function useComponentProfileConfig(componentType) {
     // Create loading promise
     const loadPromise = (async () => {
       try {
-        // Construct the path to match the glob pattern
-        const path = `../../components/${componentType}/profile-config.json`;
+        // Try multiple path patterns to match different Vite resolutions
+        const pathPatterns = [
+          `../../components/${componentType}/profile-config.json`,
+          `/components/${componentType}/profile-config.json`,
+          `@components/${componentType}/profile-config.json`
+        ];
 
-        if (configRegistry[path]) {
-          const module = await configRegistry[path]();
+        // Find matching path in registry
+        let matchingPath = null;
+        let registryLoader = null;
+
+        for (const pattern of pathPatterns) {
+          if (configRegistry[pattern]) {
+            matchingPath = pattern;
+            registryLoader = configRegistry[pattern];
+            break;
+          }
+        }
+
+        // Also try to find by partial match (component type in path)
+        if (!registryLoader) {
+          for (const [regPath, loader] of Object.entries(configRegistry)) {
+            if (regPath.includes(`/${componentType}/profile-config.json`)) {
+              matchingPath = regPath;
+              registryLoader = loader;
+              break;
+            }
+          }
+        }
+
+        if (registryLoader) {
+          console.log(`[useComponentProfileConfig] Loading config for "${componentType}" from: ${matchingPath}`);
+          const module = await registryLoader();
           // Handle both default export and direct module
           const loadedConfig = module.default || module;
 
@@ -96,7 +137,7 @@ export function useComponentProfileConfig(componentType) {
           }
         } else {
           // Config doesn't exist for this component - that's OK, not all need it
-          console.log(`[useComponentProfileConfig] No profile config for "${componentType}"`);
+          console.log(`[useComponentProfileConfig] No profile config for "${componentType}" (tried paths: ${pathPatterns.join(', ')})`);
           return null;
         }
       } catch (e) {
