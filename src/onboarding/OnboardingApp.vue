@@ -608,31 +608,28 @@ const toggleDetails = () => {
 
 // Handle modal link clicks
 const handleModalLink = (task) => {
-    const modalMap = {
-        '#quickProfileModal': showQuickProfileModal,
-        '#surveyModal': showSurveyModal,
-        '#authorityHookModal': showAuthorityHookModal,
-        '#impactIntroModal': showImpactIntroModal,
-        '#topicsModal': showTopicsModal,
-    };
-
-    const modalRef = modalMap[task.modal_id];
-    if (modalRef) {
-        modalRef.value = true;
+    if (task.modal_id === '#quickProfileModal') {
+        showQuickProfileModal.value = true;
+    } else if (task.modal_id === '#surveyModal') {
+        showSurveyModal.value = true;
+    } else if (task.modal_id === '#authorityHookModal') {
+        showAuthorityHookModal.value = true;
+    } else if (task.modal_id === '#impactIntroModal') {
+        showImpactIntroModal.value = true;
+    } else if (task.modal_id === '#topicsModal') {
+        showTopicsModal.value = true;
     }
 };
 
 // Handle AI tool saved - refresh progress and close modal
 const handleAiToolSaved = async (toolName) => {
-    const modalMap = {
-        'authority_hook': showAuthorityHookModal,
-        'impact_intro': showImpactIntroModal,
-        'topics': showTopicsModal,
-    };
-
     // Close the respective modal
-    if (modalMap[toolName]) {
-        modalMap[toolName].value = false;
+    if (toolName === 'authority_hook') {
+        showAuthorityHookModal.value = false;
+    } else if (toolName === 'impact_intro') {
+        showImpactIntroModal.value = false;
+    } else if (toolName === 'topics') {
+        showTopicsModal.value = false;
     }
 
     // Refresh progress to reflect completed task
