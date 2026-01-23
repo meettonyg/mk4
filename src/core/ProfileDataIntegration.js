@@ -103,10 +103,8 @@ export class ProfileDataIntegration {
         fields: {
           email: ["email", "contact_email"],
           phone: ["phone", "contact_phone"],
-          website: ["website", "web_url"],
-          linkedin: ["linkedin", "linkedin_url"],
-          twitter: ["twitter", "twitter_handle"],
-          facebook: ["facebook", "facebook_url"]
+          skype: ["skype", "skype_handle", "skype_id"],
+          location: ["location", "address", "city", "full_address"]
         }
       },
       topics: {

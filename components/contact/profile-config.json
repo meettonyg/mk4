@@ -15,33 +15,21 @@
       "type": "phone",
       "label": "Phone Number"
     },
-    "website": {
-      "profileFields": ["website", "web_url"],
-      "type": "url",
-      "label": "Website"
-    },
-    "linkedin": {
-      "profileFields": ["linkedin", "linkedin_url"],
-      "type": "url",
-      "label": "LinkedIn"
-    },
-    "twitter": {
-      "profileFields": ["twitter", "twitter_handle"],
+    "skype": {
+      "profileFields": ["skype", "skype_handle", "skype_id"],
       "type": "text",
-      "label": "Twitter/X"
+      "label": "Skype"
     },
-    "facebook": {
-      "profileFields": ["facebook", "facebook_url"],
-      "type": "url",
-      "label": "Facebook"
+    "location": {
+      "profileFields": ["location", "address", "city", "full_address"],
+      "type": "text",
+      "label": "Location"
     }
   },
   "saveBackFields": {
     "email": "email",
     "phone": "phone",
-    "website": "website",
-    "linkedin": "linkedin",
-    "twitter": "twitter",
-    "facebook": "facebook"
+    "skype": "skype",
+    "location": "location"
   }
 }
