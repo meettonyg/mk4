@@ -505,21 +505,6 @@ const showAuthorityHookModal = ref(false);
 const showImpactIntroModal = ref(false);
 const showTopicsModal = ref(false);
 
-// Modal maps for scalable lookups (defined at top level to avoid recreation on every function call)
-const modalLinkMap = {
-    '#quickProfileModal': showQuickProfileModal,
-    '#surveyModal': showSurveyModal,
-    '#authorityHookModal': showAuthorityHookModal,
-    '#impactIntroModal': showImpactIntroModal,
-    '#topicsModal': showTopicsModal,
-};
-
-const aiToolModalMap = {
-    'authority_hook': showAuthorityHookModal,
-    'impact_intro': showImpactIntroModal,
-    'topics': showTopicsModal,
-};
-
 // Current profile data for AI generators
 const currentProfileForGenerators = computed(() => {
     // If user has a specific profile selected, use that
@@ -623,7 +608,15 @@ const toggleDetails = () => {
 
 // Handle modal link clicks
 const handleModalLink = (task) => {
-    const modalRef = modalLinkMap[task.modal_id];
+    const modalMap = {
+        '#quickProfileModal': showQuickProfileModal,
+        '#surveyModal': showSurveyModal,
+        '#authorityHookModal': showAuthorityHookModal,
+        '#impactIntroModal': showImpactIntroModal,
+        '#topicsModal': showTopicsModal,
+    };
+
+    const modalRef = modalMap[task.modal_id];
     if (modalRef) {
         modalRef.value = true;
     }
@@ -631,9 +624,15 @@ const handleModalLink = (task) => {
 
 // Handle AI tool saved - refresh progress and close modal
 const handleAiToolSaved = async (toolName) => {
+    const modalMap = {
+        'authority_hook': showAuthorityHookModal,
+        'impact_intro': showImpactIntroModal,
+        'topics': showTopicsModal,
+    };
+
     // Close the respective modal
-    if (aiToolModalMap[toolName]) {
-        aiToolModalMap[toolName].value = false;
+    if (modalMap[toolName]) {
+        modalMap[toolName].value = false;
     }
 
     // Refresh progress to reflect completed task
