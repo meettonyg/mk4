@@ -505,6 +505,21 @@ const showAuthorityHookModal = ref(false);
 const showImpactIntroModal = ref(false);
 const showTopicsModal = ref(false);
 
+// Modal maps for scalable lookups (defined at top level to avoid recreation on every function call)
+const modalLinkMap = {
+    '#quickProfileModal': showQuickProfileModal,
+    '#surveyModal': showSurveyModal,
+    '#authorityHookModal': showAuthorityHookModal,
+    '#impactIntroModal': showImpactIntroModal,
+    '#topicsModal': showTopicsModal,
+};
+
+const aiToolModalMap = {
+    'authority_hook': showAuthorityHookModal,
+    'impact_intro': showImpactIntroModal,
+    'topics': showTopicsModal,
+};
+
 // Current profile data for AI generators
 const currentProfileForGenerators = computed(() => {
     // If user has a specific profile selected, use that
@@ -608,28 +623,18 @@ const toggleDetails = () => {
 
 // Handle modal link clicks
 const handleModalLink = (task) => {
-    if (task.modal_id === '#quickProfileModal') {
-        showQuickProfileModal.value = true;
-    } else if (task.modal_id === '#surveyModal') {
-        showSurveyModal.value = true;
-    } else if (task.modal_id === '#authorityHookModal') {
-        showAuthorityHookModal.value = true;
-    } else if (task.modal_id === '#impactIntroModal') {
-        showImpactIntroModal.value = true;
-    } else if (task.modal_id === '#topicsModal') {
-        showTopicsModal.value = true;
+    const modalRef = modalLinkMap[task.modal_id];
+    if (modalRef) {
+        modalRef.value = true;
     }
 };
 
 // Handle AI tool saved - refresh progress and close modal
 const handleAiToolSaved = async (toolName) => {
     // Close the respective modal
-    if (toolName === 'authority_hook') {
-        showAuthorityHookModal.value = false;
-    } else if (toolName === 'impact_intro') {
-        showImpactIntroModal.value = false;
-    } else if (toolName === 'topics') {
-        showTopicsModal.value = false;
+    const modalRef = aiToolModalMap[toolName];
+    if (modalRef) {
+        modalRef.value = false;
     }
 
     // Refresh progress to reflect completed task
