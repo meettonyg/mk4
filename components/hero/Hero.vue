@@ -8,17 +8,23 @@
     <div class="hero-overlay" v-if="backgroundImage"></div>
     
     <div class="hero-content">
-      <h1 v-if="title" class="hero-title">{{ title }}</h1>
-      <p v-if="subtitle" class="hero-subtitle">{{ subtitle }}</p>
-      
-      <div v-if="ctaText" class="hero-actions">
-        <a 
-          :href="ctaUrl || '#'" 
-          class="hero-cta"
-        >
-          {{ ctaText }}
-        </a>
-      </div>
+      <!-- Placeholder content when editing with no data -->
+      <template v-if="showPlaceholders">
+        <h1 class="hero-title hero-title--placeholder">Your Headline Here</h1>
+        <p class="hero-subtitle hero-subtitle--placeholder">Add a compelling subtitle or tagline</p>
+        <div class="hero-actions">
+          <span class="hero-cta hero-cta--placeholder">Call to Action</span>
+        </div>
+      </template>
+
+      <!-- Actual content when data exists -->
+      <template v-else>
+        <h1 v-if="title" class="hero-title">{{ title }}</h1>
+        <p v-if="subtitle" class="hero-subtitle">{{ subtitle }}</p>
+        <div v-if="ctaText" class="hero-actions">
+          <a :href="ctaUrl || '#'" class="hero-cta">{{ ctaText }}</a>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -61,6 +67,16 @@ const backgroundImage = computed(() => props.data?.backgroundImage || props.prop
 const ctaText = computed(() => props.data?.ctaText || props.props?.ctaText || '');
 const ctaUrl = computed(() => props.data?.ctaUrl || props.props?.ctaUrl || '#');
 const alignment = computed(() => props.data?.alignment || props.props?.alignment || 'center');
+
+// Check if any content exists
+const hasContent = computed(() => {
+  return title.value || subtitle.value || ctaText.value || backgroundImage.value;
+});
+
+// Show placeholders when editing with no data configured
+const showPlaceholders = computed(() => {
+  return !hasContent.value && (props.isEditing || props.isSelected);
+});
 </script>
 
 <style scoped>
@@ -154,6 +170,24 @@ const alignment = computed(() => props.data?.alignment || props.props?.alignment
 
 .hero--has-bg .hero-cta:hover {
   background-color: var(--button-bg-hover-on-image, #f8f9fa);
+}
+
+/* Placeholder styles for editing mode */
+.hero-title--placeholder,
+.hero-subtitle--placeholder {
+  opacity: 0.6;
+  font-style: italic;
+}
+
+.hero-cta--placeholder {
+  opacity: 0.6;
+  border: 2px dashed var(--border-color, #cbd5e1);
+  cursor: default;
+}
+
+.hero-cta--placeholder:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 /* Responsive */

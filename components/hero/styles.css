@@ -55,3 +55,38 @@
 .placeholder-image:hover {
     background-color: var(--gmkb-color-border-dark, #d0d0d0);
 }
+
+/* Placeholder styles for editing mode when no data configured */
+.hero__avatar--placeholder {
+    width: var(--gmkb-hero-avatar-size, 120px);
+    height: var(--gmkb-hero-avatar-size, 120px);
+    border-radius: var(--gmkb-radius-full, 50%);
+    background: var(--gmkb-color-surface, #f8fafc);
+    border: 2px dashed var(--gmkb-color-border, #cbd5e1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--gmkb-space-4, 1rem);
+}
+
+.hero__avatar--placeholder i {
+    font-size: 3rem;
+    color: var(--gmkb-color-text-muted, #94a3b8);
+}
+
+.hero__name--placeholder,
+.hero__title--placeholder,
+.hero__bio--placeholder {
+    opacity: 0.6;
+    font-style: italic;
+    color: var(--gmkb-color-text-muted, #94a3b8);
+}
+
+body.dark-mode .hero__avatar--placeholder {
+    background: var(--gmkb-color-surface-elevated, #1e293b);
+    border-color: var(--gmkb-color-border, #475569);
+}
+
+body.dark-mode .hero__avatar--placeholder i {
+    color: var(--gmkb-color-text-muted, #64748b);
+}

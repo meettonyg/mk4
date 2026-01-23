@@ -8,19 +8,37 @@
     <p v-if="description" class="topics-description">{{ description }}</p>
     
     <div class="topics-grid" :class="`grid-${columns || 3}`">
-      <div 
-        v-for="(topic, index) in displayTopics" 
-        :key="index"
-        class="topic-card"
-      >
-        <div v-if="showIcons && topic.icon" class="topic-icon">
-          <i :class="topic.icon"></i>
+      <!-- Placeholder topics when editing with no data -->
+      <template v-if="showPlaceholders">
+        <div
+          v-for="(topic, index) in placeholderTopics"
+          :key="index"
+          class="topic-card topic-card--placeholder"
+        >
+          <div class="topic-icon">
+            <i :class="topic.icon"></i>
+          </div>
+          <h3 class="topic-name">{{ topic.name }}</h3>
+          <p class="topic-description">{{ topic.description }}</p>
         </div>
-        <h3 class="topic-name">{{ topic.name || topic.text || topic }}</h3>
-        <p v-if="topic.description" class="topic-description">
-          {{ topic.description }}
-        </p>
-      </div>
+      </template>
+
+      <!-- Actual topics when data exists -->
+      <template v-else>
+        <div
+          v-for="(topic, index) in displayTopics"
+          :key="index"
+          class="topic-card"
+        >
+          <div v-if="showIcons && topic.icon" class="topic-icon">
+            <i :class="topic.icon"></i>
+          </div>
+          <h3 class="topic-name">{{ topic.name || topic.text || topic }}</h3>
+          <p v-if="topic.description" class="topic-description">
+            {{ topic.description }}
+          </p>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -96,6 +114,18 @@ const displayTopics = computed(() => {
 
   return topicsList;
 });
+
+// Show placeholders when editing with no topics configured
+const showPlaceholders = computed(() => {
+  return displayTopics.value.length === 0 && (props.isEditing || props.isSelected);
+});
+
+// Placeholder topics
+const placeholderTopics = [
+  { name: 'Topic 1', description: 'Click to add your first topic', icon: 'fas fa-lightbulb' },
+  { name: 'Topic 2', description: 'Add another speaking topic', icon: 'fas fa-rocket' },
+  { name: 'Topic 3', description: 'Continue building your list', icon: 'fas fa-chart-line' }
+];
 
 // Helper function to assign default icons
 const getTopicIcon = (index) => {
@@ -177,6 +207,23 @@ onMounted(() => {
 .topic-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Placeholder styles */
+.topic-card--placeholder {
+  opacity: 0.6;
+  border: 2px dashed var(--border-color, #cbd5e1);
+  background: var(--card-bg, rgba(248, 250, 252, 0.5));
+}
+
+.topic-card--placeholder:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.topic-card--placeholder .topic-name,
+.topic-card--placeholder .topic-description {
+  font-style: italic;
 }
 
 .topic-icon {

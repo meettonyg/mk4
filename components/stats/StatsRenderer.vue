@@ -9,19 +9,31 @@
       <h2 v-if="title" class="section-title">{{ title }}</h2>
       <p v-if="description" class="section-description">{{ description }}</p>
       <div class="stats-container" :style="gridStyle">
-        <div
-          v-for="(stat, index) in stats"
-          :key="index"
-          class="stat-item"
-        >
-          <span v-if="showIcons && stat.icon" class="stat-icon">{{ stat.icon }}</span>
-          <div class="stat-value">
-            <span v-if="stat.prefix" class="stat-prefix">{{ stat.prefix }}</span>
-            {{ stat.value }}
-            <span v-if="stat.suffix" class="stat-suffix">{{ stat.suffix }}</span>
+        <!-- Placeholder stats when editing with no data -->
+        <template v-if="showPlaceholders">
+          <div v-for="(stat, index) in placeholderStats" :key="index" class="stat-item stat-item--placeholder">
+            <span class="stat-icon">{{ stat.icon }}</span>
+            <div class="stat-value">{{ stat.value }}</div>
+            <div class="stat-label">{{ stat.label }}</div>
           </div>
-          <div class="stat-label">{{ stat.label }}</div>
-        </div>
+        </template>
+
+        <!-- Actual stats when data exists -->
+        <template v-else>
+          <div
+            v-for="(stat, index) in stats"
+            :key="index"
+            class="stat-item"
+          >
+            <span v-if="showIcons && stat.icon" class="stat-icon">{{ stat.icon }}</span>
+            <div class="stat-value">
+              <span v-if="stat.prefix" class="stat-prefix">{{ stat.prefix }}</span>
+              {{ stat.value }}
+              <span v-if="stat.suffix" class="stat-suffix">{{ stat.suffix }}</span>
+            </div>
+            <div class="stat-label">{{ stat.label }}</div>
+          </div>
+        </template>
       </div>
     </div>
   </div>
@@ -105,6 +117,19 @@ export default {
       return builtStats;
     });
 
+    // Show placeholders when editing with no stats
+    const showPlaceholders = computed(() => {
+      return stats.value.length === 0 && (props.isEditing || props.isSelected);
+    });
+
+    // Placeholder stats
+    const placeholderStats = [
+      { value: '10+', label: 'Years Experience', icon: '📅' },
+      { value: '500+', label: 'Projects Completed', icon: '✅' },
+      { value: '50+', label: 'Happy Clients', icon: '😊' },
+      { value: '25', label: 'Awards Won', icon: '🏆' }
+    ];
+
     // Display options from editor
     const columns = computed(() => parseInt(props.data?.columns) || 4);
     const displayStyle = computed(() => props.data?.style || 'default');
@@ -124,7 +149,9 @@ export default {
       columns,
       displayStyle,
       showIcons,
-      gridStyle
+      gridStyle,
+      showPlaceholders,
+      placeholderStats
     };
   }
 }

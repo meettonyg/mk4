@@ -2,15 +2,28 @@
   <!-- ROOT FIX: Use design system classes -->
   <div class="gmkb-component gmkb-component--hero" :data-component-id="componentId">
     <div class="component-root hero-content">
-    <div v-if="imageUrl" class="hero__avatar">
-      <img :src="imageUrl" :alt="name || 'Profile Avatar'" />
-    </div>
-    <h1 v-if="name" class="hero__name">{{ name }}</h1>
-    <div v-if="title" class="hero__title">{{ title }}</div>
-    <p v-if="bio" class="hero__bio">{{ bio }}</p>
-    <div v-if="ctaText" class="hero__cta">
-      <button class="btn" @click="handleCtaClick">{{ ctaText }}</button>
-    </div>
+      <!-- Placeholder content when editing with no data -->
+      <template v-if="showPlaceholders">
+        <div class="hero__avatar hero__avatar--placeholder">
+          <i class="fas fa-user"></i>
+        </div>
+        <h1 class="hero__name hero__name--placeholder">Your Name</h1>
+        <div class="hero__title hero__title--placeholder">Professional Title</div>
+        <p class="hero__bio hero__bio--placeholder">Your bio or introduction goes here</p>
+      </template>
+
+      <!-- Actual content when data exists -->
+      <template v-else>
+        <div v-if="imageUrl" class="hero__avatar">
+          <img :src="imageUrl" :alt="name || 'Profile Avatar'" />
+        </div>
+        <h1 v-if="name" class="hero__name">{{ name }}</h1>
+        <div v-if="title" class="hero__title">{{ title }}</div>
+        <p v-if="bio" class="hero__bio">{{ bio }}</p>
+        <div v-if="ctaText" class="hero__cta">
+          <button class="btn" @click="handleCtaClick">{{ ctaText }}</button>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -88,6 +101,16 @@ export default {
 
     const ctaUrl = computed(() => findValue(['ctaUrl', 'cta_url', 'button_url', 'booking_url']));
 
+    // Check if any content exists
+    const hasContent = computed(() => {
+      return name.value || title.value || bio.value || imageUrl.value || ctaText.value;
+    });
+
+    // Show placeholders when editing with no data configured
+    const showPlaceholders = computed(() => {
+      return !hasContent.value && (props.isEditing || props.isSelected);
+    });
+
     // CTA Click handler
     const handleCtaClick = () => {
       if (ctaUrl.value && ctaUrl.value !== '#') {
@@ -103,7 +126,8 @@ export default {
       imageUrl,
       ctaText,
       ctaUrl,
-      handleCtaClick
+      handleCtaClick,
+      showPlaceholders
     };
   }
 }

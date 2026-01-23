@@ -826,7 +826,10 @@ const onDrop = (e, sectionId, column) => {
     
     // NOW we can log success (verified)
     console.log('✅ Component dropped (verified):', componentData.type, 'in section:', sectionId, 'column:', column, 'id:', newComponentId);
-    
+
+    // AUTO-SELECT newly dropped component so placeholders are visible immediately
+    uiStore.selectComponent(newComponentId);
+
     // Trigger success event (only after verification)
     document.dispatchEvent(new CustomEvent('gmkb:component-dropped', {
       detail: {
@@ -907,10 +910,13 @@ const onEmptyDrop = async (e) => {
     
     console.log('✅ Component added to auto-created section:', newComponentId);
     console.log('✅ Sections now:', store.sections.length);
-    
+
+    // AUTO-SELECT newly dropped component so placeholders are visible immediately
+    uiStore.selectComponent(newComponentId);
+
     // Wait for Vue to update the DOM
     await nextTick();
-    
+
     // Trigger success event
     document.dispatchEvent(new CustomEvent('gmkb:component-dropped', {
       detail: {
