@@ -15,12 +15,15 @@
         height="20"
         viewBox="0 0 24 24"
         fill="none"
-        stroke="currentColor"
-        stroke-width="2.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        xmlns="http://www.w3.org/2000/svg"
       >
-        <path d="M15 18l-6-6 6-6"></path>
+        <path
+          d="M15 18L9 12L15 6"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
       </svg>
     </button>
     
@@ -1430,7 +1433,24 @@ body.dark-mode .sidebar-collapse-toggle:hover {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   width: 18px;
   height: 18px;
+  color: inherit; /* Ensure color inheritance for currentColor */
+}
+
+.collapse-icon path {
+  stroke: #374151; /* Explicit dark gray stroke */
   stroke-width: 2.5;
+}
+
+.sidebar-collapse-toggle:hover .collapse-icon path {
+  stroke: white; /* White stroke on hover */
+}
+
+body.dark-mode .collapse-icon path {
+  stroke: #d1d5db; /* Light gray in dark mode */
+}
+
+body.dark-mode .sidebar-collapse-toggle:hover .collapse-icon path {
+  stroke: white;
 }
 
 .collapse-icon.collapsed {
