@@ -22,10 +22,7 @@
         >
           <div class="gmkb-toolbar__profile-avatar" :class="{ 'gmkb-toolbar__profile-avatar--icon': selectedProfileIcon }">
             <i v-if="selectedProfileIcon" :class="selectedProfileIcon"></i>
-            <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
+            <span v-else class="gmkb-toolbar__profile-initials">{{ selectedProfileInitials }}</span>
           </div>
           <div class="gmkb-toolbar__profile-info">
             <span class="gmkb-toolbar__profile-label">
@@ -660,6 +657,15 @@ const selectedProfileIcon = computed(() => {
   return null
 })
 
+// Selected profile initials for display (when no icon)
+const selectedProfileInitials = computed(() => {
+  const name = selectedProfileName.value
+  if (!name) return '?'
+  // Strip the " - Title" part if present for initials
+  const baseName = name.split(' - ')[0]
+  return baseName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+})
+
 // Profile edit URL (for linked profiles) - links to frontend profile editor
 const profileEditUrl = computed(() => {
   // Use reactive slug first (updates when profile is switched)
@@ -1141,6 +1147,12 @@ onUnmounted(() => {
 
 .gmkb-toolbar__profile-avatar--icon i {
   font-size: 14px;
+}
+
+.gmkb-toolbar__profile-initials {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
 /* Element: profile info (container for label and name) */
