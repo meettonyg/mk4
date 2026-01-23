@@ -675,24 +675,13 @@ const selectedProfileInitials = computed(() => {
 })
 
 // Profile edit URL (for linked profiles) - links to frontend profile editor
+// Always use ID since it's stable and available even for unpublished profiles
 const profileEditUrl = computed(() => {
-  // Use reactive slug first (updates when profile is switched)
-  if (selectedProfileSlug.value) {
-    return `/app/profiles/guest/profile/?entry=${selectedProfileSlug.value}`
-  }
-  // Fallback to reactive profileId (updated when profile is switched)
+  // Use reactive profileId first (updated when profile is switched)
   if (selectedProfileId.value) {
     return `/app/profiles/guest/profile/?id=${selectedProfileId.value}`
   }
-  // Fallback to initial data from backend
-  if (window.gmkbData?.linkedProfileEditUrl) {
-    return window.gmkbData.linkedProfileEditUrl
-  }
-  const profileSlug = window.gmkbData?.linkedProfileSlug
-  if (profileSlug) {
-    return `/app/profiles/guest/profile/?entry=${profileSlug}`
-  }
-  // Fallback to initial profileId if available
+  // Fallback to initial profileId from backend
   const profileId = window.gmkbData?.profileId
   if (profileId) {
     return `/app/profiles/guest/profile/?id=${profileId}`
