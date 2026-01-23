@@ -94,7 +94,7 @@ export class ProfileDataIntegration {
         // Handle array fields (like topics)
         const values = [];
         for (const field of sourceConfig.fields) {
-          if (profileData[field]) {
+          if (profileData[field] !== undefined && profileData[field] !== null && profileData[field] !== '') {
             values.push(profileData[field]);
           }
         }
@@ -102,7 +102,7 @@ export class ProfileDataIntegration {
       } else if (typeof sourceConfig === 'object' && sourceConfig.profileFields) {
         // ROOT FIX: Handle profile-config.json format with profileFields array
         for (const field of sourceConfig.profileFields) {
-          if (profileData[field]) {
+          if (profileData[field] !== undefined && profileData[field] !== null && profileData[field] !== '') {
             result[targetField] = profileData[field];
             break;
           }
@@ -111,7 +111,7 @@ export class ProfileDataIntegration {
         // Handle simple field mapping (with fallbacks)
         const possibleFields = Array.isArray(sourceConfig) ? sourceConfig : [sourceConfig];
         for (const field of possibleFields) {
-          if (profileData[field]) {
+          if (profileData[field] !== undefined && profileData[field] !== null && profileData[field] !== '') {
             result[targetField] = profileData[field];
             break;
           }

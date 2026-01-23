@@ -56,10 +56,17 @@ export default {
 
     const data = computed(() => props.data || props.props || {});
 
+    // Helper function to find first available value from multiple field names
+    const findValue = (keys) => {
+      for (const key of keys) {
+        const value = data.value[key];
+        if (value !== undefined && value !== null && value !== '') return value;
+      }
+      return '';
+    };
+
     // Name: check 'name' first, fall back to profile's 'title' (composite name)
-    const name = computed(() =>
-      data.value.name || data.value.title || ''
-    );
+    const name = computed(() => findValue(['name', 'title']));
 
     // Title: check 'title' first (if name exists), then 'subtitle', then 'professional_title'
     const title = computed(() => {
@@ -68,31 +75,18 @@ export default {
         return data.value.title;
       }
       // Otherwise, use subtitle from profile pre-population
-      return data.value.subtitle || data.value.professional_title || data.value.tagline || '';
+      return findValue(['subtitle', 'professional_title', 'tagline']);
     });
 
     // Bio: check 'bio' first, fall back to profile's 'description'
-    const bio = computed(() =>
-      data.value.bio || data.value.description || data.value.introduction || ''
-    );
+    const bio = computed(() => findValue(['bio', 'description', 'introduction']));
 
     // Image URL: check multiple possible field names
-    const imageUrl = computed(() =>
-      data.value.imageUrl ||
-      data.value.image_url ||
-      data.value.profile_photo ||
-      data.value.avatar ||
-      data.value.photo ||
-      ''
-    );
+    const imageUrl = computed(() => findValue(['imageUrl', 'image_url', 'profile_photo', 'avatar', 'photo']));
 
-    const ctaText = computed(() =>
-      data.value.ctaText || data.value.cta_text || data.value.button_text || ''
-    );
+    const ctaText = computed(() => findValue(['ctaText', 'cta_text', 'button_text']));
 
-    const ctaUrl = computed(() =>
-      data.value.ctaUrl || data.value.cta_url || data.value.button_url || data.value.booking_url || ''
-    );
+    const ctaUrl = computed(() => findValue(['ctaUrl', 'cta_url', 'button_url', 'booking_url']));
 
     // CTA Click handler
     const handleCtaClick = () => {

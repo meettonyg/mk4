@@ -30,6 +30,18 @@
 <script>
 import { computed } from 'vue';
 
+// Static configuration - defined outside component for performance
+const STAT_FIELDS = [
+  { key: 'years_experience', label: 'Years of Experience', suffix: '+' },
+  { key: 'projects_completed', label: 'Projects Completed' },
+  { key: 'clients_served', label: 'Clients Served' },
+  { key: 'awards_won', label: 'Awards Won', icon: '🏆' },
+  { key: 'books_written', label: 'Books Written', icon: '📚' },
+  { key: 'speaking_engagements', label: 'Speaking Engagements', icon: '🎤' },
+  { key: 'countries_visited', label: 'Countries', icon: '🌍' },
+  { key: 'team_size', label: 'Team Members', icon: '👥' }
+];
+
 export default {
   name: 'StatsRenderer',
   props: {
@@ -77,19 +89,7 @@ export default {
       const builtStats = [];
       const data = props.data || props.props || {};
 
-      // Define stat fields that can be populated from profile data
-      const statFields = [
-        { key: 'years_experience', label: 'Years of Experience', suffix: '+' },
-        { key: 'projects_completed', label: 'Projects Completed' },
-        { key: 'clients_served', label: 'Clients Served' },
-        { key: 'awards_won', label: 'Awards Won', icon: '🏆' },
-        { key: 'books_written', label: 'Books Written', icon: '📚' },
-        { key: 'speaking_engagements', label: 'Speaking Engagements', icon: '🎤' },
-        { key: 'countries_visited', label: 'Countries', icon: '🌍' },
-        { key: 'team_size', label: 'Team Members', icon: '👥' }
-      ];
-
-      statFields.forEach(field => {
+      STAT_FIELDS.forEach(field => {
         const value = data[field.key];
         if (value !== undefined && value !== null && value !== '') {
           builtStats.push({

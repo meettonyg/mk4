@@ -20,6 +20,23 @@
 <script>
 import { computed } from 'vue';
 
+// Static configuration - defined outside component for performance
+const SOCIAL_PLATFORMS = [
+  'facebook', 'twitter', 'linkedin', 'instagram',
+  'youtube', 'tiktok', 'pinterest', 'website'
+];
+
+const SOCIAL_ICONS = {
+  'facebook': 'fab fa-facebook-f',
+  'twitter': 'fab fa-twitter',
+  'linkedin': 'fab fa-linkedin-in',
+  'instagram': 'fab fa-instagram',
+  'youtube': 'fab fa-youtube',
+  'pinterest': 'fab fa-pinterest',
+  'tiktok': 'fab fa-tiktok',
+  'website': 'fas fa-globe'
+};
+
 export default {
   name: 'SocialRenderer',
   props: {
@@ -62,15 +79,11 @@ export default {
       // Build from individual URL fields (profile pre-population format)
       const builtLinks = [];
       const data = props.data || props.props || {};
-      const platforms = [
-        'facebook', 'twitter', 'linkedin', 'instagram',
-        'youtube', 'tiktok', 'pinterest', 'website'
-      ];
 
-      platforms.forEach(platform => {
-        const url = data[platform];
-        if (url && url.trim()) {
-          builtLinks.push({ platform, url: url.trim() });
+      SOCIAL_PLATFORMS.forEach(platform => {
+        const url = data[platform]?.trim();
+        if (url) {
+          builtLinks.push({ platform, url });
         }
       });
 
@@ -79,18 +92,8 @@ export default {
 
     // Social icon mapper function
     const getSocialIcon = (platform) => {
-      const icons = {
-        'facebook': 'fab fa-facebook-f',
-        'twitter': 'fab fa-twitter',
-        'linkedin': 'fab fa-linkedin-in',
-        'instagram': 'fab fa-instagram',
-        'youtube': 'fab fa-youtube',
-        'pinterest': 'fab fa-pinterest',
-        'tiktok': 'fab fa-tiktok',
-        'website': 'fas fa-globe'
-      };
       const lowerPlatform = platform.toLowerCase();
-      return icons[lowerPlatform] || 'fas fa-link';
+      return SOCIAL_ICONS[lowerPlatform] || 'fas fa-link';
     };
 
     return {
