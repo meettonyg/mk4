@@ -520,8 +520,16 @@ const currentProfileForGenerators = computed(() => {
     if (store.availableProfiles.length > 0) {
         return store.availableProfiles[0];
     }
-    return null;
+    // Return empty object to avoid null checks in generators
+    return {};
 });
+
+// Modal name mapping for AI generators
+const aiModalRefs = {
+    'authority_hook': showAuthorityHookModal,
+    'impact_intro': showImpactIntroModal,
+    'topics': showTopicsModal,
+};
 
 // Quick Profile form data
 const quickProfile = reactive({
@@ -605,30 +613,34 @@ const toggleDetails = () => {
     showDetails.value = !showDetails.value;
 };
 
+// Modal link mapping for all modals
+const modalLinkMap = {
+    '#quickProfileModal': showQuickProfileModal,
+    '#surveyModal': showSurveyModal,
+    '#authorityHookModal': showAuthorityHookModal,
+    '#impactIntroModal': showImpactIntroModal,
+    '#topicsModal': showTopicsModal,
+};
+
 // Handle modal link clicks
 const handleModalLink = (task) => {
-    if (task.link === '#quickProfileModal') {
-        showQuickProfileModal.value = true;
-    } else if (task.link === '#surveyModal') {
-        showSurveyModal.value = true;
-    } else if (task.link === '#authorityHookModal') {
-        showAuthorityHookModal.value = true;
-    } else if (task.link === '#impactIntroModal') {
-        showImpactIntroModal.value = true;
-    } else if (task.link === '#topicsModal') {
-        showTopicsModal.value = true;
+    console.log('[Onboarding] handleModalLink called:', task.link);
+    const modalRef = modalLinkMap[task.link];
+    if (modalRef) {
+        modalRef.value = true;
+        console.log('[Onboarding] Modal opened:', task.link);
+    } else {
+        console.warn('[Onboarding] Unknown modal link:', task.link);
     }
 };
 
 // Handle AI tool saved - refresh progress and close modal
 const handleAiToolSaved = async (toolName) => {
-    // Close the respective modal
-    if (toolName === 'authority_hook') {
-        showAuthorityHookModal.value = false;
-    } else if (toolName === 'impact_intro') {
-        showImpactIntroModal.value = false;
-    } else if (toolName === 'topics') {
-        showTopicsModal.value = false;
+    console.log('[Onboarding] handleAiToolSaved called:', toolName);
+    // Close the respective modal using the mapping
+    const modalRef = aiModalRefs[toolName];
+    if (modalRef) {
+        modalRef.value = false;
     }
     // Refresh progress to reflect completed task
     await store.fetchProgress(true);
