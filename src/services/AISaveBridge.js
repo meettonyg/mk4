@@ -11,14 +11,31 @@
  */
 
 import profileContextService from './ProfileContextService.js';
-import { toolModules } from '../../tools/index.js';
+
+// Lazy-loaded toolModules reference to avoid circular dependency.
+// tools/index.js imports all tool modules, which import composables,
+// which import this service. Static import causes TDZ errors.
+let _toolModulesCache = null;
+
+/**
+ * Get toolModules lazily to break circular dependency
+ * @returns {Promise<Object>} The toolModules object
+ */
+async function getToolModules() {
+  if (!_toolModulesCache) {
+    const module = await import('../../tools/index.js');
+    _toolModulesCache = module.toolModules;
+  }
+  return _toolModulesCache;
+}
 
 /**
  * Get field mapping configuration from a tool's meta.json
  * @param {string} type - The API type (e.g., 'biography', 'topics')
- * @returns {Object|null} Field mapping config or null if not found
+ * @returns {Promise<Object|null>} Field mapping config or null if not found
  */
-function getFieldMappingConfig(type) {
+async function getFieldMappingConfig(type) {
+  const toolModules = await getToolModules();
   // Find the tool module by apiType
   for (const [slug, module] of Object.entries(toolModules)) {
     if (module.meta?.apiType === type && module.meta?.fieldMapping) {
@@ -127,10 +144,10 @@ function applyFieldMapping(config, data) {
 /**
  * Check if a tool type requires native API handling
  * @param {string} type - The API type
- * @returns {boolean}
+ * @returns {Promise<boolean>}
  */
-function requiresNativeApi(type) {
-  const config = getFieldMappingConfig(type);
+async function requiresNativeApi(type) {
+  const config = await getFieldMappingConfig(type);
   return config?.type === 'native_api';
 }
 
@@ -175,11 +192,11 @@ const LEGACY_MAPPINGS = {
  * Map AI output to profile fields using tool-defined configuration
  * @param {string} type - The API type
  * @param {*} data - AI-generated data
- * @returns {Object} Mapped fields
+ * @returns {Promise<Object>} Mapped fields
  */
-function mapToFields(type, data) {
+async function mapToFields(type, data) {
   // First try tool-defined field mapping from meta.json
-  const config = getFieldMappingConfig(type);
+  const config = await getFieldMappingConfig(type);
   if (config) {
     return applyFieldMapping(config, data);
   }
@@ -377,7 +394,7 @@ class AISaveBridge {
     }
 
     // Handle offers specially - use native Offers API
-    if (requiresNativeApi(type)) {
+    if (await requiresNativeApi(type)) {
       const result = await this.saveOffersToProfile(profileId, data, options);
       return {
         success: result.success,
@@ -387,7 +404,7 @@ class AISaveBridge {
     }
 
     // Map AI output to profile fields using tool-defined configuration
-    const fields = mapToFields(type, data);
+    const fields = await mapToFields(type, data);
 
     if (Object.keys(fields).length === 0) {
       console.warn(`[AISaveBridge] No fields mapped for type: ${type}`);
@@ -464,9 +481,9 @@ class AISaveBridge {
    * @param {string} componentId - The component ID to update
    * @param {string} type - The AI tool type
    * @param {*} data - The AI-generated data
-   * @returns {{success: boolean, updated: Object}}
+   * @returns {Promise<{success: boolean, updated: Object}>}
    */
-  saveToComponent(store, componentId, type, data) {
+  async saveToComponent(store, componentId, type, data) {
     if (!store || !componentId) {
       throw new Error('Store and componentId are required');
     }
@@ -477,11 +494,11 @@ class AISaveBridge {
     }
 
     // Map AI output to profile fields using tool-defined configuration
-    const fields = mapToFields(type, data);
+    const fields = await mapToFields(type, data);
     let componentData = {};
 
     // Get field mapping config to understand structure
-    const config = getFieldMappingConfig(type);
+    const config = await getFieldMappingConfig(type);
 
     if (config) {
       // Convert mapped fields to component data format based on mapping type
@@ -555,7 +572,7 @@ class AISaveBridge {
 
     // In Media Kit Builder with component context - save to component
     if (context === 'media-kit' && options.store && options.componentId) {
-      const result = this.saveToComponent(options.store, options.componentId, type, data);
+      const result = await this.saveToComponent(options.store, options.componentId, type, data);
       return {
         success: result.success,
         target: 'component',
@@ -581,7 +598,8 @@ class AISaveBridge {
    * Get available field mappings (for documentation/debugging)
    * Now reads from tool meta files for tool independence
    */
-  getAvailableTypes() {
+  async getAvailableTypes() {
+    const toolModules = await getToolModules();
     const types = [];
     for (const [, module] of Object.entries(toolModules)) {
       if (module.meta?.apiType && module.meta?.fieldMapping) {

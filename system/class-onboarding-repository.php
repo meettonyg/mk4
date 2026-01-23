@@ -105,8 +105,9 @@ class GMKB_Onboarding_Repository {
                 'group' => $task['group'],
                 'label' => $task['label'],
                 'description' => $task['description'],
-                'link' => $task['link'],
+                'link' => $task['link'] ?? null,
                 'link_type' => $task['link_type'] ?? 'default',
+                'modal_id' => $task['modal_id'] ?? null,
             ];
         }
 
