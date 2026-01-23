@@ -1,0 +1,29 @@
+{
+  "profileIntegration": {
+    "enabled": true,
+    "autoPopulate": true,
+    "showBadges": true
+  },
+  "fieldMappings": {
+    "title": {
+      "type": "composite",
+      "fields": ["first_name", "last_name"],
+      "format": "{first_name} {last_name}",
+      "label": "Headline/Name"
+    },
+    "subtitle": {
+      "profileFields": ["guest_title", "tagline", "professional_title"],
+      "type": "text",
+      "label": "Subtitle"
+    },
+    "description": {
+      "profileFields": ["tagline", "introduction", "bio_short"],
+      "type": "textarea",
+      "label": "Description"
+    }
+  },
+  "saveBackFields": {
+    "subtitle": "tagline",
+    "description": "introduction"
+  }
+}

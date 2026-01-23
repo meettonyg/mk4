@@ -1,0 +1,33 @@
+{
+  "profileIntegration": {
+    "enabled": true,
+    "autoPopulate": true,
+    "showBadges": true
+  },
+  "fieldMappings": {
+    "biography": {
+      "profileFields": ["biography", "guest_biography", "bio"],
+      "type": "text",
+      "label": "Biography"
+    },
+    "name": {
+      "type": "composite",
+      "fields": ["first_name", "last_name"],
+      "format": "{first_name} {last_name}",
+      "label": "Full Name"
+    },
+    "title": {
+      "profileFields": ["guest_title", "professional_title", "title"],
+      "type": "text",
+      "label": "Professional Title"
+    },
+    "image": {
+      "profileFields": ["guest_photo", "profile_image", "photo"],
+      "type": "image",
+      "label": "Profile Image"
+    }
+  },
+  "saveBackFields": {
+    "biography": "biography"
+  }
+}
