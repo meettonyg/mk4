@@ -1,8 +1,8 @@
 <template>
   <div class="company-logo-component" :class="componentClasses">
     <div v-if="logo" class="company-logo-container" :class="containerClasses">
-      <img 
-        :src="sanitizedLogoUrl" 
+      <img
+        :src="sanitizedLogoUrl"
         :alt="logo.alt || 'Company Logo'"
         class="company-logo-image"
         :class="imageClasses"
@@ -10,9 +10,9 @@
         loading="lazy"
       />
     </div>
-    <div v-else class="company-logo-placeholder">
+    <div v-else-if="showPlaceholder" class="company-logo-placeholder">
       <i class="fa-solid fa-building"></i>
-      <p>No company logo available</p>
+      <p>Add your company logo</p>
     </div>
   </div>
 </template>
@@ -46,6 +46,10 @@ const props = defineProps({
   isSelected: {
     type: Boolean,
     default: false
+  },
+  isBuilderMode: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -72,6 +76,11 @@ const sanitizedLogoUrl = computed(() => {
   url = url.replace(/([^:]\/)\/+/g, '$1');
   
   return url;
+});
+
+// Show placeholder when in builder mode with no logo
+const showPlaceholder = computed(() => {
+  return !logo.value && (props.isBuilderMode || props.isEditing || props.isSelected);
 });
 
 const componentClasses = computed(() => ({

@@ -10,12 +10,12 @@
       <p>Loading offers...</p>
     </div>
 
-    <!-- Empty State -->
-    <div v-else-if="displayOffers.length === 0" class="offers-empty">
+    <!-- Empty State - only show in builder mode -->
+    <div v-else-if="displayOffers.length === 0 && showPlaceholder" class="offers-empty">
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
       </svg>
-      <p>No offers available</p>
+      <p>Add your special offers</p>
     </div>
 
     <!-- Grid Layout -->
@@ -167,7 +167,8 @@ const props = defineProps({
   props: { type: Object, default: () => ({}) },
   settings: { type: Object, default: () => ({}) },
   isEditing: { type: Boolean, default: false },
-  isSelected: { type: Boolean, default: false }
+  isSelected: { type: Boolean, default: false },
+  isBuilderMode: { type: Boolean, default: false }
 });
 
 const store = useMediaKitStore();
@@ -195,6 +196,11 @@ const selectedOfferIds = computed(() => {
 
 // Card style class
 const cardStyleClass = computed(() => `card-${cardStyle.value}`);
+
+// Show placeholder when in builder mode with no offers
+const showPlaceholder = computed(() => {
+  return props.isBuilderMode || props.isEditing || props.isSelected;
+});
 
 // Display offers (filtered and limited)
 const displayOffers = computed(() => {
