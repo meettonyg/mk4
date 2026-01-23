@@ -2,25 +2,25 @@
   <div class="gmkb-sidebar" :class="{ 'dark-mode': isDarkMode, 'sidebar-collapsed': sidebarCollapsed }">
     <!-- ROOT FIX: Elementor-style dynamic sidebar content -->
     
-    <!-- Collapse Toggle Button - Middle-Left Edge -->
-    <button 
+    <!-- Collapse Toggle Button - Right Edge of Sidebar -->
+    <button
       class="sidebar-collapse-toggle"
       @click="toggleCollapse"
       :title="sidebarCollapsed ? 'Expand Sidebar ([ or Ctrl+B)' : 'Collapse Sidebar ([ or Ctrl+B)'"
     >
-      <svg 
-        class="collapse-icon" 
+      <svg
+        class="collapse-icon"
         :class="{ 'collapsed': sidebarCollapsed }"
-        width="20" 
-        height="20" 
-        viewBox="0 0 24 24" 
-        fill="none" 
-        stroke="currentColor" 
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
         stroke-width="2.5"
         stroke-linecap="round"
         stroke-linejoin="round"
       >
-        <polyline points="15 18 9 12 15 6"></polyline>
+        <path d="M15 18l-6-6 6-6"></path>
       </svg>
     </button>
     
@@ -1377,10 +1377,10 @@ export default {
   transition: opacity 0.2s ease; /* Smooth fade out */
 }
 
-/* Collapse Toggle Button - Middle-Left Edge (Option 3 - Enhanced Visibility) */
+/* Collapse Toggle Button - Right Edge of Sidebar */
 .sidebar-collapse-toggle {
   position: absolute;
-  left: -8px; /* Reduced offset for better visibility */
+  right: -18px; /* Position on right edge, extending outside sidebar */
   top: 50%;
   transform: translateY(-50%);
   z-index: 100;
@@ -1389,48 +1389,48 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(to right, white, #f9fafb);
-  border: 2px solid #d1d5db; /* Thicker border for visibility */
-  border-right: none; /* No border on right side */
-  border-radius: 8px 0 0 8px; /* More rounded for visibility */
+  background: linear-gradient(to left, white, #f9fafb);
+  border: 2px solid #d1d5db;
+  border-left: none; /* No border on left side (attached to sidebar) */
+  border-radius: 0 8px 8px 0; /* Rounded on right side only */
   cursor: pointer;
   transition: all 0.2s;
-  color: #374151; /* Darker for better contrast */
-  box-shadow: -3px 0 10px rgba(0, 0, 0, 0.15); /* Stronger shadow */
+  color: #374151;
+  box-shadow: 3px 0 10px rgba(0, 0, 0, 0.15);
 }
 
 .sidebar-collapse-toggle:hover {
-  background: linear-gradient(to right, #ec4899, #f472b6); /* Pink gradient on hover */
+  background: linear-gradient(to left, #ec4899, #f472b6);
   border-color: #ec4899;
   color: white;
-  left: -10px; /* Slide out slightly on hover */
-  box-shadow: -6px 0 16px rgba(236, 72, 153, 0.4);
+  right: -20px; /* Slide out slightly on hover */
+  box-shadow: 6px 0 16px rgba(236, 72, 153, 0.4);
   transform: translateY(-50%) scale(1.05);
 }
 
 .sidebar-collapsed .sidebar-collapse-toggle {
-  left: -8px; /* Keep same position when collapsed */
+  right: -18px; /* Keep same position when collapsed */
 }
 
 body.dark-mode .sidebar-collapse-toggle {
-  background: linear-gradient(to right, #1e293b, #334155);
+  background: linear-gradient(to left, #1e293b, #334155);
   border-color: #475569;
   color: #d1d5db;
-  box-shadow: -3px 0 10px rgba(0, 0, 0, 0.4);
+  box-shadow: 3px 0 10px rgba(0, 0, 0, 0.4);
 }
 
 body.dark-mode .sidebar-collapse-toggle:hover {
-  background: linear-gradient(to right, #ec4899, #f472b6);
+  background: linear-gradient(to left, #ec4899, #f472b6);
   border-color: #ec4899;
   color: white;
-  box-shadow: -6px 0 16px rgba(236, 72, 153, 0.5);
+  box-shadow: 6px 0 16px rgba(236, 72, 153, 0.5);
 }
 
 .collapse-icon {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   width: 18px;
   height: 18px;
-  stroke-width: 2.5; /* Thicker stroke for visibility */
+  stroke-width: 2.5;
 }
 
 .collapse-icon.collapsed {
@@ -1439,14 +1439,14 @@ body.dark-mode .sidebar-collapse-toggle:hover {
 
 /* Enhanced icon visibility on hover */
 .sidebar-collapse-toggle:hover .collapse-icon {
-  stroke-width: 3; /* Even thicker on hover */
+  stroke-width: 3;
   filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5));
 }
 
 /* Ensure button stays visible when collapsed */
 .sidebar-collapsed .sidebar-collapse-toggle:hover {
-  transform: translateY(-50%) scale(1.05); /* Maintain vertical centering with scale */
-  left: -10px; /* Same hover effect when collapsed */
+  transform: translateY(-50%) scale(1.05);
+  right: -20px;
 }
 
 /* Dark mode */
