@@ -65,7 +65,8 @@ export default {
         'instagram': 'fab fa-instagram',
         'youtube': 'fab fa-youtube',
         'pinterest': 'fab fa-pinterest',
-        'tiktok': 'fab fa-tiktok'
+        'tiktok': 'fab fa-tiktok',
+        'website': 'fas fa-globe'
       };
       const lowerPlatform = platform.toLowerCase();
       return icons[lowerPlatform] || 'fas fa-link';

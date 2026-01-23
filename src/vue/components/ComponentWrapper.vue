@@ -442,6 +442,7 @@ function handleKeydown(event) {
   overflow: visible; /* ROOT FIX: Allow absolutely positioned controls to render outside bounds */
   /* Margin applied via inline styles from ComponentStyleService */
   /* No default margins - all spacing controlled by component settings */
+  isolation: isolate; /* Create stacking context for z-index to work properly */
 }
 
 .component-wrapper--hovering {
@@ -482,6 +483,9 @@ function handleKeydown(event) {
   display: block;
   border-radius: 8px;
   overflow: hidden;
+  /* Ensure component content stays below edit-hint overlay (z-index: 100) */
+  position: relative;
+  z-index: 1;
 }
 
 /* Component Placeholder */
@@ -502,15 +506,25 @@ function handleKeydown(event) {
   font-size: 24px;
 }
 
-/* Edit Hint (Carrd-like UX) */
+/* Edit Hint (Carrd-like UX) - Full overlay for better clickability */
 .edit-hint {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 10;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100; /* Must be above component content but below ComponentControls (z-index: 10000) */
   pointer-events: auto;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.02); /* Subtle overlay to indicate clickable area */
+  transition: background 0.2s ease;
+}
+
+.edit-hint:hover {
+  background: rgba(99, 102, 241, 0.05);
 }
 
 .edit-hint-text {

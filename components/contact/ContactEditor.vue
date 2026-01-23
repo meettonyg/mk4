@@ -174,7 +174,8 @@ const handleLoadFromProfile = () => {
   const profileData = getPrePopulatedData();
   if (profileData.email) localData.value.email = profileData.email;
   if (profileData.phone) localData.value.phone = profileData.phone;
-  if (profileData.website) localData.value.website = profileData.website;
+  if (profileData.skype) localData.value.skype = profileData.skype;
+  if (profileData.location) localData.value.location = profileData.location;
   updateComponent();
 };
 
@@ -183,6 +184,7 @@ const handleSaveToProfile = async () => {
   const contactData = {
     email: localData.value.email || '',
     phone: localData.value.phone || '',
+    skype: localData.value.skype || '',
     location: localData.value.location || ''
   };
 
@@ -210,7 +212,15 @@ const loadComponentData = () => {
   }
 };
 
-watch(() => props.componentId, loadComponentData, { immediate: true });
+// Watch both componentId AND store component data for changes
+// This ensures data is loaded even if the store initializes after the editor mounts
+watch(
+  () => [props.componentId, store.components[props.componentId]?.data],
+  () => {
+    loadComponentData();
+  },
+  { immediate: true, deep: true }
+);
 
 // Update component with debouncing
 let updateTimeout = null;

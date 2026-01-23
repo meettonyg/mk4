@@ -116,3 +116,30 @@
 .social-link:hover .delete-social-btn {
     opacity: 1;
 }
+
+/* Font Awesome icon styles for social links */
+.social-link i.fab,
+.social-link i.fas {
+    font-size: 1.25rem;
+    color: inherit;
+}
+
+/* Platform-specific colors for Font Awesome icons - visible on any background */
+.social-link i.fa-facebook-f { color: #1877F2; }
+.social-link i.fa-twitter { color: #1DA1F2; }
+.social-link i.fa-linkedin-in { color: #0A66C2; }
+.social-link i.fa-instagram { color: #E4405F; }
+.social-link i.fa-youtube { color: #FF0000; }
+.social-link i.fa-tiktok { color: #000000; }
+.social-link i.fa-pinterest { color: #E60023; }
+.social-link i.fa-globe { color: #3b82f6; }
+.social-link i.fa-link { color: #6b7280; }
+
+/* When social link has colored background, icons should be white */
+.social-link[style*="background"] i.fab,
+.social-link[style*="background"] i.fas {
+    color: inherit;
+}
+
+/* Dark mode adjustments */
+body.dark-mode .social-link i.fa-tiktok { color: #ffffff; }

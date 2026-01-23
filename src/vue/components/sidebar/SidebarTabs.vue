@@ -2,46 +2,16 @@
   <div class="gmkb-sidebar" :class="{ 'dark-mode': isDarkMode, 'sidebar-collapsed': sidebarCollapsed }">
     <!-- ROOT FIX: Elementor-style dynamic sidebar content -->
     
-    <!-- Collapse Toggle Button - Middle-Left Edge -->
-    <button 
+    <!-- Collapse Toggle Button - Right Edge of Sidebar -->
+    <button
       class="sidebar-collapse-toggle"
       @click="toggleCollapse"
       :title="sidebarCollapsed ? 'Expand Sidebar ([ or Ctrl+B)' : 'Collapse Sidebar ([ or Ctrl+B)'"
     >
-      <svg 
-        class="collapse-icon" 
+      <i
+        class="fa-solid fa-chevron-left collapse-icon"
         :class="{ 'collapsed': sidebarCollapsed }"
-        width="20" 
-        height="20" 
-        viewBox="0 0 24 24" 
-        fill="none" 
-        stroke="currentColor" 
-        stroke-width="2.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <polyline points="15 18 9 12 15 6"></polyline>
-      </svg>
-    </button>
-    
-    <!-- Close Panel Button - Only visible in section/component editing modes -->
-    <button 
-      v-if="sidebarMode !== 'default'"
-      class="panel-close-button"
-      @click="closePanel"
-      title="Close Panel (Return to Main)"
-    >
-      <svg 
-        width="16" 
-        height="16" 
-        viewBox="0 0 24 24" 
-        fill="none" 
-        stroke="currentColor" 
-        stroke-width="2"
-      >
-        <line x1="18" y1="6" x2="6" y2="18"></line>
-        <line x1="6" y1="6" x2="18" y2="18"></line>
-      </svg>
+      ></i>
     </button>
     
     <!-- DEFAULT MODE: Show tabs -->
@@ -1397,10 +1367,10 @@ export default {
   transition: opacity 0.2s ease; /* Smooth fade out */
 }
 
-/* Collapse Toggle Button - Middle-Left Edge (Option 3 - Enhanced Visibility) */
+/* Collapse Toggle Button - Right Edge of Sidebar */
 .sidebar-collapse-toggle {
   position: absolute;
-  left: -8px; /* Reduced offset for better visibility */
+  right: -18px; /* Position on right edge, extending outside sidebar */
   top: 50%;
   transform: translateY(-50%);
   z-index: 100;
@@ -1409,108 +1379,69 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(to right, white, #f9fafb);
-  border: 2px solid #d1d5db; /* Thicker border for visibility */
-  border-right: none; /* No border on right side */
-  border-radius: 8px 0 0 8px; /* More rounded for visibility */
+  background: linear-gradient(to left, white, #f9fafb);
+  border: 2px solid #d1d5db;
+  border-left: none; /* No border on left side (attached to sidebar) */
+  border-radius: 0 8px 8px 0; /* Rounded on right side only */
   cursor: pointer;
   transition: all 0.2s;
-  color: #374151; /* Darker for better contrast */
-  box-shadow: -3px 0 10px rgba(0, 0, 0, 0.15); /* Stronger shadow */
+  color: #374151;
+  box-shadow: 3px 0 10px rgba(0, 0, 0, 0.15);
 }
 
 .sidebar-collapse-toggle:hover {
-  background: linear-gradient(to right, #ec4899, #f472b6); /* Pink gradient on hover */
+  background: linear-gradient(to left, #ec4899, #f472b6);
   border-color: #ec4899;
   color: white;
-  left: -10px; /* Slide out slightly on hover */
-  box-shadow: -6px 0 16px rgba(236, 72, 153, 0.4);
+  right: -20px; /* Slide out slightly on hover */
+  box-shadow: 6px 0 16px rgba(236, 72, 153, 0.4);
   transform: translateY(-50%) scale(1.05);
 }
 
 .sidebar-collapsed .sidebar-collapse-toggle {
-  left: -8px; /* Keep same position when collapsed */
+  right: -18px; /* Keep same position when collapsed */
 }
 
 body.dark-mode .sidebar-collapse-toggle {
-  background: linear-gradient(to right, #1e293b, #334155);
+  background: linear-gradient(to left, #1e293b, #334155);
   border-color: #475569;
   color: #d1d5db;
-  box-shadow: -3px 0 10px rgba(0, 0, 0, 0.4);
+  box-shadow: 3px 0 10px rgba(0, 0, 0, 0.4);
 }
 
 body.dark-mode .sidebar-collapse-toggle:hover {
-  background: linear-gradient(to right, #ec4899, #f472b6);
+  background: linear-gradient(to left, #ec4899, #f472b6);
   border-color: #ec4899;
   color: white;
-  box-shadow: -6px 0 16px rgba(236, 72, 153, 0.5);
-}
-
-/* Panel Close Button - Top-Right Corner */
-.panel-close-button {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 100;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-  color: #6b7280;
-}
-
-.panel-close-button:hover {
-  background: #fee2e2;
-  border-color: #fca5a5;
-  color: #dc2626;
-  transform: scale(1.05);
-}
-
-body.dark-mode .panel-close-button {
-  background: #1e293b;
-  border-color: #334155;
-  color: #9ca3af;
-}
-
-body.dark-mode .panel-close-button:hover {
-  background: rgba(220, 38, 38, 0.2);
-  border-color: #dc2626;
-  color: #fca5a5;
-}
-
-/* Hide close button when sidebar is collapsed */
-.sidebar-collapsed .panel-close-button {
-  opacity: 0;
-  pointer-events: none;
+  box-shadow: 6px 0 16px rgba(236, 72, 153, 0.5);
 }
 
 .collapse-icon {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  width: 18px;
-  height: 18px;
-  stroke-width: 2.5; /* Thicker stroke for visibility */
+  font-size: 16px;
+  color: #374151;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s;
 }
 
 .collapse-icon.collapsed {
   transform: rotate(180deg); /* Points right when collapsed */
 }
 
-/* Enhanced icon visibility on hover */
 .sidebar-collapse-toggle:hover .collapse-icon {
-  stroke-width: 3; /* Even thicker on hover */
-  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5));
+  color: white;
+}
+
+body.dark-mode .collapse-icon {
+  color: #d1d5db;
+}
+
+body.dark-mode .sidebar-collapse-toggle:hover .collapse-icon {
+  color: white;
 }
 
 /* Ensure button stays visible when collapsed */
 .sidebar-collapsed .sidebar-collapse-toggle:hover {
-  transform: translateY(-50%) scale(1.05); /* Maintain vertical centering with scale */
-  left: -10px; /* Same hover effect when collapsed */
+  transform: translateY(-50%) scale(1.05);
+  right: -20px;
 }
 
 /* Dark mode */
@@ -1599,7 +1530,7 @@ body.dark-mode .search-container {
 
 .search-input {
   width: 100%;
-  padding: 8px 12px 8px 36px;
+  padding: 8px 12px 8px 36px !important;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 14px;

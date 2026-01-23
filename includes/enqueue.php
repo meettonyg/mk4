@@ -391,9 +391,19 @@ function gmkb_prepare_data_for_injection() {
 
     // Get linked profile name for display in header
     $linked_profile_name = null;
+    $linked_profile_slug = null;
+    $linked_profile_edit_url = null;
     if ($linked_profile_id) {
         $profile_post = get_post($linked_profile_id);
         if ($profile_post) {
+            // Get profile slug for edit URL
+            $linked_profile_slug = $profile_post->post_name;
+
+            // Construct profile edit URL (frontend profile editor)
+            if ($linked_profile_slug) {
+                $linked_profile_edit_url = home_url('/app/profiles/guest/profile/?entry=' . $linked_profile_slug);
+            }
+
             // Try to get a display name from meta, fall back to post title
             $linked_profile_name = get_post_meta($linked_profile_id, 'guest_name', true);
             if (empty($linked_profile_name)) {
@@ -449,6 +459,8 @@ function gmkb_prepare_data_for_injection() {
         'linkedProfileId'   => $linked_profile_id,  // Profile linked to this media kit
         'profileId'         => $linked_profile_id,  // Alias for backwards compatibility
         'linkedProfileName' => $linked_profile_name, // Display name for header
+        'linkedProfileSlug' => $linked_profile_slug, // Profile slug for URL construction
+        'linkedProfileEditUrl' => $linked_profile_edit_url, // Frontend profile edit URL
         'viewUrl'           => $view_url,           // Public permalink for "View" link
         'previewUrl'        => $preview_url,        // Preview URL for draft posts
         'pluginUrl'         => GUESTIFY_PLUGIN_URL,

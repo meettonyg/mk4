@@ -42,23 +42,17 @@
           </svg>
         </button>
 
-        <!-- View/Preview Icon Button -->
+        <!-- Edit Profile Link (only when a profile is linked) -->
         <a
-          v-if="(viewUrl || previewUrl) && !isNewMediaKit"
-          :href="isPublished ? viewUrl : previewUrl"
+          v-if="profileEditUrl"
+          :href="profileEditUrl"
           target="_blank"
           class="gmkb-toolbar__view-btn"
-          :class="{ 'gmkb-toolbar__view-btn--preview': !isPublished }"
-          :title="isPublished ? 'View Published Kit' : 'Preview Draft'"
+          title="Edit Linked Profile"
         >
-          <svg v-if="isPublished" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-            <polyline points="15 3 21 3 21 9"></polyline>
-            <line x1="10" y1="14" x2="21" y2="3"></line>
-          </svg>
-          <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-            <circle cx="12" cy="12" r="3"></circle>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
           </svg>
         </a>
       </div>
@@ -191,11 +185,11 @@
         </svg>
       </button>
 
-      <!-- Save Button (only show for drafts/new kits - published kits use Update button) -->
+      <!-- Save Button (only for drafts/new kits) -->
       <button
         v-if="!isPublished"
         @click="handleSave"
-        class="gmkb-toolbar__btn gmkb-toolbar__btn--primary"
+        class="gmkb-toolbar__btn gmkb-toolbar__btn--secondary"
         title="Save (Ctrl+S)"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -204,6 +198,21 @@
         </svg>
         <span>Save</span>
       </button>
+
+      <!-- Preview Button -->
+      <a
+        v-if="(viewUrl || previewUrl) && !isNewMediaKit"
+        :href="isPublished ? viewUrl : previewUrl"
+        target="_blank"
+        class="gmkb-toolbar__btn gmkb-toolbar__btn--primary"
+        :title="isPublished ? 'View Published Kit' : 'Preview Draft'"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+        <span>Preview</span>
+      </a>
 
       <!-- Publish Button (when draft) -->
       <button
@@ -501,6 +510,7 @@ const isLoggedIn = computed(() => !!window.gmkbData?.user?.isLoggedIn)
 const isNewMediaKit = computed(() => !!window.gmkbData?.isNewMediaKit)
 const isPublished = computed(() => store.postStatus === 'publish')
 const selectedProfileId = ref(window.gmkbData?.profileId || null)
+const selectedProfileSlug = ref(window.gmkbData?.linkedProfileSlug || null)
 
 // Handle profile switch - updates store's profileData with new profile data
 const handleProfileSwitch = async (profileId) => {
@@ -508,6 +518,9 @@ const handleProfileSwitch = async (profileId) => {
 
   try {
     console.log('🔄 Switching to profile:', profileId)
+
+    // Update selected profile ID
+    selectedProfileId.value = profileId
 
     // Update URL to include profile_id for persistence
     updateUrlWithProfileId(profileId)
@@ -519,13 +532,16 @@ const handleProfileSwitch = async (profileId) => {
       // Update store's profileData with new profile data via action
       store.setProfileData(profileData)
 
+      // Update profile slug for edit link (use post_name or slug from profile data)
+      selectedProfileSlug.value = profileData.post_name || profileData.slug || profileData.entry || null
+
       // Dispatch event for components to refresh
       document.dispatchEvent(new CustomEvent('gmkb:profile-switched', {
         detail: { profileId, profileData }
       }))
 
       showSuccess('Profile switched successfully')
-      console.log('✅ Profile switched to:', profileId)
+      console.log('✅ Profile switched to:', profileId, 'slug:', selectedProfileSlug.value)
     }
   } catch (error) {
     console.error('Failed to switch profile:', error)
@@ -607,6 +623,23 @@ const selectedProfileName = computed(() => {
   // Check postTitle if this is editing a profile-linked kit
   if (window.gmkbData?.profileId && window.gmkbData?.postTitle) {
     return window.gmkbData.postTitle
+  }
+  return null
+})
+
+// Profile edit URL (for linked profiles) - links to frontend profile editor
+const profileEditUrl = computed(() => {
+  // Use reactive slug first (updates when profile is switched)
+  if (selectedProfileSlug.value) {
+    return `/app/profiles/guest/profile/?entry=${selectedProfileSlug.value}`
+  }
+  // Fallback to initial data from backend
+  if (window.gmkbData?.linkedProfileEditUrl) {
+    return window.gmkbData.linkedProfileEditUrl
+  }
+  const profileSlug = window.gmkbData?.linkedProfileSlug
+  if (profileSlug) {
+    return `/app/profiles/guest/profile/?entry=${profileSlug}`
   }
   return null
 })
@@ -877,6 +910,18 @@ function handleKeyboard(e) {
 watch(isDarkMode, (newValue) => {
   storageService.set('dark-mode', newValue)
 }, { immediate: true })
+
+// Watch store profile data changes to update profile edit link
+watch(() => store.profileData, (newProfileData) => {
+  if (newProfileData) {
+    // Extract slug from profile data
+    const slug = newProfileData.post_name || newProfileData.slug || newProfileData.entry || null
+    if (slug && slug !== selectedProfileSlug.value) {
+      selectedProfileSlug.value = slug
+      console.log('[MediaKitToolbar] Profile slug updated from store:', slug)
+    }
+  }
+}, { deep: true })
 
 // ROOT FIX: Use StorageService instead of direct localStorage
 // Initialize dark mode from localStorage
@@ -1363,6 +1408,21 @@ onUnmounted(() => {
   background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
   border-color: #0891b2;
   box-shadow: 0 4px 8px rgba(6, 182, 212, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Element Modifier: secondary button (Save for drafts) */
+.gmkb-toolbar__btn--secondary {
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
+  border-color: #475569;
+  color: white;
+  box-shadow: 0 2px 4px rgba(71, 85, 105, 0.3);
+}
+
+.gmkb-toolbar__btn--secondary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+  border-color: #334155;
+  box-shadow: 0 4px 8px rgba(71, 85, 105, 0.4);
   transform: translateY(-1px);
 }
 
