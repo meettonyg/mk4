@@ -417,9 +417,13 @@ function gmkb_prepare_data_for_injection() {
 
             // Get profile title (e.g., "Speaker", "Author")
             $linked_profile_title = get_post_meta($linked_profile_id, 'guest_title', true);
+            // Fallback to professional_title if guest_title is empty
+            if (empty($linked_profile_title)) {
+                $linked_profile_title = get_post_meta($linked_profile_id, 'professional_title', true);
+            }
 
-            // Get profile icon
-            $linked_profile_icon = get_post_meta($linked_profile_id, 'icon', true);
+            // Get profile icon (meta key is profile_icon)
+            $linked_profile_icon = get_post_meta($linked_profile_id, 'profile_icon', true);
         }
     }
 
