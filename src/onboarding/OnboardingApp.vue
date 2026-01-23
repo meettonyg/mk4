@@ -226,7 +226,7 @@
                                     <i class="fas fa-external-link-alt task-external-icon"></i>
                                 </a>
                                 <a
-                                    v-else-if="task.link && task.link_type === 'modal'"
+                                    v-else-if="task.modal_id && task.link_type === 'modal'"
                                     href="#"
                                     @click.prevent="handleModalLink(task)"
                                 >
@@ -520,7 +520,8 @@ const currentProfileForGenerators = computed(() => {
     if (store.availableProfiles.length > 0) {
         return store.availableProfiles[0];
     }
-    return null;
+    // Return empty object to prevent errors in generators when no profiles exist
+    return {};
 });
 
 // Quick Profile form data
@@ -607,29 +608,35 @@ const toggleDetails = () => {
 
 // Handle modal link clicks
 const handleModalLink = (task) => {
-    if (task.link === '#quickProfileModal') {
-        showQuickProfileModal.value = true;
-    } else if (task.link === '#surveyModal') {
-        showSurveyModal.value = true;
-    } else if (task.link === '#authorityHookModal') {
-        showAuthorityHookModal.value = true;
-    } else if (task.link === '#impactIntroModal') {
-        showImpactIntroModal.value = true;
-    } else if (task.link === '#topicsModal') {
-        showTopicsModal.value = true;
+    // Map modal IDs to their corresponding modal refs for scalability
+    const modalMap = {
+        '#quickProfileModal': showQuickProfileModal,
+        '#surveyModal': showSurveyModal,
+        '#authorityHookModal': showAuthorityHookModal,
+        '#impactIntroModal': showImpactIntroModal,
+        '#topicsModal': showTopicsModal,
+    };
+
+    const modalRef = modalMap[task.modal_id];
+    if (modalRef) {
+        modalRef.value = true;
     }
 };
 
 // Handle AI tool saved - refresh progress and close modal
 const handleAiToolSaved = async (toolName) => {
+    // Map tool names to their corresponding modal refs for scalability
+    const modalMap = {
+        'authority_hook': showAuthorityHookModal,
+        'impact_intro': showImpactIntroModal,
+        'topics': showTopicsModal,
+    };
+
     // Close the respective modal
-    if (toolName === 'authority_hook') {
-        showAuthorityHookModal.value = false;
-    } else if (toolName === 'impact_intro') {
-        showImpactIntroModal.value = false;
-    } else if (toolName === 'topics') {
-        showTopicsModal.value = false;
+    if (modalMap[toolName]) {
+        modalMap[toolName].value = false;
     }
+
     // Refresh progress to reflect completed task
     await store.fetchProgress(true);
 };

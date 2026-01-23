@@ -83,7 +83,7 @@ class GMKB_Onboarding_Schema {
             'points' => 15,
             'source' => 'postmeta',
             'check_type' => 'profile_exists',
-            'link' => '#quickProfileModal',
+            'modal_id' => '#quickProfileModal',
             'link_type' => 'modal',  // Opens quick setup modal for low-effort quick win
             'order' => 1,
         ],
@@ -108,7 +108,7 @@ class GMKB_Onboarding_Schema {
             'source' => 'usermeta',
             'check_type' => 'exists',
             'meta_key' => '_gmkb_survey_completed',
-            'link' => '#surveyModal',
+            'modal_id' => '#surveyModal',
             'link_type' => 'modal',  // Opens survey modal
             'order' => 3,
         ],
@@ -144,7 +144,7 @@ class GMKB_Onboarding_Schema {
             'source' => 'postmeta',
             'check_type' => 'not_empty',
             'meta_key' => 'authority_hook',
-            'link' => '#authorityHookModal',
+            'modal_id' => '#authorityHookModal',
             'link_type' => 'modal',  // Opens AI generator modal
             'order' => 1,
         ],
@@ -156,7 +156,7 @@ class GMKB_Onboarding_Schema {
             'source' => 'postmeta',
             'check_type' => 'not_empty',
             'meta_key' => 'impact_intro',
-            'link' => '#impactIntroModal',
+            'modal_id' => '#impactIntroModal',
             'link_type' => 'modal',  // Opens AI generator modal
             'order' => 2,
         ],
@@ -169,7 +169,7 @@ class GMKB_Onboarding_Schema {
             'check_type' => 'category',
             'meta_keys' => ['topic_1', 'topic_2', 'topic_3', 'topic_4', 'topic_5'],
             'min_required' => 3,
-            'link' => '#topicsModal',
+            'modal_id' => '#topicsModal',
             'link_type' => 'modal',  // Opens AI generator modal
             'order' => 3,
         ],
@@ -404,7 +404,8 @@ class GMKB_Onboarding_Schema {
                     'label' => $task['label'],
                     'description' => $task['description'],
                     'points' => $task['points'],
-                    'link' => $task['link'],
+                    'link' => $task['link'] ?? null,
+                    'modal_id' => $task['modal_id'] ?? null,  // Used when link_type is 'modal'
                     'link_type' => $task['link_type'] ?? 'default',  // modal, new_tab, or default
                     'order' => $task['order'] ?? 999,
                 ];
