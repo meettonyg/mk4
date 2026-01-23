@@ -1008,12 +1008,10 @@ function handleProfileSelectedEvent(event) {
   if (profileId) {
     selectedProfileId.value = profileId
   }
-  if (slug) {
-    selectedProfileSlug.value = slug
-  }
-  if (icon !== undefined) {
-    selectedProfileIconRef.value = icon
-  }
+  // Always update slug (even if null) so old value doesn't persist
+  selectedProfileSlug.value = slug || null
+  // Always update icon (even if null)
+  selectedProfileIconRef.value = icon || null
 }
 
 onMounted(() => {
