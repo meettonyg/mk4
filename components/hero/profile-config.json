@@ -20,6 +20,21 @@
       "profileFields": ["tagline", "introduction", "bio_short"],
       "type": "textarea",
       "label": "Description"
+    },
+    "profile_photo": {
+      "profileFields": ["profile_photo", "avatar", "photo", "headshot", "profile_image"],
+      "type": "url",
+      "label": "Profile Photo"
+    },
+    "cta_text": {
+      "profileFields": ["cta_button_text", "button_text", "action_text"],
+      "type": "text",
+      "label": "CTA Button Text"
+    },
+    "cta_url": {
+      "profileFields": ["booking_url", "cta_button_url", "calendar_link", "website"],
+      "type": "url",
+      "label": "CTA Button URL"
     }
   },
   "saveBackFields": {

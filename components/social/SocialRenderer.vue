@@ -20,6 +20,23 @@
 <script>
 import { computed } from 'vue';
 
+// Static configuration - defined outside component for performance
+const SOCIAL_PLATFORMS = [
+  'facebook', 'twitter', 'linkedin', 'instagram',
+  'youtube', 'tiktok', 'pinterest', 'website'
+];
+
+const SOCIAL_ICONS = {
+  'facebook': 'fab fa-facebook-f',
+  'twitter': 'fab fa-twitter',
+  'linkedin': 'fab fa-linkedin-in',
+  'instagram': 'fab fa-instagram',
+  'youtube': 'fab fa-youtube',
+  'pinterest': 'fab fa-pinterest',
+  'tiktok': 'fab fa-tiktok',
+  'website': 'fas fa-globe'
+};
+
 export default {
   name: 'SocialRenderer',
   props: {
@@ -52,24 +69,31 @@ export default {
   },
   setup(props) {
     // Data from component JSON state (single source of truth)
+    // ROOT FIX: Handle both pre-built links array AND individual URL fields
+    // Individual URL fields come from profile pre-population when component is first added
     const links = computed(() => {
-      return props.data?.links || props.props?.links || [];
+      // First check for pre-built links array (from editor save)
+      if (props.data?.links?.length) return props.data.links;
+      if (props.props?.links?.length) return props.props.links;
+
+      // Build from individual URL fields (profile pre-population format)
+      const builtLinks = [];
+      const data = props.data || props.props || {};
+
+      SOCIAL_PLATFORMS.forEach(platform => {
+        const url = data[platform]?.trim();
+        if (url) {
+          builtLinks.push({ platform, url });
+        }
+      });
+
+      return builtLinks;
     });
 
     // Social icon mapper function
     const getSocialIcon = (platform) => {
-      const icons = {
-        'facebook': 'fab fa-facebook-f',
-        'twitter': 'fab fa-twitter',
-        'linkedin': 'fab fa-linkedin-in',
-        'instagram': 'fab fa-instagram',
-        'youtube': 'fab fa-youtube',
-        'pinterest': 'fab fa-pinterest',
-        'tiktok': 'fab fa-tiktok',
-        'website': 'fas fa-globe'
-      };
       const lowerPlatform = platform.toLowerCase();
-      return icons[lowerPlatform] || 'fas fa-link';
+      return SOCIAL_ICONS[lowerPlatform] || 'fas fa-link';
     };
 
     return {

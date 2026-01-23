@@ -60,12 +60,16 @@ export class ProfileDataIntegration {
   /**
    * Transform profile data based on component's configuration
    * Added comprehensive error handling and null safety
+   * ROOT FIX: Support both 'fieldMappings' (profile-config.json) and 'fields' (legacy)
    */
   transformProfileData(config, profileData) {
     const result = {};
 
+    // ROOT FIX: Support both fieldMappings (from profile-config.json) and fields (legacy)
+    const fields = config?.fieldMappings || config?.fields;
+
     // Validate inputs
-    if (!config || !config.fields || typeof config.fields !== 'object') {
+    if (!config || !fields || typeof fields !== 'object') {
       console.warn('[ProfileDataIntegration] Invalid config structure:', config);
       return result;
     }
@@ -76,7 +80,7 @@ export class ProfileDataIntegration {
     }
 
     // Wrap field processing in try-catch for each field
-    for (const [targetField, sourceConfig] of Object.entries(config.fields)) {
+    for (const [targetField, sourceConfig] of Object.entries(fields)) {
       try {
       if (typeof sourceConfig === 'object' && sourceConfig.type === 'composite') {
         // Handle composite fields (like full name)
@@ -90,16 +94,24 @@ export class ProfileDataIntegration {
         // Handle array fields (like topics)
         const values = [];
         for (const field of sourceConfig.fields) {
-          if (profileData[field]) {
+          if (profileData[field] !== undefined && profileData[field] !== null && profileData[field] !== '') {
             values.push(profileData[field]);
           }
         }
         result[targetField] = values;
+      } else if (typeof sourceConfig === 'object' && sourceConfig.profileFields) {
+        // ROOT FIX: Handle profile-config.json format with profileFields array
+        for (const field of sourceConfig.profileFields) {
+          if (profileData[field] !== undefined && profileData[field] !== null && profileData[field] !== '') {
+            result[targetField] = profileData[field];
+            break;
+          }
+        }
       } else {
         // Handle simple field mapping (with fallbacks)
         const possibleFields = Array.isArray(sourceConfig) ? sourceConfig : [sourceConfig];
         for (const field of possibleFields) {
-          if (profileData[field]) {
+          if (profileData[field] !== undefined && profileData[field] !== null && profileData[field] !== '') {
             result[targetField] = profileData[field];
             break;
           }

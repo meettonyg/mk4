@@ -50,17 +50,43 @@ export default {
   },
   setup(props, { emit }) {
     // Data from component JSON state (single source of truth)
-    const name = computed(() => props.data?.name || props.props?.name || '');
+    // ROOT FIX: Support profile pre-population field mappings
+    // Profile config provides: title (full name), subtitle, description
+    // Renderer expects: name, title, bio, imageUrl, ctaText, ctaUrl
 
-    const title = computed(() => props.data?.title || props.props?.title || '');
+    const data = computed(() => props.data || props.props || {});
 
-    const bio = computed(() => props.data?.bio || props.props?.bio || '');
+    // Helper function to find first available value from multiple field names
+    const findValue = (keys) => {
+      for (const key of keys) {
+        const value = data.value[key];
+        if (value !== undefined && value !== null && value !== '') return value;
+      }
+      return '';
+    };
 
-    const imageUrl = computed(() => props.data?.imageUrl || props.props?.imageUrl || '');
+    // Name: check 'name' first, fall back to profile's 'title' (composite name)
+    const name = computed(() => findValue(['name', 'title']));
 
-    const ctaText = computed(() => props.data?.ctaText || props.props?.ctaText || '');
+    // Title: check 'title' first (if name exists), then 'subtitle', then 'professional_title'
+    const title = computed(() => {
+      // If we have a separate name field, title can be used as-is
+      if (data.value.name && data.value.title) {
+        return data.value.title;
+      }
+      // Otherwise, use subtitle from profile pre-population
+      return findValue(['subtitle', 'professional_title', 'tagline']);
+    });
 
-    const ctaUrl = computed(() => props.data?.ctaUrl || props.props?.ctaUrl || '');
+    // Bio: check 'bio' first, fall back to profile's 'description'
+    const bio = computed(() => findValue(['bio', 'description', 'introduction']));
+
+    // Image URL: check multiple possible field names
+    const imageUrl = computed(() => findValue(['imageUrl', 'image_url', 'profile_photo', 'avatar', 'photo']));
+
+    const ctaText = computed(() => findValue(['ctaText', 'cta_text', 'button_text']));
+
+    const ctaUrl = computed(() => findValue(['ctaUrl', 'cta_url', 'button_url', 'booking_url']));
 
     // CTA Click handler
     const handleCtaClick = () => {
