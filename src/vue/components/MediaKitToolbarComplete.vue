@@ -20,8 +20,9 @@
           @click="openProfileSelector"
           :title="selectedProfileName ? `Switch Profile: ${selectedProfileName}` : 'Select profile to pre-populate data'"
         >
-          <div class="gmkb-toolbar__profile-avatar">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <div class="gmkb-toolbar__profile-avatar" :class="{ 'gmkb-toolbar__profile-avatar--icon': selectedProfileIcon }">
+            <i v-if="selectedProfileIcon" :class="selectedProfileIcon"></i>
+            <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
               <circle cx="12" cy="7" r="4"></circle>
             </svg>
@@ -614,15 +615,46 @@ const previewUrl = computed(() => {
   return null
 })
 
-// Selected profile name for display
+// Selected profile name for display (format: "Name - Title")
 const selectedProfileName = computed(() => {
-  // First check if we have a linked profile name from the backend
-  if (window.gmkbData?.linkedProfileName) {
-    return window.gmkbData.linkedProfileName
+  // Get name from profile data or backend
+  let name = null
+  let title = null
+
+  // Try to get from store's profileData first (most up-to-date)
+  if (store.profileData) {
+    name = store.profileData.guest_name || store.profileData.name || store.profileData.title
+    title = store.profileData.guest_title
   }
-  // Check postTitle if this is editing a profile-linked kit
-  if (window.gmkbData?.profileId && window.gmkbData?.postTitle) {
-    return window.gmkbData.postTitle
+
+  // Fallback to backend data
+  if (!name && window.gmkbData?.linkedProfileName) {
+    name = window.gmkbData.linkedProfileName
+  }
+  if (!title && window.gmkbData?.linkedProfileTitle) {
+    title = window.gmkbData.linkedProfileTitle
+  }
+
+  // Fallback to postTitle, but strip "'s Media Kit" suffix if present
+  if (!name && window.gmkbData?.profileId && window.gmkbData?.postTitle) {
+    name = window.gmkbData.postTitle.replace(/'s Media Kit$/i, '').trim()
+  }
+
+  if (!name) return null
+
+  // Return formatted name with title
+  return title ? `${name} - ${title}` : name
+})
+
+// Selected profile icon for display
+const selectedProfileIcon = computed(() => {
+  // Try to get from store's profileData first
+  if (store.profileData?.icon) {
+    return store.profileData.icon
+  }
+  // Fallback to backend data
+  if (window.gmkbData?.linkedProfileIcon) {
+    return window.gmkbData.linkedProfileIcon
   }
   return null
 })
@@ -1099,6 +1131,10 @@ onUnmounted(() => {
   border-radius: 50%;
   color: white;
   flex-shrink: 0;
+}
+
+.gmkb-toolbar__profile-avatar--icon i {
+  font-size: 14px;
 }
 
 /* Element: profile info (container for label and name) */
