@@ -4,7 +4,7 @@
     <div class="intro-container">
       <div class="intro-content">
         <div v-if="displayIntroduction" class="intro-text" v-html="formattedIntro"></div>
-        <p v-else class="intro-text intro-text--placeholder">No introduction available.</p>
+        <p v-else-if="showPlaceholder" class="intro-text intro-text--placeholder">Add your guest introduction here.</p>
       </div>
     </div>
   </div>
@@ -43,6 +43,10 @@ export default {
     isSelected: {
       type: Boolean,
       default: false
+    },
+    isBuilderMode: {
+      type: Boolean,
+      default: false
     }
   },
   setup(props) {
@@ -72,6 +76,11 @@ export default {
         .join('');
     });
 
+    // Show placeholder when in builder mode with no introduction
+    const showPlaceholder = computed(() => {
+      return !displayIntroduction.value && (props.isBuilderMode || props.isEditing || props.isSelected);
+    });
+
     // Lifecycle
     onMounted(() => {
       // Event-driven approach - dispatch mount event
@@ -90,7 +99,8 @@ export default {
 
     return {
       displayIntroduction,
-      formattedIntro
+      formattedIntro,
+      showPlaceholder
     };
   }
 };
