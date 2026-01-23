@@ -510,6 +510,8 @@ const isPublished = computed(() => store.postStatus === 'publish')
 const selectedProfileId = ref(window.gmkbData?.profileId || null)
 const selectedProfileSlug = ref(window.gmkbData?.linkedProfileSlug || null)
 const selectedProfileIconRef = ref(window.gmkbData?.linkedProfileIcon || null)
+const selectedProfileNameRef = ref(window.gmkbData?.linkedProfileName || null)
+const selectedProfileTitleRef = ref(window.gmkbData?.linkedProfileTitle || null)
 
 // Handle profile switch - updates store's profileData with new profile data
 const handleProfileSwitch = async (profileId) => {
@@ -622,9 +624,19 @@ const selectedProfileName = computed(() => {
   let name = null
   let title = null
 
-  // Try to get from store's profileData first (most up-to-date)
-  if (store.profileData) {
+  // Try to get from local refs first (updated when profile is switched)
+  if (selectedProfileNameRef.value) {
+    name = selectedProfileNameRef.value
+  }
+  if (selectedProfileTitleRef.value) {
+    title = selectedProfileTitleRef.value
+  }
+
+  // Try to get from store's profileData
+  if (!name && store.profileData) {
     name = store.profileData.guest_name || store.profileData.name
+  }
+  if (!title && store.profileData) {
     title = store.profileData.guest_title
   }
 
@@ -997,10 +1009,11 @@ function handleProfileSelectedEvent(event) {
   if (profileId) {
     selectedProfileId.value = profileId
   }
-  // Always update slug (even if null) so old value doesn't persist
+  // Always update values (even if null) so old values don't persist
   selectedProfileSlug.value = slug || null
-  // Always update icon (even if null)
   selectedProfileIconRef.value = icon || null
+  selectedProfileNameRef.value = name || null
+  selectedProfileTitleRef.value = guest_title || null
 }
 
 onMounted(() => {
