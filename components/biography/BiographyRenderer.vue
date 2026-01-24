@@ -1,14 +1,10 @@
 <template>
   <div class="gmkb-component gmkb-component--biography" :data-component-id="componentId">
     <div class="component-root biography-content">
-      <template v-if="showPlaceholder">
-        <p class="biography-placeholder">
-          Add your full biography and professional background here.
-        </p>
-      </template>
-      <template v-else>
-        <div v-if="biography" class="biography-text" v-html="formattedBio"></div>
-      </template>
+      <p v-if="showPlaceholder" class="biography-placeholder">
+        Add your full biography and professional background here.
+      </p>
+      <div v-else-if="biography" class="biography-text" v-html="formattedBio"></div>
     </div>
   </div>
 </template>

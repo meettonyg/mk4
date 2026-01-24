@@ -33,7 +33,7 @@ for (const [path, module] of Object.entries(eagerProfileConfigs)) {
   }
 }
 
-if (Object.keys(profileConfigRegistry).length > 0) {
+if (window.gmkbData?.debugMode && Object.keys(profileConfigRegistry).length > 0) {
   console.log('[ProfileDataIntegration] Eagerly loaded profile configs:', Object.keys(profileConfigRegistry));
 }
 

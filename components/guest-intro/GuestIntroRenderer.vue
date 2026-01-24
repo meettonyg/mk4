@@ -2,12 +2,8 @@
   <div class="gmkb-component gmkb-component--guestintro" :data-component-id="componentId">
     <div class="intro-container">
       <div class="intro-content">
-        <template v-if="showPlaceholder">
-          <p class="intro-text intro-text--placeholder">Add your guest introduction here.</p>
-        </template>
-        <template v-else>
-          <div v-if="displayIntroduction" class="intro-text" v-html="formattedIntro"></div>
-        </template>
+        <p v-if="showPlaceholder" class="intro-text intro-text--placeholder">Add your guest introduction here.</p>
+        <div v-else-if="displayIntroduction" class="intro-text" v-html="formattedIntro"></div>
       </div>
     </div>
   </div>
