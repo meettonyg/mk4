@@ -13,32 +13,37 @@
 .gmkb-component {
   margin-bottom: var(--gmkb-component-gap);
   position: relative;
-  transition: transform var(--gmkb-transition-base), 
+  transition: transform var(--gmkb-transition-base),
               box-shadow var(--gmkb-transition-base),
               background var(--gmkb-transition-base);
-  border-radius: var(--gmkb-radius-lg);
-  background: var(--gmkb-color-surface-elevated);
+  /* NO default border-radius or background - only apply when explicitly set */
 }
 
 /* CRITICAL: Component Root - Applies CSS Variable Overrides */
+/* NOTE: All visual styles should default to NONE/transparent and only apply when explicitly set */
 .component-root {
-  background: var(--gmkb-color-surface);
-  color: var(--gmkb-color-text);
-  font-family: var(--gmkb-font-primary);
-  font-size: var(--gmkb-font-size-base);
-  padding: var(--gmkb-spacing-component, var(--gmkb-space-10));
-  border-radius: var(--gmkb-border-radius, var(--gmkb-radius-lg));
-  box-shadow: var(--gmkb-shadow, var(--gmkb-shadow-base));
+  /* Typography inherits from theme */
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+
+  /* NO default visual styles - only apply when CSS variables are explicitly set */
+  background: var(--gmkb-color-surface, transparent);
+  padding: var(--gmkb-spacing-component, 0);
+  border-radius: var(--gmkb-border-radius, 0);
+  box-shadow: var(--gmkb-shadow, none);
+
   transition: all var(--gmkb-transition-base);
-  
-  /* CRITICAL FIX: Border support */
+
+  /* Border support - defaults to none */
   border-width: var(--gmkb-border-width, 0);
   border-style: var(--gmkb-border-style, solid);
   border-color: var(--gmkb-border-color, transparent);
 }
 
 .component-root:hover {
-  box-shadow: var(--gmkb-shadow, var(--gmkb-shadow-md));
+  /* Only show hover shadow if explicitly set */
+  box-shadow: var(--gmkb-shadow-hover, var(--gmkb-shadow, none));
 }
 
 .gmkb-component:last-child {
