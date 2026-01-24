@@ -20,6 +20,7 @@
       <div
         v-if="showEditHint"
         class="edit-hint"
+        data-builder-only
         @click.stop="handleEditClick"
         role="button"
         aria-label="Click to edit this component"
@@ -33,6 +34,7 @@
     <!-- ROOT FIX: Use actualComponent computed for null safety -->
     <ComponentControls
       v-if="showControlsComputed && actualComponent"
+      data-builder-only
       :component-id="componentId || actualComponent.id"
       :component-type="actualComponent.type"
       :index="index"
