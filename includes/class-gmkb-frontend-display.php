@@ -117,6 +117,30 @@ class GMKB_Frontend_Display {
             $element->parentNode->removeChild($element);
         }
 
+        // Remove section controls (builder-only)
+        $section_controls = $xpath->query('//*[contains(@class, "gmkb-section-controls")]');
+        foreach ($section_controls as $element) {
+            $element->parentNode->removeChild($element);
+        }
+
+        // Remove section/column placeholders (builder-only)
+        $placeholders = $xpath->query('//*[contains(@class, "gmkb-section__placeholder")]');
+        foreach ($placeholders as $element) {
+            $element->parentNode->removeChild($element);
+        }
+
+        // Remove drop placeholders (builder-only)
+        $drop_placeholders = $xpath->query('//*[contains(@class, "drop-placeholder")]');
+        foreach ($drop_placeholders as $element) {
+            $element->parentNode->removeChild($element);
+        }
+
+        // Remove component error placeholders (builder-only debug elements)
+        $error_placeholders = $xpath->query('//*[contains(@class, "component-error-placeholder")]');
+        foreach ($error_placeholders as $element) {
+            $element->parentNode->removeChild($element);
+        }
+
         // Clean up builder state classes from component wrappers
         $wrappers = $xpath->query('//*[@data-component-wrapper]');
         foreach ($wrappers as $wrapper) {

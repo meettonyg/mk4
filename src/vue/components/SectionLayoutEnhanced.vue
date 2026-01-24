@@ -118,8 +118,8 @@
                       :show-controls="true"
                     />
                     <!-- CRITICAL: Debug placeholder for undefined IDs -->
-                    <div v-else-if="!componentId" class="component-error-placeholder">
-                      <span>❌ Missing component ID at index {{ index }}</span>
+                    <div v-else-if="!componentId" class="component-error-placeholder" data-builder-only>
+                      <span>Missing component ID at index {{ index }}</span>
                     </div>
                   </template>
                 </draggable>
@@ -169,8 +169,8 @@
                         :total-components="getColumnComponents(section, 1).length"
                         :show-controls="true"
                       />
-                      <div v-else-if="!componentId" class="component-error-placeholder">
-                        <span>❌ Missing component ID at index {{ index }}</span>
+                      <div v-else-if="!componentId" class="component-error-placeholder" data-builder-only>
+                        <span>Missing component ID at index {{ index }}</span>
                       </div>
                     </template>
                   </draggable>
@@ -216,8 +216,8 @@
                         :total-components="getColumnComponents(section, 2).length"
                         :show-controls="true"
                       />
-                      <div v-else-if="!componentId" class="component-error-placeholder">
-                        <span>❌ Missing component ID at index {{ index }}</span>
+                      <div v-else-if="!componentId" class="component-error-placeholder" data-builder-only>
+                        <span>Missing component ID at index {{ index }}</span>
                       </div>
                     </template>
                   </draggable>
@@ -267,8 +267,8 @@
                         :total-components="getColumnComponents(section, 1).length"
                         :show-controls="true"
                       />
-                      <div v-else-if="!componentId" class="component-error-placeholder">
-                        <span>❌ Missing component ID at index {{ index }}</span>
+                      <div v-else-if="!componentId" class="component-error-placeholder" data-builder-only>
+                        <span>Missing component ID at index {{ index }}</span>
                       </div>
                     </template>
                   </draggable>
@@ -314,8 +314,8 @@
                         :total-components="getColumnComponents(section, 2).length"
                         :show-controls="true"
                       />
-                      <div v-else-if="!componentId" class="component-error-placeholder">
-                        <span>❌ Missing component ID at index {{ index }}</span>
+                      <div v-else-if="!componentId" class="component-error-placeholder" data-builder-only>
+                        <span>Missing component ID at index {{ index }}</span>
                       </div>
                     </template>
                   </draggable>
@@ -365,8 +365,8 @@
                         :total-components="getColumnComponents(section, 1).length"
                         :show-controls="true"
                       />
-                      <div v-else-if="!componentId" class="component-error-placeholder">
-                        <span>❌ Missing component ID at index {{ index }}</span>
+                      <div v-else-if="!componentId" class="component-error-placeholder" data-builder-only>
+                        <span>Missing component ID at index {{ index }}</span>
                       </div>
                     </template>
                   </draggable>
@@ -412,8 +412,8 @@
                         :total-components="getColumnComponents(section, 2).length"
                         :show-controls="true"
                       />
-                      <div v-else-if="!componentId" class="component-error-placeholder">
-                        <span>❌ Missing component ID at index {{ index }}</span>
+                      <div v-else-if="!componentId" class="component-error-placeholder" data-builder-only>
+                        <span>Missing component ID at index {{ index }}</span>
                       </div>
                     </template>
                   </draggable>
@@ -468,8 +468,8 @@
                         :total-components="getColumnComponents(section, col).length"
                         :show-controls="true"
                       />
-                      <div v-else-if="!componentId" class="component-error-placeholder">
-                        <span>❌ Missing component ID in col {{ col }} at index {{ index }}</span>
+                      <div v-else-if="!componentId" class="component-error-placeholder" data-builder-only>
+                        <span>Missing component ID in col {{ col }} at index {{ index }}</span>
                       </div>
                     </template>
                   </draggable>
