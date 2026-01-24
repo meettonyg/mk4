@@ -6,11 +6,23 @@
       <p v-if="description" class="topics-description">{{ description }}</p>
 
       <div class="topics-grid" :style="gridStyle">
-        <div v-for="(topic, index) in topics" :key="index" class="topic-item">
-          <span v-if="showIcons" class="topic-icon">💡</span>
-          <div class="topic-title">{{ topic.title || topic.name || topic.text || topic }}</div>
-          <p v-if="topic.description" class="topic-description">{{ topic.description }}</p>
-        </div>
+        <!-- Placeholder topics when editing with no data -->
+        <template v-if="showPlaceholders">
+          <div v-for="(topic, index) in placeholderTopics" :key="index" class="topic-item topic-item--placeholder">
+            <span class="topic-icon">💡</span>
+            <div class="topic-title">{{ topic.title }}</div>
+            <p class="topic-description">{{ topic.description }}</p>
+          </div>
+        </template>
+
+        <!-- Actual topics when data exists -->
+        <template v-else>
+          <div v-for="(topic, index) in topics" :key="index" class="topic-item">
+            <span v-if="showIcons" class="topic-icon">💡</span>
+            <div class="topic-title">{{ topic.title || topic.name || topic.text || topic }}</div>
+            <p v-if="topic.description" class="topic-description">{{ topic.description }}</p>
+          </div>
+        </template>
       </div>
     </div>
   </div>
@@ -45,6 +57,10 @@ export default {
       default: false
     },
     isSelected: {
+      type: Boolean,
+      default: false
+    },
+    isBuilderMode: {
       type: Boolean,
       default: false
     }
@@ -85,13 +101,28 @@ export default {
       return topicsList;
     });
 
+    // Show placeholders when editing with no topics
+    // Show placeholders when in builder mode with no data configured
+    const showPlaceholders = computed(() => {
+      return topics.value.length === 0 && (props.isBuilderMode || props.isEditing || props.isSelected);
+    });
+
+    // Placeholder topics
+    const placeholderTopics = [
+      { title: 'Topic 1', description: 'Click to add your first topic' },
+      { title: 'Topic 2', description: 'Add another speaking topic' },
+      { title: 'Topic 3', description: 'Continue building your list' }
+    ];
+
     return {
       title,
       description,
       columns,
       showIcons,
       gridStyle,
-      topics
+      topics,
+      showPlaceholders,
+      placeholderTopics
     };
   }
 };

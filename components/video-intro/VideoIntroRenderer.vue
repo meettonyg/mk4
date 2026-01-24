@@ -11,7 +11,7 @@
         allowfullscreen
         class="video-embed"
       ></iframe>
-      <p v-else class="video-placeholder">Add your video URL</p>
+      <p v-else-if="showPlaceholder" class="video-placeholder">Add your video URL</p>
     </div>
     <p v-if="description" class="video-description">{{ description }}</p>
     </div>
@@ -89,6 +89,10 @@ export default {
     isSelected: {
       type: Boolean,
       default: false
+    },
+    isBuilderMode: {
+      type: Boolean,
+      default: false
     }
   },
   setup(props) {
@@ -109,10 +113,16 @@ export default {
       return props.data?.description || props.props?.description || '';
     });
 
+    // Show placeholder when in builder mode with no video URL
+    const showPlaceholder = computed(() => {
+      return !videoUrl.value && (props.isBuilderMode || props.isEditing || props.isSelected);
+    });
+
     return {
       title,
       videoUrl,
-      description
+      description,
+      showPlaceholder
     };
   }
 }

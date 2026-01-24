@@ -5,11 +5,22 @@
       <h2 v-if="title" class="section-title">{{ title }}</h2>
       <p v-if="description" class="section-description">{{ description }}</p>
       <div class="questions-list">
-      <div v-for="(question, index) in questions" :key="index" class="question-item">
-        <div class="question-text">{{ question.question || question }}</div>
-        <div v-if="question.answer" class="question-answer">{{ question.answer }}</div>
+        <!-- Placeholder questions when editing with no data -->
+        <template v-if="showPlaceholders">
+          <div v-for="(question, index) in placeholderQuestions" :key="index" class="question-item question-item--placeholder">
+            <div class="question-text">{{ question.question }}</div>
+            <div class="question-answer">{{ question.answer }}</div>
+          </div>
+        </template>
+
+        <!-- Actual questions when data exists -->
+        <template v-else>
+          <div v-for="(question, index) in questions" :key="index" class="question-item">
+            <div class="question-text">{{ question.question || question }}</div>
+            <div v-if="question.answer" class="question-answer">{{ question.answer }}</div>
+          </div>
+        </template>
       </div>
-    </div>
     </div>
   </div>
 </template>
@@ -45,6 +56,10 @@ export default {
     isSelected: {
       type: Boolean,
       default: false
+    },
+    isBuilderMode: {
+      type: Boolean,
+      default: false
     }
   },
   setup(props) {
@@ -74,10 +89,23 @@ export default {
       return questionsList;
     });
 
+    // Show placeholders when in builder mode with no questions
+    const showPlaceholders = computed(() => {
+      return questions.value.length === 0 && (props.isBuilderMode || props.isEditing || props.isSelected);
+    });
+
+    // Placeholder questions
+    const placeholderQuestions = [
+      { question: 'What is your first question?', answer: 'Add your answer here' },
+      { question: 'Add another frequently asked question', answer: 'Provide a helpful answer' }
+    ];
+
     return {
       title,
       description,
-      questions
+      questions,
+      showPlaceholders,
+      placeholderQuestions
     };
   }
 }

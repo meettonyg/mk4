@@ -13,7 +13,7 @@
         {{ photo.caption }}
       </p>
     </div>
-    <div v-else class="profile-photo-placeholder" :class="placeholderClasses">
+    <div v-else-if="showPlaceholder" class="profile-photo-placeholder" :class="placeholderClasses">
       <div class="placeholder-avatar">
         <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="60" cy="60" r="58" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4" opacity="0.3"/>
@@ -60,6 +60,10 @@ const props = defineProps({
   isSelected: {
     type: Boolean,
     default: false
+  },
+  isBuilderMode: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -86,6 +90,11 @@ const sanitizedPhotoUrl = computed(() => {
   url = url.replace(/([^:]\/)\/+/g, '$1');
   
   return url;
+});
+
+// Show placeholder when in builder mode with no photo
+const showPlaceholder = computed(() => {
+  return !photo.value && (props.isBuilderMode || props.isEditing || props.isSelected);
 });
 
 const componentClasses = computed(() => ({

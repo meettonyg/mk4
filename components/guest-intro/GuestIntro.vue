@@ -9,7 +9,7 @@
       <div v-if="introduction" class="guest-introduction">
         <p>{{ introduction }}</p>
       </div>
-      <div v-else class="guest-introduction-placeholder">
+      <div v-else-if="showPlaceholder" class="guest-introduction-placeholder">
         <p>Add your introduction text...</p>
       </div>
     </div>
@@ -43,12 +43,21 @@ const props = defineProps({
   isSelected: {
     type: Boolean,
     default: false
+  },
+  isBuilderMode: {
+    type: Boolean,
+    default: false
   }
 });
 
 // Data from component JSON state (single source of truth)
 const introduction = computed(() => props.data?.introduction || props.props?.introduction || '');
 const layout = computed(() => props.data?.layout || props.props?.layout || 'centered');
+
+// Show placeholder when in builder mode with no introduction
+const showPlaceholder = computed(() => {
+  return !introduction.value && (props.isBuilderMode || props.isEditing || props.isSelected);
+});
 </script>
 
 <style scoped>

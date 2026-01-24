@@ -8,25 +8,43 @@
     <p v-if="description" class="stats-description">{{ description }}</p>
     
     <div class="stats-grid" :class="`grid-${columns || 4}`">
-      <div
-        v-for="(stat, index) in displayStats"
-        :key="index"
-        class="stat-card"
-        :class="`style-${style}`"
-      >
-        <div v-if="showIcons && stat.icon" class="stat-icon">
-          {{ stat.icon }}
+      <!-- Placeholder stats when editing with no data -->
+      <template v-if="showPlaceholders">
+        <div
+          v-for="(stat, index) in placeholderStats"
+          :key="index"
+          class="stat-card stat-card--placeholder"
+        >
+          <div class="stat-icon">{{ stat.icon }}</div>
+          <div class="stat-value">
+            <span class="stat-number">{{ stat.value }}</span>
+          </div>
+          <div class="stat-label">{{ stat.label }}</div>
         </div>
-        <div class="stat-value">
-          <span v-if="stat.prefix" class="stat-prefix">{{ stat.prefix }}</span>
-          <span class="stat-number">{{ stat.value }}</span>
-          <span v-if="stat.suffix" class="stat-suffix">{{ stat.suffix }}</span>
+      </template>
+
+      <!-- Actual stats when data exists -->
+      <template v-else>
+        <div
+          v-for="(stat, index) in displayStats"
+          :key="index"
+          class="stat-card"
+          :class="`style-${style}`"
+        >
+          <div v-if="showIcons && stat.icon" class="stat-icon">
+            {{ stat.icon }}
+          </div>
+          <div class="stat-value">
+            <span v-if="stat.prefix" class="stat-prefix">{{ stat.prefix }}</span>
+            <span class="stat-number">{{ stat.value }}</span>
+            <span v-if="stat.suffix" class="stat-suffix">{{ stat.suffix }}</span>
+          </div>
+          <div class="stat-label">{{ stat.label }}</div>
+          <p v-if="stat.description" class="stat-description-text">
+            {{ stat.description }}
+          </p>
         </div>
-        <div class="stat-label">{{ stat.label }}</div>
-        <p v-if="stat.description" class="stat-description-text">
-          {{ stat.description }}
-        </p>
-      </div>
+      </template>
     </div>
   </div>
 </template>
@@ -95,6 +113,19 @@ const displayStats = computed(() => {
 
   return statsList;
 });
+
+// Show placeholders when editing with no stats configured
+const showPlaceholders = computed(() => {
+  return displayStats.value.length === 0 && (props.isEditing || props.isSelected);
+});
+
+// Placeholder stats
+const placeholderStats = [
+  { value: '10+', label: 'Years Experience', icon: '📅' },
+  { value: '500+', label: 'Projects Completed', icon: '✅' },
+  { value: '50+', label: 'Happy Clients', icon: '😊' },
+  { value: '25', label: 'Awards Won', icon: '🏆' }
+];
 </script>
 
 <style scoped>
@@ -146,6 +177,22 @@ const displayStats = computed(() => {
 .stat-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Placeholder styles */
+.stat-card--placeholder {
+  opacity: 0.6;
+  border: 2px dashed var(--border-color, #cbd5e1);
+  background: var(--card-bg, rgba(248, 250, 252, 0.5));
+}
+
+.stat-card--placeholder:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.stat-card--placeholder .stat-label {
+  font-style: italic;
 }
 
 /* Card Styles */

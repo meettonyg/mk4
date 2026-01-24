@@ -4,10 +4,28 @@
     <div class="component-root photo-gallery-content">
     <h2 v-if="title" class="section-title">{{ title }}</h2>
     
+    <!-- Placeholder photos when editing with no data -->
+    <div
+      v-if="showPlaceholders"
+      class="photo-gallery-grid"
+      :style="gridStyles"
+    >
+      <div
+        v-for="(photo, index) in placeholderPhotos"
+        :key="index"
+        class="photo-item photo-item--placeholder"
+      >
+        <div class="photo-placeholder-icon">
+          <i class="fas fa-image"></i>
+        </div>
+        <div class="photo-caption">{{ photo.caption }}</div>
+      </div>
+    </div>
+
     <!-- ✅ STANDARD GRID (default/fallback) -->
-    <div 
-      v-if="layoutStyle === 'grid' || !layoutStyle"
-      class="photo-gallery-grid" 
+    <div
+      v-else-if="layoutStyle === 'grid' || !layoutStyle"
+      class="photo-gallery-grid"
       :data-caption-style="captionStyle"
       :style="gridStyles"
     >
@@ -21,9 +39,9 @@
         @keydown.enter="openLightbox(index)"
         @keydown.space.prevent="openLightbox(index)"
       >
-        <img 
-          :src="photo.url" 
-          :alt="photo.alt || photo.caption || `Photo ${index + 1}`" 
+        <img
+          :src="photo.url"
+          :alt="photo.alt || photo.caption || `Photo ${index + 1}`"
           :title="photo.caption || undefined"
           loading="lazy"
         />
@@ -159,6 +177,10 @@ export default {
     isSelected: {
       type: Boolean,
       default: false
+    },
+    isBuilderMode: {
+      type: Boolean,
+      default: false
     }
   },
   components: {
@@ -220,6 +242,18 @@ export default {
 
       return [];
     });
+
+    // Show placeholders when in builder mode with no photos
+    const showPlaceholders = computed(() => {
+      return photos.value.length === 0 && (props.isBuilderMode || props.isEditing || props.isSelected);
+    });
+
+    // Placeholder photos
+    const placeholderPhotos = [
+      { url: '', caption: 'Photo 1' },
+      { url: '', caption: 'Photo 2' },
+      { url: '', caption: 'Photo 3' }
+    ];
     
     // Open lightbox at specific index
     const openLightbox = (index) => {
@@ -231,12 +265,14 @@ export default {
       title,
       photos,
       captionStyle,
-      layoutStyle, // ✅ NEW
-      carouselSettings, // ✅ NEW
-      gridStyles, // ✅ NEW
+      layoutStyle,
+      carouselSettings,
+      gridStyles,
       lightboxRef,
       currentPhotoIndex,
-      openLightbox
+      openLightbox,
+      showPlaceholders,
+      placeholderPhotos
     };
   }
 }

@@ -51,6 +51,7 @@
       :settings="actualComponent.settings || {}"
       :is-editing="isEditing"
       :is-selected="isSelected"
+      :is-builder-mode="isBuilderMode"
       class="component-root"
       :class="componentRootClass"
     />
@@ -216,6 +217,12 @@ const isEditing = computed(() => {
     console.error('[ComponentWrapper] Error in isEditing:', error);
     return false;
   }
+})
+
+// Detect if we're in builder mode (not preview mode)
+// This allows components to show placeholders when empty
+const isBuilderMode = computed(() => {
+  return !uiStore.previewMode;
 })
 
 // Show controls when hovering or selected (but not in preview mode)

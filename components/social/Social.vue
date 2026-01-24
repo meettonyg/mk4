@@ -8,18 +8,33 @@
     <p v-if="description" class="social-description">{{ description }}</p>
     
     <div class="social-links">
-      <a
-        v-for="(link, index) in socialLinks"
-        :key="index"
-        :href="link.url"
-        :title="link.platform"
-        class="social-link"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <i :class="getSocialIcon(link.platform)"></i>
-        <span v-if="showLabels" class="social-label">{{ link.platform }}</span>
-      </a>
+      <!-- Placeholder icons (non-clickable) when editing with no configured links -->
+      <template v-if="socialLinks.length > 0 && socialLinks[0].isPlaceholder">
+        <span
+          v-for="(link, index) in socialLinks"
+          :key="index"
+          :title="`${link.platform} (click to configure)`"
+          class="social-link social-link--placeholder"
+        >
+          <i :class="getSocialIcon(link.platform)"></i>
+          <span v-if="showLabels" class="social-label">{{ link.platform }}</span>
+        </span>
+      </template>
+      <!-- Actual links when URLs are configured -->
+      <template v-else>
+        <a
+          v-for="(link, index) in socialLinks"
+          :key="index"
+          :href="link.url"
+          :title="link.platform"
+          class="social-link"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <i :class="getSocialIcon(link.platform)"></i>
+          <span v-if="showLabels" class="social-label">{{ link.platform }}</span>
+        </a>
+      </template>
     </div>
   </div>
 </template>
@@ -51,6 +66,10 @@ const props = defineProps({
   isSelected: {
     type: Boolean,
     default: false
+  },
+  isBuilderMode: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -61,6 +80,9 @@ const showLabels = computed(() => {
   const val = props.data?.show_labels ?? props.props?.show_labels ?? props.data?.showLabels;
   return val !== false;
 });
+
+// Default platforms to show as placeholders when editing with no configured links
+const defaultPlatforms = ['linkedin', 'twitter', 'instagram', 'youtube'];
 
 // Social links from component data
 const socialLinks = computed(() => {
@@ -106,6 +128,16 @@ const socialLinks = computed(() => {
       });
     }
   });
+
+  // Show placeholder icons when in builder mode with no configured links
+  // Use isBuilderMode for reliable detection (doesn't depend on selection timing)
+  if (links.length === 0 && (props.isBuilderMode || props.isEditing || props.isSelected)) {
+    return defaultPlatforms.map(platform => ({
+      platform: platform.charAt(0).toUpperCase() + platform.slice(1),
+      url: '#', // Placeholder URL
+      isPlaceholder: true
+    }));
+  }
 
   return links;
 });
@@ -177,6 +209,13 @@ const getSocialIcon = (platform) => {
 .social-link i {
   font-size: 1.25rem;
   color: var(--icon-color, currentColor);
+}
+
+/* Placeholder styles for editing mode when no URLs configured */
+.social-link--placeholder {
+  cursor: default;
+  opacity: 0.6;
+  border: 2px dashed var(--border-color, #cbd5e1);
 }
 
 .social-label {

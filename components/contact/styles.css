@@ -217,3 +217,45 @@ a.contact-info-value:hover {
 .contact-edit-btn:hover {
     background-color: var(--gmkb-color-surface-hover, #e0e0e0);
 }
+
+/* Placeholder styles for editing mode when no data configured */
+.contact-item--placeholder {
+    cursor: default;
+    opacity: 0.7;
+    background: var(--gmkb-color-surface, #f8fafc);
+    border: 2px dashed var(--gmkb-color-border, #cbd5e1);
+}
+
+.contact-item--placeholder:hover {
+    transform: none;
+    background: var(--gmkb-color-surface, #f8fafc);
+}
+
+.contact-item--placeholder span {
+    color: var(--gmkb-color-text-muted, #94a3b8);
+    font-style: italic;
+}
+
+.social-link--placeholder {
+    cursor: default;
+    opacity: 0.7;
+    background: var(--gmkb-color-surface, #f8fafc);
+    border: 2px dashed var(--gmkb-color-border, #cbd5e1);
+}
+
+.social-link--placeholder:hover {
+    transform: none;
+    background: var(--gmkb-color-surface, #f8fafc);
+    color: var(--gmkb-color-primary, #3b82f6);
+    box-shadow: none;
+}
+
+body.dark-mode .contact-item--placeholder,
+body.dark-mode .social-link--placeholder {
+    background: var(--gmkb-color-surface-elevated, #1e293b);
+    border-color: var(--gmkb-color-border, #475569);
+}
+
+body.dark-mode .contact-item--placeholder span {
+    color: var(--gmkb-color-text-muted, #64748b);
+}

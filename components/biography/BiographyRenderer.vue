@@ -4,7 +4,7 @@
   <div class="gmkb-component gmkb-component--biography" :data-component-id="componentId">
     <div class="component-root biography-content">
       <div v-if="biography" class="biography-text" v-html="formattedBio"></div>
-      <p v-else class="biography-placeholder">
+      <p v-else-if="showPlaceholder" class="biography-placeholder">
         Add your full biography and professional background here.
       </p>
     </div>
@@ -42,6 +42,10 @@ export default {
     isSelected: {
       type: Boolean,
       default: false
+    },
+    isBuilderMode: {
+      type: Boolean,
+      default: true  // Default to true so placeholders show on initial mount before prop is passed
     }
   },
   setup(props) {
@@ -72,9 +76,15 @@ export default {
         .join('');
     });
 
+    // Show placeholder when in builder mode with no biography
+    const showPlaceholder = computed(() => {
+      return !biography.value && (props.isBuilderMode || props.isEditing || props.isSelected);
+    });
+
     return {
       biography,
-      formattedBio
+      formattedBio,
+      showPlaceholder
     };
   }
 }
