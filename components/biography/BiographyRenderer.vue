@@ -45,7 +45,7 @@ export default {
     },
     isBuilderMode: {
       type: Boolean,
-      default: false
+      default: true  // Default to true so placeholders show on initial mount before prop is passed
     }
   },
   setup(props) {
