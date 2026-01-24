@@ -14,6 +14,29 @@
  * @since 2.5.0 Renamed from PodsDataIntegration to ProfileDataIntegration
  */
 
+/**
+ * Eagerly load all profile-config.json files at build time
+ * This ensures configs are available synchronously when components are dropped
+ * Uses Vite's import.meta.glob with eager: true for synchronous loading
+ */
+const eagerProfileConfigs = import.meta.glob('/components/*/profile-config.json', { eager: true });
+
+// Build a lookup map: componentType -> config
+const profileConfigRegistry = {};
+for (const [path, module] of Object.entries(eagerProfileConfigs)) {
+  // Extract component type from path: /components/TYPE/profile-config.json
+  const match = path.match(/\/components\/([^/]+)\/profile-config\.json$/);
+  if (match) {
+    const componentType = match[1];
+    // Handle both default export and direct module
+    profileConfigRegistry[componentType] = module.default || module;
+  }
+}
+
+if (Object.keys(profileConfigRegistry).length > 0) {
+  console.log('[ProfileDataIntegration] Eagerly loaded profile configs:', Object.keys(profileConfigRegistry));
+}
+
 export class ProfileDataIntegration {
   constructor() {
     this.profileData = this.getProfileDataSource();
@@ -51,6 +74,12 @@ export class ProfileDataIntegration {
       if (component && component.profile_config) {
         return component.profile_config;
       }
+    }
+
+    // Check eagerly-loaded profile configs from JSON files
+    // This ensures configs are available synchronously when components are dropped
+    if (profileConfigRegistry[componentType]) {
+      return profileConfigRegistry[componentType];
     }
 
     // No config found - component should define its own profile-config.json
