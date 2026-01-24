@@ -86,6 +86,62 @@
             </div>
         </div>
 
+        <!-- URL Slug Panel -->
+        <EditablePanel
+            title="Media Kit URL"
+            section-id="slug"
+            :is-editing="editingSection === 'slug'"
+            :is-saving="isSaving"
+            @edit="startEditing"
+            @save="saveSlug"
+            @cancel="cancelEditing"
+        >
+            <template #display>
+                <div class="slug-display">
+                    <div class="slug-preview">
+                        <span class="slug-base-url">{{ baseUrl }}/media-kit/</span>
+                        <span class="slug-value">{{ currentSlug || 'your-slug' }}</span>
+                    </div>
+                    <a
+                        v-if="currentSlug && store.postData?.status === 'publish'"
+                        :href="fullUrl"
+                        target="_blank"
+                        class="slug-view-link"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <line x1="10" y1="14" x2="21" y2="3"></line>
+                        </svg>
+                        View
+                    </a>
+                </div>
+            </template>
+
+            <template #edit>
+                <div class="slug-edit-form">
+                    <div class="form-group">
+                        <label class="form-label">Custom URL Slug</label>
+                        <div class="slug-input-wrapper">
+                            <span class="slug-input-prefix">{{ baseUrl }}/media-kit/</span>
+                            <input
+                                type="text"
+                                class="form-input slug-input"
+                                v-model="editFields.slug"
+                                placeholder="your-custom-slug"
+                                @input="formatSlugInput"
+                                pattern="[a-z0-9-]+"
+                            />
+                        </div>
+                        <p class="form-hint">
+                            Use lowercase letters, numbers, and hyphens only.
+                            <span v-if="slugWarning" class="slug-warning">{{ slugWarning }}</span>
+                        </p>
+                    </div>
+                </div>
+            </template>
+        </EditablePanel>
+
         <!-- Schema Markup Panel -->
         <EditablePanel
             title="Schema Markup"
@@ -345,10 +401,25 @@ const availableSchemaTypes = [
 
 // Section field mappings
 const sectionFields = {
+    slug: ['slug'],
     schema: ['seo_schema_enabled', 'seo_schema_types'],
     meta: ['seo_custom_title', 'seo_custom_description'],
     authority: ['alumni_of', 'awards', 'member_of', 'certifications'],
 };
+
+// Slug-related state
+const slugWarning = ref('');
+const baseUrl = window.location.origin;
+
+// Current slug from post data
+const currentSlug = computed(() => {
+    return store.postData?.slug || store.fields.slug || '';
+});
+
+// Full URL for the media kit
+const fullUrl = computed(() => {
+    return `${baseUrl}/media-kit/${currentSlug.value}`;
+});
 
 // Computed properties
 const schemaEnabled = computed(() => {
@@ -411,19 +482,98 @@ const getFactorClass = (score, max) => {
 
 const startEditing = (sectionId) => {
     editingSection.value = sectionId;
+    slugWarning.value = '';
 
     const fields = sectionFields[sectionId] || [];
     fields.forEach((field) => {
-        const value = store.fields[field];
-        if (field === 'seo_schema_types') {
+        if (field === 'slug') {
+            // Use the current slug from post data
+            editFields[field] = currentSlug.value || '';
+        } else if (field === 'seo_schema_types') {
+            const value = store.fields[field];
             // Ensure array for checkboxes
             editFields[field] = Array.isArray(value) ? [...value] : ['person', 'profilepage'];
         } else if (field === 'seo_schema_enabled') {
+            const value = store.fields[field];
             editFields[field] = value === true || value === '1' || value === 'true';
         } else {
-            editFields[field] = value || '';
+            editFields[field] = store.fields[field] || '';
         }
     });
+};
+
+// Format slug input as user types
+const formatSlugInput = () => {
+    let value = editFields.slug || '';
+    // Convert to lowercase, replace spaces with hyphens, remove invalid characters
+    value = value.toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+    editFields.slug = value;
+    slugWarning.value = '';
+};
+
+// Save slug with special handling
+const saveSlug = async () => {
+    isSaving.value = true;
+    slugWarning.value = '';
+
+    try {
+        const newSlug = editFields.slug?.trim();
+
+        if (!newSlug) {
+            slugWarning.value = 'Slug cannot be empty';
+            isSaving.value = false;
+            return;
+        }
+
+        if (newSlug.length < 3) {
+            slugWarning.value = 'Slug must be at least 3 characters';
+            isSaving.value = false;
+            return;
+        }
+
+        // Call the API to update the slug
+        const response = await fetch(`/wp-json/gmkb/v2/profile/${store.postId}/field/slug`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-WP-Nonce': store.nonce,
+            },
+            body: JSON.stringify({ value: newSlug }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            // Update the store with the new slug
+            if (store.postData) {
+                store.postData.slug = data.slug;
+            }
+            store.updateField('slug', data.slug);
+
+            // Show warning if slug was adjusted for uniqueness
+            if (data.adjusted) {
+                slugWarning.value = `Slug was adjusted to "${data.slug}" to ensure uniqueness`;
+                // Keep editing open to show the warning
+                setTimeout(() => {
+                    editingSection.value = null;
+                    slugWarning.value = '';
+                }, 3000);
+            } else {
+                editingSection.value = null;
+            }
+        } else {
+            slugWarning.value = data.message || 'Failed to update slug. Please try again.';
+        }
+    } catch (error) {
+        console.error('Slug save error:', error);
+        slugWarning.value = 'An error occurred while saving. Please try again.';
+    } finally {
+        isSaving.value = false;
+    }
 };
 
 const cancelEditing = () => {
@@ -1086,6 +1236,98 @@ onMounted(() => {
 
 .validate-link:hover {
     text-decoration: underline;
+}
+
+/* Slug Display */
+.slug-display {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 16px;
+    background: #f8fafc;
+    border-radius: 8px;
+}
+
+.slug-preview {
+    font-size: 14px;
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    word-break: break-all;
+}
+
+.slug-base-url {
+    color: #64748b;
+}
+
+.slug-value {
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.slug-view-link {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: #0ea5e9;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.slug-view-link:hover {
+    color: #0284c7;
+    text-decoration: underline;
+}
+
+/* Slug Edit Form */
+.slug-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.slug-input-wrapper {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.slug-input-wrapper:focus-within {
+    border-color: #14b8a6;
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+}
+
+.slug-input-prefix {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 13px;
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    border-right: 1px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.slug-input {
+    flex: 1;
+    border: none !important;
+    border-radius: 0 !important;
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+
+.slug-input:focus {
+    box-shadow: none !important;
+}
+
+.slug-warning {
+    display: block;
+    color: #f59e0b;
+    font-weight: 500;
+    margin-top: 4px;
 }
 
 /* Responsive */

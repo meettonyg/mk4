@@ -243,6 +243,16 @@ class GMKB_Profile_Repository implements GMKB_Profile_Repository_Interface {
             ]);
         }
 
+        // Handle special slug field - update post_name
+        if ($field === 'slug') {
+            $slug_result = $this->update_slug($id, $value);
+            if (is_wp_error($slug_result)) {
+                return $slug_result;
+            }
+            // Return the actual slug that was set (may be different due to uniqueness)
+            return $slug_result;
+        }
+
         // Save to post meta
         // Note: update_post_meta returns false both on error AND when value is unchanged
         // Check if the current value matches to distinguish these cases
@@ -537,6 +547,85 @@ class GMKB_Profile_Repository implements GMKB_Profile_Repository_Interface {
         }
 
         return $images;
+    }
+
+    /**
+     * Update the profile's URL slug (post_name)
+     *
+     * @param int $id Post ID
+     * @param string $slug Desired slug
+     * @return string|WP_Error The actual slug that was set, or WP_Error on failure
+     */
+    public function update_slug(int $id, string $slug) {
+        $post = get_post($id);
+        if (!$post || $post->post_type !== self::POST_TYPE) {
+            return new WP_Error('invalid_post', 'Invalid profile ID');
+        }
+
+        // Sanitize the slug
+        $slug = sanitize_title($slug);
+
+        // Validate slug is not empty after sanitization
+        if (empty($slug)) {
+            return new WP_Error('invalid_slug', 'Slug cannot be empty');
+        }
+
+        // Validate minimum length
+        if (strlen($slug) < 3) {
+            return new WP_Error('slug_too_short', 'Slug must be at least 3 characters');
+        }
+
+        // Check for reserved slugs
+        $reserved = ['new', 'edit', 'delete', 'admin', 'login', 'register', 'api', 'app'];
+        if (in_array($slug, $reserved, true)) {
+            return new WP_Error('reserved_slug', 'This slug is reserved and cannot be used');
+        }
+
+        // Use WordPress built-in function to ensure uniqueness
+        // This will append -2, -3, etc. if the slug already exists
+        $unique_slug = wp_unique_post_slug(
+            $slug,
+            $id,
+            $post->post_status,
+            $post->post_type,
+            $post->post_parent
+        );
+
+        // Update the post with the new slug
+        $result = wp_update_post([
+            'ID' => $id,
+            'post_name' => $unique_slug,
+        ], true);
+
+        if (is_wp_error($result)) {
+            return $result;
+        }
+
+        // Also store in post meta for schema consistency
+        update_post_meta($id, 'slug', $unique_slug);
+
+        // Return the actual slug that was set (with response data)
+        return [
+            'success' => true,
+            'slug' => $unique_slug,
+            'adjusted' => $unique_slug !== $slug,
+            'original' => $slug,
+        ];
+    }
+
+    /**
+     * Get the public URL for a profile
+     *
+     * @param int $id Post ID
+     * @return string|null The public URL or null if not found
+     */
+    public function get_public_url(int $id): ?string {
+        $post = get_post($id);
+        if (!$post || $post->post_type !== self::POST_TYPE) {
+            return null;
+        }
+
+        return get_permalink($id);
     }
 
     /**
