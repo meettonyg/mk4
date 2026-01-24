@@ -25,23 +25,14 @@
           <div>
             <!-- Upload Button -->
             <div class="field-group">
-              <button 
-                @click="handleUploadPhoto"
-                :disabled="isUploading || isSavingToPods"
-                class="upload-btn"
-                type="button"
-              >
-                <span v-if="isUploading">Selecting image...</span>
-                <span v-else-if="isSavingToPods">Saving to profile...</span>
-                <span v-else>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="17 8 12 3 7 8"></polyline>
-                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                  </svg>
-                  Upload Photo
-                </span>
-              </button>
+              <MediaUploader
+                ref="mediaUploaderRef"
+                label="Upload Photo"
+                :multiple="false"
+                :accepted-types="['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']"
+                :max-size="10 * 1024 * 1024"
+                @select="handleMediaSelect"
+              />
               <p class="field-hint">Upload or select from media library</p>
             </div>
 
@@ -113,9 +104,8 @@
 <script setup>
 import { ref, watch, computed } from 'vue';
 import { useMediaKitStore } from '@/stores/mediaKit';
-// jQuery-Free: Using modern REST API uploader instead of WordPress Media Library
-import { useModernMediaUploader } from '@composables/useModernMediaUploader';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
+import MediaUploader from '@/vue/components/shared/MediaUploader.vue';
 // PHASE 5: Profile branding integration
 import ProfileImagePicker from '@/vue/components/shared/ProfileImagePicker.vue';
 
@@ -129,11 +119,13 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 const store = useMediaKitStore();
-// jQuery-Free: Using modern uploader with direct REST API calls
-const { selectAndUploadImage, isUploading } = useModernMediaUploader();
 
 // Active tab state
 const activeTab = ref('content');
+
+// Media uploader ref
+const mediaUploaderRef = ref(null);
+const isUploading = ref(false);
 
 const localData = ref({ 
   photo: { 
@@ -179,146 +171,39 @@ const updateComponent = () => {
   }, 300);
 };
 
-// Handle photo upload - jQuery-Free Implementation
-const handleUploadPhoto = async () => {
-  try {
-    // Step 1: Open file selector and upload via REST API
-    const attachment = await selectAndUploadImage({
-      accept: 'image/*',
-      multiple: false
-    });
-    
-    if (!attachment) {
-      return; // User cancelled
-    }
-    
-    if (window.gmkbDebug || window.gmkbData?.debugMode) {
-      console.log('📸 Profile Photo: Image uploaded via REST API', {
-        id: attachment.id,
-        url: attachment.url
-      });
-    }
-    
-    // Step 2: Save attachment ID to Pods field
-    try {
-      const postId = store.postId || window.gmkbData?.postId;
-      if (!postId) {
-        console.error('❌ Profile Photo: No post ID available');
-        throw new Error('Post ID not available');
-      }
-      
-      if (window.gmkbDebug || window.gmkbData?.debugMode) {
-        console.log('💾 Profile Photo: Saving to Pods field', {
-          postId,
-          fieldName: 'profile_photo',
-          attachmentId: attachment.id
-        });
-      }
-      
-      // ROOT FIX: Save the attachment ID (not URL) to the profile_photo Pods field
-      // Pods expects the attachment ID for image fields
-      // Try multiple field names as different Pods configurations may use different names
-      const fieldNamesToTry = ['profile_photo', 'profile_image', 'headshot'];
-      let fieldSaved = false;
-      let lastError = null;
-      
-      for (const fieldName of fieldNamesToTry) {
-        try {
-          await updatePodsField(postId, fieldName, attachment.id);
-          fieldSaved = true;
-          if (window.gmkbDebug || window.gmkbData?.debugMode) {
-            console.log(`✅ Profile Photo: Saved to Pods field '${fieldName}' successfully`);
-          }
-          break; // Success, stop trying other field names
-        } catch (fieldError) {
-          lastError = fieldError;
-          if (window.gmkbDebug || window.gmkbData?.debugMode) {
-            console.log(`⚠️ Profile Photo: Field '${fieldName}' failed:`, fieldError.message);
-          }
-          // Continue to try next field name
-        }
-      }
-      
-      if (!fieldSaved) {
-        throw lastError || new Error('Could not save to any known Pods field');
-      }
-      
-      if (window.gmkbDebug || window.gmkbData?.debugMode) {
-        console.log('✅ Profile Photo: Saved to Pods successfully');
-      }
-      
-      // Step 3: Update local state to show custom photo
-      localData.value.photo = {
-        url: attachment.url,
-        caption: attachment.caption || '',
-        alt: attachment.alt || 'Profile Photo',
-        id: attachment.id,
-        source: 'custom'
-      };
+// Handle media selection from MediaUploader
+const handleMediaSelect = (attachment) => {
+  if (!attachment) return;
 
-      // Step 4: Update component state immediately
-      // ROOT FIX: Don't use debounce for upload actions - update immediately
-      const dataToSave = {
-        photo: localData.value.photo,
-        usePodsData: false,
-        shape: localData.value.shape,
-        size: localData.value.size
-      };
-      
-      store.updateComponent(props.componentId, { data: dataToSave });
-      store.isDirty = true;
-      
-      if (window.gmkbDebug || window.gmkbData?.debugMode) {
-        console.log('✅ Profile Photo: Upload complete, component updated');
-      }
-      
-    } catch (saveError) {
-      console.error('❌ Profile Photo: Failed to save to Pods', saveError);
-      
-      // ROOT FIX: Still update local state even if Pods save fails
-      // Use the uploaded image directly without Pods
-      localData.value.photo = {
-        url: attachment.url,
-        caption: attachment.caption || '',
-        alt: attachment.alt || 'Profile Photo',
-        id: attachment.id,
-        source: 'custom'
-      };
-      localData.value.usePodsData = false; // Don't use Pods data if save failed
-      
-      // Update component immediately
-      const dataToSave = {
-        photo: localData.value.photo,
-        usePodsData: false,
-        shape: localData.value.shape,
-        size: localData.value.size
-      };
-      
-      store.updateComponent(props.componentId, { data: dataToSave });
-      store.isDirty = true;
-      
-      // Show user-friendly error
-      const errorMessage = 'Image uploaded but could not be saved to your profile. The image will be used for this media kit only.';
-      // Use ToastService if available
-      if (window.GMKB?.services?.toast) {
-        window.GMKB.services.toast.show(errorMessage, 'warning');
-      } else {
-        alert(errorMessage);
-      }
-    }
-    
-  } catch (error) {
-    console.error('❌ Profile Photo: Upload failed', error);
-    // jQuery-Free: Better error handling for REST API errors
-    if (error.message && !error.message.includes('No file selected')) {
-      const errorMessage = 'Failed to upload photo: ' + error.message;
-      // Use ToastService if available
-      if (window.GMKB?.services?.toast) {
-        window.GMKB.services.toast.show(errorMessage, 'error');
-      } else {
-        alert(errorMessage);
-      }
-    }
+  if (window.gmkbDebug || window.gmkbData?.debugMode) {
+    console.log('📸 Profile Photo: Image selected', {
+      id: attachment.id,
+      url: attachment.url
+    });
+  }
+
+  // Update local state with the selected photo
+  localData.value.photo = {
+    url: attachment.url,
+    caption: attachment.caption || '',
+    alt: attachment.alt || 'Profile Photo',
+    id: attachment.id,
+    source: 'custom'
+  };
+
+  // Update component state immediately
+  const dataToSave = {
+    photo: localData.value.photo,
+    usePodsData: false,
+    shape: localData.value.shape,
+    size: localData.value.size
+  };
+
+  store.updateComponent(props.componentId, { data: dataToSave });
+  store.isDirty = true;
+
+  if (window.gmkbDebug || window.gmkbData?.debugMode) {
+    console.log('✅ Profile Photo: Upload complete, component updated');
   }
 };
 

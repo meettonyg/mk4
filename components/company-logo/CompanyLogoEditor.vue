@@ -23,22 +23,14 @@
 
           <!-- Upload Button -->
           <div class="field-group">
-            <button
-              @click="handleUploadLogo"
-              :disabled="isUploading"
-              class="upload-btn"
-              type="button"
-            >
-              <span v-if="isUploading">Selecting logo...</span>
-              <span v-else>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="17 8 12 3 7 8"></polyline>
-                  <line x1="12" y1="3" x2="12" y2="15"></line>
-                </svg>
-                Upload Logo
-              </span>
-            </button>
+            <MediaUploader
+              ref="mediaUploaderRef"
+              label="Upload Logo"
+              :multiple="false"
+              :accepted-types="['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']"
+              :max-size="10 * 1024 * 1024"
+              @select="handleMediaSelect"
+            />
             <p class="field-hint">Upload or select from media library</p>
           </div>
 
@@ -98,9 +90,8 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { useMediaKitStore } from '@/stores/mediaKit';
-// jQuery-Free: Using modern REST API uploader instead of WordPress Media Library
-import { useModernMediaUploader } from '@composables/useModernMediaUploader';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
+import MediaUploader from '@/vue/components/shared/MediaUploader.vue';
 // PHASE 5: Profile branding integration
 import ProfileImagePicker from '@/vue/components/shared/ProfileImagePicker.vue';
 
@@ -114,11 +105,12 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 const store = useMediaKitStore();
-// jQuery-Free: Using modern uploader with direct REST API calls
-const { selectAndUploadImage, isUploading } = useModernMediaUploader();
 
 // Active tab state
 const activeTab = ref('content');
+
+// Media uploader ref
+const mediaUploaderRef = ref(null);
 
 const localData = ref({
   logo: {
@@ -182,37 +174,16 @@ const updateLogoAndSave = (logoData) => {
   store.isDirty = true;
 };
 
-// Handle logo upload - jQuery-Free Implementation
-const handleUploadLogo = async () => {
-  try {
-    // Open file selector and upload via REST API
-    const attachment = await selectAndUploadImage({
-      accept: 'image/*',
-      multiple: false
-    });
+// Handle media selection from MediaUploader
+const handleMediaSelect = (attachment) => {
+  if (!attachment) return;
 
-    if (!attachment) {
-      return; // User cancelled
-    }
-
-    updateLogoAndSave({
-      url: attachment.url,
-      alt: attachment.alt || 'Company Logo',
-      id: attachment.id,
-      type: 'company'
-    });
-
-  } catch (error) {
-    console.error('❌ Company Logo: Upload failed', error);
-    if (error.message && !error.message.includes('No file selected')) {
-      const errorMessage = 'Failed to upload logo: ' + error.message;
-      if (window.GMKB?.services?.toast) {
-        window.GMKB.services.toast.show(errorMessage, 'error');
-      } else {
-        alert(errorMessage);
-      }
-    }
-  }
+  updateLogoAndSave({
+    url: attachment.url,
+    alt: attachment.alt || 'Company Logo',
+    id: attachment.id,
+    type: 'company'
+  });
 };
 
 /**
