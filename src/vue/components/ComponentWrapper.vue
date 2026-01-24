@@ -491,9 +491,8 @@ function handleKeydown(event) {
   /* All styling applied via inline styles from ComponentStyleService */
   /* Background, padding, border, typography, effects, etc. */
   display: block;
-  border-radius: 8px;
-  overflow: hidden;
-  /* Ensure component content stays below edit-hint overlay (z-index: 100) */
+  /* NO default border-radius or overflow - these create visual artifacts on frontend */
+  /* These styles should only be applied via ComponentStyleService when explicitly set */
   position: relative;
   z-index: 1;
 }

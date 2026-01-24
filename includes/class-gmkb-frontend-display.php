@@ -131,6 +131,20 @@ class GMKB_Frontend_Display {
             if ($wrapper->hasAttribute('tabindex')) {
                 $wrapper->removeAttribute('tabindex');
             }
+
+            // Clean up aria-label to remove builder-specific text
+            if ($wrapper->hasAttribute('aria-label')) {
+                $aria_label = $wrapper->getAttribute('aria-label');
+                // Remove "Press Enter to edit." and similar builder instructions
+                $aria_label = preg_replace('/\s*Press Enter to edit\.?\s*/', '', $aria_label);
+                $aria_label = preg_replace('/\s*Click to edit\.?\s*/', '', $aria_label);
+                $aria_label = trim($aria_label);
+                if (!empty($aria_label)) {
+                    $wrapper->setAttribute('aria-label', $aria_label);
+                } else {
+                    $wrapper->removeAttribute('aria-label');
+                }
+            }
         }
 
         // Extract the inner HTML from our wrapper
