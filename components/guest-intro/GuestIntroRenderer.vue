@@ -1,10 +1,13 @@
 <template>
-  <!-- ROOT FIX: Simplified renderer for introduction-only component -->
   <div class="gmkb-component gmkb-component--guestintro" :data-component-id="componentId">
     <div class="intro-container">
       <div class="intro-content">
-        <div v-if="displayIntroduction" class="intro-text" v-html="formattedIntro"></div>
-        <p v-else-if="showPlaceholder" class="intro-text intro-text--placeholder">Add your guest introduction here.</p>
+        <template v-if="showPlaceholder">
+          <p class="intro-text intro-text--placeholder">Add your guest introduction here.</p>
+        </template>
+        <template v-else>
+          <div v-if="displayIntroduction" class="intro-text" v-html="formattedIntro"></div>
+        </template>
       </div>
     </div>
   </div>

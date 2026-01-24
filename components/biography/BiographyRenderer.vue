@@ -1,12 +1,14 @@
 <template>
-  <!-- ROOT FIX: Use design system classes -->
-  <!-- SIMPLIFIED: Biography component displays ONLY biography text -->
   <div class="gmkb-component gmkb-component--biography" :data-component-id="componentId">
     <div class="component-root biography-content">
-      <div v-if="biography" class="biography-text" v-html="formattedBio"></div>
-      <p v-else-if="showPlaceholder" class="biography-placeholder">
-        Add your full biography and professional background here.
-      </p>
+      <template v-if="showPlaceholder">
+        <p class="biography-placeholder">
+          Add your full biography and professional background here.
+        </p>
+      </template>
+      <template v-else>
+        <div v-if="biography" class="biography-text" v-html="formattedBio"></div>
+      </template>
     </div>
   </div>
 </template>
