@@ -5,7 +5,7 @@
     :show-typography="false"
     :active-tab="activeTab"
     @update:active-tab="activeTab = $event"
-    @back="handleBack"
+    @close="handleClose"
   >
     <template #content>
       <div class="content-fields">
@@ -189,7 +189,7 @@ const handleMediaSelect = (attachment) => {
   store.isDirty = true;
 };
 
-const handleBack = () => emit('close');
+const handleClose = () => emit('close');
 
 /**
  * PHASE 5: Handle selection from profile branding logos

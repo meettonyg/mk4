@@ -5,7 +5,7 @@
     :show-typography="true"
     :active-tab="activeTab"
     @update:active-tab="activeTab = $event"
-    @back="handleBack"
+    @close="handleClose"
   >
     <template #content>
       <div class="content-fields">
@@ -141,7 +141,7 @@ const updateComponent = () => {
   }, 300);
 };
 
-const handleBack = () => emit('close');
+const handleClose = () => emit('close');
 </script>
 
 <style scoped>

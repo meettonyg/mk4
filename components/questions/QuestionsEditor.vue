@@ -5,7 +5,7 @@
     :show-typography="true"
     :active-tab="activeTab"
     @update:active-tab="activeTab = $event"
-    @back="handleBack"
+    @close="handleClose"
   >
     <!-- Content Tab -->
     <template #content>
@@ -251,7 +251,7 @@ const updateComponent = () => {
   }, 300);
 };
 
-const handleBack = () => emit('close');
+const handleClose = () => emit('close');
 
 // Handle AI content applied
 const handleAiApplied = (data) => {

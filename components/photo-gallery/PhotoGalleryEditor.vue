@@ -5,7 +5,7 @@
     :show-typography="true"
     :active-tab="activeTab"
     @update:active-tab="activeTab = $event"
-    @back="handleBack"
+    @close="handleClose"
   >
     <template #content>
       <div class="content-fields">
@@ -544,7 +544,7 @@ const savePhotosToPods = async () => {
   }
 };
 
-const handleBack = () => emit('close');
+const handleClose = () => emit('close');
 
 // Computed property for current crop image URL
 const currentCropImageUrl = computed(() => {
