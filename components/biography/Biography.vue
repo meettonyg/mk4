@@ -3,8 +3,8 @@
   <!-- SIMPLIFIED: Biography text only - other fields moved to separate components -->
   <div class="component-root biography-component">
     <div v-if="biography" class="biography-text" v-html="formattedBiography"></div>
-    <div v-else class="biography-placeholder">
-      <p>No biography available.</p>
+    <div v-else-if="showPlaceholder" class="biography-placeholder">
+      <p>Add your biography here.</p>
     </div>
   </div>
 </template>
@@ -36,6 +36,10 @@ const props = defineProps({
   isSelected: {
     type: Boolean,
     default: false
+  },
+  isBuilderMode: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -43,6 +47,11 @@ const props = defineProps({
 const biography = computed(() => {
   return props.data?.biography || props.props?.biography ||
          props.data?.bio || props.props?.bio || '';
+});
+
+// Show placeholder when in builder mode with no biography
+const showPlaceholder = computed(() => {
+  return !biography.value && (props.isBuilderMode || props.isEditing || props.isSelected);
 });
 
 // Format biography text
