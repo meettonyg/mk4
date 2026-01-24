@@ -70,6 +70,82 @@ class GMKB_Frontend_Display {
     }
 
     /**
+     * Sanitize pre-rendered HTML for frontend display
+     *
+     * Removes builder-only UI elements that shouldn't appear on the public frontend:
+     * - Elements with data-builder-only attribute
+     * - Elements with edit-hint class (Click to edit overlays)
+     * - Component control elements
+     * - Builder state classes (is-selected, is-hovered, is-editing)
+     *
+     * @param string $html Pre-rendered HTML from builder
+     * @return string Sanitized HTML safe for frontend display
+     */
+    private function sanitize_prerendered_html($html) {
+        if (empty($html)) {
+            return $html;
+        }
+
+        // Use DOMDocument for reliable HTML manipulation
+        $doc = new DOMDocument();
+
+        // Suppress warnings for HTML5 elements and load the HTML
+        libxml_use_internal_errors(true);
+        $doc->loadHTML(
+            '<?xml encoding="UTF-8"><div id="gmkb-sanitize-wrapper">' . $html . '</div>',
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+        );
+        libxml_clear_errors();
+
+        $xpath = new DOMXPath($doc);
+
+        // Remove elements with data-builder-only attribute
+        $builder_only = $xpath->query('//*[@data-builder-only]');
+        foreach ($builder_only as $element) {
+            $element->parentNode->removeChild($element);
+        }
+
+        // Remove elements with edit-hint class (handles old saves without data-builder-only)
+        $edit_hints = $xpath->query('//*[contains(@class, "edit-hint")]');
+        foreach ($edit_hints as $element) {
+            $element->parentNode->removeChild($element);
+        }
+
+        // Remove component-controls elements
+        $controls = $xpath->query('//*[contains(@class, "component-controls")]');
+        foreach ($controls as $element) {
+            $element->parentNode->removeChild($element);
+        }
+
+        // Clean up builder state classes from component wrappers
+        $wrappers = $xpath->query('//*[@data-component-wrapper]');
+        foreach ($wrappers as $wrapper) {
+            $class = $wrapper->getAttribute('class');
+            // Remove builder-specific state classes
+            $class = preg_replace('/\b(is-selected|is-hovered|is-editing|component-wrapper--selected|component-wrapper--hovering|component-wrapper--editing)\b/', '', $class);
+            // Clean up extra spaces
+            $class = preg_replace('/\s+/', ' ', trim($class));
+            $wrapper->setAttribute('class', $class);
+
+            // Remove builder-specific tabindex
+            if ($wrapper->hasAttribute('tabindex')) {
+                $wrapper->removeAttribute('tabindex');
+            }
+        }
+
+        // Extract the inner HTML from our wrapper
+        $wrapper = $doc->getElementById('gmkb-sanitize-wrapper');
+        $sanitized = '';
+        if ($wrapper) {
+            foreach ($wrapper->childNodes as $child) {
+                $sanitized .= $doc->saveHTML($child);
+            }
+        }
+
+        return $sanitized;
+    }
+
+    /**
      * Render the media kit shortcode
      *
      * @param array $atts Shortcode attributes
@@ -139,7 +215,7 @@ class GMKB_Frontend_Display {
             <?php $this->inject_component_css($post_id); ?>
 
             <div class="gmkb-prerendered-content">
-                <?php echo $pre_rendered_html; ?>
+                <?php echo $this->sanitize_prerendered_html($pre_rendered_html); ?>
             </div>
 
         </div>
@@ -194,7 +270,7 @@ class GMKB_Frontend_Display {
             <?php $this->inject_component_css($post_id); ?>
 
             <div class="gmkb-prerendered-content">
-                <?php echo $pre_rendered_html; ?>
+                <?php echo $this->sanitize_prerendered_html($pre_rendered_html); ?>
             </div>
 
         </div>
