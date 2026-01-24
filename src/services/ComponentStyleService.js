@@ -212,6 +212,8 @@ class ComponentStyleService {
 
   /**
    * Generate CSS string from settings
+   * CRITICAL: Only generate CSS for values that have been EXPLICITLY customized.
+   * Default/inherited values should NOT generate CSS - they should inherit from theme.
    * @param {string} componentId - Component ID
    * @param {Object} settings - Settings object
    * @returns {string} CSS string
@@ -224,7 +226,7 @@ class ComponentStyleService {
       }
       return '';
     }
-    
+
     const { style, advanced } = settings;
     // Only skip if BOTH style AND advanced are missing
     // Components may have just style or just advanced settings
@@ -247,11 +249,11 @@ class ComponentStyleService {
     // Generate CSS for both selectors to ensure styles work everywhere
     const builderWrapperSelector = `.component-wrapper[data-component-id="${componentId}"]`;
     const builderComponentSelector = `.component-wrapper[data-component-id="${componentId}"] .component-root`;
-    
+
     // Frontend uses different class names
     const frontendWrapperSelector = `.gmkb-component[data-component-id="${componentId}"]`;
     const frontendComponentSelector = `.gmkb-component[data-component-id="${componentId}"] .component-root`;
-    
+
     // Combine selectors with comma for both environments
     const wrapperSelector = `${builderWrapperSelector}, ${frontendWrapperSelector}`;
     const componentSelector = `${builderComponentSelector}, ${frontendComponentSelector}`;
@@ -261,34 +263,38 @@ class ComponentStyleService {
     const componentRules = []; // For background, padding, border, typography, effects
 
     // Spacing (margin & padding) - Apply strategically
+    // CRITICAL: Only apply if values are non-zero (user explicitly set them)
     if (safeStyle.spacing) {
       if (safeStyle.spacing.margin) {
         const m = safeStyle.spacing.margin;
-        wrapperRules.push(`margin: ${m.top}${m.unit} ${m.right}${m.unit} ${m.bottom}${m.unit} ${m.left}${m.unit}`);
+        const hasMargin = m.top || m.right || m.bottom || m.left;
+        if (hasMargin) {
+          wrapperRules.push(`margin: ${m.top}${m.unit} ${m.right}${m.unit} ${m.bottom}${m.unit} ${m.left}${m.unit}`);
+        }
       }
       if (safeStyle.spacing.padding) {
         const p = safeStyle.spacing.padding;
-        componentRules.push(`padding: ${p.top}${p.unit} ${p.right}${p.unit} ${p.bottom}${p.unit} ${p.left}${p.unit}`);
+        const hasPadding = p.top || p.right || p.bottom || p.left;
+        if (hasPadding) {
+          componentRules.push(`padding: ${p.top}${p.unit} ${p.right}${p.unit} ${p.bottom}${p.unit} ${p.left}${p.unit}`);
+        }
       }
     }
 
     // Background - Apply to component root
+    // CRITICAL: Only apply if user set a NON-default color (not white/transparent)
     if (safeStyle.background) {
       if (safeStyle.background.color) {
-        // CRITICAL FIX: Use CSS variable fallback for theme support
-        // If component has custom color, use it
-        // If not, fall back to theme variable
         const bgColor = this.htmlDecode(safeStyle.background.color);
-        
-        // Only apply background if it's not the theme's default background
-        // This allows theme colors to show through
-        if (bgColor && bgColor !== 'transparent' && bgColor !== '#ffffff') {
+        // Skip default/theme colors - let component inherit from theme
+        const isDefaultColor = !bgColor ||
+                              bgColor === 'transparent' ||
+                              bgColor === '#ffffff' ||
+                              bgColor === '#FFFFFF' ||
+                              bgColor === 'rgb(255, 255, 255)' ||
+                              bgColor === 'rgba(255, 255, 255, 1)';
+        if (!isDefaultColor) {
           componentRules.push(`background-color: ${bgColor} !important`);
-        } else {
-          // CRITICAL FIX: Use surface (component bg) not background (page bg)!
-          // background = page background
-          // surface = component/card background
-          componentRules.push(`background-color: var(--gmkb-color-surface, ${bgColor}) !important`);
         }
       }
       if (safeStyle.background.opacity !== undefined && safeStyle.background.opacity !== 100) {
@@ -297,73 +303,112 @@ class ComponentStyleService {
     }
 
     // Typography (if present) - Apply to component root
-    // CRITICAL FIX: Add !important to override component-specific styles
+    // CRITICAL: Only apply NON-default values
     if (safeStyle.typography) {
       const t = safeStyle.typography;
-      // ROOT FIX: Format font family with proper CSS quotes
+
+      // Font family - skip system defaults
       if (t.fontFamily) {
         const fontFamily = this.formatFontFamily(t.fontFamily);
-        componentRules.push(`font-family: ${fontFamily} !important`);
-      }
-      if (t.fontSize) componentRules.push(`font-size: ${t.fontSize.value}${t.fontSize.unit} !important`);
-      if (t.fontWeight) componentRules.push(`font-weight: ${t.fontWeight} !important`);
-      
-      // ROOT FIX: Handle lineHeight object/value properly
-      if (t.lineHeight) {
-        if (typeof t.lineHeight === 'object' && t.lineHeight.value !== undefined) {
-          // Object format: { value: 1.6, unit: 'unitless' }
-          const lineHeightValue = t.lineHeight.unit === 'unitless' 
-            ? t.lineHeight.value  // No unit for unitless
-            : `${t.lineHeight.value}${t.lineHeight.unit}`; // Add unit
-          componentRules.push(`line-height: ${lineHeightValue} !important`);
-        } else if (typeof t.lineHeight === 'number' || typeof t.lineHeight === 'string') {
-          // Simple value: 1.6 or '1.6' or '24px'
-          componentRules.push(`line-height: ${t.lineHeight} !important`);
+        const isDefaultFont = fontFamily === 'inherit' ||
+                             fontFamily === 'system-ui, -apple-system, sans-serif' ||
+                             fontFamily.includes('system-ui');
+        if (!isDefaultFont) {
+          componentRules.push(`font-family: ${fontFamily} !important`);
         }
-        // Otherwise skip invalid lineHeight
       }
-      
-      // ROOT FIX: HTML decode color to prevent double-encoding
-      // CRITICAL FIX: Use theme CSS variable as fallback
+
+      // Font size - skip common defaults (14-16px)
+      if (t.fontSize) {
+        const sizeValue = t.fontSize.value;
+        const isDefaultSize = !sizeValue || sizeValue === 16 || sizeValue === 14;
+        if (!isDefaultSize) {
+          componentRules.push(`font-size: ${t.fontSize.value}${t.fontSize.unit} !important`);
+        }
+      }
+
+      // Font weight - skip normal (400)
+      if (t.fontWeight && t.fontWeight !== 400 && t.fontWeight !== '400' && t.fontWeight !== 'normal') {
+        componentRules.push(`font-weight: ${t.fontWeight} !important`);
+      }
+
+      // Line height - skip common defaults (1.5-1.6)
+      if (t.lineHeight) {
+        let lineHeightValue;
+        if (typeof t.lineHeight === 'object' && t.lineHeight.value !== undefined) {
+          lineHeightValue = t.lineHeight.unit === 'unitless'
+            ? t.lineHeight.value
+            : `${t.lineHeight.value}${t.lineHeight.unit}`;
+        } else if (typeof t.lineHeight === 'number' || typeof t.lineHeight === 'string') {
+          lineHeightValue = t.lineHeight;
+        }
+
+        // Skip default line heights
+        const isDefaultLineHeight = !lineHeightValue ||
+                                   lineHeightValue === 1.5 ||
+                                   lineHeightValue === 1.6 ||
+                                   lineHeightValue === '1.5' ||
+                                   lineHeightValue === '1.6';
+        if (!isDefaultLineHeight) {
+          componentRules.push(`line-height: ${lineHeightValue} !important`);
+        }
+      }
+
+      // Text color - skip default dark colors
       if (t.color) {
         const textColor = this.htmlDecode(t.color);
-        // Only apply custom color if it's different from theme defaults
-        if (textColor && textColor !== '#1e293b' && textColor !== '#000000') {
+        const isDefaultColor = !textColor ||
+                              textColor === '#1e293b' ||
+                              textColor === '#000000' ||
+                              textColor === 'rgb(30, 41, 59)' ||
+                              textColor === 'inherit';
+        if (!isDefaultColor) {
           componentRules.push(`color: ${textColor} !important`);
-        } else {
-          // Use theme variable as fallback
-          componentRules.push(`color: var(--gmkb-color-text, ${textColor}) !important`);
         }
       }
-      if (t.textAlign) componentRules.push(`text-align: ${t.textAlign} !important`);
+
+      // Text align - skip left (default)
+      if (t.textAlign && t.textAlign !== 'left') {
+        componentRules.push(`text-align: ${t.textAlign} !important`);
+      }
     }
 
     // Border - Apply to component root
+    // CRITICAL: Only apply if border width is non-zero
     if (safeStyle.border) {
       const b = safeStyle.border;
-      
-      // Border width
+
+      // Border width - only if actually has width
       if (b.width) {
         const hasWidth = b.width.top || b.width.right || b.width.bottom || b.width.left;
         if (hasWidth) {
           componentRules.push(`border-width: ${b.width.top}${b.width.unit} ${b.width.right}${b.width.unit} ${b.width.bottom}${b.width.unit} ${b.width.left}${b.width.unit}`);
-          // ROOT FIX: HTML decode color to prevent double-encoding
           if (b.color) componentRules.push(`border-color: ${this.htmlDecode(b.color)}`);
           if (b.style) componentRules.push(`border-style: ${b.style}`);
         }
       }
-      
-      // Border radius
+
+      // Border radius - only if non-zero
       if (b.radius) {
-        componentRules.push(`border-radius: ${b.radius.topLeft}${b.radius.unit} ${b.radius.topRight}${b.radius.unit} ${b.radius.bottomRight}${b.radius.unit} ${b.radius.bottomLeft}${b.radius.unit}`);
+        const hasRadius = b.radius.topLeft || b.radius.topRight || b.radius.bottomRight || b.radius.bottomLeft;
+        if (hasRadius) {
+          componentRules.push(`border-radius: ${b.radius.topLeft}${b.radius.unit} ${b.radius.topRight}${b.radius.unit} ${b.radius.bottomRight}${b.radius.unit} ${b.radius.bottomLeft}${b.radius.unit}`);
+        }
       }
     }
 
     // Effects - Apply to component root
-    // CRITICAL FIX: Add !important to override component-specific styles
+    // CRITICAL: Only apply if explicitly set and not 'none'
     if (safeStyle.effects) {
-      if (safeStyle.effects.boxShadow && safeStyle.effects.boxShadow !== 'none') {
-        componentRules.push(`box-shadow: ${safeStyle.effects.boxShadow} !important`);
+      if (safeStyle.effects.boxShadow &&
+          safeStyle.effects.boxShadow !== 'none' &&
+          safeStyle.effects.boxShadow !== '0 0 0 rgba(0,0,0,0)') {
+        // Skip subtle default shadows that look like borders
+        const isDefaultShadow = safeStyle.effects.boxShadow.includes('0 2px 4px rgba(0,0,0,0.05)') ||
+                               safeStyle.effects.boxShadow.includes('0 1px 2px');
+        if (!isDefaultShadow) {
+          componentRules.push(`box-shadow: ${safeStyle.effects.boxShadow} !important`);
+        }
       }
       if (safeStyle.effects.opacity !== undefined && safeStyle.effects.opacity !== 100) {
         componentRules.push(`opacity: ${safeStyle.effects.opacity / 100} !important`);
@@ -373,7 +418,7 @@ class ComponentStyleService {
     // Advanced - Layout (apply to wrapper)
     if (safeAdvanced.layout) {
       const layout = safeAdvanced.layout;
-      
+
       // Width
       if (layout.width) {
         if (layout.width.type === 'full') {
@@ -383,7 +428,7 @@ class ComponentStyleService {
         }
         // 'auto' doesn't need explicit CSS
       }
-      
+
       // Object Alignment (container positioning)
       if (layout.alignment) {
         if (layout.alignment === 'center') {
@@ -394,10 +439,9 @@ class ComponentStyleService {
         }
         // 'left' is default
       }
-      
-      // ROOT FIX: Text Alignment (text content alignment)
-      // This is separate from object positioning
-      if (layout.textAlign) {
+
+      // Text Alignment - only if not left (default)
+      if (layout.textAlign && layout.textAlign !== 'left') {
         componentRules.push(`text-align: ${layout.textAlign} !important`);
       }
     }
@@ -407,7 +451,7 @@ class ComponentStyleService {
     if (wrapperRules.length > 0) {
       rules.push(`${wrapperSelector} { ${wrapperRules.join('; ')}; }`);
     }
-    
+
     // Apply component rules (background, padding, border, typography, effects)
     if (componentRules.length > 0) {
       rules.push(`${componentSelector} { ${componentRules.join('; ')}; }`);
@@ -416,17 +460,17 @@ class ComponentStyleService {
     // Responsive visibility
     if (safeAdvanced.responsive) {
       const resp = safeAdvanced.responsive;
-      
+
       // Mobile (max-width: 767px)
       if (resp.hideOnMobile) {
         rules.push(`@media (max-width: 767px) { ${wrapperSelector} { display: none !important; } }`);
       }
-      
+
       // Tablet (768px - 1024px)
       if (resp.hideOnTablet) {
         rules.push(`@media (min-width: 768px) and (max-width: 1024px) { ${wrapperSelector} { display: none !important; } }`);
       }
-      
+
       // Desktop (min-width: 1025px)
       if (resp.hideOnDesktop) {
         rules.push(`@media (min-width: 1025px) { ${wrapperSelector} { display: none !important; } }`);
