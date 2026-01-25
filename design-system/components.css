@@ -50,7 +50,8 @@
   margin-bottom: 0;
 }
 
-/* Component States - Enhanced with better visual feedback */
+/* Component States - Builder-only visual feedback */
+/* These states (.is-editing, .is-dragging) only exist in the builder */
 .gmkb-component.is-editing {
   outline: var(--gmkb-border-width-medium) solid var(--gmkb-color-primary);
   outline-offset: var(--gmkb-border-width-medium);
@@ -65,9 +66,8 @@
   box-shadow: var(--gmkb-shadow-xl);
 }
 
-.gmkb-component:hover:not(.is-dragging) {
-  box-shadow: var(--gmkb-shadow-md);
-}
+/* REMOVED: Hover shadow was applying to frontend - components should not have
+   automatic hover effects unless explicitly configured via ComponentStyleService */
 
 /* ==========================================
    HERO COMPONENT
@@ -239,19 +239,12 @@
 
 .gmkb-component--topics,
 .topics-component {
-  padding: var(--gmkb-space-10);
-  background: var(--gmkb-color-surface-elevated);
-  border-radius: var(--gmkb-radius-lg);
-  border: 1px solid var(--gmkb-color-border);
-  box-shadow: var(--gmkb-shadow-base);
+  /* NO default visual styles - inherit from theme, apply via ComponentStyleService */
   transition: all var(--gmkb-transition-base);
 }
 
-.gmkb-component--topics:hover,
-.topics-component:hover {
-  box-shadow: var(--gmkb-shadow-md);
-  border-color: var(--gmkb-color-border-interactive);
-}
+/* REMOVED: Default background, border, box-shadow, and hover effects
+   Components should only have visual styling when explicitly configured */
 
 .topics-header {
   margin-bottom: var(--gmkb-space-6);
