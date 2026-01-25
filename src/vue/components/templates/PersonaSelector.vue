@@ -91,21 +91,22 @@ const personaDefinitions = {
 
 // Compute personas with template counts from actual data
 const personas = computed(() => {
-  const counts = {};
-
-  // Count templates per persona type
-  props.templates.forEach(template => {
+  // Count templates per persona type using reduce
+  const counts = props.templates.reduce((acc, template) => {
     const type = template.persona?.type;
     if (type) {
-      counts[type] = (counts[type] || 0) + 1;
+      acc[type] = (acc[type] || 0) + 1;
     }
-  });
+    return acc;
+  }, {});
 
-  // Build persona list with counts
-  return Object.entries(personaDefinitions).map(([type, definition]) => ({
-    ...definition,
-    templateCount: counts[type] || 0
-  })).filter(p => p.templateCount > 0); // Only show personas with templates
+  // Build persona list with counts, filtering to only show personas with templates
+  return Object.entries(personaDefinitions)
+    .map(([type, definition]) => ({
+      ...definition,
+      templateCount: counts[type] || 0
+    }))
+    .filter(p => p.templateCount > 0);
 });
 </script>
 
@@ -122,6 +123,7 @@ const personas = computed(() => {
   margin-bottom: 1.5rem;
 }
 
+/* Step badge - shared visual pattern with TemplateDirectory.vue for consistency */
 .step-badge {
   display: inline-block;
   padding: 0.375rem 1rem;
@@ -322,7 +324,9 @@ const personas = computed(() => {
     font-size: 1.25rem;
   }
 
-  .persona-card > div:last-child {
+  /* Hide description and count on mobile to save space */
+  .persona-card .persona-description,
+  .persona-card .persona-count {
     display: none;
   }
 }

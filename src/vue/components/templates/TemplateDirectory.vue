@@ -205,36 +205,46 @@ const layoutVariantFilters = computed(() => {
   return filters;
 });
 
-// Computed: Displayed templates based on current state
-const displayedTemplates = computed(() => {
-  let results = [...templateStore.templates];
+// Default sort order for templates without explicit sort_order
+const DEFAULT_SORT_ORDER = 100;
 
-  // Filter by persona (if not in view all mode)
+// Computed: Filter by persona (step 1)
+const personaFilteredTemplates = computed(() => {
   if (selectedPersona.value && !viewAllMode.value) {
-    results = results.filter(t => t.persona?.type === selectedPersona.value.type);
+    return templateStore.templates.filter(t => t.persona?.type === selectedPersona.value.type);
   }
+  return [...templateStore.templates];
+});
 
-  // Filter by layout variant
-  if (activeLayoutFilter.value !== 'all') {
-    results = results.filter(t => {
-      const variant = t.persona?.layout_variant || t.layout_variant || 'standard';
-      return variant === activeLayoutFilter.value;
-    });
+// Computed: Filter by layout variant (step 2)
+const layoutFilteredTemplates = computed(() => {
+  if (activeLayoutFilter.value === 'all') {
+    return personaFilteredTemplates.value;
   }
+  return personaFilteredTemplates.value.filter(t => {
+    const variant = t.persona?.layout_variant || t.layout_variant || 'standard';
+    return variant === activeLayoutFilter.value;
+  });
+});
 
-  // Filter by search query
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    results = results.filter(t =>
-      t.name?.toLowerCase().includes(query) ||
-      (t.description && t.description.toLowerCase().includes(query)) ||
-      (t.tags && t.tags.some(tag => tag.toLowerCase().includes(query)))
-    );
+// Computed: Filter by search query (step 3)
+const searchFilteredTemplates = computed(() => {
+  if (!searchQuery.value) {
+    return layoutFilteredTemplates.value;
   }
+  const query = searchQuery.value.toLowerCase();
+  return layoutFilteredTemplates.value.filter(t =>
+    t.name?.toLowerCase().includes(query) ||
+    (t.description && t.description.toLowerCase().includes(query)) ||
+    (t.tags && t.tags.some(tag => tag.toLowerCase().includes(query)))
+  );
+});
 
-  // Sort by sort_order
-  return results.sort((a, b) =>
-    (a.sort_order || a.metadata?.sort_order || 100) - (b.sort_order || b.metadata?.sort_order || 100)
+// Computed: Final sorted templates for display
+const displayedTemplates = computed(() => {
+  return [...searchFilteredTemplates.value].sort((a, b) =>
+    (a.sort_order || a.metadata?.sort_order || DEFAULT_SORT_ORDER) -
+    (b.sort_order || b.metadata?.sort_order || DEFAULT_SORT_ORDER)
   );
 });
 
@@ -409,6 +419,7 @@ watch(() => templateStore.searchQuery, (newVal) => {
   border-color: rgba(255, 255, 255, 0.3);
 }
 
+/* Step badge - shared visual pattern with PersonaSelector.vue for consistency */
 .step-badge {
   display: inline-block;
   padding: 0.375rem 1rem;
