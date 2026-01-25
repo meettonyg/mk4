@@ -15,8 +15,17 @@ class BrandKitService {
      * @type {string}
      * @private
      */
-    const apiRoot = window.wpApiSettings?.root || window.gmkbData?.apiRoot || '/wp-json/';
-    this._apiBase = `${apiRoot}gmkb/v2/brand-kits`;
+    // gmkbData.restUrl already includes the namespace (e.g., /wp-json/gmkb/v2/)
+    // gmkbData.apiSettings.apiUrl is the same
+    const restUrl = window.gmkbData?.restUrl || window.gmkbData?.apiSettings?.apiUrl;
+    if (restUrl) {
+      // restUrl is like "/wp-json/gmkb/v2/" - just append endpoint
+      this._apiBase = `${restUrl.replace(/\/$/, '')}/brand-kits`;
+    } else {
+      // Fallback to constructing from wpApiSettings or default
+      const apiRoot = window.wpApiSettings?.root || '/wp-json/';
+      this._apiBase = `${apiRoot}gmkb/v2/brand-kits`;
+    }
 
     /**
      * Cached brand kits
@@ -53,8 +62,13 @@ class BrandKitService {
    * @private
    */
   _getHeaders() {
-    // Try multiple sources for the nonce (different pages may use different globals)
-    const nonce = window.wpApiSettings?.nonce || window.gmkbData?.nonce || '';
+    // Try multiple sources for the REST API nonce
+    // gmkbData.restNonce or gmkbData.apiSettings.nonce is the correct WP REST API nonce
+    // wpApiSettings.nonce is standard WordPress REST API nonce
+    const nonce = window.gmkbData?.restNonce ||
+                  window.gmkbData?.apiSettings?.nonce ||
+                  window.wpApiSettings?.nonce ||
+                  '';
 
     return {
       'Content-Type': 'application/json',
