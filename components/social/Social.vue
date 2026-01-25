@@ -201,7 +201,7 @@ const getSocialIcon = (platform) => {
 
 .social-link:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  /* box-shadow controlled by theme/ComponentStyleService when explicitly set */
   background: var(--primary-color, #3b82f6);
   color: white;
 }

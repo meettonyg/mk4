@@ -193,7 +193,7 @@ const showPlaceholders = computed(() => {
 }
 
 .contact-item:hover {
-  background: #e2e8f0;
+  background: var(--hover-bg, rgba(0, 0, 0, 0.05));
   transform: translateY(-2px);
 }
 

@@ -70,6 +70,120 @@ class GMKB_Frontend_Display {
     }
 
     /**
+     * Sanitize pre-rendered HTML for frontend display
+     *
+     * Removes builder-only UI elements that shouldn't appear on the public frontend:
+     * - Elements with data-builder-only attribute
+     * - Elements with edit-hint class (Click to edit overlays)
+     * - Component control elements
+     * - Builder state classes (is-selected, is-hovered, is-editing)
+     *
+     * @param string $html Pre-rendered HTML from builder
+     * @return string Sanitized HTML safe for frontend display
+     */
+    private function sanitize_prerendered_html($html) {
+        if (empty($html)) {
+            return $html;
+        }
+
+        // Use DOMDocument for reliable HTML manipulation
+        $doc = new DOMDocument();
+
+        // Suppress warnings for HTML5 elements and load the HTML
+        libxml_use_internal_errors(true);
+        $doc->loadHTML(
+            '<?xml encoding="UTF-8"><div id="gmkb-sanitize-wrapper">' . $html . '</div>',
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+        );
+        libxml_clear_errors();
+
+        $xpath = new DOMXPath($doc);
+
+        // Remove elements with data-builder-only attribute
+        $builder_only = $xpath->query('//*[@data-builder-only]');
+        foreach ($builder_only as $element) {
+            $element->parentNode->removeChild($element);
+        }
+
+        // Remove elements with edit-hint class (handles old saves without data-builder-only)
+        $edit_hints = $xpath->query('//*[contains(@class, "edit-hint")]');
+        foreach ($edit_hints as $element) {
+            $element->parentNode->removeChild($element);
+        }
+
+        // Remove component-controls elements
+        $controls = $xpath->query('//*[contains(@class, "component-controls")]');
+        foreach ($controls as $element) {
+            $element->parentNode->removeChild($element);
+        }
+
+        // Remove section controls (builder-only)
+        $section_controls = $xpath->query('//*[contains(@class, "gmkb-section-controls")]');
+        foreach ($section_controls as $element) {
+            $element->parentNode->removeChild($element);
+        }
+
+        // Remove section/column placeholders (builder-only)
+        $placeholders = $xpath->query('//*[contains(@class, "gmkb-section__placeholder")]');
+        foreach ($placeholders as $element) {
+            $element->parentNode->removeChild($element);
+        }
+
+        // Remove drop placeholders (builder-only)
+        $drop_placeholders = $xpath->query('//*[contains(@class, "drop-placeholder")]');
+        foreach ($drop_placeholders as $element) {
+            $element->parentNode->removeChild($element);
+        }
+
+        // Remove component error placeholders (builder-only debug elements)
+        $error_placeholders = $xpath->query('//*[contains(@class, "component-error-placeholder")]');
+        foreach ($error_placeholders as $element) {
+            $element->parentNode->removeChild($element);
+        }
+
+        // Clean up builder state classes from component wrappers
+        $wrappers = $xpath->query('//*[@data-component-wrapper]');
+        foreach ($wrappers as $wrapper) {
+            $class = $wrapper->getAttribute('class');
+            // Remove builder-specific state classes
+            $class = preg_replace('/\b(is-selected|is-hovered|is-editing|component-wrapper--selected|component-wrapper--hovering|component-wrapper--editing)\b/', '', $class);
+            // Clean up extra spaces
+            $class = preg_replace('/\s+/', ' ', trim($class));
+            $wrapper->setAttribute('class', $class);
+
+            // Remove builder-specific tabindex
+            if ($wrapper->hasAttribute('tabindex')) {
+                $wrapper->removeAttribute('tabindex');
+            }
+
+            // Clean up aria-label to remove builder-specific text
+            if ($wrapper->hasAttribute('aria-label')) {
+                $aria_label = $wrapper->getAttribute('aria-label');
+                // Remove "Press Enter to edit." and similar builder instructions
+                $aria_label = preg_replace('/\s*Press Enter to edit\.?\s*/', '', $aria_label);
+                $aria_label = preg_replace('/\s*Click to edit\.?\s*/', '', $aria_label);
+                $aria_label = trim($aria_label);
+                if (!empty($aria_label)) {
+                    $wrapper->setAttribute('aria-label', $aria_label);
+                } else {
+                    $wrapper->removeAttribute('aria-label');
+                }
+            }
+        }
+
+        // Extract the inner HTML from our wrapper
+        $wrapper = $doc->getElementById('gmkb-sanitize-wrapper');
+        $sanitized = '';
+        if ($wrapper) {
+            foreach ($wrapper->childNodes as $child) {
+                $sanitized .= $doc->saveHTML($child);
+            }
+        }
+
+        return $sanitized;
+    }
+
+    /**
      * Render the media kit shortcode
      *
      * @param array $atts Shortcode attributes
@@ -139,7 +253,7 @@ class GMKB_Frontend_Display {
             <?php $this->inject_component_css($post_id); ?>
 
             <div class="gmkb-prerendered-content">
-                <?php echo $pre_rendered_html; ?>
+                <?php echo $this->sanitize_prerendered_html($pre_rendered_html); ?>
             </div>
 
         </div>
@@ -194,7 +308,7 @@ class GMKB_Frontend_Display {
             <?php $this->inject_component_css($post_id); ?>
 
             <div class="gmkb-prerendered-content">
-                <?php echo $pre_rendered_html; ?>
+                <?php echo $this->sanitize_prerendered_html($pre_rendered_html); ?>
             </div>
 
         </div>

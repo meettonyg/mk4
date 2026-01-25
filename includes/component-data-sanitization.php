@@ -2,15 +2,21 @@
 /**
  * Component Data Sanitization Before Save
  *
- * PREVENTS DATABASE BLOAT by removing Pods data before saving
+ * UPDATED (2025-01-24): Pods enrichment has been deprecated. JSON state is now
+ * the single source of truth. This file NO LONGER strips content fields.
  *
- * Strategy:
+ * Current behavior:
+ * - Decodes HTML entities to prevent accumulation
+ * - Removes internal metadata fields only (_dataSource, podsDataLoaded, etc.)
+ * - PRESERVES all user content fields (biography, introduction, topics, etc.)
+ *
+ * Previous (deprecated) strategy that caused DATA LOSS:
  * - On LOAD: Enrich components with Pods data (temporary, in-memory only)
  * - On SAVE: Strip Pods data, save only component structure + user edits
  * - On DISPLAY: Always load fresh from Pods
  *
  * @package Guestify/MediaKit
- * @version 1.0.0
+ * @version 2.3.0
  */
 
 // Prevent direct access
@@ -27,20 +33,24 @@ add_filter('gmkb_before_save_media_kit_state', 'gmkb_sanitize_components_before_
 /**
  * Remove Pods data from components before saving to database
  *
- * This prevents database bloat by keeping only:
- * - Component structure (id, type)
- * - User customizations (props that differ from Pods)
- * - Component settings
+ * DEPRECATED (2025-01-24): This function previously stripped "Pods fields" from
+ * component data to prevent database bloat, assuming they would be re-enriched
+ * from Pods on load. However, Pods enrichment has been DISABLED (see REST API v2)
+ * and JSON state is now the single source of truth.
  *
- * Pods data will be re-loaded dynamically on each page load
+ * Stripping content fields (biography, introduction, etc.) now causes DATA LOSS
+ * because the data is never re-enriched.
+ *
+ * This function now only:
+ * - Decodes HTML entities to prevent accumulation
+ * - Removes metadata fields (_dataSource, podsDataLoaded, enrichmentTimestamp)
+ * - Does NOT strip content fields anymore
  *
  * @param array $state The media kit state about to be saved
  * @param int $post_id The post ID being saved to
- * @return array Cleaned state with Pods data removed
+ * @return array Cleaned state (content fields preserved)
  */
 function gmkb_sanitize_components_before_save($state, $post_id) {
-    $total_cleaned = 0;
-
     // Clean components in main components object
     if (isset($state['components']) && is_array($state['components'])) {
         foreach ($state['components'] as $comp_id => &$component) {
@@ -51,10 +61,9 @@ function gmkb_sanitize_components_before_save($state, $post_id) {
             // Decode HTML entities BEFORE saving to prevent accumulation
             gmkb_decode_html_entities_recursive($component);
 
-            $cleaned = gmkb_clean_component_pods_data($component);
-            if ($cleaned) {
-                $total_cleaned++;
-            }
+            // DEPRECATED: No longer strip content fields - JSON state is single source of truth
+            // Only clean metadata fields now
+            gmkb_clean_component_metadata_only($component);
         }
         unset($component); // Clear reference
     }
@@ -66,10 +75,8 @@ function gmkb_sanitize_components_before_save($state, $post_id) {
                 continue;
             }
 
-            $cleaned = gmkb_clean_component_pods_data($component);
-            if ($cleaned) {
-                $total_cleaned++;
-            }
+            // DEPRECATED: No longer strip content fields
+            gmkb_clean_component_metadata_only($component);
         }
         unset($component); // Clear reference
     }
@@ -78,73 +85,62 @@ function gmkb_sanitize_components_before_save($state, $post_id) {
 }
 
 /**
- * Clean Pods data from a single component
+ * Clean only metadata fields from a component (NOT content fields)
+ *
+ * IMPORTANT: This is the safe version that preserves user content.
+ * Only removes internal tracking metadata.
+ *
+ * @param array $component Component data (passed by reference)
+ * @return void
+ */
+function gmkb_clean_component_metadata_only(&$component) {
+    // Metadata fields to remove (internal tracking only, NOT content)
+    $metadata_fields = array(
+        '_dataSource',
+        'data_source',
+        'podsDataLoaded',
+        'enrichmentTimestamp',
+        '_prePopulated',  // Internal Vue flag
+    );
+
+    // Clean data object - metadata only
+    if (isset($component['data']) && is_array($component['data'])) {
+        foreach ($metadata_fields as $field) {
+            if (isset($component['data'][$field])) {
+                unset($component['data'][$field]);
+            }
+        }
+    }
+
+    // Clean props object - metadata only
+    if (isset($component['props']) && is_array($component['props'])) {
+        foreach ($metadata_fields as $field) {
+            if (isset($component['props'][$field])) {
+                unset($component['props'][$field]);
+            }
+        }
+    }
+
+    // Remove root-level metadata
+    unset($component['_usesPods']);
+    unset($component['_podsType']);
+}
+
+/**
+ * DEPRECATED: Clean Pods data from a single component
+ *
+ * @deprecated 2.3.0 Use gmkb_clean_component_metadata_only() instead.
+ *             This function stripped content fields which caused data loss
+ *             after Pods enrichment was disabled.
  *
  * @param array $component Component data (passed by reference)
  * @return bool True if data was cleaned
  */
 function gmkb_clean_component_pods_data(&$component) {
-    $cleaned = false;
-    $type = $component['type'] ?? 'unknown';
-
-    // Fields to remove based on component type
-    $pods_fields_to_remove = gmkb_get_pods_fields_by_component_type($type);
-
-    if (empty($pods_fields_to_remove)) {
-        return false; // No Pods fields for this component type
-    }
-
-    // Clean data object
-    if (isset($component['data']) && is_array($component['data'])) {
-        foreach ($pods_fields_to_remove as $field) {
-            if (isset($component['data'][$field])) {
-                unset($component['data'][$field]);
-                $cleaned = true;
-            }
-        }
-
-        // Also remove meta fields
-        if (isset($component['data']['_dataSource'])) {
-            unset($component['data']['_dataSource']);
-        }
-        if (isset($component['data']['data_source'])) {
-            unset($component['data']['data_source']);
-        }
-        if (isset($component['data']['podsDataLoaded'])) {
-            unset($component['data']['podsDataLoaded']);
-        }
-        if (isset($component['data']['enrichmentTimestamp'])) {
-            unset($component['data']['enrichmentTimestamp']);
-        }
-    }
-
-    // Clean props object (same fields)
-    if (isset($component['props']) && is_array($component['props'])) {
-        foreach ($pods_fields_to_remove as $field) {
-            if (isset($component['props'][$field])) {
-                unset($component['props'][$field]);
-                $cleaned = true;
-            }
-        }
-
-        // Remove meta fields from props too
-        if (isset($component['props']['data_source'])) {
-            unset($component['props']['data_source']);
-        }
-        if (isset($component['props']['podsDataLoaded'])) {
-            unset($component['props']['podsDataLoaded']);
-        }
-        if (isset($component['props']['enrichmentTimestamp'])) {
-            unset($component['props']['enrichmentTimestamp']);
-        }
-    }
-
-    // Add marker that this component uses Pods
-    // This tells the system to re-enrich on load
-    $component['_usesPods'] = true;
-    $component['_podsType'] = $type;
-
-    return $cleaned;
+    // DEPRECATED: Now just calls the safe metadata-only cleaner
+    // Content fields are no longer stripped to prevent data loss
+    gmkb_clean_component_metadata_only($component);
+    return false;
 }
 
 /**
@@ -188,12 +184,22 @@ function gmkb_decode_html_entities_recursive(&$data) {
 }
 
 /**
- * Get list of Pods fields to remove for each component type
+ * DEPRECATED: Get list of Pods fields to remove for each component type
+ *
+ * @deprecated 2.3.0 This function is no longer used. Content fields should NOT be stripped
+ *             as JSON state is now the single source of truth.
  *
  * @param string $type Component type
- * @return array List of field names to remove
+ * @return array Empty array - content fields are no longer stripped
  */
 function gmkb_get_pods_fields_by_component_type($type) {
+    // DEPRECATED: Return empty array to prevent data loss
+    // Content fields (biography, introduction, etc.) must be preserved
+    // since Pods enrichment has been disabled.
+    return array();
+
+    // --- ORIGINAL CODE BELOW (kept for reference) ---
+    /*
     $pods_fields_map = array(
         'biography' => array(
             'biography',
@@ -277,22 +283,19 @@ function gmkb_get_pods_fields_by_component_type($type) {
     );
 
     return $pods_fields_map[$type] ?? array();
+    */
 }
 
 /**
- * Also add marker to new components when they're created
- * This ensures they get enriched even if never saved before
+ * DEPRECATED: Add marker to new components when they're created
+ *
+ * @deprecated 2.3.0 Pods enrichment has been disabled. This filter is now a no-op.
  */
 add_filter('gmkb_prepare_new_component', 'gmkb_mark_component_uses_pods', 10, 2);
 
 function gmkb_mark_component_uses_pods($component, $type) {
-    // Check if this component type uses Pods data
-    $pods_fields = gmkb_get_pods_fields_by_component_type($type);
-
-    if (!empty($pods_fields)) {
-        $component['_usesPods'] = true;
-        $component['_podsType'] = $type;
-    }
-
+    // DEPRECATED: Pods enrichment has been disabled
+    // JSON state is now the single source of truth
+    // No need to mark components for Pods enrichment
     return $component;
 }

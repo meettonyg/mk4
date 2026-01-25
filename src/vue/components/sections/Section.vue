@@ -4,8 +4,9 @@
     :class="sectionClass"
     :data-section-id="sectionId"
   >
-    <SectionControls 
+    <SectionControls
       v-if="isEditing"
+      data-builder-only
       @duplicate="$emit('duplicate')"
       @remove="$emit('remove')"
       @settings="openSectionSettings"
@@ -53,9 +54,10 @@
             </template>
           </draggable>
 
-          <div 
-            v-if="column.components.length === 0" 
+          <div
+            v-if="column.components.length === 0"
             class="drop-placeholder gmkb-section__content--droppable"
+            data-builder-only
             :data-section-id="sectionId"
             :data-column="index + 1"
           >
