@@ -5,6 +5,13 @@
  * Serves the /templates page as a Vue-powered template picker.
  * PHP provides a thin shell; Vue handles all UI rendering.
  *
+ * SEO-friendly URLs:
+ * - /templates/                     - Persona selection (Step 1)
+ * - /templates/authors-writers/     - Author/Writer templates
+ * - /templates/podcast-guests/      - Podcast Guest templates
+ * - /templates/speakers-coaches/    - Speaker/Coach templates
+ * - /templates/business-professionals/ - Business templates
+ *
  * @package GMKB
  * @since 3.0.0
  */
@@ -16,6 +23,33 @@ if (!defined('ABSPATH')) {
 class GMKB_Template_Pages {
 
     private static $instance = null;
+
+    /**
+     * Valid persona slugs mapped to their display info
+     * Slugs use hyphens for URLs, types use underscores internally
+     */
+    private static $persona_map = array(
+        'authors-writers' => array(
+            'type' => 'author',
+            'label' => 'Authors & Writers',
+            'description' => 'Media kit templates designed for authors, writers, and literary professionals.',
+        ),
+        'podcast-guests' => array(
+            'type' => 'podcast_guest',
+            'label' => 'Podcast Guests',
+            'description' => 'Media kit templates for podcast guests and interview subjects.',
+        ),
+        'speakers-coaches' => array(
+            'type' => 'speaker',
+            'label' => 'Speakers & Coaches',
+            'description' => 'Media kit templates for speakers, coaches, and consultants.',
+        ),
+        'business-professionals' => array(
+            'type' => 'business',
+            'label' => 'Business Professionals',
+            'description' => 'Media kit templates for business professionals and entrepreneurs.',
+        ),
+    );
 
     public static function instance() {
         if (null === self::$instance) {
@@ -40,19 +74,42 @@ class GMKB_Template_Pages {
     }
 
     public function register_rewrite_rules() {
+        // Base templates page
         add_rewrite_rule('^templates/?$', 'index.php?gmkb_templates=1', 'top');
+        // Persona-specific pages: /templates/{persona-slug}/
+        add_rewrite_rule('^templates/([^/]+)/?$', 'index.php?gmkb_templates=1&gmkb_persona=$matches[1]', 'top');
     }
 
     public function register_query_vars($vars) {
         $vars[] = 'gmkb_templates';
+        $vars[] = 'gmkb_persona';
         return $vars;
     }
 
     public function parse_request($wp) {
         $request = trim($wp->request, '/');
-        if ($request === 'templates') {
+
+        // Match /templates or /templates/{slug}
+        if (preg_match('#^templates(?:/([^/]+))?/?$#', $request, $matches)) {
             $wp->query_vars['gmkb_templates'] = '1';
+            if (!empty($matches[1])) {
+                $wp->query_vars['gmkb_persona'] = sanitize_title($matches[1]);
+            }
         }
+    }
+
+    /**
+     * Get current persona data from URL
+     */
+    private function get_current_persona() {
+        $slug = get_query_var('gmkb_persona', '');
+        if ($slug && isset(self::$persona_map[$slug])) {
+            return array_merge(
+                self::$persona_map[$slug],
+                array('slug' => $slug)
+            );
+        }
+        return null;
     }
 
     public function load_template($template) {
@@ -97,6 +154,8 @@ class GMKB_Template_Pages {
         $builder_url = home_url('/tools/media-kit/');
         $login_url = wp_login_url(home_url('/templates/'));
         $is_logged_in = is_user_logged_in();
+        $current_persona = $this->get_current_persona();
+        $base_url = home_url('/templates/');
 
         ob_start();
         ?>
@@ -155,7 +214,11 @@ window.gmkbTemplatePickerData = {
     builderUrl: '<?php echo esc_js($builder_url); ?>',
     loginUrl: '<?php echo esc_js($login_url); ?>',
     isLoggedIn: <?php echo $is_logged_in ? 'true' : 'false'; ?>,
-    pluginUrl: '<?php echo esc_js($plugin_url); ?>'
+    pluginUrl: '<?php echo esc_js($plugin_url); ?>',
+    baseUrl: '<?php echo esc_js($base_url); ?>',
+    // SEO-friendly persona routing
+    initialPersona: <?php echo $current_persona ? json_encode($current_persona) : 'null'; ?>,
+    personaSlugs: <?php echo json_encode(self::$persona_map); ?>
 };
 </script>
 
@@ -196,9 +259,19 @@ window.gmkbTemplatePickerData = {
         if (!get_query_var('gmkb_templates')) return;
 
         $site_name = get_bloginfo('name');
-        $title = 'Create Your Media Kit - ' . $site_name;
-        $description = 'Build a professional media kit in minutes. Choose your persona and visual style to get started.';
-        $url = home_url('/templates/');
+        $persona = $this->get_current_persona();
+
+        if ($persona) {
+            // Persona-specific SEO
+            $title = $persona['label'] . ' Media Kit Templates - ' . $site_name;
+            $description = $persona['description'];
+            $url = home_url('/templates/' . $persona['slug'] . '/');
+        } else {
+            // Main templates page SEO
+            $title = 'Create Your Media Kit - ' . $site_name;
+            $description = 'Build a professional media kit in minutes. Choose your persona and visual style to get started.';
+            $url = home_url('/templates/');
+        }
 
         echo "\n<!-- GMKB SEO -->\n";
         echo '<meta name="description" content="' . esc_attr($description) . '">' . "\n";
@@ -212,7 +285,14 @@ window.gmkbTemplatePickerData = {
 
     public function get_document_title($title) {
         if (!get_query_var('gmkb_templates')) return $title;
-        return 'Create Your Media Kit - ' . get_bloginfo('name');
+
+        $site_name = get_bloginfo('name');
+        $persona = $this->get_current_persona();
+
+        if ($persona) {
+            return $persona['label'] . ' Media Kit Templates - ' . $site_name;
+        }
+        return 'Create Your Media Kit - ' . $site_name;
     }
 
     public function add_body_class($classes) {
@@ -244,3 +324,14 @@ add_action('admin_init', function() {
         flush_rewrite_rules();
     }
 });
+
+// Schedule flush when this file's rewrite rules version changes
+// This ensures new persona URL patterns are registered
+add_action('init', function() {
+    $current_version = '2.0'; // Bump this when adding new rewrite rules
+    $stored_version = get_option('gmkb_template_pages_rewrite_version', '1.0');
+    if ($current_version !== $stored_version) {
+        GMKB_Template_Pages::schedule_flush();
+        update_option('gmkb_template_pages_rewrite_version', $current_version);
+    }
+}, 5);

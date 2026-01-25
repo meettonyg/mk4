@@ -129,7 +129,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useTemplateStore } from '../../../stores/templates';
 import PersonaSelector from './PersonaSelector.vue';
 import TemplateFilters from './TemplateFilters.vue';
@@ -149,6 +149,17 @@ const props = defineProps({
 });
 
 const templateStore = useTemplateStore();
+
+// Get config from PHP (for SEO-friendly URLs)
+const pickerData = window.gmkbTemplatePickerData || {};
+const baseUrl = pickerData.baseUrl || '/templates/';
+const personaSlugs = pickerData.personaSlugs || {};
+
+// Reverse lookup: type -> slug
+const typeToSlug = Object.entries(personaSlugs).reduce((acc, [slug, data]) => {
+  acc[data.type] = slug;
+  return acc;
+}, {});
 
 // Helper to show toast (works in both standalone and app mode)
 const showToast = (message, type = 'info') => {
@@ -248,12 +259,56 @@ const displayedTemplates = computed(() => {
   );
 });
 
+// URL routing helper - updates browser URL without reload
+const updateUrl = (personaType = null) => {
+  if (!props.standalone) return; // Only update URL in standalone mode
+
+  let newUrl = baseUrl;
+  let title = 'Create Your Media Kit';
+
+  if (personaType && typeToSlug[personaType]) {
+    const slug = typeToSlug[personaType];
+    newUrl = `${baseUrl}${slug}/`;
+    const personaData = personaSlugs[slug];
+    title = personaData?.label ? `${personaData.label} Media Kit Templates` : title;
+  }
+
+  // Update URL and document title
+  window.history.pushState({ personaType }, title, newUrl);
+  document.title = title;
+};
+
+// Handle browser back/forward navigation
+const handlePopState = (event) => {
+  if (!props.standalone) return;
+
+  const personaType = event.state?.personaType;
+  if (personaType) {
+    // Navigate to specific persona
+    const slug = typeToSlug[personaType];
+    const personaData = personaSlugs[slug];
+    if (personaData) {
+      selectedPersona.value = { type: personaType, label: personaData.label };
+      viewAllMode.value = false;
+      currentStep.value = 2;
+    }
+  } else {
+    // Navigate back to persona selection
+    currentStep.value = 1;
+    selectedPersona.value = null;
+    viewAllMode.value = false;
+  }
+  activeLayoutFilter.value = 'all';
+  searchQuery.value = '';
+};
+
 // Handlers
 const handlePersonaSelect = (persona) => {
   selectedPersona.value = persona;
   viewAllMode.value = false;
   activeLayoutFilter.value = 'all';
   currentStep.value = 2;
+  updateUrl(persona.type);
 };
 
 const handleViewAll = () => {
@@ -261,6 +316,7 @@ const handleViewAll = () => {
   viewAllMode.value = true;
   activeLayoutFilter.value = 'all';
   currentStep.value = 2;
+  updateUrl(null); // View all stays at base URL
 };
 
 const goBackToPersonas = () => {
@@ -269,6 +325,7 @@ const goBackToPersonas = () => {
   viewAllMode.value = false;
   activeLayoutFilter.value = 'all';
   searchQuery.value = '';
+  updateUrl(null);
 };
 
 const handleSearch = () => {
@@ -347,6 +404,27 @@ const retryFetch = () => {
 onMounted(() => {
   if (!templateStore.hasTemplates) {
     templateStore.fetchTemplates();
+  }
+
+  // Handle initial persona from URL (SEO-friendly routing)
+  if (props.standalone && pickerData.initialPersona) {
+    const { type, label } = pickerData.initialPersona;
+    selectedPersona.value = { type, label };
+    viewAllMode.value = false;
+    currentStep.value = 2;
+    // Replace initial state so back button works correctly
+    window.history.replaceState({ personaType: type }, document.title, window.location.href);
+  }
+
+  // Listen for browser back/forward
+  if (props.standalone) {
+    window.addEventListener('popstate', handlePopState);
+  }
+});
+
+onUnmounted(() => {
+  if (props.standalone) {
+    window.removeEventListener('popstate', handlePopState);
   }
 });
 
