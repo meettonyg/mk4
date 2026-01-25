@@ -170,29 +170,6 @@
             </div>
         </div>
 
-        <!-- Media Kit Layout Panel -->
-        <div class="panel">
-            <div class="panel-header">
-                <h2 class="panel-title">Media Kit Layout</h2>
-            </div>
-            <div class="panel-content">
-                <p class="layout-info">
-                    <span class="info-icon">i</span>
-                    <a :href="layoutSelectorUrl" target="_blank">
-                        Personalize your one sheet with your own unique layout.
-                    </a>
-                </p>
-                <p v-if="currentLayout" class="layout-current">
-                    Layout: <strong>{{ currentLayout }}</strong>
-                </p>
-                <p class="layout-action">
-                    <a :href="layoutSelectorUrl" target="_blank" class="button secondary-button">
-                        Change Layout
-                    </a>
-                </p>
-            </div>
-        </div>
-
         <!-- Brand Kit Editor Modal -->
         <Teleport to="body">
             <div v-if="showEditor" class="editor-modal">
@@ -237,20 +214,6 @@ const colorFields = [
     { key: 'color_text_muted', label: 'Muted Text' },
     { key: 'color_link', label: 'Link Color' },
 ];
-
-// Layout selector URL with post ID
-const layoutSelectorUrl = computed(() => {
-    const postId = profileStore.postId;
-    if (postId) {
-        return `/app/templates/designs/?pos=${postId}`;
-    }
-    return '/app/templates/designs/';
-});
-
-// Current layout name from taxonomies
-const currentLayout = computed(() => {
-    return profileStore.taxonomies?.layout?.[0]?.name || null;
-});
 
 // Selected brand kit data
 const selectedBrandKit = computed(() => {
@@ -558,6 +521,19 @@ watch(
     gap: 8px;
 }
 
+.info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    background: #e2e8f0;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+}
+
 /* Empty State */
 .empty-brand-kit .panel-content {
     padding: 40px 20px;
@@ -605,71 +581,6 @@ watch(
 
 .btn-primary:hover {
     background: #2563eb;
-}
-
-/* Layout section styles */
-.layout-info {
-    margin: 0 0 12px 0;
-    font-size: 14px;
-    color: #64748b;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.info-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 18px;
-    background: #e2e8f0;
-    border-radius: 50%;
-    font-size: 11px;
-    font-weight: 600;
-    color: #64748b;
-}
-
-.layout-info a {
-    color: #0284c7;
-    text-decoration: none;
-}
-
-.layout-info a:hover {
-    text-decoration: underline;
-}
-
-.layout-current {
-    margin: 0 0 16px 0;
-    font-size: 14px;
-    color: #334155;
-}
-
-.layout-action {
-    margin: 0;
-}
-
-.button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    text-decoration: none;
-    border: none;
-}
-
-.secondary-button {
-    background-color: white;
-    color: #64748b;
-    border: 1px solid #e2e8f0;
-}
-
-.secondary-button:hover {
-    background-color: #f8fafc;
 }
 
 /* Editor Modal */
