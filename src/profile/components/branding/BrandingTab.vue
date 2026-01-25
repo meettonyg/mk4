@@ -182,8 +182,13 @@
                             your colors, fonts, and media to the new system.
                         </p>
                     </div>
-                    <button class="btn btn-primary" @click="migrateLegacyData">
-                        Create Brand Kit from Existing Data
+                    <button
+                        class="btn btn-primary"
+                        @click="migrateLegacyData"
+                        :disabled="isMigrating"
+                    >
+                        <span v-if="isMigrating">Migrating...</span>
+                        <span v-else>Create Brand Kit from Existing Data</span>
                     </button>
                 </div>
             </div>
@@ -342,87 +347,53 @@ const onEditorSaved = async () => {
     }
 };
 
+const isMigrating = ref(false);
+
 const migrateLegacyData = async () => {
-    const fields = profileStore.fields;
+    if (isMigrating.value) return;
 
-    // Prepare brand kit data from legacy fields
-    const brandKitData = {
-        name: `${profileStore.postTitle || 'Profile'} Brand Kit`,
-    };
-
-    // Map legacy colors to new schema
-    const colorMapping = {
-        'color_primary': 'color_primary',
-        'color_accent': 'color_secondary',
-        'color_contrasting': 'color_accent',
-        'color_background': 'color_background',
-        'color_header': 'color_surface',
-        'color_paragraph': 'color_text',
-        'color_header_text': 'color_text_muted',
-        'color_header_accent': 'color_link',
-    };
-
-    for (const [oldKey, newKey] of Object.entries(colorMapping)) {
-        if (fields[oldKey]) {
-            brandKitData[newKey] = fields[oldKey];
-        }
+    const profileId = profileStore.postId;
+    if (!profileId) {
+        alert('Profile ID not found. Please refresh the page.');
+        return;
     }
 
-    // Map fonts
-    if (fields.font_primary) {
-        brandKitData.font_primary = fields.font_primary;
-        brandKitData.font_heading = fields.font_secondary || fields.font_primary;
-    }
+    isMigrating.value = true;
 
     try {
-        // Create brand kit
-        const newBrandKit = await brandKitStore.createBrandKit(brandKitData);
+        // Use server-side migration endpoint for atomic, robust migration
+        const response = await fetch(`/wp-json/gmkb/v2/profiles/${profileId}/migrate-branding`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-WP-Nonce': window.gmkbData?.nonce || '',
+            },
+            body: JSON.stringify({
+                name: `${profileStore.postTitle || 'Profile'} Brand Kit`,
+            }),
+        });
 
-        // Migrate media
-        if (newBrandKit?.id) {
-            // Migrate headshots
-            const headshotFields = [
-                { field: 'headshot_primary', tags: ['primary'], label: 'Primary Headshot', isPrimary: true },
-                { field: 'headshot_vertical', tags: ['vertical'], label: 'Vertical Headshot' },
-                { field: 'headshot_horizontal', tags: ['horizontal'], label: 'Horizontal Headshot' },
-            ];
+        const result = await response.json();
 
-            for (const headshot of headshotFields) {
-                if (fields[headshot.field]?.id) {
-                    await brandKitStore.addMedia({
-                        media_id: fields[headshot.field].id,
-                        category: 'headshot',
-                        tags: headshot.tags,
-                        label: headshot.label,
-                        is_primary: headshot.isPrimary || false,
-                    });
-                }
-            }
-
-            // Migrate logos
-            if (fields.logos && Array.isArray(fields.logos)) {
-                let isFirst = true;
-                for (const logo of fields.logos) {
-                    if (logo?.id) {
-                        await brandKitStore.addMedia({
-                            media_id: logo.id,
-                            category: 'logo',
-                            tags: ['brand'],
-                            label: logo.alt || '',
-                            is_primary: isFirst,
-                        });
-                        isFirst = false;
-                    }
-                }
-            }
-
-            // Select the new brand kit
-            selectedBrandKitId.value = newBrandKit.id;
-            await onBrandKitChange(newBrandKit.id);
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Migration failed');
         }
+
+        // Migration succeeded - update local state
+        const newBrandKit = result.data;
+        selectedBrandKitId.value = newBrandKit.id;
+
+        // Reload brand kits list
+        await brandKitStore.loadBrandKits(true);
+
+        // Update profile store
+        profileStore.updateField('brand_kit_id', newBrandKit.id);
+
     } catch (error) {
         console.error('Failed to migrate legacy branding:', error);
-        alert('Failed to migrate branding data. Please try again.');
+        alert(error.message || 'Failed to migrate branding data. Please try again.');
+    } finally {
+        isMigrating.value = false;
     }
 };
 

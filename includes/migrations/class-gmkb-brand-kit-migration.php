@@ -136,7 +136,7 @@ class GMKB_Brand_Kit_Migration {
             }
 
             // Perform actual migration
-            $migration_result = self::migrate_single_profile($profile);
+            $migration_result = self::migrate_single_profile_with_details($profile);
 
             if (is_wp_error($migration_result)) {
                 $results['errors'][] = [
@@ -209,13 +209,45 @@ class GMKB_Brand_Kit_Migration {
 
     /**
      * Migrate a single profile's branding data to a brand kit
+     *
+     * @param int|WP_Post $profile Profile ID or post object
+     * @return int|WP_Error|false Brand kit ID on success, error on failure, false if no branding data
      */
-    private static function migrate_single_profile($profile) {
+    public static function migrate_single_profile($profile) {
+        if (is_numeric($profile)) {
+            $profile = get_post($profile);
+        }
+
+        if (!$profile || $profile->post_type !== 'guests') {
+            return new WP_Error('invalid_profile', __('Invalid profile', 'gmkb'));
+        }
+
+        // Check if profile has branding data
+        if (!self::profile_has_branding($profile->ID)) {
+            return false;
+        }
+
+        // Check if already migrated
+        $existing_brand_kit_id = get_post_meta($profile->ID, 'brand_kit_id', true);
+        if ($existing_brand_kit_id) {
+            return new WP_Error('already_migrated', __('Profile already has a brand kit', 'gmkb'));
+        }
+
         $repository = GMKB_Brand_Kit_Repository::get_instance();
 
         // Prepare brand kit data from profile
+        $default_name = sprintf(__('%s Brand Kit', 'gmkb'), $profile->post_title);
+
+        /**
+         * Filter the brand kit name during migration
+         *
+         * @param string $name Default brand kit name
+         * @param WP_Post $profile The profile being migrated
+         */
+        $brand_kit_name = apply_filters('gmkb_brand_kit_migration_name', $default_name, $profile);
+
         $brand_kit_data = [
-            'name' => sprintf(__('%s Brand Kit', 'gmkb'), $profile->post_title),
+            'name' => $brand_kit_name,
             'visibility' => 'private',
         ];
 
@@ -262,9 +294,9 @@ class GMKB_Brand_Kit_Migration {
 
         // Migrate headshots
         $headshot_fields = [
-            'headshot_primary' => ['tags' => ['primary'], 'label' => 'Primary Headshot', 'is_primary' => true],
-            'headshot_vertical' => ['tags' => ['vertical'], 'label' => 'Vertical Headshot'],
-            'headshot_horizontal' => ['tags' => ['horizontal'], 'label' => 'Horizontal Headshot'],
+            'headshot_primary' => ['tags' => ['primary'], 'default_label' => 'Primary Headshot', 'is_primary' => true],
+            'headshot_vertical' => ['tags' => ['vertical'], 'default_label' => 'Vertical Headshot'],
+            'headshot_horizontal' => ['tags' => ['horizontal'], 'default_label' => 'Horizontal Headshot'],
         ];
 
         foreach ($headshot_fields as $field => $config) {
@@ -272,11 +304,17 @@ class GMKB_Brand_Kit_Migration {
             $media_id = self::extract_media_id($value);
 
             if ($media_id) {
+                // Preserve alt text as label if available
+                $label = $config['default_label'];
+                if (is_array($value) && !empty($value['alt'])) {
+                    $label = $value['alt'];
+                }
+
                 $result = $repository->add_media($brand_kit_id, [
                     'media_id' => $media_id,
                     'category' => 'headshot',
                     'tags' => $config['tags'],
-                    'label' => $config['label'],
+                    'label' => $label,
                     'is_primary' => $config['is_primary'] ?? false,
                 ]);
 
@@ -334,9 +372,42 @@ class GMKB_Brand_Kit_Migration {
         // Link profile to brand kit
         update_post_meta($profile->ID, 'brand_kit_id', $brand_kit_id);
 
+        /**
+         * Action fired after a profile's branding data is migrated to a brand kit
+         *
+         * @param int $brand_kit_id The created brand kit ID
+         * @param WP_Post $profile The profile that was migrated
+         * @param int $media_count Number of media items migrated
+         */
+        do_action('gmkb_profile_branding_migrated', $brand_kit_id, $profile, $media_count);
+
+        return $brand_kit_id;
+    }
+
+    /**
+     * Migrate a single profile and return detailed results (for internal use)
+     *
+     * @param WP_Post $profile Profile post object
+     * @return array|WP_Error Migration results or error
+     */
+    private static function migrate_single_profile_with_details($profile) {
+        $result = self::migrate_single_profile($profile);
+
+        if (is_wp_error($result)) {
+            return $result;
+        }
+
+        if ($result === false) {
+            return new WP_Error('no_branding', __('No branding data to migrate', 'gmkb'));
+        }
+
+        // Get media count for the created brand kit
+        $repository = GMKB_Brand_Kit_Repository::get_instance();
+        $media = $repository->get_media($result);
+
         return [
-            'brand_kit_id' => $brand_kit_id,
-            'media_count' => $media_count,
+            'brand_kit_id' => $result,
+            'media_count' => count($media),
         ];
     }
 

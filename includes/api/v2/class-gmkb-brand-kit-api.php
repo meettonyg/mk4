@@ -47,7 +47,7 @@ class GMKB_Brand_Kit_API {
             [
                 'methods' => WP_REST_Server::READABLE,
                 'callback' => [__CLASS__, 'get_brand_kit'],
-                'permission_callback' => [__CLASS__, 'check_read_permission'],
+                'permission_callback' => [__CLASS__, 'check_item_read_permission'],
                 'args' => [
                     'id' => [
                         'validate_callback' => function($param) {
@@ -74,7 +74,7 @@ class GMKB_Brand_Kit_API {
             [
                 'methods' => WP_REST_Server::CREATABLE,
                 'callback' => [__CLASS__, 'duplicate_brand_kit'],
-                'permission_callback' => [__CLASS__, 'check_read_permission'],
+                'permission_callback' => [__CLASS__, 'check_item_read_permission'],
             ],
         ]);
 
@@ -83,7 +83,7 @@ class GMKB_Brand_Kit_API {
             [
                 'methods' => WP_REST_Server::READABLE,
                 'callback' => [__CLASS__, 'get_brand_kit_usage'],
-                'permission_callback' => [__CLASS__, 'check_read_permission'],
+                'permission_callback' => [__CLASS__, 'check_item_read_permission'],
             ],
         ]);
 
@@ -92,7 +92,7 @@ class GMKB_Brand_Kit_API {
             [
                 'methods' => WP_REST_Server::READABLE,
                 'callback' => [__CLASS__, 'get_brand_kit_media'],
-                'permission_callback' => [__CLASS__, 'check_read_permission'],
+                'permission_callback' => [__CLASS__, 'check_item_read_permission'],
                 'args' => [
                     'category' => [
                         'type' => 'string',
@@ -141,6 +141,27 @@ class GMKB_Brand_Kit_API {
                 'methods' => WP_REST_Server::READABLE,
                 'callback' => [__CLASS__, 'get_schema'],
                 'permission_callback' => '__return_true',
+            ],
+        ]);
+
+        // Migrate profile branding to brand kit
+        register_rest_route(self::NAMESPACE, '/profiles/(?P<profile_id>\d+)/migrate-branding', [
+            [
+                'methods' => WP_REST_Server::CREATABLE,
+                'callback' => [__CLASS__, 'migrate_profile_branding'],
+                'permission_callback' => [__CLASS__, 'check_profile_edit_permission'],
+                'args' => [
+                    'profile_id' => [
+                        'validate_callback' => function($param) {
+                            return is_numeric($param);
+                        },
+                    ],
+                    'name' => [
+                        'type' => 'string',
+                        'default' => '',
+                        'sanitize_callback' => 'sanitize_text_field',
+                    ],
+                ],
             ],
         ]);
     }
@@ -456,7 +477,7 @@ class GMKB_Brand_Kit_API {
             $data['metadata'] = $request->get_param('metadata');
         }
 
-        $result = $repository->update_media($media_entry_id, $data);
+        $result = $repository->update_media($media_entry_id, $data, $brand_kit_id);
 
         if (is_wp_error($result)) {
             return new WP_REST_Response([
@@ -484,7 +505,7 @@ class GMKB_Brand_Kit_API {
         $media_entry_id = (int) $request->get_param('media_id');
         $repository = GMKB_Brand_Kit_Repository::get_instance();
 
-        $result = $repository->remove_media($media_entry_id);
+        $result = $repository->remove_media($media_entry_id, $brand_kit_id);
 
         if (is_wp_error($result)) {
             return new WP_REST_Response([
@@ -519,10 +540,14 @@ class GMKB_Brand_Kit_API {
             ], 400);
         }
 
-        foreach ($order as $item) {
-            if (isset($item['id']) && isset($item['sort_order'])) {
-                $repository->update_media($item['id'], ['sort_order' => $item['sort_order']]);
-            }
+        // Use bulk reorder for efficiency and security
+        $result = $repository->reorder_media($brand_kit_id, $order);
+
+        if (is_wp_error($result)) {
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => $result->get_error_message(),
+            ], 400);
         }
 
         $media = $repository->get_media($brand_kit_id);
@@ -553,10 +578,108 @@ class GMKB_Brand_Kit_API {
     }
 
     /**
+     * Migrate profile branding to a new brand kit
+     */
+    public static function migrate_profile_branding($request) {
+        $profile_id = (int) $request->get_param('profile_id');
+        $name = $request->get_param('name');
+
+        // Check if migration class exists
+        if (!class_exists('GMKB_Brand_Kit_Migration')) {
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => __('Migration class not available', 'gmkb'),
+            ], 500);
+        }
+
+        // Use custom name if provided
+        if (!empty($name)) {
+            add_filter('gmkb_brand_kit_migration_name', function($default_name, $profile) use ($name, $profile_id) {
+                if ($profile->ID === $profile_id) {
+                    return $name;
+                }
+                return $default_name;
+            }, 10, 2);
+        }
+
+        // Run migration for this single profile
+        $brand_kit_id = GMKB_Brand_Kit_Migration::migrate_single_profile($profile_id);
+
+        if (is_wp_error($brand_kit_id)) {
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => $brand_kit_id->get_error_message(),
+            ], 400);
+        }
+
+        if (!$brand_kit_id) {
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => __('No branding data to migrate', 'gmkb'),
+            ], 400);
+        }
+
+        // Get the created brand kit
+        $repository = GMKB_Brand_Kit_Repository::get_instance();
+        $brand_kit = $repository->get($brand_kit_id);
+        $brand_kit['media'] = $repository->get_media($brand_kit_id);
+
+        return new WP_REST_Response([
+            'success' => true,
+            'message' => __('Branding data migrated successfully', 'gmkb'),
+            'data' => $brand_kit,
+        ], 201);
+    }
+
+    /**
      * Permission callbacks
      */
     public static function check_read_permission($request) {
         return is_user_logged_in();
+    }
+
+    /**
+     * Check permission for reading a single brand kit item
+     * Prevents IDOR by verifying ownership or access rights
+     */
+    public static function check_item_read_permission($request) {
+        if (!is_user_logged_in()) {
+            return false;
+        }
+
+        $id = (int) $request->get_param('id');
+        if (!$id) {
+            return false;
+        }
+
+        return self::user_can_access_brand_kit($id);
+    }
+
+    /**
+     * Check permission to edit a profile (for migration endpoint)
+     */
+    public static function check_profile_edit_permission($request) {
+        if (!current_user_can('edit_posts')) {
+            return false;
+        }
+
+        $profile_id = (int) $request->get_param('profile_id');
+        if (!$profile_id) {
+            return false;
+        }
+
+        $post = get_post($profile_id);
+        if (!$post || $post->post_type !== 'guests') {
+            return false;
+        }
+
+        // Check if user is the author or has edit capabilities
+        $user_id = get_current_user_id();
+        if ((int) $post->post_author === $user_id) {
+            return true;
+        }
+
+        return current_user_can('edit_post', $profile_id);
     }
 
     public static function check_create_permission($request) {
@@ -583,6 +706,41 @@ class GMKB_Brand_Kit_API {
 
         $id = (int) $request->get_param('id');
         return self::user_can_edit_brand_kit($id);
+    }
+
+    /**
+     * Check if current user can access (read) a brand kit
+     */
+    private static function user_can_access_brand_kit($brand_kit_id) {
+        $user_id = get_current_user_id();
+        $post = get_post($brand_kit_id);
+
+        if (!$post || $post->post_type !== GMKB_Brand_Kit_Schema::POST_TYPE) {
+            return false;
+        }
+
+        // Author can always access
+        if ((int) $post->post_author === $user_id) {
+            return true;
+        }
+
+        // Check organization access (future feature)
+        $organization_id = get_post_meta($brand_kit_id, 'organization_id', true);
+        if ($organization_id) {
+            $user_org_id = self::get_user_organization_id($user_id);
+            if ($user_org_id && $user_org_id === (int) $organization_id) {
+                return true;
+            }
+        }
+
+        // Check visibility - public brand kits can be read by anyone
+        $visibility = get_post_meta($brand_kit_id, 'visibility', true);
+        if ($visibility === 'public') {
+            return true;
+        }
+
+        // Admins can access all
+        return current_user_can('manage_options');
     }
 
     /**

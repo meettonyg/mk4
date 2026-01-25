@@ -350,11 +350,24 @@ class GMKB_Brand_Kit_Repository {
      *
      * @param int $media_entry_id Media entry ID (from gmkb_brand_kit_media table)
      * @param array $data Data to update
+     * @param int|null $brand_kit_id Brand kit ID for security validation (optional but recommended)
      * @return bool|WP_Error True on success, error on failure
      */
-    public function update_media($media_entry_id, $data) {
+    public function update_media($media_entry_id, $data, $brand_kit_id = null) {
         global $wpdb;
         $table = $wpdb->prefix . 'gmkb_brand_kit_media';
+
+        // Verify the media entry belongs to the specified brand kit (security check)
+        if ($brand_kit_id !== null) {
+            $entry_brand_kit_id = $wpdb->get_var($wpdb->prepare(
+                "SELECT brand_kit_id FROM $table WHERE id = %d",
+                $media_entry_id
+            ));
+
+            if (!$entry_brand_kit_id || (int) $entry_brand_kit_id !== (int) $brand_kit_id) {
+                return new WP_Error('unauthorized', __('Media entry does not belong to this brand kit', 'gmkb'));
+            }
+        }
 
         $update_data = [];
 
@@ -381,7 +394,13 @@ class GMKB_Brand_Kit_Repository {
             return true; // Nothing to update
         }
 
-        $result = $wpdb->update($table, $update_data, ['id' => $media_entry_id]);
+        // Include brand_kit_id in WHERE clause for additional security
+        $where = ['id' => $media_entry_id];
+        if ($brand_kit_id !== null) {
+            $where['brand_kit_id'] = $brand_kit_id;
+        }
+
+        $result = $wpdb->update($table, $update_data, $where);
 
         if ($result === false) {
             return new WP_Error('db_error', __('Failed to update media', 'gmkb'));
@@ -405,15 +424,92 @@ class GMKB_Brand_Kit_Repository {
      * Remove media from brand kit
      *
      * @param int $media_entry_id Media entry ID
+     * @param int|null $brand_kit_id Brand kit ID for security validation (optional but recommended)
      * @return bool|WP_Error True on success, error on failure
      */
-    public function remove_media($media_entry_id) {
+    public function remove_media($media_entry_id, $brand_kit_id = null) {
         global $wpdb;
         $table = $wpdb->prefix . 'gmkb_brand_kit_media';
 
-        $result = $wpdb->delete($table, ['id' => $media_entry_id]);
+        // Build WHERE clause with optional brand_kit_id for security
+        $where = ['id' => $media_entry_id];
+        if ($brand_kit_id !== null) {
+            $where['brand_kit_id'] = $brand_kit_id;
+        }
+
+        $result = $wpdb->delete($table, $where);
+
+        if ($result === 0 && $brand_kit_id !== null) {
+            return new WP_Error('not_found', __('Media entry not found or does not belong to this brand kit', 'gmkb'));
+        }
 
         return $result !== false ? true : new WP_Error('db_error', __('Failed to remove media', 'gmkb'));
+    }
+
+    /**
+     * Bulk reorder media entries for a brand kit
+     *
+     * @param int $brand_kit_id Brand kit post ID
+     * @param array $order Array of {id, sort_order} items
+     * @return bool|WP_Error True on success, error on failure
+     */
+    public function reorder_media($brand_kit_id, $order) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'gmkb_brand_kit_media';
+
+        if (!is_array($order) || empty($order)) {
+            return new WP_Error('invalid_order', __('Invalid order data', 'gmkb'));
+        }
+
+        // Collect all media entry IDs from the order array
+        $entry_ids = array_filter(array_map(function($item) {
+            return isset($item['id']) ? absint($item['id']) : 0;
+        }, $order));
+
+        if (empty($entry_ids)) {
+            return new WP_Error('invalid_order', __('No valid media entry IDs provided', 'gmkb'));
+        }
+
+        // Verify all entries belong to this brand kit (security check)
+        $placeholders = implode(',', array_fill(0, count($entry_ids), '%d'));
+        $query = $wpdb->prepare(
+            "SELECT id FROM $table WHERE brand_kit_id = %d AND id IN ($placeholders)",
+            array_merge([$brand_kit_id], $entry_ids)
+        );
+        $valid_ids = $wpdb->get_col($query);
+
+        if (count($valid_ids) !== count($entry_ids)) {
+            return new WP_Error('unauthorized', __('Some media entries do not belong to this brand kit', 'gmkb'));
+        }
+
+        // Perform bulk update using a CASE statement for efficiency
+        $cases = [];
+        $params = [];
+        foreach ($order as $item) {
+            if (isset($item['id']) && isset($item['sort_order'])) {
+                $cases[] = "WHEN id = %d THEN %d";
+                $params[] = absint($item['id']);
+                $params[] = absint($item['sort_order']);
+            }
+        }
+
+        if (empty($cases)) {
+            return true; // Nothing to update
+        }
+
+        // Add the brand_kit_id and entry IDs to params
+        $params[] = $brand_kit_id;
+        $params = array_merge($params, $entry_ids);
+
+        $case_sql = implode(' ', $cases);
+        $sql = $wpdb->prepare(
+            "UPDATE $table SET sort_order = CASE $case_sql ELSE sort_order END WHERE brand_kit_id = %d AND id IN ($placeholders)",
+            $params
+        );
+
+        $result = $wpdb->query($sql);
+
+        return $result !== false ? true : new WP_Error('db_error', __('Failed to reorder media', 'gmkb'));
     }
 
     /**
