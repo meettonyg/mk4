@@ -4,6 +4,9 @@
  * CRITICAL: Never use localStorage or sessionStorage
  */
 
+const NORMALIZED_DEFAULT_SHADOW_MEDIUM = '02px4pxrgba(0,0,0,0.05)';
+const NORMALIZED_DEFAULT_SHADOW_SMALL = '01px2px';
+
 class ComponentStyleService {
   constructor() {
     // Map of componentId → <style> element
@@ -404,9 +407,9 @@ class ComponentStyleService {
           safeStyle.effects.boxShadow !== 'none' &&
           safeStyle.effects.boxShadow !== '0 0 0 rgba(0,0,0,0)') {
         // Skip subtle default shadows that look like borders
-        const normalizedShadow = safeStyle.effects.boxShadow.replace(/\s+/g, '');
-        const isDefaultShadow = normalizedShadow.includes('02px4pxrgba(0,0,0,0.05)') ||
-                               normalizedShadow.includes('01px2px');
+        const normalizedShadow = safeStyle.effects.boxShadow.replace(/\s+/g, '').toLowerCase();
+        const isDefaultShadow = normalizedShadow.includes(NORMALIZED_DEFAULT_SHADOW_MEDIUM) ||
+                               normalizedShadow.includes(NORMALIZED_DEFAULT_SHADOW_SMALL);
         if (!isDefaultShadow) {
           componentRules.push(`box-shadow: ${safeStyle.effects.boxShadow} !important`);
         }
