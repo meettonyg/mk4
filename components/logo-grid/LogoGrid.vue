@@ -135,7 +135,7 @@ const displayLogos = computed(() => {
 
 .logo-item:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  /* box-shadow controlled by theme/ComponentStyleService when explicitly set */
 }
 
 .logo-item img {

@@ -21,6 +21,7 @@
 
 /* CRITICAL: Component Root - Applies CSS Variable Overrides */
 /* NOTE: All visual styles should default to NONE/transparent and only apply when explicitly set */
+/* IMPORTANT: Use --gmkb-component-* variables (not globally defined) so fallbacks work */
 .component-root {
   /* Typography inherits from theme */
   color: inherit;
@@ -28,7 +29,8 @@
   font-size: inherit;
 
   /* NO default visual styles - only apply when CSS variables are explicitly set */
-  background: var(--gmkb-color-surface, transparent);
+  /* NOTE: Use --gmkb-component-background (not --gmkb-color-surface which has a global default) */
+  background: var(--gmkb-component-background, transparent);
   padding: var(--gmkb-spacing-component, 0);
   border-radius: var(--gmkb-border-radius, 0);
   box-shadow: var(--gmkb-shadow, none);

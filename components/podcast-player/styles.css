@@ -48,7 +48,7 @@
     flex-shrink: 0;
     overflow: hidden;
     border-radius: 0.5rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    /* box-shadow controlled by theme/ComponentStyleService when explicitly set */
 }
 
 .active-player-artwork img {
@@ -213,7 +213,7 @@
 
 .episode-item:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    /* box-shadow controlled by theme/ComponentStyleService when explicitly set */
 }
 
 .episode-item.active {

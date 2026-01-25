@@ -168,7 +168,7 @@ onMounted(() => {
   height: 0;
   overflow: hidden;
   border-radius: var(--component-border-radius, 8px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  /* box-shadow controlled by theme/ComponentStyleService when explicitly set */
 }
 
 .video-wrapper iframe,
