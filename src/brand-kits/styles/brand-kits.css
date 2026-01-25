@@ -1,0 +1,32 @@
+/**
+ * Brand Kits Manager - Global Styles
+ */
+
+/* Reset and base styles */
+#gmkb-brand-kits-app *,
+#gmkb-brand-kits-app *::before,
+#gmkb-brand-kits-app *::after {
+  box-sizing: border-box;
+}
+
+#gmkb-brand-kits-app {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #111827;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Hide WordPress admin notices within our app container */
+#gmkb-brand-kits-app .notice,
+#gmkb-brand-kits-app .updated,
+#gmkb-brand-kits-app .error {
+  display: none;
+}
+
+/* Ensure modals are above WordPress admin bar */
+.editor-modal,
+.confirm-modal {
+  z-index: 100001 !important;
+}

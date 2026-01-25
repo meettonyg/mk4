@@ -18,14 +18,18 @@ class BrandKitService {
     // Try multiple sources for the REST API URL:
     // - Media kit builder: gmkbData.restUrl (includes namespace /wp-json/gmkb/v2/)
     // - Profile editor: gmkbProfileData.apiUrl (just /wp-json/)
+    // - Brand kits manager: gmkbBrandKitsData.apiUrl (just /wp-json/)
     // - Standard WordPress: wpApiSettings.root
     const restUrl = window.gmkbData?.restUrl || window.gmkbData?.apiSettings?.apiUrl;
     if (restUrl) {
       // restUrl is like "/wp-json/gmkb/v2/" - just append endpoint
       this._apiBase = `${restUrl.replace(/\/$/, '')}/brand-kits`;
     } else {
-      // Profile page or fallback - construct from base API URL
-      const apiRoot = window.gmkbProfileData?.apiUrl || window.wpApiSettings?.root || '/wp-json/';
+      // Profile page, brand kits page, or fallback - construct from base API URL
+      const apiRoot = window.gmkbProfileData?.apiUrl ||
+                      window.gmkbBrandKitsData?.apiUrl ||
+                      window.wpApiSettings?.root ||
+                      '/wp-json/';
       this._apiBase = `${apiRoot.replace(/\/$/, '')}/gmkb/v2/brand-kits`;
     }
 
@@ -68,10 +72,12 @@ class BrandKitService {
     // Different pages inject data differently:
     // - Media kit builder: gmkbData.restNonce or gmkbData.apiSettings.nonce
     // - Profile editor: gmkbProfileData.nonce
+    // - Brand kits manager: gmkbBrandKitsData.nonce
     // - Standard WordPress: wpApiSettings.nonce
     const nonce = window.gmkbData?.restNonce ||
                   window.gmkbData?.apiSettings?.nonce ||
                   window.gmkbProfileData?.nonce ||
+                  window.gmkbBrandKitsData?.nonce ||
                   window.wpApiSettings?.nonce ||
                   '';
 
