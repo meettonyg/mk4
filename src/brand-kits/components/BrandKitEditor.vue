@@ -353,6 +353,11 @@ const props = defineProps({
     default: 'view',
     validator: (v) => ['view', 'edit', 'create'].includes(v),
   },
+  initialTab: {
+    type: String,
+    default: 'colors',
+    validator: (v) => ['colors', 'fonts', 'media'].includes(v),
+  },
 });
 
 const emit = defineEmits(['close', 'saved']);
@@ -360,7 +365,7 @@ const emit = defineEmits(['close', 'saved']);
 const store = useBrandKitStore();
 
 // Local state
-const activeTab = ref('colors');
+const activeTab = ref(props.initialTab);
 const mediaFilter = ref('all');
 const isEditing = ref(props.mode === 'edit' || props.mode === 'create');
 

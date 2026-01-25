@@ -1,274 +1,193 @@
 <template>
     <div class="branding-tab">
-        <!-- Headshots Panel -->
-        <EditablePanel
-            title="Headshots"
-            section-id="headshots"
-            :is-editing="editingSection === 'headshots'"
-            :is-saving="isSaving"
-            @edit="startEditing"
-            @save="saveSection"
-            @cancel="cancelEditing"
-        >
-            <template #display>
-                <div class="headshots-grid">
-                    <div
-                        v-for="headshot in headshotTypes"
-                        :key="headshot.key"
-                        class="headshot-item"
-                    >
-                        <figure>
-                            <img
-                                v-if="store.fields[headshot.key]?.url"
-                                :src="store.fields[headshot.key].sizes?.medium || store.fields[headshot.key].url"
-                                :alt="store.fields[headshot.key].alt || headshot.label"
-                            />
-                            <div v-else class="placeholder-image">
-                                <i class="fas fa-camera"></i>
-                            </div>
-                            <figcaption>{{ headshot.label }}</figcaption>
-                        </figure>
-                    </div>
-                </div>
-            </template>
+        <!-- Brand Kit Selection Panel -->
+        <div class="panel brand-kit-panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Brand Kit</h2>
+                <p class="panel-description">
+                    Select or create a brand kit to define your colors, fonts, and media assets.
+                </p>
+            </div>
+            <div class="panel-content">
+                <BrandKitSelector
+                    v-model="selectedBrandKitId"
+                    @change="onBrandKitChange"
+                />
+            </div>
+        </div>
 
-            <template #edit>
-                <div class="headshots-edit-grid">
-                    <div
-                        v-for="headshot in headshotTypes"
-                        :key="headshot.key"
-                        class="headshot-upload-item"
-                    >
-                        <label class="upload-label">{{ headshot.label }}</label>
-                        <div class="upload-preview" @click="selectHeadshot(headshot.key)">
-                            <img
-                                v-if="editFields[headshot.key]?.url"
-                                :src="editFields[headshot.key].sizes?.medium || editFields[headshot.key].url"
-                                :alt="headshot.label"
-                            />
-                            <div v-else class="upload-placeholder">
-                                <i class="upload-icon fas fa-camera"></i>
-                                <span class="upload-text">Click to select</span>
+        <!-- Brand Kit Preview (when a brand kit is selected) -->
+        <template v-if="selectedBrandKit">
+            <!-- Colors Preview -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Brand Colors</h2>
+                    <button class="edit-link" @click="openEditor('colors')">
+                        Edit in Brand Kit
+                    </button>
+                </div>
+                <div class="panel-content">
+                    <div class="color-grid">
+                        <div
+                            v-for="color in colorFields"
+                            :key="color.key"
+                            class="color-item"
+                        >
+                            <div
+                                class="color-preview"
+                                :style="{ backgroundColor: selectedBrandKit[color.key] || '#e2e8f0' }"
+                            ></div>
+                            <div class="color-details">
+                                <span class="color-name">{{ color.label }}</span>
+                                <span class="color-value">{{ selectedBrandKit[color.key] || '—' }}</span>
                             </div>
                         </div>
-                        <button
-                            v-if="editFields[headshot.key]?.url"
-                            type="button"
-                            class="remove-btn"
-                            @click.stop="removeImage(headshot.key)"
-                        >
-                            Remove
-                        </button>
                     </div>
                 </div>
-                <p v-if="mediaError" class="upload-error">{{ mediaError }}</p>
-            </template>
-        </EditablePanel>
+            </div>
 
-        <!-- Logos Panel -->
-        <EditablePanel
-            title="Logos and Graphics"
-            section-id="logos"
-            :is-editing="editingSection === 'logos'"
-            :is-saving="isSaving"
-            @edit="startEditing"
-            @save="saveSection"
-            @cancel="cancelEditing"
-        >
-            <template #display>
-                <div class="logos-grid">
-                    <template v-if="store.fields.logos && store.fields.logos.length">
-                        <div
-                            v-for="logo in store.fields.logos"
-                            :key="logo.id"
-                            class="logo-item"
-                        >
-                            <img
-                                :src="logo.sizes?.medium || logo.url"
-                                :alt="logo.alt || 'Logo'"
-                            />
+            <!-- Fonts Preview -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Brand Fonts</h2>
+                    <button class="edit-link" @click="openEditor('fonts')">
+                        Edit in Brand Kit
+                    </button>
+                </div>
+                <div class="panel-content">
+                    <div class="fonts-display">
+                        <div class="font-item">
+                            <label class="font-label">Primary Font</label>
+                            <div class="font-preview" :style="{ fontFamily: selectedBrandKit.font_primary || 'inherit' }">
+                                {{ selectedBrandKit.font_primary || 'Not set' }}
+                            </div>
+                            <div
+                                v-if="selectedBrandKit.font_primary"
+                                class="font-sample"
+                                :style="{ fontFamily: selectedBrandKit.font_primary }"
+                            >
+                                Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz
+                            </div>
                         </div>
-                    </template>
-                    <div v-else class="empty-text">
+                        <div class="font-item">
+                            <label class="font-label">Heading Font</label>
+                            <div class="font-preview" :style="{ fontFamily: selectedBrandKit.font_heading || 'inherit' }">
+                                {{ selectedBrandKit.font_heading || 'Not set' }}
+                            </div>
+                            <div
+                                v-if="selectedBrandKit.font_heading"
+                                class="font-sample"
+                                :style="{ fontFamily: selectedBrandKit.font_heading }"
+                            >
+                                Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Media Preview -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Brand Media</h2>
+                    <button class="edit-link" @click="openEditor('media')">
+                        Edit in Brand Kit
+                    </button>
+                </div>
+                <div class="panel-content">
+                    <!-- Headshots -->
+                    <div v-if="brandKitHeadshots.length" class="media-section">
+                        <h4 class="media-section-title">Headshots</h4>
+                        <div class="media-grid">
+                            <div
+                                v-for="headshot in brandKitHeadshots"
+                                :key="headshot.id"
+                                class="media-item"
+                                :class="{ 'is-primary': headshot.is_primary }"
+                            >
+                                <img
+                                    :src="headshot.sizes?.medium || headshot.url"
+                                    :alt="headshot.label || 'Headshot'"
+                                />
+                                <span v-if="headshot.is_primary" class="primary-badge">Primary</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Logos -->
+                    <div v-if="brandKitLogos.length" class="media-section">
+                        <h4 class="media-section-title">Logos</h4>
+                        <div class="media-grid logos-grid">
+                            <div
+                                v-for="logo in brandKitLogos"
+                                :key="logo.id"
+                                class="media-item logo-item"
+                                :class="{ 'is-primary': logo.is_primary }"
+                            >
+                                <img
+                                    :src="logo.sizes?.medium || logo.url"
+                                    :alt="logo.label || 'Logo'"
+                                />
+                                <span v-if="logo.is_primary" class="primary-badge">Primary</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Photos -->
+                    <div v-if="brandKitPhotos.length" class="media-section">
+                        <h4 class="media-section-title">Photos</h4>
+                        <div class="media-grid">
+                            <div
+                                v-for="photo in brandKitPhotos"
+                                :key="photo.id"
+                                class="media-item"
+                            >
+                                <img
+                                    :src="photo.sizes?.thumbnail || photo.url"
+                                    :alt="photo.label || 'Photo'"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Empty state -->
+                    <div v-if="!hasAnyMedia" class="empty-media">
                         <span class="info-icon">i</span>
-                        Personalize your one sheet with your own unique branding.
+                        No media assets in this brand kit. Click "Edit in Brand Kit" to add headshots, logos, and photos.
                     </div>
                 </div>
-            </template>
+            </div>
+        </template>
 
-            <template #edit>
-                <GalleryEditor
-                    :items="editFields.logos || []"
-                    alt-default="Logo"
-                    add-button-text="Add Logo"
-                    :error="mediaError"
-                    @add="addToGallery('logos')"
-                    @remove="(index) => removeGalleryItem('logos', index)"
-                />
-            </template>
-        </EditablePanel>
+        <!-- No Brand Kit Selected -->
+        <div v-else class="panel empty-brand-kit">
+            <div class="panel-content">
+                <div class="empty-state">
+                    <div class="empty-icon">🎨</div>
+                    <h3>No Brand Kit Selected</h3>
+                    <p>Select a brand kit above to manage your brand colors, fonts, and media assets.</p>
+                </div>
+            </div>
+        </div>
 
-        <!-- Brand Colors Panel -->
-        <EditablePanel
-            title="Brand Colors"
-            section-id="colors"
-            :is-editing="editingSection === 'colors'"
-            :is-saving="isSaving"
-            @edit="startEditing"
-            @save="saveSection"
-            @cancel="cancelEditing"
-        >
-            <template #display>
-                <div class="color-grid">
-                    <div
-                        v-for="color in colorFields"
-                        :key="color.key"
-                        class="color-item"
-                    >
-                        <div
-                            class="color-preview"
-                            :style="{ backgroundColor: store.fields[color.key] || '#e2e8f0' }"
-                        ></div>
-                        <div class="color-details">
-                            <span class="color-name">{{ color.label }}</span>
-                            <span class="color-value">{{ store.fields[color.key] || '—' }}</span>
-                        </div>
+        <!-- Legacy Data Migration Notice -->
+        <div v-if="hasLegacyBranding && !selectedBrandKitId" class="panel migration-notice">
+            <div class="panel-content">
+                <div class="notice-content">
+                    <span class="notice-icon">⚠️</span>
+                    <div class="notice-text">
+                        <strong>Legacy Branding Data Detected</strong>
+                        <p>
+                            This profile has existing branding data. Create a new brand kit to migrate
+                            your colors, fonts, and media to the new system.
+                        </p>
                     </div>
+                    <button class="btn btn-primary" @click="migrateLegacyData">
+                        Create Brand Kit from Existing Data
+                    </button>
                 </div>
-            </template>
-
-            <template #edit>
-                <div class="color-edit-grid">
-                    <div
-                        v-for="color in colorFields"
-                        :key="color.key"
-                        class="form-group color-form-group"
-                    >
-                        <label class="form-label">{{ color.label }}</label>
-                        <div class="color-input-group">
-                            <input
-                                type="color"
-                                class="color-picker"
-                                :value="editFields[color.key] || '#000000'"
-                                @input="editFields[color.key] = $event.target.value"
-                            />
-                            <input
-                                type="text"
-                                class="form-input color-hex"
-                                v-model="editFields[color.key]"
-                                placeholder="#000000"
-                            />
-                        </div>
-                    </div>
-                </div>
-            </template>
-        </EditablePanel>
-
-        <!-- Brand Fonts Panel -->
-        <EditablePanel
-            title="Brand Fonts"
-            section-id="fonts"
-            :is-editing="editingSection === 'fonts'"
-            :is-saving="isSaving"
-            @edit="startEditing"
-            @save="saveSection"
-            @cancel="cancelEditing"
-        >
-            <template #display>
-                <div class="fonts-display">
-                    <div class="font-item">
-                        <label class="font-label">Primary Font</label>
-                        <div class="font-preview" :style="{ fontFamily: store.fields.font_primary || 'inherit' }">
-                            {{ store.fields.font_primary || 'Not set' }}
-                        </div>
-                        <div
-                            v-if="store.fields.font_primary"
-                            class="font-sample"
-                            :style="{ fontFamily: store.fields.font_primary }"
-                        >
-                            Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz
-                        </div>
-                    </div>
-                    <div class="font-item">
-                        <label class="font-label">Secondary Font</label>
-                        <div class="font-preview" :style="{ fontFamily: store.fields.font_secondary || 'inherit' }">
-                            {{ store.fields.font_secondary || 'Not set' }}
-                        </div>
-                        <div
-                            v-if="store.fields.font_secondary"
-                            class="font-sample"
-                            :style="{ fontFamily: store.fields.font_secondary }"
-                        >
-                            Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz
-                        </div>
-                    </div>
-                </div>
-            </template>
-
-            <template #edit>
-                <div class="form-group">
-                    <label class="form-label">Primary Font</label>
-                    <select class="form-input" v-model="editFields.font_primary">
-                        <option value="">Select a font...</option>
-                        <option v-for="font in googleFonts" :key="font" :value="font">
-                            {{ font }}
-                        </option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Secondary Font</label>
-                    <select class="form-input" v-model="editFields.font_secondary">
-                        <option value="">Select a font...</option>
-                        <option v-for="font in googleFonts" :key="font" :value="font">
-                            {{ font }}
-                        </option>
-                    </select>
-                </div>
-            </template>
-        </EditablePanel>
-
-        <!-- Carousel Images Panel -->
-        <EditablePanel
-            title="Carousel Images"
-            section-id="carousel"
-            :is-editing="editingSection === 'carousel'"
-            :is-saving="isSaving"
-            @edit="startEditing"
-            @save="saveSection"
-            @cancel="cancelEditing"
-        >
-            <template #display>
-                <div class="carousel-grid">
-                    <template v-if="store.fields.carousel_images && store.fields.carousel_images.length">
-                        <div
-                            v-for="image in store.fields.carousel_images"
-                            :key="image.id"
-                            class="carousel-item"
-                        >
-                            <img
-                                :src="image.sizes?.thumbnail || image.url"
-                                :alt="image.alt || 'Carousel image'"
-                            />
-                        </div>
-                    </template>
-                    <div v-else class="empty-text">
-                        <span class="info-icon">i</span>
-                        Personalize your one sheet with a logo carousel
-                    </div>
-                </div>
-            </template>
-
-            <template #edit>
-                <GalleryEditor
-                    :items="editFields.carousel_images || []"
-                    alt-default="Carousel"
-                    add-button-text="Add Image"
-                    :error="mediaError"
-                    @add="addToGallery('carousel_images')"
-                    @remove="(index) => removeGalleryItem('carousel_images', index)"
-                />
-            </template>
-        </EditablePanel>
+            </div>
+        </div>
 
         <!-- Media Kit Layout Panel -->
         <div class="panel">
@@ -292,25 +211,55 @@
                 </p>
             </div>
         </div>
+
+        <!-- Brand Kit Editor Modal -->
+        <Teleport to="body">
+            <div v-if="showEditor" class="editor-modal">
+                <div class="modal-backdrop" @click="closeEditor"></div>
+                <div class="modal-content">
+                    <BrandKitEditor
+                        :brand-kit-id="selectedBrandKitId"
+                        mode="edit"
+                        :initial-tab="editorInitialTab"
+                        @close="closeEditor"
+                        @saved="onEditorSaved"
+                    />
+                </div>
+            </div>
+        </Teleport>
     </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useProfileStore } from '../../stores/profile.js';
-import { useMediaUpload } from '../../../composables/useMediaUpload.js';
-import EditablePanel from '../layout/EditablePanel.vue';
-import GalleryEditor from './GalleryEditor.vue';
+import { useBrandKitStore } from '../../../stores/brandKit.js';
+import BrandKitSelector from '../../../brand-kits/components/BrandKitSelector.vue';
+import BrandKitEditor from '../../../brand-kits/components/BrandKitEditor.vue';
 
-const store = useProfileStore();
-const { openFilePicker, uploading: isUploading, uploadError: mediaUploaderError } = useMediaUpload();
+const profileStore = useProfileStore();
+const brandKitStore = useBrandKitStore();
 
-// Media error state
-const mediaError = ref(null);
+// Brand kit selection
+const selectedBrandKitId = ref(null);
+const showEditor = ref(false);
+const editorInitialTab = ref('colors');
+
+// Color field definitions (matching new Brand Kit schema)
+const colorFields = [
+    { key: 'color_primary', label: 'Primary Color' },
+    { key: 'color_secondary', label: 'Secondary Color' },
+    { key: 'color_accent', label: 'Accent Color' },
+    { key: 'color_background', label: 'Background Color' },
+    { key: 'color_surface', label: 'Surface Color' },
+    { key: 'color_text', label: 'Text Color' },
+    { key: 'color_text_muted', label: 'Muted Text' },
+    { key: 'color_link', label: 'Link Color' },
+];
 
 // Layout selector URL with post ID
 const layoutSelectorUrl = computed(() => {
-    const postId = store.postId;
+    const postId = profileStore.postId;
     if (postId) {
         return `/app/templates/designs/?pos=${postId}`;
     }
@@ -319,204 +268,184 @@ const layoutSelectorUrl = computed(() => {
 
 // Current layout name from taxonomies
 const currentLayout = computed(() => {
-    return store.taxonomies?.layout?.[0]?.name || null;
+    return profileStore.taxonomies?.layout?.[0]?.name || null;
 });
 
-// Edit state
-const editingSection = ref(null);
-const isSaving = ref(false);
-const editFields = reactive({});
+// Selected brand kit data
+const selectedBrandKit = computed(() => {
+    if (!selectedBrandKitId.value) return null;
+    return brandKitStore.getBrandKitById(selectedBrandKitId.value);
+});
 
-// Headshot types for v-for loops
-const headshotTypes = [
-    { key: 'headshot_primary', label: 'Primary Headshot' },
-    { key: 'headshot_vertical', label: 'Vertical Headshot' },
-    { key: 'headshot_horizontal', label: 'Horizontal Headshot' },
-];
+// Media from brand kit
+const brandKitHeadshots = computed(() => {
+    if (!selectedBrandKit.value?.media) return [];
+    return selectedBrandKit.value.media.filter(m => m.category === 'headshot');
+});
 
-// Color fields
-const colorFields = [
-    { key: 'color_primary', label: 'Primary Color' },
-    { key: 'color_accent', label: 'Secondary/Accent Color' },
-    { key: 'color_contrasting', label: 'Contrasting Color' },
-    { key: 'color_background', label: 'Background Color' },
-    { key: 'color_header', label: 'Header Color' },
-    { key: 'color_header_accent', label: 'Header Accent' },
-    { key: 'color_header_text', label: 'Header Text' },
-    { key: 'color_paragraph', label: 'Paragraph Text' },
-];
+const brandKitLogos = computed(() => {
+    if (!selectedBrandKit.value?.media) return [];
+    return selectedBrandKit.value.media.filter(m => m.category === 'logo');
+});
 
-// Popular Google Fonts
-const googleFonts = [
-    'Amiri',
-    'Bonbon',
-    'Lato',
-    'Montserrat',
-    'Open Sans',
-    'Oswald',
-    'Playfair Display',
-    'Poppins',
-    'Raleway',
-    'Roboto',
-    'Roboto Condensed',
-    'Roboto Slab',
-    'Source Sans Pro',
-    'Ubuntu',
-];
+const brandKitPhotos = computed(() => {
+    if (!selectedBrandKit.value?.media) return [];
+    return selectedBrandKit.value.media.filter(m => m.category === 'photo');
+});
 
-// Section field mappings
-const sectionFields = {
-    headshots: ['headshot_primary', 'headshot_vertical', 'headshot_horizontal'],
-    logos: ['logos'],
-    colors: colorFields.map((c) => c.key),
-    fonts: ['font_primary', 'font_secondary'],
-    carousel: ['carousel_images'],
-};
+const hasAnyMedia = computed(() => {
+    return brandKitHeadshots.value.length > 0 ||
+           brandKitLogos.value.length > 0 ||
+           brandKitPhotos.value.length > 0;
+});
+
+// Check for legacy branding data
+const hasLegacyBranding = computed(() => {
+    const fields = profileStore.fields;
+    // Check if there's any legacy branding data
+    return !!(
+        fields.color_primary ||
+        fields.color_accent ||
+        fields.font_primary ||
+        fields.headshot_primary?.url ||
+        (fields.logos && fields.logos.length > 0)
+    );
+});
 
 // Methods
-const startEditing = (sectionId) => {
-    editingSection.value = sectionId;
+const onBrandKitChange = async (brandKitId) => {
+    // Save brand_kit_id to profile
+    profileStore.updateField('brand_kit_id', brandKitId);
+    await profileStore.saveFields(['brand_kit_id']);
 
-    const fields = sectionFields[sectionId] || [];
-    fields.forEach((field) => {
-        const value = store.fields[field];
-        // Deep copy to prevent direct mutation of the store state
-        // This ensures cancel will properly discard changes
-        editFields[field] = value ? JSON.parse(JSON.stringify(value)) : '';
-    });
+    // Load full brand kit data if not already loaded
+    if (brandKitId) {
+        await brandKitStore.loadBrandKit(brandKitId);
+    }
 };
 
-const cancelEditing = () => {
-    editingSection.value = null;
-    Object.keys(editFields).forEach((key) => {
-        delete editFields[key];
-    });
+const openEditor = (tab) => {
+    editorInitialTab.value = tab;
+    showEditor.value = true;
 };
 
-const saveSection = async (sectionId) => {
-    isSaving.value = true;
+const closeEditor = () => {
+    showEditor.value = false;
+};
+
+const onEditorSaved = async () => {
+    closeEditor();
+    // Refresh brand kit data
+    if (selectedBrandKitId.value) {
+        await brandKitStore.loadBrandKit(selectedBrandKitId.value);
+        await brandKitStore.loadBrandKits(true);
+    }
+};
+
+const migrateLegacyData = async () => {
+    const fields = profileStore.fields;
+
+    // Prepare brand kit data from legacy fields
+    const brandKitData = {
+        name: `${profileStore.postTitle || 'Profile'} Brand Kit`,
+    };
+
+    // Map legacy colors to new schema
+    const colorMapping = {
+        'color_primary': 'color_primary',
+        'color_accent': 'color_secondary',
+        'color_contrasting': 'color_accent',
+        'color_background': 'color_background',
+        'color_header': 'color_surface',
+        'color_paragraph': 'color_text',
+        'color_header_text': 'color_text_muted',
+        'color_header_accent': 'color_link',
+    };
+
+    for (const [oldKey, newKey] of Object.entries(colorMapping)) {
+        if (fields[oldKey]) {
+            brandKitData[newKey] = fields[oldKey];
+        }
+    }
+
+    // Map fonts
+    if (fields.font_primary) {
+        brandKitData.font_primary = fields.font_primary;
+        brandKitData.font_heading = fields.font_secondary || fields.font_primary;
+    }
 
     try {
-        const fields = sectionFields[sectionId] || [];
+        // Create brand kit
+        const newBrandKit = await brandKitStore.createBrandKit(brandKitData);
 
-        fields.forEach((field) => {
-            if (editFields[field] !== undefined) {
-                store.updateField(field, editFields[field]);
+        // Migrate media
+        if (newBrandKit?.id) {
+            // Migrate headshots
+            const headshotFields = [
+                { field: 'headshot_primary', tags: ['primary'], label: 'Primary Headshot', isPrimary: true },
+                { field: 'headshot_vertical', tags: ['vertical'], label: 'Vertical Headshot' },
+                { field: 'headshot_horizontal', tags: ['horizontal'], label: 'Horizontal Headshot' },
+            ];
+
+            for (const headshot of headshotFields) {
+                if (fields[headshot.field]?.id) {
+                    await brandKitStore.addMedia({
+                        media_id: fields[headshot.field].id,
+                        category: 'headshot',
+                        tags: headshot.tags,
+                        label: headshot.label,
+                        is_primary: headshot.isPrimary || false,
+                    });
+                }
             }
-        });
 
-        const success = await store.saveFields(fields);
+            // Migrate logos
+            if (fields.logos && Array.isArray(fields.logos)) {
+                let isFirst = true;
+                for (const logo of fields.logos) {
+                    if (logo?.id) {
+                        await brandKitStore.addMedia({
+                            media_id: logo.id,
+                            category: 'logo',
+                            tags: ['brand'],
+                            label: logo.alt || '',
+                            is_primary: isFirst,
+                        });
+                        isFirst = false;
+                    }
+                }
+            }
 
-        if (success) {
-            editingSection.value = null;
-        } else {
-            // Show error feedback to user
-            const errorMsg = store.lastError || 'Failed to save. Please try again.';
-            console.error('Save failed:', errorMsg);
-            alert(errorMsg);
+            // Select the new brand kit
+            selectedBrandKitId.value = newBrandKit.id;
+            await onBrandKitChange(newBrandKit.id);
         }
     } catch (error) {
-        console.error('Save error:', error);
-        alert('An error occurred while saving. Please try again.');
-    } finally {
-        isSaving.value = false;
+        console.error('Failed to migrate legacy branding:', error);
+        alert('Failed to migrate branding data. Please try again.');
     }
 };
 
-/**
- * Select a single headshot image using REST API upload
- * @param {string} fieldName - The headshot field (headshot_primary, etc.)
- */
-const selectHeadshot = async (fieldName) => {
-    mediaError.value = null;
+// Initialize
+onMounted(async () => {
+    await brandKitStore.loadBrandKits();
 
-    try {
-        const uploaded = await openFilePicker({
-            multiple: false,
-            accept: 'image/*',
-            allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
-        });
+    // Load existing brand_kit_id from profile
+    if (profileStore.fields.brand_kit_id) {
+        selectedBrandKitId.value = profileStore.fields.brand_kit_id;
+        await brandKitStore.loadBrandKit(selectedBrandKitId.value);
+    }
+});
 
-        if (uploaded && uploaded.length > 0) {
-            const attachment = uploaded[0];
-            // Format attachment for storage
-            editFields[fieldName] = {
-                id: attachment.id,
-                url: attachment.url,
-                alt: attachment.alt || '',
-                sizes: {
-                    thumbnail: attachment.thumbnail,
-                    medium: attachment.medium,
-                    large: attachment.large,
-                    full: attachment.full,
-                },
-            };
+// Watch for external changes to brand_kit_id
+watch(
+    () => profileStore.fields.brand_kit_id,
+    (newValue) => {
+        if (newValue !== selectedBrandKitId.value) {
+            selectedBrandKitId.value = newValue;
         }
-    } catch (err) {
-        mediaError.value = err.message;
-        console.error('Failed to select headshot:', err);
     }
-};
-
-/**
- * Remove an image from a single-image field
- * @param {string} fieldName - The field name
- */
-const removeImage = (fieldName) => {
-    editFields[fieldName] = null;
-};
-
-/**
- * Add images to a gallery field using REST API upload
- * @param {string} fieldName - The gallery field (logos, carousel_images)
- */
-const addToGallery = async (fieldName) => {
-    mediaError.value = null;
-
-    try {
-        const uploaded = await openFilePicker({
-            multiple: true,
-            accept: 'image/*',
-            allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
-        });
-
-        if (uploaded && uploaded.length > 0) {
-            // Initialize array if needed
-            if (!editFields[fieldName] || !Array.isArray(editFields[fieldName])) {
-                editFields[fieldName] = [];
-            }
-
-            // Add new images to gallery
-            uploaded.forEach((attachment) => {
-                editFields[fieldName].push({
-                    id: attachment.id,
-                    url: attachment.url,
-                    alt: attachment.alt || '',
-                    sizes: {
-                        thumbnail: attachment.thumbnail,
-                        medium: attachment.medium,
-                        large: attachment.large,
-                        full: attachment.full,
-                    },
-                });
-            });
-        }
-    } catch (err) {
-        mediaError.value = err.message;
-        console.error('Failed to add to gallery:', err);
-    }
-};
-
-/**
- * Remove an item from a gallery field
- * @param {string} fieldName - The gallery field
- * @param {number} index - Index of item to remove
- */
-const removeGalleryItem = (fieldName, index) => {
-    if (editFields[fieldName] && Array.isArray(editFields[fieldName])) {
-        editFields[fieldName].splice(index, 1);
-    }
-};
+);
 </script>
 
 <style scoped>
@@ -524,71 +453,78 @@ const removeGalleryItem = (fieldName, index) => {
     /* Uses parent padding */
 }
 
-/* Headshots Grid */
-.headshots-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-}
-
-.headshot-item {
-    text-align: center;
-}
-
-.headshot-item figure {
-    margin: 0;
-}
-
-.headshot-item img {
-    width: 200px;
-    height: 200px;
-    object-fit: contain;
+/* Panel styles */
+.panel {
+    background-color: white;
     border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    margin-bottom: 24px;
 }
 
-.headshot-item figcaption {
-    margin-top: 8px;
-    font-size: 14px;
-    color: #64748b;
-}
-
-.placeholder-image {
-    width: 200px;
-    height: 200px;
-    background: #f1f5f9;
-    border-radius: 8px;
+.panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f1f5f9;
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-size: 48px;
-    color: #94a3b8;
-}
-
-/* Logos Grid */
-.logos-grid {
-    display: flex;
+    justify-content: space-between;
     flex-wrap: wrap;
-    gap: 16px;
+    gap: 8px;
 }
 
-.logo-item img {
-    max-width: 150px;
-    max-height: 100px;
-    object-fit: contain;
+.panel-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    color: #0f172a;
+}
+
+.panel-description {
+    margin: 4px 0 0 0;
+    font-size: 14px;
+    color: #64748b;
+    flex-basis: 100%;
+}
+
+.panel-content {
+    padding: 20px;
+}
+
+/* Brand Kit Panel */
+.brand-kit-panel .panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+/* Edit Link */
+.edit-link {
+    background: none;
+    border: none;
+    color: #3b82f6;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.edit-link:hover {
+    background-color: #eff6ff;
 }
 
 /* Color Grid */
 .color-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
 }
 
 .color-item {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     padding: 12px;
     border-radius: 8px;
     border: 1px solid #e2e8f0;
@@ -596,8 +532,8 @@ const removeGalleryItem = (fieldName, index) => {
 }
 
 .color-preview {
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     border: 1px solid rgba(0, 0, 0, 0.05);
@@ -608,48 +544,18 @@ const removeGalleryItem = (fieldName, index) => {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
 }
 
 .color-name {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     color: #0f172a;
 }
 
 .color-value {
-    font-size: 13px;
+    font-size: 12px;
     color: #64748b;
-    font-family: monospace;
-}
-
-/* Color Edit Grid */
-.color-edit-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 16px;
-}
-
-.color-form-group {
-    margin-bottom: 0;
-}
-
-.color-input-group {
-    display: flex;
-    gap: 8px;
-}
-
-.color-picker {
-    width: 48px;
-    height: 38px;
-    padding: 2px;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-.color-hex {
-    flex: 1;
     font-family: monospace;
 }
 
@@ -657,7 +563,7 @@ const removeGalleryItem = (fieldName, index) => {
 .fonts-display {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 20px;
 }
 
 .font-item {
@@ -668,8 +574,8 @@ const removeGalleryItem = (fieldName, index) => {
 
 .font-label {
     display: block;
-    padding: 12px 16px;
-    font-size: 14px;
+    padding: 10px 16px;
+    font-size: 13px;
     font-weight: 500;
     background-color: #f8fafc;
     border-bottom: 1px solid #e2e8f0;
@@ -683,103 +589,194 @@ const removeGalleryItem = (fieldName, index) => {
 }
 
 .font-sample {
-    padding: 16px;
+    padding: 12px 16px;
     font-size: 14px;
     color: #64748b;
     border-top: 1px solid #f1f5f9;
+    background: #fafafa;
     white-space: nowrap;
     overflow-x: auto;
 }
 
-/* Carousel Grid */
-.carousel-grid {
+/* Media Sections */
+.media-section {
+    margin-bottom: 24px;
+}
+
+.media-section:last-child {
+    margin-bottom: 0;
+}
+
+.media-section-title {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.media-grid {
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
 }
 
-.carousel-item img {
-    width: 100px;
-    height: 75px;
-    object-fit: contain;
-    border-radius: 4px;
+.media-item {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    border-radius: 8px;
+    overflow: hidden;
     border: 1px solid #e2e8f0;
 }
 
-/* Empty states */
-.empty-text {
-    color: #64748b;
-    font-size: 14px;
+.media-item.is-primary {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
-/* Info icon styles are in profile.css */
-
-/* Edit note */
-.edit-note {
-    color: #64748b;
-    font-size: 14px;
-    font-style: italic;
-    margin: 0;
+.media-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
-/* Form elements */
-.form-group {
+.logos-grid .media-item {
+    background: #f8fafc;
+}
+
+.logos-grid .media-item img {
+    object-fit: contain;
+    padding: 8px;
+}
+
+.logo-item {
+    width: 150px;
+    height: 100px;
+}
+
+.primary-badge {
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    background: #3b82f6;
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.empty-media {
+    color: #64748b;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Empty State */
+.empty-brand-kit .panel-content {
+    padding: 40px 20px;
+}
+
+.empty-state {
+    text-align: center;
+}
+
+.empty-icon {
+    font-size: 48px;
     margin-bottom: 16px;
 }
 
-.form-label {
-    display: block;
-    font-size: 14px;
-    font-weight: 500;
-    margin-bottom: 6px;
-    color: #334155;
-}
-
-.form-input {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    font-size: 14px;
-    transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.form-input:focus {
-    outline: none;
-    border-color: #14b8a6;
-    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
-}
-
-/* Panel styles (for Media Kit Layout) */
-.panel {
-    background-color: white;
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    overflow: hidden;
-    margin-bottom: 24px;
-}
-
-.panel-header {
-    padding: 16px 20px;
-    border-bottom: 1px solid #f1f5f9;
-}
-
-.panel-title {
-    font-size: 16px;
-    font-weight: 600;
-    margin: 0;
+.empty-state h3 {
+    margin: 0 0 8px 0;
+    font-size: 18px;
     color: #0f172a;
 }
 
-.panel-content {
-    padding: 20px;
+.empty-state p {
+    margin: 0;
+    color: #64748b;
+    font-size: 14px;
+}
+
+/* Migration Notice */
+.migration-notice {
+    border-color: #fef08a;
+    background: #fefce8;
+}
+
+.notice-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.notice-icon {
+    font-size: 24px;
+}
+
+.notice-text {
+    flex: 1;
+    min-width: 200px;
+}
+
+.notice-text strong {
+    display: block;
+    color: #854d0e;
+    margin-bottom: 4px;
+}
+
+.notice-text p {
+    margin: 0;
+    font-size: 13px;
+    color: #a16207;
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: #3b82f6;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #2563eb;
 }
 
 /* Layout section styles */
 .layout-info {
     margin: 0 0 12px 0;
     font-size: 14px;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    background: #e2e8f0;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 600;
     color: #64748b;
 }
 
@@ -825,82 +822,29 @@ const removeGalleryItem = (fieldName, index) => {
     background-color: #f8fafc;
 }
 
-/* Headshots Edit Grid */
-.headshots-edit-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-}
-
-.headshot-upload-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-}
-
-.upload-label {
-    font-size: 14px;
-    font-weight: 500;
-    color: #334155;
-}
-
-.upload-preview {
-    width: 180px;
-    height: 180px;
-    border: 2px dashed #cbd5e1;
-    border-radius: 8px;
+/* Editor Modal */
+.editor-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    overflow: hidden;
-    background: #f8fafc;
 }
 
-.upload-preview:hover {
-    border-color: #14b8a6;
-    background: #f0fdfa;
+.modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
 }
 
-.upload-preview img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.upload-placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    color: #94a3b8;
-}
-
-.upload-icon {
-    font-size: 32px;
-}
-
-.upload-text {
-    font-size: 13px;
-}
-
-.remove-btn {
-    padding: 6px 12px;
-    font-size: 12px;
-    color: #dc2626;
+.modal-content {
+    position: relative;
+    width: 90%;
+    max-width: 1200px;
+    height: 90vh;
     background: white;
-    border: 1px solid #fecaca;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
+    border-radius: 16px;
+    overflow: hidden;
 }
-
-.remove-btn:hover {
-    background: #fef2f2;
-    border-color: #dc2626;
-}
-
-/* Gallery Edit Styles moved to GalleryEditor.vue component */
 </style>
