@@ -294,7 +294,7 @@
             </div>
 
             <!-- Custom URL Slug Editor -->
-            <div v-if="selectedProfileId && !isNewMediaKit" class="gmkb-modal__slug-editor">
+            <div v-if="canEditSlug && !isNewMediaKit" class="gmkb-modal__slug-editor">
               <div class="gmkb-modal__slug-header">
                 <label class="gmkb-modal__slug-label">Custom URL</label>
                 <button
@@ -567,6 +567,19 @@ const selectedProfileSlug = ref(window.gmkbData?.linkedProfileSlug || null)
 const selectedProfileIconRef = ref(window.gmkbData?.linkedProfileIcon || null)
 const selectedProfileNameRef = ref(window.gmkbData?.linkedProfileName || null)
 const selectedProfileTitleRef = ref(window.gmkbData?.linkedProfileTitle || null)
+
+// Post ID for the media kit (used as profile ID fallback since media kit IS the profile)
+const postId = computed(() => window.gmkbData?.postId || null)
+
+// Check if we can edit the slug (either linked profile or the post itself)
+const canEditSlug = computed(() => {
+  return !!(selectedProfileId.value || postId.value)
+})
+
+// Get the effective profile ID for slug operations
+const effectiveProfileId = computed(() => {
+  return selectedProfileId.value || postId.value
+})
 
 // Handle profile switch - updates store's profileData with new profile data
 const handleProfileSwitch = async (profileId) => {
@@ -901,8 +914,15 @@ function copyShareLink() {
 
 // Slug editing methods
 function startEditingSlug() {
-  // Use the dedicated slug property instead of parsing URL
-  editSlugValue.value = selectedProfileSlug.value || ''
+  // Use the dedicated slug property, or extract from viewUrl as fallback
+  let initialSlug = selectedProfileSlug.value || ''
+  if (!initialSlug && viewUrl.value) {
+    const match = viewUrl.value.match(/\/media-kit\/([^\/]+)\/?$/)
+    if (match) {
+      initialSlug = match[1]
+    }
+  }
+  editSlugValue.value = initialSlug
   isEditingSlug.value = true
   slugError.value = ''
 }
@@ -929,9 +949,10 @@ async function saveEditSlug() {
     return
   }
 
-  const profileId = selectedProfileId.value || window.gmkbData?.profileId
+  // Use effectiveProfileId (linked profile or post ID)
+  const profileId = effectiveProfileId.value
   if (!profileId) {
-    slugError.value = 'No profile linked to this media kit'
+    slugError.value = 'Unable to update URL. Please save the media kit first.'
     return
   }
 
