@@ -404,8 +404,9 @@ class ComponentStyleService {
           safeStyle.effects.boxShadow !== 'none' &&
           safeStyle.effects.boxShadow !== '0 0 0 rgba(0,0,0,0)') {
         // Skip subtle default shadows that look like borders
-        const isDefaultShadow = safeStyle.effects.boxShadow.includes('0 2px 4px rgba(0,0,0,0.05)') ||
-                               safeStyle.effects.boxShadow.includes('0 1px 2px');
+        const normalizedShadow = safeStyle.effects.boxShadow.replace(/\s+/g, '');
+        const isDefaultShadow = normalizedShadow.includes('02px4pxrgba(0,0,0,0.05)') ||
+                               normalizedShadow.includes('01px2px');
         if (!isDefaultShadow) {
           componentRules.push(`box-shadow: ${safeStyle.effects.boxShadow} !important`);
         }
