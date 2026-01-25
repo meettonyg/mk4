@@ -36,6 +36,39 @@ class GMKB_Core_Schema {
      */
     public function register_post_types() {
 
+        // Brand Kit CPT - Standalone brand identity assets
+        register_post_type('gmkb_brand_kit', [
+            'labels' => [
+                'name' => __('Brand Kits', 'gmkb'),
+                'singular_name' => __('Brand Kit', 'gmkb'),
+                'add_new' => __('Add New Brand Kit', 'gmkb'),
+                'add_new_item' => __('Add New Brand Kit', 'gmkb'),
+                'edit_item' => __('Edit Brand Kit', 'gmkb'),
+                'view_item' => __('View Brand Kit', 'gmkb'),
+                'search_items' => __('Search Brand Kits', 'gmkb'),
+                'not_found' => __('No brand kits found', 'gmkb'),
+                'not_found_in_trash' => __('No brand kits found in trash', 'gmkb'),
+            ],
+            'public' => false,
+            'publicly_queryable' => false,
+            'show_ui' => true,
+            'show_in_menu' => 'edit.php?post_type=guests',
+            'show_in_rest' => true,
+            'rest_base' => 'brand-kits',
+            'rest_controller_class' => 'WP_REST_Posts_Controller',
+            'capability_type' => 'post',
+            'map_meta_cap' => true,
+            'has_archive' => false,
+            'hierarchical' => false,
+            'menu_icon' => 'dashicons-art',
+            'supports' => [
+                'title',
+                'author',
+                'revisions',
+                'custom-fields',
+            ],
+        ]);
+
         // Primary Media Kit CPT
         register_post_type('guests', [
             'labels' => [
@@ -204,6 +237,9 @@ class GMKB_Core_Schema {
 
         // Relationship fields
         $this->register_relationship_fields();
+
+        // Brand Kit fields
+        $this->register_brand_kit_fields();
     }
 
     /**
@@ -743,6 +779,37 @@ class GMKB_Core_Schema {
     private function get_offer_type($offer_id) {
         $terms = wp_get_object_terms($offer_id, 'offer_type', ['fields' => 'slugs']);
         return !empty($terms) && !is_wp_error($terms) ? $terms[0] : null;
+    }
+
+    /**
+     * Register Brand Kit meta fields
+     */
+    private function register_brand_kit_fields() {
+        // Load schema if available
+        if (class_exists('GMKB_Brand_Kit_Schema')) {
+            $fields = GMKB_Brand_Kit_Schema::get_all_fields();
+
+            foreach ($fields as $field_name => $config) {
+                register_post_meta('gmkb_brand_kit', $field_name, [
+                    'show_in_rest' => true,
+                    'single' => true,
+                    'type' => $config['type'],
+                    'description' => $config['description'] ?? '',
+                    'sanitize_callback' => $config['sanitize_callback'] ?? 'sanitize_text_field',
+                    'default' => $config['default'] ?? null,
+                ]);
+            }
+        }
+
+        // Add brand_kit_id field to guests (profiles) for linking
+        register_post_meta('guests', 'brand_kit_id', [
+            'show_in_rest' => true,
+            'single' => true,
+            'type' => 'integer',
+            'description' => 'Associated Brand Kit ID',
+            'sanitize_callback' => 'absint',
+            'default' => 0,
+        ]);
     }
 
     /**

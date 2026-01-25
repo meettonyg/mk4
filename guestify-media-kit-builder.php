@@ -129,6 +129,26 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-profile-repository.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/class-profile-repository.php';
 }
 
+// Brand Kit Schema - Field definitions for Brand Kit entity
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-brand-kit-schema.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-brand-kit-schema.php';
+}
+
+// Brand Kit Repository - Data Access Layer for Brand Kit CRUD operations
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-brand-kit-repository.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-brand-kit-repository.php';
+}
+
+// Media Library Schema - Standalone media library structure (many-to-many with Brand Kits)
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-media-library-schema.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-media-library-schema.php';
+}
+
+// Media Library Repository - Data Access Layer for standalone media CRUD
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-media-library-repository.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-media-library-repository.php';
+}
+
 // Onboarding Schema - Single Source of Truth for gamification tasks and rewards
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-schema.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-schema.php';
@@ -265,9 +285,27 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-profile-limits
     require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-profile-limits-api.php';
 }
 
+// Brand Kit API - CRUD for standalone Brand Kit entities
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-brand-kit-api.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-brand-kit-api.php';
+    GMKB_Brand_Kit_API::init();
+}
+
+// Media Library API - CRUD for standalone media with brand kit linking
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-media-library-api.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-media-library-api.php';
+}
+
 // Offers Migration - Migrate Formidable offers to native CPT
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/migrations/class-gmkb-offers-migration.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/migrations/class-gmkb-offers-migration.php';
+}
+
+// Brand Kit Migration - Database table creation and data migration
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/migrations/class-gmkb-brand-kit-migration.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/migrations/class-gmkb-brand-kit-migration.php';
+    // Run database migrations on init (creates tables if needed)
+    add_action('init', ['GMKB_Brand_Kit_Migration', 'maybe_run'], 5);
 }
 
 // AI INTEGRATION: AI Content Generation REST API Controller
@@ -403,6 +441,18 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/offers-shortcode.php'
 // Usage: [gmkb_home_widget] or [gmkb_home_widget compact="true"]
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/home-widget-shortcode.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/home-widget-shortcode.php';
+}
+
+// Brand Kits Manager Shortcode - Standalone brand kit management
+// Usage: [gmkb_brand_kits] or [gmkb_brand_kits id="123"]
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/brand-kits-shortcode.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/brand-kits-shortcode.php';
+}
+
+// Media Gallery Shortcode - View all media across brand kits
+// Usage: [gmkb_media_gallery] or [gmkb_media_gallery category="headshot"]
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/media-gallery-shortcode.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/media-gallery-shortcode.php';
 }
 
 // ROOT FIX: Include debug REST endpoint for troubleshooting
