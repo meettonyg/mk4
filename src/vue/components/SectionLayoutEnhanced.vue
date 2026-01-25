@@ -81,7 +81,7 @@
           >
             <!-- Full Width Layout -->
             <div v-if="section.type === 'full_width'" class="gmkb-section__column" data-column="1">
-              <div 
+              <div
                 class="component-drop-zone"
                 :data-section-id="section.section_id"
                 :data-column="1"
@@ -89,12 +89,8 @@
                 @dragleave="onDragLeave"
                 @drop.prevent="onDrop($event, section.section_id, 1)"
               >
-                <div v-if="(!section.components || section.components.length === 0)" class="drop-placeholder" data-builder-only>
-                  <span class="drop-icon">📦</span>
-                  <span>Drop components here</span>
-                </div>
+                <!-- CROSS-SECTION DRAG FIX: Always render draggable to allow drops from other sections -->
                 <draggable
-                  v-else
                   v-model="section.components"
                   group="components"
                   :item-key="(item) => {
@@ -122,18 +118,23 @@
                       :show-controls="true"
                     />
                     <!-- CRITICAL: Debug placeholder for undefined IDs -->
-                    <div v-else-if="!componentId" class="component-error-placeholder">
-                      <span>❌ Missing component ID at index {{ index }}</span>
+                    <div v-else-if="!componentId" class="component-error-placeholder" data-builder-only>
+                      <span>Missing component ID at index {{ index }}</span>
                     </div>
                   </template>
                 </draggable>
+                <!-- Empty state placeholder - shown inside drop zone when no components -->
+                <div v-if="(!section.components || section.components.length === 0)" class="drop-placeholder" data-builder-only>
+                  <span class="drop-icon">📦</span>
+                  <span>Drop components here</span>
+                </div>
               </div>
             </div>
 
             <!-- Two Column Layout -->
             <template v-else-if="section.type === 'two_column'">
               <div class="gmkb-section__column" data-column="1">
-                <div 
+                <div
                   class="component-drop-zone"
                   :data-section-id="section.section_id"
                   :data-column="1"
@@ -141,22 +142,16 @@
                   @dragleave="onDragLeave"
                   @drop.prevent="onDrop($event, section.section_id, 1)"
                 >
-                  <div v-if="!getColumnComponents(section, 1).length" class="drop-placeholder" data-builder-only>
-                    <span class="drop-icon">📦</span>
-                    <span>Column 1</span>
-                  </div>
+                  <!-- CROSS-SECTION DRAG FIX: Always render draggable -->
                   <draggable
-                    v-else
                     :model-value="getColumnComponents(section, 1)"
                     @update:model-value="updateColumnComponents(section, 1, $event)"
                     group="components"
                     :item-key="(item) => {
-                      // Handle various formats of component references
                       if (typeof item === 'string') return item;
                       if (item && typeof item === 'object') {
                         return item.component_id || item.id || String(Math.random());
                       }
-                      // Fallback for any other type
                       return String(item || Math.random());
                     }"
                     class="component-list"
@@ -174,15 +169,19 @@
                         :total-components="getColumnComponents(section, 1).length"
                         :show-controls="true"
                       />
-                      <div v-else-if="!componentId" class="component-error-placeholder">
-                        <span>❌ Missing component ID at index {{ index }}</span>
+                      <div v-else-if="!componentId" class="component-error-placeholder" data-builder-only>
+                        <span>Missing component ID at index {{ index }}</span>
                       </div>
                     </template>
                   </draggable>
+                  <div v-if="!getColumnComponents(section, 1).length" class="drop-placeholder" data-builder-only>
+                    <span class="drop-icon">📦</span>
+                    <span>Column 1</span>
+                  </div>
                 </div>
               </div>
               <div class="gmkb-section__column" data-column="2">
-                <div 
+                <div
                   class="component-drop-zone"
                   :data-section-id="section.section_id"
                   :data-column="2"
@@ -190,22 +189,16 @@
                   @dragleave="onDragLeave"
                   @drop.prevent="onDrop($event, section.section_id, 2)"
                 >
-                  <div v-if="!getColumnComponents(section, 2).length" class="drop-placeholder" data-builder-only>
-                    <span class="drop-icon">📦</span>
-                    <span>Column 2</span>
-                  </div>
+                  <!-- CROSS-SECTION DRAG FIX: Always render draggable -->
                   <draggable
-                    v-else
                     :model-value="getColumnComponents(section, 2)"
                     @update:model-value="updateColumnComponents(section, 2, $event)"
                     group="components"
                     :item-key="(item) => {
-                      // Handle various formats of component references
                       if (typeof item === 'string') return item;
                       if (item && typeof item === 'object') {
                         return item.component_id || item.id || String(Math.random());
                       }
-                      // Fallback for any other type
                       return String(item || Math.random());
                     }"
                     class="component-list"
@@ -223,11 +216,15 @@
                         :total-components="getColumnComponents(section, 2).length"
                         :show-controls="true"
                       />
-                      <div v-else-if="!componentId" class="component-error-placeholder">
-                        <span>❌ Missing component ID at index {{ index }}</span>
+                      <div v-else-if="!componentId" class="component-error-placeholder" data-builder-only>
+                        <span>Missing component ID at index {{ index }}</span>
                       </div>
                     </template>
                   </draggable>
+                  <div v-if="!getColumnComponents(section, 2).length" class="drop-placeholder" data-builder-only>
+                    <span class="drop-icon">📦</span>
+                    <span>Column 2</span>
+                  </div>
                 </div>
               </div>
             </template>
@@ -235,7 +232,7 @@
             <!-- Main + Sidebar Layout (70% / 30%) -->
             <template v-else-if="section.type === 'main_sidebar'">
               <div class="gmkb-section__column" data-column="1">
-                <div 
+                <div
                   class="component-drop-zone"
                   :data-section-id="section.section_id"
                   :data-column="1"
@@ -243,12 +240,8 @@
                   @dragleave="onDragLeave"
                   @drop.prevent="onDrop($event, section.section_id, 1)"
                 >
-                  <div v-if="!getColumnComponents(section, 1).length" class="drop-placeholder" data-builder-only>
-                    <span class="drop-icon">📦</span>
-                    <span>Main Column</span>
-                  </div>
+                  <!-- CROSS-SECTION DRAG FIX: Always render draggable -->
                   <draggable
-                    v-else
                     :model-value="getColumnComponents(section, 1)"
                     @update:model-value="updateColumnComponents(section, 1, $event)"
                     group="components"
@@ -274,15 +267,19 @@
                         :total-components="getColumnComponents(section, 1).length"
                         :show-controls="true"
                       />
-                      <div v-else-if="!componentId" class="component-error-placeholder">
-                        <span>❌ Missing component ID at index {{ index }}</span>
+                      <div v-else-if="!componentId" class="component-error-placeholder" data-builder-only>
+                        <span>Missing component ID at index {{ index }}</span>
                       </div>
                     </template>
                   </draggable>
+                  <div v-if="!getColumnComponents(section, 1).length" class="drop-placeholder" data-builder-only>
+                    <span class="drop-icon">📦</span>
+                    <span>Main Column</span>
+                  </div>
                 </div>
               </div>
               <div class="gmkb-section__column" data-column="2">
-                <div 
+                <div
                   class="component-drop-zone"
                   :data-section-id="section.section_id"
                   :data-column="2"
@@ -290,12 +287,8 @@
                   @dragleave="onDragLeave"
                   @drop.prevent="onDrop($event, section.section_id, 2)"
                 >
-                  <div v-if="!getColumnComponents(section, 2).length" class="drop-placeholder" data-builder-only>
-                    <span class="drop-icon">📦</span>
-                    <span>Sidebar</span>
-                  </div>
+                  <!-- CROSS-SECTION DRAG FIX: Always render draggable -->
                   <draggable
-                    v-else
                     :model-value="getColumnComponents(section, 2)"
                     @update:model-value="updateColumnComponents(section, 2, $event)"
                     group="components"
@@ -321,11 +314,15 @@
                         :total-components="getColumnComponents(section, 2).length"
                         :show-controls="true"
                       />
-                      <div v-else-if="!componentId" class="component-error-placeholder">
-                        <span>❌ Missing component ID at index {{ index }}</span>
+                      <div v-else-if="!componentId" class="component-error-placeholder" data-builder-only>
+                        <span>Missing component ID at index {{ index }}</span>
                       </div>
                     </template>
                   </draggable>
+                  <div v-if="!getColumnComponents(section, 2).length" class="drop-placeholder" data-builder-only>
+                    <span class="drop-icon">📦</span>
+                    <span>Sidebar</span>
+                  </div>
                 </div>
               </div>
             </template>
@@ -333,7 +330,7 @@
             <!-- Sidebar + Main Layout (30% / 70%) -->
             <template v-else-if="section.type === 'sidebar_main'">
               <div class="gmkb-section__column" data-column="1">
-                <div 
+                <div
                   class="component-drop-zone"
                   :data-section-id="section.section_id"
                   :data-column="1"
@@ -341,12 +338,8 @@
                   @dragleave="onDragLeave"
                   @drop.prevent="onDrop($event, section.section_id, 1)"
                 >
-                  <div v-if="!getColumnComponents(section, 1).length" class="drop-placeholder" data-builder-only>
-                    <span class="drop-icon">📦</span>
-                    <span>Sidebar</span>
-                  </div>
+                  <!-- CROSS-SECTION DRAG FIX: Always render draggable -->
                   <draggable
-                    v-else
                     :model-value="getColumnComponents(section, 1)"
                     @update:model-value="updateColumnComponents(section, 1, $event)"
                     group="components"
@@ -372,15 +365,19 @@
                         :total-components="getColumnComponents(section, 1).length"
                         :show-controls="true"
                       />
-                      <div v-else-if="!componentId" class="component-error-placeholder">
-                        <span>❌ Missing component ID at index {{ index }}</span>
+                      <div v-else-if="!componentId" class="component-error-placeholder" data-builder-only>
+                        <span>Missing component ID at index {{ index }}</span>
                       </div>
                     </template>
                   </draggable>
+                  <div v-if="!getColumnComponents(section, 1).length" class="drop-placeholder" data-builder-only>
+                    <span class="drop-icon">📦</span>
+                    <span>Sidebar</span>
+                  </div>
                 </div>
               </div>
               <div class="gmkb-section__column" data-column="2">
-                <div 
+                <div
                   class="component-drop-zone"
                   :data-section-id="section.section_id"
                   :data-column="2"
@@ -388,12 +385,8 @@
                   @dragleave="onDragLeave"
                   @drop.prevent="onDrop($event, section.section_id, 2)"
                 >
-                  <div v-if="!getColumnComponents(section, 2).length" class="drop-placeholder" data-builder-only>
-                    <span class="drop-icon">📦</span>
-                    <span>Main Column</span>
-                  </div>
+                  <!-- CROSS-SECTION DRAG FIX: Always render draggable -->
                   <draggable
-                    v-else
                     :model-value="getColumnComponents(section, 2)"
                     @update:model-value="updateColumnComponents(section, 2, $event)"
                     group="components"
@@ -419,24 +412,28 @@
                         :total-components="getColumnComponents(section, 2).length"
                         :show-controls="true"
                       />
-                      <div v-else-if="!componentId" class="component-error-placeholder">
-                        <span>❌ Missing component ID at index {{ index }}</span>
+                      <div v-else-if="!componentId" class="component-error-placeholder" data-builder-only>
+                        <span>Missing component ID at index {{ index }}</span>
                       </div>
                     </template>
                   </draggable>
+                  <div v-if="!getColumnComponents(section, 2).length" class="drop-placeholder" data-builder-only>
+                    <span class="drop-icon">📦</span>
+                    <span>Main Column</span>
+                  </div>
                 </div>
               </div>
             </template>
 
             <!-- Three Column Layout -->
             <template v-else-if="section.type === 'three_column'">
-              <div 
-                v-for="col in [1, 2, 3]" 
+              <div
+                v-for="col in [1, 2, 3]"
                 :key="`col-${col}`"
-                class="gmkb-section__column" 
+                class="gmkb-section__column"
                 :data-column="col"
               >
-                <div 
+                <div
                   class="component-drop-zone"
                   :data-section-id="section.section_id"
                   :data-column="col"
@@ -444,17 +441,12 @@
                   @dragleave="onDragLeave"
                   @drop.prevent="onDrop($event, section.section_id, col)"
                 >
-                  <div v-if="!getColumnComponents(section, col).length" class="drop-placeholder" data-builder-only>
-                    <span class="drop-icon">📦</span>
-                    <span>Column {{ col }}</span>
-                  </div>
+                  <!-- CROSS-SECTION DRAG FIX: Always render draggable -->
                   <draggable
-                    v-else
                     :model-value="getColumnComponents(section, col)"
                     @update:model-value="updateColumnComponents(section, col, $event)"
                     group="components"
                     :item-key="(item) => {
-                      // Handle various formats of component references
                       if (typeof item === 'string') return item;
                       if (item && typeof item === 'object') {
                         return item.component_id || item.id || item;
@@ -476,11 +468,15 @@
                         :total-components="getColumnComponents(section, col).length"
                         :show-controls="true"
                       />
-                      <div v-else-if="!componentId" class="component-error-placeholder">
-                        <span>❌ Missing component ID in col {{ col }} at index {{ index }}</span>
+                      <div v-else-if="!componentId" class="component-error-placeholder" data-builder-only>
+                        <span>Missing component ID in col {{ col }} at index {{ index }}</span>
                       </div>
                     </template>
                   </draggable>
+                  <div v-if="!getColumnComponents(section, col).length" class="drop-placeholder" data-builder-only>
+                    <span class="drop-icon">📦</span>
+                    <span>Column {{ col }}</span>
+                  </div>
                 </div>
               </div>
             </template>
@@ -1442,8 +1438,13 @@ onUnmounted(() => {
 
 /* Draggable styles */
 .component-list {
-  min-height: 20px;
+  min-height: 60px; /* CROSS-SECTION DRAG FIX: Increased for better drop target when empty */
   overflow: visible; /* ROOT FIX: Allow component controls to render outside bounds */
+}
+
+/* Ensure empty draggable is still visible as drop target */
+.component-list:empty {
+  min-height: 80px;
 }
 
 .ghost {

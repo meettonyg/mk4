@@ -5,7 +5,7 @@
     :show-typography="true"
     :active-tab="activeTab"
     @update:active-tab="activeTab = $event"
-    @back="handleBack"
+    @close="handleClose"
   >
     <template #content>
       <div class="content-fields">
@@ -49,23 +49,15 @@
           <!-- Custom Photos Section -->
           <div>
             <div class="field-group">
-              <button 
+              <MediaUploader
                 v-if="localData.photos.length < 12"
-                @click="handleUploadPhotos"
-                :disabled="isUploading"
-                class="upload-btn"
-                type="button"
-              >
-                <span v-if="isUploading">Uploading...</span>
-                <span v-else>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="17 8 12 3 7 8"></polyline>
-                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                  </svg>
-                  Upload Photo(s)
-                </span>
-              </button>
+                ref="mediaUploaderRef"
+                label="Upload Photo(s)"
+                :multiple="true"
+                :accepted-types="['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']"
+                :max-size="10 * 1024 * 1024"
+                @select="handleMediaSelect"
+              />
               <p class="field-hint">Upload or select photos from media library (up to 12 total)</p>
             </div>
 
@@ -315,12 +307,12 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue';
-import draggable from 'vuedraggable';  // ✅ NEW: Drag-and-drop support
+import draggable from 'vuedraggable';
 import { useMediaKitStore } from '@/stores/mediaKit';
-import { useModernMediaUploader } from '@/composables/useModernMediaUploader';
 import { ToastService } from '@/services/ToastService';
 import ComponentEditorTemplate from '@/vue/components/sidebar/editors/ComponentEditorTemplate.vue';
-import ImageCropper from '@/vue/components/shared/ImageCropper.vue';  // ✅ NEW: Image cropper
+import ImageCropper from '@/vue/components/shared/ImageCropper.vue';
+import MediaUploader from '@/vue/components/shared/MediaUploader.vue';
 // PHASE 5: Profile branding integration
 import ProfileImagePicker from '@/vue/components/shared/ProfileImagePicker.vue';
 
@@ -334,7 +326,6 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 const store = useMediaKitStore();
-const { openMediaLibrary, isUploading } = useModernMediaUploader();
 
 // Active tab state
 const activeTab = ref('content');
@@ -342,6 +333,9 @@ const activeTab = ref('content');
 // Image cropper state
 const cropperRef = ref(null);
 const currentCropIndex = ref(null);
+
+// Media uploader ref
+const mediaUploaderRef = ref(null);
 
 const localData = ref({ 
   title: 'Photo Gallery', 
@@ -457,21 +451,12 @@ const updateComponent = () => {
   }, 300);
 };
 
-// Handle photo upload (multiple)
-const handleUploadPhotos = async () => {
+// Handle media selection from MediaUploader
+const handleMediaSelect = async (selected) => {
   try {
-    // Use REST API uploader with MULTIPLE selection
-    // SECURITY: Filter to show only current user's uploads
-    const attachments = await openMediaLibrary({
-      title: 'Select Photo(s)',
-      button: { text: 'Use Selected Photo(s)' },
-      multiple: true, // Allow multiple selection
-      library: { 
-        type: 'image',
-        author: window.gmkbData?.user?.userId // ✅ Only show MY uploads
-      }
-    });
-    
+    // Handle both single file and array
+    const attachments = Array.isArray(selected) ? selected : [selected];
+
     if (attachments && attachments.length > 0) {
       // Add each photo, respecting the 12 photo limit
       attachments.forEach(attachment => {
@@ -483,22 +468,22 @@ const handleUploadPhotos = async () => {
             .replace(/&gt;/g, '>')
             .replace(/&quot;/g, '"')
             .replace(/&#039;/g, "'");
-          
+
           localData.value.photos.push({
             url: sanitizedUrl,
             caption: attachment.caption || attachment.title || '',
-            alt: attachment.alt || attachment.title || '',  // ✅ NEW: Use alt text from WordPress
+            alt: attachment.alt || attachment.title || '',
             id: attachment.id
           });
         }
       });
-      
+
       // Save to Pods field
       await savePhotosToPods();
-      
+
       // Update component
       updateComponent();
-      
+
       // Show success toast
       ToastService.success(
         `${attachments.length} photo${attachments.length > 1 ? 's' : ''} uploaded successfully`,
@@ -559,7 +544,7 @@ const savePhotosToPods = async () => {
   }
 };
 
-const handleBack = () => emit('close');
+const handleClose = () => emit('close');
 
 // Computed property for current crop image URL
 const currentCropImageUrl = computed(() => {

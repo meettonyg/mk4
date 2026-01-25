@@ -4,8 +4,8 @@
     :class="`gmkb-section--${section.layout}`"
     :data-section-id="section.section_id"
   >
-    <!-- Section Controls -->
-    <div class="gmkb-section-controls" v-if="showControls">
+    <!-- Section Controls (builder-only) -->
+    <div class="gmkb-section-controls" v-if="showControls" data-builder-only>
       <button @click="$emit('remove', section.section_id)" title="Delete Section">
         <svg viewBox="0 0 24 24" width="16" height="16">
           <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6" stroke="currentColor" fill="none" stroke-width="2"/>
@@ -26,7 +26,7 @@
           :total-components="components.length"
           :show-controls="showControls"
         />
-        <div v-if="components.length === 0" class="gmkb-section__placeholder">
+        <div v-if="components.length === 0" class="gmkb-section__placeholder" data-builder-only>
           Drop components here or click to add
         </div>
       </template>
@@ -43,7 +43,7 @@
             :total-components="components.length"
             :show-controls="showControls"
           />
-          <div v-if="leftComponents.length === 0" class="gmkb-section__placeholder">
+          <div v-if="leftComponents.length === 0" class="gmkb-section__placeholder" data-builder-only>
             Left column
           </div>
         </div>
@@ -57,7 +57,7 @@
             :total-components="components.length"
             :show-controls="showControls"
           />
-          <div v-if="rightComponents.length === 0" class="gmkb-section__placeholder">
+          <div v-if="rightComponents.length === 0" class="gmkb-section__placeholder" data-builder-only>
             Right column
           </div>
         </div>
@@ -80,7 +80,7 @@
             :total-components="components.length"
             :show-controls="showControls"
           />
-          <div v-if="getColumnComponents(col).length === 0" class="gmkb-section__placeholder">
+          <div v-if="getColumnComponents(col).length === 0" class="gmkb-section__placeholder" data-builder-only>
             Column {{ col }}
           </div>
         </div>

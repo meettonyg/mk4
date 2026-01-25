@@ -976,7 +976,20 @@ export const useMediaKitStore = defineStore('mediaKit', {
       
       this.isDirty = true;
       this._trackChange();
-      
+
+      // PERSISTENCE FIX: Trigger immediate save for pre-populated components
+      // This ensures profile data is persisted right away, not waiting for debounce
+      if (component._prePopulated && this.postId) {
+        console.log('[Store] Pre-populated component - triggering immediate save');
+        // Use setTimeout(0) to ensure this runs after the current call stack
+        // but before any user refresh action
+        setTimeout(() => {
+          if (this.isDirty && !this.isSaving) {
+            this.save().catch(err => console.error('Immediate save failed:', err));
+          }
+        }, 0);
+      }
+
       // Dispatch event for any listening systems to react
       document.dispatchEvent(new CustomEvent('gmkb:component-added', {
         detail: {

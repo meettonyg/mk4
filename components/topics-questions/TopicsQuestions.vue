@@ -233,13 +233,13 @@ const toggleQuestion = (index) => {
 }
 
 .topic-item.card-style {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e2e8f0;
+  /* box-shadow controlled by theme/ComponentStyleService when explicitly set */
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
 }
 
 .topic-item.card-style:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  /* box-shadow controlled by theme/ComponentStyleService when explicitly set */
 }
 
 .topic-number {

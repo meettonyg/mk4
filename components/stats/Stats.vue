@@ -176,7 +176,7 @@ const placeholderStats = [
 
 .stat-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  /* box-shadow controlled by theme/ComponentStyleService when explicitly set */
 }
 
 /* Placeholder styles */
@@ -197,8 +197,8 @@ const placeholderStats = [
 
 /* Card Styles */
 .stat-card.style-cards {
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: var(--card-bg, transparent);
+  /* box-shadow controlled by theme/ComponentStyleService when explicitly set */
 }
 
 .stat-card.style-minimal {

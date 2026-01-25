@@ -13,39 +13,47 @@
 .gmkb-component {
   margin-bottom: var(--gmkb-component-gap);
   position: relative;
-  transition: transform var(--gmkb-transition-base), 
+  transition: transform var(--gmkb-transition-base),
               box-shadow var(--gmkb-transition-base),
               background var(--gmkb-transition-base);
-  border-radius: var(--gmkb-radius-lg);
-  background: var(--gmkb-color-surface-elevated);
+  /* NO default border-radius or background - only apply when explicitly set */
 }
 
 /* CRITICAL: Component Root - Applies CSS Variable Overrides */
+/* NOTE: All visual styles should default to NONE/transparent and only apply when explicitly set */
+/* IMPORTANT: Use --gmkb-component-* variables (not globally defined) so fallbacks work */
 .component-root {
-  background: var(--gmkb-color-surface);
-  color: var(--gmkb-color-text);
-  font-family: var(--gmkb-font-primary);
-  font-size: var(--gmkb-font-size-base);
-  padding: var(--gmkb-spacing-component, var(--gmkb-space-10));
-  border-radius: var(--gmkb-border-radius, var(--gmkb-radius-lg));
-  box-shadow: var(--gmkb-shadow, var(--gmkb-shadow-base));
+  /* Typography inherits from theme */
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+
+  /* NO default visual styles - only apply when CSS variables are explicitly set */
+  /* NOTE: Use --gmkb-component-background (not --gmkb-color-surface which has a global default) */
+  background: var(--gmkb-component-background, transparent);
+  padding: var(--gmkb-spacing-component, 0);
+  border-radius: var(--gmkb-border-radius, 0);
+  box-shadow: var(--gmkb-shadow, none);
+
   transition: all var(--gmkb-transition-base);
-  
-  /* CRITICAL FIX: Border support */
+
+  /* Border support - defaults to none */
   border-width: var(--gmkb-border-width, 0);
   border-style: var(--gmkb-border-style, solid);
   border-color: var(--gmkb-border-color, transparent);
 }
 
 .component-root:hover {
-  box-shadow: var(--gmkb-shadow, var(--gmkb-shadow-md));
+  /* Only show hover shadow if explicitly set */
+  box-shadow: var(--gmkb-shadow-hover, var(--gmkb-shadow, none));
 }
 
 .gmkb-component:last-child {
   margin-bottom: 0;
 }
 
-/* Component States - Enhanced with better visual feedback */
+/* Component States - Builder-only visual feedback */
+/* These states (.is-editing, .is-dragging) only exist in the builder */
 .gmkb-component.is-editing {
   outline: var(--gmkb-border-width-medium) solid var(--gmkb-color-primary);
   outline-offset: var(--gmkb-border-width-medium);
@@ -60,9 +68,8 @@
   box-shadow: var(--gmkb-shadow-xl);
 }
 
-.gmkb-component:hover:not(.is-dragging) {
-  box-shadow: var(--gmkb-shadow-md);
-}
+/* REMOVED: Hover shadow was applying to frontend - components should not have
+   automatic hover effects unless explicitly configured via ComponentStyleService */
 
 /* ==========================================
    HERO COMPONENT
@@ -234,19 +241,12 @@
 
 .gmkb-component--topics,
 .topics-component {
-  padding: var(--gmkb-space-10);
-  background: var(--gmkb-color-surface-elevated);
-  border-radius: var(--gmkb-radius-lg);
-  border: 1px solid var(--gmkb-color-border);
-  box-shadow: var(--gmkb-shadow-base);
+  /* NO default visual styles - inherit from theme, apply via ComponentStyleService */
   transition: all var(--gmkb-transition-base);
 }
 
-.gmkb-component--topics:hover,
-.topics-component:hover {
-  box-shadow: var(--gmkb-shadow-md);
-  border-color: var(--gmkb-color-border-interactive);
-}
+/* REMOVED: Default background, border, box-shadow, and hover effects
+   Components should only have visual styling when explicitly configured */
 
 .topics-header {
   margin-bottom: var(--gmkb-space-6);
@@ -299,9 +299,7 @@
    ========================================== */
 
 .gmkb-component--contact {
-  padding: var(--gmkb-space-8);
-  background: var(--gmkb-color-surface);
-  border-radius: var(--gmkb-radius-lg);
+  /* NO default visual styles - inherit from theme, apply via ComponentStyleService */
   text-align: center;
 }
 
@@ -336,7 +334,7 @@
    ========================================== */
 
 .gmkb-component--social {
-  padding: var(--gmkb-space-6);
+  /* NO default visual styles - inherit from theme, apply via ComponentStyleService */
   text-align: center;
 }
 
@@ -378,9 +376,7 @@
    ========================================== */
 
 .gmkb-component--stats {
-  padding: var(--gmkb-space-10);
-  background: var(--gmkb-color-surface-elevated);
-  border-radius: var(--gmkb-radius-lg);
+  /* NO default visual styles - inherit from theme, apply via ComponentStyleService */
 }
 
 .stats-content {
