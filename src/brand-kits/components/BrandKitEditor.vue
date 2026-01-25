@@ -2,48 +2,19 @@
   <div class="brand-kit-editor" :class="{ 'is-loading': store.isLoading }">
     <!-- Header -->
     <div class="editor-header">
-      <div class="header-left">
-        <button class="back-btn" @click="handleClose" title="Back to Brand Kits">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <div class="header-title">
-          <input
-            v-if="isEditing"
-            v-model="localName"
-            type="text"
-            class="name-input"
-            placeholder="Brand Kit Name"
-            @input="markDirty"
-          />
-          <h1 v-else>{{ brandKit?.name || 'New Brand Kit' }}</h1>
-        </div>
+      <div class="header-title">
+        <input
+          v-if="isEditing"
+          v-model="localName"
+          type="text"
+          class="name-input"
+          placeholder="Brand Kit Name"
+          @input="markDirty"
+        />
+        <h1 v-else>{{ brandKit?.name || 'New Brand Kit' }}</h1>
       </div>
       <div class="header-actions">
-        <span v-if="store.hasUnsavedChanges" class="unsaved-indicator">Unsaved changes</span>
         <button v-if="!isEditing" class="btn btn-secondary" @click="startEditing">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-          </svg>
           Edit
         </button>
         <template v-else>
@@ -55,6 +26,11 @@
             <span v-else>Save Changes</span>
           </button>
         </template>
+        <button class="close-btn" @click="handleClose" title="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
     </div>
 
@@ -81,7 +57,6 @@
           :class="{ active: activeTab === tab.id }"
           @click="activeTab = tab.id"
         >
-          <span class="tab-icon">{{ tab.icon }}</span>
           {{ tab.label }}
         </button>
       </div>
@@ -90,14 +65,12 @@
       <div class="editor-content">
         <!-- Colors Tab -->
         <div v-show="activeTab === 'colors'" class="tab-panel">
-          <div class="panel-header">
-            <h2>Brand Colors</h2>
-            <p class="panel-description">
-              Define your brand's color palette. These colors will be available throughout your
-              media kits.
-            </p>
+          <div class="section-header">
+            <h2>Color Customization</h2>
+            <p class="section-description">Customize your brand colors</p>
           </div>
 
+          <h3 class="section-label">CUSTOM COLORS</h3>
           <div class="color-grid">
             <div v-for="(config, key) in colorFields" :key="key" class="color-field">
               <label :for="key">{{ config.label }}</label>
@@ -124,31 +97,30 @@
           </div>
 
           <!-- Color Presets -->
-          <div class="presets-section">
-            <h3>Quick Presets</h3>
-            <div class="preset-grid">
-              <button
-                v-for="preset in colorPresets"
-                :key="preset.name"
-                class="preset-btn"
-                :style="{ '--preset-color': preset.primary }"
-                @click="applyPreset(preset)"
-                :disabled="!isEditing"
-                :title="preset.name"
-              >
-                <span class="preset-swatch" :style="{ backgroundColor: preset.primary }"></span>
-                <span class="preset-name">{{ preset.name }}</span>
-              </button>
-            </div>
+          <h3 class="section-label">QUICK PRESETS</h3>
+          <div class="preset-grid">
+            <button
+              v-for="preset in colorPresets"
+              :key="preset.name"
+              class="preset-btn"
+              :style="{ backgroundColor: preset.primary }"
+              @click="applyPreset(preset)"
+              :disabled="!isEditing"
+              :title="preset.name"
+            >
+              {{ preset.name }}
+            </button>
           </div>
         </div>
 
         <!-- Fonts Tab -->
         <div v-show="activeTab === 'fonts'" class="tab-panel">
-          <div class="panel-header">
+          <div class="section-header">
             <h2>Typography</h2>
-            <p class="panel-description">Choose fonts that represent your brand identity.</p>
+            <p class="section-description">Choose fonts that represent your brand identity</p>
           </div>
+
+          <h3 class="section-label">FONT SELECTION</h3>
 
           <div class="font-fields">
             <div class="font-field">
@@ -224,14 +196,13 @@
 
         <!-- Media Tab -->
         <div v-show="activeTab === 'media'" class="tab-panel">
-          <div class="panel-header">
+          <div class="section-header">
             <h2>Media Library</h2>
-            <p class="panel-description">
-              Manage your brand assets: headshots, logos, and photos.
-            </p>
+            <p class="section-description">Manage your brand assets: headshots, logos, and photos</p>
           </div>
 
           <!-- Category Filters -->
+          <h3 class="section-label">CATEGORY</h3>
           <div class="media-filters">
             <button
               v-for="cat in mediaCategories"
@@ -240,7 +211,6 @@
               :class="{ active: mediaFilter === cat.id }"
               @click="mediaFilter = cat.id"
             >
-              <span class="filter-icon">{{ cat.icon }}</span>
               {{ cat.label }}
               <span v-if="mediaCounts[cat.id]" class="filter-count">
                 {{ mediaCounts[cat.id] }}
@@ -374,11 +344,11 @@ const localName = ref('');
 const localColors = ref({});
 const localFonts = ref({});
 
-// Tabs
+// Tabs (no icons - consistent with Theme Customizer)
 const tabs = [
-  { id: 'colors', label: 'Colors', icon: '🎨' },
-  { id: 'fonts', label: 'Fonts', icon: '🔤' },
-  { id: 'media', label: 'Media', icon: '🖼️' },
+  { id: 'colors', label: 'Colors' },
+  { id: 'fonts', label: 'Typography' },
+  { id: 'media', label: 'Media' },
 ];
 
 // Color field definitions
@@ -457,13 +427,13 @@ const googleFonts = [
 
 const displayFonts = ['Playfair Display', 'Merriweather', 'Crimson Text', 'Libre Baskerville'];
 
-// Media categories
+// Media categories (no icons - consistent with Theme Customizer)
 const mediaCategories = [
-  { id: 'all', label: 'All', icon: '📁' },
-  { id: 'headshot', label: 'Headshots', icon: '👤' },
-  { id: 'logo', label: 'Logos', icon: '🏢' },
-  { id: 'photo', label: 'Photos', icon: '📷' },
-  { id: 'background', label: 'Backgrounds', icon: '🎨' },
+  { id: 'all', label: 'All' },
+  { id: 'headshot', label: 'Headshots' },
+  { id: 'logo', label: 'Logos' },
+  { id: 'photo', label: 'Photos' },
+  { id: 'background', label: 'Backgrounds' },
 ];
 
 // Computed
@@ -637,64 +607,41 @@ watch(
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #f8fafc;
+  background: #ffffff;
 }
 
-/* Header */
+/* Header - matches Theme Customizer */
 .editor-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 16px 24px;
   background: white;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.back-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border: none;
-  background: #f1f5f9;
-  border-radius: 8px;
-  cursor: pointer;
-  color: #64748b;
-  transition: all 0.2s;
-}
-
-.back-btn:hover {
-  background: #e2e8f0;
-  color: #334155;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .header-title h1 {
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
-  color: #0f172a;
+  color: #111827;
 }
 
 .name-input {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
-  border: none;
-  border-bottom: 2px solid #3b82f6;
-  background: transparent;
-  padding: 4px 0;
-  color: #0f172a;
-  width: 300px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: white;
+  padding: 8px 12px;
+  color: #111827;
+  width: 280px;
 }
 
 .name-input:focus {
   outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .header-actions {
@@ -703,16 +650,30 @@ watch(
   gap: 12px;
 }
 
-.unsaved-indicator {
-  font-size: 13px;
-  color: #f59e0b;
-  font-style: italic;
+.close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.2s;
 }
 
-/* Buttons */
+.close-btn:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+/* Buttons - matches Theme Customizer */
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   padding: 8px 16px;
   border: none;
@@ -720,7 +681,7 @@ watch(
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
 }
 
 .btn:disabled {
@@ -739,13 +700,13 @@ watch(
 
 .btn-secondary {
   background: white;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
+  color: #374151;
+  border: 1px solid #d1d5db;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #f8fafc;
-  border-color: #cbd5e1;
+  background: #f9fafb;
+  border-color: #9ca3af;
 }
 
 /* Loading/Error States */
@@ -774,33 +735,30 @@ watch(
   }
 }
 
-/* Tabs */
+/* Tabs - matches Theme Customizer */
 .editor-tabs {
   display: flex;
-  gap: 4px;
+  gap: 0;
   padding: 0 24px;
   background: white;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .tab-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
+  padding: 14px 20px;
   border: none;
   background: none;
-  color: #64748b;
+  color: #6b7280;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
-  transition: all 0.2s;
+  transition: all 0.15s;
 }
 
 .tab-btn:hover {
-  color: #334155;
+  color: #374151;
 }
 
 .tab-btn.active {
@@ -808,14 +766,10 @@ watch(
   border-bottom-color: #3b82f6;
 }
 
-.tab-icon {
-  font-size: 16px;
-}
-
 /* Content Layout */
 .editor-content {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr 300px;
   flex: 1;
   overflow: hidden;
 }
@@ -823,114 +777,134 @@ watch(
 .tab-panel {
   padding: 24px;
   overflow-y: auto;
+  background: #ffffff;
 }
 
-.panel-header {
+/* Section Headers - matches Theme Customizer */
+.section-header {
   margin-bottom: 24px;
 }
 
-.panel-header h2 {
-  margin: 0 0 8px 0;
+.section-header h2 {
+  margin: 0 0 4px 0;
   font-size: 18px;
   font-weight: 600;
-  color: #0f172a;
+  color: #111827;
 }
 
-.panel-description {
+.section-description {
   margin: 0;
-  color: #64748b;
+  color: #6b7280;
   font-size: 14px;
 }
 
-/* Color Grid */
+.section-label {
+  margin: 0 0 12px 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Color Grid - matches Theme Customizer */
 .color-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-  margin-bottom: 32px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .color-field {
   background: white;
   border-radius: 8px;
   padding: 16px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #e5e7eb;
 }
 
 .color-field label {
   display: block;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  color: #334155;
+  color: #374151;
   margin-bottom: 8px;
 }
 
 .color-input-group {
   display: flex;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .color-picker {
-  width: 48px;
-  height: 38px;
+  width: 44px;
+  height: 36px;
   padding: 2px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #d1d5db;
   border-radius: 6px;
   cursor: pointer;
+  background: white;
+}
+
+.color-picker:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .color-hex {
   flex: 1;
   padding: 8px 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-family: monospace;
-  font-size: 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  color: #374151;
 }
 
 .color-hex:focus {
   outline: none;
   border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.color-hex:disabled {
+  background: #f9fafb;
+  cursor: not-allowed;
 }
 
 .field-description {
   margin: 0;
   font-size: 12px;
-  color: #94a3b8;
+  color: #9ca3af;
 }
 
-/* Presets */
-.presets-section h3 {
-  margin: 0 0 16px 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
+/* Presets - matches Theme Customizer colored buttons */
 .preset-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
+  margin-bottom: 24px;
 }
 
 .preset-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border: 1px solid #e2e8f0;
-  background: white;
-  border-radius: 6px;
+  justify-content: center;
+  min-width: 72px;
+  padding: 32px 16px 10px;
+  border: none;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
+  font-size: 12px;
+  font-weight: 500;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .preset-btn:hover:not(:disabled) {
-  border-color: var(--preset-color);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--preset-color) 20%, transparent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .preset-btn:disabled {
@@ -938,71 +912,69 @@ watch(
   cursor: not-allowed;
 }
 
-.preset-swatch {
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-}
-
-.preset-name {
-  font-size: 13px;
-  color: #334155;
-}
-
-/* Font Fields */
+/* Font Fields - matches Theme Customizer */
 .font-fields {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 .font-field {
   background: white;
   border-radius: 8px;
-  padding: 20px;
-  border: 1px solid #e2e8f0;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
 }
 
 .font-field label {
   display: block;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  color: #334155;
+  color: #374151;
   margin-bottom: 8px;
 }
 
 .font-field select {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 14px;
   background: white;
   cursor: pointer;
+  color: #374151;
 }
 
 .font-field select:focus {
   outline: none;
   border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.font-field select:disabled {
+  background: #f9fafb;
+  cursor: not-allowed;
 }
 
 .font-preview {
   margin-top: 12px;
   padding: 16px;
-  background: #f8fafc;
+  background: #f9fafb;
   border-radius: 6px;
+  border: 1px solid #e5e7eb;
 }
 
 .font-preview p,
 .font-preview h3 {
   margin: 0;
+  color: #111827;
 }
 
 .heading-preview h3 {
-  font-size: 24px;
+  font-size: 20px;
 }
 
-/* Media Section */
+/* Media Section - matches Theme Customizer */
 .media-filters {
   display: flex;
   gap: 8px;
@@ -1014,18 +986,19 @@ watch(
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 16px;
-  border: 1px solid #e2e8f0;
+  padding: 6px 12px;
+  border: 1px solid #d1d5db;
   background: white;
-  border-radius: 20px;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
-  color: #64748b;
-  transition: all 0.2s;
+  color: #6b7280;
+  transition: all 0.15s;
 }
 
 .filter-btn:hover {
-  border-color: #cbd5e1;
+  border-color: #9ca3af;
+  color: #374151;
 }
 
 .filter-btn.active {
@@ -1035,8 +1008,8 @@ watch(
 }
 
 .filter-count {
-  background: rgba(0, 0, 0, 0.1);
-  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.08);
+  padding: 1px 6px;
   border-radius: 10px;
   font-size: 11px;
 }
@@ -1048,36 +1021,40 @@ watch(
 .media-empty {
   text-align: center;
   padding: 40px 20px;
-  color: #64748b;
+  color: #6b7280;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px dashed #d1d5db;
 }
 
 .media-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
 }
 
 .media-item {
   background: white;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #e2e8f0;
-  transition: all 0.2s;
+  border: 1px solid #e5e7eb;
+  transition: all 0.15s;
 }
 
 .media-item:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-color: #d1d5db;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .media-item.is-primary {
   border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
 .media-preview {
   position: relative;
   aspect-ratio: 1;
-  background: #f8fafc;
+  background: #f9fafb;
 }
 
 .media-preview img {
@@ -1088,8 +1065,8 @@ watch(
 
 .primary-badge {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 6px;
+  right: 6px;
   background: #3b82f6;
   color: white;
   font-size: 10px;
@@ -1099,14 +1076,14 @@ watch(
 }
 
 .media-info {
-  padding: 10px;
+  padding: 8px 10px;
 }
 
 .media-label {
   display: block;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  color: #334155;
+  color: #374151;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1114,39 +1091,43 @@ watch(
 
 .media-category {
   font-size: 11px;
-  color: #94a3b8;
+  color: #9ca3af;
   text-transform: capitalize;
 }
 
 .media-actions {
   display: flex;
   gap: 4px;
-  padding: 0 10px 10px;
+  padding: 0 8px 8px;
 }
 
 .action-btn {
   flex: 1;
-  padding: 6px;
+  padding: 5px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
+  font-size: 12px;
+  transition: all 0.15s;
 }
 
 .action-btn:first-child {
   background: #fef3c7;
-  color: #d97706;
+  color: #b45309;
 }
 
 .action-btn.edit-btn {
-  background: #e0f2fe;
-  color: #0284c7;
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
 .action-btn.delete-btn {
   background: #fee2e2;
-  color: #dc2626;
+  color: #b91c1c;
+}
+
+.action-btn:hover {
+  opacity: 0.8;
 }
 
 .media-add-btn {
@@ -1154,14 +1135,14 @@ watch(
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   aspect-ratio: 1;
-  border: 2px dashed #cbd5e1;
+  border: 2px dashed #d1d5db;
   background: transparent;
   border-radius: 8px;
   cursor: pointer;
-  color: #64748b;
-  transition: all 0.2s;
+  color: #6b7280;
+  transition: all 0.15s;
 }
 
 .media-add-btn:hover {
@@ -1171,53 +1152,53 @@ watch(
 }
 
 .add-icon {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 300;
 }
 
-/* Preview Panel */
+/* Preview Panel - matches Theme Customizer */
 .preview-panel {
-  background: white;
-  border-left: 1px solid #e2e8f0;
-  padding: 24px;
+  background: #f9fafb;
+  border-left: 1px solid #e5e7eb;
+  padding: 20px;
   overflow-y: auto;
 }
 
 .preview-panel h3 {
   margin: 0 0 16px 0;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 600;
-  color: #64748b;
+  color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .preview-card {
   background: var(--preview-background, #ffffff);
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
 }
 
 .preview-header {
-  padding: 20px;
-  background: var(--preview-surface, #f8fafc);
+  padding: 16px;
+  background: var(--preview-surface, #f9fafb);
   display: flex;
-  gap: 16px;
+  gap: 12px;
   align-items: center;
 }
 
 .preview-avatar {
-  width: 60px;
-  height: 60px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   overflow: hidden;
-  background: var(--preview-primary, #3b82f6);
+  background: #e5e7eb;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-size: 28px;
+  color: #9ca3af;
+  font-size: 20px;
 }
 
 .preview-avatar img {
@@ -1226,33 +1207,38 @@ watch(
   object-fit: cover;
 }
 
+.avatar-placeholder {
+  font-size: 20px;
+}
+
 .preview-title h4 {
-  margin: 0 0 4px 0;
+  margin: 0 0 2px 0;
   font-family: var(--preview-font-heading, Inter);
-  color: var(--preview-text, #1e293b);
-  font-size: 16px;
+  color: var(--preview-text, #111827);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .preview-title p {
   margin: 0;
   font-family: var(--preview-font-primary, Inter);
-  color: var(--preview-text, #1e293b);
-  opacity: 0.7;
-  font-size: 13px;
+  color: var(--preview-text, #111827);
+  opacity: 0.6;
+  font-size: 12px;
 }
 
 .preview-content {
-  padding: 20px;
+  padding: 16px;
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 
 .preview-btn {
-  padding: 10px 16px;
+  padding: 8px 14px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  cursor: pointer;
+  cursor: default;
   border: none;
   font-family: var(--preview-font-primary, Inter);
 }
@@ -1263,9 +1249,9 @@ watch(
 }
 
 .preview-btn.secondary {
-  background: transparent;
-  color: var(--preview-primary, #3b82f6);
-  border: 1px solid var(--preview-primary, #3b82f6);
+  background: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
 }
 
 /* Responsive */
