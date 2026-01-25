@@ -428,6 +428,18 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/home-widget-shortcode
     require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/home-widget-shortcode.php';
 }
 
+// Brand Kits Manager Shortcode - Standalone brand kit management
+// Usage: [gmkb_brand_kits] or [gmkb_brand_kits id="123"]
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/brand-kits-shortcode.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/brand-kits-shortcode.php';
+}
+
+// Media Gallery Shortcode - View all media across brand kits
+// Usage: [gmkb_media_gallery] or [gmkb_media_gallery category="headshot"]
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/media-gallery-shortcode.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/shortcodes/media-gallery-shortcode.php';
+}
+
 // ROOT FIX: Include debug REST endpoint for troubleshooting
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/debug-rest-endpoint.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/debug-rest-endpoint.php';
