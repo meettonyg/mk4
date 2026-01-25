@@ -129,6 +129,16 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-profile-repository.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/class-profile-repository.php';
 }
 
+// Brand Kit Schema - Field definitions for Brand Kit entity
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-brand-kit-schema.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-brand-kit-schema.php';
+}
+
+// Brand Kit Repository - Data Access Layer for Brand Kit CRUD operations
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-brand-kit-repository.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-brand-kit-repository.php';
+}
+
 // Onboarding Schema - Single Source of Truth for gamification tasks and rewards
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-schema.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-schema.php';
@@ -265,9 +275,22 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-profile-limits
     require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-profile-limits-api.php';
 }
 
+// Brand Kit API - CRUD for standalone Brand Kit entities
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-brand-kit-api.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-brand-kit-api.php';
+    GMKB_Brand_Kit_API::init();
+}
+
 // Offers Migration - Migrate Formidable offers to native CPT
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/migrations/class-gmkb-offers-migration.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/migrations/class-gmkb-offers-migration.php';
+}
+
+// Brand Kit Migration - Database table creation and data migration
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/migrations/class-gmkb-brand-kit-migration.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/migrations/class-gmkb-brand-kit-migration.php';
+    // Run database migrations on init (creates tables if needed)
+    add_action('init', ['GMKB_Brand_Kit_Migration', 'maybe_run'], 5);
 }
 
 // AI INTEGRATION: AI Content Generation REST API Controller
