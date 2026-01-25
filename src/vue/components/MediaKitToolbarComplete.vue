@@ -311,7 +311,7 @@
 
               <div v-if="isEditingSlug" class="gmkb-modal__slug-form">
                 <div class="gmkb-modal__slug-input-wrapper">
-                  <span class="gmkb-modal__slug-prefix">{{ window.location.origin }}/media-kit/</span>
+                  <span class="gmkb-modal__slug-prefix">{{ siteUrl }}/media-kit/</span>
                   <input
                     type="text"
                     v-model="editSlugValue"
@@ -580,6 +580,9 @@ const canEditSlug = computed(() => {
 const effectiveProfileId = computed(() => {
   return selectedProfileId.value || postId.value
 })
+
+// Site URL for displaying in templates (window not accessible in Vue templates)
+const siteUrl = window.location.origin
 
 // Handle profile switch - updates store's profileData with new profile data
 const handleProfileSwitch = async (profileId) => {
