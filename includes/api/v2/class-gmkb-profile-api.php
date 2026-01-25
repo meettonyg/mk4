@@ -348,7 +348,6 @@ class GMKB_Profile_API {
             return rest_ensure_response([
                 'success' => true,
                 'field' => $field,
-                'value' => $result['slug'],
                 'slug' => $result['slug'],
                 'adjusted' => $result['adjusted'] ?? false,
                 'original' => $result['original'] ?? $value,

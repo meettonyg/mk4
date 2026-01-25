@@ -95,6 +95,11 @@ class GMKB_Profile_Repository implements GMKB_Profile_Repository_Interface {
     const POST_TYPE = 'guests';
 
     /**
+     * Reserved slugs that cannot be used for profiles
+     */
+    private const RESERVED_SLUGS = ['new', 'edit', 'delete', 'admin', 'login', 'register', 'api', 'app'];
+
+    /**
      * Get a complete profile by ID
      *
      * @param int $id Post ID
@@ -554,7 +559,7 @@ class GMKB_Profile_Repository implements GMKB_Profile_Repository_Interface {
      *
      * @param int $id Post ID
      * @param string $slug Desired slug
-     * @return string|WP_Error The actual slug that was set, or WP_Error on failure
+     * @return array|WP_Error Array with slug data on success, or WP_Error on failure
      */
     public function update_slug(int $id, string $slug) {
         $post = get_post($id);
@@ -576,8 +581,7 @@ class GMKB_Profile_Repository implements GMKB_Profile_Repository_Interface {
         }
 
         // Check for reserved slugs
-        $reserved = ['new', 'edit', 'delete', 'admin', 'login', 'register', 'api', 'app'];
-        if (in_array($slug, $reserved, true)) {
+        if (in_array($slug, self::RESERVED_SLUGS, true)) {
             return new WP_Error('reserved_slug', 'This slug is reserved and cannot be used');
         }
 

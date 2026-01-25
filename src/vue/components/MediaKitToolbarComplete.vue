@@ -520,6 +520,9 @@ import storageService from '../../services/StorageService'
 // Profile switching support
 import ProfileSelector from './shared/ProfileSelector.vue'
 import profileContextService from '../../services/ProfileContextService.js'
+// Shared utilities
+import { formatSlug, validateSlug } from '../../utils/slug.js'
+import { apiRequest } from '../../utils/api.js'
 
 const store = useMediaKitStore()
 const { showSuccess, showInfo, showError } = useToast()
@@ -898,27 +901,15 @@ function copyShareLink() {
 
 // Slug editing methods
 function startEditingSlug() {
-  // Extract current slug from viewUrl
-  const url = viewUrl.value
-  if (url) {
-    const match = url.match(/\/media-kit\/([^\/]+)\/?$/)
-    if (match) {
-      editSlugValue.value = match[1]
-    }
-  }
+  // Use the dedicated slug property instead of parsing URL
+  editSlugValue.value = selectedProfileSlug.value || ''
   isEditingSlug.value = true
   slugError.value = ''
 }
 
 function formatEditSlug() {
-  let value = editSlugValue.value || ''
-  // Convert to lowercase, replace spaces with hyphens, remove invalid characters
-  value = value.toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
-  editSlugValue.value = value
+  // Use shared utility for slug formatting
+  editSlugValue.value = formatSlug(editSlugValue.value || '')
   slugError.value = ''
 }
 
@@ -931,13 +922,16 @@ function cancelEditSlug() {
 async function saveEditSlug() {
   const newSlug = editSlugValue.value?.trim()
 
-  if (!newSlug) {
-    slugError.value = 'Slug cannot be empty'
+  // Use shared validation utility
+  const validation = validateSlug(newSlug)
+  if (!validation.valid) {
+    slugError.value = validation.error
     return
   }
 
-  if (newSlug.length < 3) {
-    slugError.value = 'Slug must be at least 3 characters'
+  const profileId = selectedProfileId.value || window.gmkbData?.profileId
+  if (!profileId) {
+    slugError.value = 'No profile linked to this media kit'
     return
   }
 
@@ -945,46 +939,32 @@ async function saveEditSlug() {
   slugError.value = ''
 
   try {
-    const profileId = selectedProfileId.value || window.gmkbData?.profileId
-    if (!profileId) {
-      slugError.value = 'No profile linked to this media kit'
-      isSavingSlug.value = false
-      return
-    }
-
-    const nonce = window.gmkbData?.nonce || ''
-    const response = await fetch(`/wp-json/gmkb/v2/profile/${profileId}/field/slug`, {
+    // Use shared apiRequest utility
+    const data = await apiRequest(`profile/${profileId}/field/slug`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-WP-Nonce': nonce,
-      },
-      body: JSON.stringify({ value: newSlug }),
+      body: { value: newSlug },
     })
 
-    const data = await response.json()
-
-    if (response.ok && data.success) {
-      // Update the viewUrl with the new slug
-      if (window.gmkbData && data.url) {
-        window.gmkbData.viewUrl = data.url
-      }
-
-      // Show success message
-      if (data.adjusted) {
-        showInfo(`URL updated to: ${data.slug} (adjusted for uniqueness)`)
-      } else {
-        showSuccess('URL updated successfully!')
-      }
-
-      isEditingSlug.value = false
-      editSlugValue.value = ''
-    } else {
-      slugError.value = data.message || 'Failed to update URL. Please try again.'
+    // Update the viewUrl and slug with the new values
+    if (window.gmkbData && data.url) {
+      window.gmkbData.viewUrl = data.url
     }
+    if (data.slug) {
+      selectedProfileSlug.value = data.slug
+    }
+
+    // Show success message
+    if (data.adjusted) {
+      showInfo(`URL updated to: ${data.slug} (adjusted for uniqueness)`)
+    } else {
+      showSuccess('URL updated successfully!')
+    }
+
+    isEditingSlug.value = false
+    editSlugValue.value = ''
   } catch (error) {
     console.error('Slug save error:', error)
-    slugError.value = 'An error occurred. Please try again.'
+    slugError.value = error.message || 'An error occurred. Please try again.'
   } finally {
     isSavingSlug.value = false
   }

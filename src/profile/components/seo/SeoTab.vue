@@ -372,6 +372,7 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useProfileStore } from '../../stores/profile.js';
 import EditablePanel from '../layout/EditablePanel.vue';
+import { formatSlug, validateSlug } from '../../../utils/slug.js';
 
 const store = useProfileStore();
 
@@ -502,61 +503,34 @@ const startEditing = (sectionId) => {
     });
 };
 
-// Format slug input as user types
+// Format slug input as user types (uses shared utility)
 const formatSlugInput = () => {
-    let value = editFields.slug || '';
-    // Convert to lowercase, replace spaces with hyphens, remove invalid characters
-    value = value.toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/[^a-z0-9-]/g, '')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
-    editFields.slug = value;
+    editFields.slug = formatSlug(editFields.slug || '');
     slugWarning.value = '';
 };
 
-// Save slug with special handling
+// Save slug using store action
 const saveSlug = async () => {
+    const newSlug = editFields.slug?.trim();
+
+    // Validate using shared utility
+    const validation = validateSlug(newSlug);
+    if (!validation.valid) {
+        slugWarning.value = validation.error;
+        return;
+    }
+
     isSaving.value = true;
     slugWarning.value = '';
 
     try {
-        const newSlug = editFields.slug?.trim();
+        // Use the store's updateSlug action
+        const result = await store.updateSlug(newSlug);
 
-        if (!newSlug) {
-            slugWarning.value = 'Slug cannot be empty';
-            isSaving.value = false;
-            return;
-        }
-
-        if (newSlug.length < 3) {
-            slugWarning.value = 'Slug must be at least 3 characters';
-            isSaving.value = false;
-            return;
-        }
-
-        // Call the API to update the slug
-        const response = await fetch(`/wp-json/gmkb/v2/profile/${store.postId}/field/slug`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-WP-Nonce': store.nonce,
-            },
-            body: JSON.stringify({ value: newSlug }),
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.success) {
-            // Update the store with the new slug
-            if (store.postData) {
-                store.postData.slug = data.slug;
-            }
-            store.updateField('slug', data.slug);
-
+        if (result.success) {
             // Show warning if slug was adjusted for uniqueness
-            if (data.adjusted) {
-                slugWarning.value = `Slug was adjusted to "${data.slug}" to ensure uniqueness`;
+            if (result.adjusted) {
+                slugWarning.value = `Slug was adjusted to "${result.slug}" to ensure uniqueness`;
                 // Keep editing open to show the warning
                 setTimeout(() => {
                     editingSection.value = null;
@@ -566,7 +540,7 @@ const saveSlug = async () => {
                 editingSection.value = null;
             }
         } else {
-            slugWarning.value = data.message || 'Failed to update slug. Please try again.';
+            slugWarning.value = result.error || 'Failed to update slug. Please try again.';
         }
     } catch (error) {
         console.error('Slug save error:', error);

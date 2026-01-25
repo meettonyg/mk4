@@ -332,6 +332,52 @@ export const useProfileStore = defineStore('profile', {
         },
 
         /**
+         * Update the profile's URL slug
+         * @param {string} newSlug - The desired slug value
+         * @returns {Promise<{ success: boolean, slug?: string, adjusted?: boolean, url?: string, error?: string }>}
+         */
+        async updateSlug(newSlug) {
+            if (!this.postId) {
+                return { success: false, error: 'Profile ID not available' };
+            }
+
+            try {
+                const response = await this.apiRequest(
+                    'PUT',
+                    `/profile/${this.postId}/field/slug`,
+                    { value: newSlug }
+                );
+
+                if (response.success) {
+                    // Update the store with the new slug
+                    if (this.postData) {
+                        this.postData.slug = response.slug;
+                    }
+                    this.fields.slug = response.slug;
+                    this.originalFields.slug = response.slug;
+
+                    return {
+                        success: true,
+                        slug: response.slug,
+                        adjusted: response.adjusted || false,
+                        url: response.url,
+                    };
+                }
+
+                return {
+                    success: false,
+                    error: response.message || 'Failed to update slug',
+                };
+            } catch (error) {
+                console.error('Failed to update slug:', error);
+                return {
+                    success: false,
+                    error: error.message || 'An error occurred while saving',
+                };
+            }
+        },
+
+        /**
          * Save entire profile
          */
         async saveProfile() {
