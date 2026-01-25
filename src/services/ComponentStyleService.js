@@ -402,6 +402,7 @@ class ComponentStyleService {
 
     // Effects - Apply to component root
     // CRITICAL: Only apply if explicitly set and not 'none'
+    let appliedShadow = false;
     if (safeStyle.effects) {
       if (safeStyle.effects.boxShadow &&
           safeStyle.effects.boxShadow !== 'none' &&
@@ -412,11 +413,15 @@ class ComponentStyleService {
                                normalizedShadow.includes(NORMALIZED_DEFAULT_SHADOW_SMALL);
         if (!isDefaultShadow) {
           componentRules.push(`box-shadow: ${safeStyle.effects.boxShadow} !important`);
+          appliedShadow = true;
         }
       }
       if (safeStyle.effects.opacity !== undefined && safeStyle.effects.opacity !== 100) {
         componentRules.push(`opacity: ${safeStyle.effects.opacity / 100} !important`);
       }
+    }
+    if (!appliedShadow) {
+      componentRules.push('box-shadow: none');
     }
 
     // Advanced - Layout (apply to wrapper)
