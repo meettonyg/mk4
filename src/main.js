@@ -674,6 +674,11 @@ function isStandaloneToolsPage() {
     }
   }
 
+  // Check for template picker page (uses different data object)
+  if (window.gmkbTemplatePickerData?.isTemplatePicker && !window.gmkbData) {
+    return true;
+  }
+
   // Check for standalone tool DOM elements
   const standaloneSelectors = [
     '[data-gmkb-tool]',

@@ -135,10 +135,15 @@ export const useTemplateStore = defineStore('templates', {
             // CRITICAL FIX: Use base WP-JSON URL, not the v2 namespace URL
             // Templates API uses gmkb/v1 namespace, while restUrl points to gmkb/v2
             // We need to construct the URL from the base /wp-json/ path
-            const restUrl = window.gmkbData?.restUrl || '/wp-json/';
+            // Support both gmkbData (builder) and gmkbTemplatePickerData (standalone /templates page)
+            const restUrl = window.gmkbData?.restUrl ||
+                           window.gmkbTemplatePickerData?.restUrl ||
+                           '/wp-json/';
             // Extract base WP-JSON URL by removing any namespace suffix
             const baseUrl = restUrl.replace(/gmkb\/v\d+\/?$/, '');
-            const nonce = window.gmkbData?.restNonce || '';
+            const nonce = window.gmkbData?.restNonce ||
+                         window.gmkbTemplatePickerData?.restNonce ||
+                         '';
             const url = `${baseUrl}${endpoint}`;
 
             const fetchOptions = {
