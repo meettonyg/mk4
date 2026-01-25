@@ -15,7 +15,8 @@ class BrandKitService {
      * @type {string}
      * @private
      */
-    this._apiBase = `${window.wpApiSettings?.root || '/wp-json/'}gmkb/v2/brand-kits`;
+    const apiRoot = window.wpApiSettings?.root || window.gmkbData?.apiRoot || '/wp-json/';
+    this._apiBase = `${apiRoot}gmkb/v2/brand-kits`;
 
     /**
      * Cached brand kits
@@ -52,10 +53,28 @@ class BrandKitService {
    * @private
    */
   _getHeaders() {
+    // Try multiple sources for the nonce (different pages may use different globals)
+    const nonce = window.wpApiSettings?.nonce || window.gmkbData?.nonce || '';
+
     return {
       'Content-Type': 'application/json',
-      'X-WP-Nonce': window.wpApiSettings?.nonce || '',
+      'X-WP-Nonce': nonce,
     };
+  }
+
+  /**
+   * Make a fetch request with proper authentication
+   * @param {string} url - Request URL
+   * @param {Object} options - Fetch options
+   * @returns {Promise<Response>} Fetch response
+   * @private
+   */
+  async _fetch(url, options = {}) {
+    return fetch(url, {
+      ...options,
+      headers: this._getHeaders(),
+      credentials: 'same-origin',
+    });
   }
 
   /**
@@ -96,11 +115,7 @@ class BrandKitService {
       return this._cache;
     }
 
-    const response = await fetch(this._apiBase, {
-      method: 'GET',
-      headers: this._getHeaders(),
-    });
-
+    const response = await this._fetch(this._apiBase, { method: 'GET' });
     const result = await this._handleResponse(response);
 
     // Cache results
@@ -116,11 +131,7 @@ class BrandKitService {
    * @returns {Promise<Object>} Brand kit object with full media
    */
   async get(id) {
-    const response = await fetch(`${this._apiBase}/${id}`, {
-      method: 'GET',
-      headers: this._getHeaders(),
-    });
-
+    const response = await this._fetch(`${this._apiBase}/${id}`, { method: 'GET' });
     const result = await this._handleResponse(response);
     return result.data;
   }
@@ -136,17 +147,13 @@ class BrandKitService {
    * @returns {Promise<Object>} Created brand kit
    */
   async create(data) {
-    const response = await fetch(this._apiBase, {
+    const response = await this._fetch(this._apiBase, {
       method: 'POST',
-      headers: this._getHeaders(),
       body: JSON.stringify(data),
     });
 
     const result = await this._handleResponse(response);
-
-    // Invalidate cache
     this.invalidateCache();
-
     return result.data;
   }
 
@@ -157,17 +164,13 @@ class BrandKitService {
    * @returns {Promise<Object>} Updated brand kit
    */
   async update(id, data) {
-    const response = await fetch(`${this._apiBase}/${id}`, {
+    const response = await this._fetch(`${this._apiBase}/${id}`, {
       method: 'POST',
-      headers: this._getHeaders(),
       body: JSON.stringify(data),
     });
 
     const result = await this._handleResponse(response);
-
-    // Invalidate cache
     this.invalidateCache();
-
     return result.data;
   }
 
@@ -179,17 +182,9 @@ class BrandKitService {
    */
   async delete(id, force = false) {
     const url = force ? `${this._apiBase}/${id}?force=true` : `${this._apiBase}/${id}`;
-
-    const response = await fetch(url, {
-      method: 'DELETE',
-      headers: this._getHeaders(),
-    });
-
+    const response = await this._fetch(url, { method: 'DELETE' });
     await this._handleResponse(response);
-
-    // Invalidate cache
     this.invalidateCache();
-
     return true;
   }
 
@@ -199,16 +194,9 @@ class BrandKitService {
    * @returns {Promise<Object>} New brand kit
    */
   async duplicate(id) {
-    const response = await fetch(`${this._apiBase}/${id}/duplicate`, {
-      method: 'POST',
-      headers: this._getHeaders(),
-    });
-
+    const response = await this._fetch(`${this._apiBase}/${id}/duplicate`, { method: 'POST' });
     const result = await this._handleResponse(response);
-
-    // Invalidate cache
     this.invalidateCache();
-
     return result.data;
   }
 
@@ -218,11 +206,7 @@ class BrandKitService {
    * @returns {Promise<Object>} Usage data with profiles and media_kits arrays
    */
   async getUsage(id) {
-    const response = await fetch(`${this._apiBase}/${id}/usage`, {
-      method: 'GET',
-      headers: this._getHeaders(),
-    });
-
+    const response = await this._fetch(`${this._apiBase}/${id}/usage`, { method: 'GET' });
     const result = await this._handleResponse(response);
     return result.data;
   }
@@ -254,11 +238,7 @@ class BrandKitService {
       url += `?${params.toString()}`;
     }
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: this._getHeaders(),
-    });
-
+    const response = await this._fetch(url, { method: 'GET' });
     const result = await this._handleResponse(response);
     return result.data;
   }
@@ -276,9 +256,8 @@ class BrandKitService {
    * @returns {Promise<Object>} Updated media list
    */
   async addMedia(brandKitId, mediaData) {
-    const response = await fetch(`${this._apiBase}/${brandKitId}/media`, {
+    const response = await this._fetch(`${this._apiBase}/${brandKitId}/media`, {
       method: 'POST',
-      headers: this._getHeaders(),
       body: JSON.stringify(mediaData),
     });
 
@@ -294,9 +273,8 @@ class BrandKitService {
    * @returns {Promise<Object>} Updated media list
    */
   async updateMedia(brandKitId, mediaEntryId, data) {
-    const response = await fetch(`${this._apiBase}/${brandKitId}/media/${mediaEntryId}`, {
+    const response = await this._fetch(`${this._apiBase}/${brandKitId}/media/${mediaEntryId}`, {
       method: 'POST',
-      headers: this._getHeaders(),
       body: JSON.stringify(data),
     });
 
@@ -311,9 +289,8 @@ class BrandKitService {
    * @returns {Promise<Object>} Updated media list
    */
   async removeMedia(brandKitId, mediaEntryId) {
-    const response = await fetch(`${this._apiBase}/${brandKitId}/media/${mediaEntryId}`, {
+    const response = await this._fetch(`${this._apiBase}/${brandKitId}/media/${mediaEntryId}`, {
       method: 'DELETE',
-      headers: this._getHeaders(),
     });
 
     const result = await this._handleResponse(response);
@@ -327,9 +304,8 @@ class BrandKitService {
    * @returns {Promise<Object>} Updated media list
    */
   async reorderMedia(brandKitId, order) {
-    const response = await fetch(`${this._apiBase}/${brandKitId}/media/reorder`, {
+    const response = await this._fetch(`${this._apiBase}/${brandKitId}/media/reorder`, {
       method: 'POST',
-      headers: this._getHeaders(),
       body: JSON.stringify({ order }),
     });
 
@@ -350,11 +326,7 @@ class BrandKitService {
       return this._schema;
     }
 
-    const response = await fetch(`${this._apiBase}/schema`, {
-      method: 'GET',
-      headers: this._getHeaders(),
-    });
-
+    const response = await this._fetch(`${this._apiBase}/schema`, { method: 'GET' });
     const result = await this._handleResponse(response);
     this._schema = result.data;
     return this._schema;
