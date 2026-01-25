@@ -3,14 +3,9 @@
     <!-- Loading State -->
     <LoadingScreen v-if="!isReady" :progress="loadingProgress" />
 
-    <!-- Template Picker for new media kits without template -->
+    <!-- Template Directory for new media kits without template -->
     <template v-else-if="showTemplatePicker">
-      <TemplatePicker
-        :templates="availableTemplates"
-        :login-url="loginUrl"
-        @template-selected="handleTemplateSelected"
-        @resume-session="handleResumeSession"
-      />
+      <TemplateDirectory />
     </template>
 
     <!-- Main App -->
@@ -102,7 +97,7 @@ import ImportExportModal from './ImportExportModal.vue';
 import MediaKitToolbarComplete from './MediaKitToolbarComplete.vue';
 import ErrorBoundary from './ErrorBoundary.vue';
 import ToastContainer from './ToastContainer.vue';
-import TemplatePicker from './TemplatePicker.vue';
+import TemplateDirectory from './templates/TemplateDirectory.vue';
 import ProfileSelectorModal from './ProfileSelectorModal.vue';
 import TemplateHintBanner from './TemplateHintBanner.vue';
 import storageService from '../../services/StorageService';
@@ -141,12 +136,6 @@ const isLoggedIn = window.gmkbData?.user?.isLoggedIn === true;
 const showTemplatePicker = computed(() => {
   return isNewMediaKit && !hasTemplateParam && isReady.value;
 });
-
-// Get available templates from theme store
-const availableTemplates = computed(() => themeStore.availableThemes || []);
-
-// Login URL from data
-const loginUrl = computed(() => window.gmkbData?.user?.loginUrl || '/wp-login.php');
 
 // Computed properties
 const themeClass = computed(() => `theme-${store.theme || 'professional_clean'}`);
@@ -276,17 +265,6 @@ async function applyProfileToComponents(profileId) {
   } catch (error) {
     console.error('❌ Failed to apply profile:', error);
   }
-}
-
-// Template picker handlers
-function handleTemplateSelected(template) {
-  console.log('📋 Template selected:', template.id);
-  // The TemplatePicker component handles the redirect with ?template=xxx
-}
-
-function handleResumeSession() {
-  console.log('🔄 Resuming previous session');
-  // The TemplatePicker component handles the redirect with ?resume=true
 }
 
 // Apply template when URL has template parameter

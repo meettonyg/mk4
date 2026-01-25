@@ -99,6 +99,18 @@ const icons = {
     'stroke-width': 2
   }, [
     h('path', { d: 'm19 21-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2v16z' })
+  ]),
+  layout: () => h('svg', {
+    width: 14,
+    height: 14,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    'stroke-width': 2
+  }, [
+    h('rect', { x: 3, y: 3, width: 18, height: 18, rx: 2 }),
+    h('line', { x1: 3, y1: 9, x2: 21, y2: 9 }),
+    h('line', { x1: 9, y1: 21, x2: 9, y2: 9 })
   ])
 };
 

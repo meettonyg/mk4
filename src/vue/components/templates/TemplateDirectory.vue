@@ -12,82 +12,113 @@
       </div>
     </header>
 
-    <!-- Hero Section -->
-    <section class="directory-hero">
-      <h1>Choose a Starting Point</h1>
-      <p>Select a template below to get started, or choose a blank canvas to build from scratch</p>
-    </section>
-
-    <!-- Search -->
-    <div class="directory-search">
-      <div class="search-input-wrapper">
-        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="m21 21-4.35-4.35"/>
-        </svg>
-        <input
-          type="text"
-          v-model="searchQuery"
-          placeholder="Search templates..."
-          class="search-input"
-          @input="handleSearch"
-        />
-        <button
-          v-if="searchQuery"
-          class="search-clear"
-          @click="clearSearch"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 6L6 18M6 6l12 12"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-
-    <!-- Filters -->
-    <TemplateFilters
-      :categories="categories"
-      :active-category="templateStore.activeFilter"
-      @select="handleFilterChange"
+    <!-- STEP 1: Persona Selection -->
+    <PersonaSelector
+      v-if="currentStep === 1"
+      :templates="templateStore.templates"
+      @select="handlePersonaSelect"
+      @view-all="handleViewAll"
     />
 
-    <!-- Template Grid -->
-    <div class="directory-grid-wrapper">
-      <div class="directory-grid">
-        <!-- Blank Canvas Card -->
-        <BlankCanvasCard @select="handleBlankSelect" />
-
-        <!-- Template Cards -->
-        <TemplateCard
-          v-for="template in filteredTemplates"
-          :key="template.id"
-          :template="template"
-          :deletable="template.type === 'user'"
-          @select="handleTemplateSelect"
-          @demo="handleTemplateDemo"
-          @delete="handleTemplateDelete"
-        />
-
-        <!-- Loading State -->
-        <div v-if="templateStore.isLoading" class="loading-state">
-          <div class="loading-spinner"></div>
-          <p>Loading templates...</p>
-        </div>
-
-        <!-- Empty State -->
-        <div
-          v-if="!templateStore.isLoading && filteredTemplates.length === 0"
-          class="empty-state"
-        >
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+    <!-- STEP 2: Template Selection -->
+    <template v-else>
+      <!-- Back Button & Step Indicator -->
+      <div class="step-header">
+        <button class="back-btn" @click="goBackToPersonas">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
-          <p>No templates found</p>
-          <span v-if="searchQuery">Try a different search term</span>
-          <span v-else>Check back later for new templates</span>
+          Back to personas
+        </button>
+        <span class="step-badge" v-if="!viewAllMode">STEP 2 OF 2</span>
+      </div>
+
+      <!-- Hero Section -->
+      <section class="directory-hero">
+        <h1 v-if="selectedPersona && !viewAllMode">
+          Choose Your {{ selectedPersona.label }} Template
+        </h1>
+        <h1 v-else>All Templates</h1>
+        <p v-if="selectedPersona && !viewAllMode">
+          Pick a layout style that fits your brand
+        </p>
+        <p v-else>
+          Browse all available templates or use search to find what you need
+        </p>
+      </section>
+
+      <!-- Search -->
+      <div class="directory-search">
+        <div class="search-input-wrapper">
+          <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input
+            type="text"
+            v-model="searchQuery"
+            placeholder="Search templates..."
+            class="search-input"
+            @input="handleSearch"
+          />
+          <button
+            v-if="searchQuery"
+            class="search-clear"
+            @click="clearSearch"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
         </div>
       </div>
-    </div>
+
+      <!-- Layout Filters (only in persona mode) -->
+      <TemplateFilters
+        v-if="selectedPersona && !viewAllMode"
+        :categories="layoutVariantFilters"
+        :active-category="activeLayoutFilter"
+        @select="handleLayoutFilterChange"
+      />
+
+      <!-- Template Grid -->
+      <div class="directory-grid-wrapper">
+        <div class="directory-grid">
+          <!-- Blank Canvas Card -->
+          <BlankCanvasCard @select="handleBlankSelect" />
+
+          <!-- Template Cards -->
+          <TemplateCard
+            v-for="template in displayedTemplates"
+            :key="template.id"
+            :template="template"
+            :deletable="template.type === 'user'"
+            @select="handleTemplateSelect"
+            @demo="handleTemplateDemo"
+            @delete="handleTemplateDelete"
+          />
+
+          <!-- Loading State -->
+          <div v-if="templateStore.isLoading" class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Loading templates...</p>
+          </div>
+
+          <!-- Empty State -->
+          <div
+            v-if="!templateStore.isLoading && displayedTemplates.length === 0"
+            class="empty-state"
+          >
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+            </svg>
+            <p>No templates found</p>
+            <span v-if="searchQuery">Try a different search term</span>
+            <span v-else>Check back later for new templates</span>
+          </div>
+        </div>
+      </div>
+    </template>
 
     <!-- Error State -->
     <div v-if="templateStore.error" class="error-banner">
@@ -98,34 +129,205 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useTemplateStore } from '../../../stores/templates';
-import { useUIStore } from '../../../stores/ui';
+import PersonaSelector from './PersonaSelector.vue';
 import TemplateFilters from './TemplateFilters.vue';
 import TemplateCard from './TemplateCard.vue';
 import BlankCanvasCard from './BlankCanvasCard.vue';
 
+// Props for standalone mode (used on /templates page)
+const props = defineProps({
+  standalone: {
+    type: Boolean,
+    default: false
+  },
+  builderUrl: {
+    type: String,
+    default: '/tools/media-kit/'
+  }
+});
+
 const templateStore = useTemplateStore();
-const uiStore = useUIStore();
+
+// Get config from PHP (for SEO-friendly URLs)
+const pickerData = window.gmkbTemplatePickerData || {};
+const baseUrl = pickerData.baseUrl || '/templates/';
+const personaSlugs = pickerData.personaSlugs || {};
+
+// Reverse lookup: type -> slug
+const typeToSlug = Object.entries(personaSlugs).reduce((acc, [slug, data]) => {
+  acc[data.type] = slug;
+  return acc;
+}, {});
+
+// Helper to show toast (works in both standalone and app mode)
+const showToast = (message, type = 'info') => {
+  if (window.GMKB?.utils?.showToast) {
+    window.GMKB.utils.showToast(message, type);
+  } else {
+    console.log(`[${type}] ${message}`);
+  }
+};
+
+// Step state
+const currentStep = ref(1);
+const selectedPersona = ref(null);
+const viewAllMode = ref(false);
 
 // Local state
 const searchQuery = ref('');
+const activeLayoutFilter = ref('all');
 let searchTimeout = null;
 
-// Categories for filter
-const categories = [
-  { id: 'all', label: 'All', icon: 'grid' },
-  { id: 'corporate', label: 'Corporate', icon: 'building' },
-  { id: 'creative', label: 'Creative', icon: 'palette' },
-  { id: 'minimal', label: 'Minimal', icon: 'minus' },
-  { id: 'portfolio', label: 'Portfolio', icon: 'briefcase' },
-  { id: 'saved', label: 'My Templates', icon: 'bookmark' }
-];
+// Layout variant labels
+const LAYOUT_LABELS = {
+  'standard': 'Classic',
+  'split-layout': 'Split Screen',
+  'minimal': 'Minimal',
+  'centered': 'Centered',
+  'bold': 'Bold'
+};
 
-// Computed
-const filteredTemplates = computed(() => templateStore.filteredTemplates);
+// Computed: Layout variant filters based on selected persona
+const layoutVariantFilters = computed(() => {
+  const filters = [{ id: 'all', label: 'All Layouts', icon: 'grid' }];
+
+  if (!selectedPersona.value) return filters;
+
+  // Get unique layout variants for the selected persona
+  const variants = new Set();
+  templateStore.templates.forEach(template => {
+    if (template.persona?.type === selectedPersona.value.type) {
+      const variant = template.persona?.layout_variant || template.layout_variant || 'standard';
+      variants.add(variant);
+    }
+  });
+
+  // Add layout filters
+  variants.forEach(variant => {
+    filters.push({
+      id: variant,
+      label: LAYOUT_LABELS[variant] || variant,
+      icon: 'layout'
+    });
+  });
+
+  return filters;
+});
+
+// Default sort order for templates without explicit sort_order
+const DEFAULT_SORT_ORDER = 100;
+
+// Computed: Filter by persona (step 1)
+const personaFilteredTemplates = computed(() => {
+  if (selectedPersona.value && !viewAllMode.value) {
+    return templateStore.templates.filter(t => t.persona?.type === selectedPersona.value.type);
+  }
+  return [...templateStore.templates];
+});
+
+// Computed: Filter by layout variant (step 2)
+const layoutFilteredTemplates = computed(() => {
+  if (activeLayoutFilter.value === 'all') {
+    return personaFilteredTemplates.value;
+  }
+  return personaFilteredTemplates.value.filter(t => {
+    const variant = t.persona?.layout_variant || t.layout_variant || 'standard';
+    return variant === activeLayoutFilter.value;
+  });
+});
+
+// Computed: Filter by search query (step 3)
+const searchFilteredTemplates = computed(() => {
+  if (!searchQuery.value) {
+    return layoutFilteredTemplates.value;
+  }
+  const query = searchQuery.value.toLowerCase();
+  return layoutFilteredTemplates.value.filter(t =>
+    t.name?.toLowerCase().includes(query) ||
+    (t.description && t.description.toLowerCase().includes(query)) ||
+    (t.tags && t.tags.some(tag => tag.toLowerCase().includes(query)))
+  );
+});
+
+// Computed: Final sorted templates for display
+const displayedTemplates = computed(() => {
+  return [...searchFilteredTemplates.value].sort((a, b) =>
+    (a.sort_order || a.metadata?.sort_order || DEFAULT_SORT_ORDER) -
+    (b.sort_order || b.metadata?.sort_order || DEFAULT_SORT_ORDER)
+  );
+});
+
+// URL routing helper - updates browser URL without reload
+const updateUrl = (personaType = null) => {
+  if (!props.standalone) return; // Only update URL in standalone mode
+
+  let newUrl = baseUrl;
+  let title = 'Create Your Media Kit';
+
+  if (personaType && typeToSlug[personaType]) {
+    const slug = typeToSlug[personaType];
+    newUrl = `${baseUrl}${slug}/`;
+    const personaData = personaSlugs[slug];
+    title = personaData?.label ? `${personaData.label} Media Kit Templates` : title;
+  }
+
+  // Update URL and document title
+  window.history.pushState({ personaType }, title, newUrl);
+  document.title = title;
+};
+
+// Handle browser back/forward navigation
+const handlePopState = (event) => {
+  if (!props.standalone) return;
+
+  const personaType = event.state?.personaType;
+  if (personaType) {
+    // Navigate to specific persona
+    const slug = typeToSlug[personaType];
+    const personaData = personaSlugs[slug];
+    if (personaData) {
+      selectedPersona.value = { type: personaType, label: personaData.label };
+      viewAllMode.value = false;
+      currentStep.value = 2;
+    }
+  } else {
+    // Navigate back to persona selection
+    currentStep.value = 1;
+    selectedPersona.value = null;
+    viewAllMode.value = false;
+  }
+  activeLayoutFilter.value = 'all';
+  searchQuery.value = '';
+};
 
 // Handlers
+const handlePersonaSelect = (persona) => {
+  selectedPersona.value = persona;
+  viewAllMode.value = false;
+  activeLayoutFilter.value = 'all';
+  currentStep.value = 2;
+  updateUrl(persona.type);
+};
+
+const handleViewAll = () => {
+  selectedPersona.value = null;
+  viewAllMode.value = true;
+  activeLayoutFilter.value = 'all';
+  currentStep.value = 2;
+  updateUrl(null); // View all stays at base URL
+};
+
+const goBackToPersonas = () => {
+  currentStep.value = 1;
+  selectedPersona.value = null;
+  viewAllMode.value = false;
+  activeLayoutFilter.value = 'all';
+  searchQuery.value = '';
+  updateUrl(null);
+};
+
 const handleSearch = () => {
   // Debounce search
   if (searchTimeout) clearTimeout(searchTimeout);
@@ -139,38 +341,58 @@ const clearSearch = () => {
   templateStore.setSearchQuery('');
 };
 
-const handleFilterChange = (category) => {
-  templateStore.setFilter(category);
+const handleLayoutFilterChange = (layoutId) => {
+  activeLayoutFilter.value = layoutId;
 };
 
 const handleBlankSelect = () => {
-  templateStore.initializeBlank();
+  if (props.standalone) {
+    // Redirect to builder without template
+    window.location.href = props.builderUrl;
+  } else {
+    templateStore.initializeBlank();
+  }
 };
 
 const handleTemplateSelect = async (template) => {
-  try {
-    await templateStore.initializeFromTemplate(template.id);
-  } catch (err) {
-    console.error('Failed to load template:', err);
-    uiStore.showToast('Failed to load template', 'error');
+  if (props.standalone) {
+    // Redirect to builder with template parameter
+    const url = new URL(props.builderUrl, window.location.origin);
+    url.searchParams.set('template', template.id);
+    window.location.href = url.toString();
+  } else {
+    try {
+      await templateStore.initializeFromTemplate(template.id);
+    } catch (err) {
+      console.error('Failed to load template:', err);
+      showToast('Failed to load template', 'error');
+    }
   }
 };
 
 const handleTemplateDemo = (template) => {
-  uiStore.openTemplateDemo(template.id);
+  if (props.standalone) {
+    // In standalone mode, just select the template (preview not available)
+    handleTemplateSelect(template);
+  } else if (window.GMKB?.stores?.ui?.openTemplateDemo) {
+    window.GMKB.stores.ui.openTemplateDemo(template.id);
+  }
 };
 
 const handleTemplateDelete = async (template) => {
+  // Delete only available in app mode (not standalone)
+  if (props.standalone) return;
+
   if (!confirm(`Delete "${template.name}"? This cannot be undone.`)) {
     return;
   }
 
   try {
     await templateStore.deleteUserTemplate(template.id);
-    uiStore.showToast('Template deleted', 'success');
+    showToast('Template deleted', 'success');
   } catch (err) {
     console.error('Failed to delete template:', err);
-    uiStore.showToast('Failed to delete template', 'error');
+    showToast('Failed to delete template', 'error');
   }
 };
 
@@ -182,6 +404,27 @@ const retryFetch = () => {
 onMounted(() => {
   if (!templateStore.hasTemplates) {
     templateStore.fetchTemplates();
+  }
+
+  // Handle initial persona from URL (SEO-friendly routing)
+  if (props.standalone && pickerData.initialPersona) {
+    const { type, label } = pickerData.initialPersona;
+    selectedPersona.value = { type, label };
+    viewAllMode.value = false;
+    currentStep.value = 2;
+    // Replace initial state so back button works correctly
+    window.history.replaceState({ personaType: type }, document.title, window.location.href);
+  }
+
+  // Listen for browser back/forward
+  if (props.standalone) {
+    window.addEventListener('popstate', handlePopState);
+  }
+});
+
+onUnmounted(() => {
+  if (props.standalone) {
+    window.removeEventListener('popstate', handlePopState);
   }
 });
 
@@ -225,15 +468,56 @@ watch(() => templateStore.searchQuery, (newVal) => {
   letter-spacing: -0.02em;
 }
 
+/* Step Header (Step 2) */
+.step-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Step badge - shared visual pattern with PersonaSelector.vue for consistency */
+.step-badge {
+  display: inline-block;
+  padding: 0.375rem 1rem;
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
 /* Hero */
 .directory-hero {
   text-align: center;
-  padding: 2rem 2rem 1.5rem;
+  padding: 1.5rem 2rem 1rem;
 }
 
 .directory-hero h1 {
   color: white;
-  font-size: 2.25rem;
+  font-size: 2rem;
   font-weight: 700;
   margin: 0 0 0.5rem;
   letter-spacing: -0.03em;
@@ -420,12 +704,27 @@ watch(() => templateStore.searchQuery, (newVal) => {
 
 /* Responsive */
 @media (max-width: 768px) {
+  .step-header {
+    padding: 0 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+
+  .directory-hero {
+    padding: 1rem;
+  }
+
   .directory-hero h1 {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
   }
 
   .directory-hero p {
     font-size: 0.9375rem;
+  }
+
+  .directory-search {
+    padding: 0 1rem 1rem;
   }
 
   .directory-grid-wrapper {

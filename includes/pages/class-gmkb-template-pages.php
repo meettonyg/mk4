@@ -2,10 +2,15 @@
 /**
  * GMKB Template Pages
  *
- * Two-step template selection flow:
- * Step 1: Pick persona (Author, Speaker, Podcast Guest, etc.)
- * Step 2: Pick visual theme (Professional Clean, Modern Dark, etc.)
- * Then redirect to /tools/media-kit/?template={persona}&theme={style}
+ * Serves the /templates page as a Vue-powered template picker.
+ * PHP provides a thin shell; Vue handles all UI rendering.
+ *
+ * SEO-friendly URLs:
+ * - /templates/                     - Persona selection (Step 1)
+ * - /templates/authors-writers/     - Author/Writer templates
+ * - /templates/podcast-guests/      - Podcast Guest templates
+ * - /templates/speakers-coaches/    - Speaker/Coach templates
+ * - /templates/business-professionals/ - Business templates
  *
  * @package GMKB
  * @since 3.0.0
@@ -18,8 +23,33 @@ if (!defined('ABSPATH')) {
 class GMKB_Template_Pages {
 
     private static $instance = null;
-    private $template_discovery = null;
-    private $theme_discovery = null;
+
+    /**
+     * Valid persona slugs mapped to their display info
+     * Slugs use hyphens for URLs, types use underscores internally
+     */
+    private static $persona_map = array(
+        'authors-writers' => array(
+            'type' => 'author',
+            'label' => 'Authors & Writers',
+            'description' => 'Media kit templates designed for authors, writers, and literary professionals.',
+        ),
+        'podcast-guests' => array(
+            'type' => 'podcast_guest',
+            'label' => 'Podcast Guests',
+            'description' => 'Media kit templates for podcast guests and interview subjects.',
+        ),
+        'speakers-coaches' => array(
+            'type' => 'speaker',
+            'label' => 'Speakers & Coaches',
+            'description' => 'Media kit templates for speakers, coaches, and consultants.',
+        ),
+        'business-professionals' => array(
+            'type' => 'business',
+            'label' => 'Business Professionals',
+            'description' => 'Media kit templates for business professionals and entrepreneurs.',
+        ),
+    );
 
     public static function instance() {
         if (null === self::$instance) {
@@ -29,19 +59,7 @@ class GMKB_Template_Pages {
     }
 
     private function __construct() {
-        $this->load_dependencies();
         $this->init_hooks();
-    }
-
-    private function load_dependencies() {
-        if (file_exists(GMKB_PLUGIN_DIR . 'system/TemplateDiscovery.php')) {
-            require_once GMKB_PLUGIN_DIR . 'system/TemplateDiscovery.php';
-            $this->template_discovery = new TemplateDiscovery(GMKB_PLUGIN_DIR . 'starter-templates');
-        }
-        if (file_exists(GMKB_PLUGIN_DIR . 'system/ThemeDiscovery.php')) {
-            require_once GMKB_PLUGIN_DIR . 'system/ThemeDiscovery.php';
-            $this->theme_discovery = new ThemeDiscovery(GMKB_PLUGIN_DIR . 'themes');
-        }
     }
 
     private function init_hooks() {
@@ -56,19 +74,42 @@ class GMKB_Template_Pages {
     }
 
     public function register_rewrite_rules() {
+        // Base templates page
         add_rewrite_rule('^templates/?$', 'index.php?gmkb_templates=1', 'top');
+        // Persona-specific pages: /templates/{persona-slug}/
+        add_rewrite_rule('^templates/([^/]+)/?$', 'index.php?gmkb_templates=1&gmkb_persona=$matches[1]', 'top');
     }
 
     public function register_query_vars($vars) {
         $vars[] = 'gmkb_templates';
+        $vars[] = 'gmkb_persona';
         return $vars;
     }
 
     public function parse_request($wp) {
         $request = trim($wp->request, '/');
-        if ($request === 'templates') {
+
+        // Match /templates or /templates/{slug}
+        if (preg_match('#^templates(?:/([^/]+))?/?$#', $request, $matches)) {
             $wp->query_vars['gmkb_templates'] = '1';
+            if (!empty($matches[1])) {
+                $wp->query_vars['gmkb_persona'] = sanitize_title($matches[1]);
+            }
         }
+    }
+
+    /**
+     * Get current persona data from URL
+     */
+    private function get_current_persona() {
+        $slug = get_query_var('gmkb_persona', '');
+        if ($slug && isset(self::$persona_map[$slug])) {
+            return array_merge(
+                self::$persona_map[$slug],
+                array('slug' => $slug)
+            );
+        }
+        return null;
     }
 
     public function load_template($template) {
@@ -91,7 +132,6 @@ class GMKB_Template_Pages {
         $temp_file = @tempnam(get_temp_dir(), 'gmkb-templates');
 
         if ($temp_file === false) {
-            // Fallback to sys_get_temp_dir if get_temp_dir fails
             $temp_file = @tempnam(sys_get_temp_dir(), 'gmkb-templates');
         }
 
@@ -104,399 +144,108 @@ class GMKB_Template_Pages {
         return $temp_file;
     }
 
+    /**
+     * Generate the Vue shell page content
+     */
     private function get_template_content() {
-        $templates = $this->template_discovery ? $this->template_discovery->getTemplates() : array();
-        $themes = $this->get_visual_themes();
+        $plugin_url = GMKB_PLUGIN_URL;
+        $rest_url = rest_url('gmkb/v1/');
+        $rest_nonce = wp_create_nonce('wp_rest');
+        $builder_url = home_url('/tools/media-kit/');
+        $login_url = wp_login_url(home_url('/templates/'));
+        $is_logged_in = is_user_logged_in();
+        $current_persona = $this->get_current_persona();
+        $base_url = home_url('/templates/');
 
         ob_start();
         ?>
 <?php get_header(); ?>
 
-<div id="gmkb-template-picker" class="gmkb-picker">
-    <!-- Step 1: Pick Persona -->
-    <section class="gmkb-step gmkb-step-1 gmkb-active" data-step="1">
-        <div class="gmkb-container">
-            <div class="gmkb-step-header">
-                <span class="gmkb-step-number">Step 1 of 2</span>
-                <h1>I'm a...</h1>
-                <p class="gmkb-subtitle">Choose the type of media kit that best fits your needs</p>
-            </div>
-            <div class="gmkb-persona-grid">
-                <?php foreach ($templates as $id => $template) :
-                    $persona = $template['persona'] ?? array();
-                    $icon = $persona['icon'] ?? 'fa-solid fa-user';
-                ?>
-                <button type="button" class="gmkb-persona-card" data-template="<?php echo esc_attr($id); ?>">
-                    <div class="gmkb-persona-icon">
-                        <i class="<?php echo esc_attr($icon); ?>"></i>
-                    </div>
-                    <h3><?php echo esc_html($persona['label'] ?? $template['template_name'] ?? $id); ?></h3>
-                    <p><?php echo esc_html($template['description'] ?? ''); ?></p>
-                </button>
-                <?php endforeach; ?>
-            </div>
-        </div>
-    </section>
-
-    <!-- Step 2: Pick Theme -->
-    <section class="gmkb-step gmkb-step-2" data-step="2">
-        <div class="gmkb-container">
-            <div class="gmkb-step-header">
-                <button type="button" class="gmkb-back-btn" data-goto="1">
-                    <i class="fa-solid fa-arrow-left"></i> Back
-                </button>
-                <span class="gmkb-step-number">Step 2 of 2</span>
-                <h1>I want it to look...</h1>
-                <p class="gmkb-subtitle">Choose a visual style for your media kit</p>
-            </div>
-            <div class="gmkb-theme-grid">
-                <?php foreach ($themes as $id => $theme) :
-                    $colors = $theme['colors'] ?? array();
-                    $primary = $colors['primary'] ?? '#2563eb';
-                    $secondary = $colors['secondary'] ?? '#1e40af';
-                    $bg = $colors['background'] ?? '#ffffff';
-                    $is_dark = $theme['metadata']['is_dark'] ?? false;
-                ?>
-                <button type="button" class="gmkb-theme-card <?php echo $is_dark ? 'gmkb-theme-dark' : ''; ?>" data-theme="<?php echo esc_attr($id); ?>">
-                    <div class="gmkb-theme-preview" style="background: <?php echo esc_attr($bg); ?>">
-                        <div class="gmkb-theme-colors">
-                            <span style="background: <?php echo esc_attr($primary); ?>"></span>
-                            <span style="background: <?php echo esc_attr($secondary); ?>"></span>
-                        </div>
-                        <div class="gmkb-theme-mockup">
-                            <div class="gmkb-mockup-header" style="background: linear-gradient(135deg, <?php echo esc_attr($primary); ?>, <?php echo esc_attr($secondary); ?>)"></div>
-                            <div class="gmkb-mockup-content">
-                                <div class="gmkb-mockup-line" style="background: <?php echo esc_attr($primary); ?>"></div>
-                                <div class="gmkb-mockup-line gmkb-short"></div>
-                                <div class="gmkb-mockup-line gmkb-short"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="gmkb-theme-info">
-                        <h3><?php echo esc_html($theme['theme_name'] ?? $id); ?></h3>
-                        <p><?php echo esc_html($theme['style']['label'] ?? $theme['description'] ?? ''); ?></p>
-                    </div>
-                </button>
-                <?php endforeach; ?>
-            </div>
-        </div>
-    </section>
+<div id="gmkb-template-picker-app" class="gmkb-template-picker-shell">
+    <!-- Loading state while Vue initializes -->
+    <div class="gmkb-loading-state">
+        <div class="gmkb-loading-spinner"></div>
+        <p>Loading templates...</p>
+    </div>
 </div>
 
 <style>
-:root {
-    --gmkb-primary: #2563eb;
-    --gmkb-primary-hover: #1d4ed8;
-    --gmkb-bg: #f8fafc;
-    --gmkb-surface: #ffffff;
-    --gmkb-text: #1e293b;
-    --gmkb-text-light: #64748b;
-    --gmkb-border: #e2e8f0;
-    --gmkb-radius: 16px;
-    --gmkb-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
-    --gmkb-shadow-lg: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
-}
-
-.gmkb-picker {
+/* Shell styles - Vue takes over once loaded */
+.gmkb-template-picker-shell {
     min-height: 100vh;
-    background: var(--gmkb-bg);
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
 }
 
-.gmkb-step {
-    display: none;
-    padding: 60px 20px 100px;
-}
-
-.gmkb-step.gmkb-active {
-    display: block;
-    animation: gmkbFadeIn 0.3s ease;
-}
-
-@keyframes gmkbFadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.gmkb-container {
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.gmkb-step-header {
-    text-align: center;
-    margin-bottom: 48px;
-}
-
-.gmkb-step-number {
-    display: inline-block;
-    background: var(--gmkb-primary);
-    color: white;
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 6px 16px;
-    border-radius: 100px;
-    margin-bottom: 24px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.gmkb-step-header h1 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: var(--gmkb-text);
-    margin: 0 0 12px;
-}
-
-.gmkb-subtitle {
-    font-size: 1.125rem;
-    color: var(--gmkb-text-light);
-    margin: 0;
-}
-
-.gmkb-back-btn {
-    position: absolute;
-    left: 0;
-    top: 0;
-    background: none;
-    border: none;
-    color: var(--gmkb-text-light);
-    font-size: 0.875rem;
-    cursor: pointer;
-    padding: 8px 16px;
-    border-radius: 8px;
-    transition: all 0.2s;
-}
-
-.gmkb-back-btn:hover {
-    background: var(--gmkb-border);
-    color: var(--gmkb-text);
-}
-
-.gmkb-step-header {
-    position: relative;
-}
-
-/* Persona Grid */
-.gmkb-persona-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 24px;
-}
-
-.gmkb-persona-card {
-    background: var(--gmkb-surface);
-    border: 2px solid var(--gmkb-border);
-    border-radius: var(--gmkb-radius);
-    padding: 32px 24px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.gmkb-persona-card:hover {
-    border-color: var(--gmkb-primary);
-    box-shadow: var(--gmkb-shadow-lg);
-    transform: translateY(-4px);
-}
-
-.gmkb-persona-card.selected {
-    border-color: var(--gmkb-primary);
-    background: linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(37, 99, 235, 0.1));
-}
-
-.gmkb-persona-icon {
-    width: 64px;
-    height: 64px;
-    background: linear-gradient(135deg, var(--gmkb-primary), #7c3aed);
-    border-radius: 16px;
+.gmkb-loading-state {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 20px;
+    min-height: 100vh;
+    color: rgba(255, 255, 255, 0.7);
 }
 
-.gmkb-persona-icon i {
-    font-size: 1.5rem;
-    color: white;
-}
-
-.gmkb-persona-card h3 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--gmkb-text);
-    margin: 0 0 8px;
-}
-
-.gmkb-persona-card p {
-    font-size: 0.875rem;
-    color: var(--gmkb-text-light);
-    margin: 0;
-    line-height: 1.5;
-}
-
-/* Theme Grid */
-.gmkb-theme-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 24px;
-}
-
-.gmkb-theme-card {
-    background: var(--gmkb-surface);
-    border: 2px solid var(--gmkb-border);
-    border-radius: var(--gmkb-radius);
-    overflow: hidden;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: left;
-}
-
-.gmkb-theme-card:hover {
-    border-color: var(--gmkb-primary);
-    box-shadow: var(--gmkb-shadow-lg);
-    transform: translateY(-4px);
-}
-
-.gmkb-theme-preview {
-    padding: 20px;
-    position: relative;
-}
-
-.gmkb-theme-colors {
-    display: flex;
-    gap: 8px;
+.gmkb-loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: gmkb-spin 0.8s linear infinite;
     margin-bottom: 16px;
 }
 
-.gmkb-theme-colors span {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+@keyframes gmkb-spin {
+    to { transform: rotate(360deg); }
 }
 
-.gmkb-theme-mockup {
-    background: white;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-}
-
-.gmkb-theme-dark .gmkb-theme-mockup {
-    background: #1e293b;
-}
-
-.gmkb-mockup-header {
-    height: 40px;
-}
-
-.gmkb-mockup-content {
-    padding: 12px;
-}
-
-.gmkb-mockup-line {
-    height: 8px;
-    border-radius: 4px;
-    margin-bottom: 8px;
-    opacity: 0.7;
-}
-
-.gmkb-mockup-line:last-child {
-    margin-bottom: 0;
-}
-
-.gmkb-mockup-line.gmkb-short {
-    width: 60%;
-    background: #e2e8f0;
-}
-
-.gmkb-theme-dark .gmkb-mockup-line.gmkb-short {
-    background: #334155;
-}
-
-.gmkb-theme-info {
-    padding: 20px;
-    border-top: 1px solid var(--gmkb-border);
-}
-
-.gmkb-theme-info h3 {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--gmkb-text);
-    margin: 0 0 4px;
-}
-
-.gmkb-theme-info p {
-    font-size: 0.813rem;
-    color: var(--gmkb-text-light);
-    margin: 0;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .gmkb-step {
-        padding: 40px 16px 80px;
-    }
-    .gmkb-step-header h1 {
-        font-size: 1.75rem;
-    }
-    .gmkb-persona-grid,
-    .gmkb-theme-grid {
-        grid-template-columns: 1fr;
-    }
+/* Hide loading state when Vue is ready */
+.gmkb-vue-mounted .gmkb-loading-state {
+    display: none;
 }
 </style>
 
 <script>
+// Configuration for Vue template picker
+window.gmkbTemplatePickerData = {
+    isTemplatePicker: true,
+    restUrl: '<?php echo esc_js($rest_url); ?>',
+    restNonce: '<?php echo esc_js($rest_nonce); ?>',
+    builderUrl: '<?php echo esc_js($builder_url); ?>',
+    loginUrl: '<?php echo esc_js($login_url); ?>',
+    isLoggedIn: <?php echo $is_logged_in ? 'true' : 'false'; ?>,
+    pluginUrl: '<?php echo esc_js($plugin_url); ?>',
+    baseUrl: '<?php echo esc_js($base_url); ?>',
+    // SEO-friendly persona routing
+    initialPersona: <?php echo $current_persona ? json_encode($current_persona) : 'null'; ?>,
+    personaSlugs: <?php echo json_encode(self::$persona_map); ?>
+};
+</script>
+
+<!-- Load Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+
+<!-- Load Vue bundle -->
+<link rel="stylesheet" href="<?php echo esc_url($plugin_url . 'dist/gmkb.css'); ?>">
+<script src="<?php echo esc_url($plugin_url . 'dist/gmkb.iife.js'); ?>"></script>
+
+<script>
+// Initialize Vue template picker after bundle loads
 (function() {
-    const picker = document.getElementById('gmkb-template-picker');
-    if (!picker) return;
+    function initTemplatePicker() {
+        if (typeof window.GMKB === 'undefined' || !window.GMKB.initTemplatePicker) {
+            // Retry if GMKB not ready yet
+            setTimeout(initTemplatePicker, 100);
+            return;
+        }
 
-    let selectedTemplate = null;
-    let selectedTheme = null;
+        window.GMKB.initTemplatePicker('#gmkb-template-picker-app');
+    }
 
-    // Persona selection
-    picker.querySelectorAll('.gmkb-persona-card').forEach(card => {
-        card.addEventListener('click', function() {
-            selectedTemplate = this.dataset.template;
-
-            // Update selection state
-            picker.querySelectorAll('.gmkb-persona-card').forEach(c => c.classList.remove('selected'));
-            this.classList.add('selected');
-
-            // Go to step 2
-            goToStep(2);
-        });
-    });
-
-    // Theme selection
-    picker.querySelectorAll('.gmkb-theme-card').forEach(card => {
-        card.addEventListener('click', function() {
-            selectedTheme = this.dataset.theme;
-
-            // Redirect to builder
-            const url = new URL('<?php echo esc_url(home_url('/tools/media-kit/')); ?>');
-            url.searchParams.set('template', selectedTemplate);
-            url.searchParams.set('theme', selectedTheme);
-            window.location.href = url.toString();
-        });
-    });
-
-    // Back button
-    picker.querySelectorAll('.gmkb-back-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            goToStep(parseInt(this.dataset.goto));
-        });
-    });
-
-    function goToStep(step) {
-        picker.querySelectorAll('.gmkb-step').forEach(s => {
-            s.classList.remove('gmkb-active');
-            if (parseInt(s.dataset.step) === step) {
-                s.classList.add('gmkb-active');
-            }
-        });
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initTemplatePicker);
+    } else {
+        initTemplatePicker();
     }
 })();
 </script>
@@ -506,35 +255,23 @@ class GMKB_Template_Pages {
         return ob_get_clean();
     }
 
-    /**
-     * Get visual-only themes (exclude old mixed themes with defaultContent)
-     */
-    private function get_visual_themes() {
-        if (!$this->theme_discovery) {
-            return array();
-        }
-
-        $all_themes = $this->theme_discovery->getThemes();
-        $visual_themes = array();
-
-        foreach ($all_themes as $id => $theme) {
-            // Skip themes that have layout content (old architecture)
-            if (isset($theme['defaultContent'])) {
-                continue;
-            }
-            $visual_themes[$id] = $theme;
-        }
-
-        return $visual_themes;
-    }
-
     public function output_seo_tags() {
         if (!get_query_var('gmkb_templates')) return;
 
         $site_name = get_bloginfo('name');
-        $title = 'Create Your Media Kit - ' . $site_name;
-        $description = 'Build a professional media kit in minutes. Choose your persona and visual style to get started.';
-        $url = home_url('/templates/');
+        $persona = $this->get_current_persona();
+
+        if ($persona) {
+            // Persona-specific SEO
+            $title = $persona['label'] . ' Media Kit Templates - ' . $site_name;
+            $description = $persona['description'];
+            $url = home_url('/templates/' . $persona['slug'] . '/');
+        } else {
+            // Main templates page SEO
+            $title = 'Create Your Media Kit - ' . $site_name;
+            $description = 'Build a professional media kit in minutes. Choose your persona and visual style to get started.';
+            $url = home_url('/templates/');
+        }
 
         echo "\n<!-- GMKB SEO -->\n";
         echo '<meta name="description" content="' . esc_attr($description) . '">' . "\n";
@@ -548,12 +285,19 @@ class GMKB_Template_Pages {
 
     public function get_document_title($title) {
         if (!get_query_var('gmkb_templates')) return $title;
-        return 'Create Your Media Kit - ' . get_bloginfo('name');
+
+        $site_name = get_bloginfo('name');
+        $persona = $this->get_current_persona();
+
+        if ($persona) {
+            return $persona['label'] . ' Media Kit Templates - ' . $site_name;
+        }
+        return 'Create Your Media Kit - ' . $site_name;
     }
 
     public function add_body_class($classes) {
         if (get_query_var('gmkb_templates')) {
-            $classes[] = 'gmkb-template-picker';
+            $classes[] = 'gmkb-template-picker-page';
         }
         return $classes;
     }
@@ -580,3 +324,14 @@ add_action('admin_init', function() {
         flush_rewrite_rules();
     }
 });
+
+// Schedule flush when this file's rewrite rules version changes
+// This ensures new persona URL patterns are registered
+add_action('init', function() {
+    $current_version = '2.0'; // Bump this when adding new rewrite rules
+    $stored_version = get_option('gmkb_template_pages_rewrite_version', '1.0');
+    if ($current_version !== $stored_version) {
+        GMKB_Template_Pages::schedule_flush();
+        update_option('gmkb_template_pages_rewrite_version', $current_version);
+    }
+}, 5);
