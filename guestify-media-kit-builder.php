@@ -139,6 +139,16 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-brand-kit-repository.php')) 
     require_once GUESTIFY_PLUGIN_DIR . 'system/class-brand-kit-repository.php';
 }
 
+// Media Library Schema - Standalone media library structure (many-to-many with Brand Kits)
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-media-library-schema.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-media-library-schema.php';
+}
+
+// Media Library Repository - Data Access Layer for standalone media CRUD
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-media-library-repository.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/class-media-library-repository.php';
+}
+
 // Onboarding Schema - Single Source of Truth for gamification tasks and rewards
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-schema.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/class-onboarding-schema.php';
@@ -279,6 +289,11 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-profile-limits
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-brand-kit-api.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-brand-kit-api.php';
     GMKB_Brand_Kit_API::init();
+}
+
+// Media Library API - CRUD for standalone media with brand kit linking
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-media-library-api.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-media-library-api.php';
 }
 
 // Offers Migration - Migrate Formidable offers to native CPT

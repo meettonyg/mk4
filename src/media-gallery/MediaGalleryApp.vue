@@ -5,9 +5,12 @@
       <div class="header-content">
         <h1>Media Gallery</h1>
         <p class="header-description">
-          View and manage all your brand media assets in one place.
+          Upload and manage your brand media assets. Link them to multiple brand kits.
         </p>
       </div>
+      <button class="btn btn-primary" @click="openUploader">
+        + Upload Media
+      </button>
     </div>
 
     <!-- Filters -->
@@ -33,8 +36,9 @@
       <div class="filter-group">
         <label class="filter-label">BRAND KIT</label>
         <select v-model="selectedBrandKitId" class="filter-select">
-          <option value="">All Brand Kits</option>
-          <option v-for="kit in store.brandKits" :key="kit.id" :value="kit.id">
+          <option value="">All Media</option>
+          <option value="unlinked">Unlinked Only</option>
+          <option v-for="kit in brandKits" :key="kit.id" :value="kit.id">
             {{ kit.name || 'Untitled' }}
           </option>
         </select>
@@ -42,25 +46,25 @@
     </div>
 
     <!-- Loading State -->
-    <div v-if="store.isLoading && !allMedia.length" class="loading-state">
+    <div v-if="isLoading && !mediaItems.length" class="loading-state">
       <div class="spinner"></div>
       <p>Loading media...</p>
     </div>
 
     <!-- Error State -->
-    <div v-else-if="store.error" class="error-state">
-      <p>{{ store.error }}</p>
-      <button class="btn btn-secondary" @click="store.clearError">Dismiss</button>
+    <div v-else-if="error" class="error-state">
+      <p>{{ error }}</p>
+      <button class="btn btn-secondary" @click="error = null">Dismiss</button>
     </div>
 
     <!-- Media Grid -->
     <div v-else-if="filteredMedia.length > 0" class="media-grid">
       <div
         v-for="item in filteredMedia"
-        :key="`${item.brandKitId}-${item.id}`"
+        :key="item.id"
         class="media-card"
-        :class="{ 'is-primary': item.is_primary }"
-        @click="openInBrandKit(item)"
+        :class="{ 'is-selected': selectedMedia?.id === item.id }"
+        @click="selectMedia(item)"
       >
         <div class="card-preview">
           <img
@@ -68,14 +72,13 @@
             :alt="item.alt || item.label || 'Media'"
             loading="lazy"
           />
-          <span v-if="item.is_primary" class="primary-badge">Primary</span>
           <span class="category-badge">{{ item.category }}</span>
+          <span v-if="item.linked_brand_kits?.length" class="link-badge">
+            {{ item.linked_brand_kits.length }} kit{{ item.linked_brand_kits.length > 1 ? 's' : '' }}
+          </span>
         </div>
         <div class="card-content">
           <h3 class="card-title">{{ item.label || 'Untitled' }}</h3>
-          <p class="card-meta">
-            <span class="brand-kit-name">{{ getBrandKitName(item.brandKitId) }}</span>
-          </p>
         </div>
       </div>
     </div>
@@ -85,30 +88,156 @@
       <div class="empty-icon">🖼️</div>
       <h2>No Media Found</h2>
       <p v-if="selectedCategory || selectedBrandKitId">
-        No media matches your current filters. Try adjusting your selection.
+        No media matches your current filters.
       </p>
       <p v-else>
-        You haven't added any media to your brand kits yet.
-        <br />
-        Go to Brand Kits to add headshots, logos, and photos.
+        Upload your first media to start building your brand library.
       </p>
-      <button v-if="selectedCategory || selectedBrandKitId" class="btn btn-secondary" @click="clearFilters">
-        Clear Filters
-      </button>
+      <div class="empty-actions">
+        <button v-if="selectedCategory || selectedBrandKitId" class="btn btn-secondary" @click="clearFilters">
+          Clear Filters
+        </button>
+        <button class="btn btn-primary" @click="openUploader">
+          + Upload Media
+        </button>
+      </div>
     </div>
 
-    <!-- Brand Kit Editor Modal -->
+    <!-- Media Detail Sidebar -->
     <Teleport to="body">
-      <div v-if="showEditor" class="editor-modal">
-        <div class="modal-backdrop" @click="closeEditor"></div>
+      <div v-if="selectedMedia" class="detail-sidebar">
+        <div class="sidebar-backdrop" @click="selectedMedia = null"></div>
+        <div class="sidebar-content">
+          <div class="sidebar-header">
+            <h2>Media Details</h2>
+            <button class="close-btn" @click="selectedMedia = null">×</button>
+          </div>
+
+          <div class="sidebar-body">
+            <!-- Preview -->
+            <div class="detail-preview">
+              <img :src="selectedMedia.sizes?.large?.url || selectedMedia.url" :alt="selectedMedia.alt" />
+            </div>
+
+            <!-- Edit Form -->
+            <div class="detail-form">
+              <div class="form-group">
+                <label>Label</label>
+                <input
+                  type="text"
+                  v-model="editForm.label"
+                  placeholder="Enter a label..."
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Alt Text</label>
+                <input
+                  type="text"
+                  v-model="editForm.alt"
+                  placeholder="Describe the image..."
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Category</label>
+                <select v-model="editForm.category">
+                  <option v-for="cat in categories.slice(1)" :key="cat.id" :value="cat.id">
+                    {{ cat.label }}
+                  </option>
+                </select>
+              </div>
+
+              <button class="btn btn-primary btn-full" @click="saveMediaDetails" :disabled="isSaving">
+                {{ isSaving ? 'Saving...' : 'Save Changes' }}
+              </button>
+            </div>
+
+            <!-- Brand Kit Links -->
+            <div class="detail-section">
+              <h3>LINKED BRAND KITS</h3>
+              <div v-if="selectedMedia.linked_brand_kits?.length" class="linked-kits">
+                <div
+                  v-for="kitId in selectedMedia.linked_brand_kits"
+                  :key="kitId"
+                  class="linked-kit"
+                >
+                  <span>{{ getBrandKitName(kitId) }}</span>
+                  <button class="unlink-btn" @click="unlinkFromBrandKit(selectedMedia.id, kitId)">
+                    Unlink
+                  </button>
+                </div>
+              </div>
+              <p v-else class="no-links">Not linked to any brand kits</p>
+
+              <!-- Add to Brand Kit -->
+              <div class="add-to-kit">
+                <select v-model="linkToBrandKitId">
+                  <option value="">Link to brand kit...</option>
+                  <option
+                    v-for="kit in availableBrandKits"
+                    :key="kit.id"
+                    :value="kit.id"
+                  >
+                    {{ kit.name || 'Untitled' }}
+                  </option>
+                </select>
+                <button
+                  class="btn btn-secondary"
+                  @click="linkToBrandKit"
+                  :disabled="!linkToBrandKitId"
+                >
+                  Link
+                </button>
+              </div>
+            </div>
+
+            <!-- Delete -->
+            <div class="detail-section danger-zone">
+              <button class="btn btn-danger btn-full" @click="confirmDelete">
+                Delete Media
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Upload Modal -->
+    <Teleport to="body">
+      <div v-if="showUploader" class="upload-modal">
+        <div class="modal-backdrop" @click="closeUploader"></div>
         <div class="modal-content">
-          <BrandKitEditor
-            :brand-kit-id="editingBrandKitId"
-            mode="edit"
-            initial-tab="media"
-            @close="closeEditor"
-            @saved="onEditorSaved"
-          />
+          <div class="modal-header">
+            <h2>Upload Media</h2>
+            <button class="close-btn" @click="closeUploader">×</button>
+          </div>
+          <div class="modal-body">
+            <div class="upload-form">
+              <div class="form-group">
+                <label>Category</label>
+                <select v-model="uploadCategory">
+                  <option v-for="cat in categories.slice(1)" :key="cat.id" :value="cat.id">
+                    {{ cat.label }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="form-group" v-if="brandKits.length">
+                <label>Link to Brand Kit (Optional)</label>
+                <select v-model="uploadBrandKitId">
+                  <option value="">Don't link</option>
+                  <option v-for="kit in brandKits" :key="kit.id" :value="kit.id">
+                    {{ kit.name || 'Untitled' }}
+                  </option>
+                </select>
+              </div>
+
+              <button class="btn btn-primary btn-full" @click="openWordPressMediaLibrary">
+                Select from Media Library
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </Teleport>
@@ -116,9 +245,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
+import { mediaLibraryService } from '../services/MediaLibraryService.js';
 import { useBrandKitStore } from '../stores/brandKit.js';
-import BrandKitEditor from '../brand-kits/components/BrandKitEditor.vue';
 
 const props = defineProps({
   initialCategory: {
@@ -127,15 +256,28 @@ const props = defineProps({
   },
 });
 
-const store = useBrandKitStore();
+const brandKitStore = useBrandKitStore();
+
+// State
+const mediaItems = ref([]);
+const brandKits = ref([]);
+const isLoading = ref(false);
+const error = ref(null);
+const isSaving = ref(false);
 
 // Filter state
 const selectedCategory = ref(props.initialCategory || '');
 const selectedBrandKitId = ref('');
 
-// Editor state
-const showEditor = ref(false);
-const editingBrandKitId = ref(null);
+// Selected media for detail view
+const selectedMedia = ref(null);
+const editForm = ref({ label: '', alt: '', category: '' });
+const linkToBrandKitId = ref('');
+
+// Upload state
+const showUploader = ref(false);
+const uploadCategory = ref('photo');
+const uploadBrandKitId = ref('');
 
 // Categories
 const categories = [
@@ -146,66 +288,150 @@ const categories = [
   { id: 'background', label: 'Backgrounds' },
 ];
 
-// Computed: Aggregate all media from all brand kits
-const allMedia = computed(() => {
-  const media = [];
-  for (const kit of store.brandKits) {
-    if (kit.media && Array.isArray(kit.media)) {
-      for (const item of kit.media) {
-        media.push({
-          ...item,
-          brandKitId: kit.id,
-          brandKitName: kit.name,
-        });
-      }
-    }
-  }
-  return media;
-});
-
-// Computed: Filter media by category and brand kit
+// Computed
 const filteredMedia = computed(() => {
-  let result = allMedia.value;
+  let result = mediaItems.value;
 
   if (selectedCategory.value) {
     result = result.filter(m => m.category === selectedCategory.value);
   }
 
-  if (selectedBrandKitId.value) {
-    result = result.filter(m => m.brandKitId === parseInt(selectedBrandKitId.value));
+  if (selectedBrandKitId.value === 'unlinked') {
+    result = result.filter(m => !m.linked_brand_kits?.length);
+  } else if (selectedBrandKitId.value) {
+    result = result.filter(m =>
+      m.linked_brand_kits?.includes(parseInt(selectedBrandKitId.value))
+    );
   }
 
   return result;
 });
 
+const availableBrandKits = computed(() => {
+  if (!selectedMedia.value) return brandKits.value;
+  const linkedIds = selectedMedia.value.linked_brand_kits || [];
+  return brandKits.value.filter(kit => !linkedIds.includes(kit.id));
+});
+
 // Methods
-const getCategoryCount = (categoryId) => {
-  if (!categoryId) {
-    return allMedia.value.length;
+const loadMedia = async () => {
+  isLoading.value = true;
+  error.value = null;
+
+  try {
+    mediaItems.value = await mediaLibraryService.getAll();
+  } catch (err) {
+    error.value = err.message;
+    console.error('Failed to load media:', err);
+  } finally {
+    isLoading.value = false;
   }
-  return allMedia.value.filter(m => m.category === categoryId).length;
 };
 
-const getBrandKitName = (brandKitId) => {
-  const kit = store.brandKits.find(k => k.id === brandKitId);
+const loadBrandKits = async () => {
+  try {
+    await brandKitStore.loadBrandKits();
+    brandKits.value = brandKitStore.brandKits;
+  } catch (err) {
+    console.error('Failed to load brand kits:', err);
+  }
+};
+
+const getCategoryCount = (categoryId) => {
+  if (!categoryId) return mediaItems.value.length;
+  return mediaItems.value.filter(m => m.category === categoryId).length;
+};
+
+const getBrandKitName = (kitId) => {
+  const kit = brandKits.value.find(k => k.id === kitId);
   return kit?.name || 'Untitled';
 };
 
-const openInBrandKit = (item) => {
-  editingBrandKitId.value = item.brandKitId;
-  store.loadBrandKit(item.brandKitId);
-  showEditor.value = true;
+const selectMedia = (item) => {
+  selectedMedia.value = item;
+  editForm.value = {
+    label: item.label || '',
+    alt: item.alt || '',
+    category: item.category || 'photo',
+  };
+  linkToBrandKitId.value = '';
 };
 
-const closeEditor = () => {
-  showEditor.value = false;
-  editingBrandKitId.value = null;
+const saveMediaDetails = async () => {
+  if (!selectedMedia.value) return;
+
+  isSaving.value = true;
+  try {
+    const updated = await mediaLibraryService.update(selectedMedia.value.id, editForm.value);
+    // Update in list
+    const index = mediaItems.value.findIndex(m => m.id === selectedMedia.value.id);
+    if (index !== -1) {
+      mediaItems.value[index] = { ...mediaItems.value[index], ...updated };
+    }
+    selectedMedia.value = { ...selectedMedia.value, ...updated };
+  } catch (err) {
+    error.value = err.message;
+  } finally {
+    isSaving.value = false;
+  }
 };
 
-const onEditorSaved = async () => {
-  closeEditor();
-  // Reload all brand kits to refresh media
-  await store.loadBrandKits(true);
+const linkToBrandKit = async () => {
+  if (!selectedMedia.value || !linkToBrandKitId.value) return;
+
+  try {
+    await mediaLibraryService.linkToBrandKit(selectedMedia.value.id, linkToBrandKitId.value);
+    // Update linked_brand_kits
+    if (!selectedMedia.value.linked_brand_kits) {
+      selectedMedia.value.linked_brand_kits = [];
+    }
+    selectedMedia.value.linked_brand_kits.push(parseInt(linkToBrandKitId.value));
+    // Update in list
+    const index = mediaItems.value.findIndex(m => m.id === selectedMedia.value.id);
+    if (index !== -1) {
+      mediaItems.value[index].linked_brand_kits = [...selectedMedia.value.linked_brand_kits];
+    }
+    linkToBrandKitId.value = '';
+  } catch (err) {
+    error.value = err.message;
+  }
+};
+
+const unlinkFromBrandKit = async (mediaId, brandKitId) => {
+  try {
+    await mediaLibraryService.unlinkFromBrandKit(mediaId, brandKitId);
+    // Update linked_brand_kits
+    if (selectedMedia.value?.id === mediaId) {
+      selectedMedia.value.linked_brand_kits = selectedMedia.value.linked_brand_kits.filter(
+        id => id !== brandKitId
+      );
+    }
+    // Update in list
+    const index = mediaItems.value.findIndex(m => m.id === mediaId);
+    if (index !== -1) {
+      mediaItems.value[index].linked_brand_kits = mediaItems.value[index].linked_brand_kits.filter(
+        id => id !== brandKitId
+      );
+    }
+  } catch (err) {
+    error.value = err.message;
+  }
+};
+
+const confirmDelete = async () => {
+  if (!selectedMedia.value) return;
+
+  if (!confirm('Are you sure you want to delete this media? This will unlink it from all brand kits.')) {
+    return;
+  }
+
+  try {
+    await mediaLibraryService.delete(selectedMedia.value.id);
+    mediaItems.value = mediaItems.value.filter(m => m.id !== selectedMedia.value.id);
+    selectedMedia.value = null;
+  } catch (err) {
+    error.value = err.message;
+  }
 };
 
 const clearFilters = () => {
@@ -213,16 +439,58 @@ const clearFilters = () => {
   selectedBrandKitId.value = '';
 };
 
+const openUploader = () => {
+  showUploader.value = true;
+};
+
+const closeUploader = () => {
+  showUploader.value = false;
+};
+
+const openWordPressMediaLibrary = () => {
+  if (!window.wp?.media) {
+    alert('WordPress media library not available');
+    return;
+  }
+
+  const frame = window.wp.media({
+    title: 'Select Media',
+    multiple: true,
+    library: { type: 'image' },
+  });
+
+  frame.on('select', async () => {
+    const selection = frame.state().get('selection').toJSON();
+
+    for (const attachment of selection) {
+      try {
+        const data = {
+          media_id: attachment.id,
+          category: uploadCategory.value,
+          label: attachment.title || attachment.filename,
+          alt: attachment.alt || '',
+        };
+
+        if (uploadBrandKitId.value) {
+          data.brand_kit_id = uploadBrandKitId.value;
+        }
+
+        const created = await mediaLibraryService.create(data);
+        mediaItems.value.unshift(created);
+      } catch (err) {
+        console.error('Failed to add media:', err);
+      }
+    }
+
+    closeUploader();
+  });
+
+  frame.open();
+};
+
 // Initialize
 onMounted(async () => {
-  await store.loadBrandKits();
-
-  // Load full data for each brand kit to get media
-  for (const kit of store.brandKits) {
-    if (!kit.media) {
-      await store.loadBrandKit(kit.id);
-    }
-  }
+  await Promise.all([loadMedia(), loadBrandKits()]);
 });
 </script>
 
@@ -236,7 +504,11 @@ onMounted(async () => {
 
 /* Header */
 .app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   margin-bottom: 24px;
+  gap: 24px;
 }
 
 .header-content h1 {
@@ -331,12 +603,6 @@ onMounted(async () => {
   cursor: pointer;
 }
 
-.filter-select:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
 /* Buttons */
 .btn {
   display: inline-flex;
@@ -349,6 +615,21 @@ onMounted(async () => {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #2563eb;
 }
 
 .btn-secondary {
@@ -357,8 +638,21 @@ onMounted(async () => {
   border: 1px solid #d1d5db;
 }
 
-.btn-secondary:hover {
+.btn-secondary:hover:not(:disabled) {
   background: #f9fafb;
+}
+
+.btn-danger {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.btn-full {
+  width: 100%;
 }
 
 /* Loading/Error States */
@@ -388,7 +682,7 @@ onMounted(async () => {
 /* Media Grid */
 .media-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 16px;
 }
 
@@ -404,11 +698,11 @@ onMounted(async () => {
 .media-card:hover {
   border-color: #d1d5db;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
 }
 
-.media-card.is-primary {
+.media-card.is-selected {
   border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
 .card-preview {
@@ -424,22 +718,10 @@ onMounted(async () => {
   object-fit: cover;
 }
 
-.primary-badge {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  background: #3b82f6;
-  color: white;
-  font-size: 10px;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-weight: 500;
-}
-
 .category-badge {
   position: absolute;
   top: 8px;
-  right: 8px;
+  left: 8px;
   background: rgba(0, 0, 0, 0.6);
   color: white;
   font-size: 10px;
@@ -449,30 +731,30 @@ onMounted(async () => {
   text-transform: capitalize;
 }
 
+.link-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #3b82f6;
+  color: white;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
 .card-content {
   padding: 12px;
 }
 
 .card-title {
-  margin: 0 0 4px 0;
-  font-size: 14px;
-  font-weight: 600;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
   color: #111827;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.card-meta {
-  margin: 0;
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.brand-kit-name {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
 }
 
 /* Empty State */
@@ -500,14 +782,190 @@ onMounted(async () => {
   margin: 0 0 24px 0;
   font-size: 15px;
   color: #6b7280;
-  line-height: 1.6;
 }
 
-/* Editor Modal */
-.editor-modal {
+.empty-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* Detail Sidebar */
+.detail-sidebar {
   position: fixed;
   inset: 0;
   z-index: 10000;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.sidebar-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.sidebar-content {
+  position: relative;
+  width: 400px;
+  max-width: 90%;
+  height: 100%;
+  background: white;
+  overflow-y: auto;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.sidebar-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.close-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  font-size: 24px;
+  cursor: pointer;
+  color: #6b7280;
+  border-radius: 6px;
+}
+
+.close-btn:hover {
+  background: #f3f4f6;
+}
+
+.sidebar-body {
+  padding: 20px;
+}
+
+.detail-preview {
+  margin-bottom: 20px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f3f4f6;
+}
+
+.detail-preview img {
+  width: 100%;
+  display: block;
+}
+
+.detail-form {
+  margin-bottom: 24px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.detail-section {
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 20px;
+}
+
+.detail-section h3 {
+  margin: 0 0 12px 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.linked-kits {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.linked-kit {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.unlink-btn {
+  background: none;
+  border: none;
+  color: #ef4444;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.unlink-btn:hover {
+  background: #fee2e2;
+}
+
+.no-links {
+  color: #6b7280;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.add-to-kit {
+  display: flex;
+  gap: 8px;
+}
+
+.add-to-kit select {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.danger-zone {
+  border-top-color: #fee2e2;
+}
+
+/* Upload Modal */
+.upload-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -522,21 +980,54 @@ onMounted(async () => {
 .modal-content {
   position: relative;
   width: 90%;
-  max-width: 1100px;
-  height: 85vh;
+  max-width: 500px;
   background: white;
   border-radius: 12px;
   overflow: hidden;
 }
 
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.upload-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
+  .app-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .filters-bar {
     flex-direction: column;
   }
 
   .media-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+
+  .sidebar-content {
+    width: 100%;
   }
 }
 </style>
