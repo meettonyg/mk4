@@ -4,6 +4,9 @@
  * CRITICAL: Never use localStorage or sessionStorage
  */
 
+const NORMALIZED_DEFAULT_SHADOW_MEDIUM = '02px4pxrgba(0,0,0,0.05)';
+const NORMALIZED_DEFAULT_SHADOW_SMALL = '01px2px';
+
 class ComponentStyleService {
   constructor() {
     // Map of componentId → <style> element
@@ -399,20 +402,26 @@ class ComponentStyleService {
 
     // Effects - Apply to component root
     // CRITICAL: Only apply if explicitly set and not 'none'
+    let appliedShadow = false;
     if (safeStyle.effects) {
       if (safeStyle.effects.boxShadow &&
           safeStyle.effects.boxShadow !== 'none' &&
           safeStyle.effects.boxShadow !== '0 0 0 rgba(0,0,0,0)') {
         // Skip subtle default shadows that look like borders
-        const isDefaultShadow = safeStyle.effects.boxShadow.includes('0 2px 4px rgba(0,0,0,0.05)') ||
-                               safeStyle.effects.boxShadow.includes('0 1px 2px');
+        const normalizedShadow = safeStyle.effects.boxShadow.replace(/\s+/g, '').toLowerCase();
+        const isDefaultShadow = normalizedShadow.includes(NORMALIZED_DEFAULT_SHADOW_MEDIUM) ||
+                               normalizedShadow.includes(NORMALIZED_DEFAULT_SHADOW_SMALL);
         if (!isDefaultShadow) {
           componentRules.push(`box-shadow: ${safeStyle.effects.boxShadow} !important`);
+          appliedShadow = true;
         }
       }
       if (safeStyle.effects.opacity !== undefined && safeStyle.effects.opacity !== 100) {
         componentRules.push(`opacity: ${safeStyle.effects.opacity / 100} !important`);
       }
+    }
+    if (!appliedShadow) {
+      componentRules.push('box-shadow: none');
     }
 
     // Advanced - Layout (apply to wrapper)
