@@ -404,7 +404,7 @@ class ComponentStyleService {
     }
     // Prevent theme default borders from appearing when no border is explicitly set
     if (!appliedBorder) {
-      componentRules.push('border: none');
+      componentRules.push('border: none !important');
     }
 
     // Effects - Apply to component root
