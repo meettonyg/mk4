@@ -170,30 +170,6 @@
             </div>
         </div>
 
-        <!-- Legacy Data Migration Notice -->
-        <div v-if="hasLegacyBranding && !selectedBrandKitId" class="panel migration-notice">
-            <div class="panel-content">
-                <div class="notice-content">
-                    <span class="notice-icon">⚠️</span>
-                    <div class="notice-text">
-                        <strong>Legacy Branding Data Detected</strong>
-                        <p>
-                            This profile has existing branding data. Create a new brand kit to migrate
-                            your colors, fonts, and media to the new system.
-                        </p>
-                    </div>
-                    <button
-                        class="btn btn-primary"
-                        @click="migrateLegacyData"
-                        :disabled="isMigrating"
-                    >
-                        <span v-if="isMigrating">Migrating...</span>
-                        <span v-else>Create Brand Kit from Existing Data</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-
         <!-- Media Kit Layout Panel -->
         <div class="panel">
             <div class="panel-header">
@@ -304,19 +280,6 @@ const hasAnyMedia = computed(() => {
            brandKitPhotos.value.length > 0;
 });
 
-// Check for legacy branding data
-const hasLegacyBranding = computed(() => {
-    const fields = profileStore.fields;
-    // Check if there's any legacy branding data
-    return !!(
-        fields.color_primary ||
-        fields.color_accent ||
-        fields.font_primary ||
-        fields.headshot_primary?.url ||
-        (fields.logos && fields.logos.length > 0)
-    );
-});
-
 // Methods
 const onBrandKitChange = async (brandKitId) => {
     // Save brand_kit_id to profile
@@ -344,56 +307,6 @@ const onEditorSaved = async () => {
     if (selectedBrandKitId.value) {
         await brandKitStore.loadBrandKit(selectedBrandKitId.value);
         await brandKitStore.loadBrandKits(true);
-    }
-};
-
-const isMigrating = ref(false);
-
-const migrateLegacyData = async () => {
-    if (isMigrating.value) return;
-
-    const profileId = profileStore.postId;
-    if (!profileId) {
-        alert('Profile ID not found. Please refresh the page.');
-        return;
-    }
-
-    isMigrating.value = true;
-
-    try {
-        // Use server-side migration endpoint for atomic, robust migration
-        const response = await fetch(`/wp-json/gmkb/v2/profiles/${profileId}/migrate-branding`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-WP-Nonce': window.gmkbData?.nonce || '',
-            },
-            body: JSON.stringify({
-                name: `${profileStore.postTitle || 'Profile'} Brand Kit`,
-            }),
-        });
-
-        const result = await response.json();
-
-        if (!response.ok || !result.success) {
-            throw new Error(result.message || 'Migration failed');
-        }
-
-        // Migration succeeded - update local state
-        const newBrandKit = result.data;
-        selectedBrandKitId.value = newBrandKit.id;
-
-        // Reload brand kits list
-        await brandKitStore.loadBrandKits(true);
-
-        // Update profile store
-        profileStore.updateField('brand_kit_id', newBrandKit.id);
-
-    } catch (error) {
-        console.error('Failed to migrate legacy branding:', error);
-        alert(error.message || 'Failed to migrate branding data. Please try again.');
-    } finally {
-        isMigrating.value = false;
     }
 };
 
@@ -669,40 +582,6 @@ watch(
     margin: 0;
     color: #64748b;
     font-size: 14px;
-}
-
-/* Migration Notice */
-.migration-notice {
-    border-color: #fef08a;
-    background: #fefce8;
-}
-
-.notice-content {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-}
-
-.notice-icon {
-    font-size: 24px;
-}
-
-.notice-text {
-    flex: 1;
-    min-width: 200px;
-}
-
-.notice-text strong {
-    display: block;
-    color: #854d0e;
-    margin-bottom: 4px;
-}
-
-.notice-text p {
-    margin: 0;
-    font-size: 13px;
-    color: #a16207;
 }
 
 /* Buttons */
