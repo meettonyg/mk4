@@ -12,82 +12,113 @@
       </div>
     </header>
 
-    <!-- Hero Section -->
-    <section class="directory-hero">
-      <h1>Choose a Starting Point</h1>
-      <p>Select a template below to get started, or choose a blank canvas to build from scratch</p>
-    </section>
-
-    <!-- Search -->
-    <div class="directory-search">
-      <div class="search-input-wrapper">
-        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="m21 21-4.35-4.35"/>
-        </svg>
-        <input
-          type="text"
-          v-model="searchQuery"
-          placeholder="Search templates..."
-          class="search-input"
-          @input="handleSearch"
-        />
-        <button
-          v-if="searchQuery"
-          class="search-clear"
-          @click="clearSearch"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 6L6 18M6 6l12 12"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-
-    <!-- Filters -->
-    <TemplateFilters
-      :categories="categories"
-      :active-category="templateStore.activeFilter"
-      @select="handleFilterChange"
+    <!-- STEP 1: Persona Selection -->
+    <PersonaSelector
+      v-if="currentStep === 1"
+      :templates="templateStore.templates"
+      @select="handlePersonaSelect"
+      @view-all="handleViewAll"
     />
 
-    <!-- Template Grid -->
-    <div class="directory-grid-wrapper">
-      <div class="directory-grid">
-        <!-- Blank Canvas Card -->
-        <BlankCanvasCard @select="handleBlankSelect" />
-
-        <!-- Template Cards -->
-        <TemplateCard
-          v-for="template in filteredTemplates"
-          :key="template.id"
-          :template="template"
-          :deletable="template.type === 'user'"
-          @select="handleTemplateSelect"
-          @demo="handleTemplateDemo"
-          @delete="handleTemplateDelete"
-        />
-
-        <!-- Loading State -->
-        <div v-if="templateStore.isLoading" class="loading-state">
-          <div class="loading-spinner"></div>
-          <p>Loading templates...</p>
-        </div>
-
-        <!-- Empty State -->
-        <div
-          v-if="!templateStore.isLoading && filteredTemplates.length === 0"
-          class="empty-state"
-        >
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+    <!-- STEP 2: Template Selection -->
+    <template v-else>
+      <!-- Back Button & Step Indicator -->
+      <div class="step-header">
+        <button class="back-btn" @click="goBackToPersonas">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
-          <p>No templates found</p>
-          <span v-if="searchQuery">Try a different search term</span>
-          <span v-else>Check back later for new templates</span>
+          Back to personas
+        </button>
+        <span class="step-badge" v-if="!viewAllMode">STEP 2 OF 2</span>
+      </div>
+
+      <!-- Hero Section -->
+      <section class="directory-hero">
+        <h1 v-if="selectedPersona && !viewAllMode">
+          Choose Your {{ selectedPersona.label }} Template
+        </h1>
+        <h1 v-else>All Templates</h1>
+        <p v-if="selectedPersona && !viewAllMode">
+          Pick a layout style that fits your brand
+        </p>
+        <p v-else>
+          Browse all available templates or use search to find what you need
+        </p>
+      </section>
+
+      <!-- Search -->
+      <div class="directory-search">
+        <div class="search-input-wrapper">
+          <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input
+            type="text"
+            v-model="searchQuery"
+            placeholder="Search templates..."
+            class="search-input"
+            @input="handleSearch"
+          />
+          <button
+            v-if="searchQuery"
+            class="search-clear"
+            @click="clearSearch"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
         </div>
       </div>
-    </div>
+
+      <!-- Layout Filters (only in persona mode) -->
+      <TemplateFilters
+        v-if="selectedPersona && !viewAllMode"
+        :categories="layoutVariantFilters"
+        :active-category="activeLayoutFilter"
+        @select="handleLayoutFilterChange"
+      />
+
+      <!-- Template Grid -->
+      <div class="directory-grid-wrapper">
+        <div class="directory-grid">
+          <!-- Blank Canvas Card -->
+          <BlankCanvasCard @select="handleBlankSelect" />
+
+          <!-- Template Cards -->
+          <TemplateCard
+            v-for="template in displayedTemplates"
+            :key="template.id"
+            :template="template"
+            :deletable="template.type === 'user'"
+            @select="handleTemplateSelect"
+            @demo="handleTemplateDemo"
+            @delete="handleTemplateDelete"
+          />
+
+          <!-- Loading State -->
+          <div v-if="templateStore.isLoading" class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Loading templates...</p>
+          </div>
+
+          <!-- Empty State -->
+          <div
+            v-if="!templateStore.isLoading && displayedTemplates.length === 0"
+            class="empty-state"
+          >
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+            </svg>
+            <p>No templates found</p>
+            <span v-if="searchQuery">Try a different search term</span>
+            <span v-else>Check back later for new templates</span>
+          </div>
+        </div>
+      </div>
+    </template>
 
     <!-- Error State -->
     <div v-if="templateStore.error" class="error-banner">
@@ -101,6 +132,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useTemplateStore } from '../../../stores/templates';
 import { useUIStore } from '../../../stores/ui';
+import PersonaSelector from './PersonaSelector.vue';
 import TemplateFilters from './TemplateFilters.vue';
 import TemplateCard from './TemplateCard.vue';
 import BlankCanvasCard from './BlankCanvasCard.vue';
@@ -108,24 +140,108 @@ import BlankCanvasCard from './BlankCanvasCard.vue';
 const templateStore = useTemplateStore();
 const uiStore = useUIStore();
 
+// Step state
+const currentStep = ref(1);
+const selectedPersona = ref(null);
+const viewAllMode = ref(false);
+
 // Local state
 const searchQuery = ref('');
+const activeLayoutFilter = ref('all');
 let searchTimeout = null;
 
-// Categories for filter
-const categories = [
-  { id: 'all', label: 'All', icon: 'grid' },
-  { id: 'corporate', label: 'Corporate', icon: 'building' },
-  { id: 'creative', label: 'Creative', icon: 'palette' },
-  { id: 'minimal', label: 'Minimal', icon: 'minus' },
-  { id: 'portfolio', label: 'Portfolio', icon: 'briefcase' },
-  { id: 'saved', label: 'My Templates', icon: 'bookmark' }
-];
+// Layout variant labels
+const LAYOUT_LABELS = {
+  'standard': 'Classic',
+  'split-layout': 'Split Screen',
+  'minimal': 'Minimal',
+  'centered': 'Centered',
+  'bold': 'Bold'
+};
 
-// Computed
-const filteredTemplates = computed(() => templateStore.filteredTemplates);
+// Computed: Layout variant filters based on selected persona
+const layoutVariantFilters = computed(() => {
+  const filters = [{ id: 'all', label: 'All Layouts', icon: 'grid' }];
+
+  if (!selectedPersona.value) return filters;
+
+  // Get unique layout variants for the selected persona
+  const variants = new Set();
+  templateStore.templates.forEach(template => {
+    if (template.persona?.type === selectedPersona.value.type) {
+      const variant = template.persona?.layout_variant || template.layout_variant || 'standard';
+      variants.add(variant);
+    }
+  });
+
+  // Add layout filters
+  variants.forEach(variant => {
+    filters.push({
+      id: variant,
+      label: LAYOUT_LABELS[variant] || variant,
+      icon: 'layout'
+    });
+  });
+
+  return filters;
+});
+
+// Computed: Displayed templates based on current state
+const displayedTemplates = computed(() => {
+  let results = [...templateStore.templates];
+
+  // Filter by persona (if not in view all mode)
+  if (selectedPersona.value && !viewAllMode.value) {
+    results = results.filter(t => t.persona?.type === selectedPersona.value.type);
+  }
+
+  // Filter by layout variant
+  if (activeLayoutFilter.value !== 'all') {
+    results = results.filter(t => {
+      const variant = t.persona?.layout_variant || t.layout_variant || 'standard';
+      return variant === activeLayoutFilter.value;
+    });
+  }
+
+  // Filter by search query
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    results = results.filter(t =>
+      t.name?.toLowerCase().includes(query) ||
+      (t.description && t.description.toLowerCase().includes(query)) ||
+      (t.tags && t.tags.some(tag => tag.toLowerCase().includes(query)))
+    );
+  }
+
+  // Sort by sort_order
+  return results.sort((a, b) =>
+    (a.sort_order || a.metadata?.sort_order || 100) - (b.sort_order || b.metadata?.sort_order || 100)
+  );
+});
 
 // Handlers
+const handlePersonaSelect = (persona) => {
+  selectedPersona.value = persona;
+  viewAllMode.value = false;
+  activeLayoutFilter.value = 'all';
+  currentStep.value = 2;
+};
+
+const handleViewAll = () => {
+  selectedPersona.value = null;
+  viewAllMode.value = true;
+  activeLayoutFilter.value = 'all';
+  currentStep.value = 2;
+};
+
+const goBackToPersonas = () => {
+  currentStep.value = 1;
+  selectedPersona.value = null;
+  viewAllMode.value = false;
+  activeLayoutFilter.value = 'all';
+  searchQuery.value = '';
+};
+
 const handleSearch = () => {
   // Debounce search
   if (searchTimeout) clearTimeout(searchTimeout);
@@ -139,8 +255,8 @@ const clearSearch = () => {
   templateStore.setSearchQuery('');
 };
 
-const handleFilterChange = (category) => {
-  templateStore.setFilter(category);
+const handleLayoutFilterChange = (layoutId) => {
+  activeLayoutFilter.value = layoutId;
 };
 
 const handleBlankSelect = () => {
@@ -225,15 +341,55 @@ watch(() => templateStore.searchQuery, (newVal) => {
   letter-spacing: -0.02em;
 }
 
+/* Step Header (Step 2) */
+.step-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.step-badge {
+  display: inline-block;
+  padding: 0.375rem 1rem;
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
 /* Hero */
 .directory-hero {
   text-align: center;
-  padding: 2rem 2rem 1.5rem;
+  padding: 1.5rem 2rem 1rem;
 }
 
 .directory-hero h1 {
   color: white;
-  font-size: 2.25rem;
+  font-size: 2rem;
   font-weight: 700;
   margin: 0 0 0.5rem;
   letter-spacing: -0.03em;
@@ -420,12 +576,27 @@ watch(() => templateStore.searchQuery, (newVal) => {
 
 /* Responsive */
 @media (max-width: 768px) {
+  .step-header {
+    padding: 0 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+
+  .directory-hero {
+    padding: 1rem;
+  }
+
   .directory-hero h1 {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
   }
 
   .directory-hero p {
     font-size: 0.9375rem;
+  }
+
+  .directory-search {
+    padding: 0 1rem 1rem;
   }
 
   .directory-grid-wrapper {
