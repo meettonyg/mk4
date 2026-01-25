@@ -106,7 +106,33 @@ class GMKB_Template_Pages {
 
     private function get_template_content() {
         $templates = $this->template_discovery ? $this->template_discovery->getTemplates() : array();
-        $themes = $this->get_visual_themes();
+
+        // Group templates by persona type
+        $personas = array();
+        $templates_by_persona = array();
+
+        foreach ($templates as $id => $template) {
+            $persona = $template['persona'] ?? array();
+            $persona_type = $persona['type'] ?? 'other';
+
+            // Store unique personas
+            if (!isset($personas[$persona_type])) {
+                $personas[$persona_type] = array(
+                    'type' => $persona_type,
+                    'label' => $persona['label'] ?? ucfirst($persona_type),
+                    'icon' => $persona['icon'] ?? 'fa-solid fa-user',
+                    'description' => $this->get_persona_description($persona_type),
+                    'count' => 0
+                );
+            }
+            $personas[$persona_type]['count']++;
+
+            // Group templates by persona
+            if (!isset($templates_by_persona[$persona_type])) {
+                $templates_by_persona[$persona_type] = array();
+            }
+            $templates_by_persona[$persona_type][$id] = $template;
+        }
 
         ob_start();
         ?>
@@ -122,62 +148,84 @@ class GMKB_Template_Pages {
                 <p class="gmkb-subtitle">Choose the type of media kit that best fits your needs</p>
             </div>
             <div class="gmkb-persona-grid">
-                <?php foreach ($templates as $id => $template) :
-                    $persona = $template['persona'] ?? array();
-                    $icon = $persona['icon'] ?? 'fa-solid fa-user';
-                ?>
-                <button type="button" class="gmkb-persona-card" data-template="<?php echo esc_attr($id); ?>">
+                <?php foreach ($personas as $persona_type => $persona) : ?>
+                <button type="button" class="gmkb-persona-card" data-persona="<?php echo esc_attr($persona_type); ?>">
                     <div class="gmkb-persona-icon">
-                        <i class="<?php echo esc_attr($icon); ?>"></i>
+                        <i class="<?php echo esc_attr($persona['icon']); ?>"></i>
                     </div>
-                    <h3><?php echo esc_html($persona['label'] ?? $template['template_name'] ?? $id); ?></h3>
-                    <p><?php echo esc_html($template['description'] ?? ''); ?></p>
+                    <h3><?php echo esc_html($persona['label']); ?></h3>
+                    <p><?php echo esc_html($persona['description']); ?></p>
+                    <span class="gmkb-template-count"><?php echo intval($persona['count']); ?> templates</span>
                 </button>
                 <?php endforeach; ?>
+            </div>
+            <div class="gmkb-view-all-wrapper">
+                <button type="button" class="gmkb-view-all-btn" data-action="view-all">
+                    <i class="fa-solid fa-grid-2"></i>
+                    View All Templates
+                </button>
             </div>
         </div>
     </section>
 
-    <!-- Step 2: Pick Theme -->
+    <!-- Step 2: Pick Template -->
     <section class="gmkb-step gmkb-step-2" data-step="2">
         <div class="gmkb-container">
             <div class="gmkb-step-header">
                 <button type="button" class="gmkb-back-btn" data-goto="1">
-                    <i class="fa-solid fa-arrow-left"></i> Back
+                    <i class="fa-solid fa-arrow-left"></i> Back to personas
                 </button>
                 <span class="gmkb-step-number">Step 2 of 2</span>
-                <h1>I want it to look...</h1>
-                <p class="gmkb-subtitle">Choose a visual style for your media kit</p>
+                <h1 class="gmkb-step2-title">Choose Your Template</h1>
+                <p class="gmkb-subtitle">Pick a layout style that fits your brand</p>
             </div>
-            <div class="gmkb-theme-grid">
-                <?php foreach ($themes as $id => $theme) :
-                    $colors = $theme['colors'] ?? array();
-                    $primary = $colors['primary'] ?? '#2563eb';
-                    $secondary = $colors['secondary'] ?? '#1e40af';
-                    $bg = $colors['background'] ?? '#ffffff';
-                    $is_dark = $theme['metadata']['is_dark'] ?? false;
-                ?>
-                <button type="button" class="gmkb-theme-card <?php echo $is_dark ? 'gmkb-theme-dark' : ''; ?>" data-theme="<?php echo esc_attr($id); ?>">
-                    <div class="gmkb-theme-preview" style="background: <?php echo esc_attr($bg); ?>">
-                        <div class="gmkb-theme-colors">
-                            <span style="background: <?php echo esc_attr($primary); ?>"></span>
-                            <span style="background: <?php echo esc_attr($secondary); ?>"></span>
+
+            <!-- Template cards for each persona (shown/hidden via JS) -->
+            <?php foreach ($templates_by_persona as $persona_type => $persona_templates) : ?>
+            <div class="gmkb-template-group" data-persona="<?php echo esc_attr($persona_type); ?>" style="display: none;">
+                <div class="gmkb-template-grid">
+                    <?php foreach ($persona_templates as $id => $template) :
+                        $layout_variant = $template['persona']['layout_variant'] ?? 'standard';
+                        $layout_label = $this->get_layout_label($layout_variant);
+                    ?>
+                    <button type="button" class="gmkb-template-card" data-template="<?php echo esc_attr($id); ?>">
+                        <div class="gmkb-template-preview">
+                            <i class="<?php echo esc_attr($template['persona']['icon'] ?? 'fa-solid fa-file'); ?>"></i>
                         </div>
-                        <div class="gmkb-theme-mockup">
-                            <div class="gmkb-mockup-header" style="background: linear-gradient(135deg, <?php echo esc_attr($primary); ?>, <?php echo esc_attr($secondary); ?>)"></div>
-                            <div class="gmkb-mockup-content">
-                                <div class="gmkb-mockup-line" style="background: <?php echo esc_attr($primary); ?>"></div>
-                                <div class="gmkb-mockup-line gmkb-short"></div>
-                                <div class="gmkb-mockup-line gmkb-short"></div>
+                        <div class="gmkb-template-info">
+                            <h3><?php echo esc_html($template['template_name'] ?? $id); ?></h3>
+                            <p><?php echo esc_html($template['description'] ?? ''); ?></p>
+                            <span class="gmkb-layout-badge"><?php echo esc_html($layout_label); ?></span>
+                        </div>
+                    </button>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endforeach; ?>
+
+            <!-- All templates (for "View All" mode) -->
+            <div class="gmkb-template-group gmkb-all-templates" data-persona="all" style="display: none;">
+                <div class="gmkb-template-grid">
+                    <?php foreach ($templates as $id => $template) :
+                        $persona = $template['persona'] ?? array();
+                        $layout_variant = $persona['layout_variant'] ?? 'standard';
+                        $layout_label = $this->get_layout_label($layout_variant);
+                    ?>
+                    <button type="button" class="gmkb-template-card" data-template="<?php echo esc_attr($id); ?>">
+                        <div class="gmkb-template-preview">
+                            <i class="<?php echo esc_attr($persona['icon'] ?? 'fa-solid fa-file'); ?>"></i>
+                        </div>
+                        <div class="gmkb-template-info">
+                            <h3><?php echo esc_html($template['template_name'] ?? $id); ?></h3>
+                            <p><?php echo esc_html($template['description'] ?? ''); ?></p>
+                            <div class="gmkb-template-meta">
+                                <span class="gmkb-persona-badge"><?php echo esc_html($persona['label'] ?? 'General'); ?></span>
+                                <span class="gmkb-layout-badge"><?php echo esc_html($layout_label); ?></span>
                             </div>
                         </div>
-                    </div>
-                    <div class="gmkb-theme-info">
-                        <h3><?php echo esc_html($theme['theme_name'] ?? $id); ?></h3>
-                        <p><?php echo esc_html($theme['style']['label'] ?? $theme['description'] ?? ''); ?></p>
-                    </div>
-                </button>
-                <?php endforeach; ?>
+                    </button>
+                    <?php endforeach; ?>
+                </div>
             </div>
         </div>
     </section>
@@ -330,8 +378,132 @@ class GMKB_Template_Pages {
 .gmkb-persona-card p {
     font-size: 0.875rem;
     color: var(--gmkb-text-light);
-    margin: 0;
+    margin: 0 0 12px;
     line-height: 1.5;
+}
+
+.gmkb-template-count {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--gmkb-border);
+    color: var(--gmkb-text-light);
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 100px;
+}
+
+/* View All Button */
+.gmkb-view-all-wrapper {
+    text-align: center;
+    margin-top: 32px;
+    padding-top: 32px;
+    border-top: 1px solid var(--gmkb-border);
+}
+
+.gmkb-view-all-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: transparent;
+    border: 1px solid var(--gmkb-border);
+    border-radius: 8px;
+    color: var(--gmkb-text-light);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.gmkb-view-all-btn:hover {
+    background: var(--gmkb-surface);
+    border-color: var(--gmkb-primary);
+    color: var(--gmkb-primary);
+}
+
+/* Template Grid (Step 2) */
+.gmkb-template-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+}
+
+.gmkb-template-card {
+    background: var(--gmkb-surface);
+    border: 2px solid var(--gmkb-border);
+    border-radius: var(--gmkb-radius);
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+}
+
+.gmkb-template-card:hover {
+    border-color: var(--gmkb-primary);
+    box-shadow: var(--gmkb-shadow-lg);
+    transform: translateY(-4px);
+}
+
+.gmkb-template-preview {
+    height: 160px;
+    background: linear-gradient(135deg, var(--gmkb-primary), #7c3aed);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gmkb-template-preview i {
+    font-size: 3rem;
+    color: white;
+    opacity: 0.9;
+}
+
+.gmkb-template-info {
+    padding: 20px;
+}
+
+.gmkb-template-info h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--gmkb-text);
+    margin: 0 0 8px;
+}
+
+.gmkb-template-info p {
+    font-size: 0.875rem;
+    color: var(--gmkb-text-light);
+    margin: 0 0 12px;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.gmkb-template-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.gmkb-persona-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    background: #eff6ff;
+    color: #3b82f6;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 100px;
+}
+
+.gmkb-layout-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    background: #fef3c7;
+    color: #d97706;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 100px;
 }
 
 /* Theme Grid */
@@ -452,32 +624,68 @@ class GMKB_Template_Pages {
     const picker = document.getElementById('gmkb-template-picker');
     if (!picker) return;
 
-    let selectedTemplate = null;
-    let selectedTheme = null;
+    let selectedPersona = null;
+    const step2Title = picker.querySelector('.gmkb-step2-title');
+    const personaLabels = {
+        'author': 'Authors & Writers',
+        'speaker': 'Speakers & Trainers',
+        'podcast-guest': 'Podcast Guests',
+        'consultant': 'Consultants & Advisors',
+        'influencer': 'Creators & Influencers',
+        'executive': 'Executives',
+        'creative': 'Creative Professionals'
+    };
 
-    // Persona selection
+    // Persona selection (Step 1)
     picker.querySelectorAll('.gmkb-persona-card').forEach(card => {
         card.addEventListener('click', function() {
-            selectedTemplate = this.dataset.template;
+            selectedPersona = this.dataset.persona;
 
             // Update selection state
             picker.querySelectorAll('.gmkb-persona-card').forEach(c => c.classList.remove('selected'));
             this.classList.add('selected');
+
+            // Update Step 2 title
+            const label = personaLabels[selectedPersona] || 'Your';
+            if (step2Title) {
+                step2Title.textContent = 'Choose Your ' + label + ' Template';
+            }
+
+            // Show templates for selected persona
+            showTemplatesForPersona(selectedPersona);
 
             // Go to step 2
             goToStep(2);
         });
     });
 
-    // Theme selection
-    picker.querySelectorAll('.gmkb-theme-card').forEach(card => {
-        card.addEventListener('click', function() {
-            selectedTheme = this.dataset.theme;
+    // View All button
+    const viewAllBtn = picker.querySelector('.gmkb-view-all-btn');
+    if (viewAllBtn) {
+        viewAllBtn.addEventListener('click', function() {
+            selectedPersona = 'all';
 
-            // Redirect to builder
+            // Update Step 2 title
+            if (step2Title) {
+                step2Title.textContent = 'All Templates';
+            }
+
+            // Show all templates
+            showTemplatesForPersona('all');
+
+            // Go to step 2
+            goToStep(2);
+        });
+    }
+
+    // Template selection (Step 2)
+    picker.querySelectorAll('.gmkb-template-card').forEach(card => {
+        card.addEventListener('click', function() {
+            const templateId = this.dataset.template;
+
+            // Redirect to builder with template
             const url = new URL('<?php echo esc_url(home_url('/tools/media-kit/')); ?>');
-            url.searchParams.set('template', selectedTemplate);
-            url.searchParams.set('theme', selectedTheme);
+            url.searchParams.set('template', templateId);
             window.location.href = url.toString();
         });
     });
@@ -488,6 +696,19 @@ class GMKB_Template_Pages {
             goToStep(parseInt(this.dataset.goto));
         });
     });
+
+    function showTemplatesForPersona(persona) {
+        // Hide all template groups
+        picker.querySelectorAll('.gmkb-template-group').forEach(group => {
+            group.style.display = 'none';
+        });
+
+        // Show the selected persona's templates
+        const targetGroup = picker.querySelector('.gmkb-template-group[data-persona="' + persona + '"]');
+        if (targetGroup) {
+            targetGroup.style.display = 'block';
+        }
+    }
 
     function goToStep(step) {
         picker.querySelectorAll('.gmkb-step').forEach(s => {
@@ -504,6 +725,38 @@ class GMKB_Template_Pages {
 <?php get_footer(); ?>
         <?php
         return ob_get_clean();
+    }
+
+    /**
+     * Get human-readable persona description
+     */
+    private function get_persona_description($persona_type) {
+        $descriptions = array(
+            'author' => 'Media kits for book authors, writers, and literary professionals',
+            'speaker' => 'Professional press kits for keynote speakers and workshop facilitators',
+            'podcast-guest' => 'One-sheets optimized for podcast booking and audio interviews',
+            'consultant' => 'Credibility kits for business consultants and professional advisors',
+            'influencer' => 'Media kits showcasing social stats and brand collaboration info',
+            'executive' => 'Executive bios and leadership profiles for C-suite professionals',
+            'creative' => 'Portfolio-style kits for artists, designers, and creative professionals'
+        );
+        return $descriptions[$persona_type] ?? 'Professional media kit templates';
+    }
+
+    /**
+     * Get human-readable layout variant label
+     */
+    private function get_layout_label($layout_variant) {
+        $labels = array(
+            'standard' => 'Classic',
+            'split-layout' => 'Split Screen',
+            'minimal' => 'Minimal',
+            'centered' => 'Centered',
+            'bold' => 'Bold',
+            'image-left' => 'Image Left',
+            'image-right' => 'Image Right'
+        );
+        return $labels[$layout_variant] ?? ucfirst($layout_variant);
     }
 
     /**
