@@ -706,6 +706,71 @@ async function initializeStandaloneTools() {
   }
 }
 
+/**
+ * Initialize Template Picker for standalone /templates page
+ * Called from PHP shell page
+ */
+async function initTemplatePicker(selector) {
+  console.log('🎨 Initializing Template Picker...');
+
+  const mountPoint = document.querySelector(selector);
+  if (!mountPoint) {
+    console.error('Template picker mount point not found:', selector);
+    return;
+  }
+
+  try {
+    // Create Pinia store
+    const pinia = createPinia();
+
+    // Import and create template store
+    const { useTemplateStore } = await import('./stores/templates.js');
+    const templateStore = useTemplateStore(pinia);
+
+    // Fetch templates
+    await templateStore.fetchTemplates();
+
+    // Import TemplateDirectory component
+    const { default: TemplateDirectory } = await import('./vue/components/templates/TemplateDirectory.vue');
+
+    // Create Vue app with TemplateDirectory as root
+    const app = createApp(TemplateDirectory, {
+      standalone: true,
+      builderUrl: window.gmkbTemplatePickerData?.builderUrl || '/tools/media-kit/'
+    });
+
+    app.use(pinia);
+
+    // Mount the app
+    app.mount(mountPoint);
+
+    // Add class to indicate Vue is mounted
+    mountPoint.classList.add('gmkb-vue-mounted');
+
+    console.log('✅ Template Picker initialized');
+
+    // Store reference
+    window.GMKB = window.GMKB || {};
+    window.GMKB.templatePickerApp = app;
+
+  } catch (error) {
+    console.error('❌ Failed to initialize template picker:', error);
+    mountPoint.innerHTML = `
+      <div style="padding: 40px; text-align: center; color: #ef4444;">
+        <h2>Failed to load templates</h2>
+        <p>${error.message}</p>
+        <button onclick="location.reload()" style="margin-top: 16px; padding: 8px 16px; cursor: pointer;">
+          Retry
+        </button>
+      </div>
+    `;
+  }
+}
+
+// Expose initTemplatePicker globally
+window.GMKB = window.GMKB || {};
+window.GMKB.initTemplatePicker = initTemplatePicker;
+
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {

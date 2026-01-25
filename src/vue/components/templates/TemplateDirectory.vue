@@ -131,14 +131,33 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useTemplateStore } from '../../../stores/templates';
-import { useUIStore } from '../../../stores/ui';
 import PersonaSelector from './PersonaSelector.vue';
 import TemplateFilters from './TemplateFilters.vue';
 import TemplateCard from './TemplateCard.vue';
 import BlankCanvasCard from './BlankCanvasCard.vue';
 
+// Props for standalone mode (used on /templates page)
+const props = defineProps({
+  standalone: {
+    type: Boolean,
+    default: false
+  },
+  builderUrl: {
+    type: String,
+    default: '/tools/media-kit/'
+  }
+});
+
 const templateStore = useTemplateStore();
-const uiStore = useUIStore();
+
+// Helper to show toast (works in both standalone and app mode)
+const showToast = (message, type = 'info') => {
+  if (window.GMKB?.utils?.showToast) {
+    window.GMKB.utils.showToast(message, type);
+  } else {
+    console.log(`[${type}] ${message}`);
+  }
+};
 
 // Step state
 const currentStep = ref(1);
@@ -260,33 +279,53 @@ const handleLayoutFilterChange = (layoutId) => {
 };
 
 const handleBlankSelect = () => {
-  templateStore.initializeBlank();
+  if (props.standalone) {
+    // Redirect to builder without template
+    window.location.href = props.builderUrl;
+  } else {
+    templateStore.initializeBlank();
+  }
 };
 
 const handleTemplateSelect = async (template) => {
-  try {
-    await templateStore.initializeFromTemplate(template.id);
-  } catch (err) {
-    console.error('Failed to load template:', err);
-    uiStore.showToast('Failed to load template', 'error');
+  if (props.standalone) {
+    // Redirect to builder with template parameter
+    const url = new URL(props.builderUrl, window.location.origin);
+    url.searchParams.set('template', template.id);
+    window.location.href = url.toString();
+  } else {
+    try {
+      await templateStore.initializeFromTemplate(template.id);
+    } catch (err) {
+      console.error('Failed to load template:', err);
+      showToast('Failed to load template', 'error');
+    }
   }
 };
 
 const handleTemplateDemo = (template) => {
-  uiStore.openTemplateDemo(template.id);
+  if (props.standalone) {
+    // In standalone mode, just select the template (preview not available)
+    handleTemplateSelect(template);
+  } else if (window.GMKB?.stores?.ui?.openTemplateDemo) {
+    window.GMKB.stores.ui.openTemplateDemo(template.id);
+  }
 };
 
 const handleTemplateDelete = async (template) => {
+  // Delete only available in app mode (not standalone)
+  if (props.standalone) return;
+
   if (!confirm(`Delete "${template.name}"? This cannot be undone.`)) {
     return;
   }
 
   try {
     await templateStore.deleteUserTemplate(template.id);
-    uiStore.showToast('Template deleted', 'success');
+    showToast('Template deleted', 'success');
   } catch (err) {
     console.error('Failed to delete template:', err);
-    uiStore.showToast('Failed to delete template', 'error');
+    showToast('Failed to delete template', 'error');
   }
 };
 
