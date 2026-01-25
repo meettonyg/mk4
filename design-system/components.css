@@ -297,9 +297,7 @@
    ========================================== */
 
 .gmkb-component--contact {
-  padding: var(--gmkb-space-8);
-  background: var(--gmkb-color-surface);
-  border-radius: var(--gmkb-radius-lg);
+  /* NO default visual styles - inherit from theme, apply via ComponentStyleService */
   text-align: center;
 }
 
@@ -334,7 +332,7 @@
    ========================================== */
 
 .gmkb-component--social {
-  padding: var(--gmkb-space-6);
+  /* NO default visual styles - inherit from theme, apply via ComponentStyleService */
   text-align: center;
 }
 
@@ -376,9 +374,7 @@
    ========================================== */
 
 .gmkb-component--stats {
-  padding: var(--gmkb-space-10);
-  background: var(--gmkb-color-surface-elevated);
-  border-radius: var(--gmkb-radius-lg);
+  /* NO default visual styles - inherit from theme, apply via ComponentStyleService */
 }
 
 .stats-content {
