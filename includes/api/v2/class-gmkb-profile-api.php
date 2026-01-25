@@ -343,6 +343,18 @@ class GMKB_Profile_API {
         // Fire action for onboarding progress tracking
         do_action('gmkb_profile_field_updated', $post_id, $field, $value);
 
+        // Handle slug field response (includes actual slug set and adjustment info)
+        if ($field === 'slug' && is_array($result)) {
+            return rest_ensure_response([
+                'success' => true,
+                'field' => $field,
+                'slug' => $result['slug'],
+                'adjusted' => $result['adjusted'] ?? false,
+                'original' => $result['original'] ?? $value,
+                'url' => $repo->get_public_url($post_id),
+            ]);
+        }
+
         return rest_ensure_response([
             'success' => true,
             'field' => $field,

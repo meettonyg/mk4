@@ -292,6 +292,52 @@
               />
               <button @click="copyShareLink" class="gmkb-btn gmkb-btn--primary">Copy Link</button>
             </div>
+
+            <!-- Custom URL Slug Editor -->
+            <div v-if="canEditSlug && !isNewMediaKit" class="gmkb-modal__slug-editor">
+              <div class="gmkb-modal__slug-header">
+                <label class="gmkb-modal__slug-label">Custom URL</label>
+                <button
+                  v-if="!isEditingSlug"
+                  @click="startEditingSlug"
+                  class="gmkb-modal__slug-edit-btn"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                  </svg>
+                  Edit
+                </button>
+              </div>
+
+              <div v-if="isEditingSlug" class="gmkb-modal__slug-form">
+                <div class="gmkb-modal__slug-input-wrapper">
+                  <span class="gmkb-modal__slug-prefix">{{ siteUrl }}/media-kit/</span>
+                  <input
+                    type="text"
+                    v-model="editSlugValue"
+                    class="gmkb-modal__slug-input"
+                    placeholder="your-custom-slug"
+                    @input="formatEditSlug"
+                    @keyup.enter="saveEditSlug"
+                    @keyup.escape="cancelEditSlug"
+                  />
+                </div>
+                <p v-if="slugError" class="gmkb-modal__slug-error">{{ slugError }}</p>
+                <p class="gmkb-modal__slug-hint">Use lowercase letters, numbers, and hyphens only.</p>
+                <div class="gmkb-modal__slug-actions">
+                  <button
+                    @click="saveEditSlug"
+                    :disabled="isSavingSlug"
+                    class="gmkb-btn gmkb-btn--primary gmkb-btn--sm"
+                  >
+                    {{ isSavingSlug ? 'Saving...' : 'Save' }}
+                  </button>
+                  <button @click="cancelEditSlug" class="gmkb-btn gmkb-btn--secondary gmkb-btn--sm">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -474,6 +520,9 @@ import storageService from '../../services/StorageService'
 // Profile switching support
 import ProfileSelector from './shared/ProfileSelector.vue'
 import profileContextService from '../../services/ProfileContextService.js'
+// Shared utilities
+import { formatSlug, validateSlug } from '../../utils/slug.js'
+import { apiRequest } from '../../utils/api.js'
 
 const store = useMediaKitStore()
 const { showSuccess, showInfo, showError } = useToast()
@@ -503,6 +552,12 @@ const showPublishModal = ref(false)
 const publishModalAction = ref('publish') // 'publish' or 'unpublish'
 const publishSuccess = ref(false) // Track successful publish for celebration modal
 
+// Slug editing state
+const isEditingSlug = ref(false)
+const editSlugValue = ref('')
+const isSavingSlug = ref(false)
+const slugError = ref('')
+
 // Profile switching state
 const isLoggedIn = computed(() => !!window.gmkbData?.user?.isLoggedIn)
 const isNewMediaKit = computed(() => !!window.gmkbData?.isNewMediaKit)
@@ -512,6 +567,22 @@ const selectedProfileSlug = ref(window.gmkbData?.linkedProfileSlug || null)
 const selectedProfileIconRef = ref(window.gmkbData?.linkedProfileIcon || null)
 const selectedProfileNameRef = ref(window.gmkbData?.linkedProfileName || null)
 const selectedProfileTitleRef = ref(window.gmkbData?.linkedProfileTitle || null)
+
+// Post ID for the media kit (used as profile ID fallback since media kit IS the profile)
+const postId = computed(() => window.gmkbData?.postId || null)
+
+// Check if we can edit the slug (either linked profile or the post itself)
+const canEditSlug = computed(() => {
+  return !!(selectedProfileId.value || postId.value)
+})
+
+// Get the effective profile ID for slug operations
+const effectiveProfileId = computed(() => {
+  return selectedProfileId.value || postId.value
+})
+
+// Site URL for displaying in templates (window not accessible in Vue templates)
+const siteUrl = window.location.origin
 
 // Handle profile switch - updates store's profileData with new profile data
 const handleProfileSwitch = async (profileId) => {
@@ -591,11 +662,14 @@ const saveStatusText = computed(() => {
   }
 })
 
+// Reactive view URL ref (allows updating after slug change)
+const viewUrlRef = ref(window.gmkbData?.viewUrl || null)
+
 // View URL for the published media kit (also used for sharing)
 const viewUrl = computed(() => {
-  // First try the direct permalink if available
-  if (window.gmkbData?.viewUrl) {
-    return window.gmkbData.viewUrl
+  // Use reactive ref first (updated when slug changes)
+  if (viewUrlRef.value) {
+    return viewUrlRef.value
   }
   // Fallback to constructing from post ID
   const postId = window.gmkbData?.postId
@@ -841,6 +915,89 @@ function copyShareLink() {
       showSuccess('Link copied to clipboard!')
       showShareModal.value = false
     })
+  }
+}
+
+// Slug editing methods
+function startEditingSlug() {
+  // Use the dedicated slug property, or extract from viewUrl as fallback
+  let initialSlug = selectedProfileSlug.value || ''
+  if (!initialSlug && viewUrl.value) {
+    const match = viewUrl.value.match(/\/media-kit\/([^\/]+)\/?$/)
+    if (match) {
+      initialSlug = match[1]
+    }
+  }
+  editSlugValue.value = initialSlug
+  isEditingSlug.value = true
+  slugError.value = ''
+}
+
+function formatEditSlug() {
+  // Use shared utility for slug formatting
+  editSlugValue.value = formatSlug(editSlugValue.value || '')
+  slugError.value = ''
+}
+
+function cancelEditSlug() {
+  isEditingSlug.value = false
+  editSlugValue.value = ''
+  slugError.value = ''
+}
+
+async function saveEditSlug() {
+  const newSlug = editSlugValue.value?.trim()
+
+  // Use shared validation utility
+  const validation = validateSlug(newSlug)
+  if (!validation.valid) {
+    slugError.value = validation.error
+    return
+  }
+
+  // Use effectiveProfileId (linked profile or post ID)
+  const profileId = effectiveProfileId.value
+  if (!profileId) {
+    slugError.value = 'Unable to update URL. Please save the media kit first.'
+    return
+  }
+
+  isSavingSlug.value = true
+  slugError.value = ''
+
+  try {
+    // Use shared apiRequest utility
+    const data = await apiRequest(`profile/${profileId}/field/slug`, {
+      method: 'PUT',
+      body: { value: newSlug },
+    })
+
+    // Update the viewUrl and slug with the new values
+    if (data.url) {
+      viewUrlRef.value = data.url
+      // Also update gmkbData for consistency
+      if (window.gmkbData) {
+        window.gmkbData.viewUrl = data.url
+      }
+    }
+    if (data.slug) {
+      selectedProfileSlug.value = data.slug
+    }
+
+    // Show success message
+    if (data.adjusted) {
+      showInfo(`URL updated to: ${data.slug} (adjusted for uniqueness)`)
+    } else {
+      showSuccess('URL updated successfully!')
+    }
+
+    isEditingSlug.value = false
+    editSlugValue.value = ''
+  } catch (error) {
+    console.error('Slug save error:', error)
+    slugError.value = error.message || 'An error occurred. Please try again.'
+  } finally {
+    isSavingSlug.value = false
   }
 }
 
@@ -2435,5 +2592,113 @@ body.dark-mode .gmkb-toolbar__btn:hover:not(:disabled) {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* Slug Editor in Share Modal */
+.gmkb-modal__slug-editor {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.gmkb-modal__slug-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.gmkb-modal__slug-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.gmkb-modal__slug-edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gmkb-modal__slug-edit-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.gmkb-modal__slug-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gmkb-modal__slug-input-wrapper {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.gmkb-modal__slug-input-wrapper:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.gmkb-modal__slug-prefix {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 12px;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  border-right: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.gmkb-modal__slug-input {
+  flex: 1;
+  min-width: 100px;
+  padding: 10px 12px;
+  border: none;
+  font-size: 14px;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  outline: none;
+}
+
+.gmkb-modal__slug-hint {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+}
+
+.gmkb-modal__slug-error {
+  font-size: 13px;
+  color: #dc2626;
+  margin: 0;
+  padding: 8px 12px;
+  background: #fef2f2;
+  border-radius: 6px;
+}
+
+.gmkb-modal__slug-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.gmkb-btn--sm {
+  padding: 8px 14px;
+  font-size: 13px;
 }
 </style>
