@@ -378,6 +378,8 @@ class ComponentStyleService {
 
     // Border - Apply to component root
     // CRITICAL: Only apply if border width is non-zero
+    // Track if border was applied to prevent theme defaults from leaking through
+    let appliedBorder = false;
     if (safeStyle.border) {
       const b = safeStyle.border;
 
@@ -388,6 +390,7 @@ class ComponentStyleService {
           componentRules.push(`border-width: ${b.width.top}${b.width.unit} ${b.width.right}${b.width.unit} ${b.width.bottom}${b.width.unit} ${b.width.left}${b.width.unit}`);
           if (b.color) componentRules.push(`border-color: ${this.htmlDecode(b.color)}`);
           if (b.style) componentRules.push(`border-style: ${b.style}`);
+          appliedBorder = true;
         }
       }
 
@@ -398,6 +401,10 @@ class ComponentStyleService {
           componentRules.push(`border-radius: ${b.radius.topLeft}${b.radius.unit} ${b.radius.topRight}${b.radius.unit} ${b.radius.bottomRight}${b.radius.unit} ${b.radius.bottomLeft}${b.radius.unit}`);
         }
       }
+    }
+    // Prevent theme default borders from appearing when no border is explicitly set
+    if (!appliedBorder) {
+      componentRules.push('border: none !important');
     }
 
     // Effects - Apply to component root

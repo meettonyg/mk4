@@ -477,7 +477,9 @@ class GMKB_Theme_Generator {
         $css .= "  --gmkb-border-radius-lg: " . ($effects['border_radius_lg'] ?? '12px') . ";\n";
         $css .= "  --gmkb-border-radius-xl: 16px;\n";
         $css .= "  --gmkb-border-radius-full: 9999px;\n";
-        $css .= "  --gmkb-border-width: 1px;\n";
+        // NOTE: Set to 0 to prevent unintended borders on components
+        // Component borders are controlled via ComponentStyleService
+        $css .= "  --gmkb-border-width: 0;\n";
 
         // Shadows (complete scale)
         $css .= "  --gmkb-shadow-sm: " . ($effects['shadow_sm'] ?? 'none') . ";\n";
