@@ -662,11 +662,14 @@ const saveStatusText = computed(() => {
   }
 })
 
+// Reactive view URL ref (allows updating after slug change)
+const viewUrlRef = ref(window.gmkbData?.viewUrl || null)
+
 // View URL for the published media kit (also used for sharing)
 const viewUrl = computed(() => {
-  // First try the direct permalink if available
-  if (window.gmkbData?.viewUrl) {
-    return window.gmkbData.viewUrl
+  // Use reactive ref first (updated when slug changes)
+  if (viewUrlRef.value) {
+    return viewUrlRef.value
   }
   // Fallback to constructing from post ID
   const postId = window.gmkbData?.postId
@@ -970,8 +973,12 @@ async function saveEditSlug() {
     })
 
     // Update the viewUrl and slug with the new values
-    if (window.gmkbData && data.url) {
-      window.gmkbData.viewUrl = data.url
+    if (data.url) {
+      viewUrlRef.value = data.url
+      // Also update gmkbData for consistency
+      if (window.gmkbData) {
+        window.gmkbData.viewUrl = data.url
+      }
     }
     if (data.slug) {
       selectedProfileSlug.value = data.slug
