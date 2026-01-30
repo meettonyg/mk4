@@ -77,3 +77,7 @@ console-pods-debug.js
 quick-pods-debug.js
 HOVER_TEST.js
 *.md
+
+# Knowledge base documentation - DO track these markdown files
+!knowledge-base/
+!knowledge-base/**/*.md
