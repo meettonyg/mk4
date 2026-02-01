@@ -91,19 +91,23 @@ const imageError = ref(false);
 
 // Computed
 const thumbnailUrl = computed(() => {
-  if (imageError.value) return null;
-  if (props.template.preview_url) return props.template.preview_url;
-  if (props.template.thumbnail) return props.template.thumbnail;
-  if (props.template.thumbnail_image) return props.template.thumbnail_image;
-
-  if (props.template.preview_image) {
-    const previewImage = props.template.preview_image;
-    if (previewImage.startsWith('http') || previewImage.startsWith('/')) {
-      return previewImage;
-    }
+  if (imageError.value) {
+    return null;
   }
 
-  return null;
+  const {
+    preview_url,
+    thumbnail,
+    thumbnail_image,
+    preview_image
+  } = props.template;
+
+  const validPreviewImage = preview_image &&
+    (preview_image.startsWith('http') || preview_image.startsWith('/'))
+    ? preview_image
+    : null;
+
+  return preview_url || thumbnail || thumbnail_image || validPreviewImage || null;
 });
 
 const truncatedDescription = computed(() => {
