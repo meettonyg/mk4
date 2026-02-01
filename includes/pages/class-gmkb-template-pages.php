@@ -170,10 +170,31 @@ class GMKB_Template_Pages {
 </div>
 
 <style>
+/* Override theme container constraints for full-width template picker */
+.gmkb-template-picker-page .site-content,
+.gmkb-template-picker-page .content-area,
+.gmkb-template-picker-page .entry-content,
+.gmkb-template-picker-page main,
+.gmkb-template-picker-page article,
+.gmkb-template-picker-page .container,
+.gmkb-template-picker-page .wrapper,
+.gmkb-template-picker-page [class*="container"],
+.gmkb-template-picker-page [class*="wrapper"] {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
 /* Shell styles - Vue takes over once loaded */
 .gmkb-template-picker-shell {
     min-height: 100vh;
     background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+    position: relative;
 }
 
 .gmkb-loading-state {
@@ -219,6 +240,26 @@ window.gmkbTemplatePickerData = {
     // SEO-friendly persona routing
     initialPersona: <?php echo $current_persona ? json_encode($current_persona) : 'null'; ?>,
     personaSlugs: <?php echo json_encode(self::$persona_map); ?>
+};
+
+// gmkbData required by Vue bundle validation
+window.gmkbData = {
+    isTemplatePicker: true,
+    ajaxUrl: '<?php echo esc_js(admin_url('admin-ajax.php')); ?>',
+    nonce: '<?php echo esc_js(wp_create_nonce('gmkb_nonce')); ?>',
+    restUrl: '<?php echo esc_js($rest_url); ?>',
+    restNonce: '<?php echo esc_js($rest_nonce); ?>',
+    pluginUrl: '<?php echo esc_js($plugin_url); ?>',
+    postId: null,
+    componentRegistry: {},
+    themes: [],
+    savedState: null,
+    user: {
+        isLoggedIn: <?php echo $is_logged_in ? 'true' : 'false'; ?>,
+        userId: <?php echo get_current_user_id(); ?>,
+        canEdit: true,
+        canSave: <?php echo $is_logged_in ? 'true' : 'false'; ?>
+    }
 };
 </script>
 

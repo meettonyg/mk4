@@ -371,9 +371,15 @@ const handleTemplateSelect = async (template) => {
 };
 
 const handleTemplateDemo = (template) => {
+  console.log('Demo clicked:', { standalone: props.standalone, builderUrl: props.builderUrl, template: template.id });
   if (props.standalone) {
-    // In standalone mode, just select the template (preview not available)
-    handleTemplateSelect(template);
+    // Open builder with template in preview mode (new tab)
+    const builderBase = props.builderUrl || window.gmkbTemplatePickerData?.builderUrl || '/tools/media-kit/';
+    const url = new URL(builderBase, window.location.origin);
+    url.searchParams.set('template', template.id);
+    url.searchParams.set('preview', 'true');
+    console.log('Opening demo URL:', url.toString());
+    window.open(url.toString(), '_blank');
   } else if (window.GMKB?.stores?.ui?.openTemplateDemo) {
     window.GMKB.stores.ui.openTemplateDemo(template.id);
   }

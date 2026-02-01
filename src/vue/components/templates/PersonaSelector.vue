@@ -155,12 +155,15 @@ const personas = computed(() => {
   margin: 0;
 }
 
-/* Persona Grid */
+/* Persona Grid - 4 columns on desktop, 2 on tablet, 1 on mobile */
 .persona-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.25rem;
   margin-bottom: 2rem;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .persona-card {
@@ -261,6 +264,12 @@ const personas = computed(() => {
 }
 
 /* Responsive */
+@media (max-width: 900px) {
+  .persona-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
   .persona-selector {
     padding: 1.5rem 1rem;

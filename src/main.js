@@ -666,17 +666,17 @@ async function initialize() {
  * Check if we're on a standalone tools page (not Media Kit Builder)
  */
 function isStandaloneToolsPage() {
+  // Check for template picker page - skip builder init, uses its own initTemplatePicker()
+  if (window.gmkbData?.isTemplatePicker || window.gmkbTemplatePickerData?.isTemplatePicker) {
+    return true;
+  }
+
   // Check for standalone tools global data (set by PHP)
   if (window.gmkbStandaloneTools || window.gmkbPublicData || window.gmkbToolPageData) {
     // But only if gmkbData is NOT set (Media Kit Builder context)
     if (!window.gmkbData) {
       return true;
     }
-  }
-
-  // Check for template picker page (uses different data object)
-  if (window.gmkbTemplatePickerData?.isTemplatePicker && !window.gmkbData) {
-    return true;
   }
 
   // Check for standalone tool DOM elements
