@@ -125,16 +125,21 @@
       <span>{{ templateStore.error }}</span>
       <button @click="retryFetch">Retry</button>
     </div>
+
+    <!-- Demo Overlay (standalone only) -->
+    <TemplateDemoOverlay v-if="standalone" />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useTemplateStore } from '../../../stores/templates';
+import { useUIStore } from '../../../stores/ui';
 import PersonaSelector from './PersonaSelector.vue';
 import TemplateFilters from './TemplateFilters.vue';
 import TemplateCard from './TemplateCard.vue';
 import BlankCanvasCard from './BlankCanvasCard.vue';
+import TemplateDemoOverlay from './TemplateDemoOverlay.vue';
 
 // Props for standalone mode (used on /templates page)
 const props = defineProps({
@@ -149,6 +154,7 @@ const props = defineProps({
 });
 
 const templateStore = useTemplateStore();
+const uiStore = useUIStore();
 
 // Get config from PHP (for SEO-friendly URLs)
 const pickerData = window.gmkbTemplatePickerData || {};
@@ -371,11 +377,10 @@ const handleTemplateSelect = async (template) => {
 };
 
 const handleTemplateDemo = (template) => {
-  if (props.standalone) {
-    // In standalone mode, just select the template (preview not available)
+  if (uiStore?.openTemplateDemo) {
+    uiStore.openTemplateDemo(template.id);
+  } else if (props.standalone) {
     handleTemplateSelect(template);
-  } else if (window.GMKB?.stores?.ui?.openTemplateDemo) {
-    window.GMKB.stores.ui.openTemplateDemo(template.id);
   }
 };
 

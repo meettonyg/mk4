@@ -34,14 +34,15 @@
       <!-- Hover Overlay -->
       <Transition name="fade">
         <div v-if="isHovered" class="card-overlay">
-          <button class="btn-select" @click.stop="$emit('select', template)">
+          <button type="button" class="btn-select" @click.stop="$emit('select', template)">
             Select
           </button>
-          <button class="btn-demo" @click.stop="$emit('demo', template)">
+          <button type="button" class="btn-demo" @click.stop="$emit('demo', template)">
             Demo
           </button>
           <button
             v-if="deletable"
+            type="button"
             class="btn-delete"
             @click.stop="$emit('delete', template)"
           >
@@ -91,7 +92,18 @@ const imageError = ref(false);
 // Computed
 const thumbnailUrl = computed(() => {
   if (imageError.value) return null;
-  return props.template.thumbnail_image || props.template.preview_image || null;
+  if (props.template.preview_url) return props.template.preview_url;
+  if (props.template.thumbnail) return props.template.thumbnail;
+  if (props.template.thumbnail_image) return props.template.thumbnail_image;
+
+  if (props.template.preview_image) {
+    const previewImage = props.template.preview_image;
+    if (previewImage.startsWith('http') || previewImage.startsWith('/')) {
+      return previewImage;
+    }
+  }
+
+  return null;
 });
 
 const truncatedDescription = computed(() => {

@@ -168,17 +168,22 @@ const loadPreview = async () => {
     const fullTemplate = await templateStore.fetchTemplate(uiStore.templateDemoId);
 
     if (fullTemplate) {
+      const sectionsSource = fullTemplate.sections ||
+        fullTemplate.defaultContent?.sections ||
+        fullTemplate.content?.defaultContent?.sections ||
+        [];
+
       // Process template content for preview
       previewData.value = {
-        sections: processPreviewSections(fullTemplate.defaultContent?.sections || []),
+        sections: processPreviewSections(sectionsSource),
         components: {},
-        theme: fullTemplate.theme_id || fullTemplate.id,
+        theme: fullTemplate.theme_id || fullTemplate.theme || 'professional_clean',
         themeCustomizations: fullTemplate.themeCustomizations || {}
       };
 
       // Generate preview components
-      if (fullTemplate.defaultContent?.sections) {
-        generatePreviewComponents(fullTemplate.defaultContent.sections);
+      if (sectionsSource.length > 0) {
+        generatePreviewComponents(sectionsSource);
       }
     }
   } catch (err) {
@@ -193,7 +198,7 @@ const processPreviewSections = (sections) => {
   return sections.map((section, idx) => ({
     section_id: `preview_sec_${idx}`,
     layout: section.type,
-    type: 'layout',
+    type: section.type,
     components: [],
     columns: {}
   }));
@@ -225,6 +230,10 @@ const generatePreviewComponents = (sections) => {
     // Column components
     if (section.columns) {
       for (const [colNum, colComponents] of Object.entries(section.columns)) {
+        if (!Array.isArray(colComponents)) {
+          continue;
+        }
+
         previewSection.columns[colNum] = [];
         colComponents.forEach(comp => {
           const compId = `preview_comp_${compIndex++}`;
@@ -233,7 +242,7 @@ const generatePreviewComponents = (sections) => {
             component_id: compId,
             type: comp.type,
             section_id: sectionId,
-            column: parseInt(colNum),
+            column: parseInt(colNum, 10),
             settings: comp.settings || {},
             data: comp.data || {},
             customization: {}
