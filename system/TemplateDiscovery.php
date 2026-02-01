@@ -79,13 +79,18 @@ class TemplateDiscovery {
                     $template_data['directory'] = $template_id;
 
                     // Add preview image URL if exists
-                    $preview_image = $template_path . '/preview.png';
-                    if (!file_exists($preview_image)) {
-                        $preview_image = $template_path . '/preview.jpg';
+                    $preview_image = null;
+                    foreach (['png', 'jpg', 'svg', 'webp'] as $ext) {
+                        $check_path = $template_path . '/preview.' . $ext;
+                        if (file_exists($check_path)) {
+                            $preview_image = $check_path;
+                            break;
+                        }
                     }
-                    if (file_exists($preview_image)) {
+                    if ($preview_image) {
                         $ext = pathinfo($preview_image, PATHINFO_EXTENSION);
-                        $template_data['preview_url'] = plugins_url('starter-templates/' . $template_id . '/preview.' . $ext, dirname(dirname(__FILE__)));
+                        // plugins_url needs a file reference, not directory - use main plugin file
+                        $template_data['preview_url'] = plugins_url('starter-templates/' . $template_id . '/preview.' . $ext, dirname(__DIR__) . '/guestify-media-kit-builder.php');
                     }
 
                     $this->templates[$template_id] = $template_data;

@@ -91,7 +91,7 @@ const imageError = ref(false);
 // Computed
 const thumbnailUrl = computed(() => {
   if (imageError.value) return null;
-  return props.template.thumbnail_image || props.template.preview_image || null;
+  return props.template.preview_url || props.template.thumbnail_image || props.template.preview_image || null;
 });
 
 const truncatedDescription = computed(() => {

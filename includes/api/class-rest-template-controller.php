@@ -168,9 +168,16 @@ class GMKB_REST_Template_Controller {
     /**
      * GET /starter-templates
      * List all persona-based layout templates
+     * Add ?refresh=1 to force cache clear
      */
     public function get_starter_templates($request) {
         $discovery = $this->get_template_discovery();
+
+        // Allow cache refresh via query param
+        if ($request->get_param('refresh')) {
+            $discovery->forceRefresh();
+        }
+
         $templates = array();
 
         foreach ($discovery->getTemplates() as $id => $template) {

@@ -347,7 +347,6 @@ const handleLayoutFilterChange = (layoutId) => {
 
 const handleBlankSelect = () => {
   if (props.standalone) {
-    // Redirect to builder without template
     window.location.href = props.builderUrl;
   } else {
     templateStore.initializeBlank();
@@ -356,7 +355,6 @@ const handleBlankSelect = () => {
 
 const handleTemplateSelect = async (template) => {
   if (props.standalone) {
-    // Redirect to builder with template parameter
     const url = new URL(props.builderUrl, window.location.origin);
     url.searchParams.set('template', template.id);
     window.location.href = url.toString();
@@ -371,14 +369,10 @@ const handleTemplateSelect = async (template) => {
 };
 
 const handleTemplateDemo = (template) => {
-  console.log('Demo clicked:', { standalone: props.standalone, builderUrl: props.builderUrl, template: template.id });
   if (props.standalone) {
-    // Open builder with template in preview mode (new tab)
-    const builderBase = props.builderUrl || window.gmkbTemplatePickerData?.builderUrl || '/tools/media-kit/';
-    const url = new URL(builderBase, window.location.origin);
+    const url = new URL(props.builderUrl, window.location.origin);
     url.searchParams.set('template', template.id);
     url.searchParams.set('preview', 'true');
-    console.log('Opening demo URL:', url.toString());
     window.open(url.toString(), '_blank');
   } else if (window.GMKB?.stores?.ui?.openTemplateDemo) {
     window.GMKB.stores.ui.openTemplateDemo(template.id);
