@@ -78,14 +78,23 @@ class TemplateDiscovery {
                     $template_data['path'] = $template_path;
                     $template_data['directory'] = $template_id;
 
-                    // Add preview image URL if exists
-                    $preview_image = $template_path . '/preview.png';
-                    if (!file_exists($preview_image)) {
-                        $preview_image = $template_path . '/preview.jpg';
+                    // Add preview image URL if exists (supports preview_image + png/jpg/svg fallbacks)
+                    $preview_candidates = array();
+
+                    if (!empty($template_data['preview_image'])) {
+                        $preview_candidates[] = $template_path . '/' . ltrim($template_data['preview_image'], '/');
                     }
-                    if (file_exists($preview_image)) {
-                        $ext = pathinfo($preview_image, PATHINFO_EXTENSION);
-                        $template_data['preview_url'] = plugins_url('starter-templates/' . $template_id . '/preview.' . $ext, dirname(dirname(__FILE__)));
+
+                    $preview_candidates[] = $template_path . '/preview.png';
+                    $preview_candidates[] = $template_path . '/preview.jpg';
+                    $preview_candidates[] = $template_path . '/preview.svg';
+
+                    foreach ($preview_candidates as $preview_image) {
+                        if (file_exists($preview_image)) {
+                            $preview_file = basename($preview_image);
+                            $template_data['preview_url'] = plugins_url('starter-templates/' . $template_id . '/' . $preview_file, dirname(dirname(__FILE__)));
+                            break;
+                        }
                     }
 
                     $this->templates[$template_id] = $template_data;
