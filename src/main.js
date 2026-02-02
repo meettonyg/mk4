@@ -539,9 +539,18 @@ async function initialize() {
   console.log('🐛 DEBUG: initialize() called, guard value:', window.gmkbIsInitialized);
   console.log('🐛 DEBUG: window.GMKB.services at start of initialize():', window.GMKB.services);
 
-  if (typeof window.gmkbData === 'undefined' && window.gmkbStandaloneTools) {
-    console.info('ℹ️ GMKB: gmkbData not found, skipping builder initialization for standalone tools.');
-    return;
+  // Skip builder initialization for pages that don't need it
+  if (typeof window.gmkbData === 'undefined') {
+    // Template picker page has its own initialization
+    if (window.gmkbTemplatePickerData?.isTemplatePicker) {
+      console.info('ℹ️ GMKB: Template picker page detected, skipping builder initialization.');
+      return;
+    }
+    // Standalone tools have their own initialization
+    if (window.gmkbStandaloneTools) {
+      console.info('ℹ️ GMKB: gmkbData not found, skipping builder initialization for standalone tools.');
+      return;
+    }
   }
   
   // ARCHITECTURE FIX: Initialization guard - prevents race conditions
