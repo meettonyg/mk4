@@ -203,6 +203,40 @@ class GMKB_Template_Pages {
 .gmkb-vue-mounted .gmkb-loading-state {
     display: none;
 }
+
+/* Override theme styles for template picker search field */
+.gmkb-template-picker-shell .directory-search {
+    padding: 0 2rem 1rem;
+    display: flex;
+    justify-content: center;
+}
+
+.gmkb-template-picker-shell .search-input-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+}
+
+.gmkb-template-picker-shell .search-input {
+    width: 100%;
+    padding: 0.75rem 2.5rem 0.75rem 2.75rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 9999px;
+    color: white;
+    font-size: 0.9375rem;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.gmkb-template-picker-shell .search-input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.gmkb-template-picker-shell .search-input:focus {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
 </style>
 
 <script>
