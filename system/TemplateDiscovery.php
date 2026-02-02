@@ -92,7 +92,7 @@ class TemplateDiscovery {
                     foreach ($preview_candidates as $preview_image) {
                         if (file_exists($preview_image)) {
                             $preview_file = basename($preview_image);
-                            $template_data['preview_url'] = plugins_url('starter-templates/' . $template_id . '/' . $preview_file, dirname(dirname(__FILE__)));
+                            $template_data['preview_url'] = GMKB_PLUGIN_URL . 'starter-templates/' . $template_id . '/' . $preview_file;
                             break;
                         }
                     }

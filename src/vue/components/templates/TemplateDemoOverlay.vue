@@ -110,31 +110,22 @@ const error = ref(null);
 const previewData = ref(null);
 const activeDevice = ref('desktop');
 
-// Device options with icons
+// Device options with Font Awesome icons
 const devices = [
   {
     id: 'desktop',
     label: 'Desktop',
-    icon: () => h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [
-      h('rect', { x: 2, y: 3, width: 20, height: 14, rx: 2 }),
-      h('path', { d: 'M8 21h8M12 17v4' })
-    ])
+    icon: () => h('i', { class: 'fa-solid fa-desktop' })
   },
   {
     id: 'tablet',
     label: 'Tablet',
-    icon: () => h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [
-      h('rect', { x: 4, y: 2, width: 16, height: 20, rx: 2 }),
-      h('path', { d: 'M12 18h.01' })
-    ])
+    icon: () => h('i', { class: 'fa-solid fa-tablet-screen-button' })
   },
   {
     id: 'mobile',
     label: 'Mobile',
-    icon: () => h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [
-      h('rect', { x: 5, y: 2, width: 14, height: 20, rx: 2 }),
-      h('path', { d: 'M12 18h.01' })
-    ])
+    icon: () => h('i', { class: 'fa-solid fa-mobile-screen-button' })
   }
 ];
 
@@ -262,12 +253,24 @@ const handleClose = () => {
 const handleUseTemplate = async () => {
   if (!uiStore.templateDemoId) return;
 
+  // Check if we're on the standalone template picker page
+  const pickerData = window.gmkbTemplatePickerData;
+  if (pickerData?.isTemplatePicker) {
+    // Redirect to builder with template parameter (same as Select button)
+    const builderUrl = pickerData.builderUrl || '/tools/media-kit/';
+    const url = new URL(builderUrl, window.location.origin);
+    url.searchParams.set('template', uiStore.templateDemoId);
+    window.location.href = url.toString();
+    return;
+  }
+
+  // In-app mode: initialize template directly
   try {
     await templateStore.initializeFromTemplate(uiStore.templateDemoId);
     uiStore.closeTemplateDemo();
   } catch (err) {
     console.error('Failed to use template:', err);
-    uiStore.showToast('Failed to load template', 'error');
+    uiStore.showToast?.('Failed to load template', 'error');
   }
 };
 
