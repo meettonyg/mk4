@@ -253,12 +253,24 @@ const handleClose = () => {
 const handleUseTemplate = async () => {
   if (!uiStore.templateDemoId) return;
 
+  // Check if we're on the standalone template picker page
+  const pickerData = window.gmkbTemplatePickerData;
+  if (pickerData?.isTemplatePicker) {
+    // Redirect to builder with template parameter (same as Select button)
+    const builderUrl = pickerData.builderUrl || '/tools/media-kit/';
+    const url = new URL(builderUrl, window.location.origin);
+    url.searchParams.set('template', uiStore.templateDemoId);
+    window.location.href = url.toString();
+    return;
+  }
+
+  // In-app mode: initialize template directly
   try {
     await templateStore.initializeFromTemplate(uiStore.templateDemoId);
     uiStore.closeTemplateDemo();
   } catch (err) {
     console.error('Failed to use template:', err);
-    uiStore.showToast('Failed to load template', 'error');
+    uiStore.showToast?.('Failed to load template', 'error');
   }
 };
 
