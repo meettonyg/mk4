@@ -92,14 +92,7 @@ class TemplateDiscovery {
                     foreach ($preview_candidates as $preview_image) {
                         if (file_exists($preview_image)) {
                             $preview_file = basename($preview_image);
-                            // Use GMKB_PLUGIN_URL constant for reliable URL generation
-                            // plugins_url() can fail when passed a directory path instead of file path
-                            if (defined('GMKB_PLUGIN_URL')) {
-                                $template_data['preview_url'] = GMKB_PLUGIN_URL . 'starter-templates/' . $template_id . '/' . $preview_file;
-                            } else {
-                                // Fallback to plugins_url - use __FILE__ and traverse up from system/ directory
-                                $template_data['preview_url'] = plugins_url('../starter-templates/' . $template_id . '/' . $preview_file, __FILE__);
-                            }
+                            $template_data['preview_url'] = GMKB_PLUGIN_URL . 'starter-templates/' . $template_id . '/' . $preview_file;
                             break;
                         }
                     }
