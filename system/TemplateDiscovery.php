@@ -97,8 +97,8 @@ class TemplateDiscovery {
                             if (defined('GMKB_PLUGIN_URL')) {
                                 $template_data['preview_url'] = GMKB_PLUGIN_URL . 'starter-templates/' . $template_id . '/' . $preview_file;
                             } else {
-                                // Fallback to plugins_url with __FILE__ as reference
-                                $template_data['preview_url'] = plugins_url('starter-templates/' . $template_id . '/' . $preview_file, dirname(__FILE__) . '/dummy.php');
+                                // Fallback to plugins_url - use __FILE__ and traverse up from system/ directory
+                                $template_data['preview_url'] = plugins_url('../starter-templates/' . $template_id . '/' . $preview_file, __FILE__);
                             }
                             break;
                         }
