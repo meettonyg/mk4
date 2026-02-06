@@ -146,10 +146,8 @@ class GMKB_Free_Tools_Shortcode {
             }
         }
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            $type_count = $this->valid_types ? count($this->valid_types) : 0;
-            error_log('GMKB Free Tools Shortcode: Registered ' . ($type_count + 2) . ' shortcodes');
-        }
+        $type_count = $this->valid_types ? count($this->valid_types) : 0;
+        GMKB_Logger::startup('GMKB Free Tools Shortcode: Registered ' . ($type_count + 2) . ' shortcodes');
     }
 
     /**
@@ -256,9 +254,7 @@ class GMKB_Free_Tools_Shortcode {
 
         // Validate type (safeguard)
         if (!in_array($type, $this->valid_types)) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB Free Tools: Invalid dynamic shortcode tag "' . $tag . '"');
-            }
+            GMKB_Logger::warning('GMKB Free Tools: Invalid dynamic shortcode tag "' . $tag . '"');
             return '<!-- GMKB: Invalid tool type -->';
         }
 
@@ -287,9 +283,7 @@ class GMKB_Free_Tools_Shortcode {
 
         // Validate type
         if (!in_array($atts['type'], $this->valid_types)) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB Free Tools: Invalid type "' . $atts['type'] . '"');
-            }
+            GMKB_Logger::warning('GMKB Free Tools: Invalid type "' . $atts['type'] . '"');
             return '<!-- GMKB: Invalid tool type "' . esc_attr($atts['type']) . '" -->';
         }
 
@@ -714,9 +708,7 @@ class GMKB_Free_Tools_Shortcode {
 
             $script_handle = 'gmkb-tools';
 
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB Free Tools: Using gmkb bundle');
-            }
+            GMKB_Logger::debug('GMKB Free Tools: Using gmkb bundle');
         } else {
             // Fallback: Use placeholder inline script until Vue bundle is built
             // This provides basic functionality for testing
@@ -741,9 +733,7 @@ class GMKB_Free_Tools_Shortcode {
 
             $script_handle = 'gmkb-free-tools-placeholder';
 
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB Free Tools: Using placeholder (Vue bundle not built yet)');
-            }
+            GMKB_Logger::debug('GMKB Free Tools: Using placeholder (Vue bundle not built yet)');
         }
 
         // CRITICAL: Pass public nonce to JavaScript
@@ -766,9 +756,7 @@ class GMKB_Free_Tools_Shortcode {
 
         $this->enqueued = true;
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB Free Tools: Assets enqueued with public nonce');
-        }
+        GMKB_Logger::startup('GMKB Free Tools: Assets enqueued with public nonce');
     }
 
     /**

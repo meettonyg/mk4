@@ -92,11 +92,9 @@ class GMKB_Topics_Save_Handler {
                 $pods->save('topics', $topics);
             }
             
-            // Log the save for debugging
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB Topics Save: Saved ' . $saved_count . ' topics to post ' . $post_id);
-                error_log('GMKB Topics Save: Topics data: ' . print_r($topics, true));
-            }
+            // Log the save
+            GMKB_Logger::info('Topics saved: ' . $saved_count . ' topics to post ' . $post_id);
+            GMKB_Logger::debug('Topics save data for post ' . $post_id, $topics);
             
             wp_send_json_success(array(
                 'message' => 'Topics saved successfully',
@@ -105,10 +103,8 @@ class GMKB_Topics_Save_Handler {
             ));
             
         } catch (Exception $e) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB Topics Save Error: ' . $e->getMessage());
-            }
-            
+            GMKB_Logger::exception($e, 'Topics save to Pods');
+
             wp_send_json_error('Error saving topics: ' . $e->getMessage());
         }
     }

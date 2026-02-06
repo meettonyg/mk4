@@ -193,6 +193,4 @@ add_filter('gmkb_enrich_stats_props', function($props, $post_id) {
     return $props;
 }, 10, 2);
 
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ PHASE 8: Stats Data Integration loaded (native meta)');
-}
+GMKB_Logger::startup('Stats Data Integration loaded');

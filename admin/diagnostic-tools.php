@@ -43,10 +43,7 @@ class GMKB_Admin_Diagnostic {
         );
         
         // Debug: Log menu registration
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB Diagnostics menu registered as TOP-LEVEL menu');
-            error_log('✅ Current user can manage_options: ' . (current_user_can('manage_options') ? 'YES' : 'NO'));
-        }
+        GMKB_Logger::startup('GMKB Diagnostics menu registered as TOP-LEVEL menu, manage_options=' . (current_user_can('manage_options') ? 'YES' : 'NO'));
     }
     
     public function render_diagnostic_page() {
@@ -1418,6 +1415,4 @@ class GMKB_Admin_Diagnostic {
 // Initialize the diagnostic tool
 new GMKB_Admin_Diagnostic();
 
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ GMKB Diagnostics class instantiated');
-}
+GMKB_Logger::startup('GMKB Diagnostics class instantiated');

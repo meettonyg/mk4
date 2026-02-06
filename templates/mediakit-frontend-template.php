@@ -65,37 +65,11 @@ $sections = isset($media_kit_state['sections']) ? $media_kit_state['sections'] :
 $components_map = isset($media_kit_state['components']) ? $media_kit_state['components'] : array();
 
 // ROOT FIX: Debug loaded data structure
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('========== MEDIA KIT STATE STRUCTURE ==========');
-    error_log('Post ID: ' . $post_id);
-    error_log('Has sections: ' . (!empty($sections) ? count($sections) : 0));
-    error_log('Has components_map: ' . (!empty($components_map) ? count($components_map) : 0));
-    
-    if (!empty($sections)) {
-        foreach ($sections as $idx => $section) {
-            error_log('Section ' . $idx . ': ID=' . ($section['section_id'] ?? 'no-id') . ', Type=' . ($section['section_type'] ?? 'no-type'));
-            $sec_comps = $section['components'] ?? array();
-            error_log('  - Has ' . count($sec_comps) . ' component references');
-            if (!empty($sec_comps)) {
-                foreach ($sec_comps as $cidx => $cref) {
-                    if (is_array($cref)) {
-                        error_log('    [' . $cidx . '] Ref: ' . print_r($cref, true));
-                    } else {
-                        error_log('    [' . $cidx . '] ID: ' . $cref);
-                    }
-                }
-            }
-        }
-    }
-    
-    if (!empty($components_map)) {
-        error_log('Components in map:');
-        foreach ($components_map as $cid => $comp) {
-            error_log('  - ' . $cid . ' => type=' . ($comp['type'] ?? 'no-type') . ', has_props=' . (!empty($comp['props']) ? 'YES' : 'NO') . ', has_settings=' . (!empty($comp['settings']) ? 'YES' : 'NO'));
-        }
-    }
-    error_log('===============================================');
-}
+GMKB_Logger::debug('Media kit state structure', [
+    'post_id' => $post_id,
+    'sections_count' => !empty($sections) ? count($sections) : 0,
+    'components_map_count' => !empty($components_map) ? count($components_map) : 0,
+]);
 
 // Build ordered component list
 $components = array();
@@ -165,9 +139,7 @@ $post = get_post($post_id);
 
 <?php
 // ROOT FIX: Simplified debug output
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ MEDIAKIT TEMPLATE: Rendering media kit for post_id=' . $post_id);
-}
+GMKB_Logger::info('MEDIAKIT TEMPLATE: Rendering media kit for post_id=' . $post_id);
 
 // Use the enhanced frontend display class if available
 if (class_exists('GMKB_Frontend_Display')) {
@@ -189,16 +161,12 @@ if (class_exists('GMKB_Frontend_Display')) {
     }
     
     // DEBUG: Log theme loading
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('[GMKB Frontend Template] Theme loaded: ' . $theme_id . ' (source: ' . $theme_source . ')');
-    }
+    GMKB_Logger::debug('Frontend template theme loaded: ' . $theme_id . ' (source: ' . $theme_source . ')');
     
     // Render the media kit with theme support
     $frontend_display->render_media_kit_template($media_kit_state, $post_id, $theme_id);
     } catch (Exception $e) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('MEDIAKIT TEMPLATE ERROR: ' . $e->getMessage());
-        }
+        GMKB_Logger::exception($e, 'MEDIAKIT TEMPLATE');
         // Fall through to basic display mode
         goto basic_display;
     }
@@ -290,21 +258,12 @@ if (class_exists('GMKB_Frontend_Display')) {
                                 </div>
                             <?php else: ?>
                                 <!-- Single column layout -->
-                                <?php 
+                                <?php
                                 // ROOT FIX: Debug component rendering
-                                if (defined('WP_DEBUG') && WP_DEBUG) {
-                                    error_log('Section ' . $section_id . ' has ' . count($section_components) . ' component references');
-                                    error_log('Components map has ' . count($components_map) . ' components');
-                                    foreach ($section_components as $comp_ref) {
-                                        $cid = isset($comp_ref['component_id']) ? $comp_ref['component_id'] : 'NO_ID';
-                                        $exists = isset($components_map[$cid]) ? 'YES' : 'NO';
-                                        error_log('  - Looking for component: ' . $cid . ' - Exists in map: ' . $exists);
-                                        if ($exists) {
-                                            error_log('  - Component type: ' . ($components_map[$cid]['type'] ?? 'unknown'));
-                                        }
-                                    }
-                                    error_log('Available components in map: ' . implode(', ', array_keys($components_map)));
-                                }
+                                GMKB_Logger::debug('Section ' . $section_id . ' component rendering', [
+                                    'component_refs' => count($section_components),
+                                    'components_in_map' => count($components_map),
+                                ]);
                                 
                                 foreach ($section_components as $comp_ref):
                                     // ROOT FIX: Handle both string IDs and array refs
@@ -313,25 +272,19 @@ if (class_exists('GMKB_Frontend_Display')) {
                                     } elseif (is_array($comp_ref) && isset($comp_ref['component_id'])) {
                                         $component_id = $comp_ref['component_id'];
                                     } else {
-                                        if (defined('WP_DEBUG') && WP_DEBUG) {
-                                            error_log('Invalid component reference: ' . print_r($comp_ref, true));
-                                        }
+                                        GMKB_Logger::warning('Invalid component reference: ' . print_r($comp_ref, true));
                                         continue;
                                     }
                                     
                                     if (isset($components_map[$component_id])):
                                         $component = $components_map[$component_id];
                                         $component['id'] = $component_id;
-                                        
-                                        if (defined('WP_DEBUG') && WP_DEBUG) {
-                                            error_log('✅ Rendering component: ' . $component_id . ' of type: ' . ($component['type'] ?? 'unknown'));
-                                        }
-                                        
+
+                                        GMKB_Logger::debug('Rendering component: ' . $component_id . ' of type: ' . ($component['type'] ?? 'unknown'));
+
                                         render_component($component, $post_id);
                                     else:
-                                        if (defined('WP_DEBUG') && WP_DEBUG) {
-                                            error_log('❌ Component ' . $component_id . ' not found in map');
-                                        }
+                                        GMKB_Logger::warning('Component ' . $component_id . ' not found in map');
                                     endif;
                                 endforeach; ?>
                             <?php endif; ?>
@@ -375,11 +328,10 @@ function render_component($component, $post_id, $index = 0) {
     }
     
     // ROOT FIX: Debug component data
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('Rendering component: ' . $component_type . ' with ID: ' . $component_id);
-        error_log('Component data: ' . print_r($component_data, true));
-        error_log('Component props: ' . print_r($component_props, true));
-    }
+    GMKB_Logger::debug('Rendering component: ' . $component_type . ' with ID: ' . $component_id, [
+        'data_keys' => array_keys($component_data),
+        'props_keys' => array_keys($component_props),
+    ]);
     ?>
     
     <?php
@@ -400,18 +352,11 @@ function render_component($component, $post_id, $index = 0) {
         // This loads Pods data into component props on the frontend
         $enrichment_filter = "gmkb_enrich_{$component_type}_props";
         if (has_filter($enrichment_filter)) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('🔄 Applying Pods enrichment filter: ' . $enrichment_filter . ' for post ' . $post_id);
-            }
+            GMKB_Logger::debug('Applying Pods enrichment filter: ' . $enrichment_filter . ' for post ' . $post_id);
             $merged_props = apply_filters($enrichment_filter, $merged_props, $post_id);
-            
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ Enriched ' . $component_type . ' props: ' . print_r(array_keys($merged_props), true));
-            }
+            GMKB_Logger::debug('Enriched ' . $component_type . ' props', array_keys($merged_props));
         } else {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('⚠️ No enrichment filter found: ' . $enrichment_filter);
-            }
+            GMKB_Logger::debug('No enrichment filter found: ' . $enrichment_filter);
         }
         
         // ROOT FIX: Extract merged props as variables for the template
@@ -432,9 +377,7 @@ function render_component($component, $post_id, $index = 0) {
         // ROOT FIX: Pass componentId for template compatibility
         $componentId = $component_id;
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('📝 Final template variables for ' . $component_type . ': ' . print_r(array_keys($merged_props), true));
-        }
+        GMKB_Logger::debug('Final template variables for ' . $component_type, array_keys($merged_props));
         
         // Include template (which includes its own wrapper)
         include $component_template;

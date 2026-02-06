@@ -47,6 +47,10 @@ define('GMKB_WORDPRESS_COMPATIBLE', true);
 define('GMKB_ARCHITECTURE', 'pure-vue'); // PHASE 3 COMPLETE: 100% Vue architecture, no PHP rendering
 define('GMKB_USE_PURE_VUE', true); // PHASE 3: Always use Pure Vue template
 define('GMKB_DEV_MODE', defined('WP_DEBUG') && WP_DEBUG);
+define('GMKB_VERBOSE_LOG', false); // Set true for full startup/debug logging
+
+// Centralized Logger (must load before everything else)
+require_once GUESTIFY_PLUGIN_DIR . 'system/class-gmkb-logger.php';
 
 // Include shared profile branding functions (used by enqueue.php and REST API)
 require_once GUESTIFY_PLUGIN_DIR . 'includes/profile-branding.php';

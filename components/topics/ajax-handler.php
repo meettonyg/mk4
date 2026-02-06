@@ -51,9 +51,7 @@ class GMKB_Topics_Ajax_Handler {
         add_action('wp_ajax_save_mkcg_topics', array($this, 'ajax_save_topics'));
         add_action('wp_ajax_nopriv_save_mkcg_topics', array($this, 'ajax_save_topics_nopriv'));
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('PHASE 1.2 Topics AJAX Handler: Initialized with simplified, reliable handlers');
-        }
+        GMKB_Logger::startup('Topics AJAX Handler initialized with simplified, reliable handlers');
     }
     
     /**
@@ -79,10 +77,11 @@ class GMKB_Topics_Ajax_Handler {
             // PHASE 1.1 FIX: Enhanced post ID extraction with multiple parameter support
             $post_id = intval($_POST['post_id'] ?? $_POST['media_kit_post_id'] ?? 0);
             
-            // PHASE 1.1 FIX: Debug logging for post ID detection
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("PHASE 1.1 AJAX Handler: post_id={$post_id}, POST_post_id=" . ($_POST['post_id'] ?? 'null') . ", POST_media_kit_post_id=" . ($_POST['media_kit_post_id'] ?? 'null'));
-            }
+            // Debug logging for post ID detection
+            GMKB_Logger::debug("AJAX Handler: post_id={$post_id}", [
+                'POST_post_id' => $_POST['post_id'] ?? null,
+                'POST_media_kit_post_id' => $_POST['media_kit_post_id'] ?? null,
+            ]);
             
             $topics_data = $_POST['topics'] ?? array();
             
@@ -109,25 +108,19 @@ class GMKB_Topics_Ajax_Handler {
                     'processing_time' => $save_result['processing_time'] ?? 0
                 );
                 
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log("PHASE 1.2 Topics: Successfully saved {$save_result['count']} topics for post {$post_id} in {$save_result['processing_time']}ms");
-                }
+                GMKB_Logger::info("Topics saved: {$save_result['count']} topics for post {$post_id} in {$save_result['processing_time']}ms");
             } else {
                 $response['message'] = 'Save failed: ' . $save_result['error'];
                 $response['debug']['save_error'] = $save_result['error'];
                 
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log("PHASE 1.2 Topics: Save failed for post {$post_id}: " . $save_result['error']);
-                }
+                GMKB_Logger::error("Topics save failed for post {$post_id}: " . $save_result['error']);
             }
             
         } catch (Exception $e) {
             $response['message'] = 'Server error during save';
             $response['debug']['exception'] = $e->getMessage();
             
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('PHASE 1.2 Topics AJAX Save Error: ' . $e->getMessage());
-            }
+            GMKB_Logger::exception($e, 'Topics AJAX save');
         }
         
         // PHASE 1.2 FIX: Always send immediate response
@@ -161,9 +154,7 @@ class GMKB_Topics_Ajax_Handler {
             // ROOT FIX: Enhanced post ID extraction with multiple fallback strategies
             $post_id = $this->extract_post_id_comprehensive();
             
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("ROOT FIX Topics Load: post_id={$post_id}, method=comprehensive_extraction");
-            }
+            GMKB_Logger::debug("Topics Load: post_id={$post_id}, method=comprehensive_extraction");
             
             if (!$post_id || $post_id <= 0) {
                 $response['message'] = 'No valid post ID found';
@@ -196,9 +187,7 @@ class GMKB_Topics_Ajax_Handler {
                 'quality_check' => $topics_result['quality']
             );
             
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("ROOT FIX Topics: Loaded {$topics_result['count']} topics from {$topics_result['source']} for post {$post_id} in {$processing_time}ms");
-            }
+            GMKB_Logger::info("Topics loaded: {$topics_result['count']} topics from {$topics_result['source']} for post {$post_id} in {$processing_time}ms");
             
         } catch (Exception $e) {
             // ROOT FIX: Comprehensive error handling - never leave client hanging
@@ -211,10 +200,7 @@ class GMKB_Topics_Ajax_Handler {
                 'line' => $e->getLine()
             );
             
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('ROOT FIX Topics Load Exception: ' . $e->getMessage());
-                error_log('ROOT FIX Exception Context: ' . $e->getFile() . ':' . $e->getLine());
-            }
+            GMKB_Logger::exception($e, 'Topics load');
         }
         
         // ROOT FIX: Guaranteed JSON response - prevents client-side infinite loading
@@ -415,16 +401,12 @@ class GMKB_Topics_Ajax_Handler {
         if ($post_id > 0) {
             $post = get_post($post_id);
             if (!$post || $post->post_status === 'trash') {
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log("ROOT FIX: Invalid post ID {$post_id} - post does not exist or is trashed");
-                }
+                GMKB_Logger::warning("Invalid post ID {$post_id} - post does not exist or is trashed");
                 return 0;
             }
         }
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("ROOT FIX: Post ID {$post_id} extracted from sources: " . implode(', ', $sources));
-        }
+        GMKB_Logger::debug("Post ID {$post_id} extracted from sources: " . implode(', ', $sources));
         
         return $post_id;
     }
@@ -457,9 +439,7 @@ class GMKB_Topics_Ajax_Handler {
                 $result['message'] = "Loaded {$pods_topics['count']} topics from Pods fields (single source of truth)";
                 $result['quality'] = $pods_topics['quality'];
                 
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log("✅ PHASE 1 AJAX: Topics loaded from Pods ONLY - {$pods_topics['count']} topics");
-                }
+                GMKB_Logger::info("Topics loaded from Pods fields: {$pods_topics['count']} topics");
                 
                 return $result;
             }
@@ -472,17 +452,13 @@ class GMKB_Topics_Ajax_Handler {
             $result['quality'] = 'empty';
             $result['source'] = 'pods_fields_primary';
             
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("✅ PHASE 1 AJAX: No topics found in Pods fields for post {$post_id} - single source of truth enforced");
-            }
+            GMKB_Logger::debug("No topics found in Pods fields for post {$post_id}");
             
         } catch (Exception $e) {
             $result['message'] = 'Error loading topics: ' . $e->getMessage();
             $result['quality'] = 'error';
             
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("ROOT FIX: Exception in comprehensive load: " . $e->getMessage());
-            }
+            GMKB_Logger::exception($e, 'Topics comprehensive load');
         }
         
         return $result;
@@ -506,9 +482,7 @@ class GMKB_Topics_Ajax_Handler {
                     $result['topics'][$topic_key] = $cleaned_value;
                     $result['count']++;
                     
-                    if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log("PHASE 1 FIX: Found {$topic_key} = {$cleaned_value} for post {$post_id}");
-                    }
+                    GMKB_Logger::debug("Found {$topic_key} = {$cleaned_value} for post {$post_id}");
                 }
             }
             
@@ -520,9 +494,7 @@ class GMKB_Topics_Ajax_Handler {
         if ($result['count'] > 0) {
             $result['quality'] = $this->assess_topics_quality($result['topics']);
             
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("PHASE 1 FIX: Loaded {$result['count']} topics from Pods fields for post {$post_id}");
-            }
+            GMKB_Logger::debug("Loaded {$result['count']} topics from Pods fields for post {$post_id}");
         }
         
         return $result;
@@ -644,14 +616,10 @@ class GMKB_Topics_Ajax_Handler {
      * Used by main plugin AJAX handler to pre-load topic data
      */
     public function load_topics_direct($data_source_id = 0) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("load_topics_direct called with post ID: {$data_source_id}");
-        }
-        
+        GMKB_Logger::debug("load_topics_direct called with post ID: {$data_source_id}");
+
         if (empty($data_source_id)) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("load_topics_direct: Empty post ID, returning empty array");
-            }
+            GMKB_Logger::debug("load_topics_direct: Empty post ID, returning empty array");
             return [];
         }
 
@@ -668,17 +636,13 @@ class GMKB_Topics_Ajax_Handler {
                         'description' => ''
                     ];
                     
-                    if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log("PHASE 1 FIX: Found topic_{$i}: {$topic_value} from Pods fields");
-                    }
+                    GMKB_Logger::debug("Found topic_{$i}: {$topic_value} from Pods fields");
                 }
             }
         }
         
         if (!empty($topics_array)) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("PHASE 1 FIX: Successfully loaded " . count($topics_array) . " topics from Pods fields for post {$data_source_id}");
-            }
+            GMKB_Logger::info("Loaded " . count($topics_array) . " topics from Pods fields for post {$data_source_id}");
             return $topics_array;
         }
         
@@ -689,20 +653,17 @@ class GMKB_Topics_Ajax_Handler {
         }
         
         // Debug logging if no topics found
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("ROOT FIX: No topics found for post {$data_source_id}");
-            
-            // Log all meta keys to help debug
-            $all_meta = get_post_meta($data_source_id);
-            $topic_related = array();
-            foreach ($all_meta as $key => $value) {
-                if (stripos($key, 'topic') !== false) {
-                    $topic_related[$key] = $value;
-                }
+        GMKB_Logger::debug("No topics found for post {$data_source_id}");
+
+        $all_meta = get_post_meta($data_source_id);
+        $topic_related = array();
+        foreach ($all_meta as $key => $value) {
+            if (stripos($key, 'topic') !== false) {
+                $topic_related[$key] = $value;
             }
-            if (!empty($topic_related)) {
-                error_log("ROOT FIX: Topic-related meta found: " . print_r($topic_related, true));
-            }
+        }
+        if (!empty($topic_related)) {
+            GMKB_Logger::debug("Topic-related meta found for post {$data_source_id}", $topic_related);
         }
         
         return []; // Return empty array if no topics are found.
@@ -743,6 +704,4 @@ class GMKB_Topics_Ajax_Handler {
 // ROOT FIX: Initialize the enhanced handler immediately
 GMKB_Topics_Ajax_Handler::get_instance();
 
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('ROOT FIX Topics AJAX Handler: Comprehensive, reliable handler initialized with enhanced error handling');
-}
+GMKB_Logger::startup('Topics AJAX Handler: Comprehensive, reliable handler initialized');

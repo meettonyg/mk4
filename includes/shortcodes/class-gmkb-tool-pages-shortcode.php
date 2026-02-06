@@ -21,9 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Debug: Log when this file is loaded
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('GMKB Tool Pages Shortcode FILE LOADED at ' . current_action());
-}
+GMKB_Logger::startup('GMKB Tool Pages Shortcode file loaded at ' . current_action());
 
 class GMKB_Tool_Pages_Shortcode {
 
@@ -114,9 +112,7 @@ class GMKB_Tool_Pages_Shortcode {
         // 3. template_redirect priority 1 - render the virtual page
         add_action('template_redirect', array($this, 'handle_virtual_pages_template'), 1);
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB Tool Pages Shortcode: Registered directory and tool page shortcodes');
-        }
+        GMKB_Logger::startup('GMKB Tool Pages Shortcode: Registered directory and tool page shortcodes');
     }
 
     /**
@@ -168,10 +164,7 @@ class GMKB_Tool_Pages_Shortcode {
         $tools_info = $this->is_tools_url();
 
         if ($tools_info) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB Virtual Pages: Preventing canonical redirect for /tools/ URL');
-                error_log('GMKB Virtual Pages: Type = ' . $tools_info['type'] . ', Slug = ' . ($tools_info['slug'] ?: 'directory'));
-            }
+            GMKB_Logger::debug('GMKB Virtual Pages: Preventing canonical redirect for /tools/ URL, Type = ' . $tools_info['type'] . ', Slug = ' . ($tools_info['slug'] ?: 'directory'));
 
             // Tell WordPress this is NOT a 404
             $wp_query->is_404 = false;
@@ -195,9 +188,7 @@ class GMKB_Tool_Pages_Shortcode {
      */
     public function prevent_tools_redirect($redirect_url, $requested_url) {
         if ($this->is_tools_url()) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB Virtual Pages: Blocking redirect via filter');
-            }
+            GMKB_Logger::debug('GMKB Virtual Pages: Blocking redirect via filter');
             return false;
         }
         return $redirect_url;
@@ -214,10 +205,7 @@ class GMKB_Tool_Pages_Shortcode {
             return;
         }
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB Virtual Pages: Rendering virtual page');
-            error_log('GMKB Virtual Pages: Type = ' . $tools_info['type'] . ', Slug = ' . ($tools_info['slug'] ?: 'directory'));
-        }
+        GMKB_Logger::info('GMKB Virtual Pages: Rendering virtual page, Type = ' . $tools_info['type'] . ', Slug = ' . ($tools_info['slug'] ?: 'directory'));
 
         $this->enqueue_assets();
         $this->render_virtual_page($tools_info['slug'], $tools_info['type']);
@@ -370,9 +358,7 @@ class GMKB_Tool_Pages_Shortcode {
 
         // Validate slug
         if (!empty($slug) && !in_array($slug, $this->valid_slugs)) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB Tool Pages: Invalid tool slug "' . $slug . '"');
-            }
+            GMKB_Logger::warning('GMKB Tool Pages: Invalid tool slug "' . $slug . '"');
             // Show directory instead of error
             return $this->render_directory(array(
                 'class' => $atts['class'],
@@ -567,9 +553,7 @@ class GMKB_Tool_Pages_Shortcode {
 
         $this->enqueued = true;
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB Tool Pages: Assets enqueued');
-        }
+        GMKB_Logger::startup('GMKB Tool Pages: Assets enqueued');
     }
 
     /**

@@ -43,9 +43,7 @@ class Profile_Photo_Data_Integration {
      * Debug logging
      */
     protected static function debug_log($message) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[Profile_Photo_Data_Integration] ' . $message);
-        }
+        GMKB_Logger::info('[Profile_Photo] ' . $message);
     }
     
     /**
@@ -162,9 +160,7 @@ class Profile_Photo_Data_Integration {
     }
 }
 
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ PHASE 8: Profile Photo Data Integration loaded (native meta)');
-}
+GMKB_Logger::startup('Profile Photo Data Integration loaded');
 
 /**
  * Hook into component prop enrichment filter
@@ -175,10 +171,7 @@ add_filter('gmkb_enrich_profile-photo_props', function($props, $post_id) {
     if ($photo_data['success']) {
         $props = Profile_Photo_Data_Integration::prepare_template_props($photo_data, $props);
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ Profile Photo: Enriched props for post ' . $post_id);
-            error_log('   - Has photo: ' . ($props['has_photo'] ? 'Yes' : 'No'));
-        }
+        GMKB_Logger::debug('Profile Photo: Enriched props for post ' . $post_id . ' (has_photo: ' . ($props['has_photo'] ? 'Yes' : 'No') . ')');
     }
     
     return $props;

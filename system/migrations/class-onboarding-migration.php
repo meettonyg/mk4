@@ -63,14 +63,12 @@ class GMKB_Onboarding_Migration {
                 if ($dry_run) {
                     if ($current != $percentage) {
                         $results['users_updated']++;
-                        if (defined('WP_DEBUG') && WP_DEBUG) {
-                            error_log(sprintf(
-                                '[Onboarding Migration] DRY RUN: User %d would update from %s to %d',
-                                $user_id,
-                                $current ?: 'null',
-                                $percentage
-                            ));
-                        }
+                        GMKB_Logger::info(sprintf(
+                            'Onboarding Migration DRY RUN: User %d would update from %s to %d',
+                            $user_id,
+                            $current ?: 'null',
+                            $percentage
+                        ));
                     } else {
                         $results['users_skipped']++;
                     }
@@ -79,14 +77,12 @@ class GMKB_Onboarding_Migration {
                     $repo->update_progress_meta($user_id, $percentage);
                     $results['users_updated']++;
 
-                    if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log(sprintf(
-                            '[Onboarding Migration] User %d updated: %s → %d',
-                            $user_id,
-                            $current ?: 'null',
-                            $percentage
-                        ));
-                    }
+                    GMKB_Logger::info(sprintf(
+                        'Onboarding Migration: User %d updated: %s -> %d',
+                        $user_id,
+                        $current ?: 'null',
+                        $percentage
+                    ));
                 }
             } catch (Exception $e) {
                 $results['errors'][] = sprintf(

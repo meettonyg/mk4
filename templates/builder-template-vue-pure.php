@@ -82,9 +82,7 @@ $page_title = $is_new_media_kit ? 'Create New Media Kit' : esc_html($post->post_
         }
     ');
     
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('✅ GMKB TEMPLATE: Directly enqueued wp.media before wp_head()');
-    }
+    GMKB_Logger::startup('GMKB TEMPLATE: Directly enqueued wp.media before wp_head()');
     ?>
 
     <!-- WordPress Head (loads Vue bundle) -->
@@ -278,9 +276,7 @@ $page_title = $is_new_media_kit ? 'Create New Media Kit' : esc_html($post->post_
         // Print media templates (Backbone views for media library modal)
         wp_print_media_templates();
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB: Media templates printed in footer for frontend builder');
-        }
+        GMKB_Logger::startup('GMKB: Media templates printed in footer for frontend builder');
     }
     ?>
 

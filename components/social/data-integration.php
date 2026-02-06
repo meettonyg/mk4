@@ -85,9 +85,7 @@ class Social_Data_Integration {
      * Debug logging
      */
     protected static function debug_log($message) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[Social_Data_Integration] ' . $message);
-        }
+        GMKB_Logger::info('[Social] ' . $message);
     }
     
     /**
@@ -297,9 +295,7 @@ class Social_Data_Integration {
     }
 }
 
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ PHASE 8: Social Data Integration loaded (native meta)');
-}
+GMKB_Logger::startup('Social Data Integration loaded');
 
 /**
  * ROOT FIX: Hook into component prop enrichment filter (ARCHITECTURE COMPLIANT)
@@ -312,10 +308,7 @@ add_filter('gmkb_enrich_social_props', function($props, $post_id) {
         // Prepare props using the class method
         $props = Social_Data_Integration::prepare_template_props($social_data, $props);
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ Social: Enriched props for post ' . $post_id);
-            error_log('   - Links count: ' . count($props['links']));
-        }
+        GMKB_Logger::debug('Social: Enriched props for post ' . $post_id . ' (links: ' . count($props['links']) . ')');
     }
     
     return $props;

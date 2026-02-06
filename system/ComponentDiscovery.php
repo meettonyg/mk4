@@ -22,23 +22,19 @@ class ComponentDiscovery {
     public function getRequiredPodsFields() {
         $all_fields = array();
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('ComponentDiscovery: Scanning ' . count($this->components) . ' components for Pods field requirements...');
-        }
+        GMKB_Logger::debug('ComponentDiscovery: Scanning ' . count($this->components) . ' components for Pods field requirements');
         
         // ROOT FIX: Ensure components are loaded before scanning
         if (empty($this->components)) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('⚠️ ComponentDiscovery: No components loaded, attempting scan...');
-            }
+            GMKB_Logger::warning('ComponentDiscovery: No components loaded, attempting scan');
             $this->scan(false);
         }
         
         // ROOT FIX: Also scan component directories directly if components list is still empty
         $component_dirs = is_dir($this->componentsDir) ? glob($this->componentsDir . '/*', GLOB_ONLYDIR) : array();
         
-        if (defined('WP_DEBUG') && WP_DEBUG && !empty($component_dirs)) {
-            error_log('ComponentDiscovery: Found ' . count($component_dirs) . ' component directories to scan');
+        if (!empty($component_dirs)) {
+            GMKB_Logger::debug('ComponentDiscovery: Found ' . count($component_dirs) . ' component directories to scan');
         }
         
         foreach ($component_dirs as $component_dir) {
@@ -52,32 +48,23 @@ class ComponentDiscovery {
                     $field_names = array_keys($config['fields']);
                     $all_fields = array_merge($all_fields, $field_names);
                     
-                    if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log("ComponentDiscovery: Component '{$component_name}' requires " . count($field_names) . " Pods fields: " . implode(', ', $field_names));
-                    }
+                    GMKB_Logger::debug("ComponentDiscovery: Component '{$component_name}' requires " . count($field_names) . ' Pods fields: ' . implode(', ', $field_names));
                 } else {
-                    if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log("ComponentDiscovery: Component '{$component_name}' has pods-config.json but no fields array");
-                    }
+                    GMKB_Logger::debug("ComponentDiscovery: Component '{$component_name}' has pods-config.json but no fields array");
                 }
-            } else {
-                if (defined('WP_DEBUG') && WP_DEBUG && count($all_fields) < 5) {
-                    // Only log for first few to avoid noise
-                    error_log("ComponentDiscovery: Component '{$component_name}' has no pods-config.json");
-                }
+            } else if (count($all_fields) < 5) {
+                GMKB_Logger::debug("ComponentDiscovery: Component '{$component_name}' has no pods-config.json");
             }
         }
         
         // Remove duplicates and re-index
         $unique_fields = array_values(array_unique($all_fields));
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('ComponentDiscovery: Total unique Pods fields required: ' . count($unique_fields));
-            if (count($unique_fields) > 0) {
-                error_log('ComponentDiscovery: Field list: ' . implode(', ', $unique_fields));
-            } else {
-                error_log('❌ ComponentDiscovery: WARNING - No Pods fields discovered! Check component pods-config.json files.');
-            }
+        GMKB_Logger::debug('ComponentDiscovery: Total unique Pods fields required: ' . count($unique_fields));
+        if (count($unique_fields) > 0) {
+            GMKB_Logger::debug('ComponentDiscovery: Field list: ' . implode(', ', $unique_fields));
+        } else {
+            GMKB_Logger::warning('ComponentDiscovery: No Pods fields discovered! Check component pods-config.json files.');
         }
         
         return $unique_fields;
@@ -115,9 +102,7 @@ class ComponentDiscovery {
                 $this->categories = $cached_data['categories'];
                 $this->aliases = $cached_data['aliases'];
                 
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('ComponentDiscovery: Loaded ' . count($this->components) . ' components from cache');
-                }
+                GMKB_Logger::startup('ComponentDiscovery: Loaded ' . count($this->components) . ' components from cache');
                 
                 return $this->categories;
             }
@@ -131,9 +116,7 @@ class ComponentDiscovery {
             throw new Exception("Components directory does not exist: {$this->componentsDir}");
         }
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('ComponentDiscovery: Performing fresh filesystem scan...');
-        }
+        GMKB_Logger::debug('ComponentDiscovery: Performing fresh filesystem scan');
 
         // Get all component directories
         $componentDirs = glob($this->componentsDir . '/*', GLOB_ONLYDIR);
@@ -142,18 +125,10 @@ class ComponentDiscovery {
             $componentName = basename($componentDir);
             $componentJsonPath = $componentDir . '/component.json';
 
-            // ROOT CAUSE DEBUG: Log each component being processed
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("ComponentDiscovery: Processing component '{$componentName}'");
-                error_log("ComponentDiscovery: JSON path: {$componentJsonPath}");
-                error_log("ComponentDiscovery: JSON exists: " . (file_exists($componentJsonPath) ? 'YES' : 'NO'));
-            }
+            GMKB_Logger::debug("ComponentDiscovery: Processing '{$componentName}' (json exists: " . (file_exists($componentJsonPath) ? 'YES' : 'NO') . ')');
 
-            // Check if component.json exists
             if (!file_exists($componentJsonPath)) {
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log("ComponentDiscovery: Skipping '{$componentName}' - no component.json");
-                }
+                GMKB_Logger::debug("ComponentDiscovery: Skipping '{$componentName}' - no component.json");
                 continue;
             }
 
@@ -166,22 +141,15 @@ class ComponentDiscovery {
                 $schemaData = json_decode(file_get_contents($schemaJsonPath), true);
                 if ($schemaData) {
                     $componentData['schema'] = $schemaData;
-                    if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log("ComponentDiscovery: Loaded schema.json for '{$componentName}'");
-                    }
+                    GMKB_Logger::debug("ComponentDiscovery: Loaded schema.json for '{$componentName}'");
                 }
             }
             
-            // ROOT CAUSE DEBUG: Log loaded data
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("ComponentDiscovery: Loaded data for '{$componentName}': " . print_r($componentData, true));
-            }
+            GMKB_Logger::debug("ComponentDiscovery: Loaded data for '{$componentName}'", $componentData);
             
             // Skip if required fields are missing
             if (!isset($componentData['name']) || !isset($componentData['category'])) {
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log("ComponentDiscovery: Skipping '{$componentName}' - missing required fields (name: " . (isset($componentData['name']) ? 'YES' : 'NO') . ", category: " . (isset($componentData['category']) ? 'YES' : 'NO') . ")");
-                }
+                GMKB_Logger::warning("ComponentDiscovery: Skipping '{$componentName}' - missing required fields (name: " . (isset($componentData['name']) ? 'YES' : 'NO') . ', category: ' . (isset($componentData['category']) ? 'YES' : 'NO') . ')');
                 continue;
             }
 
@@ -209,16 +177,11 @@ class ComponentDiscovery {
             if (isset($componentData['aliases']) && is_array($componentData['aliases'])) {
                 foreach ($componentData['aliases'] as $alias) {
                     $this->component_aliases[$alias] = $componentName;
-                    if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log("ComponentDiscovery: Registered alias '{$alias}' -> '{$componentName}'");
-                    }
+                    GMKB_Logger::debug("ComponentDiscovery: Registered alias '{$alias}' -> '{$componentName}'");
                 }
             }
             
-            // ROOT CAUSE DEBUG: Log final component data
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("ComponentDiscovery: Successfully processed '{$componentName}' with type: {$componentData['type']}");
-            }
+            GMKB_Logger::debug("ComponentDiscovery: Processed '{$componentName}' with type: {$componentData['type']}");
             
             // Add component to the list
             $this->components[$componentName] = $componentData;
@@ -254,9 +217,7 @@ class ComponentDiscovery {
         // Save to cache for next time
         $this->saveToCache();
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('ComponentDiscovery: Fresh scan complete - found ' . count($this->components) . ' components, saved to cache');
-        }
+        GMKB_Logger::startup('ComponentDiscovery: Fresh scan complete - found ' . count($this->components) . ' components, saved to cache');
 
         return $this->categories;
     }
@@ -311,9 +272,7 @@ class ComponentDiscovery {
         $cache_key = 'gmkb_component_discovery_' . md5($this->componentsDir);
         delete_transient($cache_key);
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('ComponentDiscovery: Cache cleared - next scan will be fresh');
-        }
+        GMKB_Logger::debug('ComponentDiscovery: Cache cleared');
     }
 
     /**
@@ -458,9 +417,7 @@ class ComponentDiscovery {
         // If a component needs special handling, update its component.json,
         // not this discovery class.
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('ComponentDiscovery: ensure_topics_component_registered() called but doing nothing (using component.json instead)');
-        }
+        GMKB_Logger::debug('ComponentDiscovery: ensure_topics_component_registered() called (no-op, using component.json)');
         
         return true;
     }

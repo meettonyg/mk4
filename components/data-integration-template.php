@@ -60,9 +60,7 @@ class Example_Data_Integration {
      * Debug logging
      */
     protected static function debug_log($message) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[' . static::$component_type . '_Data_Integration] ' . $message);
-        }
+        GMKB_Logger::info('[' . static::$component_type . '] ' . $message);
     }
     
     /**
@@ -202,6 +200,4 @@ class Example_Data_Integration {
     }
 }
 
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ Example_Data_Integration loaded - Template for component data integration');
-}
+GMKB_Logger::startup('Example_Data_Integration template loaded');

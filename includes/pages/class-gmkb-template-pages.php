@@ -136,7 +136,7 @@ class GMKB_Template_Pages {
         }
 
         if ($temp_file === false) {
-            error_log('GMKB Error: Failed to create temporary file for template rendering.');
+            GMKB_Logger::error('GMKB: Failed to create temporary file for template rendering.');
             return '';
         }
 

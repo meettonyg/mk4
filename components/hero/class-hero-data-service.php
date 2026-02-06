@@ -60,11 +60,8 @@ class Hero_Data_Service extends Base_Component_Data_Service {
             )
         );
         
-        // Enhanced debugging for scalable architecture
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("SCALABLE HERO: Context [{$context}] Post ID {$current_post_id} ({$post_id_source}), " . 
+        GMKB_Logger::info("Hero: Context [{$context}] Post ID {$current_post_id} ({$post_id_source}), " .
                      "data from {$result['data_source']}");
-        }
         
         return $result;
     }
@@ -248,11 +245,10 @@ class Hero_Data_Service extends Base_Component_Data_Service {
         
         $overall_success = $scalable_save && $legacy_save;
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("SCALABLE HERO: Saved hero data to post {$post_id}");
-            error_log("  Scalable save: " . ($scalable_save ? 'SUCCESS' : 'FAILED'));
-            error_log("  Legacy save: " . ($legacy_save ? 'SUCCESS' : 'FAILED'));
-        }
+        GMKB_Logger::info("Hero data saved to post {$post_id}", [
+            'scalable_save' => $scalable_save ? 'SUCCESS' : 'FAILED',
+            'legacy_save' => $legacy_save ? 'SUCCESS' : 'FAILED',
+        ]);
         
         return $overall_success;
     }
@@ -292,6 +288,4 @@ class Hero_Data_Service extends Base_Component_Data_Service {
     }
 }
 
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ SCALABLE HERO: Hero Data Service loaded with scalable base architecture');
-}
+GMKB_Logger::startup('Hero Data Service loaded with scalable base architecture');

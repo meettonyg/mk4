@@ -127,19 +127,9 @@ abstract class Abstract_Component_Integration {
      * @param array $context Additional context
      */
     protected static function debug_log($message, $context = array()) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            $component_type = static::$component_type;
-            $log_message = "{$component_type} Integration: {$message}";
-            
-            if (!empty($context)) {
-                $log_message .= ' | Context: ' . print_r($context, true);
-            }
-            
-            error_log($log_message);
-        }
+        $component_type = static::$component_type;
+        GMKB_Logger::debug("{$component_type} Integration: {$message}", !empty($context) ? $context : null);
     }
 }
 
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ PHASE 1: Abstract Component Integration loaded - Component isolation pattern established');
-}
+GMKB_Logger::startup('Abstract Component Integration loaded - Component isolation pattern established');

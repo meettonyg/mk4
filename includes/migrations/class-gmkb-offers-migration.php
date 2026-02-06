@@ -667,8 +667,18 @@ class Offers_Migration {
             }
         }
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log(sprintf('[GMKB Offers Migration] [%s] %s', strtoupper($level), $message));
+        switch ($level) {
+            case 'error':
+                GMKB_Logger::error('[GMKB Offers Migration] ' . $message);
+                break;
+            case 'warning':
+                GMKB_Logger::warning('[GMKB Offers Migration] ' . $message);
+                break;
+            case 'debug':
+                GMKB_Logger::debug('[GMKB Offers Migration] ' . $message);
+                break;
+            default:
+                GMKB_Logger::info('[GMKB Offers Migration] ' . $message);
         }
     }
 

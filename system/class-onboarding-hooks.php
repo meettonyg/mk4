@@ -314,13 +314,11 @@ class GMKB_Onboarding_Hooks {
         $progress = $repo->calculate_progress($user_id);
         $repo->update_progress_meta($user_id, $progress['points']['percentage'], $progress);
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log(sprintf(
-                '[Onboarding Hooks] Updated progress for user %d: %d%%',
-                $user_id,
-                $progress['points']['percentage']
-            ));
-        }
+        GMKB_Logger::info(sprintf(
+            'Onboarding Hooks: Updated progress for user %d: %d%%',
+            $user_id,
+            $progress['points']['percentage']
+        ));
     }
 }
 

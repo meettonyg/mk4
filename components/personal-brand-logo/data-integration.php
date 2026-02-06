@@ -44,9 +44,7 @@ class Personal_Brand_Logo_Data_Integration {
      * Debug logging
      */
     protected static function debug_log($message) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[Personal_Brand_Logo_Data_Integration] ' . $message);
-        }
+        GMKB_Logger::info('[Personal_Brand_Logo] ' . $message);
     }
     
     /**
@@ -163,9 +161,7 @@ class Personal_Brand_Logo_Data_Integration {
     }
 }
 
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ PHASE 8: Personal Brand Logo Data Integration loaded (native meta)');
-}
+GMKB_Logger::startup('Personal Brand Logo Data Integration loaded');
 
 /**
  * Hook into component prop enrichment filter
@@ -176,10 +172,7 @@ add_filter('gmkb_enrich_personal-brand-logo_props', function($props, $post_id) {
     if ($logo_data['success']) {
         $props = Personal_Brand_Logo_Data_Integration::prepare_template_props($logo_data, $props);
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ Personal Brand Logo: Enriched props for post ' . $post_id);
-            error_log('   - Has logo: ' . ($props['has_logo'] ? 'Yes' : 'No'));
-        }
+        GMKB_Logger::debug('Personal Brand Logo: Enriched props for post ' . $post_id . ' (has_logo: ' . ($props['has_logo'] ? 'Yes' : 'No') . ')');
     }
     
     return $props;

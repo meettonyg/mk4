@@ -50,10 +50,8 @@ class Component_Integration_Registry {
         self::load_integrations();
         
         self::$initialized = true;
-        
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ Component Integration Registry: Initialized with ' . count(self::$integrations) . ' integrations');
-        }
+
+        GMKB_Logger::startup('Component Integration Registry initialized with ' . count(self::$integrations) . ' integrations');
     }
     
     /**
@@ -65,18 +63,14 @@ class Component_Integration_Registry {
 
         // Scan components directory for data-integration.php files
         if (!is_dir($components_dir)) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('Component Registry: Components directory not found: ' . $components_dir);
-            }
+            GMKB_Logger::warning('Component Registry: Components directory not found: ' . $components_dir);
             return;
         }
 
         $component_dirs = scandir($components_dir);
 
         if ($component_dirs === false) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('Component Registry: Failed to scan components directory: ' . $components_dir);
-            }
+            GMKB_Logger::error('Component Registry: Failed to scan components directory: ' . $components_dir);
             return;
         }
 
@@ -129,10 +123,8 @@ class Component_Integration_Registry {
     public static function register_integration($component_type, $config) {
         self::$integrations[$component_type] = $config;
         self::$component_paths[$component_type] = $config['path'];
-        
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("Component Registry: Registered {$component_type} integration");
-        }
+
+        GMKB_Logger::debug("Component Registry: Registered {$component_type} integration");
     }
     
     /**
@@ -157,18 +149,12 @@ class Component_Integration_Registry {
             require_once $file_path;
             
             if (class_exists($config['class'])) {
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log("Component Registry: Loaded {$component_type} integration class");
-                }
+                GMKB_Logger::debug("Component Registry: Loaded {$component_type} integration class");
             } else {
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log("Component Registry: ERROR - Class {$config['class']} not found after loading file");
-                }
+                GMKB_Logger::error("Component Registry: Class {$config['class']} not found after loading file");
             }
         } else {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("Component Registry: ERROR - Integration file not found: {$file_path}");
-            }
+            GMKB_Logger::error("Component Registry: Integration file not found: {$file_path}");
         }
     }
     
@@ -322,9 +308,7 @@ class Component_Integration_Registry {
         try {
             return call_user_func(array($integration_class, 'has_component_data'), $post_id);
         } catch (Exception $e) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("Component Registry: Error checking {$component_type} data: " . $e->getMessage());
-            }
+            GMKB_Logger::exception($e, "Component Registry: Error checking {$component_type} data");
             return false;
         }
     }
@@ -375,9 +359,7 @@ class Component_Integration_Registry {
         try {
             return call_user_func(array($integration_class, 'calculate_content_hash'), $post_id);
         } catch (Exception $e) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("Component Registry: Error calculating {$component_type} hash: " . $e->getMessage());
-            }
+            GMKB_Logger::exception($e, "Component Registry: Error calculating {$component_type} hash");
             return '';
         }
     }
@@ -423,10 +405,8 @@ class Component_Integration_Registry {
         }
         
         $result['message'] = "Loaded data from {$result['components_with_data']} of {$result['total_components']} components";
-        
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("Component Registry: {$result['message']} for post {$post_id}");
-        }
+
+        GMKB_Logger::info("Component Registry: {$result['message']} for post {$post_id}");
         
         return $result;
     }
@@ -464,6 +444,4 @@ class Component_Integration_Registry {
 // Auto-initialize when WordPress is ready
 add_action('init', array('Component_Integration_Registry', 'initialize'));
 
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ PHASE 8: Component Integration Registry loaded - Dynamic component discovery');
-}
+GMKB_Logger::startup('Component Integration Registry loaded - Dynamic component discovery');

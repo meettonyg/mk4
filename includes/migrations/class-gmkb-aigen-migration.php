@@ -410,8 +410,18 @@ class Aigen_Migration {
             'message' => $message,
         ];
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("[GMKB Migration] [{$level}] {$message}");
+        switch ($level) {
+            case 'error':
+                GMKB_Logger::error('[GMKB Migration] ' . $message);
+                break;
+            case 'warning':
+                GMKB_Logger::warning('[GMKB Migration] ' . $message);
+                break;
+            case 'debug':
+                GMKB_Logger::debug('[GMKB Migration] ' . $message);
+                break;
+            default:
+                GMKB_Logger::info('[GMKB Migration] ' . $message);
         }
     }
 

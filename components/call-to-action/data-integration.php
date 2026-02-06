@@ -153,6 +153,4 @@ add_filter('gmkb_enrich_call-to-action_props', function($props, $post_id) {
     return $props;
 }, 10, 2);
 
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ PHASE 8: Call to Action Data Integration loaded (native meta)');
-}
+GMKB_Logger::startup('Call to Action Data Integration loaded');

@@ -36,9 +36,7 @@ class Interviews_Data_Integration {
      * Debug logging
      */
     protected static function debug_log($message) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[Interviews_Data_Integration] ' . $message);
-        }
+        GMKB_Logger::info('[Interviews] ' . $message);
     }
 
     /**
@@ -322,6 +320,4 @@ add_filter('gmkb_enrich_interviews_props', function($props, $post_id) {
     return $props;
 }, 10, 2);
 
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('[Interviews_Data_Integration] Self-contained data integration loaded');
-}
+GMKB_Logger::startup('Interviews Data Integration loaded');

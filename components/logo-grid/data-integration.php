@@ -43,9 +43,7 @@ class Logo_Grid_Data_Integration {
      * Debug logging
      */
     protected static function debug_log($message) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[Logo_Grid_Data_Integration] ' . $message);
-        }
+        GMKB_Logger::info('[Logo_Grid] ' . $message);
     }
     
     /**
@@ -165,9 +163,7 @@ class Logo_Grid_Data_Integration {
     }
 }
 
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ PHASE 8: Logo Grid Data Integration loaded (native meta)');
-}
+GMKB_Logger::startup('Logo Grid Data Integration loaded');
 
 /**
  * Hook into component prop enrichment filter
@@ -178,10 +174,7 @@ add_filter('gmkb_enrich_logo-grid_props', function($props, $post_id) {
     if ($logos_data['success']) {
         $props = Logo_Grid_Data_Integration::prepare_template_props($logos_data, $props);
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ Logo Grid: Enriched props for post ' . $post_id);
-            error_log('   - Logos count: ' . $props['logos_count']);
-        }
+        GMKB_Logger::debug('Logo Grid: Enriched props for post ' . $post_id . ' (logos: ' . $props['logos_count'] . ')');
     }
     
     return $props;

@@ -50,9 +50,7 @@ class Contact_Data_Integration {
      * Debug logging
      */
     protected static function debug_log($message) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[Contact_Data_Integration] ' . $message);
-        }
+        GMKB_Logger::info('[Contact] ' . $message);
     }
     
     /**
@@ -233,9 +231,7 @@ class Contact_Data_Integration {
     }
 }
 
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ PHASE 8: Contact Data Integration loaded (native meta)');
-}
+GMKB_Logger::startup('Contact Data Integration loaded');
 
 /**
  * ROOT FIX: Hook into component prop enrichment filter (ARCHITECTURE COMPLIANT)
@@ -248,11 +244,7 @@ add_filter('gmkb_enrich_contact_props', function($props, $post_id) {
         // Prepare props using the class method
         $props = Contact_Data_Integration::prepare_template_props($contact_data, $props);
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ Contact: Enriched props for post ' . $post_id);
-            error_log('   - Fields count: ' . $contact_data['count']);
-            error_log('   - Has email: ' . ($props['has_email'] ? 'Yes' : 'No'));
-        }
+        GMKB_Logger::debug('Contact: Enriched props for post ' . $post_id . ' (fields: ' . $contact_data['count'] . ', has_email: ' . ($props['has_email'] ? 'Yes' : 'No') . ')');
     }
     
     return $props;

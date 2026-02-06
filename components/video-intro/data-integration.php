@@ -43,9 +43,7 @@ class Video_Intro_Data_Integration {
      * Debug logging
      */
     protected static function debug_log($message) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[Video_Intro_Data_Integration] ' . $message);
-        }
+        GMKB_Logger::info('[Video_Intro] ' . $message);
     }
     
     /**
@@ -243,9 +241,7 @@ class Video_Intro_Data_Integration {
     }
 }
 
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ PHASE 8: Video Intro Data Integration loaded (native meta)');
-}
+GMKB_Logger::startup('Video Intro Data Integration loaded');
 
 /**
  * ROOT FIX: Hook into component prop enrichment filter (ARCHITECTURE COMPLIANT)
@@ -258,10 +254,7 @@ add_filter('gmkb_enrich_video-intro_props', function($props, $post_id) {
         // Prepare props using the class method
         $props = Video_Intro_Data_Integration::prepare_template_props($video_data, $props);
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ Video Intro: Enriched props for post ' . $post_id);
-            error_log('   - Has video: ' . ($props['has_video'] ? 'Yes' : 'No'));
-        }
+        GMKB_Logger::debug('Video Intro: Enriched props for post ' . $post_id . ' (has_video: ' . ($props['has_video'] ? 'Yes' : 'No') . ')');
     }
     
     return $props;

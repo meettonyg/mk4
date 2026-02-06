@@ -74,9 +74,7 @@ class GMKB_AI_Controller {
         $this->load_ai_service();
         $this->load_tool_discovery();
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB AI Controller: Initialized');
-        }
+        GMKB_Logger::startup('AI Controller initialized');
     }
 
     /**
@@ -101,9 +99,7 @@ class GMKB_AI_Controller {
             require_once $service_path;
             $this->ai_service = new GMKB_AI_Service();
         } else {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB AI Controller: AI Service file not found at ' . $service_path);
-            }
+            GMKB_Logger::error('AI Service file not found', ['path' => $service_path]);
         }
     }
 
@@ -117,9 +113,7 @@ class GMKB_AI_Controller {
             require_once $discovery_path;
             $this->tool_discovery = GMKB_Tool_Discovery::instance();
         } else {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB AI Controller: Tool Discovery not found at ' . $discovery_path);
-            }
+            GMKB_Logger::error('Tool Discovery not found', ['path' => $discovery_path]);
         }
     }
 
@@ -223,14 +217,7 @@ class GMKB_AI_Controller {
             'permission_callback' => '__return_true'
         ));
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB AI Controller: Routes registered');
-            error_log('  - POST /' . $this->namespace . '/ai/generate');
-            error_log('  - POST /' . $this->namespace . '/ai/tool/generate');
-            error_log('  - GET  /' . $this->namespace . '/ai/tools');
-            error_log('  - GET  /' . $this->namespace . '/ai/test');
-            error_log('  - GET  /' . $this->namespace . '/ai/usage');
-        }
+        GMKB_Logger::startup('AI Controller routes registered: /ai/generate, /ai/tool/generate, /ai/tools, /ai/test, /ai/usage');
     }
 
     /**
@@ -515,20 +502,14 @@ class GMKB_AI_Controller {
         $params = $request->get_param('params');
         $context = $request->get_param('context') ?? 'public';
 
-        // DEPRECATION WARNING - Always log this
-        error_log(sprintf(
-            '[DEPRECATED] /ai/generate endpoint called for type "%s". ' .
-            'New tools should use /ai/tool/generate with prompts.php. ' .
-            'See tools/guest-intro/ for reference.',
+        // DEPRECATION WARNING
+        GMKB_Logger::warning(sprintf(
+            '[DEPRECATED] /ai/generate endpoint called for type "%s". New tools should use /ai/tool/generate with prompts.php.',
             $type
         ));
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB AI Controller: Generate request');
-            error_log('  - Type: ' . $type);
-            error_log('  - Context: ' . $context);
-            error_log('  - Params: ' . wp_json_encode($params));
-        }
+        GMKB_Logger::info('Generate request: type=' . $type . ', context=' . $context);
+        GMKB_Logger::debug('Generate params', $params);
 
         // Validate AI service is available
         if (!$this->ai_service) {
@@ -585,19 +566,16 @@ class GMKB_AI_Controller {
             $response->header('X-RateLimit-Remaining', $usage['remaining']);
             $response->header('X-RateLimit-Reset', time() + $usage['reset_time']);
 
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB AI Controller: Generation successful');
-                error_log('  - Content length: ' . strlen(is_array($result['content']) ? wp_json_encode($result['content']) : $result['content']));
-                error_log('  - Remaining usage: ' . $usage['remaining']);
-            }
+            GMKB_Logger::info('Generation successful');
+            GMKB_Logger::debug('Generation result', [
+                'content_length' => strlen(is_array($result['content']) ? wp_json_encode($result['content']) : $result['content']),
+                'remaining_usage' => $usage['remaining'],
+            ]);
 
             return $response;
 
         } catch (Exception $e) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB AI Controller: Exception during generation');
-                error_log('  - Error: ' . $e->getMessage());
-            }
+            GMKB_Logger::exception($e, 'Legacy generate endpoint');
 
             return new WP_Error(
                 'generation_error',
@@ -773,12 +751,8 @@ class GMKB_AI_Controller {
         $params = $request->get_param('params');
         $context = $request->get_param('context') ?? 'public';
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB AI Controller: Tool-based generate request');
-            error_log('  - Tool: ' . $tool_id);
-            error_log('  - Context: ' . $context);
-            error_log('  - Params: ' . wp_json_encode($params));
-        }
+        GMKB_Logger::info('Tool-based generate request: tool=' . $tool_id . ', context=' . $context);
+        GMKB_Logger::debug('Tool generate params', $params);
 
         // Check if tool discovery is available
         if (!$this->tool_discovery) {
@@ -851,12 +825,11 @@ class GMKB_AI_Controller {
             }
             $user_prompt = call_user_func($prompts['user_prompt'], $params);
 
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB AI Controller: Calling AI service');
-                error_log('  - Model: ' . $model);
-                error_log('  - System prompt length: ' . strlen($system_prompt));
-                error_log('  - User prompt length: ' . strlen($user_prompt));
-            }
+            GMKB_Logger::info('Calling AI service: model=' . $model);
+            GMKB_Logger::debug('Prompt lengths', [
+                'system_prompt' => strlen($system_prompt),
+                'user_prompt' => strlen($user_prompt),
+            ]);
 
             // Verify AI service is available
             if (!$this->ai_service) {
@@ -923,19 +896,16 @@ class GMKB_AI_Controller {
             $rest_response->header('X-RateLimit-Remaining', $usage['remaining']);
             $rest_response->header('X-RateLimit-Reset', time() + $usage['reset_time']);
 
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB AI Controller: Tool generation successful');
-                error_log('  - Content type: ' . gettype($parsed_content));
-                error_log('  - Remaining usage: ' . $usage['remaining']);
-            }
+            GMKB_Logger::info('Tool generation successful');
+            GMKB_Logger::debug('Tool generation result', [
+                'content_type' => gettype($parsed_content),
+                'remaining_usage' => $usage['remaining'],
+            ]);
 
             return $rest_response;
 
         } catch (Exception $e) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB AI Controller: Exception during tool generation');
-                error_log('  - Error: ' . $e->getMessage());
-            }
+            GMKB_Logger::exception($e, 'Tool generate endpoint');
 
             return new WP_Error(
                 'generation_error',

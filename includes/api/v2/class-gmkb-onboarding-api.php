@@ -141,9 +141,7 @@ class GMKB_Onboarding_API {
             'permission_callback' => '__return_true',
         ]);
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB Onboarding API: Routes registered');
-        }
+        GMKB_Logger::startup('GMKB Onboarding API: Routes registered');
     }
 
     // =========================================================================

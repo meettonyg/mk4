@@ -72,9 +72,7 @@ class GMKB_Icon_Service {
         $file_path = $this->icons_path . $icon_name . '.svg';
 
         if (!file_exists($file_path)) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB Icon Service: Icon not found: ' . $icon_name);
-            }
+            GMKB_Logger::warning('GMKB Icon Service: Icon not found: ' . $icon_name);
             return '';
         }
 

@@ -343,8 +343,6 @@ function gmkb_graphql_resolve_image_by_id($attachment_id) {
 }
 
 // Log GraphQL registration
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    add_action('graphql_register_types', function() {
-        error_log('✅ GMKB Phase 4: GraphQL types registered');
-    }, 999);
-}
+add_action('graphql_register_types', function() {
+    GMKB_Logger::startup('GraphQL types registered');
+}, 999);

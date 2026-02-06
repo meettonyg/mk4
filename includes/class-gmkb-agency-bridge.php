@@ -112,7 +112,7 @@ class GMKB_Agency_Bridge {
         }
 
         // Log the transfer
-        error_log("GMKB Agency Bridge: Transferred " . count($post_ids) . " media kits from client {$client_id} to user {$target_user_id}");
+        GMKB_Logger::info("GMKB Agency Bridge: Transferred " . count($post_ids) . " media kits from client {$client_id} to user {$target_user_id}");
     }
 
     /**

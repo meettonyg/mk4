@@ -76,12 +76,7 @@ class GMKB_AI_Service {
         $this->api_key = $this->get_api_key_for_provider($this->provider);
         $this->config = new GMKB_AI_Config();
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB AI Service: Initialized');
-            error_log('  - Provider: ' . $this->provider);
-            error_log('  - Model: ' . $this->model);
-            error_log('  - API Key configured: ' . (!empty($this->api_key) ? 'YES' : 'NO'));
-        }
+        GMKB_Logger::startup('GMKB AI Service: Initialized, Provider=' . $this->provider . ', Model=' . $this->model . ', API Key=' . (!empty($this->api_key) ? 'YES' : 'NO'));
     }
 
     /**
@@ -116,7 +111,7 @@ class GMKB_AI_Service {
     public function call_api($system_prompt, $user_prompt, $settings = array()) {
         // Validate API key
         if (empty($this->api_key)) {
-            error_log('GMKB AI Service: Missing API key for ' . $this->provider);
+            GMKB_Logger::error('GMKB AI Service: Missing API key for ' . $this->provider);
             return array(
                 'success' => false,
                 'message' => 'AI service not configured. Please set up your API key in AI Settings.'
@@ -129,11 +124,7 @@ class GMKB_AI_Service {
         $max_tokens = isset($settings['max_tokens']) ? intval($settings['max_tokens']) : 1000;
         $timeout = isset($settings['timeout']) ? intval($settings['timeout']) : $this->timeout;
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB AI Service: Making API call');
-            error_log('  - Provider: ' . $this->provider);
-            error_log('  - Model: ' . $model);
-        }
+        GMKB_Logger::info('GMKB AI Service: Making API call, Provider=' . $this->provider . ', Model=' . $model);
 
         // Route to provider-specific method
         switch ($this->provider) {
@@ -311,9 +302,7 @@ class GMKB_AI_Service {
         // Build user prompt from params
         $user_prompt = $this->build_user_prompt($type, $params);
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB AI Service: Generating ' . $type . ' content');
-        }
+        GMKB_Logger::info('GMKB AI Service: Generating ' . $type . ' content');
 
         // Use centralized API call
         $result = $this->call_api($system_prompt, $user_prompt, array(
@@ -331,10 +320,7 @@ class GMKB_AI_Service {
         // Format content based on type
         $formatted_content = $this->format_response($raw_content, $type, $params);
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB AI Service: Generation successful');
-            error_log('  - Tokens used: ' . ($result['tokens_used'] ?? 'unknown'));
-        }
+        GMKB_Logger::info('GMKB AI Service: Generation successful, Tokens used: ' . ($result['tokens_used'] ?? 'unknown'));
 
         return array(
             'success' => true,

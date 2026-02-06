@@ -227,6 +227,4 @@ add_filter('gmkb_enrich_hero_props', function($props, $post_id) {
     return $props;
 }, 10, 2);
 
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ PHASE 8: Hero Data Integration loaded (native meta)');
-}
+GMKB_Logger::startup('Hero Data Integration loaded');

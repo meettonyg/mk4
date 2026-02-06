@@ -72,9 +72,7 @@ class GMKB_Brand_Kit_Migration {
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
         dbDelta($sql);
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB: Created brand_kit_media table');
-        }
+        GMKB_Logger::info('GMKB: Created brand_kit_media table');
     }
 
     /**
@@ -84,9 +82,7 @@ class GMKB_Brand_Kit_Migration {
         if (class_exists('GMKB_Media_Library_Schema')) {
             GMKB_Media_Library_Schema::create_tables();
 
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB: Created media_library tables');
-            }
+            GMKB_Logger::info('GMKB: Created media_library tables');
         }
     }
 

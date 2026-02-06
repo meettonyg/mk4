@@ -43,9 +43,7 @@ class Photo_Gallery_Data_Integration {
      * Debug logging
      */
     protected static function debug_log($message) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[Photo_Gallery_Data_Integration] ' . $message);
-        }
+        GMKB_Logger::info('[Photo_Gallery] ' . $message);
     }
     
     /**
@@ -167,9 +165,7 @@ class Photo_Gallery_Data_Integration {
     }
 }
 
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ PHASE 8: Photo Gallery Data Integration loaded (native meta)');
-}
+GMKB_Logger::startup('Photo Gallery Data Integration loaded');
 
 /**
  * Hook into component prop enrichment filter
@@ -180,10 +176,7 @@ add_filter('gmkb_enrich_photo-gallery_props', function($props, $post_id) {
     if ($photos_data['success']) {
         $props = Photo_Gallery_Data_Integration::prepare_template_props($photos_data, $props);
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ Photo Gallery: Enriched props for post ' . $post_id);
-            error_log('   - Photos count: ' . $props['photos_count']);
-        }
+        GMKB_Logger::debug('Photo Gallery: Enriched props for post ' . $post_id . ' (photos: ' . $props['photos_count'] . ')');
     }
     
     return $props;

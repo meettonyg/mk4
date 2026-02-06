@@ -240,6 +240,4 @@ add_filter('gmkb_enrich_testimonials_props', function($props, $post_id) {
     return $props;
 }, 10, 2);
 
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ PHASE 8: Testimonials Data Integration loaded (native meta)');
-}
+GMKB_Logger::startup('Testimonials Data Integration loaded');

@@ -205,6 +205,4 @@ add_filter('gmkb_enrich_podcast-player_props', function($props, $post_id) {
     return $props;
 }, 10, 2);
 
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ PHASE 8: Podcast Player Data Integration loaded (native meta)');
-}
+GMKB_Logger::startup('Podcast Player Data Integration loaded');

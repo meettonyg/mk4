@@ -81,9 +81,7 @@ class GMKB_Onboarding_Admin_API {
             ],
         ]);
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB Onboarding Admin API: Routes registered');
-        }
+        GMKB_Logger::startup('GMKB Onboarding Admin API: Routes registered');
     }
 
     // =========================================================================

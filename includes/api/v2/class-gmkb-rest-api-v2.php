@@ -109,11 +109,7 @@ class GMKB_REST_API_V2 {
         global $gmkb_component_discovery;
         
         // ROOT FIX: Enhanced initialization with better error handling
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('🔍 GMKB REST API v2: Starting Pods field initialization...');
-            error_log('  - ComponentDiscovery available: ' . (isset($gmkb_component_discovery) && is_object($gmkb_component_discovery) ? 'YES' : 'NO'));
-            error_log('  - Has getRequiredPodsFields method: ' . (isset($gmkb_component_discovery) && method_exists($gmkb_component_discovery, 'getRequiredPodsFields') ? 'YES' : 'NO'));
-        }
+        GMKB_Logger::startup('Pods field init - ComponentDiscovery: ' . (isset($gmkb_component_discovery) && is_object($gmkb_component_discovery) ? 'YES' : 'NO') . ', hasGetFields: ' . (isset($gmkb_component_discovery) && method_exists($gmkb_component_discovery, 'getRequiredPodsFields') ? 'YES' : 'NO'));
         
         // ROOT FIX: Ensure ComponentDiscovery has scanned components before getting fields
         if ($gmkb_component_discovery && is_object($gmkb_component_discovery)) {
@@ -121,27 +117,21 @@ class GMKB_REST_API_V2 {
             $components = $gmkb_component_discovery->getComponents();
             if (empty($components)) {
                 // Force a scan if no components found
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('⚠️ GMKB REST API v2: No components found, forcing scan...');
-                }
+                GMKB_Logger::warning('No components found, forcing scan');
                 try {
                     $gmkb_component_discovery->scan(false);
                 } catch (Exception $e) {
-                    if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log('❌ GMKB REST API v2: Component scan failed: ' . $e->getMessage());
-                    }
+                    GMKB_Logger::exception($e, 'Component scan failed');
                 }
             }
             
             // Now try to get the Pods fields
             if (method_exists($gmkb_component_discovery, 'getRequiredPodsFields')) {
                 $this->pods_fields = $gmkb_component_discovery->getRequiredPodsFields();
-                
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('✅ GMKB REST API v2: Using ' . count($this->pods_fields) . ' Pods fields from component discovery');
-                    if (count($this->pods_fields) > 0) {
-                        error_log('  Sample fields: ' . implode(', ', array_slice($this->pods_fields, 0, 5)) . '...');
-                    }
+
+                GMKB_Logger::startup('Using ' . count($this->pods_fields) . ' Pods fields from component discovery');
+                if (count($this->pods_fields) > 0) {
+                    GMKB_Logger::debug('Sample Pods fields', array_slice($this->pods_fields, 0, 5));
                 }
             }
         }
@@ -149,9 +139,7 @@ class GMKB_REST_API_V2 {
         // FALLBACK: If still no fields, use manual list
         if (empty($this->pods_fields)) {
             // FALLBACK: Manual field list if component discovery not available
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('⚠️ GMKB REST API v2: No Pods fields from component discovery, using fallback field list');
-            }
+            GMKB_Logger::warning('No Pods fields from component discovery, using fallback field list');
             
             $this->pods_fields = array(
                 // Base fields
@@ -200,9 +188,7 @@ class GMKB_REST_API_V2 {
      * Register REST routes
      */
     public function register_routes() {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('🔧 GMKB REST API v2: Registering routes with namespace: ' . $this->namespace);
-        }
+        GMKB_Logger::startup('REST API v2: Registering routes with namespace: ' . $this->namespace);
         
         // Single endpoint to load EVERYTHING
         register_rest_route($this->namespace, '/mediakit/(?P<id>\d+)', array(
@@ -283,17 +269,7 @@ class GMKB_REST_API_V2 {
         // NOTE: Offers API endpoints are handled by the self-contained GMKB_Offers_API class
         // in class-gmkb-offers-api.php (following component self-containment architecture)
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB REST API v2: Routes registered successfully:');
-            error_log('  - GET  /' . $this->namespace . '/mediakit/{id}');
-            error_log('  - POST /' . $this->namespace . '/mediakit/{id}');
-            error_log('  - POST /' . $this->namespace . '/mediakit (create new)');
-            error_log('  - POST /' . $this->namespace . '/mediakit/{id}/publish');
-            error_log('  - GET  /' . $this->namespace . '/mediakits (list all)');
-            error_log('  - GET  /' . $this->namespace . '/components');
-            error_log('  - POST /' . $this->namespace . '/pods/{id}/field/{field}');
-            error_log('  - (Offers API routes handled by GMKB_Offers_API)');
-        }
+        GMKB_Logger::startup('REST API v2: Routes registered - GET/POST /mediakit/{id}, POST /mediakit, POST /mediakit/{id}/publish, GET /mediakits, GET /components, POST /pods/{id}/field/{field}');
     }
 
     /**
@@ -323,9 +299,7 @@ class GMKB_REST_API_V2 {
         }
         
         // DEBUG: Log the request details
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('🔍 GMKB REST API: get_mediakit called for post ' . $post_id . ' (CACHE MISS)');
-        }
+        GMKB_Logger::info('get_mediakit called for post #' . $post_id . ' (CACHE MISS)');
 
         // Verify post exists
         $post = get_post($post_id);
@@ -355,11 +329,10 @@ class GMKB_REST_API_V2 {
             }
             
             // CRITICAL FIX: Log theme data for debugging
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('🎨 GMKB REST API v2: Loading state for post #' . $post_id);
-                error_log('  - Theme in state: "' . ($state_data['theme'] ?? 'NOT SET') . '"');
-                error_log('  - Has customizations: ' . (!empty($state_data['themeCustomizations']) ? 'YES' : 'NO'));
-            }
+            GMKB_Logger::debug('Loading state for post #' . $post_id, [
+                'theme' => $state_data['theme'] ?? 'NOT SET',
+                'hasCustomizations' => !empty($state_data['themeCustomizations']),
+            ]);
 
             // PHASE 1: Fetch profile branding from post meta (2025-12-16)
             // This exposes brand colors, fonts, and images to the Media Kit Builder
@@ -468,22 +441,20 @@ class GMKB_REST_API_V2 {
             $body = $request->get_json_params();
             
             // ROOT FIX: Enhanced debug logging with theme tracking
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('💾 GMKB REST API v2: Saving media kit #' . $post_id);
-                error_log('  - Request body size: ' . strlen(json_encode($body)) . ' bytes');
-                error_log('  - Components: ' . (isset($body['components']) ? count((array)$body['components']) : 0));
-                error_log('  - Sections: ' . (isset($body['sections']) ? count($body['sections']) : 0));
-                error_log('  - Theme in body: ' . (isset($body['theme']) ? '"' . $body['theme'] . '"' : 'NOT SET'));
-                error_log('  - Theme empty() check: ' . (empty($body['theme']) ? 'TRUE (will skip save)' : 'FALSE (will save)'));
-                error_log('  - Theme value type: ' . (isset($body['theme']) ? gettype($body['theme']) : 'N/A'));
-            }
+            GMKB_Logger::info('Saving media kit #' . $post_id);
+            GMKB_Logger::debug('Save request details', [
+                'bodySize' => strlen(json_encode($body)) . ' bytes',
+                'components' => isset($body['components']) ? count((array)$body['components']) : 0,
+                'sections' => isset($body['sections']) ? count($body['sections']) : 0,
+                'theme' => $body['theme'] ?? 'NOT SET',
+                'themeEmpty' => empty($body['theme']),
+                'themeType' => isset($body['theme']) ? gettype($body['theme']) : 'N/A',
+            ]);
 
             // Validate data structure
             $validation_result = $this->validate_state_data($body);
             if (is_wp_error($validation_result)) {
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('❌ GMKB REST API v2: Validation failed: ' . $validation_result->get_error_message());
-                }
+                GMKB_Logger::warning('Validation failed: ' . $validation_result->get_error_message());
                 return $validation_result;
             }
 
@@ -502,9 +473,7 @@ class GMKB_REST_API_V2 {
             // ROOT FIX: Apply sanitization filter BEFORE saving
             // This removes Pods data bloat from components
             if (has_filter('gmkb_before_save_media_kit_state')) {
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('🔧 GMKB REST API v2: Applying gmkb_before_save_media_kit_state filter');
-                }
+                GMKB_Logger::debug('Applying gmkb_before_save_media_kit_state filter');
                 $state_data = apply_filters('gmkb_before_save_media_kit_state', $state_data, $post_id);
             }
 
@@ -546,9 +515,7 @@ class GMKB_REST_API_V2 {
                 }
                 
                 // Meta exists and values are identical - not an error, just no change needed
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('ℹ️ GMKB REST API v2: No database update needed (values identical)');
-                }
+                GMKB_Logger::debug('No database update needed (values identical)');
             }
 
             // Theme is part of state - no separate save needed (already in $state_data above)
@@ -584,11 +551,10 @@ class GMKB_REST_API_V2 {
 
                 update_post_meta($post_id, 'gmkb_rendered_html', $sanitized_html);
 
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('📄 GMKB REST API v2: Pre-rendered HTML saved');
-                    error_log('  - Original size: ' . strlen($rendered_content) . ' bytes');
-                    error_log('  - Sanitized size: ' . strlen($sanitized_html) . ' bytes');
-                }
+                GMKB_Logger::debug('Pre-rendered HTML saved', [
+                    'originalSize' => strlen($rendered_content) . ' bytes',
+                    'sanitizedSize' => strlen($sanitized_html) . ' bytes',
+                ]);
             }
 
             // PRE-RENDER ARCHITECTURE: Save component CSS for frontend display
@@ -614,11 +580,10 @@ class GMKB_REST_API_V2 {
 
                 update_post_meta($post_id, 'gmkb_rendered_css', $sanitized_css);
 
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('🎨 GMKB REST API v2: Pre-rendered CSS saved');
-                    error_log('  - Original size: ' . strlen($rendered_css) . ' bytes');
-                    error_log('  - Sanitized size: ' . strlen($sanitized_css) . ' bytes');
-                }
+                GMKB_Logger::debug('Pre-rendered CSS saved', [
+                    'originalSize' => strlen($rendered_css) . ' bytes',
+                    'sanitizedSize' => strlen($sanitized_css) . ' bytes',
+                ]);
             }
 
             // ROOT FIX: Clear cache after successful save
@@ -629,13 +594,13 @@ class GMKB_REST_API_V2 {
             do_action('gmkb_after_save_mediakit', $post_id, $state_data);
             
             // ROOT FIX: Clean save success logging
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ GMKB REST API v2: Media kit #' . $post_id . ' saved successfully');
-                error_log('  - Data size: ' . size_format($data_size));
-                error_log('  - Components: ' . (is_object($state_data['components']) ? 0 : count($state_data['components'])));
-                error_log('  - Sections: ' . count($state_data['sections']));
-                error_log('  - Theme: "' . ($state_data['theme'] ?? 'NOT SET') . '"');
-            }
+            GMKB_Logger::info('Media kit #' . $post_id . ' saved successfully');
+            GMKB_Logger::debug('Save result details', [
+                'dataSize' => size_format($data_size),
+                'components' => is_object($state_data['components']) ? 0 : count($state_data['components']),
+                'sections' => count($state_data['sections']),
+                'theme' => $state_data['theme'] ?? 'NOT SET',
+            ]);
 
             // ROOT FIX: Clean response - theme is in state, no separate tracking
             $response = array(
@@ -652,13 +617,8 @@ class GMKB_REST_API_V2 {
 
         } catch (Exception $e) {
             // ROOT FIX: Enhanced error logging
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('❌ GMKB REST API v2: Save failed for post #' . $post_id);
-                error_log('  - Error: ' . $e->getMessage());
-                error_log('  - File: ' . $e->getFile() . ':' . $e->getLine());
-                error_log('  - Trace: ' . $e->getTraceAsString());
-            }
-            
+            GMKB_Logger::exception($e, 'Save failed for post #' . $post_id);
+
             return new WP_Error(
                 'save_failed',
                 'Failed to save media kit: ' . $e->getMessage(),
@@ -719,9 +679,7 @@ class GMKB_REST_API_V2 {
             // Trigger action for extensibility
             do_action('gmkb_after_publish_mediakit', $post_id, $status);
 
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ GMKB REST API v2: Media kit #' . $post_id . ' status changed to "' . $status . '"');
-            }
+            GMKB_Logger::info('Media kit #' . $post_id . ' status changed to "' . $status . '"');
 
             return rest_ensure_response(array(
                 'success' => true,
@@ -731,9 +689,7 @@ class GMKB_REST_API_V2 {
             ));
 
         } catch (Exception $e) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('❌ GMKB REST API v2: Publish failed for post #' . $post_id . ': ' . $e->getMessage());
-            }
+            GMKB_Logger::exception($e, 'Publish failed for post #' . $post_id);
 
             return new WP_Error(
                 'publish_failed',
@@ -759,9 +715,7 @@ class GMKB_REST_API_V2 {
      */
     private function fetch_all_pods_data($post_id, $post_type) {
         // DEPRECATED: Return empty array - this method is no longer used
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('⚠️ GMKB API v2: fetch_all_pods_data() called but is DEPRECATED');
-        }
+        GMKB_Logger::warning('fetch_all_pods_data() called but is DEPRECATED');
         return array();
 
         // --- ORIGINAL CODE BELOW (kept for reference) ---
@@ -770,14 +724,14 @@ class GMKB_REST_API_V2 {
 
         // PHASE 8 FIX: If Pods is not available, use native WordPress fallback
         if (!function_exists('pods') || !class_exists('Pods')) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
+            if (defined('GMKB_VERBOSE_LOG') && GMKB_VERBOSE_LOG) {
                 error_log('ℹ️ GMKB API v2: Pods not available, using native WordPress meta fallback');
             }
             return $this->fetch_native_meta_data($post_id);
         }
         
         if ($post_type !== 'guests') {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
+            if (defined('GMKB_VERBOSE_LOG') && GMKB_VERBOSE_LOG) {
                 error_log('⚠️ GMKB API v2: Skipping Pods data - invalid post_type: ' . $post_type);
             }
             return $data;
@@ -785,7 +739,7 @@ class GMKB_REST_API_V2 {
         
         // ROOT FIX: Ensure we have fields to fetch
         if (empty($this->pods_fields)) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
+            if (defined('GMKB_VERBOSE_LOG') && GMKB_VERBOSE_LOG) {
                 error_log('⚠️ GMKB API v2: No Pods fields configured to fetch!');
                 error_log('  Attempting to initialize Pods fields now...');
             }
@@ -793,7 +747,7 @@ class GMKB_REST_API_V2 {
             $this->initialize_pods_fields();
             
             if (empty($this->pods_fields)) {
-                if (defined('WP_DEBUG') && WP_DEBUG) {
+                if (defined('GMKB_VERBOSE_LOG') && GMKB_VERBOSE_LOG) {
                     error_log('❌ GMKB API v2: Still no Pods fields after initialization attempt');
                 }
                 return $data;
@@ -807,14 +761,14 @@ class GMKB_REST_API_V2 {
             // ROOT FIX: Use correct post type for Pods with better error handling
             $pod = pods($post_type, $post_id);
             
-            if (defined('WP_DEBUG') && WP_DEBUG) {
+            if (defined('GMKB_VERBOSE_LOG') && GMKB_VERBOSE_LOG) {
                 error_log('🔍 GMKB API v2: Created Pods object for ' . $post_type . ' #' . $post_id);
                 error_log('  Pods fields to fetch: ' . count($this->pods_fields));
             }
             
             // ROOT FIX: More thorough existence check
             if (!$pod || !is_object($pod) || !method_exists($pod, 'exists') || !$pod->exists()) {
-                if (defined('WP_DEBUG') && WP_DEBUG) {
+                if (defined('GMKB_VERBOSE_LOG') && GMKB_VERBOSE_LOG) {
                     error_log('❌ GMKB API v2: Pods object invalid or post does not exist');
                     error_log('  - Pod object: ' . (is_object($pod) ? 'YES' : 'NO'));
                     error_log('  - Has exists method: ' . (is_object($pod) && method_exists($pod, 'exists') ? 'YES' : 'NO'));
@@ -824,7 +778,7 @@ class GMKB_REST_API_V2 {
             }
             
             // ROOT FIX: Log the fields we're about to fetch
-            if (defined('WP_DEBUG') && WP_DEBUG) {
+            if (defined('GMKB_VERBOSE_LOG') && GMKB_VERBOSE_LOG) {
                 error_log('✅ GMKB API v2: Pods ready, fetching ' . count($this->pods_fields) . ' fields');
                 if (count($this->pods_fields) === 0) {
                     error_log('⚠️ WARNING: No Pods fields configured to fetch!');
@@ -842,7 +796,7 @@ class GMKB_REST_API_V2 {
             }
             
             // ROOT FIX: Enhanced debugging output
-            if (defined('WP_DEBUG') && WP_DEBUG) {
+            if (defined('GMKB_VERBOSE_LOG') && GMKB_VERBOSE_LOG) {
                 $elapsed = round((microtime(true) - $start_time) * 1000, 2);
                 $non_empty = count($data);
                 error_log('✅ GMKB API v2: Fetched ' . $non_empty . '/' . count($this->pods_fields) . ' non-empty Pods fields in ' . $elapsed . 'ms');
@@ -857,7 +811,7 @@ class GMKB_REST_API_V2 {
             }
             
         } catch (Exception $e) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
+            if (defined('GMKB_VERBOSE_LOG') && GMKB_VERBOSE_LOG) {
                 error_log('❌ GMKB API v2: Exception fetching Pods data: ' . $e->getMessage());
                 error_log('  Stack trace: ' . $e->getTraceAsString());
             }
@@ -883,9 +837,7 @@ class GMKB_REST_API_V2 {
     private function fetch_native_meta_data($post_id) {
         $data = array();
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('🔍 GMKB API v2: Fetching native meta data for post #' . $post_id);
-        }
+        GMKB_Logger::info('Fetching native meta data for post #' . $post_id);
         
         // Use GMKB_Field_Migration helper if available for legacy field support
         $use_migration_helper = class_exists('GMKB_Field_Migration');
@@ -966,11 +918,9 @@ class GMKB_REST_API_V2 {
             }
         }
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB API v2: Fetched ' . count($data) . ' native meta fields');
-            if (count($data) > 0) {
-                error_log('  Sample fields: ' . implode(', ', array_slice(array_keys($data), 0, 5)));
-            }
+        GMKB_Logger::info('Fetched ' . count($data) . ' native meta fields');
+        if (count($data) > 0) {
+            GMKB_Logger::debug('Sample native meta fields', array_slice(array_keys($data), 0, 5));
         }
         
         return $data;
@@ -1214,9 +1164,7 @@ class GMKB_REST_API_V2 {
                 $mediakits[] = $this->format_mediakit_card($post);
             }
 
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('📋 GMKB REST API v2: Listed ' . count($mediakits) . ' media kits for user #' . $user_id);
-            }
+            GMKB_Logger::info('Listed ' . count($mediakits) . ' media kits for user #' . $user_id);
 
             return rest_ensure_response(array(
                 'success' => true,
@@ -1225,9 +1173,7 @@ class GMKB_REST_API_V2 {
             ));
 
         } catch (Exception $e) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('❌ GMKB REST API v2: List mediakits error: ' . $e->getMessage());
-            }
+            GMKB_Logger::exception($e, 'List mediakits failed');
 
             return new WP_Error(
                 'list_failed',
@@ -1321,11 +1267,11 @@ class GMKB_REST_API_V2 {
         try {
             $body = $request->get_json_params();
 
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('🆕 GMKB REST API v2: Creating new media kit for user #' . $user_id);
-                error_log('  - Profile ID: ' . ($body['profile_id'] ?? 'none'));
-                error_log('  - Theme: ' . ($body['theme'] ?? 'default'));
-            }
+            GMKB_Logger::info('Creating new media kit for user #' . $user_id);
+            GMKB_Logger::debug('Create request details', [
+                'profileId' => $body['profile_id'] ?? 'none',
+                'theme' => $body['theme'] ?? 'default',
+            ]);
 
             // Get user info for post title
             $user = get_userdata($user_id);
@@ -1342,15 +1288,11 @@ class GMKB_REST_API_V2 {
             $post_id = wp_insert_post($post_data, true);
 
             if (is_wp_error($post_id)) {
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('❌ GMKB REST API v2: Failed to create post: ' . $post_id->get_error_message());
-                }
+                GMKB_Logger::error('Failed to create post: ' . $post_id->get_error_message());
                 return $post_id;
             }
 
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ GMKB REST API v2: Created post #' . $post_id);
-            }
+            GMKB_Logger::info('Created post #' . $post_id);
 
             // Set owner meta for consistent querying
             update_post_meta($post_id, 'owner_user_id', $user_id);
@@ -1364,9 +1306,7 @@ class GMKB_REST_API_V2 {
                     update_post_meta($post_id, '_gmkb_profile_id', $profile_id);
                     update_post_meta($post_id, 'profile_id', $profile_id);
 
-                    if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log('  - Linked to profile #' . $profile_id);
-                    }
+                    GMKB_Logger::debug('Linked to profile #' . $profile_id);
                 }
             }
 
@@ -1383,9 +1323,7 @@ class GMKB_REST_API_V2 {
                 if (is_wp_error($save_result)) {
                     // Post was created but save failed - return the post ID anyway
                     // so the frontend can retry saves
-                    if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log('⚠️ GMKB REST API v2: Post created but initial save failed: ' . $save_result->get_error_message());
-                    }
+                    GMKB_Logger::warning('Post created but initial save failed: ' . $save_result->get_error_message());
 
                     return rest_ensure_response(array(
                         'success' => true,
@@ -1408,9 +1346,7 @@ class GMKB_REST_API_V2 {
             ));
 
         } catch (Exception $e) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('❌ GMKB REST API v2: Create exception: ' . $e->getMessage());
-            }
+            GMKB_Logger::exception($e, 'Create media kit failed');
 
             return new WP_Error(
                 'create_failed',
@@ -1479,16 +1415,14 @@ class GMKB_REST_API_V2 {
             
             $value = $body['value'];
             
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('💾 GMKB REST API v2: Updating Pods field');
-                error_log('  - Post ID: ' . $post_id);
-                error_log('  - Post Type: ' . $post->post_type);
-                error_log('  - Field: ' . $field_name);
-                error_log('  - Value type: ' . gettype($value));
-                if (is_scalar($value)) {
-                    error_log('  - Value: ' . $value);
-                }
-            }
+            GMKB_Logger::info('Updating Pods field "' . $field_name . '" on post #' . $post_id);
+            GMKB_Logger::debug('Pods field update details', [
+                'postId' => $post_id,
+                'postType' => $post->post_type,
+                'field' => $field_name,
+                'valueType' => gettype($value),
+                'value' => is_scalar($value) ? $value : '(non-scalar)',
+            ]);
             
             // Initialize Pods for this post
             $pod = pods($post->post_type, $post_id);
@@ -1506,11 +1440,11 @@ class GMKB_REST_API_V2 {
             
             if ($save_result === false || is_wp_error($save_result)) {
                 $error_message = is_wp_error($save_result) ? $save_result->get_error_message() : 'Unknown error';
-                
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('❌ GMKB REST API v2: Failed to save Pods field');
-                    error_log('  - Error: ' . $error_message);
-                }
+
+                GMKB_Logger::error('Failed to save Pods field', [
+                    'field' => $field_name,
+                    'error' => $error_message,
+                ]);
                 
                 return new WP_Error(
                     'save_failed',
@@ -1526,11 +1460,11 @@ class GMKB_REST_API_V2 {
             // Verify the save by reading back
             $saved_value = $pod->field($field_name);
             
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ GMKB REST API v2: Pods field saved successfully');
-                error_log('  - Field: ' . $field_name);
-                error_log('  - Verified saved value type: ' . gettype($saved_value));
-            }
+            GMKB_Logger::info('Pods field "' . $field_name . '" saved successfully');
+            GMKB_Logger::debug('Pods field save verified', [
+                'field' => $field_name,
+                'savedValueType' => gettype($saved_value),
+            ]);
             
             // Return success response
             $response = array(
@@ -1544,12 +1478,8 @@ class GMKB_REST_API_V2 {
             return rest_ensure_response($response);
             
         } catch (Exception $e) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('❌ GMKB REST API v2: Exception updating Pods field');
-                error_log('  - Error: ' . $e->getMessage());
-                error_log('  - File: ' . $e->getFile() . ':' . $e->getLine());
-            }
-            
+            GMKB_Logger::exception($e, 'Exception updating Pods field "' . $field_name . '"');
+
             return new WP_Error(
                 'update_failed',
                 'Failed to update Pods field: ' . $e->getMessage(),
@@ -1674,11 +1604,7 @@ class GMKB_REST_API_V2 {
                 )
             );
             
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB REST API v2: Returning ' . count($normalized_components) . ' components');
-                error_log('GMKB REST API v2: Cache status - ' . ($response_data['metadata']['cached'] ? 'HIT' : 'MISS'));
-                error_log('GMKB REST API v2: Execution time: ' . $execution_time . 's');
-            }
+            GMKB_Logger::debug('Returning ' . count($normalized_components) . ' components, cache: ' . ($response_data['metadata']['cached'] ? 'HIT' : 'MISS') . ', time: ' . round($execution_time, 4) . 's');
             
             // PHASE 2: Create REST response with cache headers
             $response = rest_ensure_response($response_data);
@@ -1730,6 +1656,4 @@ class GMKB_REST_API_V2 {
 // ROOT FIX: Instantiation now happens via init hook in main plugin file
 // This ensures ComponentDiscovery is ready before REST API initializes
 
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('📄 GMKB REST API v2: Class defined, waiting for init hook instantiation');
-}
+GMKB_Logger::startup('REST API v2: Class defined, waiting for init hook instantiation');

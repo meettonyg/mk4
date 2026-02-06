@@ -87,10 +87,8 @@ class Topics_Data_Service extends Base_Component_Data_Service {
             'count' => $pods_result['count']
         );
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("EVENT-DRIVEN TOPICS: Context [{$context}] Post ID {$current_post_id} (explicit), " . 
+        GMKB_Logger::info("Topics: Context [{$context}] Post ID {$current_post_id}, " .
                      count($result['topics']) . " topics from {$result['data_source']}");
-        }
         
         return $result;
     }
@@ -183,9 +181,7 @@ class Topics_Data_Service extends Base_Component_Data_Service {
                 $count++;
                 $success = true;
                 
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log("✅ PHASE 1 Topics Data Service: Found topic_{$i} = {$topic_value} (Pods only)");
-                }
+                GMKB_Logger::debug("Topics Data Service: Found topic_{$i} = {$topic_value} (Pods only)");
             }
         }
         
@@ -210,9 +206,7 @@ class Topics_Data_Service extends Base_Component_Data_Service {
             $message = "No topics found in Pods fields for post {$post_id}";
         }
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("✅ PHASE 1 ARCHITECTURAL FIX: Topics loaded from Pods ONLY - {$count} topics, quality: {$quality}");
-        }
+        GMKB_Logger::info("Topics loaded from Pods fields: {$count} topics, quality: {$quality}");
         
         return array(
             'topics' => $topics,
@@ -298,9 +292,7 @@ class Topics_Data_Service extends Base_Component_Data_Service {
      */
     
     public static function get_unified_topics_data($context = 'unknown') {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('DEPRECATED: get_unified_topics_data() called without explicit post_id. Use get_unified_component_data($post_id, $context) instead.');
-        }
+        GMKB_Logger::warning('DEPRECATED: get_unified_topics_data() called without explicit post_id. Use get_unified_component_data($post_id, $context) instead.');
         
         // Attempt to get post_id from various sources for backward compatibility
         $post_id = $_POST['post_id'] ?? $_GET['post_id'] ?? get_the_ID() ?? 0;
@@ -309,9 +301,7 @@ class Topics_Data_Service extends Base_Component_Data_Service {
     }
     
     public static function get_sidebar_topics($context = 'sidebar') {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('DEPRECATED: get_sidebar_topics() called without explicit post_id. Use get_sidebar_data($post_id, $context) instead.');
-        }
+        GMKB_Logger::warning('DEPRECATED: get_sidebar_topics() called without explicit post_id. Use get_sidebar_data($post_id, $context) instead.');
         
         $post_id = $_POST['post_id'] ?? $_GET['post_id'] ?? get_the_ID() ?? 0;
         
@@ -319,9 +309,7 @@ class Topics_Data_Service extends Base_Component_Data_Service {
     }
     
     public static function get_preview_topics($context = 'preview') {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('DEPRECATED: get_preview_topics() called without explicit post_id. Use get_preview_data($post_id, $context) instead.');
-        }
+        GMKB_Logger::warning('DEPRECATED: get_preview_topics() called without explicit post_id. Use get_preview_data($post_id, $context) instead.');
         
         $post_id = $_POST['post_id'] ?? $_GET['post_id'] ?? get_the_ID() ?? 0;
         
@@ -329,6 +317,4 @@ class Topics_Data_Service extends Base_Component_Data_Service {
     }
 }
 
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ SCALABLE TOPICS: Topics Data Service loaded with scalable base architecture');
-}
+GMKB_Logger::startup('Topics Data Service loaded with scalable base architecture');

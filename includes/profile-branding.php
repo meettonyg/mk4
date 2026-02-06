@@ -73,13 +73,12 @@ function gmkb_get_profile_branding($post_id) {
 
     $branding['hasBrandingData'] = $has_colors || $has_fonts || $has_images;
 
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('🎨 GMKB Profile Branding: Post #' . $post_id);
-        error_log('  - Schema version: ' . GMKB_PROFILE_BRANDING_SCHEMA_VERSION);
-        error_log('  - Has colors: ' . ($has_colors ? 'YES' : 'NO'));
-        error_log('  - Has fonts: ' . ($has_fonts ? 'YES' : 'NO'));
-        error_log('  - Has images: ' . ($has_images ? 'YES' : 'NO'));
-    }
+    GMKB_Logger::debug('GMKB Profile Branding: Post #' . $post_id, [
+        'schema_version' => GMKB_PROFILE_BRANDING_SCHEMA_VERSION,
+        'has_colors' => $has_colors,
+        'has_fonts' => $has_fonts,
+        'has_images' => $has_images,
+    ]);
 
     return $branding;
 }

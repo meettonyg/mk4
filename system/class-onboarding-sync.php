@@ -167,14 +167,12 @@ class GMKB_Onboarding_Sync {
             $tag_name = self::TASK_TAGS[$task_id];
             self::apply_tag($user_id, $tag_name);
 
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log(sprintf(
-                    '[Onboarding Sync] User %d completed task "%s" - applied tag "%s"',
-                    $user_id,
-                    $task_id,
-                    $tag_name
-                ));
-            }
+            GMKB_Logger::info(sprintf(
+                'Onboarding Sync: User %d completed task "%s" - applied tag "%s"',
+                $user_id,
+                $task_id,
+                $tag_name
+            ));
         }
 
         // Trigger custom action for extensibility
@@ -229,14 +227,12 @@ class GMKB_Onboarding_Sync {
             $tag_name = self::MILESTONE_TAGS[$milestone];
             self::apply_tag($user_id, $tag_name);
 
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log(sprintf(
-                    '[Onboarding Sync] User %d reached %d%% milestone - applied tag "%s"',
-                    $user_id,
-                    $milestone,
-                    $tag_name
-                ));
-            }
+            GMKB_Logger::info(sprintf(
+                'Onboarding Sync: User %d reached %d%% milestone - applied tag "%s"',
+                $user_id,
+                $milestone,
+                $tag_name
+            ));
         }
 
         // Trigger custom action for extensibility
@@ -289,14 +285,11 @@ class GMKB_Onboarding_Sync {
 
             return true;
         } catch (Exception $e) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log(sprintf(
-                    '[Onboarding Sync] Failed to apply tag "%s" to user %d: %s',
-                    $tag_name,
-                    $user_id,
-                    $e->getMessage()
-                ));
-            }
+            GMKB_Logger::exception($e, sprintf(
+                'Onboarding Sync: Failed to apply tag "%s" to user %d',
+                $tag_name,
+                $user_id
+            ));
             return false;
         }
     }
@@ -322,14 +315,11 @@ class GMKB_Onboarding_Sync {
 
             return true;
         } catch (Exception $e) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log(sprintf(
-                    '[Onboarding Sync] Failed to remove tag "%s" from user %d: %s',
-                    $tag_name,
-                    $user_id,
-                    $e->getMessage()
-                ));
-            }
+            GMKB_Logger::exception($e, sprintf(
+                'Onboarding Sync: Failed to remove tag "%s" from user %d',
+                $tag_name,
+                $user_id
+            ));
             return false;
         }
     }
@@ -350,13 +340,10 @@ class GMKB_Onboarding_Sync {
             wp_fusion()->user->push_user_meta($user_id, $meta_data);
             return true;
         } catch (Exception $e) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log(sprintf(
-                    '[Onboarding Sync] Failed to push meta for user %d: %s',
-                    $user_id,
-                    $e->getMessage()
-                ));
-            }
+            GMKB_Logger::exception($e, sprintf(
+                'Onboarding Sync: Failed to push meta for user %d',
+                $user_id
+            ));
             return false;
         }
     }
@@ -494,15 +481,12 @@ class GMKB_Onboarding_Sync {
         $previous_count = (int) get_user_meta($user_id, 'guestify_total_interview_entries', true);
         update_user_meta($user_id, 'guestify_total_interview_entries', $opportunity_count);
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log(sprintf(
-                '[Onboarding Sync BRIDGE] User %d imported opportunity. Count: %d -> %d (import_data: %s)',
-                $user_id,
-                $previous_count,
-                $opportunity_count,
-                json_encode($import_data)
-            ));
-        }
+        GMKB_Logger::info(sprintf(
+            'Onboarding Sync Bridge: User %d imported opportunity. Count: %d -> %d',
+            $user_id,
+            $previous_count,
+            $opportunity_count
+        ));
 
         // Check if this is the first import (trigger task completion)
         if ($previous_count === 0 && $opportunity_count > 0) {
@@ -560,15 +544,12 @@ class GMKB_Onboarding_Sync {
         $previous_count = (int) get_user_meta($user_id, 'guestify_total_pitches_sent', true);
         update_user_meta($user_id, 'guestify_total_pitches_sent', $message_count);
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log(sprintf(
-                '[Onboarding Sync OUTREACH] User %d sent message. Count: %d -> %d (message_data: %s)',
-                $user_id,
-                $previous_count,
-                $message_count,
-                json_encode($message_data)
-            ));
-        }
+        GMKB_Logger::info(sprintf(
+            'Onboarding Sync Outreach: User %d sent message. Count: %d -> %d',
+            $user_id,
+            $previous_count,
+            $message_count
+        ));
 
         // Check for first pitch (task completion)
         if ($previous_count === 0 && $message_count > 0) {
@@ -623,12 +604,7 @@ class GMKB_Onboarding_Sync {
         );
 
         if ($table_exists !== $table_name) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log(sprintf(
-                    '[Onboarding Sync OUTREACH] Table %s does not exist',
-                    $table_name
-                ));
-            }
+            GMKB_Logger::warning(sprintf('Onboarding Sync Outreach: Table %s does not exist', $table_name));
             return 0;
         }
 
@@ -658,14 +634,12 @@ class GMKB_Onboarding_Sync {
             if ($new_count >= $threshold && $previous_count < $threshold) {
                 self::apply_tag($user_id, $tag_name);
 
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log(sprintf(
-                        '[Onboarding Sync] User %d reached pitch milestone %d - applied tag "%s"',
-                        $user_id,
-                        $threshold,
-                        $tag_name
-                    ));
-                }
+                GMKB_Logger::info(sprintf(
+                    'Onboarding Sync: User %d reached pitch milestone %d - applied tag "%s"',
+                    $user_id,
+                    $threshold,
+                    $tag_name
+                ));
             }
         }
     }
@@ -687,14 +661,12 @@ class GMKB_Onboarding_Sync {
             if ($new_count >= $threshold && $previous_count < $threshold) {
                 self::apply_tag($user_id, $tag_name);
 
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log(sprintf(
-                        '[Onboarding Sync] User %d reached import milestone %d - applied tag "%s"',
-                        $user_id,
-                        $threshold,
-                        $tag_name
-                    ));
-                }
+                GMKB_Logger::info(sprintf(
+                    'Onboarding Sync: User %d reached import milestone %d - applied tag "%s"',
+                    $user_id,
+                    $threshold,
+                    $tag_name
+                ));
             }
         }
     }
@@ -719,12 +691,7 @@ class GMKB_Onboarding_Sync {
         );
 
         if ($table_exists !== $table_name) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log(sprintf(
-                    '[Onboarding Sync BRIDGE] Table %s does not exist',
-                    $table_name
-                ));
-            }
+            GMKB_Logger::warning(sprintf('Onboarding Sync Bridge: Table %s does not exist', $table_name));
             return 0;
         }
 

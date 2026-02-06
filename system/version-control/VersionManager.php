@@ -66,9 +66,7 @@ class VersionManager {
         add_action('gmkb_before_major_change', array($this, 'auto_create_snapshot'));
         add_action('gmkb_state_saved', array($this, 'maybe_create_auto_version'));
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB Version Manager: Initialized');
-        }
+        \GMKB_Logger::startup('Version Manager initialized');
     }
     
     /**
@@ -151,9 +149,7 @@ class VersionManager {
         // Update version index
         update_post_meta($post_id, self::VERSION_INDEX_KEY, count($versions) - 1);
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ Version created: ' . $version['version_id'] . ' for post ' . $post_id);
-        }
+        \GMKB_Logger::info('Version created: ' . $version['version_id'] . ' for post ' . $post_id);
         
         return array(
             'success' => true,
@@ -223,9 +219,7 @@ class VersionManager {
         // Trigger state restored action
         do_action('gmkb_version_restored', $post_id, $version_id, $state);
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ Version restored: ' . $version_id . ' for post ' . $post_id);
-        }
+        \GMKB_Logger::info('Version restored: ' . $version_id . ' for post ' . $post_id);
         
         return array(
             'success' => true,
@@ -368,7 +362,7 @@ class VersionManager {
             
             return !empty($diff) ? $diff : false;
         } catch (\Exception $e) {
-            error_log('Error creating diff: ' . $e->getMessage());
+            \GMKB_Logger::exception($e, 'Version Manager: Error creating diff');
             return false;
         }
     }
@@ -470,7 +464,7 @@ class VersionManager {
         if ($snapshot['type'] === 'diff') {
             $base_version = $this->get_version($post_id, $snapshot['base_version']);
             if (!$base_version) {
-                error_log('Base version not found: ' . $snapshot['base_version']);
+                \GMKB_Logger::warning('Version Manager: Base version not found: ' . $snapshot['base_version']);
                 return null;
             }
             

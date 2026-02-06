@@ -69,9 +69,7 @@ abstract class Base_Component_Data_Service {
             );
         }
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("EVENT-DRIVEN BASE SERVICE: Post ID {$current_post_id} validated for " . (static::$component_type ?? 'unknown') . " component in context {$context}");
-        }
+        GMKB_Logger::debug("Base Service: Post ID {$current_post_id} validated for " . (static::$component_type ?? 'unknown') . " component in context {$context}");
         
         return array(
             'post_id' => $current_post_id,
@@ -141,9 +139,7 @@ abstract class Base_Component_Data_Service {
         if ($options['validate']) {
             $data = static::validate_component_data($data);
             if ($data === false) {
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log("BASE SERVICE: Data validation failed for {$component_type} component");
-                }
+                GMKB_Logger::warning("Base Service: Data validation failed for {$component_type} component");
                 return false;
             }
         }
@@ -176,10 +172,8 @@ abstract class Base_Component_Data_Service {
             self::clear_component_cache($component_type, $post_id);
         }
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("BASE SERVICE: Saved {$component_type} data to post {$post_id} - " . 
+        GMKB_Logger::info("Base Service: Saved {$component_type} data to post {$post_id} - " .
                      ($success !== false ? 'SUCCESS' : 'FAILED'));
-        }
         
         return $success !== false;
     }
@@ -221,8 +215,8 @@ abstract class Base_Component_Data_Service {
             $backup_key = "component_{$component_type}_data_backup";
             $data = get_post_meta($post_id, $backup_key, true);
             
-            if (!empty($data) && defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("BASE SERVICE: Used backup data for {$component_type} component");
+            if (!empty($data)) {
+                GMKB_Logger::warning("Base Service: Used backup data for {$component_type} component");
             }
         }
         
@@ -359,6 +353,4 @@ abstract class Base_Component_Data_Service {
     }
 }
 
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ BASE SERVICE: Base Component Data Service loaded - scalable foundation ready');
-}
+GMKB_Logger::startup('Base Component Data Service loaded - scalable foundation ready');
