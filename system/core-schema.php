@@ -667,7 +667,7 @@ class GMKB_Core_Schema {
                 'type' => $config['type'],
                 'description' => $config['description'] ?? '',
                 'sanitize_callback' => $config['sanitize_callback'] ?? 'sanitize_text_field',
-                'default' => $config['default'] ?? null,
+                'default' => $config['default'] ?? self::get_type_default($config['type']),
             ]);
         }
 
@@ -796,7 +796,7 @@ class GMKB_Core_Schema {
                     'type' => $config['type'],
                     'description' => $config['description'] ?? '',
                     'sanitize_callback' => $config['sanitize_callback'] ?? 'sanitize_text_field',
-                    'default' => $config['default'] ?? null,
+                    'default' => $config['default'] ?? self::get_type_default($config['type']),
                 ]);
             }
         }
@@ -875,6 +875,29 @@ class GMKB_Core_Schema {
         }
 
         return $interviews;
+    }
+
+    /**
+     * Get the appropriate default value for a given meta type.
+     *
+     * @param string $type The meta type (string, integer, number, boolean, array, object).
+     * @return mixed
+     */
+    private static function get_type_default($type) {
+        switch ($type) {
+            case 'integer':
+            case 'number':
+                return 0;
+            case 'boolean':
+                return false;
+            case 'array':
+                return [];
+            case 'object':
+                return new \stdClass();
+            case 'string':
+            default:
+                return '';
+        }
     }
 }
 
